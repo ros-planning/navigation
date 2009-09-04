@@ -1,0 +1,13 @@
+<package>
+  <description brief="fake localization">A ROS node that simply forwards odometry information.</description>
+  <author>Ioan A. Sucan</author>
+  <license>BSD</license>
+  <review status="proposal cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/fake_localization</url>
+  <depend package="roscpp" />
+  <depend package="rosconsole" />
+  <depend package="nav_msgs" />
+  <depend package="geometry_msgs" />
+  <depend package="tf" />
+  <depend package="angles" />
+</package>

@@ -1,0 +1,26 @@
+<package>
+  <description>
+<p>
+    amcl is a probabilistic localization system for a robot moving in
+    2D. It implements the adaptive (or KLD-sampling) Monte Carlo
+    localization approach (as described by Dieter Fox), which uses a
+    particle filter to track the pose of a robot against a known map.
+</p>
+<p>
+    This node is derived, with thanks, from Andrew Howard's excellent
+    'amcl' Player driver.
+</p>
+  </description>
+  <url>http://ros.org/wiki/amcl</url>
+  <author>Brian P. Gerkey</author>
+  <license>LGPL</license>
+  <review status="proposal cleared" notes="API review in progress (Brian)"/>
+  <depend package="roscpp" />
+  <depend package="tf" />
+  <depend package="nav_msgs" />
+  <depend package="std_srvs" />
+  
+  <!-- For tests -->
+  <depend package="map_server"/>
+  <depend package="rostest"/>
+</package>

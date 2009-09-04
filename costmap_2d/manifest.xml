@@ -1,0 +1,28 @@
+<package>
+<description brief="A 2D Costmap">
+  This package provides an implementation of a 2D costmap that takes in sensor
+  data from the world, builds a 2D or 3D occupancy grid of the data (depending
+  on whether a voxel based implementation is used), and inflates costs in a
+  2D costmap based on the occupancy grid and a user specified inflation radius.
+  This package also provides support for map_server based initialization of a
+  costmap, rolling window based costmaps, and parameter based subscription to
+  and configuration of sensor topics.
+</description>
+<author>Eitan Marder-Eppstein</author>
+<license>BSD</license>
+<review status="api cleared" notes=""/>
+<url>http://pr.willowgarage.com/wiki/costmap_2d</url>
+<depend package="rosconsole"/>
+<depend package="roscpp" />
+<depend package="std_msgs" />
+<depend package="geometry_msgs" />
+<depend package="sensor_msgs" />
+<depend package="laser_geometry" />
+<depend package="tf" />
+<depend package="voxel_grid" />
+<depend package="nav_msgs" />
+<depend package="visualization_msgs" />
+<export>
+  <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread` -lcostmap_2d"/>
+</export>
+</package>

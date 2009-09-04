@@ -1,0 +1,33 @@
+<package>
+  <description brief="A general navigation stack">
+
+The move_base package provides an implementation of a robot_action that, given a goal in the world, will attempt to reach it with a mobile base. The move_base node links together a global and local planner to accomplish its global navigation task. It supports any global planner adhering to the BaseGlobalPlanner interface specified in nav_robot_actions and any local planner adhering to the BaseLocalPlanner interface specified in the nav_robot_actions package. The move_base node also maintains two costmaps one global and one local that can be used for navigation tasks.
+
+  </description>
+ <author>Eitan Marder-Eppstein</author>
+ <license>BSD</license>
+ <review status="proposal cleared" notes=""/>
+ <url>http://ros.org/wiki/move_base</url>
+
+ <depend package="roscpp"/>
+ <depend package="rosconsole"/>
+ <depend package="std_msgs"/>
+ <depend package="move_base_msgs"/>
+ <depend package="geometry_msgs"/>
+ <depend package="visualization_msgs"/>
+ <depend package="actionlib"/>
+ <depend package="nav_core"/>
+ <depend package="pluginlib"/>
+ <depend package="costmap_2d"/>
+ <depend package="tf"/>
+ <depend package="roslib"/>
+ <depend package="nav_msgs"/>
+
+ <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->
+ <depend package="base_local_planner"/>
+ <depend package="navfn"/>
+
+ <export>
+ <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread`"/>
+ </export>
+</package>

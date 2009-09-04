@@ -1,0 +1,27 @@
+
+/** \mainpage
+
+@htmlinclude manifest.html
+
+@section summary Summary
+This package provides an implementation of a local planner for a mobile robot.
+The planner uses either the Trajectory Rollout or Dynamic Window Approach to povide safe local naivagtion 
+commands to the base.
+
+@section usage Usage
+There are two main ways to use this package. The first is to create a TrajectoryPlanner object and manage it
+yourself. The second, and encouraged method, is to use a ROS wrapper (base_local_planner::TrajectoryPlannerROS)
+that manages the underlying TrajectoryPlanner for you and adheres to the ROS nav_robot_actions::BaseLocalPlanner 
+interface. See below for an example of base_local_planner::TrajectoryPlannerROS construction. 
+
+@subsection construction TrajectoryPlannerROS Construction
+To construct a base_local_planner::TrajectoryPlannerROS object, pass it a name, a reference to a 
+costmap_2D::Costmap2DROS, and a reference to a tf::TransformListener.
+
+@verbatim
+#include "ros/ros.h"
+#include "tf/transform_listener.h"
+#include "costmap_2d/costmap_2d_ros.h"
+#include "base_local_planner/trajectory_planner_ros.h"
+
+*/

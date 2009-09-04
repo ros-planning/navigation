@@ -1,0 +1,12 @@
+<launch>
+
+<!--<param name="/use_sim_time" type="bool" value="True"/>-->
+
+<include file="$(find robot_pose_ekf)/robot_pose_ekf.launch" />
+
+<node pkg="rosrecord" type="rosplay" args="$(find robot_pose_ekf)/test/ekf_test.bag" />
+
+<test test-name="test_robot_pose_ekf" pkg="robot_pose_ekf" type="test_robot_pose_ekf" />
+
+
+</launch>

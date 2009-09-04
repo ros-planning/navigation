@@ -1,0 +1,126 @@
+
+/** \mainpage
+
+@htmlinclude manifest.html
+
+@section summary Summary
+This pakages provides a 2D costmap that can be used for a wide range of planning and navigation tasks.
+
+@section usage Usage
+There are two main ways to use this package. The first is to create a costmap_2d::Costmap2D
+object and manage updating it yourself. The second, and encouraged method, is
+to use a ROS wrapper (costmap_2d::Costmap2DROS) for the costmap that manages the map for
+you, but allows you to get a copy of the underlying costmap_2d::Costmap2D object at any
+time. For an example of costmap_2d::Costmap2DROS construction and configuration please see the
+<a href="../../costmap_2d_tutorials/html">costmap_2d_tutorials</a> package.
+
+@subsection example_use Using the Underlying Costmap2D
+To get a copy of the underlying costmap_2d::Costmap2D object, call the
+getCostmapCopy method. The copy may be used by the user without affecting the
+update rate of the map. Responsibility for deletion of the costmap_2d::Costmap2D copy also
+lies with the user. See the costmap_2d::Costmap2D section for details on using
+a costmap.
+
+@verbatim
+void doSomething(costmap_2d::Costmap2DROS& map_updater){
+  //get a copy of the underlying Costmap2D
+  costmap_2d::Costmap2D costmap;
+  map_updater.getCostmapCopy(costmap);
+
+  //do whatever you want with the map here
+  ROS_INFO("The size of the map in meters is: (%.2f, %.2f)", costmap.metersSizeX(), costmap.metersSizeY());
+}
+@endverbatim
+
+@subsection parameters Costmap2DROS Parameters
+There are a number of parameters that can be used to configure the costmap_2d::Costmap2DROS object
+<ul>
+<li><b>~global_frame</b>, <i>string</i> <br>The global frame for the costmap to operate in</li>
+<br><br>
+<li><b>~robot_base_frame</b>, <i>string</i> <br>The name of the frame for the base link of the robot</li>
+<br><br>
+<li><b>~update_frequency</b>, <i>double</i> <br>The frequency in Hz for the map to be updated</li>
+<br><br>
+<li><b>~publish_frequency</b>, <i>double</i> <br>The frequency in Hz for the map to be publish display information</li>
+<br><br>
+<li><b>~transform_tolerance</b>, <i>double</i> <br>Specifies the delay in transform (tf) data that is tolerable in seconds. </li>
+<br><br>
+<li><b>~obstacle_range</b>, <i>double</i> <br>The maximum distance from the robot at which an obstacle will be inserted into the cost map</li>
+<br><br>
+<li><b>~max_obstacle_height</b>, <i>double</i> <br>The maximum height of an obstacle</li>
+<br><br>
+<li><b>~raytrace_range</b>, <i>double</i> <br>The range at which to raytrace out obstacles from the map using sensor data</li>
+<br><br>
+<li><b>~inscribed_radius</b>, <i>double</i> <br>The inscribed radius of the robot</li>
+<br><br>
+<li><b>~circumscribed_radius</b>, <i>double</i> <br>The circumscribed radius of the robot</li>
+<br><br>
+<li><b>~inflation_radius</b>, <i>double</i> <br>The radius to which the map inflates obstacle cost values</li>
+<br><br>
+<li><b>~observation_sources</b>, <i>string</i> <br>A list of topics to subscribe to separated by spaces</li>
+<br><br>
+<li>
+  <b>Each topic can also have parameters set on it</b><br><br>
+  <ul>
+  <li><b>~topic_name/sensor_frame</b>, <i>string</i> <br>The frame of the origin of the sensor. Set to "frame_from_message" to attempt to read the frame from sensor data.</li>
+  <br><br>
+  <li><b>~topic_name/observation_persistence</b>, <i>double</i> <br>How long to keep each sensor reading in seconds. A value of 0.0 will only keep the most recent reading.</li>
+  <br><br>
+  <li><b>~topic_name/expected_update_rate</b>, <i>double</i> <br>How often to expect a reading from a sensor in secongs. A value of 0.0 will allow infinite time between readings.</li>
+  <br><br>
+  <li><b>~topic_name/data_type</b>, <i>string</i> <br>The data_type associated with the topic, right now only PointCloud and LaserScan are supported natively.</li>
+  <br><br>
+  <li><b>~topic_name/clearing</b>, <i>bool</i> <br>Whether or not this observation should be used to clear out freespace</li>
+  <br><br>
+  <li><b>~topic_name/marking</b>, <i>bool</i> <br>Whether or not this observation should be used to mark obstacles</li>
+  <br><br>
+  <li><b>~topic_name/max_obstacle_height</b>, <i>double</i> <br>The maximum height in meters of a sensor reading considered valid</li>
+  <br><br>
+  <li><b>~topic_name/min_obstacle_height</b>, <i>double</i> <br>The minimum height in meters of a sensor reading considered valid</li>
+  </ul>
+</li>
+<br><br>
+<li><b>~static_map</b>, <i>bool</i> <br>Whether or not to use the static map to initialize the costmap</li>
+<br><br>
+<li><b>~rolling_window</b>, <i>bool</i> <br>Whether or not to use a rolling window version of the costmap</li>
+<br><br>
+<li> 
+  <b>The following parameters are only used if static_map is set to false</b><br><br>
+  <ul>
+  <li><b>~width</b>, <i>double</i> <br>The width of the map in meters</li>
+  <br><br>
+  <li><b>~height</b>, <i>double</i> <br>The height of the map in meters</li>
+  <br><br>
+  <li><b>~resolution</b>, <i>double</i> <br>The resolution of the map in meters/cell</li>
+  <br><br>
+  <li><b>~origin_x</b>, <i>double</i> <br>The x origin of the map in the global frame</li>
+  <br><br>
+  <li><b>~origin_y</b>, <i>double</i> <br>The y origin of the map in the global frame</li>
+  </ul>
+</li>
+<br><br>
+<li><b>~map_type</b>, <i>string</i> <br>What map type to use. "voxel" or "costmap" are the supported types.</li>
+<br><br>
+<li> 
+  <b>The following parameters are only used if map_type is set to "voxel"</b><br><br>
+  <ul>
+  <li><b>~origin_z</b>, <i>double</i> <br>The z origin of the map</li>
+  <br><br>
+  <li><b>~z_resolution</b>, <i>double</i> <br>The z resolution of the map</li>
+  <br><br>
+  <li><b>~z_voxels</b>, <i>int</i> <br>The number of voxels to in each vertical column</li>
+  <br><br>
+  <li><b>~unknown_threshold</b>, <i>int</i> <br>The number of unmarked cells allowed in a column considered to be "known"</li>
+  <br><br>
+  <li><b>~mark_threshold</b>, <i>int</i> <br>The number of marked cells allowed in a column considered to be "free"</li>
+  </ul>
+</li>
+<br><br>
+<li><b>~cost_scaling_factor</b>, <i>double</i> <br>A scaling factor to apply to cost values during inflation. The cost function is computed
+as follows: exp(-1.0 * cost_scaling_factor * (distance_from_obstacle - inscribed_radius)) * max_cost</li>
+<br><br>
+<li><b>~lethal_cost_threshold</b>, <i>int</i> <br>The threshold value at which to consider a cost lethal when reading in a map</li>
+</ul>
+
+
+*/

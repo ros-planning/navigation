@@ -1,0 +1,12 @@
+<launch>
+  <master auto="start"/>
+  <group name="wg">
+    <node pkg="map_server" type="map_server" args="$(find 2dnav_stage)/maps/willow-full-0.05.pgm 0.05" respawn="false" />
+    <node pkg="stage" type="stageros" name="stageros" args="$(find 2dnav_stage)/worlds/willow-pr2-5cm.world" respawn="false" >
+      <param name="base_watchdog_timeout" value="0.2"/>
+    </node>
+    <node pkg="fake_localization" type="fake_localization" respawn="false" />
+    <node pkg="nav_view" type="nav_view" respawn="false"/>
+    <node pkg="nav" type="planner_test" output="screen" />
+  </group>
+</launch>

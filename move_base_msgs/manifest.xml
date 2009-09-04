@@ -1,0 +1,22 @@
+<package>
+  <description brief="Holds the action description and relevant messages for the move_base package">
+
+     Holds the action description and relevant messages for the move_base package
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/move_base_msgs</url>
+  <depend package="roslib"/>
+  <depend package="std_msgs"/>
+  <depend package="actionlib_msgs"/>
+  <depend package="geometry_msgs"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/msg/cpp"/>
+  </export>
+
+</package>
+
+

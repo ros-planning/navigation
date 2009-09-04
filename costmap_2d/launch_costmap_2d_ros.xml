@@ -1,0 +1,61 @@
+<launch>
+  <master auto="start"/>
+  <group name="wg">
+    <param name="/use_sim_time" value="true" />
+    <node pkg="costmap_2d" type="costmap_test" respawn="false" name="costmap_tester" output="screen">
+      <param name="costmap/global_frame" value="map" />
+      <param name="costmap/robot_base_frame" value="base_link" />
+
+      <param name="costmap/update_frequency" value="5.0" />
+      <param name="costmap/publish_frequency" value="2.0" />
+      <param name="costmap/publish_voxel_map" value="true" />
+
+      <param name="costmap/obstacle_range" value="2.5" />
+      <param name="costmap/max_obstacle_height" value="2.0" />
+      <param name="costmap/raytrace_range" value="10.0" />
+
+      <param name="costmap/inscribed_radius" value="0.325" />
+      <param name="costmap/circumscribed_radius" value="0.46" />
+      <param name="costmap/inflation_radius" value="0.55" />
+      
+      <param name="costmap/map_type" value="voxel" />
+      <param name="costmap/origin_z" value="0.0" />
+      <param name="costmap/z_resolution" value="0.2" />
+      <param name="costmap/z_voxels" value="10" />
+      <param name="costmap/unknown_threshold" value="3" />
+      <param name="costmap/mark_threshold" value="0" />
+
+      <param name="costmap/transform_tolerance" value="100.0" />
+
+      <param name="costmap/observation_sources" value="tilt_scan" />
+
+      <param name="costmap/base_scan/observation_persistence" value="0.0" />
+      <param name="costmap/base_scan/expected_update_rate" value="0.2" />
+      <param name="costmap/base_scan/data_type" value="LaserScan" />
+      <param name="costmap/base_scan/clearing" value="true" />
+
+      <param name="costmap/tilt_scan/observation_persistence" value="10.0" />
+      <param name="costmap/tilt_scan/expected_update_rate" value="0.2" />
+      <param name="costmap/tilt_scan/data_type" value="LaserScan" />
+      <param name="costmap/tilt_scan/clearing" value="true" />
+      <param name="costmap/tilt_scan/marking" value="true" />
+      <param name="costmap/tilt_scan/min_obstacle_height" value="-20.10" />
+      <param name="costmap/tilt_scan/max_obstacle_height" value="30.00" />
+
+      <param name="costmap/static_map" value="false" />
+      <param name="costmap/rolling_window" value="true" />
+
+      <!-- begin only used if static map is set to false -->
+      <param name="costmap/width" value="10.0" />
+      <param name="costmap/height" value="10.0" />
+      <param name="costmap/resolution" value="0.025" />
+      <param name="costmap/origin_x" value="0.0" />
+      <param name="costmap/origin_y" value="0.0" />
+      <!-- end only used if static map is set to false -->
+
+      <param name="costmap/cost_scaling_factor" value="1.0" />
+      <param name="costmap/lethal_cost_threshold" value="100" />
+
+    </node>
+  </group>
+</launch>

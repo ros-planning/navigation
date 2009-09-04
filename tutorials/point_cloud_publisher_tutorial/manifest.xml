@@ -1,0 +1,16 @@
+<package>
+  <description brief="point_cloud_publisher_tutorial">
+
+     point_cloud_publisher_tutorial
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/point_cloud_publisher_tutorial</url>
+  <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+
+</package>
+
+

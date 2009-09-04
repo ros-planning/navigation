@@ -1,0 +1,17 @@
+<package>
+  <description>A graphical interface for 2-D navigation.</description>
+  <author>Morgan Quigley, Brian Gerkey and Josh Faust</author>
+  <license>BSD</license>
+  <review status="proposal cleared" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/nav_view</url>
+  <depend package="roscpp"/>
+  <depend package="nav_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="tf"/>
+  <depend package="ogre"/>
+  <depend package="ogre_tools"/>
+  <depend package="message_filters"/>
+  
+  <cpp cflags="-I${prefix}/src/" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lnav_view"/>
+  <python path="${prefix}/lib/"/>
+</package>

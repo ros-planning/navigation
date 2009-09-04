@@ -1,0 +1,28 @@
+<package>
+  <description brief="Static map server">
+
+    map_server provides the <tt>map_server</tt> ROS <a href="http://www.ros.org/wiki/Nodes">Node</a>, which offers map data as a ROS <a href="http://www.ros.org/wiki/Services">Service</a>. It also provides the <tt>map_saver</tt> command-line utility, which allows dynamically generated maps to be saved to file.
+
+  </description>
+  <author>Brian Gerkey, Tony Pratkanis</author>
+  <license>BSD</license>
+  <review status="proposal cleared" notes="API review in progress (Brian)"/>
+  <url>http://ros.org/wiki/map_server</url>
+  <depend package="rosconsole"/>
+  <depend package="roscpp"/>
+  <depend package="rospy" />
+  <depend package="nav_msgs"/>
+  <depend package="bullet"/>
+  <export>
+     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread`"/>
+  </export>
+
+  <!-- <depend package="sdl_image"/> -->
+
+
+
+  <rosdep name="sdl-image"/>
+  <rosdep name="python-imaging"/>
+  <rosdep name="python-yaml"/>
+
+</package>

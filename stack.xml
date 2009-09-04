@@ -1,0 +1,20 @@
+<stack name="navigation" version="0.1.0">
+  <description brief="planar navigation stack">
+    A 2D navigation stack that takes in information from odometry, sensor
+    streams, and a goal pose and outputs safe velocity commands that are sent
+    to a mobile base.
+  </description>
+  <author>Eitan Marder-Eppstein eitan@willowgarage.com</author>
+  <license>BSD, LGPL (amcl)</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/navigation</url>
+  
+
+  <depend stack="geometry"/> 
+  <depend stack="ros"/> 
+  <depend stack="visualization_common"/> 
+  <depend stack="common"/> 
+  <depend stack="common_msgs"/> 
+  <depend stack="laser_pipeline"/> 
+
+</stack>

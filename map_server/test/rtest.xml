@@ -1,0 +1,7 @@
+<launch>
+
+  <node pkg="map_server" type="map_server" args="$(find map_server)/test/testmap.bmp 0.1"/>
+
+  <test test-name="map_server_test" pkg="map_server" type="rtest"/>
+
+</launch>

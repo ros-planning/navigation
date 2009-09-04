@@ -1,0 +1,11 @@
+/**
+
+@mainpage
+
+@htmlinclude manifest.html
+
+Tools of interest:
+- \ref map_server
+- \ref map_saver
+*/
+

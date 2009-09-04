@@ -1,0 +1,30 @@
+<package>
+  <description brief="A local planner for a mobile base">
+
+This package provides implementations of the Trajectory Rollout and Dynamic Window approaches to local navigation. Given a plan to follow and a costmap, the controller produces velocity commands to send to a mobile base. This package supports both holonomic and non-holonomic robots, any robot footprint that can be represented as a convex polygon (the convex requirement is to keep the code as efficient as possible), and exposes its configuration as ROS parameters that can be set in a launch file. This package's ROS wrapper adheres to the BaseLocalPlanner interface specified in the <a href="http://ros.org/wiki/nav_core">nav_core</a> package. 
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="proposal cleared" notes=""/>
+  <url>http://ros.org/wiki/base_local_planner</url>
+  <depend package="std_msgs" />
+  <depend package="nav_msgs" />
+  <depend package="rosconsole" />
+  <depend package="roscpp" />
+  <depend package="tf" />
+  <depend package="roslib" />
+  <depend package="rospy" />
+  <depend package="pluginlib" />
+  <depend package="costmap_2d" />
+  <depend package="voxel_grid" />
+  <depend package="angles" />
+  <depend package="visualization_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="nav_core"/>
+  <repository>http://pr.willowgarage.com/repos</repository>
+  <export>
+    <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lbase_local_planner" />
+    <nav_core plugin="${prefix}/blp_plugin.xml" />
+  </export>
+</package>

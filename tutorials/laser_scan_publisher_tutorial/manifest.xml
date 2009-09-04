@@ -1,0 +1,15 @@
+<package>
+  <description brief="laser_scan_publisher_tutorial">
+
+     laser_scan_publisher_tutorial
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/laser_scan_publisher_tutorial</url>
+  <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+
+</package>
+

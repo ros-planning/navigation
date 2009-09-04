@@ -1,0 +1,17 @@
+<package>
+  <description brief="simple_navigation_goals_tutorial">
+
+     A package that provides sample code for sending simple navigation goals to the navigation stack.
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://pr.willowgarage.com/wiki/simple_navigation_goals_tutorial</url>
+  <depend package="move_base_msgs"/>
+  <depend package="actionlib"/>
+  <depend package="roscpp"/>
+
+</package>
+
+
