@@ -644,6 +644,8 @@ namespace move_base {
   void MoveBase::resetCostmaps(double size_x, double size_y){
     planner_costmap_ros_->resetMapOutsideWindow(size_x, size_y);
     controller_costmap_ros_->resetMapOutsideWindow(size_x, size_y);
+    planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
+    controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
   }
 
 };
