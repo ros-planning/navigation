@@ -51,7 +51,7 @@ class TestBasicLocalization(unittest.TestCase):
       time.sleep(0.1)
     start_time = rospy.rostime.get_time()
     # TODO: This should be replace by a pytf listener
-    rospy.Subscriber('tf_message', tfMessage, self.tf_cb)
+    rospy.Subscriber('/tf', tfMessage, self.tf_cb)
 
     while (rospy.rostime.get_time() - start_time) < target_time:
       #print 'Waiting for end time %.6f (current: %.6f)'%(target_time,(rospy.rostime.get_time() - start_time))
