@@ -42,6 +42,7 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 #include "odom_estimation.h"
+#include <robot_pose_ekf/GetStatus.h>
 
 // messages
 #include "nav_msgs/Odometry.h"
@@ -97,11 +98,14 @@ private:
   /// callback function for vo data
   void voCallback(const VoConstPtr& vo);
 
+  /// get the status of the filter
+  bool getStatus(robot_pose_ekf::GetStatus::Request& req, robot_pose_ekf::GetStatus::Response& resp);
 
   ros::NodeHandle node_;
   ros::Timer timer_;
   ros::Publisher pose_pub_;
   ros::Subscriber cmd_vel_sub_, odom_sub_, imu_sub_, vo_sub_;
+  ros::ServiceServer state_srv_;
 
   // ekf filter
   OdomEstimation my_filter_;
@@ -133,6 +137,8 @@ private:
   // log files for debugging
   std::ofstream odom_file_, imu_file_, vo_file_, corr_file_, time_file_, extra_file_;
 
+  // counters
+  unsigned int odom_callback_counter_, imu_callback_counter_, vo_callback_counter_, ekf_sent_counter_;
 
 }; // class
 

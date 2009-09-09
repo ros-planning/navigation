@@ -64,7 +64,11 @@ namespace estimation
       vo_initializing_(false),
       odom_covariance_(6),
       imu_covariance_(3),
-      vo_covariance_(6)
+      vo_covariance_(6),
+      odom_callback_counter_(0),
+      imu_callback_counter_(0),
+      vo_callback_counter_(0),
+      ekf_sent_counter_(0)
   {
     // paramters
     node_.getParam("sensor_timeout", timeout_, 1.0);
@@ -109,6 +113,8 @@ namespace estimation
     }
     else ROS_DEBUG("VO sensor will NOT be used");
 
+    // publish state service
+    state_srv_ = node_.advertiseService("get_status", &OdomEstimationNode::getStatus, this);
 
 #ifdef __EKF_DEBUG_FILE__
     // open files for debugging
@@ -145,6 +151,8 @@ namespace estimation
   // callback function for odom data
   void OdomEstimationNode::odomCallback(const OdomConstPtr& odom)
   {
+    odom_callback_counter_++;
+
     ROS_DEBUG("Odom callback at time %f ", ros::Time::now().toSec());
     assert(odom_used_);
 
@@ -191,6 +199,8 @@ namespace estimation
   // callback function for imu data
   void OdomEstimationNode::imuCallback(const ImuConstPtr& imu)
   {
+    imu_callback_counter_++;
+
     assert(imu_used_);
 
     // receive data 
@@ -245,6 +255,8 @@ namespace estimation
   // callback function for VO data
   void OdomEstimationNode::voCallback(const VoConstPtr& vo)
   {
+    vo_callback_counter_++;
+
     assert(vo_used_);
 
     // get data
@@ -351,6 +363,7 @@ namespace estimation
           // output most recent estimate and relative covariance
           my_filter_.getEstimate(output_);
           pose_pub_.publish(output_);
+          ekf_sent_counter_++;
           
           // broadcast most recent estimate to TransformArray
           Stamped<Transform> tmp;
@@ -385,6 +398,31 @@ namespace estimation
     }
   };
 
+
+bool OdomEstimationNode::getStatus(robot_pose_ekf::GetStatus::Request& req, robot_pose_ekf::GetStatus::Response& resp)
+{
+  stringstream ss;
+  ss << "Input:" << endl;
+  ss << " * Odometry sensor" << endl;
+  ss << "   - is "; if (!odom_active_) ss << "NOT "; ss << "active" << endl;
+  ss << "   - received " << odom_callback_counter_ << " messages" << endl;
+  ss << "   - listens to topic " << odom_sub_.getTopic() << endl;
+  ss << " * IMU sensor" << endl;
+  ss << "   - is "; if (!imu_active_) ss << "NOT "; ss << "active" << endl;
+  ss << "   - received " << imu_callback_counter_ << " messages" << endl;
+  ss << "   - listens to topic " << imu_sub_.getTopic() << endl;
+  ss << " * Visual Odometry sensor" << endl;
+  ss << "   - is "; if (!vo_active_) ss << "NOT "; ss << "active" << endl;
+  ss << "   - received " << vo_callback_counter_ << " messages" << endl;
+  ss << "   - listens to topic " << vo_sub_.getTopic() << endl;
+  ss << "Output:" << endl;
+  ss << " * Robot pose ekf filter" << endl;
+  ss << "   - is "; if (!my_filter_.isInitialized()) ss << "NOT "; ss << "active" << endl;
+  ss << "   - sent " << ekf_sent_counter_ << " messages" << endl;
+  ss << "   - pulishes on topics " << pose_pub_.getTopic() << " and /tf" << endl;
+  resp.status = ss.str();
+  return true;
+}
 
 }; // namespace
 
