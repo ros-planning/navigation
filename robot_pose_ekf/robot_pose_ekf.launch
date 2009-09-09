@@ -8,7 +8,7 @@
   <param name="imu_used" value="true"/>
   <param name="vo_used" value="true"/>
 
-  <remap from="odom" to="/pr2_base_odometry/odom" />
+  <remap from="/odom" to="/pr2_base_odometry/odom" />
 </node>
 
 </launch>
