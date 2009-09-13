@@ -477,6 +477,8 @@ namespace costmap_2d {
         unsigned char* cell_cost = &costmap_[index];
         if(*cell_cost != NO_INFORMATION)
           *cell_cost = std::max(cost, *cell_cost);
+        else if(cost == LETHAL_OBSTACLE)
+          *cell_cost = cost;
       }
 
       /**

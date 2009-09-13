@@ -144,14 +144,14 @@ namespace voxel_grid {
     unsigned int unknown_bits = uint16_t(*col>>16) ^ uint16_t(*col);
     unsigned int marked_bits = *col>>16;
 
-    //check if the number of unkown bits qualifies the col as unknown
-    if(!bitsBelowThreshold(unknown_bits, unknown_threshold))
-      return UNKNOWN;
-
     //check if the number of marked bits qualifies the col as marked
     if(!bitsBelowThreshold(marked_bits, marked_threshold)){
       return MARKED;
     }
+
+    //check if the number of unkown bits qualifies the col as unknown
+    if(!bitsBelowThreshold(unknown_bits, unknown_threshold))
+      return UNKNOWN;
 
     return FREE;
   }

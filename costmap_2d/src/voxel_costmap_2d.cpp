@@ -163,12 +163,13 @@ namespace costmap_2d{
           continue;
         }
 
-        //mark the cell in the voxel grid
-        voxel_grid_.markVoxel(mx, my, mz);
-        unsigned int index = getIndex(mx, my);
+        //mark the cell in the voxel grid and check if we should also mark it in the costmap
+        if(voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_)){
+          unsigned int index = getIndex(mx, my);
 
-        //push the relevant cell index back onto the inflation queue
-        enqueue(index, mx, my, mx, my, inflation_queue);
+          //push the relevant cell index back onto the inflation queue
+          enqueue(index, mx, my, mx, my, inflation_queue);
+        }
       }
     }
   }

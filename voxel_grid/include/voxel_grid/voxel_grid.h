@@ -82,6 +82,23 @@ namespace voxel_grid {
         data_[y * size_x_ + x] |= full_mask; //clear unknown and mark cell
       }
 
+      inline bool markVoxelInMap(unsigned int x, unsigned int y, unsigned int z, unsigned int marked_threshold){
+        if(x >= size_x_ || y >= size_y_ || z >= size_z_){
+          printf("Error, voxel out of bounds.\n");
+          return false;
+        }
+
+        int index = y * size_x_ + x;
+        uint32_t* col = &data_[index];
+        uint32_t full_mask = ((uint32_t)1<<z<<16) | (1<<z);
+        *col |= full_mask; //clear unknown and mark cell
+
+        unsigned int marked_bits = *col>>16;
+
+        //make sure the number of bits in each is below our thesholds
+        return !bitsBelowThreshold(marked_bits, marked_threshold);
+      }
+
       inline void clearVoxel(unsigned int x, unsigned int y, unsigned int z){
         if(x >= size_x_ || y >= size_y_ || z >= size_z_){
           printf("Error, voxel out of bounds.\n");
