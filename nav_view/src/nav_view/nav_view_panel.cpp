@@ -244,9 +244,37 @@ void NavViewPanel::loadMap()
   static int tex_count = 0;
   std::stringstream ss;
   ss << "NavViewMapTexture" << tex_count++;
-  map_texture_ = Ogre::TextureManager::getSingleton().loadRawData( ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+  try
+  {
+    map_texture_ = Ogre::TextureManager::getSingleton().loadRawData( ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
                                                                    pixel_stream, map_width_, map_height_, Ogre::PF_BYTE_RGB, Ogre::TEX_TYPE_2D,
                                                                    0);
+  }
+  catch(Ogre::RenderingAPIException&)
+  {
+    Ogre::Image image;
+    pixel_stream->seek(0);
+    float width = map_width_;
+    float height = map_height_;
+    if (map_width_ > map_height_)
+    {
+      float aspect = height / width;
+      width = 2048;
+      height = width * aspect;
+    }
+    else
+    {
+      float aspect = width / height;
+      height = 2048;
+      width = height * aspect;
+    }
+
+    ROS_WARN("Failed to create full-size map texture, likely because your graphics card does not support textures of size > 2048.  Downsampling to [%d x %d]...", (int)width, (int)height);
+    image.loadRawData(pixel_stream, map_width_, map_height_, Ogre::PF_BYTE_RGB);
+    image.resize(width, height, Ogre::Image::FILTER_NEAREST);
+    ss << "Downsampled";
+    map_texture_ = Ogre::TextureManager::getSingleton().loadImage(ss.str(), Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME, image);
+  }
 
   delete [] pixels;
 
