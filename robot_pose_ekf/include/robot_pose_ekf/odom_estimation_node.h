@@ -37,7 +37,7 @@
 #define __ODOM_ESTIMATION_NODE__
 
 // ros stuff
-#include <ros/node.h>
+#include <ros/ros.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>

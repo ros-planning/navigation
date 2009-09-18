@@ -36,10 +36,11 @@
 
 #include <string>
 #include <gtest/gtest.h>
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "nav_msgs/Odometry.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 
+#include <boost/thread.hpp>
 
 using namespace ros;
 
