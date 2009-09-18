@@ -60,7 +60,7 @@ Uses (name type):
  **/
 
 #include <cstdio>
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/console.h"
 #include "nav_msgs/GetMap.h"
 #include "LinearMath/btMatrix3x3.h"

@@ -31,7 +31,7 @@
 
 #include <gtest/gtest.h>
 #include <ros/service.h>
-#include <ros/node.h>
+#include <ros/ros.h>
 #include <nav_msgs/GetMap.h>
 
 #include "test_constants.h"
