@@ -33,7 +33,7 @@
 
 #include <wx/wx.h>
 
-#include "ros/node.h"
+#include "ros/ros.h"
 #include "ros/common.h"
 #include <ros/package.h>
 

@@ -31,7 +31,7 @@
 #include <ogre_tools/arrow.h>
 #include <ogre_tools/wx_ogre_render_window.h>
 
-#include <ros/node.h>
+#include <ros/ros.h>
 #include <OGRE/Ogre.h>
 #include <wx/wx.h>
 
