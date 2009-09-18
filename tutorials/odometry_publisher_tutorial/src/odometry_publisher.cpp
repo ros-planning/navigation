@@ -51,7 +51,7 @@ int main(int argc, char** argv){
 
   double vx = 0.1;
   double vy = -0.1;
-  double vth = 0.0;
+  double vth = 0.1;
 
   ros::Time current_time, last_time;
   current_time = ros::Time::now();
@@ -85,6 +85,7 @@ int main(int argc, char** argv){
     odom_trans.transform.translation.z = 0.0;
     odom_trans.transform.rotation = odom_quat;
 
+    //send the transform
     odom_broadcaster.sendTransform(odom_trans);
 
     //next, we'll publish the odometry message over ROS
@@ -103,7 +104,9 @@ int main(int argc, char** argv){
     odom.twist.twist.linear.y = vy;
     odom.twist.twist.angular.z = vth;
 
+    //publish the message
     odom_pub.publish(odom);
+
     last_time = current_time;
     r.sleep();
   }
