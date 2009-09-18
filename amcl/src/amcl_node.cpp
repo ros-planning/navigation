@@ -33,7 +33,7 @@
 #include "ros/assert.h"
 
 // roscpp
-#include "ros/node.h"
+#include "ros/ros.h"
 
 // Messages that I need
 #include "sensor_msgs/LaserScan.h"
@@ -104,14 +104,11 @@ class AmclNode
     // the map
     static pf_vector_t uniformPoseGenerator(void* arg);
 
-    // incoming messages
-    geometry_msgs::PoseWithCovarianceStamped initial_pose_;
-
     // Message callbacks
     bool globalLocalizationCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
     void laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& laser_scan);
-    void initialPoseReceived();
+  void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
 
     double getYaw(tf::Pose& t);
 
@@ -162,6 +159,13 @@ class AmclNode
     //time for tolerance on the published transform,
     //basically defines how long a map->odom transform is good for
     ros::Duration transform_tolerance_;
+
+  ros::NodeHandle nh_;
+  ros::NodeHandle private_nh_;
+  ros::Publisher pose_pub_;
+  ros::Publisher particlecloud_pub_;
+  ros::ServiceServer global_loc_srv_;
+  ros::Subscriber initial_pose_sub_;
 };
 
 #define USAGE "USAGE: amcl"
@@ -169,13 +173,12 @@ class AmclNode
 int
 main(int argc, char** argv)
 {
-  ros::init(argc, argv);
-
-  ros::Node n("amcl");
+  ros::init(argc, argv, "amcl");
+  ros::NodeHandle nh;
 
   AmclNode an;
 
-  n.spin();
+  ros::spin();
 
   // To quote Morgan, Hooray!
   return(0);
@@ -186,7 +189,8 @@ AmclNode::AmclNode() :
         map_(NULL),
         have_laser_pose(false),
         pf_(NULL),
-        resample_count_(0)
+        resample_count_(0),
+	private_nh_("~")
 {
   // Grab params off the param server
   int max_beams, min_particles, max_particles;
@@ -196,36 +200,36 @@ AmclNode::AmclNode() :
   double pf_err, pf_z;
 
   double tmp;
-  ros::Node::instance()->param("~gui_publish_rate", tmp, -1.0);
+  private_nh_.param("gui_publish_rate", tmp, -1.0);
   gui_publish_period = ros::Duration(1.0/tmp);
-  ros::Node::instance()->param("~save_pose_rate", tmp, 0.5);
+  private_nh_.param("save_pose_rate", tmp, 0.5);
   save_pose_period = ros::Duration(1.0/tmp);
 
-  ros::Node::instance()->param("~laser_min_range", laser_min_range_, -1.0);
-  ros::Node::instance()->param("~laser_max_range", laser_max_range_, -1.0);
-  ros::Node::instance()->param("~laser_max_beams", max_beams, 30);
-  ros::Node::instance()->param("~min_particles", min_particles, 100);
-  ros::Node::instance()->param("~max_particles", max_particles, 5000);
-  ros::Node::instance()->param("~kld_err", pf_err, 0.01);
-  ros::Node::instance()->param("~kld_z", pf_z, 0.99);
-  ros::Node::instance()->param("~odom_alpha1", alpha1, 0.2);
-  ros::Node::instance()->param("~odom_alpha2", alpha2, 0.2);
-  ros::Node::instance()->param("~odom_alpha3", alpha3, 0.2);
-  ros::Node::instance()->param("~odom_alpha4", alpha4, 0.2);
-  ros::Node::instance()->param("~odom_alpha5", alpha5, 0.2);
+  private_nh_.param("laser_min_range", laser_min_range_, -1.0);
+  private_nh_.param("laser_max_range", laser_max_range_, -1.0);
+  private_nh_.param("laser_max_beams", max_beams, 30);
+  private_nh_.param("min_particles", min_particles, 100);
+  private_nh_.param("max_particles", max_particles, 5000);
+  private_nh_.param("kld_err", pf_err, 0.01);
+  private_nh_.param("kld_z", pf_z, 0.99);
+  private_nh_.param("odom_alpha1", alpha1, 0.2);
+  private_nh_.param("odom_alpha2", alpha2, 0.2);
+  private_nh_.param("odom_alpha3", alpha3, 0.2);
+  private_nh_.param("odom_alpha4", alpha4, 0.2);
+  private_nh_.param("odom_alpha5", alpha5, 0.2);
 
-  ros::Node::instance()->param("~laser_z_hit", z_hit, 0.95);
-  ros::Node::instance()->param("~laser_z_short", z_short, 0.1);
-  ros::Node::instance()->param("~laser_z_max", z_max, 0.05);
-  ros::Node::instance()->param("~laser_z_rand", z_rand, 0.05);
-  ros::Node::instance()->param("~laser_sigma_hit", sigma_hit, 0.2);
-  ros::Node::instance()->param("~laser_lambda_short", lambda_short, 0.1);
+  private_nh_.param("laser_z_hit", z_hit, 0.95);
+  private_nh_.param("laser_z_short", z_short, 0.1);
+  private_nh_.param("laser_z_max", z_max, 0.05);
+  private_nh_.param("laser_z_rand", z_rand, 0.05);
+  private_nh_.param("laser_sigma_hit", sigma_hit, 0.2);
+  private_nh_.param("laser_lambda_short", lambda_short, 0.1);
   double laser_likelihood_max_dist;
-  ros::Node::instance()->param("~laser_likelihood_max_dist",
+  private_nh_.param("laser_likelihood_max_dist",
                                laser_likelihood_max_dist, 2.0);
   std::string tmp_model_type;
   laser_model_t laser_model_type;
-  ros::Node::instance()->param("~laser_model_type", tmp_model_type, std::string("likelihood_field"));
+  private_nh_.param("laser_model_type", tmp_model_type, std::string("likelihood_field"));
   if(tmp_model_type == "beam")
     laser_model_type = LASER_MODEL_BEAM;
   else if(tmp_model_type == "likelihood_field")
@@ -238,7 +242,7 @@ AmclNode::AmclNode() :
   }
 
   odom_model_t odom_model_type;
-  ros::Node::instance()->param("~odom_model_type", tmp_model_type, std::string("diff"));
+  private_nh_.param("odom_model_type", tmp_model_type, std::string("diff"));
   if(tmp_model_type == "diff")
     odom_model_type = ODOM_MODEL_DIFF;
   else if(tmp_model_type == "omni")
@@ -250,32 +254,32 @@ AmclNode::AmclNode() :
     odom_model_type = ODOM_MODEL_DIFF;
   }
 
-  ros::Node::instance()->param("~update_min_d", d_thresh_, 0.2);
-  ros::Node::instance()->param("~update_min_a", a_thresh_, M_PI/6.0);
-  ros::Node::instance()->param("~odom_frame_id", odom_frame_id_, std::string("odom"));
-  ros::Node::instance()->param("~base_frame_id", base_frame_id_, std::string("base_link"));
-  ros::Node::instance()->param("~resample_interval", resample_interval_, 2);
+  private_nh_.param("update_min_d", d_thresh_, 0.2);
+  private_nh_.param("update_min_a", a_thresh_, M_PI/6.0);
+  private_nh_.param("odom_frame_id", odom_frame_id_, std::string("odom"));
+  private_nh_.param("base_frame_id", base_frame_id_, std::string("base_link"));
+  private_nh_.param("resample_interval", resample_interval_, 2);
   double tmp_tol;
-  ros::Node::instance()->param("~transform_tolerance", tmp_tol, 0.1);
-  ros::Node::instance()->param("~recovery_alpha_slow", alpha_slow, 0.001);
-  ros::Node::instance()->param("~recovery_alpha_fast", alpha_fast, 0.1);
+  private_nh_.param("transform_tolerance", tmp_tol, 0.1);
+  private_nh_.param("recovery_alpha_slow", alpha_slow, 0.001);
+  private_nh_.param("recovery_alpha_fast", alpha_fast, 0.1);
 
 
   transform_tolerance_.fromSec(tmp_tol);
 
   double init_pose[3];
-  ros::Node::instance()->param("~initial_pose_x", init_pose[0], 0.0);
-  ros::Node::instance()->param("~initial_pose_y", init_pose[1], 0.0);
-  ros::Node::instance()->param("~initial_pose_a", init_pose[2], 0.0);
+  private_nh_.param("initial_pose_x", init_pose[0], 0.0);
+  private_nh_.param("initial_pose_y", init_pose[1], 0.0);
+  private_nh_.param("initial_pose_a", init_pose[2], 0.0);
   double init_cov[3];
-  ros::Node::instance()->param("~initial_cov_xx", init_cov[0], 0.5 * 0.5);
-  ros::Node::instance()->param("~initial_cov_yy", init_cov[1], 0.5 * 0.5);
-  ros::Node::instance()->param("~initial_cov_aa", init_cov[2], 
+  private_nh_.param("initial_cov_xx", init_cov[0], 0.5 * 0.5);
+  private_nh_.param("initial_cov_yy", init_cov[1], 0.5 * 0.5);
+  private_nh_.param("initial_cov_aa", init_cov[2], 
                                (M_PI/12.0) * (M_PI/12.0));
 
   cloud_pub_interval.fromSec(1.0);
   tfb_ = new tf::TransformBroadcaster();
-  tf_ = new tf::TransformListener(*ros::Node::instance());
+  tf_ = new tf::TransformListener();
 
   map_ = requestMap();
 
@@ -317,19 +321,19 @@ AmclNode::AmclNode() :
     laser_->SetModelLikelihoodField(z_hit, z_rand, sigma_hit,
                                     laser_likelihood_max_dist);
 
-  ros::Node::instance()->advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose",2);
-  ros::Node::instance()->advertise<geometry_msgs::PoseArray>("particlecloud",2);
-  ros::Node::instance()->advertiseService("global_localization",
-                                          &AmclNode::globalLocalizationCallback,
-                                          this);
+  pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2);
+  particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2);
+  global_loc_srv_ = nh_.advertiseService("global_localization", 
+					 &AmclNode::globalLocalizationCallback,
+                                         this);
   laser_scan_notifer =
           new tf::MessageNotifier<sensor_msgs::LaserScan>
-          (tf_, ros::Node::instance(),
+          (*tf_, 
            boost::bind(&AmclNode::laserReceived,
                        this, _1),
            "scan", odom_frame_id_,
            100);
-  ros::Node::instance()->subscribe("initialpose", initial_pose_, &AmclNode::initialPoseReceived,this,2);
+  initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 }
 
 map_t*
@@ -615,7 +619,8 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
                       cloud_msg.poses[i]);
 
     }
-    ros::Node::instance()->publish("particlecloud", cloud_msg);
+
+    particlecloud_pub_.publish(cloud_msg);
   }
 
   if(resampled || force_publication)
@@ -697,7 +702,7 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
          }
        */
 
-      ros::Node::instance()->publish("amcl_pose", p);
+      pose_pub_.publish(p);
       last_published_pose = p;
 
       ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",
@@ -770,14 +775,14 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
       double yaw,pitch,roll;
       map_pose.getBasis().getEulerZYX(yaw, pitch, roll);
 
-      ros::Node::instance()->setParam("~initial_pose_x", map_pose.getOrigin().x());
-      ros::Node::instance()->setParam("~initial_pose_y", map_pose.getOrigin().y());
-      ros::Node::instance()->setParam("~initial_pose_a", yaw);
-      ros::Node::instance()->setParam("~initial_cov_xx", 
+      private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
+      private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
+      private_nh_.setParam("initial_pose_a", yaw);
+      private_nh_.setParam("initial_cov_xx", 
                                       last_published_pose.pose.covariance[6*0+0]);
-      ros::Node::instance()->setParam("~initial_cov_yy", 
+      private_nh_.setParam("initial_cov_yy", 
                                       last_published_pose.pose.covariance[6*1+1]);
-      ros::Node::instance()->setParam("~initial_cov_aa", 
+      private_nh_.setParam("initial_cov_aa", 
                                       last_published_pose.pose.covariance[6*3+3]);
       save_pose_last_time = now;
     }
@@ -796,7 +801,7 @@ AmclNode::getYaw(tf::Pose& t)
 }
 
 void
-AmclNode::initialPoseReceived()
+AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
@@ -804,7 +809,7 @@ AmclNode::initialPoseReceived()
   try
   {
     tf_->lookupTransform(base_frame_id_, ros::Time::now(),
-                         base_frame_id_, initial_pose_.header.stamp,
+                         base_frame_id_, msg->header.stamp,
                          "map", tx_odom);
   }
   catch(tf::TransformException e)
@@ -814,7 +819,7 @@ AmclNode::initialPoseReceived()
   }
 
   tf::Pose pose_old, pose_new;
-  tf::poseMsgToTF(initial_pose_.pose.pose, pose_old);
+  tf::poseMsgToTF(msg->pose.pose, pose_old);
   pose_new = tx_odom.inverse() * pose_old;
 
   ROS_INFO("Setting pose (%.6f): %.3f %.3f %.3f",
@@ -833,10 +838,10 @@ AmclNode::initialPoseReceived()
   {
     for(int j=0; j<2; j++)
     {
-      pf_init_pose_cov.m[i][j] = initial_pose_.pose.covariance[6*i+j];
+      pf_init_pose_cov.m[i][j] = msg->pose.covariance[6*i+j];
     }
   }
-  pf_init_pose_cov.m[2][2] = initial_pose_.pose.covariance[6*3+3];
+  pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*3+3];
 
   pf_mutex_.lock();
   pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
