@@ -1,16 +1,16 @@
 <package>
-  <description brief="odometry_publisher_tutorial">
+  <description brief="robot_setup_tf">
 
-     odometry_publisher_tutorial
+     robot_setup_tf
 
   </description>
   <author>Eitan Marder-Eppstein</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/odometry_publisher_tutorial</url>
+  <url>http://pr.willowgarage.com/wiki/robot_tf_publisher</url>
   <depend package="roscpp"/>
-  <depend package="nav_msgs"/>
   <depend package="tf"/>
+  <depend package="geometry_msgs"/>
 
 </package>
 
