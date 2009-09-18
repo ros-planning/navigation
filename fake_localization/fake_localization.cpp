@@ -70,7 +70,7 @@ Publishes to (name / type):
 
  **/
 
-#include <ros/node.h>
+#include <ros/ros.h>
 #include <ros/time.h>
 
 #include <nav_msgs/Odometry.h>
@@ -86,28 +86,29 @@ Publishes to (name / type):
 #include "tf/message_notifier.h"
 
 
-class FakeOdomNode: public ros::Node
+class FakeOdomNode
 {
 public:
-    FakeOdomNode(void) : ros::Node("fake_localization")
+    FakeOdomNode(void)
     {
-      advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose",1);
-      advertise<geometry_msgs::PoseArray>("particlecloud",1);
+      m_posePub = m_nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose",1);
+      m_particlecloudPub = m_nh.advertise<geometry_msgs::PoseArray>("particlecloud",1);
       m_tfServer = new tf::TransformBroadcaster();	
-      m_tfListener = new tf::TransformListener(*this);
-      m_lastUpdate = ros::Time::now();
+      m_tfListener = new tf::TransformListener();
+     m_lastUpdate = ros::Time::now();
       
       m_base_pos_received = false;
 
-      param("~odom_frame_id", odom_frame_id_, std::string("odom"));
+      ros::NodeHandle private_nh("~");
+      private_nh.param("odom_frame_id", odom_frame_id_, std::string("odom"));
       m_particleCloud.header.stamp = ros::Time::now();
       m_particleCloud.header.frame_id = "/map";
       m_particleCloud.set_poses_size(1);
-      notifier = new tf::MessageNotifier<nav_msgs::Odometry>(m_tfListener, this, 
+      notifier = new tf::MessageNotifier<nav_msgs::Odometry>(*m_tfListener, 
                                                                            boost::bind(&FakeOdomNode::update, this, _1),
                                                                            "",//empty topic it will be manually stuffed
                                                                            odom_frame_id_, 100);
-      subscribe("base_pose_ground_truth", m_basePosMsg, &FakeOdomNode::basePosReceived,1);
+      m_groundTruthSub = m_nh.subscribe("base_pose_ground_truth", 1, &FakeOdomNode::basePosReceived, this);
     }
     
     ~FakeOdomNode(void)
@@ -131,6 +132,10 @@ public:
 
     
 private:
+  ros::NodeHandle m_nh;
+  ros::Publisher m_posePub;
+  ros::Publisher m_particlecloudPub;
+  ros::Subscriber m_groundTruthSub;
     tf::TransformBroadcaster       *m_tfServer;
     tf::TransformListener          *m_tfListener;
     tf::MessageNotifier<nav_msgs::Odometry>* notifier;
@@ -146,8 +151,9 @@ private:
     //parameter for what odom to use
     std::string odom_frame_id_;
     
-  void basePosReceived()
+  void basePosReceived(const nav_msgs::OdometryConstPtr& msg)
   {
+    m_basePosMsg = *msg;
     m_basePosMsg.header.frame_id = "base_footprint"; //hack to make the notifier do what I want (changed back later)
     boost::shared_ptr<nav_msgs::Odometry>  message(new nav_msgs::Odometry);
     *message = m_basePosMsg;
@@ -211,22 +217,21 @@ public:
     tf::quaternionTFToMsg(tf::Quaternion(yaw, 0.0, 0.0),
                           m_currentPos.pose.pose.orientation);
     // Leave covariance as zero
-    publish("amcl_pose", m_currentPos);
+    m_posePub.publish(m_currentPos);
 
     // The particle cloud is the current position. Quite convenient.
     m_particleCloud.poses[0] = m_currentPos.pose.pose;
-    publish("particlecloud", m_particleCloud);
+    m_particlecloudPub.publish(m_particleCloud);
   }   
 };
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv);
+  ros::init(argc, argv, "fake_localization");
     
     FakeOdomNode odom;
-    odom.spin();
 
-    
+    ros::spin();
     
     return 0;
 }
