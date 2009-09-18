@@ -38,7 +38,7 @@
 #include <iostream>
 #include <base_local_planner/trajectory_inc.h>
 #include <ros/console.h>
-#include <ros/node.h>
+#include <ros/ros.h>
 
 #include <base_local_planner/map_cell.h>
 
