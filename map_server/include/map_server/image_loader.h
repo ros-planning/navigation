@@ -48,12 +48,13 @@ namespace map_server
  *               pixels are free
  * @param occ_th Threshold above which pixels are occupied
  * @param free_th Threshold below which pixels are free
+ * @param origin Triple specifying 2-D pose of lower-left corner of image
  *
  * @throws std::runtime_error If the image file can't be loaded
  * */
 void loadMapFromFile(nav_msgs::GetMap::Response* resp,
                      const char* fname, double res, bool negate,
-                     double occ_th, double free_th);
+                     double occ_th, double free_th, double* origin);
 }
 
 #endif

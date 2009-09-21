@@ -4,8 +4,6 @@
 
 @htmlinclude manifest.html
 
-Tools of interest:
-- \ref map_server
-- \ref map_saver
+Command-line usage is in the wiki.
 */
 

@@ -43,6 +43,7 @@
 #include <SDL/SDL_image.h>
 
 #include "map_server/image_loader.h"
+#include "LinearMath/btMatrix3x3.h"
 
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
@@ -53,7 +54,7 @@ namespace map_server
 void
 loadMapFromFile(nav_msgs::GetMap::Response* resp,
                 const char* fname, double res, bool negate,
-                double occ_th, double free_th)
+                double occ_th, double free_th, double* origin)
 {
   SDL_Surface* img;
 
@@ -78,15 +79,14 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   resp->map.info.width = img->w;
   resp->map.info.height = img->h;
   resp->map.info.resolution = res;
-  /// @todo Make the map's origin configurable, probably from within the
-  /// comment section of the image file.
-  resp->map.info.origin.position.x = 0.0;
-  resp->map.info.origin.position.y = 0.0;
+  resp->map.info.origin.position.x = *(origin);
+  resp->map.info.origin.position.y = *(origin+1);
   resp->map.info.origin.position.z = 0.0;
-  resp->map.info.origin.orientation.x = 0.0;
-  resp->map.info.origin.orientation.y = 0.0;
-  resp->map.info.origin.orientation.z = 0.0;
-  resp->map.info.origin.orientation.w = 1.0;
+  btQuaternion q(*(origin+2), 0.0, 0.0);
+  resp->map.info.origin.orientation.x = q.x();
+  resp->map.info.origin.orientation.y = q.y();
+  resp->map.info.origin.orientation.z = q.z();
+  resp->map.info.origin.orientation.w = q.w();
 
   // Allocate space to hold the data
   resp->map.set_data_size(resp->map.info.width * resp->map.info.height);
