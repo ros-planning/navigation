@@ -49,7 +49,7 @@ namespace costmap_2d {
   tf_(tf), costmap_(NULL), map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), initialized_(true), stopped_(false) {
 
     std::string map_type;
-    ros_node_.param("map_type", map_type, std::string("costmap"));
+    ros_node_.param("map_type", map_type, std::string("voxel"));
 
     ros_node_.param("publish_voxel_map", publish_voxel_, false);
 
@@ -235,7 +235,7 @@ namespace costmap_2d {
     ros_node_.param("max_obstacle_height", max_obstacle_height, 2.0);
 
     double cost_scale;
-    ros_node_.param("cost_scaling_factor", cost_scale, 1.0);
+    ros_node_.param("cost_scaling_factor", cost_scale, 10.0);
 
     int temp_lethal_threshold;
     ros_node_.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
