@@ -1,0 +1,15 @@
+<package>
+  <description brief="navigation_configuration_tutorial">
+
+     navigation_configuration_tutorial
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/navigation_configuration_tutorial</url>
+  <depend package="move_base"/>
+
+</package>
+
+

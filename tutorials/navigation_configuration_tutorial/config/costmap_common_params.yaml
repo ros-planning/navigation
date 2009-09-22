@@ -1,0 +1,36 @@
+###################### YOU MUST FILL IN THIS SECTION ################################
+
+#TODO: Fill in the inscribed radius of your robot here!
+inscribed_radius: 0.185  
+
+#TODO: Fill in the circumscirbed radius of your robot here!
+circumscribed_radius: 0.26
+
+#TODO: Fill in the footprint of your robot here!
+footprint: [[-0.185, -0.185], [-0.185, 0.185], [0.185, 0.185], [0.26, 0], [0.185, 0.185]]
+
+#TODO: Fill in the list of sources from which you receive data
+observation_sources: scan cloud
+
+#TODO: Configure each source in the list above
+scan: {topic: scan, data_type: LaserScan, expected_update_rate: 0.2,
+  observation_persistence: 0.0, marking: true, clearing: true, max_obstacle_height: 0.4, min_obstacle_height: 0.08}
+
+#TODO: Configure each source in the list above
+cloud: {topic: cloud, data_type: PointCloud, expected_update_rate: 0.2,
+  observation_persistence: 0.0, marking: true, clearing: true, max_obstacle_height: 0.4, min_obstacle_height: 0.08}
+##################### END MANDATORY SECTION #######################################
+
+#You may wish to tweak the following parameters, but you don't have to
+inflation_radius: 0.55
+
+z_resolution: 0.2
+z_voxels: 10
+unknown_threshold: 9
+mark_threshold: 0
+
+transform_tolerance: 0.3
+
+obstacle_range: 2.5
+max_obstacle_height: 2.0
+raytrace_range: 3.0
