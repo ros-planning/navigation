@@ -44,9 +44,6 @@ namespace base_local_planner {
 
   double CostmapModel::footprintCost(const geometry_msgs::Point& position, const vector<geometry_msgs::Point>& footprint, 
       double inscribed_radius, double circumscribed_radius){
-    if(footprint.size() < 3 && inscribed_radius != circumscribed_radius)
-      return -1.0;
-
     //used to put things into grid coordinates
     unsigned int cell_x, cell_y;
 
@@ -54,8 +51,8 @@ namespace base_local_planner {
     if(!costmap_.worldToMap(position.x, position.y, cell_x, cell_y))
       return -1.0;
 
-    //for circular robots the circumscribed radius will equal the inscribed radius and we can do a point check
-    if(circumscribed_radius == inscribed_radius){
+    //if number of points in the footprint is less than 3, we'll just assume a circular robot
+    if(footprint.size() < 3){
       unsigned char cost = costmap_.getCost(cell_x, cell_y);
       //if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE)
       if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE || cost == NO_INFORMATION)

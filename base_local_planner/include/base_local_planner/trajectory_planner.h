@@ -145,15 +145,6 @@ namespace base_local_planner {
       void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan);
 
       /**
-       * @brief  Used for display purposes, allows the footprint of the robot to be drawn in visualization tools
-       * @param x_i The x position of the robot
-       * @param y_i The y position of the robot
-       * @param theta_i The orientation of the robot
-       * @return A vector of points in world coordinates that correspond to the verticies of the robot's footprint 
-       */
-      std::vector<geometry_msgs::Point> drawFootprint(double x_i, double y_i, double theta_i);
-
-      /**
        * @brief  Accessor for the goal the robot is currently pursuing in world corrdinates
        * @param x Will be set to the x position of the local goal 
        * @param y Will be set to the y position of the local goal 

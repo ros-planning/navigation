@@ -37,6 +37,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 
 #include <nav_msgs/GetMap.h>
+#include <limits>
 
 
 namespace costmap_2d {
@@ -223,13 +224,37 @@ namespace costmap_2d {
     }
 
     double inscribed_radius, circumscribed_radius, inflation_radius;
-    ros_node_.param("inscribed_radius", inscribed_radius, 0.325);
-    ros_node_.param("circumscribed_radius", circumscribed_radius, 0.46);
+    ros_node_.param("inscribed_radius", inscribed_radius, 0.46);
     ros_node_.param("inflation_radius", inflation_radius, 0.55);
 
     //load the robot footprint from the parameter server if its available in the global namespace
-    ros::NodeHandle n;
-    footprint_spec_ = loadRobotFootprint(n, inscribed_radius, circumscribed_radius);
+    footprint_spec_ = loadRobotFootprint(ros_node_, inscribed_radius, circumscribed_radius);
+
+    if(footprint_spec_.size() > 2){
+      //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
+      double min_dist = std::numeric_limits<double>::max();
+      double max_dist = 0.0;
+
+      for(unsigned int i = 0; i < footprint_spec_.size() - 1; ++i){
+        //check the distance from the robot center point to the first vertex
+        double vertex_dist = distance(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y);
+        double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y, footprint_spec_[i+1].x, footprint_spec_[i+1].y);
+        min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+        max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+      }
+
+      //we also need to do the last vertex and the first vertex
+      double vertex_dist = distance(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y);
+      double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y, footprint_spec_.front().x, footprint_spec_.front().y);
+      min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+      max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+
+      inscribed_radius = min_dist;
+      circumscribed_radius = max_dist;
+    }
+    else{
+      circumscribed_radius = inscribed_radius;
+    }
 
     double max_obstacle_height;
     ros_node_.param("max_obstacle_height", max_obstacle_height, 2.0);
@@ -283,8 +308,13 @@ namespace costmap_2d {
 
     //create a publisher for the costmap if desired
     costmap_publisher_ = new Costmap2DPublisher(ros_node_, map_publish_frequency, global_frame_);
-    if(costmap_publisher_->active())
-      costmap_publisher_->updateCostmapData(*costmap_);
+    if(costmap_publisher_->active()){
+      std::vector<geometry_msgs::Point> oriented_footprint;
+      getOrientedFootprint(oriented_footprint);
+      tf::Stamped<tf::Pose> global_pose;
+      getRobotPose(global_pose);
+      costmap_publisher_->updateCostmapData(*costmap_, oriented_footprint, global_pose);
+    }
 
     //create a thread to handle updating the map
     double map_update_frequency;
@@ -293,23 +323,60 @@ namespace costmap_2d {
 
   }
 
+  double Costmap2DROS::distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1){
+    double A = pX - x0;
+    double B = pY - y0;
+    double C = x1 - x0;
+    double D = y1 - y0;
+
+    double dot = A * C + B * D;
+    double len_sq = C * C + D * D;
+    double param = dot / len_sq;
+
+    double xx,yy;
+
+    if(param < 0)
+    {
+      xx = x0;
+      yy = y0;
+    }
+    else if(param > 1)
+    {
+      xx = x1;
+      yy = y1;
+    }
+    else
+    {
+      xx = x0 + param * C;
+      yy = y0 + param * D;
+    }
+
+    return distance(pX,pY,xx,yy);
+  }
+
   std::vector<geometry_msgs::Point> Costmap2DROS::loadRobotFootprint(ros::NodeHandle node, double inscribed_radius, double circumscribed_radius){
     std::vector<geometry_msgs::Point> footprint;
     geometry_msgs::Point pt;
     double padding;
-    node.param("~footprint_padding", padding, 0.01);
+
+    std::string padding_param, footprint_param;
+    if(!node.searchParam("footprint_padding", padding_param))
+      padding = 0.01;
+    else
+      node.param(padding_param, padding, 0.01);
 
     //grab the footprint from the parameter server if possible
     XmlRpc::XmlRpcValue footprint_list;
-    if(node.getParam("~footprint", footprint_list)){
+    if(node.searchParam("footprint", footprint_param)){
+      node.getParam(footprint_param, footprint_list);
       //make sure we have a list of lists
       ROS_ASSERT_MSG(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeArray && footprint_list.size() > 2, 
-          "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
+          "The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
       for(int i = 0; i < footprint_list.size(); ++i){
         //make sure we have a list of lists of size 2
         XmlRpc::XmlRpcValue point = footprint_list[i];
         ROS_ASSERT_MSG(point.getType() == XmlRpc::XmlRpcValue::TypeArray && point.size() == 2, 
-            "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
+            "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
 
         //make sure that the value we're looking at is either a double or an int
         ROS_ASSERT(point[0].getType() == XmlRpc::XmlRpcValue::TypeInt || point[0].getType() == XmlRpc::XmlRpcValue::TypeDouble);
@@ -322,28 +389,8 @@ namespace costmap_2d {
         pt.y += sign(pt.y) * padding;
 
         footprint.push_back(pt);
-        
-      }
-    }
-    else{
-      //if no explicit footprint is set on the param server... create a square footprint
-      pt.x = inscribed_radius + padding;
-      pt.y = -1 * (inscribed_radius + padding);
-      footprint.push_back(pt);
-      pt.x = -1 * (inscribed_radius + padding);
-      pt.y = -1 * (inscribed_radius + padding);
-      footprint.push_back(pt);
-      pt.x = -1 * (inscribed_radius + padding);
-      pt.y = inscribed_radius + padding;
-      footprint.push_back(pt);
-      pt.x = inscribed_radius + padding;
-      pt.y = inscribed_radius + padding;
-      footprint.push_back(pt);
 
-      //give the robot a nose
-      pt.x = circumscribed_radius;
-      pt.y = 0;
-      footprint.push_back(pt);
+      }
     }
     return footprint;
   }
@@ -510,8 +557,13 @@ namespace costmap_2d {
     clearRobotFootprint();
 
     //if we have an active publisher... we'll update its costmap data
-    if(costmap_publisher_->active())
-      costmap_publisher_->updateCostmapData(*costmap_);
+    if(costmap_publisher_->active()){
+      std::vector<geometry_msgs::Point> oriented_footprint;
+      getOrientedFootprint(oriented_footprint);
+      tf::Stamped<tf::Pose> global_pose;
+      getRobotPose(global_pose);
+      costmap_publisher_->updateCostmapData(*costmap_, oriented_footprint, global_pose);
+    }
 
     if(publish_voxel_){
       costmap_2d::VoxelGrid voxel_grid;
@@ -622,6 +674,17 @@ namespace costmap_2d {
     return footprint_spec_;
   }
 
+  void Costmap2DROS::getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint){
+    tf::Stamped<tf::Pose> global_pose;
+    if(!getRobotPose(global_pose))
+      return;
+
+    double useless_pitch, useless_roll, yaw;
+    global_pose.getBasis().getEulerZYX(yaw, useless_pitch, useless_roll);
+
+    getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint);
+  }
+
   void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint){
     //build the oriented footprint at the robot's current location
     double cos_th = cos(theta);
@@ -669,9 +732,16 @@ namespace costmap_2d {
   }
 
   void Costmap2DROS::clearRobotFootprint(const tf::Stamped<tf::Pose>& global_pose){
-    //make sure we have a legal footprint
-    if(footprint_spec_.size() < 3)
+    //if we don't have a footprint of a large enough size, we'll just clear the cell that the robot occupies
+    if(footprint_spec_.size() < 3){
+      //lock the map if necessary
+      boost::recursive_mutex::scoped_lock lock(lock_);
+      unsigned int mx, my;
+      if(costmap_->worldToMap(global_pose.getOrigin().x(), global_pose.getOrigin().y(), mx, my)){
+        costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
+      }
       return;
+    }
 
     double useless_pitch, useless_roll, yaw;
     global_pose.getBasis().getEulerZYX(yaw, useless_pitch, useless_roll);

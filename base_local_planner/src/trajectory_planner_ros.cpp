@@ -80,7 +80,6 @@ namespace base_local_planner {
 
       ros::NodeHandle ros_node("~/" + name);
 
-      footprint_pub_ = ros_node.advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);
       g_plan_pub_ = ros_node.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = ros_node.advertise<nav_msgs::Path>("local_plan", 1);
 
@@ -155,14 +154,6 @@ namespace base_local_planner {
 
     if(world_model_ != NULL)
       delete world_model_;
-  }
-
-  vector<geometry_msgs::Point> TrajectoryPlannerROS::drawFootprint(double x_i, double y_i, double theta_i){
-    if(!initialized_){
-      ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
-      return vector<geometry_msgs::Point>();
-    }
-    return tc_->drawFootprint(x_i, y_i, theta_i);
   }
 
   bool TrajectoryPlannerROS::stopped(){
@@ -458,8 +449,7 @@ namespace base_local_planner {
           return false;
       }
 
-      //publish the robot footprint and an empty plan because we've reached our goal position
-      publishFootprint(global_pose);
+      //publish an empty plan because we've reached our goal position
       publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
       publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
 
@@ -490,7 +480,6 @@ namespace base_local_planner {
     //if we cannot move... tell someone
     if(path.cost_ < 0){
       local_plan.clear();
-      publishFootprint(global_pose);
       publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
       publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
       return false;
@@ -508,7 +497,6 @@ namespace base_local_planner {
     }
 
     //publish information to the visualizer
-    publishFootprint(global_pose);
     publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
     publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
     return true;
@@ -531,25 +519,6 @@ namespace base_local_planner {
       it = plan.erase(it);
       global_it = global_plan.erase(global_it);
     }
-  }
-
-  void TrajectoryPlannerROS::publishFootprint(const tf::Stamped<tf::Pose>& global_pose){
-    double useless_pitch, useless_roll, yaw;
-    global_pose.getBasis().getEulerZYX(yaw, useless_pitch, useless_roll);
-    std::vector<geometry_msgs::Point> footprint = drawFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw);
-
-    //create a polygon message for the footprint
-    geometry_msgs::PolygonStamped footprint_poly;
-    footprint_poly.header.frame_id = global_frame_;
-    footprint_poly.header.stamp = ros::Time::now();
-    footprint_poly.polygon.set_points_size(footprint.size());
-    
-    for(unsigned int i = 0; i < footprint.size(); ++i){
-      footprint_poly.polygon.points[i].x = footprint[i].x;
-      footprint_poly.polygon.points[i].y = footprint[i].y;
-      footprint_poly.polygon.points[i].z = footprint[i].z;
-    }
-    footprint_pub_.publish(footprint_poly);
   }
 
   void TrajectoryPlannerROS::publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub, double r, double g, double b, double a){

@@ -35,6 +35,7 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <costmap_2d/costmap_2d_publisher.h>
+#include <geometry_msgs/PolygonStamped.h>
 
 namespace costmap_2d {
   Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle& ros_node, double publish_frequency, std::string global_frame) 
@@ -43,6 +44,7 @@ namespace costmap_2d {
 
     obs_pub_ = ros_node_.advertise<nav_msgs::GridCells>("obstacles", 1);
     inf_obs_pub_ = ros_node_.advertise<nav_msgs::GridCells>("inflated_obstacles", 1);
+    footprint_pub_ = ros_node.advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);
 
     visualizer_thread_ = new boost::thread(boost::bind(&Costmap2DPublisher::mapPublishLoop, this, publish_frequency));
   }
@@ -76,7 +78,7 @@ namespace costmap_2d {
     }
   }
 
-  void Costmap2DPublisher::updateCostmapData(const Costmap2D& costmap){
+  void Costmap2DPublisher::updateCostmapData(const Costmap2D& costmap, const std::vector<geometry_msgs::Point>& footprint, const tf::Stamped<tf::Pose>& global_pose){
     std::vector< std::pair<double, double> > raw_obstacles, inflated_obstacles;
     for(unsigned int i = 0; i < costmap.getSizeInCellsX(); i++){
       for(unsigned int j = 0; j < costmap.getSizeInCellsY(); j++){
@@ -95,10 +97,50 @@ namespace costmap_2d {
     resolution_ = costmap.getResolution();
     raw_obstacles_ = raw_obstacles;
     inflated_obstacles_ = inflated_obstacles;
+    inscribed_radius_ = costmap.getInscribedRadius();
+    footprint_ = footprint;
+    global_pose_ = global_pose;
     lock_.unlock();
+
+    //we'll publish the footprint at the rate at which we get data about it since it is so small
+    publishFootprint();
     
     //let the publisher know we have new data to publish
     new_data_ = true;
+  }
+
+  void Costmap2DPublisher::publishFootprint(){
+    //create a polygon message for the footprint
+    geometry_msgs::PolygonStamped footprint_poly;
+    footprint_poly.header.frame_id = global_frame_;
+    footprint_poly.header.stamp = ros::Time::now();
+
+    lock_.lock();
+    //if the footprint size is less than 3 we'll assume a circular robot
+    if(footprint_.size() < 3){
+      double angle = 0;
+      double step = 2 * M_PI / 72;
+      while(angle < 2 * M_PI){
+        geometry_msgs::Point32 pt;
+        pt.x = inscribed_radius_ * cos(angle) + global_pose_.getOrigin().x();
+        pt.y = inscribed_radius_ * sin(angle) + global_pose_.getOrigin().y();
+        pt.z = 0.0;
+        footprint_poly.polygon.points.push_back(pt);
+        angle += step;
+      }
+    } 
+    else{
+      footprint_poly.polygon.set_points_size(footprint_.size());
+
+      for(unsigned int i = 0; i < footprint_.size(); ++i){
+        footprint_poly.polygon.points[i].x = footprint_[i].x;
+        footprint_poly.polygon.points[i].y = footprint_[i].y;
+        footprint_poly.polygon.points[i].z = footprint_[i].z;
+      } 
+    }
+    lock_.unlock();
+
+    footprint_pub_.publish(footprint_poly);
   }
 
   void Costmap2DPublisher::publishCostmap(){
@@ -144,6 +186,7 @@ namespace costmap_2d {
     }
 
     inf_obs_pub_.publish(obstacle_cells);
+
   }
 
 };

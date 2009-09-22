@@ -41,6 +41,7 @@
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GridCells.h>
 #include <boost/thread.hpp>
+#include <tf/transform_datatypes.h>
 
 namespace costmap_2d {
   /**
@@ -62,6 +63,11 @@ namespace costmap_2d {
       ~Costmap2DPublisher();
 
       /**
+       * @brief  Publishes footprint visualization data over ROS
+       */
+      void publishFootprint();
+
+      /**
        * @brief  Publishes the visualization data over ROS
        */
       void publishCostmap();
@@ -69,8 +75,11 @@ namespace costmap_2d {
       /**
        * @brief  Update the visualization data from a Costmap2D
        * @param costmap The Costmap2D object to create visualization messages from 
+       * @param footprint The footprint of the robot associated with the costmap
        */
-      void updateCostmapData(const Costmap2D& costmap);
+      void updateCostmapData(const Costmap2D& costmap, 
+          const std::vector<geometry_msgs::Point>& footprint = std::vector<geometry_msgs::Point>(),
+          const tf::Stamped<tf::Pose>& global_pose = tf::Stamped<tf::Pose>());
 
       /**
        * @brief Check if the publisher is active
@@ -87,8 +96,10 @@ namespace costmap_2d {
       std::vector< std::pair<double, double> > raw_obstacles_, inflated_obstacles_;
       boost::recursive_mutex lock_; ///< @brief A lock
       bool active_, new_data_;
-      ros::Publisher obs_pub_, inf_obs_pub_;
-      double resolution_;
+      ros::Publisher obs_pub_, inf_obs_pub_, footprint_pub_;
+      double resolution_, inscribed_radius_;
+      std::vector<geometry_msgs::Point> footprint_;
+      tf::Stamped<tf::Pose> global_pose_;
   };
 };
 #endif

@@ -933,10 +933,6 @@ namespace base_local_planner{
 
   //we need to take the footprint of the robot into account when we calculate cost to obstacles
   double TrajectoryPlanner::footprintCost(double x_i, double y_i, double theta_i){
-    //if we have no footprint... do nothing
-    if(footprint_spec_.size() < 3)
-      return -1.0;
-
     //build the oriented footprint
     double cos_th = cos(theta_i);
     double sin_th = sin(theta_i);
@@ -1029,28 +1025,18 @@ namespace base_local_planner{
     }
   }
 
-  //its nice to be able to draw a footprint for a particular point for debugging info
-  vector<geometry_msgs::Point> TrajectoryPlanner::drawFootprint(double x_i, double y_i, double theta_i){
-    vector<base_local_planner::Position2DInt> footprint_cells = getFootprintCells(x_i, y_i, theta_i, false);
-    vector<geometry_msgs::Point> footprint_pts;
-    geometry_msgs::Point pt;
-    for(unsigned int i = 0; i < footprint_cells.size(); ++i){
-      double pt_x, pt_y;
-      costmap_.mapToWorld(footprint_cells[i].x, footprint_cells[i].y, pt_x, pt_y);
-      pt.x = pt_x;
-      pt.y = pt_y;
-      footprint_pts.push_back(pt);
-    }
-    return footprint_pts;
-  }
-
   //get the cellsof a footprint at a given position
   vector<base_local_planner::Position2DInt> TrajectoryPlanner::getFootprintCells(double x_i, double y_i, double theta_i, bool fill){
     vector<base_local_planner::Position2DInt> footprint_cells;
 
     //if we have no footprint... do nothing
-    if(footprint_spec_.size() <= 1)
+    if(footprint_spec_.size() <= 1){
+      Position2DInt center;
+      center.x = x_i;
+      center.y = y_i;
+      footprint_cells.push_back(center);
       return footprint_cells;
+    }
 
     //pre-compute cos and sin values
     double cos_th = cos(theta_i);

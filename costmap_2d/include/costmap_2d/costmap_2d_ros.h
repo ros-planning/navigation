@@ -124,6 +124,12 @@ namespace costmap_2d {
       void getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint);
 
       /**
+       * @brief  Build the oriented footprint of the robot at the robot's current pose
+       * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
+       */
+      void getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint);
+
+      /**
        * @brief Get the pose of the robot in the global frame of the costmap
        * @param global_pose Will be set to the pose of the robot in the global frame of the costmap
        * @return True if the pose was set successfully, false otherwise
@@ -288,6 +294,15 @@ namespace costmap_2d {
        * @brief  Grab the footprint of the robot from the parameter server if available
        */
       std::vector<geometry_msgs::Point> loadRobotFootprint(ros::NodeHandle node, double inscribed_radius, double circumscribed_radius);
+
+      /**
+       * @brief  Return the shortest distance from a point to a line segment
+       */
+      double distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1);
+
+      inline double distance(double x0, double y0, double x1, double y1){
+        return sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
+      }
 
       ros::NodeHandle ros_node_; ///< @brief The ros node to use
       tf::TransformListener& tf_; ///< @brief Used for transforming point clouds

@@ -124,15 +124,6 @@ namespace base_local_planner {
 
     private:
       /**
-       * @brief  Used for display purposes, allows the footprint of the robot to be drawn in visualization tools
-       * @param x_i The x position of the robot
-       * @param y_i The y position of the robot
-       * @param theta_i The orientation of the robot
-       * @return A vector of points in world coordinates that correspond to the verticies of the robot's footprint 
-       */
-      std::vector<geometry_msgs::Point> drawFootprint(double x_i, double y_i, double theta_i);
-
-      /**
        * @brief  Check whether the robot is stopped or not
        * @return True if the robot is stopped, false otherwise
        */
@@ -189,12 +180,6 @@ namespace base_local_planner {
       bool transformGlobalPlan(std::vector<geometry_msgs::PoseStamped>& transformed_plan);
 
       /**
-       * @brief  Publishes the footprint of the robot for visualization purposes
-       * @param global_pose The pose of the robot in the global frame
-       */
-      void publishFootprint(const tf::Stamped<tf::Pose>& global_pose);
-
-      /**
        * @brief  Publish a plan for visualization purposes
        */
       void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub, double r, double g, double b, double a);
@@ -215,7 +200,7 @@ namespace base_local_planner {
       double inscribed_radius_, circumscribed_radius_, inflation_radius_; 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       bool prune_plan_;
-      ros::Publisher footprint_pub_, g_plan_pub_, l_plan_pub_;
+      ros::Publisher g_plan_pub_, l_plan_pub_;
       ros::Subscriber odom_sub_;
       boost::recursive_mutex odom_lock_;
       bool initialized_;
