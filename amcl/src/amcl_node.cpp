@@ -46,7 +46,8 @@
 // For transform support
 #include "tf/transform_broadcaster.h"
 #include "tf/transform_listener.h"
-#include "tf/message_notifier.h"
+#include "tf/message_filter.h"
+#include "message_filters/subscriber.h"
 
 using namespace amcl;
 
@@ -107,8 +108,8 @@ class AmclNode
     // Message callbacks
     bool globalLocalizationCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
-    void laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& laser_scan);
-  void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
+    void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
 
     double getYaw(tf::Pose& t);
 
@@ -129,7 +130,11 @@ class AmclNode
     double resolution;
     bool have_laser_pose;
 
-    tf::MessageNotifier<sensor_msgs::LaserScan>* laser_scan_notifer;
+    message_filters::Subscriber<sensor_msgs::LaserScan>* laser_scan_sub;
+    tf::MessageFilter<sensor_msgs::LaserScan>* laser_scan_filter;
+
+    message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>* initial_pose_sub;
+    tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* initial_pose_filter;
 
     // Particle filter
     pf_t *pf_;
@@ -165,7 +170,7 @@ class AmclNode
   ros::Publisher pose_pub_;
   ros::Publisher particlecloud_pub_;
   ros::ServiceServer global_loc_srv_;
-  ros::Subscriber initial_pose_sub_;
+  //ros::Subscriber initial_pose_sub_;
 };
 
 #define USAGE "USAGE: amcl"
@@ -326,14 +331,23 @@ AmclNode::AmclNode() :
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
-  laser_scan_notifer =
-          new tf::MessageNotifier<sensor_msgs::LaserScan>
-          (*tf_, 
-           boost::bind(&AmclNode::laserReceived,
-                       this, _1),
-           "scan", odom_frame_id_,
-           100);
-  initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
+  laser_scan_sub = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, "scan", 100);
+  laser_scan_filter = new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub,
+                                                                *tf_,
+                                                                odom_frame_id_,
+                                                                2);
+  laser_scan_filter->registerCallback(boost::bind(&AmclNode::laserReceived,
+                                                  this, _1));
+
+  initial_pose_sub = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh_, "scan", 100);
+  initial_pose_filter = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub,
+                                                                *tf_,
+                                                                "map",
+                                                                2);
+  initial_pose_filter->registerCallback(boost::bind(&AmclNode::initialPoseReceived,
+                                                    this, _1));
+                                                                
+  //initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 }
 
 map_t*
@@ -380,6 +394,8 @@ AmclNode::requestMap()
 
 AmclNode::~AmclNode()
 {
+  delete laser_scan_filter; 
+  delete laser_scan_sub; 
   map_free(map_);
   delete tfb_;
   delete tf_;
@@ -459,7 +475,7 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
 }
 
 void
-AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& laser_scan)
+AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
   // Do we have the base->base_laser Tx yet?
   if(!have_laser_pose)
