@@ -44,7 +44,7 @@ namespace base_local_planner {
 
   double CostmapModel::footprintCost(const geometry_msgs::Point& position, const vector<geometry_msgs::Point>& footprint, 
       double inscribed_radius, double circumscribed_radius){
-    if(footprint.size() < 3)
+    if(footprint.size() < 3 && inscribed_radius != circumscribed_radius)
       return -1.0;
 
     //used to put things into grid coordinates
@@ -60,7 +60,7 @@ namespace base_local_planner {
       //if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE)
       if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE || cost == NO_INFORMATION)
         return -1.0;
-      return 1.0;
+      return cost;
     }
 
     //now we really have to lay down the footprint in the costmap grid
