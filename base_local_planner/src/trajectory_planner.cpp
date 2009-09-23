@@ -1031,10 +1031,13 @@ namespace base_local_planner{
 
     //if we have no footprint... do nothing
     if(footprint_spec_.size() <= 1){
-      Position2DInt center;
-      center.x = x_i;
-      center.y = y_i;
-      footprint_cells.push_back(center);
+      unsigned int mx, my;
+      if(costmap_.worldToMap(x_i, y_i, mx, my)){
+        Position2DInt center;
+        center.x = mx;
+        center.y = my;
+        footprint_cells.push_back(center);
+      }
       return footprint_cells;
     }
 
