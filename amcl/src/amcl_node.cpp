@@ -339,7 +339,7 @@ AmclNode::AmclNode() :
   laser_scan_filter->registerCallback(boost::bind(&AmclNode::laserReceived,
                                                   this, _1));
 
-  initial_pose_sub = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh_, "scan", 100);
+  initial_pose_sub = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh_, "initialpose", 100);
   initial_pose_filter = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub,
                                                                 *tf_,
                                                                 "map",
