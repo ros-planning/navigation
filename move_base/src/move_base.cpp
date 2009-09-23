@@ -35,8 +35,6 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <move_base/move_base.h>
-#include <cstdlib>
-#include <ctime>
 
 namespace move_base {
 
@@ -418,19 +416,17 @@ namespace move_base {
           //if we've been preempted explicitly we need to shut things down
           resetState();
 
-          //notify the ActionServer that we've successfully preemted
+          //notify the ActionServer that we've successfully preempted
           ROS_DEBUG("Move base preempting the current goal");
           as_.setPreempted();
 
-          //we'll actually return from exedcute after preempting
+          //we'll actually return from execute after preempting
           return;
         }
       }
 
       //for timing that gives real time even in simulation
-      struct timeval start, end;
-      double start_t, end_t, t_diff;
-      gettimeofday(&start, NULL);
+      ros::WallTime start = ros::WallTime::now();
 
       //the real work on pursuing a goal is done here
       bool done = executeCycle(goal, global_plan);
@@ -441,11 +437,8 @@ namespace move_base {
 
       //check if execution of the goal has completed in some way
 
-      gettimeofday(&end, NULL);
-      start_t = start.tv_sec + double(start.tv_usec) / 1e6;
-      end_t = end.tv_sec + double(end.tv_usec) / 1e6;
-      t_diff = end_t - start_t;
-      ROS_DEBUG("Full control cycle time: %.9f\n", t_diff);
+      ros::WallDuration t_diff = ros::WallTime::now() - start;
+      ROS_DEBUG("Full control cycle time: %.9f\n", t_diff.toSec());
 
       r.sleep();
       //make sure to sleep for the remainder of our cycle time
