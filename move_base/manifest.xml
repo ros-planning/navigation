@@ -20,8 +20,11 @@ The move_base package provides an implementation of a robot_action that, given a
  <depend package="pluginlib"/>
  <depend package="costmap_2d"/>
  <depend package="tf"/>
- <depend package="roslib"/>
  <depend package="nav_msgs"/>
+ <depend package="roslib"/>
+ <depend package="rospy"/>
+ <depend package="rosmsg"/>
+ <depend package="rostopic"/>
 
  <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->
  <depend package="base_local_planner"/>
