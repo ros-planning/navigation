@@ -38,18 +38,18 @@
 #include <geometry_msgs/PolygonStamped.h>
 
 namespace costmap_2d {
-  Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle& ros_node, double publish_frequency, std::string global_frame) 
-    : ros_node_(ros_node), global_frame_(global_frame), 
-    visualizer_thread_(NULL), active_(false), new_data_(false), resolution_(0.0){
+  Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, double publish_frequency, std::string global_frame) 
+    : global_frame_(global_frame), visualizer_thread_(NULL), active_(false), new_data_(false), resolution_(0.0), visualizer_thread_shutdown_(false){
 
-    obs_pub_ = ros_node_.advertise<nav_msgs::GridCells>("obstacles", 1);
-    inf_obs_pub_ = ros_node_.advertise<nav_msgs::GridCells>("inflated_obstacles", 1);
+    obs_pub_ = ros_node.advertise<nav_msgs::GridCells>("obstacles", 1);
+    inf_obs_pub_ = ros_node.advertise<nav_msgs::GridCells>("inflated_obstacles", 1);
     footprint_pub_ = ros_node.advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);
 
     visualizer_thread_ = new boost::thread(boost::bind(&Costmap2DPublisher::mapPublishLoop, this, publish_frequency));
   }
 
   Costmap2DPublisher::~Costmap2DPublisher(){
+    visualizer_thread_shutdown_ = true;
     if(visualizer_thread_ != NULL){
       visualizer_thread_->join();
       delete visualizer_thread_;
@@ -62,13 +62,17 @@ namespace costmap_2d {
       return;
 
     active_ = true;
+    ros::NodeHandle n;
     ros::Rate r(frequency);
-    while(ros_node_.ok()){
+    while(n.ok() && !visualizer_thread_shutdown_){
+      ROS_DEBUG("In publish loop new data is: %d", new_data_);
       //check if we have new data to publish
       if(new_data_){
         //we are about to publish the latest data
-        new_data_ = false;
+        ROS_DEBUG("Publishing costmap");
         publishCostmap();
+        new_data_ = false;
+        ROS_DEBUG("Finished publishing map and set new_data_ to: %d", new_data_);
       }
 
       r.sleep();
@@ -100,24 +104,31 @@ namespace costmap_2d {
     inscribed_radius_ = costmap.getInscribedRadius();
     footprint_ = footprint;
     global_pose_ = global_pose;
+
+    //let the publisher know we have new data to publish
+    new_data_ = true;
+    ROS_DEBUG("Set new_data_ to: %d", new_data_);
+
     lock_.unlock();
 
     //we'll publish the footprint at the rate at which we get data about it since it is so small
     publishFootprint();
-    
-    //let the publisher know we have new data to publish
-    new_data_ = true;
   }
 
   void Costmap2DPublisher::publishFootprint(){
+    std::vector<geometry_msgs::Point> footprint;
+
+    lock_.lock();
+    footprint = footprint_;
+    lock_.unlock();
+
     //create a polygon message for the footprint
     geometry_msgs::PolygonStamped footprint_poly;
     footprint_poly.header.frame_id = global_frame_;
     footprint_poly.header.stamp = ros::Time::now();
 
-    lock_.lock();
     //if the footprint size is less than 3 we'll assume a circular robot
-    if(footprint_.size() < 3){
+    if(footprint.size() < 3){
       double angle = 0;
       double step = 2 * M_PI / 72;
       while(angle < 2 * M_PI){
@@ -130,16 +141,16 @@ namespace costmap_2d {
       }
     } 
     else{
-      footprint_poly.polygon.set_points_size(footprint_.size());
+      footprint_poly.polygon.set_points_size(footprint.size());
 
-      for(unsigned int i = 0; i < footprint_.size(); ++i){
-        footprint_poly.polygon.points[i].x = footprint_[i].x;
-        footprint_poly.polygon.points[i].y = footprint_[i].y;
-        footprint_poly.polygon.points[i].z = footprint_[i].z;
+      for(unsigned int i = 0; i < footprint.size(); ++i){
+        footprint_poly.polygon.points[i].x = footprint[i].x;
+        footprint_poly.polygon.points[i].y = footprint[i].y;
+        footprint_poly.polygon.points[i].z = footprint[i].z;
       } 
     }
-    lock_.unlock();
 
+    ROS_DEBUG("Publishing footprint");
     footprint_pub_.publish(footprint_poly);
   }
 
@@ -173,6 +184,7 @@ namespace costmap_2d {
       obstacle_cells.cells[i].z = 0;
     }
 
+    ROS_DEBUG("Publishing obstacles");
     obs_pub_.publish(obstacle_cells);
 
     //set the size equal to the number of inflated obstacles
@@ -185,6 +197,7 @@ namespace costmap_2d {
       obstacle_cells.cells[i].z = 0;
     }
 
+    ROS_DEBUG("Publishing inflated obstacles");
     inf_obs_pub_.publish(obstacle_cells);
 
   }

@@ -50,7 +50,6 @@
 #include <string>
 #include <nav_msgs/GetPlan.h>
 #include <geometry_msgs/Twist.h>
-#include <visualization_msgs/Marker.h>
 
 #include <pluginlib/class_loader.h>
 
@@ -118,12 +117,6 @@ namespace move_base {
       bool makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
-       * @brief  Publish a goal to the visualizer
-       * @param  goal The goal to visualize
-       */
-      void publishGoal(const geometry_msgs::PoseStamped& goal);
-
-      /**
        * @brief  Resets the costmaps to the static map outside a given window
        * @param size_x The x size of the window
        * @param size_y The y size of the window
@@ -160,7 +153,6 @@ namespace move_base {
 
       geometry_msgs::PoseStamped goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg);
 
-      ros::NodeHandle ros_node_;
       tf::TransformListener& tf_;
 
       MoveBaseActionServer as_;
@@ -175,7 +167,7 @@ namespace move_base {
       double controller_frequency_, inscribed_radius_, circumscribed_radius_;
       double planner_patience_, controller_patience_;
       double conservative_reset_dist_, clearing_radius_;
-      ros::Publisher vis_pub_, vel_pub_, position_pub_, action_goal_pub_;
+      ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
       ros::Subscriber goal_sub_;
       ros::ServiceServer make_plan_srv_;
       bool shutdown_costmaps_;

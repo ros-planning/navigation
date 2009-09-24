@@ -1,1 +1,2 @@
+geometry_msgs/PoseStamped base_position
 

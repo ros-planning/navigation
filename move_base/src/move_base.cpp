@@ -40,41 +40,43 @@ namespace move_base {
 
   MoveBase::MoveBase(std::string name, tf::TransformListener& tf) :
     tf_(tf),
-    as_(ros::NodeHandle(), name, boost::bind(&MoveBase::executeCb, this, _1), false),
+    as_(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false),
     tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
     planner_(NULL), bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"){
 
+    ros::NodeHandle param_nh("~");
+    ros::NodeHandle topic_nh;
+
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
-    ros_node_.param("~base_global_planner", global_planner, std::string("NavfnROS"));
-    ros_node_.param("~base_local_planner", local_planner, std::string("TrajectoryPlannerROS"));
-    ros_node_.param("~global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
-    ros_node_.param("~global_costmap/global_frame", global_frame_, std::string("/map"));
-    ros_node_.param("~controller_frequency", controller_frequency_, 20.0);
-    ros_node_.param("~planner_patience", planner_patience_, 5.0);
-    ros_node_.param("~controller_patience", controller_patience_, 15.0);
+    param_nh.param("base_global_planner", global_planner, std::string("NavfnROS"));
+    param_nh.param("base_local_planner", local_planner, std::string("TrajectoryPlannerROS"));
+    param_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
+    param_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
+    param_nh.param("controller_frequency", controller_frequency_, 20.0);
+    param_nh.param("planner_patience", planner_patience_, 5.0);
+    param_nh.param("controller_patience", controller_patience_, 15.0);
 
     //for comanding the base
-    vel_pub_ = ros_node_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-    vis_pub_ = ros_node_.advertise<visualization_msgs::Marker>( "visualization_marker", 0 );
-    position_pub_ = ros_node_.advertise<geometry_msgs::PoseStamped>("~current_position", 1);
+    vel_pub_ = topic_nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+    current_goal_pub_ = topic_nh.advertise<geometry_msgs::PoseStamped>( "current_goal", 0 );
 
-    ros::NodeHandle action_node(ros_node_, name);
-    action_goal_pub_ = action_node.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
+    ros::NodeHandle action_nh("move_base");
+    action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
     //like nav_view and rviz
-    goal_sub_ = ros_node_.subscribe<geometry_msgs::PoseStamped>("~activate", 1, boost::bind(&MoveBase::goalCB, this, _1));
+    goal_sub_ = topic_nh.subscribe<geometry_msgs::PoseStamped>("move_base_simple/goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
 
     //we'll assume the radius of the robot to be consistent with what's specified for the costmaps
-    ros_node_.param("~local_costmap/inscribed_radius", inscribed_radius_, 0.325);
-    ros_node_.param("~local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
-    ros_node_.param("~clearing_radius", clearing_radius_, circumscribed_radius_);
-    ros_node_.param("~conservative_reset_dist", conservative_reset_dist_, 3.0);
+    param_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
+    param_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
+    param_nh.param("clearing_radius", clearing_radius_, circumscribed_radius_);
+    param_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
 
-    ros_node_.param("~shutdown_costmaps", shutdown_costmaps_, false);
+    param_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
@@ -105,7 +107,7 @@ namespace move_base {
     }
 
     //advertise a service for getting a plan
-    make_plan_srv_ = ros_node_.advertiseService("~make_plan", &MoveBase::planService, this);
+    make_plan_srv_ = topic_nh.advertiseService("make_plan", &MoveBase::planService, this);
 
     //initially clear any unknown space around the robot
     planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
@@ -265,23 +267,6 @@ namespace move_base {
       delete controller_costmap_ros_;
   }
 
-  void MoveBase::publishGoal(const geometry_msgs::PoseStamped& goal){
-    visualization_msgs::Marker marker;
-    marker.header = goal.header;
-    marker.ns = "move_base";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::ARROW;
-    marker.pose = goal.pose;
-    marker.scale.x = 0.5;
-    marker.scale.y = 0.4;
-    marker.scale.z = 0.4;
-    marker.color.a = 1.0;
-    marker.color.r = 0.0;
-    marker.color.g = 1.0;
-    marker.color.b = 0.0;
-    vis_pub_.publish(marker);
-  }
-
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     //make sure to set the plan to be empty initially
     plan.clear();
@@ -384,6 +369,7 @@ namespace move_base {
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+    current_goal_pub_.publish(goal);
     std::vector<geometry_msgs::PoseStamped> global_plan;
 
     ros::Rate r(controller_frequency_);
@@ -393,7 +379,8 @@ namespace move_base {
       controller_costmap_ros_->start();
     }
 
-    while(ros_node_.ok())
+    ros::NodeHandle n;
+    while(n.ok())
     {
       if(as_.isPreemptRequested()){
         if(as_.isNewGoalAvailable()){
@@ -406,7 +393,7 @@ namespace move_base {
 
           //publish the goal point to the visualizer
           ROS_DEBUG("move_base has received a goal of x: %.2f, y: %.2f", goal.pose.position.x, goal.pose.position.y);
-          publishGoal(goal);
+          current_goal_pub_.publish(goal);
 
           //make sure to reset our timeouts
           last_valid_control_ = ros::Time::now();
@@ -462,7 +449,9 @@ namespace move_base {
     tf::poseStampedTFToMsg(global_pose, current_position);
 
     //push the feedback out
-    position_pub_.publish(current_position);
+    move_base_msgs::MoveBaseFeedback feedback;
+    feedback.base_position = current_position;
+    as_.publishFeedback(feedback);
 
     //check that the observation buffers for the costmap are current, we don't want to drive blind
     if(!controller_costmap_ros_->isCurrent()){
@@ -644,10 +633,10 @@ namespace move_base {
 };
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "move_base");
+  ros::init(argc, argv, "move_base_node");
   tf::TransformListener tf(ros::Duration(10));
 
-  move_base::MoveBase move_base(ros::this_node::getName(), tf);
+  move_base::MoveBase move_base("move_base", tf);
 
   //ros::MultiThreadedSpinner s;
   ros::spin();

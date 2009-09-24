@@ -46,26 +46,29 @@ namespace costmap_2d {
     return x < 0.0 ? -1.0 : 1.0;
   }
 
-  Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : ros_node_("~/" + name),
-  tf_(tf), costmap_(NULL), map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), initialized_(true), stopped_(false) {
+  Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : tf_(tf), costmap_(NULL), 
+                             map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
+                             initialized_(true), stopped_(false), map_update_thread_shutdown_(false) {
+    ros::NodeHandle nh(name);
+    ros::NodeHandle private_nh("~/" + name);
 
     std::string map_type;
-    ros_node_.param("map_type", map_type, std::string("voxel"));
+    private_nh.param("map_type", map_type, std::string("voxel"));
 
-    ros_node_.param("publish_voxel_map", publish_voxel_, false);
+    private_nh.param("publish_voxel_map", publish_voxel_, false);
 
     if(publish_voxel_ && map_type == "voxel")
-      voxel_pub_ = ros_node_.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
+      voxel_pub_ = nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
     else
       publish_voxel_ = false;
 
     std::string topics_string;
     //get the topics that we'll subscribe to from the parameter server
-    ros_node_.param("observation_sources", topics_string, std::string(""));
+    private_nh.param("observation_sources", topics_string, std::string(""));
     ROS_INFO("Subscribed to Topics: %s", topics_string.c_str());
 
-    ros_node_.param("global_frame", global_frame_, std::string("/map"));
-    ros_node_.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
+    private_nh.param("global_frame", global_frame_, std::string("/map"));
+    private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
 
     ros::Time last_error = ros::Time::now();
     std::string tf_error;
@@ -79,7 +82,7 @@ namespace costmap_2d {
       }
     }
 
-    ros_node_.param("transform_tolerance", transform_tolerance_, 0.2);
+    private_nh.param("transform_tolerance", transform_tolerance_, 0.3);
 
     //now we need to split the topics based on whitespace which we can use a stringstream for
     std::stringstream ss(topics_string);
@@ -89,7 +92,7 @@ namespace costmap_2d {
 
     std::string source;
     while(ss >> source){
-      ros::NodeHandle source_node(ros_node_, source);
+      ros::NodeHandle source_node(private_nh, source);
       //get the parameters for the specific topic
       double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
       std::string topic, sensor_frame, data_type;
@@ -170,18 +173,18 @@ namespace costmap_2d {
     double map_resolution;
     double map_origin_x, map_origin_y;
 
-    ros_node_.param("static_map", static_map, true);
+    private_nh.param("static_map", static_map, true);
     std::vector<unsigned char> input_data;
 
     //check if we want a rolling window version of the costmap
-    ros_node_.param("rolling_window", rolling_window_, false);
+    private_nh.param("rolling_window", rolling_window_, false);
 
     double map_width_meters, map_height_meters;
-    ros_node_.param("width", map_width_meters, 10.0);
-    ros_node_.param("height", map_height_meters, 10.0);
-    ros_node_.param("resolution", map_resolution, 0.05);
-    ros_node_.param("origin_x", map_origin_x, 0.0);
-    ros_node_.param("origin_y", map_origin_y, 0.0);
+    private_nh.param("width", map_width_meters, 10.0);
+    private_nh.param("height", map_height_meters, 10.0);
+    private_nh.param("resolution", map_resolution, 0.05);
+    private_nh.param("origin_x", map_origin_x, 0.0);
+    private_nh.param("origin_y", map_origin_y, 0.0);
     map_width = (unsigned int)(map_width_meters / map_resolution);
     map_height = (unsigned int)(map_height_meters / map_resolution);
 
@@ -199,11 +202,11 @@ namespace costmap_2d {
 
       //check if the user has set any parameters that will be overwritten
       bool user_map_params = false;
-      user_map_params |= ros_node_.hasParam("~width");
-      user_map_params |= ros_node_.hasParam("~height");
-      user_map_params |= ros_node_.hasParam("~resolution");
-      user_map_params |= ros_node_.hasParam("~origin_x");
-      user_map_params |= ros_node_.hasParam("~origin_y");
+      user_map_params |= private_nh.hasParam("width");
+      user_map_params |= private_nh.hasParam("height");
+      user_map_params |= private_nh.hasParam("resolution");
+      user_map_params |= private_nh.hasParam("origin_x");
+      user_map_params |= private_nh.hasParam("origin_y");
 
       if(user_map_params)
         ROS_WARN("You have set map parameters, but also requested to use the static map. Your parameters will be overwritten by those given by the map server");
@@ -224,11 +227,12 @@ namespace costmap_2d {
     }
 
     double inscribed_radius, circumscribed_radius, inflation_radius;
-    ros_node_.param("inscribed_radius", inscribed_radius, 0.46);
-    ros_node_.param("inflation_radius", inflation_radius, 0.55);
+    private_nh.param("inscribed_radius", inscribed_radius, 0.46);
+    circumscribed_radius = inscribed_radius;
+    private_nh.param("inflation_radius", inflation_radius, 0.55);
 
     //load the robot footprint from the parameter server if its available in the global namespace
-    footprint_spec_ = loadRobotFootprint(ros_node_, inscribed_radius, circumscribed_radius);
+    footprint_spec_ = loadRobotFootprint(private_nh, inscribed_radius, circumscribed_radius);
 
     if(footprint_spec_.size() > 2){
       //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
@@ -252,18 +256,15 @@ namespace costmap_2d {
       inscribed_radius = min_dist;
       circumscribed_radius = max_dist;
     }
-    else{
-      circumscribed_radius = inscribed_radius;
-    }
 
     double max_obstacle_height;
-    ros_node_.param("max_obstacle_height", max_obstacle_height, 2.0);
+    private_nh.param("max_obstacle_height", max_obstacle_height, 2.0);
 
     double cost_scale;
-    ros_node_.param("cost_scaling_factor", cost_scale, 10.0);
+    private_nh.param("cost_scaling_factor", cost_scale, 10.0);
 
     int temp_lethal_threshold;
-    ros_node_.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
+    private_nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
 
     unsigned char lethal_threshold = std::max(std::min(temp_lethal_threshold, 255), 0);
 
@@ -278,15 +279,15 @@ namespace costmap_2d {
     else if(map_type == "voxel"){
 
       int z_voxels;
-      ros_node_.param("z_voxels", z_voxels, 10);
+      private_nh.param("z_voxels", z_voxels, 10);
 
       double z_resolution, map_origin_z;
-      ros_node_.param("z_resolution", z_resolution, 0.2);
-      ros_node_.param("origin_z", map_origin_z, 0.0);
+      private_nh.param("z_resolution", z_resolution, 0.2);
+      private_nh.param("origin_z", map_origin_z, 0.0);
 
       int unknown_threshold, mark_threshold;
-      ros_node_.param("unknown_threshold", unknown_threshold, z_voxels);
-      ros_node_.param("mark_threshold", mark_threshold, 0);
+      private_nh.param("unknown_threshold", unknown_threshold, z_voxels);
+      private_nh.param("mark_threshold", mark_threshold, 0);
 
       ROS_ASSERT(z_voxels >= 0 && unknown_threshold >= 0 && mark_threshold >= 0);
 
@@ -304,10 +305,10 @@ namespace costmap_2d {
     ROS_DEBUG("New map construction time: %.9f", t_diff);
 
     double map_publish_frequency;
-    ros_node_.param("publish_frequency", map_publish_frequency, 0.0);
+    private_nh.param("publish_frequency", map_publish_frequency, 0.0);
 
     //create a publisher for the costmap if desired
-    costmap_publisher_ = new Costmap2DPublisher(ros_node_, map_publish_frequency, global_frame_);
+    costmap_publisher_ = new Costmap2DPublisher(nh, map_publish_frequency, global_frame_);
     if(costmap_publisher_->active()){
       std::vector<geometry_msgs::Point> oriented_footprint;
       getOrientedFootprint(oriented_footprint);
@@ -318,7 +319,7 @@ namespace costmap_2d {
 
     //create a thread to handle updating the map
     double map_update_frequency;
-    ros_node_.param("update_frequency", map_update_frequency, 5.0);
+    private_nh.param("update_frequency", map_update_frequency, 5.0);
     map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
   }
@@ -396,6 +397,7 @@ namespace costmap_2d {
   }
 
   Costmap2DROS::~Costmap2DROS(){
+    map_update_thread_shutdown_ = true;
     if(map_update_thread_ != NULL){
       map_update_thread_->join();
       delete map_update_thread_;
@@ -477,8 +479,9 @@ namespace costmap_2d {
     if(frequency == 0.0)
       return;
 
+    ros::NodeHandle nh;
     ros::Rate r(frequency);
-    while(ros_node_.ok()){
+    while(nh.ok() && !map_update_thread_shutdown_){
       struct timeval start, end;
       double start_t, end_t, t_diff;
       gettimeofday(&start, NULL);

@@ -59,9 +59,9 @@ namespace navfn {
       //get an initial copy of the costmap
       costmap_ros_->getCostmapCopy(costmap_);
 
-      ros::NodeHandle ros_node("~/" + name);
+      ros::NodeHandle nh(name);
 
-      plan_pub_ = ros_node.advertise<nav_msgs::Path>("plan", 1);
+      plan_pub_ = nh.advertise<nav_msgs::Path>("plan", 1);
 
       //read parameters for the planner
       global_frame_ = costmap_ros_->getGlobalFrameID();

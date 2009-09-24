@@ -55,7 +55,7 @@ namespace costmap_2d {
        * @param  ros_node The node under which to publish the visualization output
        * @param  global_frame The frame in which to publish the visualization output
        */
-      Costmap2DPublisher(ros::NodeHandle& ros_node, double publish_frequency, std::string global_frame);
+      Costmap2DPublisher(ros::NodeHandle ros_node, double publish_frequency, std::string global_frame);
 
       /**
        * @brief  Destructor
@@ -90,7 +90,6 @@ namespace costmap_2d {
     private:
       void mapPublishLoop(double frequency);
 
-      ros::NodeHandle& ros_node_;
       std::string global_frame_;
       boost::thread* visualizer_thread_; ///< @brief A thread for publising to the visualizer
       std::vector< std::pair<double, double> > raw_obstacles_, inflated_obstacles_;
@@ -100,6 +99,7 @@ namespace costmap_2d {
       double resolution_, inscribed_radius_;
       std::vector<geometry_msgs::Point> footprint_;
       tf::Stamped<tf::Pose> global_pose_;
+      bool visualizer_thread_shutdown_;
   };
 };
 #endif

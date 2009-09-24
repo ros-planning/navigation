@@ -78,17 +78,18 @@ namespace base_local_planner {
       //initialize the copy of the costmap the controller will use
       costmap_ros_->getCostmapCopy(costmap_);
 
-      ros::NodeHandle ros_node("~/" + name);
+      ros::NodeHandle nh(name);
+      ros::NodeHandle private_nh("~/" + name);
 
-      g_plan_pub_ = ros_node.advertise<nav_msgs::Path>("global_plan", 1);
-      l_plan_pub_ = ros_node.advertise<nav_msgs::Path>("local_plan", 1);
+      g_plan_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
+      l_plan_pub_ = nh.advertise<nav_msgs::Path>("local_plan", 1);
 
       global_frame_ = costmap_ros_->getGlobalFrameID();
       robot_base_frame_ = costmap_ros_->getBaseFrameID();
-      ros_node.param("prune_plan", prune_plan_, true);
+      private_nh.param("prune_plan", prune_plan_, true);
 
-      ros_node.param("yaw_goal_tolerance", yaw_goal_tolerance_, 0.05);
-      ros_node.param("xy_goal_tolerance", xy_goal_tolerance_, 0.10);
+      private_nh.param("yaw_goal_tolerance", yaw_goal_tolerance_, 0.05);
+      private_nh.param("xy_goal_tolerance", xy_goal_tolerance_, 0.10);
 
       //to get odometery information, we need to get a handle to the topic in the global namespace of the node
       ros::NodeHandle global_node;
@@ -99,39 +100,39 @@ namespace base_local_planner {
       circumscribed_radius_ = costmap_ros_->getCircumscribedRadius();
       inflation_radius_ = costmap_ros_->getInflationRadius();
 
-      ros_node.param("acc_lim_x", acc_lim_x, 2.5);
-      ros_node.param("acc_lim_y", acc_lim_y, 2.5);
-      ros_node.param("acc_lim_th", acc_lim_theta, 3.2);
-      ros_node.param("sim_time", sim_time, 1.0);
-      ros_node.param("sim_granularity", sim_granularity, 0.025);
-      ros_node.param("vx_samples", vx_samples, 3);
-      ros_node.param("vtheta_samples", vtheta_samples, 20);
-      ros_node.param("path_distance_bias", pdist_scale, 0.6);
-      ros_node.param("goal_distance_bias", gdist_scale, 0.8);
-      ros_node.param("occdist_scale", occdist_scale, 0.2);
-      ros_node.param("heading_lookahead", heading_lookahead, 0.325);
-      ros_node.param("oscillation_reset_dist", oscillation_reset_dist, 0.05);
-      ros_node.param("escape_reset_dist", escape_reset_dist, 0.10);
-      ros_node.param("escape_reset_theta", escape_reset_theta, M_PI_4);
-      ros_node.param("holonomic_robot", holonomic_robot, true);
-      ros_node.param("max_vel_x", max_vel_x, 0.5);
-      ros_node.param("min_vel_x", min_vel_x, 0.1);
-      ros_node.param("max_vel_th", max_vel_th, 1.0);
-      ros_node.param("min_vel_th", min_vel_th, -1.0);
-      ros_node.param("min_in_place_vel_th", min_in_place_vel_th_, 0.4);
-      ros_node.param("backup_vel", backup_vel, -0.1);
-      ros_node.param("world_model", world_model_type, string("costmap")); 
-      ros_node.param("dwa", dwa, true);
-      ros_node.param("heading_scoring", heading_scoring, false);
-      ros_node.param("heading_scoring_timestep", heading_scoring_timestep, 0.1);
-      ros_node.param("simple_attractor", simple_attractor, false);
+      private_nh.param("acc_lim_x", acc_lim_x, 2.5);
+      private_nh.param("acc_lim_y", acc_lim_y, 2.5);
+      private_nh.param("acc_lim_th", acc_lim_theta, 3.2);
+      private_nh.param("sim_time", sim_time, 1.0);
+      private_nh.param("sim_granularity", sim_granularity, 0.025);
+      private_nh.param("vx_samples", vx_samples, 3);
+      private_nh.param("vtheta_samples", vtheta_samples, 20);
+      private_nh.param("path_distance_bias", pdist_scale, 0.6);
+      private_nh.param("goal_distance_bias", gdist_scale, 0.8);
+      private_nh.param("occdist_scale", occdist_scale, 0.2);
+      private_nh.param("heading_lookahead", heading_lookahead, 0.325);
+      private_nh.param("oscillation_reset_dist", oscillation_reset_dist, 0.05);
+      private_nh.param("escape_reset_dist", escape_reset_dist, 0.10);
+      private_nh.param("escape_reset_theta", escape_reset_theta, M_PI_4);
+      private_nh.param("holonomic_robot", holonomic_robot, true);
+      private_nh.param("max_vel_x", max_vel_x, 0.5);
+      private_nh.param("min_vel_x", min_vel_x, 0.1);
+      private_nh.param("max_vel_th", max_vel_th, 1.0);
+      private_nh.param("min_vel_th", min_vel_th, -1.0);
+      private_nh.param("min_in_place_vel_th", min_in_place_vel_th_, 0.4);
+      private_nh.param("backup_vel", backup_vel, -0.1);
+      private_nh.param("world_model", world_model_type, string("costmap")); 
+      private_nh.param("dwa", dwa, true);
+      private_nh.param("heading_scoring", heading_scoring, false);
+      private_nh.param("heading_scoring_timestep", heading_scoring_timestep, 0.1);
+      private_nh.param("simple_attractor", simple_attractor, false);
 
       //parameters for using the freespace controller
       double min_pt_separation, max_obstacle_height, grid_resolution;
-      ros_node.param("point_grid/max_sensor_range", max_sensor_range_, 2.0);
-      ros_node.param("point_grid/min_pt_separation", min_pt_separation, 0.01);
-      ros_node.param("point_grid/max_obstacle_height", max_obstacle_height, 2.0);
-      ros_node.param("point_grid/grid_resolution", grid_resolution, 0.2);
+      private_nh.param("point_grid/max_sensor_range", max_sensor_range_, 2.0);
+      private_nh.param("point_grid/min_pt_separation", min_pt_separation, 0.01);
+      private_nh.param("point_grid/max_obstacle_height", max_obstacle_height, 2.0);
+      private_nh.param("point_grid/grid_resolution", grid_resolution, 0.2);
 
       ROS_ASSERT_MSG(world_model_type == "costmap", "At this time, only costmap world models are supported by this controller");
       world_model_ = new CostmapModel(costmap_); 
