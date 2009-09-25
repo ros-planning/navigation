@@ -125,6 +125,7 @@ class MapServer
         private_nh.param("occupied_thresh", occ_th, 0.65);
         private_nh.param("free_thresh", free_th, 0.196);
         mapfname = fname;
+        origin[0] = origin[1] = origin[2] = 0.0;
       }
 
       ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
