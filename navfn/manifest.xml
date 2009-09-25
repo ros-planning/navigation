@@ -6,7 +6,7 @@ navfn provides a fast interpolated navigation function that can be used to creat
  </description>
  <author>Kurt Konolige, Eitan Marder-Eppstein</author>
  <license>BSD</license>
- <review status="proposal cleared" notes=""/>
+ <review status="API cleared" notes=""/>
  <url>http://ros.org/wiki/navfn</url>
  <depend package="rosconsole"/>
  <depend package="roscpp"/>

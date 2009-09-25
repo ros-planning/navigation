@@ -6,7 +6,7 @@ The move_base package provides an implementation of a robot_action that, given a
   </description>
  <author>Eitan Marder-Eppstein</author>
  <license>BSD</license>
- <review status="proposal cleared" notes=""/>
+ <review status="API cleared" notes=""/>
  <url>http://ros.org/wiki/move_base</url>
 
  <depend package="roscpp"/>

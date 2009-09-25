@@ -6,7 +6,7 @@ This package provides implementations of the Trajectory Rollout and Dynamic Wind
   </description>
   <author>Eitan Marder-Eppstein</author>
   <license>BSD</license>
-  <review status="proposal cleared" notes=""/>
+  <review status="API cleared" notes=""/>
   <url>http://ros.org/wiki/base_local_planner</url>
   <depend package="std_msgs" />
   <depend package="nav_msgs" />

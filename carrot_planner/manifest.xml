@@ -6,7 +6,7 @@
   </description>
   <author>Eitan Marder-Eppstein, Sachin Chitta</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="API cleared" notes=""/>
   <url>http://pr.willowgarage.com/wiki/carrot_planner</url>
   <depend package="roscpp"/>
   <depend package="costmap_2d"/>
