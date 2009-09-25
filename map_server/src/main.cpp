@@ -62,7 +62,7 @@ class MapServer
         //std::ifstream fin((fname + ".yaml").c_str());
         std::ifstream fin(fname.c_str());
         if (fin.fail()) {
-          ROS_ERROR("Map_server could not open %s.yaml.", fname.c_str());
+          ROS_ERROR("Map_server could not open %s.", fname.c_str());
           exit(-1);
         }
         YAML::Parser parser(fin);   
