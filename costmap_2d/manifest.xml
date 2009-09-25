@@ -10,7 +10,7 @@
 </description>
 <author>Eitan Marder-Eppstein</author>
 <license>BSD</license>
-<review status="api cleared" notes=""/>
+<review status="API cleared" notes=""/>
 <url>http://pr.willowgarage.com/wiki/costmap_2d</url>
 <depend package="rosconsole"/>
 <depend package="roscpp" />

@@ -227,7 +227,23 @@ namespace costmap_2d {
     }
 
     double inscribed_radius, circumscribed_radius, inflation_radius;
-    private_nh.param("inscribed_radius", inscribed_radius, 0.46);
+    inscribed_radius = 0.46;
+
+    //BEGIN TODO 0.4: REMOVE DEPRECATION STUFF HERE
+    if(private_nh.hasParam("circumscribed_radius")){
+      ROS_WARN("The circumscribed_radius parameter no longer has an affect as the radius is automatically computed from the robot footprint. Please remove the parameter from you launch file.");
+    }
+
+    if(private_nh.hasParam("inscribed_radius")){
+      ROS_WARN("The \"inscribed_radius\" parameter has been deprecated in favor of the \"robot_radius\" parameter. Please switch your launch/configuration files");
+      private_nh.param("inscirbed_radius", inscribed_radius, 0.46);
+    }
+
+    if(private_nh.hasParam("robot_radius")){
+      private_nh.param("robot_radius", inscribed_radius, 0.46);
+    }
+    //END TODO
+
     circumscribed_radius = inscribed_radius;
     private_nh.param("inflation_radius", inflation_radius, 0.55);
 
