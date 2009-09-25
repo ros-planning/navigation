@@ -109,7 +109,7 @@ namespace base_local_planner {
       private_nh.param("vtheta_samples", vtheta_samples, 20);
       private_nh.param("path_distance_bias", pdist_scale, 0.6);
       private_nh.param("goal_distance_bias", gdist_scale, 0.8);
-      private_nh.param("occdist_scale", occdist_scale, 0.2);
+      private_nh.param("occdist_scale", occdist_scale, 0.01);
       private_nh.param("heading_lookahead", heading_lookahead, 0.325);
       private_nh.param("oscillation_reset_dist", oscillation_reset_dist, 0.05);
       private_nh.param("escape_reset_dist", escape_reset_dist, 0.10);
@@ -124,7 +124,7 @@ namespace base_local_planner {
       private_nh.param("world_model", world_model_type, string("costmap")); 
       private_nh.param("dwa", dwa, true);
       private_nh.param("heading_scoring", heading_scoring, false);
-      private_nh.param("heading_scoring_timestep", heading_scoring_timestep, 0.1);
+      private_nh.param("heading_scoring_timestep", heading_scoring_timestep, 0.8);
       private_nh.param("simple_attractor", simple_attractor, false);
 
       //parameters for using the freespace controller
