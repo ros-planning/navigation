@@ -45,22 +45,22 @@ namespace move_base {
     planner_(NULL), bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"){
 
-    ros::NodeHandle param_nh("~");
-    ros::NodeHandle topic_nh;
+    ros::NodeHandle private_nh("~");
+    ros::NodeHandle nh;
 
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
-    param_nh.param("base_global_planner", global_planner, std::string("NavfnROS"));
-    param_nh.param("base_local_planner", local_planner, std::string("TrajectoryPlannerROS"));
-    param_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
-    param_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
-    param_nh.param("controller_frequency", controller_frequency_, 20.0);
-    param_nh.param("planner_patience", planner_patience_, 5.0);
-    param_nh.param("controller_patience", controller_patience_, 15.0);
+    private_nh.param("base_global_planner", global_planner, std::string("NavfnROS"));
+    private_nh.param("base_local_planner", local_planner, std::string("TrajectoryPlannerROS"));
+    private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
+    private_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
+    private_nh.param("controller_frequency", controller_frequency_, 20.0);
+    private_nh.param("planner_patience", planner_patience_, 5.0);
+    private_nh.param("controller_patience", controller_patience_, 15.0);
 
     //for comanding the base
-    vel_pub_ = topic_nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-    current_goal_pub_ = topic_nh.advertise<geometry_msgs::PoseStamped>( "current_goal", 0 );
+    vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+    current_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>( "current_goal", 0 );
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
@@ -68,15 +68,16 @@ namespace move_base {
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
     //like nav_view and rviz
-    goal_sub_ = topic_nh.subscribe<geometry_msgs::PoseStamped>("move_base_simple/goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
+    goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("move_base_simple/goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
 
     //we'll assume the radius of the robot to be consistent with what's specified for the costmaps
-    param_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
-    param_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
-    param_nh.param("clearing_radius", clearing_radius_, circumscribed_radius_);
-    param_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
+    private_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
+    private_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
+    private_nh.param("clearing_radius", clearing_radius_, circumscribed_radius_);
+    private_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
 
-    param_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
+    private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
+    private_nh.param("clearing_roatation_allowed", clearing_roatation_allowed_, true);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
@@ -107,7 +108,7 @@ namespace move_base {
     }
 
     //advertise a service for getting a plan
-    make_plan_srv_ = topic_nh.advertiseService("make_plan", &MoveBase::planService, this);
+    make_plan_srv_ = nh.advertiseService("make_plan", &MoveBase::planService, this);
 
     //initially clear any unknown space around the robot
     planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
@@ -544,7 +545,7 @@ namespace move_base {
             //next, we'll try an in-place rotation to try to clear out space
           case IN_PLACE_ROTATION_1:
             //we need to set the rotation goal for the robot
-            if(set180RotationGoal()){
+            if(clearing_roatation_allowed_ && set180RotationGoal()){
               clearing_state_ = EXECUTE_ROTATE_1;
             }
             else{
@@ -564,7 +565,7 @@ namespace move_base {
             break;
           case IN_PLACE_ROTATION_2:
             //we need to set the rotation goal for the robot
-            if(set180RotationGoal()){
+            if(clearing_roatation_allowed_ && set180RotationGoal()){
               clearing_state_ = EXECUTE_ROTATE_2;
             }
             else{
