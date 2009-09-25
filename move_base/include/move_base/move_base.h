@@ -170,7 +170,7 @@ namespace move_base {
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
       ros::Subscriber goal_sub_;
       ros::ServiceServer make_plan_srv_;
-      bool shutdown_costmaps_, clearing_roatation_allowed_;
+      bool shutdown_costmaps_, clearing_roatation_allowed_, recovery_behavior_enabled_;
 
       MoveBaseState state_;
       ClearingState clearing_state_;

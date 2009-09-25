@@ -78,6 +78,7 @@ namespace move_base {
 
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_roatation_allowed", clearing_roatation_allowed_, true);
+    private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
@@ -490,6 +491,10 @@ namespace move_base {
             //we'll move into our obstacle clearing mode
             state_ = CLEARING;
             publishZeroVelocity();
+
+            //if the recovery behavior is not enabled.. we'll just have to abort
+            if(!recovery_behavior_enabled_)
+              clearing_state_ = ABORT;
           }
 
           //we don't want to attempt to control if planning failed
