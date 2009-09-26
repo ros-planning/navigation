@@ -6,7 +6,7 @@
   </description>
   <author>Brian Gerkey, Tony Pratkanis</author>
   <license>BSD</license>
-  <review status="proposal cleared" notes="API review in progress (Brian)"/>
+  <review status="API cleared" notes=""/>
   <url>http://ros.org/wiki/map_server</url>
   <depend package="rosconsole"/>
   <depend package="roscpp"/>

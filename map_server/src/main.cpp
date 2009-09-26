@@ -138,13 +138,21 @@ class MapServer
       meta_data_message_ = map_resp_.map.info;
 
       service = n.advertiseService("static_map", &MapServer::mapCallback, this);
-      pub = n.advertise<nav_msgs::MapMetaData>("map_metadata", 1,
-                                                 boost::bind(&MapServer::metadataSubscriptionCallback, *this, _1));
+      //pub = n.advertise<nav_msgs::MapMetaData>("map_metadata", 1,
+
+      // Latched publisher for metadata
+      metadata_pub= n.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
+      metadata_pub.publish( meta_data_message_ );
+      
+      // Latched publisher for data
+      map_pub = n.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+      map_pub.publish( map_resp_.map );
     }
 
   private:
     ros::NodeHandle n;
-    ros::Publisher pub;
+    ros::Publisher map_pub;
+    ros::Publisher metadata_pub;
     ros::ServiceServer service;
     bool deprecated;
 
@@ -163,16 +171,18 @@ class MapServer
       return true;
     }
 
-    /** The map response is cached here, to be sent out to service callers
+    /** The map data is cached here, to be sent out to service callers
      */
+    nav_msgs::MapMetaData meta_data_message_;
     nav_msgs::GetMap::Response map_resp_;
 
+    /*
     void metadataSubscriptionCallback(const ros::SingleSubscriberPublisher& pub)
     {
       pub.publish( meta_data_message_ );
     }
+    */
 
-    nav_msgs::MapMetaData meta_data_message_;
 };
 
 int main(int argc, char **argv)
