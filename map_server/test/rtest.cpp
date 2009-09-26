@@ -52,6 +52,7 @@ class MapClientTest : public testing::Test
       ros::init(g_argc, g_argv, "map_client_test");
       n_ = new ros::NodeHandle();
       got_map_ = false;
+      got_map_metadata_ = false;
     }
 
     ~MapClientTest()
@@ -112,11 +113,7 @@ TEST_F(MapClientTest, subscribe_topic)
     ASSERT_EQ(g_valid_image_content[i], map_->data[i]);
 }
 
-// This test is giving occasional boost-related exceptions.  Need to look
-// into it.
-//
 /* Try to retrieve the metadata via topic, and compare to ground truth */
-/*
 TEST_F(MapClientTest, subscribe_topic_metadata)
 {
   ros::Subscriber sub = n_->subscribe<nav_msgs::MapMetaData>("map_metadata", 1, boost::bind(&MapClientTest::mapMetaDataCallback, this, _1));
@@ -135,7 +132,6 @@ TEST_F(MapClientTest, subscribe_topic_metadata)
   ASSERT_EQ(map_metadata_->width, g_valid_image_width);
   ASSERT_EQ(map_metadata_->height, g_valid_image_height);
 }
-*/
 
 int main(int argc, char **argv)
 {
