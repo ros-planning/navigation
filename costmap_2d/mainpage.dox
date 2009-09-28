@@ -4,7 +4,7 @@
 @htmlinclude manifest.html
 
 @section summary Summary
-This pakages provides a 2D costmap that can be used for a wide range of planning and navigation tasks.
+This pakage provides a 2D costmap that can be used for a wide range of planning and navigation tasks.
 
 @section usage Usage
 There are two main ways to use this package. The first is to create a costmap_2d::Costmap2D
