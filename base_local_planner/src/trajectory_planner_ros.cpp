@@ -117,9 +117,19 @@ namespace base_local_planner {
       private_nh.param("holonomic_robot", holonomic_robot, true);
       private_nh.param("max_vel_x", max_vel_x, 0.5);
       private_nh.param("min_vel_x", min_vel_x, 0.1);
+
+      //TODO: DEPRECATED
       private_nh.param("max_vel_th", max_vel_th, 1.0);
       private_nh.param("min_vel_th", min_vel_th, -1.0);
       private_nh.param("min_in_place_vel_th", min_in_place_vel_th_, 0.4);
+      //END DEPRECATED
+
+      double max_rotational_vel;
+      private_nh.param("max_rotational_vel", max_rotational_vel, 1.0);
+      max_vel_th = max_rotational_vel;
+      min_vel_th = -1.0 * max_rotational_vel;
+      private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
+
       private_nh.param("backup_vel", backup_vel, -0.1);
       private_nh.param("world_model", world_model_type, string("costmap")); 
       private_nh.param("dwa", dwa, true);
