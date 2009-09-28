@@ -53,22 +53,45 @@
 #include <base_local_planner/costmap_model.h>
 
 namespace carrot_planner{
+  /**
+   * @class CarrotPlanner
+   * @brief Provides a simple global planner that will compute a valid goal point for the local planner by walking back along the vector between the robot and the user-specified goal point until a valid cost is found.
+   */
   class CarrotPlanner : public nav_core::BaseGlobalPlanner {
     public:
-    CarrotPlanner();
-    CarrotPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
-    void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+      /**
+       * @brief  Constructor for the CarrotPlanner
+       */
+      CarrotPlanner();
+      /**
+       * @brief  Constructor for the CarrotPlanner
+       * @param  name The name of this planner
+       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+       */
+      CarrotPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
-    bool makePlan(const geometry_msgs::PoseStamped& start, 
-                  const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
+      /**
+       * @brief  Initialization function for the CarrotPlanner
+       * @param  name The name of this planner
+       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+       */
+      void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+
+      /**
+       * @brief Given a goal pose in the world, compute a plan
+       * @param start The start pose 
+       * @param goal The goal pose 
+       * @param plan The plan... filled by the planner
+       * @return True if a valid plan was found, false otherwise
+       */
+      bool makePlan(const geometry_msgs::PoseStamped& start, 
+          const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
     private:
-    costmap_2d::Costmap2DROS* costmap_ros_;
-    double step_size_, min_dist_from_robot_;
-    costmap_2d::Costmap2D costmap_;
-    base_local_planner::WorldModel* world_model_; 
-
-    ///< @brief The world model that the controller will use
+      costmap_2d::Costmap2DROS* costmap_ros_;
+      double step_size_, min_dist_from_robot_;
+      costmap_2d::Costmap2D costmap_;
+      base_local_planner::WorldModel* world_model_; ///< @brief The world model that the controller will use
       double inscribed_radius_, circumscribed_radius_, inflation_radius_; 
 
       /**

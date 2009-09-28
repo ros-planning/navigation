@@ -48,6 +48,10 @@
 #include <nav_core/base_global_planner.h>
 
 namespace navfn {
+  /**
+   * @class NavfnROS
+   * @brief Provides a ROS wrapper for the navfn planner which runs a fast, interpolated navigation function on a costmap.
+   */
   class NavfnROS : public nav_core::BaseGlobalPlanner {
     public:
       /**
@@ -65,7 +69,7 @@ namespace navfn {
       /**
        * @brief  Initialization function for the NavFnROS object
        * @param  name The name of this planner
-       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
+       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
        */
       void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
@@ -80,7 +84,7 @@ namespace navfn {
           const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
-       * @brief  Compute the full navigation function for the costmap given a point in the world to start from
+       * @brief  Computes the full navigation function for the map given a point in the world to start from
        * @param world_point The point to use for seeding the navigation function 
        * @return True if the navigation function was computed successfully, false otherwise
        */
