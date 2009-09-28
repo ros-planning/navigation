@@ -74,12 +74,14 @@ namespace costmap_2d {
        * @param  weight The scaling factor for the cost function. 
        * @param  static_data Data used to initialize the costmap
        * @param  lethal_threshold The cost threshold at which a point in the static data is considered a lethal obstacle
+       * @param  track_unknown_space Whether or not to keep track of what space is completely unknown, whether or not a sensor reading has seen through a cell
        */
       Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
           double resolution, double origin_x, double origin_y, double inscribed_radius = 0.0,
           double circumscribed_radius = 0.0, double inflation_radius = 0.0, double max_obstacle_range = 0.0,
           double max_obstacle_height = 0.0, double max_raytrace_range = 0.0, double weight = 25.0,
-          const std::vector<unsigned char>& static_data = std::vector<unsigned char>(0), unsigned char lethal_threshold = 0);
+          const std::vector<unsigned char>& static_data = std::vector<unsigned char>(0), unsigned char lethal_threshold = 0,
+          bool track_unknown_space = false);
 
       /**
        * @brief  Copy constructor for a costmap, creates a copy efficiently
@@ -540,6 +542,7 @@ namespace costmap_2d {
       unsigned int cell_inscribed_radius_, cell_circumscribed_radius_, cell_inflation_radius_;
       double weight_;
       unsigned char circumscribed_cost_lb_;
+      bool track_unknown_space_;
       std::priority_queue<CellData> inflation_queue_;
 
       //functors for raytracing actions

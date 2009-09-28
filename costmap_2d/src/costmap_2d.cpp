@@ -43,12 +43,12 @@ namespace costmap_2d{
       double resolution, double origin_x, double origin_y, double inscribed_radius,
       double circumscribed_radius, double inflation_radius, double max_obstacle_range,
       double max_obstacle_height, double max_raytrace_range, double weight,
-      const std::vector<unsigned char>& static_data, unsigned char lethal_threshold) : size_x_(cells_size_x),
+      const std::vector<unsigned char>& static_data, unsigned char lethal_threshold, bool track_unknown_space) : size_x_(cells_size_x),
   size_y_(cells_size_y), resolution_(resolution), origin_x_(origin_x), origin_y_(origin_y), static_map_(NULL),
   costmap_(NULL), markers_(NULL), max_obstacle_range_(max_obstacle_range), 
   max_obstacle_height_(max_obstacle_height), max_raytrace_range_(max_raytrace_range), cached_costs_(NULL), cached_distances_(NULL), 
   inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius), inflation_radius_(inflation_radius),
-  weight_(weight), inflation_queue_(){
+  weight_(weight), track_unknown_space_(track_unknown_space), inflation_queue_(){
     //creat the costmap, static_map, and markers
     costmap_ = new unsigned char[size_x_ * size_y_];
     static_map_ = new unsigned char[size_x_ * size_y_];
@@ -101,9 +101,15 @@ namespace costmap_2d{
       memcpy(static_map_, costmap_, size_x_ * size_y_ * sizeof(unsigned char));
     }
     else{
-      //everything is unknown initially if we don't have a static map
-      memset(static_map_, NO_INFORMATION, size_x_ * size_y_ * sizeof(unsigned char));
-      memset(costmap_, NO_INFORMATION, size_x_ * size_y_ * sizeof(unsigned char));
+      //everything is unknown initially if we don't have a static map unless we aren't tracking unkown space in which case it is free
+      if(track_unknown_space_){
+        memset(static_map_, NO_INFORMATION, size_x_ * size_y_ * sizeof(unsigned char));
+        memset(costmap_, NO_INFORMATION, size_x_ * size_y_ * sizeof(unsigned char));
+      }
+      else{
+        memset(static_map_, FREE_SPACE, size_x_ * size_y_ * sizeof(unsigned char));
+        memset(costmap_, FREE_SPACE, size_x_ * size_y_ * sizeof(unsigned char));
+      }
     }
   }
 
@@ -622,8 +628,13 @@ namespace costmap_2d{
       costmap_cell += size_x_ - cell_size_x;
     }
 
-    //now we'll set the costmap to be completely unknown
-    memset(costmap_, NO_INFORMATION, size_x_ * size_y_ * sizeof(unsigned char));
+    //now we'll set the costmap to be completely unknown if we track unknown space
+    if(track_unknown_space_){
+      memset(costmap_, NO_INFORMATION, size_x_ * size_y_ * sizeof(unsigned char));
+    }
+    else{
+      memset(costmap_, FREE_SPACE, size_x_ * size_y_ * sizeof(unsigned char));
+    }
 
     //update the origin with the appropriate world coordinates
     origin_x_ = new_grid_ox;
