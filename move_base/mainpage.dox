@@ -1,0 +1,11 @@
+
+/** \mainpage
+
+@htmlinclude manifest.html
+
+@section summary Summary
+This pakage provides an implementation of the move_base node which is used for autonomous navigation of a mobile base.
+
+- \ref move_base::MoveBase : Implementation of the move_base node
+
+*/
