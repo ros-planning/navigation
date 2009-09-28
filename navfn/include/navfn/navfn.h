@@ -67,110 +67,112 @@
 #define PRIORITYBUFSIZE 10000
 
 
-/**
-   Navigation function call.
+namespace navfn {
+  /**
+    Navigation function call.
     \param costmap Cost map array, of type COSTTYPE; origin is upper left
-        NOTE: will be modified to have a border of obstacle costs
-    \param nx Width of map in cells
-    \param ny Height of map in cells
-    \param goal X,Y position of goal cell
-    \param start X,Y position of start cell
-    
-   Returns length of plan if found, and fills an array with x,y interpolated 
-     positions at about 1/2 cell resolution; else returns 0.
+NOTE: will be modified to have a border of obstacle costs
+\param nx Width of map in cells
+\param ny Height of map in cells
+\param goal X,Y position of goal cell
+\param start X,Y position of start cell
+
+Returns length of plan if found, and fills an array with x,y interpolated 
+positions at about 1/2 cell resolution; else returns 0.
 
 */
 
-int create_nav_plan_astar(const COSTTYPE *costmap, int nx, int ny,
-			   int* goal, int* start,
-			   float *plan, int nplan);
+  int create_nav_plan_astar(const COSTTYPE *costmap, int nx, int ny,
+      int* goal, int* start,
+      float *plan, int nplan);
 
 
 
-/**
-   Navigation function class.
-   - Holds buffers for costmap, navfn map
-   - Maps are pixel-based
-   - Origin is upper left, x is right, y is down
-*/
+  /**
+    Navigation function class.
+    - Holds buffers for costmap, navfn map
+    - Maps are pixel-based
+    - Origin is upper left, x is right, y is down
+    */
 
-class NavFn
-{
- public:
-  /** \param nx width of map
-      \param ny height of map */
-  NavFn(int nx, int ny);	// size of map
-  ~NavFn();
+  class NavFn
+  {
+    public:
+      /** \param nx width of map
+        \param ny height of map */
+      NavFn(int nx, int ny);	// size of map
+      ~NavFn();
 
-  void setNavArr(int nx, int ny); /**< sets or resets the size of the map */
-  int nx, ny, ns;		/**< size of grid, in pixels */
+      void setNavArr(int nx, int ny); /**< sets or resets the size of the map */
+      int nx, ny, ns;		/**< size of grid, in pixels */
 
-  void setCostmap(const COSTTYPE *cmap, bool isROS=true); /**< sets up the cost map */
-  bool calcNavFnAstar();	/**< calculates a plan, returns true if found */
-  bool calcNavFnDijkstra(bool atStart = false);	/**< calculates the full navigation function */
-  float *getPathX();		/**< x-coordinates of path */
-  float *getPathY();		/**< x-coordinates of path */
-  int   getPathLen();		/**< length of path, 0 if not found */
-  float getLastPathCost();      /**< Return cost of path found the last time A* was called */
+      void setCostmap(const COSTTYPE *cmap, bool isROS=true); /**< sets up the cost map */
+      bool calcNavFnAstar();	/**< calculates a plan, returns true if found */
+      bool calcNavFnDijkstra(bool atStart = false);	/**< calculates the full navigation function */
+      float *getPathX();		/**< x-coordinates of path */
+      float *getPathY();		/**< x-coordinates of path */
+      int   getPathLen();		/**< length of path, 0 if not found */
+      float getLastPathCost();      /**< Return cost of path found the last time A* was called */
 
-  /** cell arrays */
-  COSTTYPE *obsarr;		/**< obstacle array, to be expanded to cost array */
-  COSTTYPE *costarr;		/**< cost array in 2D configuration space */
-  float   *potarr;		/**< potential array, navigation function potential */
-  bool    *pending;		/**< pending cells during propagation */
-  int nobs;			/**< number of obstacle cells */
+      /** cell arrays */
+      COSTTYPE *obsarr;		/**< obstacle array, to be expanded to cost array */
+      COSTTYPE *costarr;		/**< cost array in 2D configuration space */
+      float   *potarr;		/**< potential array, navigation function potential */
+      bool    *pending;		/**< pending cells during propagation */
+      int nobs;			/**< number of obstacle cells */
 
-  /** block priority buffers */
-  int *pb1, *pb2, *pb3;		/**< storage buffers for priority blocks */
-  int *curP, *nextP, *overP;	/**< priority buffer block ptrs */
-  int curPe, nextPe, overPe; /**< end points of arrays */
+      /** block priority buffers */
+      int *pb1, *pb2, *pb3;		/**< storage buffers for priority blocks */
+      int *curP, *nextP, *overP;	/**< priority buffer block ptrs */
+      int curPe, nextPe, overPe; /**< end points of arrays */
 
-  /** block priority thresholds */
-  float curT;			/**< current threshold */
-  float priInc;			/**< priority threshold increment */
+      /** block priority thresholds */
+      float curT;			/**< current threshold */
+      float priInc;			/**< priority threshold increment */
 
-  /** goal and start positions */
-  void setGoal(int *goal);	
-  void setStart(int *start);	
-  int goal[2];
-  int start[2];
-  void initCost(int k, float v); /**< initialize cell <k> with cost <v>, for propagation */
+      /** goal and start positions */
+      void setGoal(int *goal);	
+      void setStart(int *start);	
+      int goal[2];
+      int start[2];
+      void initCost(int k, float v); /**< initialize cell <k> with cost <v>, for propagation */
 
-  /** simple obstacle for testing */
-  void setObs();
+      /** simple obstacle for testing */
+      void setObs();
 
-  /** propagation */
-  void updateCell(int n);	/**< updates the cell at index <n> */
-  void updateCellAstar(int n);	/**< updates the cell at index <n>, uses A* heuristic */
-  void setupNavFn(bool keepit = false); /**< resets all nav fn arrays for propagation */
-  /** run propagation for <cycles> iterations, or until Start is
-      reached; use breadth-first Dijkstra method */
-  bool propNavFnDijkstra(int cycles, bool atStart = false); /**< returns true if start point found or full prop */
-  /** run propagation for <cycles> iterations, or until Start is
-      reached; use best-first A* method with Euclidean distance heuristic */
-  bool propNavFnAstar(int cycles); /**< returns true if start point found */
+      /** propagation */
+      void updateCell(int n);	/**< updates the cell at index <n> */
+      void updateCellAstar(int n);	/**< updates the cell at index <n>, uses A* heuristic */
+      void setupNavFn(bool keepit = false); /**< resets all nav fn arrays for propagation */
+      /** run propagation for <cycles> iterations, or until Start is
+        reached; use breadth-first Dijkstra method */
+      bool propNavFnDijkstra(int cycles, bool atStart = false); /**< returns true if start point found or full prop */
+      /** run propagation for <cycles> iterations, or until Start is
+        reached; use best-first A* method with Euclidean distance heuristic */
+      bool propNavFnAstar(int cycles); /**< returns true if start point found */
 
-  /** gradient and paths */
-  float *gradx, *grady;		/**< gradient arrays, size of potential array */
-  float *pathx, *pathy;		/**< path points, as subpixel cell coordinates */
-  int npath;			/**< number of path points */
-  int npathbuf;			/**< size of pathx, pathy buffers */
+      /** gradient and paths */
+      float *gradx, *grady;		/**< gradient arrays, size of potential array */
+      float *pathx, *pathy;		/**< path points, as subpixel cell coordinates */
+      int npath;			/**< number of path points */
+      int npathbuf;			/**< size of pathx, pathy buffers */
 
-  float last_path_cost_; /**< Holds the cost of the path found the last time A* was called */
+      float last_path_cost_; /**< Holds the cost of the path found the last time A* was called */
 
 
-  int calcPath(int n, int *st = NULL); /**< calculates path for at most <n> cycles, returns path length, 0 if none */
-  float gradCell(int n);	/**< calculates gradient at cell <n>, returns norm */
-  float pathStep;		/**< step size for following gradient */
+      int calcPath(int n, int *st = NULL); /**< calculates path for at most <n> cycles, returns path length, 0 if none */
+      float gradCell(int n);	/**< calculates gradient at cell <n>, returns norm */
+      float pathStep;		/**< step size for following gradient */
 
-  /** display callback */
-  void display(void fn(NavFn *nav), int n = 100); /**< <n> is the number of cycles between updates  */
-  int displayInt;		/**< save second argument of display() above */
-  void (*displayFn)(NavFn *nav); /**< display function itself */
+      /** display callback */
+      void display(void fn(NavFn *nav), int n = 100); /**< <n> is the number of cycles between updates  */
+      int displayInt;		/**< save second argument of display() above */
+      void (*displayFn)(NavFn *nav); /**< display function itself */
 
-  /** save costmap */
-  void savemap(const char *fname); /**< write out costmap and start/goal states as fname.pgm and fname.txt */
+      /** save costmap */
+      void savemap(const char *fname); /**< write out costmap and start/goal states as fname.pgm and fname.txt */
 
+  };
 };
 
 

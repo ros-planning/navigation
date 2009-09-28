@@ -5,7 +5,7 @@
 #include <navfn/navwin.h>
 #include <string.h>
 
-
+namespace navfn {
 NavWin::NavWin(int w, int h, const char *name)
   : Fl_Double_Window(w,h,name)
 {
@@ -291,4 +291,5 @@ void NavWin::draw()
     fl_draw_image(im, 0,0,nw,nh);
   drawOverlay();
 }
+};
 

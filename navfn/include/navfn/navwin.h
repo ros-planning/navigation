@@ -14,30 +14,32 @@
 
 #include "navfn.h"
 
-class NavWin 
-  : public Fl_Double_Window
-{
- public:
-  NavWin(int w, int h, const char *name);
-  ~NavWin();
-  
-  int nw,nh;			// width and height of image
-  int pw,ph;			// width and height of pot field
-  int dec, inc;			// decimation or expansion for display
+namespace navfn {
+  class NavWin 
+    : public Fl_Double_Window
+  {
+    public:
+      NavWin(int w, int h, const char *name);
+      ~NavWin();
 
-  float maxval;			// max potential value
-  void drawPot(NavFn *nav);	// draw everything...
+      int nw,nh;			// width and height of image
+      int pw,ph;			// width and height of pot field
+      int dec, inc;			// decimation or expansion for display
 
-  void drawOverlay();
+      float maxval;			// max potential value
+      void drawPot(NavFn *nav);	// draw everything...
 
-  uchar *im;			// image for drawing
-  int *pc, *pn, *po;		// priority buffers
-  int pce, pne, poe;		// buffer sizes
-  int goal[2];
-  int start[2];
-  int *path;			// path buffer, cell indices
-  int pathlen;			// how many we have
-  int pathbuflen;		// how big the path buffer is
+      void drawOverlay();
 
-  void draw();			// draw the image
+      uchar *im;			// image for drawing
+      int *pc, *pn, *po;		// priority buffers
+      int pce, pne, poe;		// buffer sizes
+      int goal[2];
+      int start[2];
+      int *path;			// path buffer, cell indices
+      int pathlen;			// how many we have
+      int pathbuflen;		// how big the path buffer is
+
+      void draw();			// draw the image
+  };
 };

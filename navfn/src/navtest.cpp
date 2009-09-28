@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+using namespace navfn;
+
 extern "C" {
 #include <stdio.h>
 // pgm.h is not very friendly with system headers... need to undef max() and min() afterwards
