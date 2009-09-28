@@ -30,9 +30,14 @@
 #ifndef NAV_VIEW_TOOLS_H
 #define NAV_VIEW_TOOLS_H
 
+#include <ros/ros.h>
+
+#if defined(__APPLE__)
+#include <Carbon/Carbon.h>
+#endif
 #include <OGRE/OgreVector3.h>
 
-#include <ros/ros.h>
+
 
 namespace Ogre
 {

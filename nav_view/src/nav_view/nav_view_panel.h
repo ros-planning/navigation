@@ -30,6 +30,8 @@
 #ifndef NAV_VIEW_NAV_VIEW_PANEL_H
 #define NAV_VIEW_NAV_VIEW_PANEL_H
 
+#include <ros/ros.h>
+
 #include "nav_view_panel_generated.h"
 
 #include "geometry_msgs/PoseArray.h"
@@ -39,13 +41,15 @@
 #include "nav_msgs/GridCells.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 
+#if defined(__APPLE__)
+#include <Carbon/Carbon.h>
+#endif
 #include <OGRE/OgreTexture.h>
 #include <OGRE/OgreMaterial.h>
 #include <OGRE/OgreRenderOperation.h>
 
 #include <message_filters/subscriber.h>
 #include <tf/message_filter.h>
-#include <ros/ros.h>
 
 #include <list>
 
