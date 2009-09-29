@@ -92,6 +92,7 @@ int main(int argc, char** argv){
     nav_msgs::Odometry odom;
     odom.header.stamp = current_time;
     odom.header.frame_id = "odom";
+    odom.child_frame_id = "base_link";
 
     //set the position
     odom.pose.pose.position.x = x;
