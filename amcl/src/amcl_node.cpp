@@ -21,6 +21,8 @@
 /* Author: Brian Gerkey */
 
 #include <algorithm>
+#include <vector>
+#include <map>
 
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
@@ -127,9 +129,11 @@ class AmclNode
     char* mapdata;
     int sx, sy;
     double resolution;
-    bool have_laser_pose;
 
-    tf::MessageNotifier<sensor_msgs::LaserScan>* laser_scan_notifer;
+    tf::MessageNotifier<sensor_msgs::LaserScan>* laser_scan_notifier_;
+    std::vector< AMCLLaser* > lasers_;
+    std::vector< bool > lasers_update_;
+    std::map< std::string, int > frame_to_laser_;
 
     // Particle filter
     pf_t *pf_;
@@ -187,7 +191,6 @@ main(int argc, char** argv)
 AmclNode::AmclNode() :
         latest_tf_valid_(false),
         map_(NULL),
-        have_laser_pose(false),
         pf_(NULL),
         resample_count_(0),
 	private_nh_("~")
@@ -326,7 +329,7 @@ AmclNode::AmclNode() :
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
-  laser_scan_notifer =
+  laser_scan_notifier_ =
           new tf::MessageNotifier<sensor_msgs::LaserScan>
           (*tf_, 
            boost::bind(&AmclNode::laserReceived,
@@ -461,9 +464,16 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
 void
 AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& laser_scan)
 {
+  int laser_index = -1;
+
   // Do we have the base->base_laser Tx yet?
-  if(!have_laser_pose)
+  if(frame_to_laser_.find(laser_scan->header.frame_id) == frame_to_laser_.end())
   {
+    ROS_DEBUG("Setting up laser %d (frame_id=%s)\n", frame_to_laser_.size(), laser_scan->header.frame_id.c_str());
+    lasers_.push_back(new AMCLLaser(*laser_));
+    lasers_update_.push_back(true);
+    laser_index = frame_to_laser_.size();
+
     tf::Stamped<tf::Pose> ident (btTransform(btQuaternion(0,0,0),
                                              btVector3(0,0,0)),
                                  ros::Time(), laser_scan->header.frame_id);
@@ -486,12 +496,16 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
     laser_pose_v.v[1] = laser_pose.getOrigin().y();
     double p,r;
     laser_pose.getBasis().getEulerZYX(laser_pose_v.v[2],p,r);
-    laser_->SetLaserPose(laser_pose_v);
+    lasers_[laser_index]->SetLaserPose(laser_pose_v);
     ROS_DEBUG("Received laser's pose wrt robot: %.3f %.3f %.3f",
               laser_pose_v.v[0],
               laser_pose_v.v[1],
               laser_pose_v.v[2]);
-    have_laser_pose = true;
+
+    frame_to_laser_[laser_scan->header.frame_id] = laser_index;
+  } else {
+    // we have the laser pose, retrieve laser index
+    laser_index = frame_to_laser_[laser_scan->header.frame_id];
   }
 
   // Where was the robot when this scan was taken?
@@ -506,7 +520,6 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
 
   pf_mutex_.lock();
 
-  bool update = false;
   pf_vector_t delta = pf_vector_zero();
 
   if(pf_init_)
@@ -518,9 +531,14 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
     delta.v[2] = angle_diff(pose.v[2], pf_odom_pose_.v[2]);
 
     // See if we should update the filter
-    update = fabs(delta.v[0]) > d_thresh_ ||
-             fabs(delta.v[1]) > d_thresh_ ||
-             fabs(delta.v[2]) > a_thresh_;
+    bool update = fabs(delta.v[0]) > d_thresh_ ||
+                  fabs(delta.v[1]) > d_thresh_ ||
+                  fabs(delta.v[2]) > a_thresh_;
+
+    // Set the laser update flags
+    if(update)
+      for(int i=0; i < lasers_update_.size(); i++)
+        lasers_update_[i] = true;
   }
 
   bool force_publication = false;
@@ -533,13 +551,15 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
     pf_init_ = true;
 
     // Should update sensor data
-    update = true;
+    for(int i=0; i < lasers_update_.size(); i++)
+      lasers_update_[i] = true;
+
     force_publication = true;
 
     resample_count_ = 0;
   }
   // If the robot has moved, update the filter
-  else if(pf_init_ && update)
+  else if(pf_init_ && lasers_update_[laser_index])
   {
     //printf("pose\n");
     //pf_vector_fprintf(pose, stdout, "%.3f");
@@ -560,10 +580,10 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
 
   bool resampled = false;
   // If the robot has moved, update the filter
-  if(update)
+  if(lasers_update_[laser_index])
   {
     AMCLLaserData ldata;
-    ldata.sensor = laser_;
+    ldata.sensor = lasers_[laser_index];
     ldata.range_count = laser_scan->ranges.size();
 
     // Apply min/max thresholds, if the user supplied them
@@ -592,7 +612,10 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
               (i * laser_scan->angle_increment);
     }
 
-    laser_->UpdateSensor(pf_, (AMCLSensorData*)&ldata);
+    lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata);
+
+    lasers_update_[laser_index] = false;
+
     pf_odom_pose_ = pose;
 
     // Resample the particles
