@@ -127,7 +127,7 @@ namespace estimation
     filter_ = new ExtendedKalmanFilter(prior_);
 
     // remember prior
-    addMeasurement(Stamped<Transform>(prior, time, "odom_combined", "base_footprint"));
+    addMeasurement(StampedTransform(prior, time, "odom_combined", "base_footprint"));
     filter_estimate_old_vec_ = prior_Mu;
     filter_estimate_old_ = prior;
     filter_time_old_     = time;
@@ -174,7 +174,7 @@ namespace estimation
         ROS_ERROR("filter time older than odom message buffer");
         return false;
       }
-      transformer_.lookupTransform("base_footprint","wheelodom", filter_time, odom_meas_);
+      transformer_.lookupTransform("wheelodom", "base_footprint", filter_time, odom_meas_);
       if (odom_initialized_){
 	// convert absolute odom measurements to relative odom measurements in horizontal plane
 	Transform odom_rel_frame =  Transform(Quaternion(filter_estimate_old_vec_(6),0,0), 
@@ -207,7 +207,7 @@ namespace estimation
         ROS_ERROR("filter time older than imu message buffer");
         return false;
       }
-      transformer_.lookupTransform("base_footprint","imu", filter_time, imu_meas_);
+      transformer_.lookupTransform("imu", "base_footprint", filter_time, imu_meas_);
       if (imu_initialized_){
 	// convert absolute imu yaw measurement to relative imu yaw measurement 
 	Transform imu_rel_frame =  filter_estimate_old_ * imu_meas_old_.inverse() * imu_meas_;
@@ -238,7 +238,7 @@ namespace estimation
         ROS_ERROR("filter time older than vo message buffer");
         return false;
       }
-      transformer_.lookupTransform("base_footprint","vo", filter_time, vo_meas_);
+      transformer_.lookupTransform("vo", "base_footprint", filter_time, vo_meas_);
       if (vo_initialized_){
 	// convert absolute vo measurements to relative vo measurements
 	Transform vo_rel_frame =  filter_estimate_old_ * vo_meas_old_.inverse() * vo_meas_;
@@ -261,7 +261,7 @@ namespace estimation
     filter_estimate_old_ = Transform(Quaternion(filter_estimate_old_vec_(6), filter_estimate_old_vec_(5), filter_estimate_old_vec_(4)),
 				     Vector3(filter_estimate_old_vec_(1), filter_estimate_old_vec_(2), filter_estimate_old_vec_(3)));
     filter_time_old_ = filter_time;
-    addMeasurement(Stamped<Transform>(filter_estimate_old_, filter_time, "odom_combined", "base_footprint"));
+    addMeasurement(StampedTransform(filter_estimate_old_, filter_time, "odom_combined", "base_footprint"));
 
     // diagnostics
     diagnostics_res = true;
@@ -276,18 +276,18 @@ namespace estimation
 };
 
 
-  void OdomEstimation::addMeasurement(const Stamped<Transform>& meas)
+  void OdomEstimation::addMeasurement(const StampedTransform& meas)
   {
     transformer_.setTransform( meas );
   };
 
-  void OdomEstimation::addMeasurement(const Stamped<Transform>& meas, const MatrixWrapper::SymmetricMatrix& covar)
+  void OdomEstimation::addMeasurement(const StampedTransform& meas, const MatrixWrapper::SymmetricMatrix& covar)
   {
     transformer_.setTransform( meas );
-    if (meas.frame_id_ == "wheelodom") odom_covariance_ = covar;
-    else if (meas.frame_id_ == "imu")  imu_covariance_  = covar;
-    else if (meas.frame_id_ == "vo")   vo_covariance_   = covar;
-    else ROS_ERROR("Adding a measurement for an unknown sensor %s", meas.frame_id_.c_str());
+    if (meas.child_frame_id_ == "wheelodom") odom_covariance_ = covar;
+    else if (meas.child_frame_id_ == "imu")  imu_covariance_  = covar;
+    else if (meas.child_frame_id_ == "vo")   vo_covariance_   = covar;
+    else ROS_ERROR("Adding a measurement for an unknown sensor %s", meas.child_frame_id_.c_str());
   };
 
 
@@ -300,35 +300,35 @@ namespace estimation
   // get filter posterior at time 'time' as Transform
   void OdomEstimation::getEstimate(Time time, Transform& estimate)
   {
-    Stamped<Transform> tmp;
+    StampedTransform tmp;
     if (!transformer_.canTransform("base_footprint","odom_combined", time)){
       ROS_ERROR("Cannot get transform at time %f", time.toSec());
       return;
     }
-    transformer_.lookupTransform("base_footprint","odom_combined", time, tmp);
+    transformer_.lookupTransform("odom_combined", "base_footprint", time, tmp);
     estimate = tmp;
   };
 
   // get filter posterior at time 'time' as Stamped Transform
-  void OdomEstimation::getEstimate(Time time, Stamped<Transform>& estimate)
+  void OdomEstimation::getEstimate(Time time, StampedTransform& estimate)
   {
-    if (!transformer_.canTransform("base_footprint","odom_combined", time)){
+    if (!transformer_.canTransform("odom_combined", "base_footprint", time)){
       ROS_ERROR("Cannot get transform at time %f", time.toSec());
       return;
     }
-    transformer_.lookupTransform("base_footprint","odom_combined", time, estimate);
+    transformer_.lookupTransform("odom_combined", "base_footprint", time, estimate);
   };
 
   // get most recent filter posterior as PoseWithCovarianceStamped
   void OdomEstimation::getEstimate(geometry_msgs::PoseWithCovarianceStamped& estimate)
   {
     // pose
-    Stamped<Transform> tmp;
-    if (!transformer_.canTransform("base_footprint","odom_combined", ros::Time())){
+    StampedTransform tmp;
+    if (!transformer_.canTransform("odom_combined", "base_footprint", ros::Time())){
       ROS_ERROR("Cannot get transform at time %f", 0.0);
       return;
     }
-    transformer_.lookupTransform("base_footprint","odom_combined", ros::Time(), tmp);
+    transformer_.lookupTransform("odom_combined", "base_footprint", ros::Time(), tmp);
     poseTFToMsg(tmp, estimate.pose.pose);
 
     // header
@@ -350,7 +350,7 @@ namespace estimation
   };
 
   // decompose Transform into x,y,z,Rx,Ry,Rz
-  void OdomEstimation::decomposeTransform(const Stamped<Transform>& trans, 
+  void OdomEstimation::decomposeTransform(const StampedTransform& trans, 
 					   double& x, double& y, double&z, double&Rx, double& Ry, double& Rz){
     x = trans.getOrigin().x();   
     y = trans.getOrigin().y(); 

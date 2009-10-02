@@ -167,7 +167,7 @@ namespace estimation
       for (unsigned int j=0; j<6; j++)
         odom_covariance_(i+1, j+1) = odom->pose.covariance[6*i+j];
 
-    my_filter_.addMeasurement(Stamped<Transform>(odom_meas_, odom_stamp_,"wheelodom", "base_footprint"), odom_covariance_);
+    my_filter_.addMeasurement(StampedTransform(odom_meas_.inverse(), odom_stamp_, "base_footprint", "wheelodom"), odom_covariance_);
     
     // activate odom
     if (!odom_active_) {
@@ -223,7 +223,7 @@ namespace estimation
       imu_covariance_ = measNoiseImu_Cov;
     }
 
-    my_filter_.addMeasurement(Stamped<Transform>(imu_meas_, imu_stamp_, "imu", "base_footprint"), imu_covariance_);
+    my_filter_.addMeasurement(StampedTransform(imu_meas_.inverse(), imu_stamp_, "base_footprint", "imu"), imu_covariance_);
     
     // activate imu
     if (!imu_active_) {
@@ -267,7 +267,7 @@ namespace estimation
     for (unsigned int i=0; i<6; i++)
       for (unsigned int j=0; j<6; j++)
         vo_covariance_(i+1, j+1) = vo->pose.covariance[6*i+j];
-    my_filter_.addMeasurement(Stamped<Transform>(vo_meas_, vo_stamp_, "vo", "base_footprint"), vo_covariance_);
+    my_filter_.addMeasurement(StampedTransform(vo_meas_.inverse(), vo_stamp_, "base_footprint", "vo"), vo_covariance_);
     
     // activate vo
     if (!vo_active_) {
@@ -366,11 +366,11 @@ namespace estimation
           ekf_sent_counter_++;
           
           // broadcast most recent estimate to TransformArray
-          Stamped<Transform> tmp;
+          StampedTransform tmp;
           my_filter_.getEstimate(ros::Time(), tmp);
           if(!vo_active_)
             tmp.getOrigin().setZ(0.0);
-          odom_broadcaster_.sendTransform(Stamped<Transform>(tmp, tmp.stamp_, "base_footprint", publish_name));
+          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, publish_name, "base_footprint"));
           
 #ifdef __EKF_DEBUG_FILE__
           // write to file

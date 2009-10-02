@@ -102,7 +102,7 @@ public:
    * \param time the time of the filter posterior
    * \param estimate the filter posterior as a stamped tf transform
    */
-  void getEstimate(ros::Time time, tf::Stamped<tf::Transform>& estiamte);
+  void getEstimate(ros::Time time, tf::StampedTransform& estiamte);
 
   /** get the filter posterior
    * \param estimate the filter posterior as a pose with covariance
@@ -112,20 +112,20 @@ public:
   /** Add a sensor measurement to the measurement buffer
    * \param meas the measurement to add
    */
-  void addMeasurement(const tf::Stamped<tf::Transform>& meas);
+  void addMeasurement(const tf::StampedTransform& meas);
 
   /** Add a sensor measurement to the measurement buffer
    * \param meas the measurement to add
    * \param covar the 6x6 covariance matrix of this measurement, as defined in the PoseWithCovariance message
    */
-  void addMeasurement(const tf::Stamped<tf::Transform>& meas, const MatrixWrapper::SymmetricMatrix& covar);
+  void addMeasurement(const tf::StampedTransform& meas, const MatrixWrapper::SymmetricMatrix& covar);
 
 private:
   /// correct for angle overflow
   void angleOverflowCorrect(double& a, double ref);
 
   // decompose Transform into x,y,z,Rx,Ry,Rz
-  void decomposeTransform(const tf::Stamped<tf::Transform>& trans,
+  void decomposeTransform(const tf::StampedTransform& trans,
 			  double& x, double& y, double&z, double&Rx, double& Ry, double& Rz);
   void decomposeTransform(const tf::Transform& trans,
 			  double& x, double& y, double&z, double&Rx, double& Ry, double& Rz);
@@ -147,7 +147,7 @@ private:
   // vars
   MatrixWrapper::ColumnVector vel_desi_, filter_estimate_old_vec_;
   tf::Transform filter_estimate_old_;
-  tf::Stamped<tf::Transform> odom_meas_, odom_meas_old_, imu_meas_, imu_meas_old_, vo_meas_, vo_meas_old_;
+  tf::StampedTransform odom_meas_, odom_meas_old_, imu_meas_, imu_meas_old_, vo_meas_, vo_meas_old_;
   ros::Time filter_time_old_;
   bool filter_initialized_, odom_initialized_, imu_initialized_, vo_initialized_;
 
