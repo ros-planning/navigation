@@ -136,9 +136,6 @@ namespace navfn {
       return;
     }
 
-    double useless_pitch, useless_roll, yaw;
-    global_pose.getBasis().getEulerZYX(yaw, useless_pitch, useless_roll);
-
     //set the associated costs in the cost map to be free
     costmap_.setCost(mx, my, costmap_2d::FREE_SPACE);
 

@@ -156,16 +156,49 @@ namespace base_local_planner {
       ROS_ASSERT_MSG(world_model_type == "costmap", "At this time, only costmap world models are supported by this controller");
       world_model_ = new CostmapModel(costmap_); 
 
+      std::vector<double> y_vels = loadYVels(private_nh);
+
       tc_ = new TrajectoryPlanner(*world_model_, costmap_, costmap_ros_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_,
           acc_lim_x, acc_lim_y, acc_lim_theta, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
           max_vel_x, min_vel_x, max_vel_th, min_vel_th, min_in_place_vel_th_, backup_vel,
-          dwa, heading_scoring, heading_scoring_timestep, simple_attractor);
+          dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels);
 
       initialized_ = true;
     }
     else
       ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");
+  }
+
+  std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
+    std::vector<double> y_vels;
+
+    XmlRpc::XmlRpcValue y_vel_list;
+    if(node.getParam("y_vels", y_vel_list)){
+      ROS_ASSERT_MSG(y_vel_list.getType() == XmlRpc::XmlRpcValue::TypeArray, 
+          "The y velocities to explore must be specified as a list");
+
+      for(int i = 0; i < y_vel_list.size(); ++i){
+        //make sure we have a list of lists of size 2
+        XmlRpc::XmlRpcValue vel = y_vel_list[i];
+
+        //make sure that the value we're looking at is either a double or an int
+        ROS_ASSERT(vel.getType() == XmlRpc::XmlRpcValue::TypeInt || vel.getType() == XmlRpc::XmlRpcValue::TypeDouble);
+        double y_vel = vel.getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(vel) : (double)(vel);
+
+        y_vels.push_back(y_vel);
+
+      }
+    }
+    else{
+      //if no values are passed in, we'll provide defaults
+      y_vels.push_back(-0.3);
+      y_vels.push_back(-0.1);
+      y_vels.push_back(0.1);
+      y_vels.push_back(0.3);
+    }
+
+    return y_vels;
   }
 
   TrajectoryPlannerROS::~TrajectoryPlannerROS(){
@@ -193,15 +226,13 @@ namespace base_local_planner {
   }
 
   bool TrajectoryPlannerROS::goalOrientationReached(const tf::Stamped<tf::Pose>& global_pose, double goal_th){
-    double useless_pitch, useless_roll, yaw;
-    global_pose.getBasis().getEulerZYX(yaw, useless_pitch, useless_roll);
+    double yaw = tf::getYaw(global_pose.getRotation());
     return fabs(angles::shortest_angular_distance(yaw, goal_th)) <= yaw_goal_tolerance_;
   }
 
   bool TrajectoryPlannerROS::rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel){
-    double uselessPitch, uselessRoll, yaw, vel_yaw;
-    global_pose.getBasis().getEulerZYX(yaw, uselessPitch, uselessRoll);
-    robot_vel.getBasis().getEulerZYX(vel_yaw, uselessPitch, uselessRoll);
+    double yaw = tf::getYaw(global_pose.getRotation());
+    double vel_yaw = tf::getYaw(robot_vel.getRotation());
     cmd_vel.linear.x = 0;
     cmd_vel.linear.y = 0;
     double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
@@ -263,7 +294,7 @@ namespace base_local_planner {
         return false;
       }
 
-      tf::Stamped<tf::Transform> transform;
+      tf::StampedTransform transform;
       tf_->lookupTransform(global_frame_, ros::Time(), 
           plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp, 
           plan_goal_pose.header.frame_id, transform);
@@ -294,8 +325,7 @@ namespace base_local_planner {
     double goal_x = goal_pose.getOrigin().getX();
     double goal_y = goal_pose.getOrigin().getY();
 
-    double uselessPitch, uselessRoll, yaw;
-    goal_pose.getBasis().getEulerZYX(yaw, uselessPitch, uselessRoll);
+    double yaw = tf::getYaw(goal_pose.getRotation());
 
     double goal_th = yaw;
 
@@ -341,7 +371,7 @@ namespace base_local_planner {
         return false;
       }
 
-      tf::Stamped<tf::Transform> transform;
+      tf::StampedTransform transform;
       tf_->lookupTransform(global_frame_, ros::Time(), 
           plan_pose.header.frame_id, plan_pose.header.stamp, 
           plan_pose.header.frame_id, transform);
@@ -425,8 +455,7 @@ namespace base_local_planner {
     drive_cmds.frame_id_ = robot_base_frame_;
 
     tf::Stamped<tf::Pose> robot_vel;
-    btQuaternion qt(global_vel.angular.z, 0, 0);
-    robot_vel.setData(btTransform(qt, btVector3(global_vel.linear.x, global_vel.linear.y, 0)));
+    robot_vel.setData(btTransform(tf::createQuaternionFromYaw(global_vel.angular.z), btVector3(global_vel.linear.x, global_vel.linear.y, 0)));
     robot_vel.frame_id_ = robot_base_frame_;
     robot_vel.stamp_ = ros::Time();
 
@@ -446,8 +475,7 @@ namespace base_local_planner {
     double goal_x = goal_point.getOrigin().getX();
     double goal_y = goal_point.getOrigin().getY();
 
-    double uselessPitch, uselessRoll, yaw;
-    goal_point.getBasis().getEulerZYX(yaw, uselessPitch, uselessRoll);
+    double yaw = tf::getYaw(goal_point.getRotation());
 
     double goal_th = yaw;
 
@@ -493,7 +521,7 @@ namespace base_local_planner {
     //pass along drive commands
     cmd_vel.linear.x = drive_cmds.getOrigin().getX();
     cmd_vel.linear.y = drive_cmds.getOrigin().getY();
-    drive_cmds.getBasis().getEulerZYX(yaw, uselessPitch, uselessRoll);
+    yaw = tf::getYaw(drive_cmds.getRotation());
 
     cmd_vel.angular.z = yaw;
 
@@ -510,7 +538,7 @@ namespace base_local_planner {
       double p_x, p_y, p_th;
       path.getPoint(i, p_x, p_y, p_th);
 
-      tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(tf::Quaternion(p_th, 0.0, 0.0), tf::Point(p_x, p_y, 0.0)), ros::Time::now(), global_frame_);
+      tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(tf::createQuaternionFromYaw(p_th), tf::Point(p_x, p_y, 0.0)), ros::Time::now(), global_frame_);
       geometry_msgs::PoseStamped pose;
       tf::poseStampedTFToMsg(p, pose);
       local_plan.push_back(pose);

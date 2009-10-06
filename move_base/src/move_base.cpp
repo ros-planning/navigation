@@ -297,7 +297,7 @@ namespace move_base {
   bool MoveBase::set180RotationGoal(){
     ROS_DEBUG("180 rotation");
     double angle = M_PI; //rotate 180 degrees
-    tf::Stamped<tf::Pose> rotate_goal = tf::Stamped<tf::Pose>(tf::Pose(tf::Quaternion(angle, 0.0, 0.0), tf::Point(0.0, 0.0, 0.0)), ros::Time(), robot_base_frame_);
+    tf::Stamped<tf::Pose> rotate_goal = tf::Stamped<tf::Pose>(tf::Pose(tf::createQuaternionFromYaw(angle), tf::Point(0.0, 0.0, 0.0)), ros::Time(), robot_base_frame_);
     geometry_msgs::PoseStamped rotate_goal_msg;
 
     try{

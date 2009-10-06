@@ -186,6 +186,8 @@ namespace base_local_planner {
 
       void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
+      std::vector<double> loadYVels(ros::NodeHandle node);
+
       WorldModel* world_model_; ///< @brief The world model that the controller will use
       TrajectoryPlanner* tc_; ///< @brief The trajectory controller
       costmap_2d::Costmap2DROS* costmap_ros_; ///< @brief The ROS wrapper for the costmap the controller will use

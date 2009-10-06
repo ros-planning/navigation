@@ -86,13 +86,6 @@ namespace base_local_planner{
 
     escaping_ = false;
 
-    //if no y velocities are specified... we'll fill in default values
-    if(y_vels_.empty()){
-      y_vels_.push_back(-0.3);
-      y_vels_.push_back(-0.1);
-      y_vels_.push_back(0.1);
-      y_vels_.push_back(0.3);
-    }
   }
 
   TrajectoryPlanner::~TrajectoryPlanner(){}
@@ -859,9 +852,8 @@ namespace base_local_planner{
   Trajectory TrajectoryPlanner::findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel, 
       tf::Stamped<tf::Pose>& drive_velocities){
 
-    double uselessPitch, uselessRoll, yaw, velYaw;
-    global_pose.getBasis().getEulerZYX(yaw, uselessPitch, uselessRoll);
-    global_vel.getBasis().getEulerZYX(velYaw, uselessPitch, uselessRoll);
+    double yaw = tf::getYaw(global_pose.getRotation());
+    double vel_yaw = tf::getYaw(global_vel.getRotation());
 
     double x = global_pose.getOrigin().getX();
     double y = global_pose.getOrigin().getY();
@@ -869,7 +861,7 @@ namespace base_local_planner{
 
     double vx = global_vel.getOrigin().getX();
     double vy = global_vel.getOrigin().getY();
-    double vtheta = velYaw;
+    double vtheta = vel_yaw;
 
     //reset the map for new operations
     map_.resetPathDist();
@@ -924,7 +916,7 @@ namespace base_local_planner{
       btVector3 start(best.xv_, best.yv_, 0);
       drive_velocities.setOrigin(start);
       btMatrix3x3 matrix;
-      matrix.setRotation(btQuaternion(best.thetav_, 0, 0));
+      matrix.setRotation(tf::createQuaternionFromYaw(best.thetav_));
       drive_velocities.setBasis(matrix);
     }
 

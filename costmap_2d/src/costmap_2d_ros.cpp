@@ -478,7 +478,7 @@ namespace costmap_2d {
     //project the scan into a point cloud
     try
     {
-      projector_.transformLaserScanToPointCloud(message->header.frame_id, base_cloud, *message, tf_);
+      projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, base_cloud, tf_);
     }
     catch (tf::TransformException &ex)
     {
@@ -707,8 +707,7 @@ namespace costmap_2d {
     if(!getRobotPose(global_pose))
       return;
 
-    double useless_pitch, useless_roll, yaw;
-    global_pose.getBasis().getEulerZYX(yaw, useless_pitch, useless_roll);
+    double yaw = tf::getYaw(global_pose.getRotation());
 
     getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint);
   }
@@ -771,8 +770,7 @@ namespace costmap_2d {
       return;
     }
 
-    double useless_pitch, useless_roll, yaw;
-    global_pose.getBasis().getEulerZYX(yaw, useless_pitch, useless_roll);
+    double yaw = tf::getYaw(global_pose.getRotation());
 
     //get the oriented footprint of the robot
     double x = global_pose.getOrigin().x();
