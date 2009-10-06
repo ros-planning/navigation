@@ -114,6 +114,7 @@ class AmclNode
                                     std_srvs::Empty::Response& res);
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
 
     double getYaw(tf::Pose& t);
 
@@ -175,6 +176,7 @@ class AmclNode
     ros::Publisher pose_pub_;
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
+    ros::Subscriber initial_pose_sub_old_;
 };
 
 #define USAGE "USAGE: amcl"
@@ -346,6 +348,8 @@ AmclNode::AmclNode() :
   initial_pose_sub_ = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh_, "initialpose", 2);
   initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, "map", 2);
   initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
+
+  initial_pose_sub_old_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceivedOld, this);
 }
 
 map_t*
@@ -835,6 +839,14 @@ AmclNode::getYaw(tf::Pose& t)
   btMatrix3x3 mat = t.getBasis();
   mat.getEulerZYX(yaw,pitch,roll);
   return yaw;
+}
+
+void
+AmclNode::initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
+{
+  // Support old behavior, where null frame ids were accepted.
+  if(msg->header.frame_id == "")
+    initialPoseReceived(msg);
 }
 
 void
