@@ -48,7 +48,8 @@
 // For transform support
 #include "tf/transform_broadcaster.h"
 #include "tf/transform_listener.h"
-#include "tf/message_notifier.h"
+#include "tf/message_filter.h"
+#include "message_filters/subscriber.h"
 
 using namespace amcl;
 
@@ -99,6 +100,8 @@ class AmclNode
     tf::TransformBroadcaster* tfb_;
     tf::TransformListener* tf_;
 
+    bool sent_first_transform_;
+
     tf::Transform latest_tf_;
     bool latest_tf_valid_;
 
@@ -109,8 +112,8 @@ class AmclNode
     // Message callbacks
     bool globalLocalizationCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
-    void laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& laser_scan);
-  void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
+    void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
 
     double getYaw(tf::Pose& t);
 
@@ -130,7 +133,10 @@ class AmclNode
     int sx, sy;
     double resolution;
 
-    tf::MessageNotifier<sensor_msgs::LaserScan>* laser_scan_notifier_;
+    message_filters::Subscriber<sensor_msgs::LaserScan>* laser_scan_sub_;
+    tf::MessageFilter<sensor_msgs::LaserScan>* laser_scan_filter_;
+    message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>* initial_pose_sub_;
+    tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* initial_pose_filter_;
     std::vector< AMCLLaser* > lasers_;
     std::vector< bool > lasers_update_;
     std::map< std::string, int > frame_to_laser_;
@@ -164,12 +170,11 @@ class AmclNode
     //basically defines how long a map->odom transform is good for
     ros::Duration transform_tolerance_;
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle private_nh_;
-  ros::Publisher pose_pub_;
-  ros::Publisher particlecloud_pub_;
-  ros::ServiceServer global_loc_srv_;
-  ros::Subscriber initial_pose_sub_;
+    ros::NodeHandle nh_;
+    ros::NodeHandle private_nh_;
+    ros::Publisher pose_pub_;
+    ros::Publisher particlecloud_pub_;
+    ros::ServiceServer global_loc_srv_;
 };
 
 #define USAGE "USAGE: amcl"
@@ -189,6 +194,7 @@ main(int argc, char** argv)
 }
 
 AmclNode::AmclNode() :
+        sent_first_transform_(false),
         latest_tf_valid_(false),
         map_(NULL),
         pf_(NULL),
@@ -329,14 +335,17 @@ AmclNode::AmclNode() :
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
-  laser_scan_notifier_ =
-          new tf::MessageNotifier<sensor_msgs::LaserScan>
-          (*tf_, 
-           boost::bind(&AmclNode::laserReceived,
-                       this, _1),
-           "scan", odom_frame_id_,
-           100);
-  initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
+  laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, "scan", 100);
+  laser_scan_filter_ = 
+          new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
+                                                        *tf_, 
+                                                        odom_frame_id_, 
+                                                        100);
+  laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
+                                                   this, _1));
+  initial_pose_sub_ = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh_, "initialpose", 2);
+  initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, "map", 2);
+  initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
 }
 
 map_t*
@@ -384,6 +393,10 @@ AmclNode::requestMap()
 AmclNode::~AmclNode()
 {
   map_free(map_);
+  delete laser_scan_filter_;
+  delete laser_scan_sub_;
+  delete initial_pose_filter_;
+  delete initial_pose_sub_;
   delete tfb_;
   delete tf_;
   pf_free(pf_);
@@ -462,7 +475,7 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
 }
 
 void
-AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& laser_scan)
+AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
   int laser_index = -1;
 
@@ -537,7 +550,7 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
 
     // Set the laser update flags
     if(update)
-      for(int i=0; i < lasers_update_.size(); i++)
+      for(unsigned int i=0; i < lasers_update_.size(); i++)
         lasers_update_[i] = true;
   }
 
@@ -551,7 +564,7 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
     pf_init_ = true;
 
     // Should update sensor data
-    for(int i=0; i < lasers_update_.size(); i++)
+    for(unsigned int i=0; i < lasers_update_.size(); i++)
       lasers_update_[i] = true;
 
     force_publication = true;
@@ -768,6 +781,7 @@ AmclNode::laserReceived(const tf::MessageNotifier<sensor_msgs::LaserScan>::Messa
                                                 transform_expiration,
                                                 odom_frame_id_, "map");
       this->tfb_->sendTransform(tmp_tf_stamped);
+      sent_first_transform_ = true;
     }
     else
     {
@@ -837,7 +851,12 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   }
   catch(tf::TransformException e)
   {
-    ROS_WARN("Failed to transform initial pose in time (%s)", e.what());
+    // If we've never sent a transform, then this is normal, because the
+    // "map" frame doesn't exist.  We only care about in-time
+    // transformation for on-the-move pose-setting, so ignoring this
+    // startup condition doesn't really cost us anything.
+    if(sent_first_transform_)
+      ROS_WARN("Failed to transform initial pose in time (%s)", e.what());
     tx_odom.setIdentity();
   }
 

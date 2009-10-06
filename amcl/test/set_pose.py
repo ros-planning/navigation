@@ -13,6 +13,7 @@ class PoseSetter(rospy.SubscribeListener):
         self.pose = pose
     def peer_subscribe(self, topic_name, topic_publish, peer_publish):
         p = PoseWithCovarianceStamped()
+        p.header.frame_id = "map"
         p.pose.pose.position.x = self.pose[0]
         p.pose.pose.position.y = self.pose[1]
         (p.pose.pose.orientation.x, 
