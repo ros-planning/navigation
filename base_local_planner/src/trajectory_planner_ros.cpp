@@ -144,7 +144,11 @@ namespace base_local_planner {
       private_nh.param("dwa", dwa, true);
       private_nh.param("heading_scoring", heading_scoring, false);
       private_nh.param("heading_scoring_timestep", heading_scoring_timestep, 0.8);
-      private_nh.param("simple_attractor", simple_attractor, false);
+
+      simple_attractor = false;
+      if(private_nh.getParam("simple_attractor", simple_attractor)){
+        ROS_WARN("You are using the \"simple_attractor\" parameter which has been deprecated. Please use the carrot planner instead");
+      }
 
       //parameters for using the freespace controller
       double min_pt_separation, max_obstacle_height, grid_resolution;
