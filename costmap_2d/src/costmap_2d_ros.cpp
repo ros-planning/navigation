@@ -192,7 +192,7 @@ namespace costmap_2d {
       nav_msgs::GetMap::Request map_req;
       nav_msgs::GetMap::Response map_resp;
       ROS_INFO("Requesting the map...\n");
-      while(!ros::service::call("/static_map", map_req, map_resp))
+      while(!ros::service::call("static_map", map_req, map_resp))
       {
         ROS_INFO("Request failed; trying again...\n");
         usleep(1000000);
