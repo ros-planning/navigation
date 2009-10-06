@@ -1,7 +1,7 @@
 <package>
   <description brief="A general navigation stack">
 
-The move_base package provides an implementation of a robot_action that, given a goal in the world, will attempt to reach it with a mobile base. The move_base node links together a global and local planner to accomplish its global navigation task. It supports any global planner adhering to the BaseGlobalPlanner interface specified in nav_robot_actions and any local planner adhering to the BaseLocalPlanner interface specified in the nav_robot_actions package. The move_base node also maintains two costmaps one global and one local that can be used for navigation tasks.
+The move_base package provides an implementation of a action that, given a goal in the world, will attempt to reach it with a mobile base. The move_base node links together a global and local planner to accomplish its global navigation task. It supports any global planner adhering to the nav_core::BaseGlobalPlanner interface specified in nav_robot_actions and any local planner adhering to the nav_core::BaseLocalPlanner interface specified in the nav_core package. The move_base node also maintains two costmaps one global and one local that can be used for navigation tasks.
 
   </description>
  <author>Eitan Marder-Eppstein</author>
