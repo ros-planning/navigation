@@ -7,6 +7,6 @@
 \section codeapi Code API
 
 - \ref navfn::NavfnROS : A ROS wrapper for the \ref navfn::Navfn planner
-- \ref navfn::Navfn : The underlying planner, this API is not guranteed to be stable
+- \ref navfn::NavFn : The underlying planner, this API is not guranteed to be stable
  
 */
