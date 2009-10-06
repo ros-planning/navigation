@@ -166,12 +166,13 @@ int PoseTool::processMouseEvent( wxMouseEvent& event, int last_x, int last_y, fl
         printf("setting goal: Position(%.3f, %.3f, %.3f), Orientation(%.3f, %.3f, %.3f, %.3f) = Angle: %.3f\n", goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
             goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w, angle);
         goal.header.stamp = ros::Time::now();
-        goal.header.frame_id = "/map";
+        goal.header.frame_id = panel_->getGlobalFrame();
         goal_pub_.publish( goal );
       }
       else
       {
         geometry_msgs::PoseWithCovarianceStamped pose;
+	pose.header.frame_id = panel_->getGlobalFrame();
         pose.pose.pose.position.x = pos_.x;
         pose.pose.pose.position.y = pos_.y;
         tf::quaternionTFToMsg(tf::Quaternion(angle, 0.0, 0.0),
