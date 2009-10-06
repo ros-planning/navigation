@@ -89,29 +89,69 @@ positions at about 1/2 cell resolution; else returns 0.
 
 
   /**
-    Navigation function class.
-    - Holds buffers for costmap, navfn map
-    - Maps are pixel-based
-    - Origin is upper left, x is right, y is down
-    */
-
+   * @class NavFn
+   * @brief Navigation function class. Holds buffers for costmap, navfn map. Maps are pixel-based. Origin is upper left, x is right, y is down. 
+   */
   class NavFn
   {
     public:
-      /** \param nx width of map
-        \param ny height of map */
+      /**
+       * @brief  Constructs the planner
+       * @param nx The x size of the map 
+       * @param ny The y size of the map 
+       */
       NavFn(int nx, int ny);	// size of map
+
       ~NavFn();
 
+      /**
+       * @brief  Sets or resets the size of the map
+       * @param nx The x size of the map 
+       * @param ny The y size of the map 
+       */
       void setNavArr(int nx, int ny); /**< sets or resets the size of the map */
       int nx, ny, ns;		/**< size of grid, in pixels */
 
+      /**
+       * @brief  Set up the cost array for the planner, usually from ROS  
+       * @param cmap The costmap 
+       * @param isROS Whether or not the costmap is coming in in ROS format
+       */
       void setCostmap(const COSTTYPE *cmap, bool isROS=true); /**< sets up the cost map */
+
+      /**
+       * @brief  Calculates a plan using the A* heuristic, returns true if one is found
+       * @return True if a plan is found, false otherwise
+       */
       bool calcNavFnAstar();	/**< calculates a plan, returns true if found */
+
+      /**
+       * @brief Caclulates the full navigation function using Dijkstra
+       */
       bool calcNavFnDijkstra(bool atStart = false);	/**< calculates the full navigation function */
+
+      /**
+       * @brief  Accessor for the x-coordinates of a path
+       * @return The x-coordinates of a path
+       */
       float *getPathX();		/**< x-coordinates of path */
-      float *getPathY();		/**< x-coordinates of path */
+
+      /**
+       * @brief  Accessor for the y-coordinates of a path
+       * @return The y-coordinates of a path
+       */
+      float *getPathY();		/**< y-coordinates of path */
+
+      /**
+       * @brief  Accessor for the length of a path
+       * @return The length of a path
+       */
       int   getPathLen();		/**< length of path, 0 if not found */
+
+      /**
+       * @brief  Gets the cost of the path found the last time a navigation function was computed
+       * @return The cost of the last path found
+       */
       float getLastPathCost();      /**< Return cost of path found the last time A* was called */
 
       /** cell arrays */
@@ -131,24 +171,58 @@ positions at about 1/2 cell resolution; else returns 0.
       float priInc;			/**< priority threshold increment */
 
       /** goal and start positions */
+      /**
+       * @brief  Sets the goal position for the planner. Note: the navigation function is computed from goal to start.
+       * @param goal the goal position 
+       */
       void setGoal(int *goal);	
+
+      /**
+       * @brief  Sets the start position for the planner. Note: the navigation function is computed from goal to start.
+       * @param start the start position 
+       */
       void setStart(int *start);	
+
       int goal[2];
       int start[2];
+      /**
+       * @brief  Initialize cell k with cost v for propagation
+       * @param k the cell to initialize 
+       * @param v the cost to give to the cell
+       */
       void initCost(int k, float v); /**< initialize cell <k> with cost <v>, for propagation */
 
       /** simple obstacle for testing */
       void setObs();
 
       /** propagation */
+
+      /**
+       * @brief  Updates the cell at index n  
+       * @param n The index to update
+       */
       void updateCell(int n);	/**< updates the cell at index <n> */
+
+      /**
+       * @brief  Updates the cell at index n using the A* heuristic
+       * @param n The index to update
+       */
       void updateCellAstar(int n);	/**< updates the cell at index <n>, uses A* heuristic */
+
       void setupNavFn(bool keepit = false); /**< resets all nav fn arrays for propagation */
-      /** run propagation for <cycles> iterations, or until Start is
-        reached; use breadth-first Dijkstra method */
+
+      /**
+       * @brief  Run propagation for <cycles> iterations, or until start is reached using breadth-first Dijkstra method
+       * @param cycles The maximum number of iterations to run for
+       * @param atStart Whether or not to stop when the start point is reached
+       * @return true if the start point is reached
+       */
       bool propNavFnDijkstra(int cycles, bool atStart = false); /**< returns true if start point found or full prop */
-      /** run propagation for <cycles> iterations, or until Start is
-        reached; use best-first A* method with Euclidean distance heuristic */
+      /**
+       * @brief  Run propagation for <cycles> iterations, or until start is reached using the best-first A* method with Euclidean distance heuristic
+       * @param cycles The maximum number of iterations to run for
+       * @return true if the start point is reached
+       */
       bool propNavFnAstar(int cycles); /**< returns true if start point found */
 
       /** gradient and paths */
@@ -160,7 +234,13 @@ positions at about 1/2 cell resolution; else returns 0.
       float last_path_cost_; /**< Holds the cost of the path found the last time A* was called */
 
 
+      /**
+       * @brief  Calculates the path for at mose <n> cycles
+       * @param n The maximum number of cycles to run for 
+       * @return The lenght of the path found
+       */
       int calcPath(int n, int *st = NULL); /**< calculates path for at most <n> cycles, returns path length, 0 if none */
+
       float gradCell(int n);	/**< calculates gradient at cell <n>, returns norm */
       float pathStep;		/**< step size for following gradient */
 
