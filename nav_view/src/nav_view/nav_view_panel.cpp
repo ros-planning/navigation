@@ -424,12 +424,12 @@ void NavViewPanel::updateRadiusPosition()
 {
   try
   {
-    tf::Stamped<tf::Pose> robot_pose(btTransform(btQuaternion(0,0,0), btVector3(0,0,0)), ros::Time(), "base_link");
+    tf::Stamped<tf::Pose> robot_pose(btTransform(tf::createIdentityQuaternion(), btVector3(0,0,0)), ros::Time(), "base_link");
     tf::Stamped<tf::Pose> map_pose;
 
     tf_client_->transformPose(getGlobalFrame(), robot_pose, map_pose);
     double yaw, pitch, roll;
-    map_pose.getBasis().getEulerZYX(yaw, pitch, roll);
+    map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
 
     Ogre::SceneNode* node = radius_object_->getParentSceneNode();
     node->setPosition( Ogre::Vector3(map_pose.getOrigin().x(), map_pose.getOrigin().y(), RADIUS_DEPTH) );
@@ -596,7 +596,7 @@ void NavViewPanel::incomingPoseArray(const geometry_msgs::PoseArray::ConstPtr& m
     tf::Quaternion orientation;
     tf::quaternionMsgToTF(msg->poses[i].orientation, orientation);
     double yaw, pitch, roll;
-    btMatrix3x3(orientation).getEulerZYX(yaw, pitch, roll);
+    btMatrix3x3(orientation).getEulerYPR(yaw, pitch, roll);
     Ogre::Quaternion orient( Ogre::Quaternion( Ogre::Radian( yaw ), Ogre::Vector3::UNIT_Z ) );
 
     Ogre::Vector3 vertices[8];
