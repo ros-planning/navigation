@@ -11,13 +11,13 @@ include ($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 set (ROS_BUILD_TYPE RelWithDebInfo)
 
 add_definitions (-Wall)
-rospack (navfn)
-gensrv()
-genmsg()
+rosbuild_init()
+rosbuild_gensrv()
+rosbuild_genmsg()
 
-rospack_add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
+rosbuild_add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
 
-rospack_add_executable(bin/navfn_node src/navfn_node.cpp)
+rosbuild_add_executable(bin/navfn_node src/navfn_node.cpp)
 target_link_libraries(bin/navfn_node navfn)
 
 
@@ -32,7 +32,7 @@ message (STATUS "NAVFN_HAVE_FLTK: ${NAVFN_HAVE_FLTK}")
 # Just linking -lfltk is not sufficient on OS X
 if (NAVFN_HAVE_FLTK AND NOT APPLE)
   message (STATUS "FLTK found: adding navtest to build")
-  rospack_add_executable (navtest src/navtest.cpp src/navwin.cpp)
+  rosbuild_add_executable (navtest src/navtest.cpp src/navwin.cpp)
   target_link_libraries (navtest navfn fltk netpbm)
 else (NAVFN_HAVE_FLTK)
   message (STATUS "FLTK not found: cannot build navtest")

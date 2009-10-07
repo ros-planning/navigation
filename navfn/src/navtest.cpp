@@ -261,8 +261,6 @@ void setcostunk(COSTTYPE *cmap, int n, int w)
 COSTTYPE *
 readPGM(const char *fname, int *width, int *height, bool raw)
 {
-  int fake_argc(1);
-  char fake_arg[] = "foo";
   pm_init("navtest",0);
 
   FILE *pgmfile;
