@@ -486,7 +486,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   // Do we have the base->base_laser Tx yet?
   if(frame_to_laser_.find(laser_scan->header.frame_id) == frame_to_laser_.end())
   {
-    ROS_DEBUG("Setting up laser %d (frame_id=%s)\n", frame_to_laser_.size(), laser_scan->header.frame_id.c_str());
+    ROS_DEBUG("Setting up laser %d (frame_id=%s)\n", (int)frame_to_laser_.size(), laser_scan->header.frame_id.c_str());
     lasers_.push_back(new AMCLLaser(*laser_));
     lasers_update_.push_back(true);
     laser_index = frame_to_laser_.size();
@@ -653,7 +653,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     cloud_msg.set_poses_size(set->sample_count);
     for(int i=0;i<set->sample_count;i++)
     {
-      tf::poseTFToMsg(tf::Pose(btQuaternion(set->samples[i].pose.v[2], 0, 0),
+      tf::poseTFToMsg(tf::Pose(tf::createQuaternionFromYaw(set->samples[i].pose.v[2]),
                                btVector3(set->samples[i].pose.v[0],
                                          set->samples[i].pose.v[1], 0)),
                       cloud_msg.poses[i]);
@@ -713,7 +713,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // Copy in the pose
       p.pose.pose.position.x = hyps[max_weight_hyp].pf_pose_mean.v[0];
       p.pose.pose.position.y = hyps[max_weight_hyp].pf_pose_mean.v[1];
-      tf::quaternionTFToMsg(tf::Quaternion(hyps[max_weight_hyp].pf_pose_mean.v[2], 0.0, 0.0),
+      tf::quaternionTFToMsg(tf::createQuaternionFromYaw(hyps[max_weight_hyp].pf_pose_mean.v[2]),
                             p.pose.pose.orientation);
       // Copy in the covariance, converting from 3-D to 6-D
       pf_sample_set_t* set = pf_->sets + pf_->current_set;
@@ -754,8 +754,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       tf::Stamped<tf::Pose> odom_to_map;
       try
       {
-        tf::Transform tmp_tf(tf::Quaternion(hyps[max_weight_hyp].pf_pose_mean.v[2],
-                                            0, 0),
+        tf::Transform tmp_tf(tf::createQuaternionFromYaw(hyps[max_weight_hyp].pf_pose_mean.v[2]),
                              tf::Vector3(hyps[max_weight_hyp].pf_pose_mean.v[0],
                                          hyps[max_weight_hyp].pf_pose_mean.v[1],
                                          0.0));
@@ -814,7 +813,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // last_published_pose.
       tf::Pose map_pose = latest_tf_.inverse() * odom_pose;
       double yaw,pitch,roll;
-      map_pose.getBasis().getEulerZYX(yaw, pitch, roll);
+      map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
 
       private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
       private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
@@ -837,7 +836,7 @@ AmclNode::getYaw(tf::Pose& t)
 {
   double yaw, pitch, roll;
   btMatrix3x3 mat = t.getBasis();
-  mat.getEulerZYX(yaw,pitch,roll);
+  mat.getEulerYPR(yaw,pitch,roll);
   return yaw;
 }
 
