@@ -118,21 +118,6 @@ namespace base_local_planner {
       private_nh.param("max_vel_x", max_vel_x, 0.5);
       private_nh.param("min_vel_x", min_vel_x, 0.1);
 
-      //TODO: DEPRECATED
-      if(private_nh.hasParam("max_vel_th"))
-        ROS_WARN("max_vel_th is deprecated, please switch to using max_rotational_vel instead");
-
-      if(private_nh.hasParam("min_vel_th"))
-        ROS_WARN("min_vel_th is deprecated and will no longer be supported in future versions of the navigation stack");
-
-      if(private_nh.hasParam("min_in_place_vel_th"))
-        ROS_WARN("min_in_place_vel_th is deprecated, please switch to using min_in_place_rotational_vel instead");
-
-      private_nh.param("max_vel_th", max_vel_th, 1.0);
-      private_nh.param("min_vel_th", min_vel_th, -1.0);
-      private_nh.param("min_in_place_vel_th", min_in_place_vel_th_, 0.4);
-      //END DEPRECATED
-
       double max_rotational_vel;
       private_nh.param("max_rotational_vel", max_rotational_vel, 1.0);
       max_vel_th = max_rotational_vel;
