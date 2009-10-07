@@ -759,27 +759,33 @@ namespace costmap_2d {
   }
 
   void Costmap2DROS::clearRobotFootprint(const tf::Stamped<tf::Pose>& global_pose){
-    //if we don't have a footprint of a large enough size, we'll just clear the cell that the robot occupies
-    if(footprint_spec_.size() < 3){
-      //lock the map if necessary
-      boost::recursive_mutex::scoped_lock lock(lock_);
-      unsigned int mx, my;
-      if(costmap_->worldToMap(global_pose.getOrigin().x(), global_pose.getOrigin().y(), mx, my)){
-        costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
-      }
-      return;
-    }
-
-    double yaw = tf::getYaw(global_pose.getRotation());
-
-    //get the oriented footprint of the robot
-    double x = global_pose.getOrigin().x();
-    double y = global_pose.getOrigin().y();
-    double theta = yaw;
-
-    //build the oriented footprint at the robot's current location
     std::vector<geometry_msgs::Point> oriented_footprint;
-    getOrientedFootprint(x, y, theta, oriented_footprint);
+
+    //check if we have a circular footprint or a polygon footprint
+    if(footprint_spec_.size() < 3){
+      //we'll build an approximation of the circle as the footprint and clear that
+      double angle = 0;
+      double step = 2 * M_PI / 72;
+      while(angle < 2 * M_PI){
+        geometry_msgs::Point pt;
+        pt.x = getInscribedRadius() * cos(angle) + global_pose.getOrigin().x();
+        pt.y = getInscribedRadius() * sin(angle) + global_pose.getOrigin().y();
+        pt.z = 0.0;
+        oriented_footprint.push_back(pt);
+        angle += step;
+      }
+    }
+    else{
+      double yaw = tf::getYaw(global_pose.getRotation());
+
+      //get the oriented footprint of the robot
+      double x = global_pose.getOrigin().x();
+      double y = global_pose.getOrigin().y();
+      double theta = yaw;
+
+      //build the oriented footprint at the robot's current location
+      getOrientedFootprint(x, y, theta, oriented_footprint);
+    }
 
     //lock the map if necessary
     boost::recursive_mutex::scoped_lock lock(lock_);
