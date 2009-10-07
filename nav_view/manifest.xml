@@ -2,7 +2,7 @@
   <description>A graphical interface for 2-D navigation.</description>
   <author>Morgan Quigley, Brian Gerkey and Josh Faust</author>
   <license>BSD</license>
-  <review status="doc reviewed" notes=""/>
+  <review status="Doc reviewed" notes=""/>
   <url>http://pr.willowgarage.com/wiki/nav_view</url>
   <depend package="roscpp"/>
   <depend package="nav_msgs"/>

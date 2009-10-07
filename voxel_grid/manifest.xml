@@ -6,7 +6,7 @@ voxel_grid provides an implementation of an efficient 3D voxel grid. The occupan
 </description>
 <author>Eitan Marder-Eppstein, Eric Berger</author>
 <license>BSD</license>
-<review status="proposal cleared" notes=""/>
+<review status="Doc reviewed" notes=""/>
 <url>http://ros.org/wiki/voxel_grid</url>
 <depend package="rosconsole"/>
 <export>

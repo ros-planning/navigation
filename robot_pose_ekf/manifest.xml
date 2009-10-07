@@ -6,7 +6,7 @@ The Robot Pose EKF package is used to estimate the 3D pose of a robot, based on 
 </description>
 <author>Wim Meeussen</author>
 <license>BSD</license>
-<review status="doc reviewed" notes=""/>
+<review status="Doc reviewed" notes=""/>
 <url>http://ros.org/wiki/robot_pose_ekf</url>
 <depend package="roscpp" />
 <depend package="bfl" />
