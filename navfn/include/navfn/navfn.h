@@ -172,13 +172,13 @@ positions at about 1/2 cell resolution; else returns 0.
 
       /** goal and start positions */
       /**
-       * @brief  Sets the goal position for the planner. Note: the navigation function is computed from goal to start.
+       * @brief  Sets the goal position for the planner. Note: the navigation cost field computed gives the cost to get to a given point from the goal, not from the start.
        * @param goal the goal position 
        */
       void setGoal(int *goal);	
 
       /**
-       * @brief  Sets the start position for the planner. Note: the navigation function is computed from goal to start.
+       * @brief  Sets the start position for the planner. Note: the navigation cost field computed gives the cost to get to a given point from the goal, not from the start.
        * @param start the start position 
        */
       void setStart(int *start);	
