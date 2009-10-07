@@ -781,9 +781,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // tolerance time so that odom can be used
       ros::Time transform_expiration = (laser_scan->header.stamp +
                                         transform_tolerance_);
-      tf::Stamped<tf::Transform> tmp_tf_stamped(latest_tf_.inverse(),
-                                                transform_expiration,
-                                                odom_frame_id_, "map");
+      tf::StampedTransform tmp_tf_stamped(latest_tf_.inverse(),
+                                          transform_expiration,
+                                          "map", odom_frame_id_);
       this->tfb_->sendTransform(tmp_tf_stamped);
       sent_first_transform_ = true;
     }
@@ -798,9 +798,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     // everybody happy.
     ros::Time transform_expiration = (laser_scan->header.stamp +
                                       transform_tolerance_);
-    tf::Stamped<tf::Transform> tmp_tf_stamped(latest_tf_.inverse(),
-                                              transform_expiration,
-                                              odom_frame_id_, "map");
+    tf::StampedTransform tmp_tf_stamped(latest_tf_.inverse(),
+                                        transform_expiration,
+                                        "map", odom_frame_id_);
     this->tfb_->sendTransform(tmp_tf_stamped);
 
 
