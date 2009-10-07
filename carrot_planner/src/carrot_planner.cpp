@@ -130,8 +130,8 @@ namespace carrot_planner {
     poseStampedMsgToTF(start,start_tf);
 
     double useless_pitch, useless_roll, goal_yaw, start_yaw;
-    start_tf.getBasis().getEulerZYX(start_yaw, useless_pitch, useless_roll);
-    goal_tf.getBasis().getEulerZYX(goal_yaw, useless_pitch, useless_roll);
+    start_tf.getBasis().getEulerYPR(start_yaw, useless_pitch, useless_roll);
+    goal_tf.getBasis().getEulerYPR(goal_yaw, useless_pitch, useless_roll);
 
     //we want to step back along the vector created by the robot's position and the goal pose until we find a legal cell
     double goal_x = goal.pose.position.x;
@@ -175,7 +175,7 @@ namespace carrot_planner {
 
     plan.push_back(start);
     geometry_msgs::PoseStamped new_goal = goal;
-    tf::Quaternion goal_quat = tf::Quaternion(target_yaw,0,0);
+    tf::Quaternion goal_quat = tf::createQuaternionFromYaw(target_yaw);
 
     new_goal.pose.position.x = target_x;
     new_goal.pose.position.y = target_y;
