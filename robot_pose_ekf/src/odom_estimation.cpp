@@ -177,7 +177,7 @@ namespace estimation
       transformer_.lookupTransform("wheelodom", "base_footprint", filter_time, odom_meas_);
       if (odom_initialized_){
 	// convert absolute odom measurements to relative odom measurements in horizontal plane
-	Transform odom_rel_frame =  Transform(Quaternion(filter_estimate_old_vec_(6),0,0), 
+	Transform odom_rel_frame =  Transform(tf::createQuaternionFromYaw(filter_estimate_old_vec_(6)), 
 					      filter_estimate_old_.getOrigin()) * odom_meas_old_.inverse() * odom_meas_;
 	ColumnVector odom_rel(6); 
 	decomposeTransform(odom_rel_frame, odom_rel(1), odom_rel(2), odom_rel(3), odom_rel(4), odom_rel(5), odom_rel(6));
@@ -258,7 +258,9 @@ namespace estimation
     
     // remember last estimate
     filter_estimate_old_vec_ = filter_->PostGet()->ExpectedValueGet();
-    filter_estimate_old_ = Transform(Quaternion(filter_estimate_old_vec_(6), filter_estimate_old_vec_(5), filter_estimate_old_vec_(4)),
+    tf::Quaternion q;
+    q.setRPY(filter_estimate_old_vec_(4), filter_estimate_old_vec_(5), filter_estimate_old_vec_(6));
+    filter_estimate_old_ = Transform(q,
 				     Vector3(filter_estimate_old_vec_(1), filter_estimate_old_vec_(2), filter_estimate_old_vec_(3)));
     filter_time_old_ = filter_time;
     addMeasurement(StampedTransform(filter_estimate_old_, filter_time, "odom_combined", "base_footprint"));
@@ -355,7 +357,7 @@ namespace estimation
     x = trans.getOrigin().x();   
     y = trans.getOrigin().y(); 
     z = trans.getOrigin().z(); 
-    trans.getBasis().getEulerZYX(Rz, Ry, Rx);
+    trans.getBasis().getEulerYPR(Rz, Ry, Rx);
   };
 
   // decompose Transform into x,y,z,Rx,Ry,Rz
@@ -364,7 +366,7 @@ namespace estimation
     x = trans.getOrigin().x();   
     y = trans.getOrigin().y(); 
     z = trans.getOrigin().z(); 
-    trans.getBasis().getEulerZYX(Rz, Ry, Rx);
+    trans.getBasis().getEulerYPR(Rz, Ry, Rx);
   };
 
 }; // namespace
