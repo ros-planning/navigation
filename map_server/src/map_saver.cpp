@@ -106,7 +106,7 @@ free_thresh: 0.196
       geometry_msgs::Quaternion & orientation = resp.map.info.origin.orientation;
       btMatrix3x3 mat(btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w));
       double yaw, pitch, roll;
-      mat.getEulerZYX(yaw, pitch, roll);
+      mat.getEulerYPR(yaw, pitch, roll);
 
       fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n",
               mapdatafile.c_str(), resp.map.info.resolution, resp.map.info.origin.position.x, resp.map.info.origin.position.y, yaw);
