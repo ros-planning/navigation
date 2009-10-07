@@ -6,7 +6,7 @@
   </description>
   <author>Eitan Marder-Eppstein</author>
   <license>BSD</license>
-  <review status="API cleared" notes=""/>
+  <review status="Doc reviewed" notes=""/>
   <url>http://pr.willowgarage.com/wiki/move_base_msgs</url>
   <depend package="roslib"/>
   <depend package="std_msgs"/>

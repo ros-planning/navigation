@@ -6,7 +6,7 @@ The move_base package provides an implementation of a action (see the <a href="h
   </description>
  <author>Eitan Marder-Eppstein</author>
  <license>BSD</license>
- <review status="API cleared" notes=""/>
+ <review status="Doc reviewed" notes=""/>
  <url>http://ros.org/wiki/move_base</url>
 
  <depend package="roscpp"/>
