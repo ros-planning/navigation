@@ -172,13 +172,12 @@ public:
 
     double x = txi.getOrigin().x();
     double y = txi.getOrigin().y();
-    double z = txi.getOrigin().z();
 
     double yaw, pitch, roll;
-    txi.getBasis().getEulerZYX(yaw, pitch, roll);
+    txi.getBasis().getEulerYPR(yaw, pitch, roll);
     yaw = angles::normalize_angle(yaw);
 
-    tf::Transform txo(tf::Quaternion(yaw, pitch, roll), tf::Point(x, y, z));
+    tf::Transform txo = txi;
     
     //tf::Transform txIdentity(tf::Quaternion(0, 0, 0), tf::Point(0, 0, 0));
     
@@ -203,10 +202,10 @@ public:
       return;
     }
 
-    m_tfServer->sendTransform(tf::Stamped<tf::Transform>
+    m_tfServer->sendTransform(tf::StampedTransform
 			      (odom_to_map.inverse(),
 			       message->header.stamp,
-			       odom_frame_id_, "/map"));
+			       "/map", odom_frame_id_));
 
     // Publish localized pose
     m_currentPos.header = message->header;
@@ -214,7 +213,7 @@ public:
     m_currentPos.pose.pose.position.x = x;
     m_currentPos.pose.pose.position.y = y;
     // Leave z as zero
-    tf::quaternionTFToMsg(tf::Quaternion(yaw, 0.0, 0.0),
+    tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw),
                           m_currentPos.pose.pose.orientation);
     // Leave covariance as zero
     m_posePub.publish(m_currentPos);

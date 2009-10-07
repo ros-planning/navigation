@@ -429,7 +429,7 @@ AmclNode::getOdomPose(tf::Stamped<btTransform>& odom_pose,
   x = odom_pose.getOrigin().x();
   y = odom_pose.getOrigin().y();
   double pitch,roll;
-  odom_pose.getBasis().getEulerZYX(yaw, pitch, roll);
+  odom_pose.getBasis().getEulerYPR(yaw, pitch, roll);
 
   return true;
 }
@@ -512,7 +512,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     laser_pose_v.v[0] = laser_pose.getOrigin().x();
     laser_pose_v.v[1] = laser_pose.getOrigin().y();
     double p,r;
-    laser_pose.getBasis().getEulerZYX(laser_pose_v.v[2],p,r);
+    laser_pose.getBasis().getEulerYPR(laser_pose_v.v[2],p,r);
     lasers_[laser_index]->SetLaserPose(laser_pose_v);
     ROS_DEBUG("Received laser's pose wrt robot: %.3f %.3f %.3f",
               laser_pose_v.v[0],
