@@ -854,7 +854,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
 {
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
-  tf::Stamped<tf::Transform> tx_odom;
+  tf::StampedTransform tx_odom;
   try
   {
     tf_->lookupTransform(base_frame_id_, ros::Time::now(),
