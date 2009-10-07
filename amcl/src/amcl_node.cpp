@@ -163,7 +163,7 @@ class AmclNode
     map_t* requestMap();
 
     // Helper to get odometric pose from transform system
-    bool getOdomPose(tf::Stamped<btTransform>& pose,
+  bool getOdomPose(tf::Stamped<tf::Pose>& pose,
                      double& x, double& y, double& yaw,
                      const ros::Time& t, const std::string& f);
 
@@ -410,12 +410,12 @@ AmclNode::~AmclNode()
 }
 
 bool
-AmclNode::getOdomPose(tf::Stamped<btTransform>& odom_pose,
+AmclNode::getOdomPose(tf::Stamped<tf::Pose>& odom_pose,
                       double& x, double& y, double& yaw,
                       const ros::Time& t, const std::string& f)
 {
   // Get the robot's pose
-  tf::Stamped<tf::Pose> ident (btTransform(btQuaternion(0,0,0),
+  tf::Stamped<tf::Pose> ident (btTransform(tf::createIdentityQuaternion(),
                                            btVector3(0,0,0)), t, f);
   try
   {
@@ -491,10 +491,10 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     lasers_update_.push_back(true);
     laser_index = frame_to_laser_.size();
 
-    tf::Stamped<tf::Pose> ident (btTransform(btQuaternion(0,0,0),
+    tf::Stamped<tf::Pose> ident (btTransform(tf::createIdentityQuaternion(),
                                              btVector3(0,0,0)),
                                  ros::Time(), laser_scan->header.frame_id);
-    tf::Stamped<btTransform> laser_pose;
+    tf::Stamped<tf::Pose> laser_pose;
     try
     {
       this->tf_->transformPose("base_footprint", ident, laser_pose);
@@ -526,7 +526,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
 
   // Where was the robot when this scan was taken?
-  tf::Stamped<btTransform> odom_pose;
+  tf::Stamped<tf::Pose> odom_pose;
   pf_vector_t pose;
   if(!getOdomPose(odom_pose, pose.v[0], pose.v[1], pose.v[2],
                   laser_scan->header.stamp, "base_footprint"))
