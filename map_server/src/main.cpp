@@ -56,6 +56,9 @@ class MapServer
       double origin[3];
       int negate;
       double occ_th, free_th;
+      std::string frame_id;
+      ros::NodeHandle private_nh("~");
+      private_nh.param("frame_id", frame_id, std::string("map"));
       deprecated = (res != 0);
       if (!deprecated) {
         //mapfname = fname + ".pgm";
@@ -120,7 +123,6 @@ class MapServer
           exit(-1);
         }
       } else {
-        ros::NodeHandle private_nh("~");
         private_nh.param("negate", negate, 0);
         private_nh.param("occupied_thresh", occ_th, 0.65);
         private_nh.param("free_thresh", free_th, 0.196);
@@ -131,6 +133,7 @@ class MapServer
       ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
       map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin);
       map_resp_.map.info.map_load_time = ros::Time::now();
+      map_resp_.map.header.frame_id = frame_id;
       ROS_INFO("Read a %d X %d map @ %.3lf m/cell",
                map_resp_.map.info.width,
                map_resp_.map.info.height,

@@ -87,6 +87,7 @@ TEST_F(MapClientTest, call_service)
   ASSERT_FLOAT_EQ(resp.map.info.resolution, g_valid_image_res);
   ASSERT_EQ(resp.map.info.width, g_valid_image_width);
   ASSERT_EQ(resp.map.info.height, g_valid_image_height);
+  ASSERT_STREQ(resp.map.header.frame_id.c_str(), "map");
   for(unsigned int i=0; i < resp.map.info.width * resp.map.info.height; i++)
     ASSERT_EQ(g_valid_image_content[i], resp.map.data[i]);
 }
@@ -109,6 +110,7 @@ TEST_F(MapClientTest, subscribe_topic)
   ASSERT_FLOAT_EQ(map_->info.resolution, g_valid_image_res);
   ASSERT_EQ(map_->info.width, g_valid_image_width);
   ASSERT_EQ(map_->info.height, g_valid_image_height);
+  ASSERT_STREQ(map_->header.frame_id.c_str(), "map");
   for(unsigned int i=0; i < map_->info.width * map_->info.height; i++)
     ASSERT_EQ(g_valid_image_content[i], map_->data[i]);
 }
