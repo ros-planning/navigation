@@ -122,6 +122,7 @@ class AmclNode
     std::string odom_frame_id_;
     //parameter for what base to use
     std::string base_frame_id_;
+    std::string global_frame_id_;
 
     ros::Duration gui_publish_period;
     ros::Time save_pose_last_time;
@@ -269,12 +270,12 @@ AmclNode::AmclNode() :
   private_nh_.param("update_min_a", a_thresh_, M_PI/6.0);
   private_nh_.param("odom_frame_id", odom_frame_id_, std::string("odom"));
   private_nh_.param("base_frame_id", base_frame_id_, std::string("base_link"));
+  private_nh_.param("global_frame_id", global_frame_id_, std::string("map"));
   private_nh_.param("resample_interval", resample_interval_, 2);
   double tmp_tol;
   private_nh_.param("transform_tolerance", tmp_tol, 0.1);
   private_nh_.param("recovery_alpha_slow", alpha_slow, 0.001);
   private_nh_.param("recovery_alpha_fast", alpha_fast, 0.1);
-
 
   transform_tolerance_.fromSec(tmp_tol);
 
@@ -346,7 +347,7 @@ AmclNode::AmclNode() :
   laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
                                                    this, _1));
   initial_pose_sub_ = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh_, "initialpose", 2);
-  initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, "map", 2);
+  initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, global_frame_id_, 2);
   initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
 
   initial_pose_sub_old_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceivedOld, this);
@@ -497,14 +498,14 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     tf::Stamped<tf::Pose> laser_pose;
     try
     {
-      this->tf_->transformPose("base_footprint", ident, laser_pose);
+      this->tf_->transformPose(base_frame_id_, ident, laser_pose);
     }
     catch(tf::TransformException e)
     {
       ROS_ERROR("Couldn't transform from %s to %s, "
                 "even though the message notifier is in use",
                 laser_scan->header.frame_id.c_str(),
-                "base_footprint");
+                base_frame_id_.c_str());
       return;
     }
 
@@ -529,7 +530,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   tf::Stamped<tf::Pose> odom_pose;
   pf_vector_t pose;
   if(!getOdomPose(odom_pose, pose.v[0], pose.v[1], pose.v[2],
-                  laser_scan->header.stamp, "base_footprint"))
+                  laser_scan->header.stamp, base_frame_id_))
   {
     ROS_ERROR("Couldn't determine robot's pose associated with laser scan");
     return;
@@ -649,7 +650,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     // TODO: set maximum rate for publishing
     geometry_msgs::PoseArray cloud_msg;
     cloud_msg.header.stamp = ros::Time::now();
-    cloud_msg.header.frame_id = "map";
+    cloud_msg.header.frame_id = global_frame_id_;
     cloud_msg.set_poses_size(set->sample_count);
     for(int i=0;i<set->sample_count;i++)
     {
@@ -708,7 +709,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
       geometry_msgs::PoseWithCovarianceStamped p;
       // Fill in the header
-      p.header.frame_id = "map";
+      p.header.frame_id = global_frame_id_;
       p.header.stamp = laser_scan->header.stamp;
       // Copy in the pose
       p.pose.pose.position.x = hyps[max_weight_hyp].pf_pose_mean.v[0];
@@ -760,7 +761,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                          0.0));
         tf::Stamped<tf::Pose> tmp_tf_stamped (tmp_tf.inverse(),
                                               laser_scan->header.stamp,
-                                              "base_footprint");
+                                              base_frame_id_);
         this->tf_->transformPose(odom_frame_id_,
                                  tmp_tf_stamped,
                                  odom_to_map);
@@ -782,7 +783,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                         transform_tolerance_);
       tf::StampedTransform tmp_tf_stamped(latest_tf_.inverse(),
                                           transform_expiration,
-                                          "map", odom_frame_id_);
+                                          global_frame_id_, odom_frame_id_);
       this->tfb_->sendTransform(tmp_tf_stamped);
       sent_first_transform_ = true;
     }
@@ -799,7 +800,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                       transform_tolerance_);
     tf::StampedTransform tmp_tf_stamped(latest_tf_.inverse(),
                                         transform_expiration,
-                                        "map", odom_frame_id_);
+                                        global_frame_id_, odom_frame_id_);
     this->tfb_->sendTransform(tmp_tf_stamped);
 
 
@@ -858,12 +859,12 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   {
     tf_->lookupTransform(base_frame_id_, ros::Time::now(),
                          base_frame_id_, msg->header.stamp,
-                         "map", tx_odom);
+                         global_frame_id_, tx_odom);
   }
   catch(tf::TransformException e)
   {
     // If we've never sent a transform, then this is normal, because the
-    // "map" frame doesn't exist.  We only care about in-time
+    // global_frame_id_ frame doesn't exist.  We only care about in-time
     // transformation for on-the-move pose-setting, so ignoring this
     // startup condition doesn't really cost us anything.
     if(sent_first_transform_)
