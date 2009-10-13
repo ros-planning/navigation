@@ -27,6 +27,6 @@ rosbuild_add_gtest_build_flags(test_robot_pose_ekf)
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf.launch)
 
 # Download needed data file
-rosbuild_download_test_data(http://pr.willowgarage.com/data/robot_pose_ekf/ekf_test.bag test/ekf_test.bag)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/robot_pose_ekf/ekf_test.bag test/ekf_test.bag 490acffaf62c92ef79eb2ecef36d4e03)
 
 endif(CMAKE_SYSTEM_NAME MATCHES "Linux")

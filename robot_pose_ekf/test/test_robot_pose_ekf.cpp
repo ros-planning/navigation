@@ -179,7 +179,11 @@ int main(int argc, char** argv)
 
   init(g_argc, g_argv, "testEKF");
 
-  boost::thread(boost::bind(&ros::spin));
+  boost::thread spinner(boost::bind(&ros::spin));
 
-  return RUN_ALL_TESTS();
+  int res = RUN_ALL_TESTS();
+  spinner.interrupt();
+  spinner.join();
+
+  return res;
 }
