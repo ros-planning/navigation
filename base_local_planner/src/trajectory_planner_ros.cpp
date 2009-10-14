@@ -71,7 +71,7 @@ namespace base_local_planner {
       double pdist_scale, gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta;
       bool holonomic_robot, dwa, simple_attractor, heading_scoring;
       double heading_scoring_timestep;
-      double max_vel_x, min_vel_x, max_vel_th, min_vel_th;
+      double max_vel_x, min_vel_x;
       double backup_vel;
       string world_model_type;
 
@@ -120,8 +120,8 @@ namespace base_local_planner {
 
       double max_rotational_vel;
       private_nh.param("max_rotational_vel", max_rotational_vel, 1.0);
-      max_vel_th = max_rotational_vel;
-      min_vel_th = -1.0 * max_rotational_vel;
+      max_vel_th_ = max_rotational_vel;
+      min_vel_th_ = -1.0 * max_rotational_vel;
       private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
 
       private_nh.param("backup_vel", backup_vel, -0.1);
@@ -147,7 +147,7 @@ namespace base_local_planner {
       tc_ = new TrajectoryPlanner(*world_model_, costmap_, costmap_ros_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_,
           acc_lim_x, acc_lim_y, acc_lim_theta, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
-          max_vel_x, min_vel_x, max_vel_th, min_vel_th, min_in_place_vel_th_, backup_vel,
+          max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
           dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels);
 
       initialized_ = true;
@@ -222,7 +222,10 @@ namespace base_local_planner {
     cmd_vel.linear.x = 0;
     cmd_vel.linear.y = 0;
     double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
-    double v_theta_samp = ang_diff > 0.0 ? std::max(min_in_place_vel_th_, ang_diff) : std::min(-1.0 * min_in_place_vel_th_, ang_diff);
+
+    double v_theta_samp = ang_diff > 0.0 ? std::min(max_vel_th_,
+        std::max(min_in_place_vel_th_, ang_diff)) : std::max(min_vel_th_,
+        std::min(-1.0 * min_in_place_vel_th_, ang_diff));
 
     //we still want to lay down the footprint of the robot and check if the action is legal
     bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw, 

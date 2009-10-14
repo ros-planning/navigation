@@ -206,6 +206,7 @@ namespace base_local_planner {
       ros::Subscriber odom_sub_;
       boost::recursive_mutex odom_lock_;
       bool initialized_;
+      double max_vel_th_, min_vel_th_;
   };
 
 };
