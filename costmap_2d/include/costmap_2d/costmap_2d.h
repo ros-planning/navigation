@@ -342,6 +342,12 @@ namespace costmap_2d {
         return circumscribed_cost_lb_;
       }
 
+      /**
+       * @brief  Save the costmap out to a file
+       * @param file_name The name of the file to save 
+       */
+      void saveMap(std::string file_name);
+
     protected:
       /**
        * @brief  Given an index of a cell in the costmap, place it into a priority queue for obstacle inflation

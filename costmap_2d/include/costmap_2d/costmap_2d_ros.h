@@ -304,6 +304,7 @@ namespace costmap_2d {
         return sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
       }
 
+      std::string name_;
       tf::TransformListener& tf_; ///< @brief Used for transforming point clouds
       laser_geometry::LaserProjection projector_; ///< @brief Used to project laser scans into point clouds
       Costmap2D* costmap_; ///< @brief The underlying costmap to update
@@ -325,6 +326,7 @@ namespace costmap_2d {
       ros::Publisher voxel_pub_;
       boost::recursive_mutex lock_;
       bool map_update_thread_shutdown_;
+      bool save_debug_pgm_;
 
   };
 };

@@ -46,9 +46,9 @@ namespace costmap_2d {
     return x < 0.0 ? -1.0 : 1.0;
   }
 
-  Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : tf_(tf), costmap_(NULL), 
+  Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
-                             initialized_(true), stopped_(false), map_update_thread_shutdown_(false) {
+                             initialized_(true), stopped_(false), map_update_thread_shutdown_(false), save_debug_pgm_(false) {
     ros::NodeHandle nh(name);
     ros::NodeHandle private_nh("~/" + name);
 
@@ -69,6 +69,9 @@ namespace costmap_2d {
 
     private_nh.param("global_frame", global_frame_, std::string("/map"));
     private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
+
+    //check if the user wants to save pgms of the costmap for debugging
+    private_nh.param("save_debug_pgm", save_debug_pgm_, false);
 
     ros::Time last_error = ros::Time::now();
     std::string tf_error;
@@ -572,6 +575,9 @@ namespace costmap_2d {
 
     //make sure to clear the robot footprint of obstacles at the end
     clearRobotFootprint();
+    
+    if(save_debug_pgm_)
+      costmap_->saveMap(name_ + ".pgm");
 
     //if we have an active publisher... we'll update its costmap data
     if(costmap_publisher_->active()){
@@ -783,14 +789,15 @@ namespace costmap_2d {
     if(!costmap_->setConvexPolygonCost(oriented_footprint, costmap_2d::FREE_SPACE))
       return;
 
-    double max_inflation_dist = costmap_->getInflationRadius() + costmap_->getCircumscribedRadius();
+    double max_inflation_dist = 2 * (costmap_->getInflationRadius() + costmap_->getCircumscribedRadius());
 
     //clear all non-lethal obstacles out to the maximum inflation distance of an obstacle in the robot footprint
     costmap_->clearNonLethal(global_pose.getOrigin().x(), global_pose.getOrigin().y(), max_inflation_dist, max_inflation_dist);
 
     //make sure to re-inflate obstacles in the affected region... plus those obstalces that could inflate to have costs in the footprint
     costmap_->reinflateWindow(global_pose.getOrigin().x(), global_pose.getOrigin().y(), 
-        max_inflation_dist + costmap_->getInflationRadius(), max_inflation_dist + costmap_->getInflationRadius(), false);
+        max_inflation_dist + 2 * costmap_->getInflationRadius(), max_inflation_dist + 2 * costmap_->getInflationRadius(), false);
+
   }
 
 };

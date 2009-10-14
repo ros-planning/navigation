@@ -333,8 +333,11 @@ namespace costmap_2d{
     //if we raytrace X meters out... we must re-inflate obstacles within the containing square of that circle
     double inflation_window_size = 2 * (max_raytrace_range_ + inflation_radius_);
 
-    //reset the inflation window.. clears all costs except lethal costs and adds them to the queue for re-propagation
-    resetInflationWindow(robot_x, robot_y, inflation_window_size, inflation_window_size, inflation_queue_);
+    //clear all non-lethal obstacles in preparation for re-inflation
+    clearNonLethal(robot_x, robot_y, inflation_window_size, inflation_window_size);
+
+    //reset the inflation window
+    resetInflationWindow(robot_x, robot_y, inflation_window_size + 2 * inflation_radius_, inflation_window_size + 2 * inflation_radius_, inflation_queue_, false);
 
     //now we also want to add the new obstacles we've received to the cost map
     updateObstacles(observations, inflation_queue_);
@@ -349,7 +352,7 @@ namespace costmap_2d{
     //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
     ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
 
-    //reset the inflation window.. clears all costs except lethal costs and adds them to the queue for re-propagation
+    //reset the inflation window.. adds all lethal costs to the queue for re-propagation
     resetInflationWindow(wx, wy, w_size_x, w_size_y, inflation_queue_, clear);
 
     //inflate the obstacles
@@ -795,6 +798,39 @@ namespace costmap_2d{
     if(cost < INSCRIBED_INFLATED_OBSTACLE && cost >= circumscribed_cost_lb_)
       return true;
     return false;
+  }
+
+  void Costmap2D::saveMap(std::string file_name){
+    FILE *fp = fopen(file_name.c_str(), "w");
+
+    if(!fp){
+      ROS_WARN("Can't open file %s", file_name.c_str());
+      return;
+    }
+
+    fprintf(fp, "P2\n%d\n%d\n%d\n", size_x_, size_y_, 0xff); 
+    for(unsigned int iy = 0; iy < size_y_; iy++) {
+      for(unsigned int ix = 0; ix < size_x_; ix++) {
+        unsigned char cost = getCost(ix,iy);
+        if (cost == LETHAL_OBSTACLE) {
+          fprintf(fp, "255 ");
+        } 
+        else if (cost == NO_INFORMATION){
+          fprintf(fp, "180 ");
+        }
+        else if (cost == INSCRIBED_INFLATED_OBSTACLE ) {
+          fprintf(fp, "128 ");
+        } 
+        else if (cost > 0){
+          fprintf(fp, "50 ");
+        }
+        else {
+          fprintf(fp, "0 ");
+        }
+      }
+      fprintf(fp, "\n");
+    }
+    fclose(fp);
   }
 
 };
