@@ -8,7 +8,7 @@
 
   <rosparam file="$(find costmap_2d)/test/costmap_params.yaml" command="load" ns="simple_driving_test/test_costmap" />
   <test time-limt="180" test-name="simple_driving_test" pkg="costmap_2d" type="costmap_tester">
-    <param name="wait_time" value="10.0" />
+    <param name="wait_time" value="50.0" />
   </test>
 
 </launch>
