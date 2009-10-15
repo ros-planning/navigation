@@ -4,7 +4,7 @@
   <node name="rosplay" pkg="rosrecord" type="rosplay"
     args="-s 5 -r 1 -b 10 $(find costmap_2d)/test/simple_driving_test.bag" />
 
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find willow_maps)/willow-full-0.025.pgm 0.025" />
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find costmap_2d)/test/willow-full-0.025.pgm 0.025" />
 
   <rosparam file="$(find costmap_2d)/test/costmap_params.yaml" command="load" ns="simple_driving_test/test_costmap" />
   <test time-limt="300" test-name="simple_driving_test" pkg="costmap_2d" type="costmap_tester">
