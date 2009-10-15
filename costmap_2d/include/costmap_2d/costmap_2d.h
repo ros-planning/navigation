@@ -57,6 +57,7 @@ namespace costmap_2d {
    * @brief A 2D costmap provides a mapping between points in the world and their associated "costs".
    */
   class Costmap2D {
+    friend class CostmapTester; //Need this for gtest to work correctly
     public:
       /**
        * @brief  Constructor for a costmap
