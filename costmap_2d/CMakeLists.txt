@@ -19,5 +19,5 @@ rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_dr
 
 rosbuild_add_rostest(test/simple_driving_test.xml)
 
-#rosbuild_add_gtest(test/module_tests test/module_tests.cpp)
-#target_link_libraries(test/module_tests costmap_2d)
+rosbuild_add_gtest(test/module_tests test/module_tests.cpp)
+target_link_libraries(test/module_tests costmap_2d)
