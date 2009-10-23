@@ -16,6 +16,7 @@ rospack_add_executable(test/costmap_tester test/costmap_tester.cpp)
 target_link_libraries(test/costmap_tester costmap_2d gtest)
 
 rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test.bag test/simple_driving_test.bag)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm)
 
 rosbuild_add_rostest(test/simple_driving_test.xml)
 

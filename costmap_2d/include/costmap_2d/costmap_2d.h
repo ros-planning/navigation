@@ -344,7 +344,7 @@ namespace costmap_2d {
       }
 
       /**
-       * @brief  Save the costmap out to a file
+       * @brief  Save the costmap out to a pgm file
        * @param file_name The name of the file to save 
        */
       void saveMap(std::string file_name);
@@ -368,7 +368,7 @@ namespace costmap_2d {
           double distance = distanceLookup(mx, my, src_x, src_y);
 
           //we only want to put the cell in the queue if it is within the inflation radius of the obstacle point
-          if(distance >= cell_inflation_radius_)
+          if(distance > cell_inflation_radius_)
             return;
 
           //assign the cost associated with the distance from an obstacle to the cell

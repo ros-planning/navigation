@@ -173,58 +173,9 @@ TEST(costmap, testResetForStaticMap){
 }
 
 /**
- * Basic testing for observation buffer
-TEST(costmap, test15){
-  double keep_alive = 10.0;
-  double refresh_interval = 0.02; // 200 ms
-  tf::TransformListener tf;
-  ObservationBuffer buffer("Foo", keep_alive, refresh_interval, 0.0, MAX_Z, OBSTACLE_RANGE, RAYTRACE_RANGE, tf, "map", "map");
-
-  // Initially it should be false
-  ASSERT_EQ(buffer.isCurrent(), false);
-
-  geometry_msgs::Point origin; // Map origin
-  origin.x = 0;
-  origin.y = 0;
-  origin.z = 0;
-
-  ros::Time epoch; // Beginning of time
-
-  // Buffer a point cloud with a time stamp that is very old. It should still not be current
-  sensor_msgs::PointCloud* p0 = new sensor_msgs::PointCloud();
-  p0->set_points_size(1);
-  p0->points[0].x = 50;
-  p0->points[0].y = 50;
-  p0->points[0].z = MAX_Z;
-  p0->header.stamp = epoch;
-  p0->header.frame_id = "map";
-  buffer.bufferCloud(*p0);
-  // Up to date - ignores the time stamp.
-  ASSERT_EQ(buffer.isCurrent(), true);
-
-  // Now buffer another which has a current time stamp
-  sensor_msgs::PointCloud* p1 = new sensor_msgs::PointCloud();
-  p1->set_points_size(1);
-  p1->points[0].x = 50;
-  p1->points[0].y = 50;
-  p1->points[0].z = MAX_Z;
-  p1->header.stamp = ros::Time::now();
-  p1->header.frame_id = "map";
-  buffer.bufferCloud(*p1);
-  ASSERT_EQ(buffer.isCurrent(), true);
-
-  // Now go again after sleeping for a bit too long - 300 ms
-  ros::Time oldValue = ros::Time::now();
-  ros::Duration excessiveSleep(0, 300000000);
-  excessiveSleep.sleep();
-  ASSERT_EQ(buffer.isCurrent(), false);
-}
- */
-
-/**
  * Test for the cost function correctness with a larger range and different values
  */
-TEST(costmap, test14){
+TEST(costmap, testCostFunctionCorrectness){
   Costmap2D map(100, 100, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS * 5.0, ROBOT_RADIUS * 8.0, ROBOT_RADIUS * 10.5, 
       100.0, MAX_Z, 100.0, 25, EMPTY_100_BY_100, THRESHOLD);
 
@@ -293,7 +244,7 @@ TEST(costmap, test14){
 /**
  * Test for wave interference
  */
-TEST(costmap, test12){
+TEST(costmap, testWaveInterference){
   // Start with an empty map
   Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS * 2, ROBOT_RADIUS * 3.01,
       10.0, MAX_Z * 2, 10.0, 1, EMPTY_10_BY_10, THRESHOLD);
@@ -339,7 +290,7 @@ TEST(costmap, test12){
 /**
  * Test for ray tracing free space
  */
-TEST(costmap, test0){
+TEST(costmap, testRaytracing){
   Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
       10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
@@ -356,7 +307,7 @@ TEST(costmap, test0){
   p.z = MAX_Z;
 
   Observation obs(p, cloud, 100.0, 100.0);
-  std::vector<Observation> obsBuf, empty;
+  std::vector<Observation> obsBuf;
   obsBuf.push_back(obs);
 
   map.updateWorld(0, 0, obsBuf, obsBuf);
@@ -387,7 +338,7 @@ void indexToWorld(Costmap2D& map, unsigned int index, double& wx, double& wy){
   map.mapToWorld(mx, my, wx, wy);
 }
 
-TEST(costmap, test1){
+TEST(costmap, testStaticMap){
   Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
       10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
@@ -456,9 +407,11 @@ TEST(costmap, test1){
 
 /**
  * Verify that dynamic obstacles are added
+ */
 
-TEST(costmap, test3){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD);
+TEST(costmap, testDynamicObstacles){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
   // Add a point cloud and verify its insertion. There should be only one new one
   sensor_msgs::PointCloud cloud;
@@ -470,25 +423,41 @@ TEST(costmap, test3){
   cloud.points[2].x = 0;
   cloud.points[2].y = 0;
 
-  std::vector<unsigned int> updates;
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, cloud, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
+
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+
   std::vector<unsigned int> ids;
-  map.updateDynamicObstacles(cloud, updates);
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE){
+        ids.push_back(map.getIndex(i, j));
+      }
+    }
+  }
 
   // Should now have 1 insertion and no deletions
-  ASSERT_EQ(updates.size(), 1);
-  map.getOccupiedCellDataIndexList(ids);
-  ASSERT_EQ(ids.size(), 21);
+  ASSERT_EQ(ids.size(), (unsigned int)21);
 
   // Repeating the call - we should see no insertions or deletions
-  map.updateDynamicObstacles(cloud, updates);
-  ASSERT_EQ(updates.empty(), true);
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+  ASSERT_EQ(ids.size(), (unsigned int)21);
 }
- */
 
 /**
  * Verify that if we add a point that is already a static obstacle we do not end up with a new ostacle
-TEST(costmap, test4){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD);
+ */
+TEST(costmap, testMultipleAdditions){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
   // A point cloud with one point that falls within an existing obstacle
   sensor_msgs::PointCloud cloud;
@@ -496,17 +465,36 @@ TEST(costmap, test4){
   cloud.points[0].x = 7;
   cloud.points[0].y = 2;
 
-  std::vector<unsigned int> updates;
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, cloud, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
+
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+
   std::vector<unsigned int> ids;
-  map.updateDynamicObstacles(cloud, updates);
-  ASSERT_EQ(updates.empty(), true);
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE){
+        ids.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  ASSERT_EQ(ids.size(), (unsigned int)20);
 }
- */
 
 /**
  * Make sure we ignore points outside of our z threshold
-TEST(costmap, test6){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD, MAX_Z, MAX_Z, MAX_Z);
+ */
+TEST(costmap, testZThreshold){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
   // A point cloud with 2 points falling in a cell with a non-lethal cost
   sensor_msgs::PointCloud c0;
@@ -518,23 +506,48 @@ TEST(costmap, test6){
   c0.points[1].y = 5;
   c0.points[1].z = 1.2;
 
-  std::vector<unsigned int> updates;
-  map.updateDynamicObstacles(c0, updates);
-  ASSERT_EQ(updates.size(), 1);
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, c0, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
+
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+
+  std::vector<unsigned int> ids;
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE){
+        ids.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  ASSERT_EQ(ids.size(), (unsigned int)21);
 }
- */
 
 /**
  * Test inflation for both static and dynamic obstacles
+ */
 
-TEST(costmap, test7){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD, MAX_Z, MAX_Z, MAX_Z,
-		ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS);
-
+TEST(costmap, testInflation){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
   // Verify that obstacles correctly identified
   std::vector<unsigned int> occupiedCells;
-  map.getOccupiedCellDataIndexList(occupiedCells);
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+        occupiedCells.push_back(map.getIndex(i, j));
+      }
+    }
+  }
 
   // There should be no duplicates
   std::set<unsigned int> setOfCells;
@@ -542,30 +555,46 @@ TEST(costmap, test7){
     setOfCells.insert(i);
 
   ASSERT_EQ(setOfCells.size(), occupiedCells.size());
-  ASSERT_EQ(setOfCells.size(), 48);
-
-  const unsigned char* costData = map.getMap();
+  ASSERT_EQ(setOfCells.size(), (unsigned int)48);
 
   // Iterate over all id's and verify they are obstacles
   for(std::vector<unsigned int>::const_iterator it = occupiedCells.begin(); it != occupiedCells.end(); ++it){
     unsigned int ind = *it;
     unsigned int x, y;
-    map.IND_MC(ind, x, y);
-    ASSERT_EQ(find(occupiedCells, map.MC_IND(x, y)), true);
-    ASSERT_EQ(costData[ind] == Costmap2D::LETHAL_OBSTACLE || costData[ind] == Costmap2D::INSCRIBED_INFLATED_OBSTACLE, true);
+    map.indexToCells(ind, x, y);
+    ASSERT_EQ(find(occupiedCells, map.getIndex(x, y)), true);
+    ASSERT_EQ(map.getCost(x, y) == costmap_2d::LETHAL_OBSTACLE || map.getCost(x, y) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
   }
 
   // Set an obstacle at the origin and observe insertions for it and its neighbors
-  std::vector<unsigned int> updates;
   sensor_msgs::PointCloud c0;
   c0.set_points_size(1);
   c0.points[0].x = 0;
   c0.points[0].y = 0;
   c0.points[0].z = 0.4;
-  map.updateDynamicObstacles(c0, updates);
+
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, c0, 100.0, 100.0);
+  std::vector<Observation> obsBuf, empty;
+  obsBuf.push_back(obs);
+
+  map.updateWorld(0, 0, obsBuf, empty);
+
+  occupiedCells.clear();
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+        occupiedCells.push_back(map.getIndex(i, j));
+      }
+    }
+  }
 
   // It and its 2 neighbors makes 3 obstacles
-  ASSERT_EQ(updates.size(), 3);
+  ASSERT_EQ(occupiedCells.size(), (unsigned int)51);
 
   // @todo Rewrite 
   // Add an obstacle at <2,0> which will inflate and refresh to of the other inflated cells
@@ -574,47 +603,82 @@ TEST(costmap, test7){
   c1.points[0].x = 2;
   c1.points[0].y = 0;
   c1.points[0].z = 0.0;
-  map.updateDynamicObstacles(c1, updates);
+
+  geometry_msgs::Point p1;
+  p1.x = 0.0;
+  p1.y = 0.0;
+  p1.z = MAX_Z;
+
+  Observation obs1(p1, c1, 100.0, 100.0);
+  std::vector<Observation> obsBuf1;
+  obsBuf1.push_back(obs1);
+
+  map.updateWorld(0, 0, obsBuf1, empty);
+
+  occupiedCells.clear();
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+        occupiedCells.push_back(map.getIndex(i, j));
+      }
+    }
+  }
 
   // Now we expect insertions for it, and 2 more neighbors, but not all 5. Free space will propagate from
   // the origin to the target, clearing the point at <0, 0>, but not over-writing the inflation of the obstacle
   // at <0, 1>
-  ASSERT_EQ(updates.size(), 3);
+  ASSERT_EQ(occupiedCells.size(), (unsigned int)54);
 
 
   // Add an obstacle at <1, 9>. This will inflate obstacles around it
-  std::vector<sensor_msgs::PointCloud*> cv2;
   sensor_msgs::PointCloud c2;
-  cv2.push_back(&c2);
   c2.set_points_size(1);
   c2.points[0].x = 1;
   c2.points[0].y = 9;
   c2.points[0].z = 0.0;
-  map.updateDynamicObstacles(0.0, 0.0, cv2); //, updates); //WINDOW_LENGTH + 2
-  ASSERT_EQ(map.getCost(1, 9), Costmap2D::LETHAL_OBSTACLE);
-  ASSERT_EQ(map.getCost(0, 9), Costmap2D::INSCRIBED_INFLATED_OBSTACLE);
-  ASSERT_EQ(map.getCost(2, 9), Costmap2D::INSCRIBED_INFLATED_OBSTACLE);
+
+  geometry_msgs::Point p2;
+  p2.x = 0.0;
+  p2.y = 0.0;
+  p2.z = MAX_Z;
+
+  Observation obs2(p2, c2, 100.0, 100.0);
+  std::vector<Observation> obsBuf2;
+  obsBuf2.push_back(obs2);
+
+  map.updateWorld(0, 0, obsBuf2, empty);
+
+  ASSERT_EQ(map.getCost(1, 9), costmap_2d::LETHAL_OBSTACLE);
+  ASSERT_EQ(map.getCost(0, 9), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
+  ASSERT_EQ(map.getCost(2, 9), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
 
   // Add an obstacle and verify that it over-writes its inflated status
-  std::vector<sensor_msgs::PointCloud*> cv3;
   sensor_msgs::PointCloud c3;
-  cv3.push_back(&c3);
   c3.set_points_size(1);
   c3.points[0].x = 0;
   c3.points[0].y = 9;
   c3.points[0].z = 0.0;
-  map.updateDynamicObstacles(0.0, 0.0, cv3); //, updates); //WINDOW_LENGTH + 3
-  ASSERT_EQ(map.getCost(0, 9), Costmap2D::LETHAL_OBSTACLE);
+
+  geometry_msgs::Point p3;
+  p3.x = 0.0;
+  p3.y = 0.0;
+  p3.z = MAX_Z;
+
+  Observation obs3(p3, c3, 100.0, 100.0);
+  std::vector<Observation> obsBuf3;
+  obsBuf3.push_back(obs3);
+
+  map.updateWorld(0, 0, obsBuf3, empty);
+
+  ASSERT_EQ(map.getCost(0, 9), costmap_2d::LETHAL_OBSTACLE);
 }
- */
 
 /**
  * Test specific inflation scenario to ensure we do not set inflated obstacles to be raw obstacles.
-TEST(costmap, test8){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD, MAX_Z, MAX_Z, MAX_Z, 
-		ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS);
-
-  std::vector<unsigned int> updates;
+ */
+TEST(costmap, testInflation2){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
   // Creat a small L-Shape all at once
   sensor_msgs::PointCloud c0;
@@ -629,16 +693,25 @@ TEST(costmap, test8){
   c0.points[2].y = 2;
   c0.points[2].z = MAX_Z;
 
-  map.updateDynamicObstacles(c0, updates);
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
 
-  ASSERT_EQ(map.getCost(3, 2), Costmap2D::INSCRIBED_INFLATED_OBSTACLE);  
-  ASSERT_EQ(map.getCost(3, 3), Costmap2D::INSCRIBED_INFLATED_OBSTACLE);
+  Observation obs(p, c0, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
+
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+
+  ASSERT_EQ(map.getCost(3, 2), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);  
+  ASSERT_EQ(map.getCost(3, 3), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
 }
- */
 
 /**
  * Test inflation behavior, starting with an empty map
-TEST(costmap, test9){
+ */
+TEST(costmap, testInflation3){
   std::vector<unsigned char> mapData;
   for(unsigned int i=0; i< GRID_WIDTH; i++){
     for(unsigned int j = 0; j < GRID_HEIGHT; j++){
@@ -646,13 +719,21 @@ TEST(costmap, test9){
     }
   }
 
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, mapData, RESOLUTION, THRESHOLD, MAX_Z, MAX_Z, MAX_Z, 
-		ROBOT_RADIUS * 3, ROBOT_RADIUS * 2, ROBOT_RADIUS);
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS * 2, ROBOT_RADIUS * 3, 
+      10.0, MAX_Z, 10.0, 1, mapData, THRESHOLD);
 
   // There should be no occupied cells
   std::vector<unsigned int> ids;
-  map.getOccupiedCellDataIndexList(ids);
-  ASSERT_EQ(ids.size(), 0);
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+        ids.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  ASSERT_EQ(ids.size(), (unsigned int)0);
 
   // Add an obstacle at 5,5
   sensor_msgs::PointCloud c0;
@@ -661,152 +742,120 @@ TEST(costmap, test9){
   c0.points[0].y = 5;
   c0.points[0].z = MAX_Z;
 
-  std::vector<unsigned int> updates;
-  map.updateDynamicObstacles(c0, updates);
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
 
-  ASSERT_EQ(updates.size(), 45);
+  Observation obs(p, c0, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
 
-  map.getOccupiedCellDataIndexList(ids);
-  ASSERT_EQ(ids.size(), 5);
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) != costmap_2d::FREE_SPACE){
+        ids.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  ASSERT_EQ(ids.size(), (unsigned int)29);
+
+  ids.clear();
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+        ids.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  ASSERT_EQ(ids.size(), (unsigned int)5);
 
   // Update again - should see no change
-  map.updateDynamicObstacles(c0, updates);
-  ASSERT_EQ(updates.size(), 0);
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+
+  ids.clear();
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) != costmap_2d::FREE_SPACE){
+        ids.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+  
+  ASSERT_EQ(ids.size(), (unsigned int)29);
 }
- */
-
-/**
- * Test for the cost map accessor
-TEST(costmap, test10){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD, MAX_Z, MAX_Z, ROBOT_RADIUS);
-
-  // A window around a robot in the top left
-  CostMapAccessor ma(map, 5, 0, 0);
-  double wx, wy;
-
-  // Origin
-  ma.MC_WC(0, 0, wx, wy);
-  ASSERT_EQ(wx, 0.5);
-  ASSERT_EQ(wy, 0.5);
-
-
-  // Max in x and y
-  ma.updateForRobotPosition(9.5, 9.5);
-  ma.MC_WC(0, 0, wx, wy);
-  ASSERT_EQ(wx, 4.5);
-  ASSERT_EQ(wy, 4.5);
-
-  // Off the map in x - assume it ignores the change
-  ma.updateForRobotPosition(10.5, 9.5);
-  ma.MC_WC(0, 0, wx, wy);
-  ASSERT_EQ(wx, 4.5);
-  ASSERT_EQ(wy, 4.5);
-
-  // Off the map in y - assume it ignores the change
-  ma.updateForRobotPosition(9.5, 10.5);
-  ma.MC_WC(0, 0, wx, wy);
-  ASSERT_EQ(wx, 4.5);
-  ASSERT_EQ(wy, 4.5);
-
-  ASSERT_EQ(map.getCircumscribedCostLowerBound(), ma.getCircumscribedCostLowerBound());
-}
- */
 
 /**
  * Test for ray tracing free space
+ */
 
-TEST(costmap, test11){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD, MAX_Z * 2, MAX_Z, MAX_Z, ROBOT_RADIUS, 0, 0, 1, 100.0, 100.0, 7.0);
+TEST(costmap, testRaytracing2){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      100.0, MAX_Z, 100.0, 1, MAP_10_BY_10, THRESHOLD);
 
-  // The initial position will be <0,0> by default. So if we add an obstacle at 9,9, we would expect cells
-  // <0, 0> thru <8, 8> to be free
+  // The sensor origin will be <0,0>. So if we add an obstacle at 9,9, we would expect cells
+  // <0, 0> thru <8, 8> to be traced through
   sensor_msgs::PointCloud c0;
   c0.set_points_size(1);
   c0.points[0].x = 9.5;
   c0.points[0].y = 9.5;
   c0.points[0].z = MAX_Z;
-  std::vector<unsigned int> updates;
-  map.updateDynamicObstacles(c0, updates);
 
-  // Actual hit point and 3 cells along the diagonal. Note that neigbors are unchanged because they have higher cost in the static map (NO_INFORMATION).
-  // I considered allowing the cost function to over-ride this case but we quickly find that the planner will plan through walls once it gets out of sensor range.
-  // Note that this will not be the case when we persist the changes to the static map more aggressively since we will retain high cost obstacle data that 
-  // has not been ray tarced thru. If that is the case, this update count would change to 6
-  ASSERT_EQ(updates.size(), 5);
+  geometry_msgs::Point p;
+  p.x = 0.5;
+  p.y = 0.5;
+  p.z = MAX_Z;
+
+  Observation obs(p, c0, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
+
+  std::vector<unsigned int> obstacles;
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE){
+        obstacles.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  unsigned int obs_before = obstacles.size();
+
+  map.updateWorld(0, 0, obsBuf, obsBuf);
+
+  obstacles.clear();
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE){
+        obstacles.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  //Two obstacles shoulb be removed from the map by raytracing
+  ASSERT_EQ(obstacles.size(), obs_before - 2);
 
 
-  // many cells will have been switched to free space along the diagonal except for those inflated in the update
-  unsigned char test[9]= {0, 0, 0, 126, 126, 0, 0, 126, 254};
-  for(unsigned int i=0; i < 9; i++)
+  // many cells will have been switched to free space along the diagonal except
+  // for those inflated in the update.. tests that inflation happens properly
+  // after raytracing
+  unsigned char test[10]= {0, 0, 0, 253, 253, 0, 0, 253, 253, 254};
+  for(unsigned int i=0; i < 10; i++)
     ASSERT_EQ(map.getCost(i, i), test[i]);
 }
-
-
-
-bool compareFiles(std::string a, std::string b) {
-  FILE *test, *compare;
-
-  test = fopen(a.c_str(), "r");
-  compare = fopen(b.c_str(), "r");
-  if (!test) {
-    ROS_INFO("Could not open: %s\n", a.c_str());
-    return false;
-  }
-  if (!compare) {
-    ROS_INFO("Could not open: %s\n", b.c_str());
-    return false;
-  }
-
-  while (1) {
-    char out = getc(test);
-    char com = getc(compare);
-    if (out == EOF && com == EOF) {
-      fclose(test);
-      fclose(compare);
-      return true;
-    }
-    if (out != com) {
-      fclose(test);
-      fclose(compare);
-      return false;
-    }
-    if (out == EOF || com == EOF) {
-      fclose(test);
-      fclose(compare);
-      return false;
-    }
-  }
-
-}
- */
-
-
-/**
- * Test for saving.
-
-TEST(costmap, test16){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_10_BY_10, RESOLUTION, THRESHOLD, MAX_Z * 2, MAX_Z, MAX_Z, ROBOT_RADIUS, 0, 0, 1, 100.0, 100.0);
-  map.saveText("testmap.txt");
-  map.saveBinary("testmap.bin");
-  map.savePgm("testmap.pgm");
-  
-  ASSERT_EQ(compareFiles("testmap.txt", "testmap_compare.txt"), true);
-  ASSERT_EQ(compareFiles("testmap.bin", "testmap_compare.bin"), true);
-  ASSERT_EQ(compareFiles("testmap.pgm", "testmap_compare.pgm"), true);
-}
- */
-
-
-
-
-
 
 /**
  * Within a certian radius of the robot, the cost map most propagate obstacles. This
  * is to avoid a case where a hit on a far obstacle clears inscribed radius around a
  * near one.
+ */
 
-TEST(costmap, test17){
+TEST(costmap, testTrickyPropagation){
   const unsigned char MAP_HALL_CHAR[10 * 10] = {
     0,   0, 0,   0,   0, 0,   0, 0, 0, 0,
     254, 0, 0,   0,   0, 0,   0, 0, 0, 0,
@@ -824,16 +873,12 @@ TEST(costmap, test17){
     MAP_HALL.push_back(MAP_HALL_CHAR[i]);
   }
 
-
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, MAP_HALL, RESOLUTION, 
-		THRESHOLD, MAX_Z * 2, MAX_Z, MAX_Z, ROBOT_RADIUS, 0, 0, 1, 100.0, 100.0, 7.0);
-
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      100.0, MAX_Z, 100.0, 1, MAP_HALL, THRESHOLD);
 
 
   //Add a dynamic obstacle
-  std::vector<sensor_msgs::PointCloud*> cv2;
   sensor_msgs::PointCloud c2;
-  cv2.push_back(&c2);
   c2.set_points_size(3);
   //Dynamic obstacle that raytaces.
   c2.points[0].x = 7.0;
@@ -848,19 +893,28 @@ TEST(costmap, test17){
   c2.points[2].x = 6.0;
   c2.points[2].y = 3.0;
   c2.points[2].z = 1.0;
-  map.updateDynamicObstacles(0.0, 0.0, cv2);
 
+  geometry_msgs::Point p2;
+  p2.x = 0.5;
+  p2.y = 0.5;
+  p2.z = MAX_Z;
+
+  Observation obs2(p2, c2, 100.0, 100.0);
+  std::vector<Observation> obsBuf2;
+  obsBuf2.push_back(obs2);
+
+  map.updateWorld(0, 0, obsBuf2, obsBuf2);
 
   const unsigned char MAP_HALL_CHAR_TEST[10 * 10] = { 
-    126, 254, 126,   0,   0,   0,   0,   0,   0,   0,
-      0, 126,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0, 126,   0,   0,   0,   0,   0,
-      0,   0,   0, 126, 254, 126,   0,   0,   0,   0,
-      0,   0,   0,   0, 126,   0,   0, 126,   0,   0,
-      0,   0,   0, 126,   0,   0, 126, 254, 126,   0,
-      0,   0, 126, 254, 126,   0,   0, 126, 126,   0,
-      0,   0,   0, 126,   0,   0,   0, 126, 254, 126,
-      0,   0,   0,   0,   0,   0,   0,   0, 126,   0,
+    253, 254, 253,   0,   0,   0,   0,   0,   0,   0,
+      0, 253,   0,   0,   0,   0,   0,   0,   0,   0,
+      0,   0,   0,   0, 253,   0,   0,   0,   0,   0,
+      0,   0,   0, 253, 254, 253,   0,   0,   0,   0,
+      0,   0,   0,   0, 253,   0,   0, 253,   0,   0,
+      0,   0,   0, 253,   0,   0, 253, 254, 253,   0,
+      0,   0, 253, 254, 253,   0,   0, 253, 253,   0,
+      0,   0,   0, 253,   0,   0,   0, 253, 254, 253,
+      0,   0,   0,   0,   0,   0,   0,   0, 253,   0,
       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
   };
 
@@ -869,27 +923,34 @@ TEST(costmap, test17){
     ASSERT_EQ(map.getCost(i / 10, i % 10), MAP_HALL_CHAR_TEST[i]);
   }
 
-  std::vector<sensor_msgs::PointCloud*> cv;
   sensor_msgs::PointCloud c;
-  cv.push_back(&c);
   c.set_points_size(1);
   //Dynamic obstacle that raytaces the one at (3.0, 4.0).
   c.points[0].x = 4.0;
   c.points[0].y = 5.0;
   c.points[0].z = 1.0;
-  map.updateDynamicObstacles(0.0, 0.0, cv);
 
+  geometry_msgs::Point p3;
+  p3.x = 0.5;
+  p3.y = 0.5;
+  p3.z = MAX_Z;
+
+  Observation obs3(p3, c, 100.0, 100.0);
+  std::vector<Observation> obsBuf3;
+  obsBuf3.push_back(obs3);
+
+  map.updateWorld(0, 0, obsBuf3, obsBuf3);
 
   const unsigned char MAP_HALL_CHAR_TEST2[10 * 10] = { 
-    126, 254, 126,   0,   0,   0,   0,   0,   0,   0,
-      0, 126,   0,   0,   0,   0,   0,   0,   0,   0,
+    253, 254, 253,   0,   0,   0,   0,   0,   0,   0,
+      0, 253,   0,   0,   0,   0,   0,   0,   0,   0,
       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
-      0,   0,   0,   0,   0, 126,   0,   0,   0,   0,
-      0,   0,   0,   0, 126, 254, 126, 126,   0,   0,
-      0,   0,   0, 126,   0, 126, 126, 254, 126,   0,
-      0,   0, 126, 254, 126,   0,   0, 126, 126,   0,
-      0,   0,   0, 126,   0,   0,   0, 126, 254, 126,
-      0,   0,   0,   0,   0,   0,   0,   0, 126,   0,
+      0,   0,   0,   0,   0, 253,   0,   0,   0,   0,
+      0,   0,   0,   0, 253, 254, 253, 253,   0,   0,
+      0,   0,   0, 253,   0, 253, 253, 254, 253,   0,
+      0,   0, 253, 254, 253,   0,   0, 253, 253,   0,
+      0,   0,   0, 253,   0,   0,   0, 253, 254, 253,
+      0,   0,   0,   0,   0,   0,   0,   0, 253,   0,
       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
   };
 
@@ -897,11 +958,8 @@ TEST(costmap, test17){
   for (int i = 0; i < 10 * 10; i++) {
     ASSERT_EQ(map.getCost(i / 10, i % 10), MAP_HALL_CHAR_TEST2[i]);
   }
-
-
 }
 
- */
 
 
 int main(int argc, char** argv){

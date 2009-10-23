@@ -64,12 +64,12 @@ namespace costmap_2d{
     circumscribed_cost_lb_ = computeCost(cell_circumscribed_radius_);
 
     //based on the inflation radius... compute distance and cost caches
-    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 1];
-    cached_distances_ = new double*[cell_inflation_radius_ + 1];
-    for(unsigned int i = 0; i <= cell_inflation_radius_; ++i){
-      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 1];
-      cached_distances_[i] = new double[cell_inflation_radius_ + 1];
-      for(unsigned int j = 0; j <= cell_inflation_radius_; ++j){
+    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
         cached_distances_[i][j] = sqrt(i*i + j*j);
         cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
       }
@@ -124,14 +124,14 @@ namespace costmap_2d{
     if(markers_ != NULL) delete[] markers_;
 
     if(cached_distances_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_; ++i){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
         if(cached_distances_[i] != NULL) delete[] cached_distances_[i];
       }
       delete[] cached_distances_;
     }
 
     if(cached_costs_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_; ++i){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
         if(cached_costs_[i] != NULL) delete[] cached_costs_[i];
       }
       delete[] cached_costs_;
@@ -175,12 +175,12 @@ namespace costmap_2d{
     weight_ = map.weight_;
 
     //copy the cost and distance kernels
-    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 1];
-    cached_distances_ = new double*[cell_inflation_radius_ + 1];
-    for(unsigned int i = 0; i <= cell_inflation_radius_; ++i){
-      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 1];
-      cached_distances_[i] = new double[cell_inflation_radius_ + 1];
-      for(unsigned int j = 0; j <= cell_inflation_radius_; ++j){
+    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
         cached_distances_[i][j] = map.cached_distances_[i][j];
         cached_costs_[i][j] = map.cached_costs_[i][j];
       }
@@ -203,14 +203,14 @@ namespace costmap_2d{
     if(markers_ != NULL) delete[] markers_;
 
     if(cached_distances_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_; ++i){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
         if(cached_distances_[i] != NULL) delete[] cached_distances_[i];
       }
       delete[] cached_distances_;
     }
 
     if(cached_costs_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_; ++i){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
         if(cached_costs_[i] != NULL) delete[] cached_costs_[i];
       }
       delete[] cached_costs_;
@@ -281,7 +281,7 @@ namespace costmap_2d{
     if(!worldToMap(start_point_x, start_point_y, start_x, start_y) || !worldToMap(end_point_x, end_point_y, end_x, end_y))
       return;
 
-    ROS_ASSERT(end_x > start_x && end_y > start_y);
+    ROS_ASSERT(end_x >= start_x && end_y >= start_y);
     unsigned int cell_size_x = end_x - start_x;
     unsigned int cell_size_y = end_y - start_y;
 
