@@ -35,6 +35,7 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <costmap_2d/costmap_2d.h>
+#include <cstdio>
 
 using namespace std;
 
