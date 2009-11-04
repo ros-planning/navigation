@@ -42,6 +42,10 @@
 #include <ros/ros.h>
 
 namespace clear_costmap_recovery{
+  /**
+   * @class ClearCostmapRecovery
+   * @brief A recovery behavior that reverts the navigation stack's costmaps to the static map outside of a user-specified region.
+   */
   class ClearCostmapRecovery : public nav_core::RecoveryBehavior {
     public:
       /**

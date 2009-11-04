@@ -46,6 +46,10 @@
 #include <angles/angles.h>
 
 namespace rotate_recovery{
+  /**
+   * @class RotateRecovery
+   * @brief A recovery behavior that rotates the robot in-place to attempt to clear out space
+   */
   class RotateRecovery : public nav_core::RecoveryBehavior {
     public:
       /**
