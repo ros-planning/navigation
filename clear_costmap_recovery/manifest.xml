@@ -1,0 +1,23 @@
+<package>
+  <description brief="clear_costmap_recovery">
+
+     clear_costmap_recovery
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/clear_costmap_recovery</url>
+  <depend package="roscpp"/>
+  <depend package="tf"/>
+  <depend package="costmap_2d"/>
+  <depend package="nav_core"/>
+  <depend package="pluginlib"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lclear_costmap_recovery" />
+    <nav_core plugin="${prefix}/ccr_plugin.xml" />
+  </export>
+</package>
+
+

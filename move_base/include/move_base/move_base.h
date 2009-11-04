@@ -43,6 +43,7 @@
 
 #include <nav_core/base_local_planner.h>
 #include <nav_core/base_global_planner.h>
+#include <nav_core/recovery_behavior.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
@@ -117,6 +118,18 @@ namespace move_base {
       bool makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
+       * @brief  Load the recovery behaviors for the navigation stack from the parameter server
+       * @param node The ros::NodeHandle to be used for loading parameters 
+       * @return True if the recovery behaviors were loaded successfully, false otherwise
+       */
+      bool loadRecoveryBehaviors(ros::NodeHandle node);
+
+      /**
+       * @brief  Loads the default recovery behaviors for the navigation stack
+       */
+      void loadDefaultRecoveryBehaviors();
+
+      /**
        * @brief  Resets the costmaps to the static map outside a given window
        * @param size_x The x size of the window
        * @param size_y The y size of the window
@@ -163,6 +176,9 @@ namespace move_base {
       nav_core::BaseGlobalPlanner* planner_;
       std::string robot_base_frame_, global_frame_;
 
+      std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
+      unsigned int recovery_index_;
+
       tf::Stamped<tf::Pose> global_pose_;
       double controller_frequency_, inscribed_radius_, circumscribed_radius_;
       double planner_patience_, controller_patience_;
@@ -178,6 +194,7 @@ namespace move_base {
       ros::Time last_valid_plan_, last_valid_control_;
       pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_;
       pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
+      pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
   };
 };

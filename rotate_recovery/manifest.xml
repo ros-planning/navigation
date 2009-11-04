@@ -1,0 +1,27 @@
+<package>
+  <description brief="rotate_recovery">
+
+     rotate_recovery
+
+  </description>
+  <author>Eitan Marder-Eppstein</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rotate_recovery</url>
+  <depend package="roscpp"/>
+  <depend package="nav_core"/>
+  <depend package="tf"/>
+  <depend package="costmap_2d"/>
+  <depend package="geometry_msgs"/>
+  <depend package="base_local_planner"/>
+  <depend package="pluginlib"/>
+  <depend package="angles"/>
+
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrotate_recovery" />
+    <nav_core plugin="${prefix}/rotate_plugin.xml" />
+  </export>
+
+</package>
+
+

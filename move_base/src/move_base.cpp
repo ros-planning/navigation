@@ -43,7 +43,8 @@ namespace move_base {
     as_(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false),
     tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
     planner_(NULL), bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
-    blp_loader_("nav_core", "nav_core::BaseLocalPlanner"){
+    blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
+    recovery_loader_("nav_core", "nav_core::RecoveryBehavior"){
 
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
@@ -87,7 +88,7 @@ namespace move_base {
     try {
       planner_ = bgp_loader_.createClassInstance(global_planner);
       planner_->initialize(global_planner, planner_costmap_ros_);
-    } catch (const std::runtime_error& ex)
+    } catch (const pluginlib::PluginlibException& ex)
     {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", global_planner.c_str(), ex.what());
       exit(0);
@@ -102,7 +103,7 @@ namespace move_base {
     try {
       tc_ = blp_loader_.createClassInstance(local_planner);
       tc_->initialize(local_planner, &tf_, controller_costmap_ros_);
-    } catch (const std::runtime_error& ex)
+    } catch (const pluginlib::PluginlibException& ex)
     {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", local_planner.c_str(), ex.what());
       exit(0);
@@ -122,11 +123,16 @@ namespace move_base {
       controller_costmap_ros_->stop();
     }
 
+    //load any user specified recovery behaviors, and if that fails load the defaults
+    if(!loadRecoveryBehaviors(private_nh)){
+      loadDefaultRecoveryBehaviors();
+    }
+
     //initially, we'll need to make a plan
     state_ = PLANNING;
 
-    //the initial clearing state will be to conservatively clear the costmaps
-    clearing_state_ = CONSERVATIVE_RESET;
+    //we'll start executing recovery behaviors at the beginning of our list
+    recovery_index_ = 0;
 
     //we're all set up now so we can start the action server
     as_.start();
@@ -390,7 +396,7 @@ namespace move_base {
           goal = goalToGlobalFrame((*as_.acceptNewGoal()).target_pose);
 
           //we'll make sure that we reset our state for the next execution cycle
-          clearing_state_ = CONSERVATIVE_RESET;
+          recovery_index_ = 0;
           state_ = PLANNING;
 
           //publish the goal point to the visualizer
@@ -479,8 +485,8 @@ namespace move_base {
           last_valid_plan_ = ros::Time::now();
           state_ = CONTROLLING;
 
-          //make sure to reset clearing state since we were able to find a valid plan
-          clearing_state_ = CONSERVATIVE_RESET;
+          //make sure to reset recovery_index_ since we were able to find a valid plan
+          recovery_index_ = 0;
 
         }
         else{
@@ -492,9 +498,6 @@ namespace move_base {
             state_ = CLEARING;
             publishZeroVelocity();
 
-            //if the recovery behavior is not enabled.. we'll just have to abort
-            if(!recovery_behavior_enabled_)
-              clearing_state_ = ABORT;
           }
 
           //we don't want to attempt to control if planning failed
@@ -537,72 +540,23 @@ namespace move_base {
 
         break;
 
-        //we'll try to clear out space with the following actions
+      //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
-        switch(clearing_state_){
-          //first, we'll try resetting the costmaps conservatively to see if we find a plan
-          case CONSERVATIVE_RESET:
-            ROS_DEBUG("In conservative reset state");
-            resetCostmaps(conservative_reset_dist_, conservative_reset_dist_);
-            clearing_state_ = IN_PLACE_ROTATION_1;
-            state_ = PLANNING;
-            break;
-            //next, we'll try an in-place rotation to try to clear out space
-          case IN_PLACE_ROTATION_1:
-            //we need to set the rotation goal for the robot
-            if(clearing_roatation_allowed_ && set180RotationGoal()){
-              clearing_state_ = EXECUTE_ROTATE_1;
-            }
-            else{
-              clearing_state_ = AGGRESSIVE_RESET;
-              state_ = PLANNING;
-            }
-            break;
-          case EXECUTE_ROTATE_1:
-            ROS_DEBUG("In in-place rotation state 1");
-            if(tc_->isGoalReached()){
-              clearing_state_ = IN_PLACE_ROTATION_2;
-            }
-            else if(!rotateRobot()){
-              clearing_state_ = AGGRESSIVE_RESET;
-              state_ = PLANNING;
-            }
-            break;
-          case IN_PLACE_ROTATION_2:
-            //we need to set the rotation goal for the robot
-            if(clearing_roatation_allowed_ && set180RotationGoal()){
-              clearing_state_ = EXECUTE_ROTATE_2;
-            }
-            else{
-              clearing_state_ = AGGRESSIVE_RESET;
-              state_ = PLANNING;
-            }
-            break;
-          case EXECUTE_ROTATE_2:
-            ROS_DEBUG("In in-place rotation state 2");
-            if(tc_->isGoalReached() || !rotateRobot()){
-              clearing_state_ = AGGRESSIVE_RESET;
-              state_ = PLANNING;
-            }
-            break;
-            //finally, we'll try resetting the costmaps aggresively to clear out space
-          case AGGRESSIVE_RESET:
-            ROS_DEBUG("In aggressive reset state");
-            resetCostmaps(circumscribed_radius_ * 2, circumscribed_radius_ * 2);
-            clearing_state_ = ABORT;
-            state_ = PLANNING;
-            break;
-            //if all of the above fail, we can't drive safely, so we'll abort
-          case ABORT:
-            ROS_ERROR("Aborting because a valid plan could not be found. Even after attempting to reset costmaps and rotating in place");
-            resetState();
-            as_.setAborted();
-            return true;
-          default:
-            ROS_ERROR("This case should never be reached, something is wrong, aborting");
-            resetState();
-            as_.setAborted();
-            return true;
+        //we'll invoke whatever recovery behavior we're currently on if they're enabled
+        if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
+          recovery_behaviors_[recovery_index_]->runBehavior();
+
+          //we'll check if the recovery behavior actually worked
+          state_ = PLANNING;
+
+          //update the index of the next recovery behavior that we'll try
+          recovery_index_++;
+        }
+        else{
+          ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
+          resetState();
+          as_.setAborted();
+          return true;
         }
         break;
       default:
@@ -616,9 +570,110 @@ namespace move_base {
     return false;
   }
 
+  bool MoveBase::loadRecoveryBehaviors(ros::NodeHandle node){
+    XmlRpc::XmlRpcValue behavior_list;
+    if(node.getParam("recovery_behaviors", behavior_list)){
+      if(behavior_list.getType() == XmlRpc::XmlRpcValue::TypeArray){
+        for(int i = 0; i < behavior_list.size(); ++i){
+          if(behavior_list[i].getType() == XmlRpc::XmlRpcValue::TypeStruct){
+            if(behavior_list[i].hasMember("name") && behavior_list[i].hasMember("type")){
+              //check for recovery behaviors with the same name
+              for(int j = i + 1; j < behavior_list.size(); j++){
+                if(behavior_list[j].getType() == XmlRpc::XmlRpcValue::TypeStruct){
+                  if(behavior_list[j].hasMember("name") && behavior_list[j].hasMember("type")){
+                    std::string name_i = behavior_list[i]["name"];
+                    std::string name_j = behavior_list[j]["name"];
+                    if(name_i == name_j){
+                      ROS_ERROR("A recovery behavior with the name %s already exists, this is not allowed. Using the default recovery behaviors instead.", 
+                          name_i.c_str());
+                      return false;
+                    }
+                  }
+                }
+              }
+            }
+            else{
+              ROS_ERROR("Recovery behaviors must have a name and a type and this does not. Using the default recovery behaviors instead.");
+              return false;
+            }
+          }
+          else{
+            ROS_ERROR("Recovery behaviors must be specified as maps, but they are XmlRpcType %d. We'll use the default recovery behaviors instead.",
+                behavior_list[i].getType());
+            return false;
+          }
+        }
+
+        //if we've made it to this point, we know that the list is legal so we'll create all the recovery behaviors
+        for(int i = 0; i < behavior_list.size(); ++i){
+          try{
+            boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createClassInstance(behavior_list[i]["type"]));
+
+            //shouldn't be possible, but it won't hurt to check
+            if(behavior.get() == NULL){
+              ROS_ERROR("The ClassLoader returned a null pointer without throwing an exception. This should not happen");
+              return false;
+            }
+
+            //initialize the recovery behavior with its name
+            behavior->initialize(behavior_list[i]["name"], &tf_, planner_costmap_ros_, controller_costmap_ros_);
+            recovery_behaviors_.push_back(behavior);
+          }
+          catch(pluginlib::PluginlibException& ex){
+            ROS_ERROR("Failed to load a plugin. Using default recovery behaviors. Error: %s", ex.what());
+            return false;
+          }
+        }
+      }
+      else{
+        ROS_ERROR("The recovery behavior specification must be a list, but is of XmlRpcType %d. We'll use the default recovery behaviors instead.", 
+            behavior_list.getType());
+        return false;
+      }
+    }
+    else{
+      //if no recovery_behaviors are specified, we'll just load the defaults
+      return false;
+    }
+
+    //if we've made it here... we've constructed a recovery behavior list successfully
+    return true;
+  }
+
+  //we'll load our default recovery behaviors here
+  void MoveBase::loadDefaultRecoveryBehaviors(){
+    recovery_behaviors_.clear();
+    try{
+      //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
+      ros::NodeHandle n("~");
+      n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
+      n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 2);
+
+      //first, we'll load a recovery behavior to clear the costmap
+      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createClassInstance("ClearCostmapRecovery"));
+      cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(cons_clear);
+
+      //next, we'll load a recovery behavior to rotate in place
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createClassInstance("RotateRecovery"));
+      rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(rotate);
+
+      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
+      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createClassInstance("ClearCostmapRecovery"));
+      ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(ags_clear);
+    }
+    catch(pluginlib::PluginlibException& ex){
+      ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
+    }
+
+    return;
+  }
+
   void MoveBase::resetState(){
     state_ = PLANNING;
-    clearing_state_ = CONSERVATIVE_RESET;
+    recovery_index_ = 0;
     publishZeroVelocity();
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
