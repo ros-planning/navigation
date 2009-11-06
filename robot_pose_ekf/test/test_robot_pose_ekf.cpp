@@ -115,6 +115,21 @@ protected:
   ~TestEKF()
   {
   }
+
+  void SetUp()
+  {
+    ROS_INFO("Subscribing to robot_pose_ekf/odom_combined");
+    ekf_sub_ = node_.subscribe("/robot_pose_ekf/odom_combined", 10, &TestEKF::EKFCallback, (TestEKF*)this);
+
+    ROS_INFO("Subscribing to pr2_base_odometry/odom");
+    odom_sub_ = node_.subscribe("/pr2_base_odometry/odom", 10 , &TestEKF::OdomCallback, (TestEKF*)this);
+  }
+
+  void TearDown()
+  {
+    odom_sub_.shutdown();
+    ekf_sub_.shutdown();
+  }
 };
 
 
@@ -122,21 +137,16 @@ protected:
 
 TEST_F(TestEKF, test)
 {
-  ROS_INFO("Subscribing to robot_pose_ekf/odom_combined");
-  ekf_sub_ = node_.subscribe("/robot_pose_ekf/odom_combined", 10, &TestEKF::EKFCallback, (TestEKF*)this);
-
-  ROS_INFO("Subscribing to pr2_base_odometry/odom");
-  odom_sub_ = node_.subscribe("/pr2_base_odometry/odom", 10 , &TestEKF::OdomCallback, (TestEKF*)this);
-
+  Duration d(0.01);
   // wait while bag is played back
   ROS_INFO("Waiting for bag to start playing");
   while (odom_counter_ == 0)
-    usleep(1e4);
+    d.sleep();
   ROS_INFO("Detected that bag is playing");
 
   ROS_INFO("Waiting untile end time is reached");
   while( odom_end_->header.stamp.toSec() < time_end){
-    usleep(1e4);
+    d.sleep();
   }
   ROS_INFO("End time reached");
   // give filter some time to catch up
