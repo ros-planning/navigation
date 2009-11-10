@@ -3,6 +3,9 @@ robot_base_frame: base_link
 update_frequency: 5.0
 publish_frequency: 1.0
 
+#set if you want the voxel map published
+publish_voxel_map: true
+
 #set to true if you want to initialize the costmap from a static map
 static_map: false
 
