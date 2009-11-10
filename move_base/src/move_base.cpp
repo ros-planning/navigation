@@ -40,11 +40,13 @@ namespace move_base {
 
   MoveBase::MoveBase(std::string name, tf::TransformListener& tf) :
     tf_(tf),
-    as_(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false),
+    as_(NULL),
     tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
     planner_(NULL), bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"){
+
+    as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
@@ -135,7 +137,7 @@ namespace move_base {
     recovery_index_ = 0;
 
     //we're all set up now so we can start the action server
-    as_.start();
+    as_->start();
   }
 
   void MoveBase::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal){
@@ -202,7 +204,7 @@ namespace move_base {
   }
 
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
-    if(as_.isActive()){
+    if(as_->isActive()){
       ROS_ERROR("move_base must be in an inactive state to make a plan for an external user");
       return false;
     }
@@ -261,6 +263,10 @@ namespace move_base {
   }
 
   MoveBase::~MoveBase(){
+    recovery_behaviors_.clear();
+
+    if(as_ != NULL)
+      delete as_;
 
     if(planner_ != NULL)
       delete planner_;
@@ -390,10 +396,10 @@ namespace move_base {
     ros::NodeHandle n;
     while(n.ok())
     {
-      if(as_.isPreemptRequested()){
-        if(as_.isNewGoalAvailable()){
+      if(as_->isPreemptRequested()){
+        if(as_->isNewGoalAvailable()){
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
-          goal = goalToGlobalFrame((*as_.acceptNewGoal()).target_pose);
+          goal = goalToGlobalFrame((*as_->acceptNewGoal()).target_pose);
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
@@ -413,7 +419,7 @@ namespace move_base {
 
           //notify the ActionServer that we've successfully preempted
           ROS_DEBUG("Move base preempting the current goal");
-          as_.setPreempted();
+          as_->setPreempted();
 
           //we'll actually return from execute after preempting
           return;
@@ -442,7 +448,7 @@ namespace move_base {
     }
 
     //if the node is killed then we'll abort and return
-    as_.setAborted();
+    as_->setAborted();
     return;
   }
 
@@ -459,7 +465,7 @@ namespace move_base {
     //push the feedback out
     move_base_msgs::MoveBaseFeedback feedback;
     feedback.base_position = current_position;
-    as_.publishFeedback(feedback);
+    as_->publishFeedback(feedback);
 
     //check that the observation buffers for the costmap are current, we don't want to drive blind
     if(!controller_costmap_ros_->isCurrent()){
@@ -478,7 +484,7 @@ namespace move_base {
             //ABORT and SHUTDOWN COSTMAPS
             ROS_ERROR("Failed to pass global plan to the controller, aborting.");
             resetState();
-            as_.setAborted();
+            as_->setAborted();
             return true;
           }
           ROS_DEBUG("Generated a plan from the base_global_planner");
@@ -512,7 +518,7 @@ namespace move_base {
         if(tc_->isGoalReached()){
           ROS_DEBUG("Goal reached!");
           resetState();
-          as_.setSucceeded();
+          as_->setSucceeded();
           return true;
         }
 
@@ -528,7 +534,7 @@ namespace move_base {
           if(ros::Time::now() > attempt_end){
             ROS_ERROR("Aborting because of failure to find a valid control for %.2f seconds", controller_patience_);
             resetState();
-            as_.setAborted();
+            as_->setAborted();
             return true;
           }
 
@@ -555,14 +561,14 @@ namespace move_base {
         else{
           ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
           resetState();
-          as_.setAborted();
+          as_->setAborted();
           return true;
         }
         break;
       default:
         ROS_ERROR("This case should never be reached, something is wrong, aborting");
         resetState();
-        as_.setAborted();
+        as_->setAborted();
         return true;
     }
 

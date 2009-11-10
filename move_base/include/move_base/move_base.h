@@ -168,7 +168,7 @@ namespace move_base {
 
       tf::TransformListener& tf_;
 
-      MoveBaseActionServer as_;
+      MoveBaseActionServer* as_;
 
       nav_core::BaseLocalPlanner* tc_;
       costmap_2d::Costmap2DROS* planner_costmap_ros_, *controller_costmap_ros_;
