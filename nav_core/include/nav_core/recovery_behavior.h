@@ -57,6 +57,11 @@ namespace nav_core {
        */
       virtual void runBehavior() = 0;
 
+      /**
+       * @brief  Virtual destructor for the interface
+       */
+      virtual ~RecoveryBehavior(){}
+
     protected:
       RecoveryBehavior(){}
   };

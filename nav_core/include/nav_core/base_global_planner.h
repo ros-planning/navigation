@@ -64,6 +64,11 @@ namespace nav_core {
        */
       virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 
+      /**
+       * @brief  Virtual destructor for the interface
+       */
+      virtual ~BaseGlobalPlanner(){}
+
     protected:
       BaseGlobalPlanner(){}
   };
