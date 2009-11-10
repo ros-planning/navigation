@@ -75,6 +75,10 @@ void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
   }
 }
 
+RotateRecovery::~RotateRecovery(){
+  delete world_model_;
+}
+
 void RotateRecovery::runBehavior(){
   if(!initialized_){
     ROS_ERROR("This object must be initialized before runBehavior is called");
