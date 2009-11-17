@@ -219,6 +219,7 @@ public:
     m_posePub.publish(m_currentPos);
 
     // The particle cloud is the current position. Quite convenient.
+    m_particleCloud.header = m_currentPos.header;
     m_particleCloud.poses[0] = m_currentPos.pose.pose;
     m_particlecloudPub.publish(m_particleCloud);
   }   
