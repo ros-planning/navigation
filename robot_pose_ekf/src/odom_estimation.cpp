@@ -277,15 +277,27 @@ namespace estimation
     return true;
 };
 
-
   void OdomEstimation::addMeasurement(const StampedTransform& meas)
   {
+    ROS_DEBUG("AddMeasurement from %s to %s:  (%f, %f, %f)  (%f, %f, %f, %f)",
+              meas.frame_id_.c_str(), meas.child_frame_id_.c_str(),
+              meas.getOrigin().x(), meas.getOrigin().y(), meas.getOrigin().z(),
+              meas.getRotation().x(),  meas.getRotation().y(), 
+              meas.getRotation().z(), meas.getRotation().w());
     transformer_.setTransform( meas );
-  };
+  }
 
   void OdomEstimation::addMeasurement(const StampedTransform& meas, const MatrixWrapper::SymmetricMatrix& covar)
   {
-    transformer_.setTransform( meas );
+    // check covariance
+    for (unsigned int i=0; i<covar.rows(); i++){
+      if (covar(i+1,i+1) == 0){
+        ROS_ERROR("Covariance specified for measurement on topic %s is zero", meas.child_frame_id_.c_str());
+        return;
+      }
+    }
+    // add measurements
+    addMeasurement(meas);
     if (meas.child_frame_id_ == "wheelodom") odom_covariance_ = covar;
     else if (meas.child_frame_id_ == "imu")  imu_covariance_  = covar;
     else if (meas.child_frame_id_ == "vo")   vo_covariance_   = covar;
