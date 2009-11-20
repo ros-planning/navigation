@@ -172,7 +172,8 @@ int PoseTool::processMouseEvent( wxMouseEvent& event, int last_x, int last_y, fl
       else
       {
         geometry_msgs::PoseWithCovarianceStamped pose;
-	pose.header.frame_id = panel_->getGlobalFrame();
+        pose.header.frame_id = panel_->getGlobalFrame();
+        pose.header.stamp = ros::Time::now(); 
         pose.pose.pose.position.x = pos_.x;
         pose.pose.pose.position.y = pos_.y;
         tf::quaternionTFToMsg(tf::createQuaternionFromYaw(angle),
