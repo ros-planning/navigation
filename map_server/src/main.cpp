@@ -134,6 +134,7 @@ class MapServer
       map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin);
       map_resp_.map.info.map_load_time = ros::Time::now();
       map_resp_.map.header.frame_id = frame_id;
+      map_resp_.map.header.stamp = ros::Time::now();
       ROS_INFO("Read a %d X %d map @ %.3lf m/cell",
                map_resp_.map.info.width,
                map_resp_.map.info.height,
