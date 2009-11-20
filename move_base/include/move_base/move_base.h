@@ -149,13 +149,6 @@ namespace move_base {
       void publishZeroVelocity();
 
       /**
-       * @brief  Perform an in-place rotation of the base to attempt to clear out space
-       */
-      bool rotateRobot();
-
-      bool set180RotationGoal();
-
-      /**
        * @brief  Reset the state of the move_base action and send a zero velocity command to the base
        */
       void resetState();

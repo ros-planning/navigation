@@ -307,47 +307,6 @@ namespace move_base {
     return true;
   }
 
-  bool MoveBase::set180RotationGoal(){
-    ROS_DEBUG("180 rotation");
-    double angle = M_PI; //rotate 180 degrees
-    tf::Stamped<tf::Pose> rotate_goal = tf::Stamped<tf::Pose>(tf::Pose(tf::createQuaternionFromYaw(angle), tf::Point(0.0, 0.0, 0.0)), ros::Time(), robot_base_frame_);
-    geometry_msgs::PoseStamped rotate_goal_msg;
-
-    try{
-      tf_.transformPose(global_frame_, rotate_goal, rotate_goal);
-    }
-    catch(tf::TransformException& ex){
-      ROS_ERROR("This tf error should never happen: %s", ex.what());
-      return false;
-
-    }
-
-    poseStampedTFToMsg(rotate_goal, rotate_goal_msg);
-    std::vector<geometry_msgs::PoseStamped> rotate_plan;
-    rotate_plan.push_back(rotate_goal_msg);
-
-    //pass the rotation goal to the controller
-    if(!tc_->setPlan(rotate_plan)){
-      ROS_ERROR("Failed to pass global plan to the controller, aborting in place rotation attempt.");
-      return false;
-    }
-
-    return true;
-  }
-
-  bool MoveBase::rotateRobot(){
-      geometry_msgs::Twist cmd_vel;
-      if(tc_->computeVelocityCommands(cmd_vel)){
-        //make sure that we send the velocity command to the base
-        vel_pub_.publish(cmd_vel);
-        ROS_DEBUG("Velocity commands produced by controller: vx: %.2f, vy: %.2f, vth: %.2f", cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z);
-        return true;
-      }
-
-      return false;
-
-  }
-
   void MoveBase::publishZeroVelocity(){
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = 0.0;
