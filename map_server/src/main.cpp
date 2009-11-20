@@ -168,9 +168,7 @@ class MapServer
       // = operator is overloaded to make deep copy (tricky!)
       res = map_resp_;
       ROS_INFO("Sending map");
-      if (deprecated) { 
-        ROS_WARN("Using deprecated map server interface. Please switch to new interface.");
-      }
+
       return true;
     }
 
