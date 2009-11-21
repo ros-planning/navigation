@@ -4,7 +4,7 @@
     streams, and a goal pose and outputs safe velocity commands that are sent
     to a mobile base.
   </description>
-  <author>Eitan Marder-Eppstein eitan@willowgarage.com</author>
+  <author>Maintained by Eitan Marder-Eppstein eitan@willowgarage.com</author>
   <license>BSD, LGPL (amcl)</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/navigation</url>
