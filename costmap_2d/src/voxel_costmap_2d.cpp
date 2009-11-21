@@ -186,8 +186,10 @@ namespace costmap_2d{
     double oy = clearing_observation.origin_.y;
     double oz = clearing_observation.origin_.z;
 
-    if(!worldToMap3DFloat(ox, oy, oz, sensor_x, sensor_y, sensor_z))
+    if(!worldToMap3DFloat(ox, oy, oz, sensor_x, sensor_y, sensor_z)){
+      ROS_WARN("The origin for the sensor at (%.2f, %.2f, %.2f) is out of map bounds. So, the costmap cannot raytrace for it.", ox, oy, oz);
       return;
+    }
 
     //we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
     double map_end_x = origin_x_ + getSizeInMetersX();

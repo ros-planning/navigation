@@ -447,8 +447,10 @@ namespace costmap_2d{
 
     //get the map coordinates of the origin of the sensor 
     unsigned int x0, y0;
-    if(!worldToMap(ox, oy, x0, y0))
+    if(!worldToMap(ox, oy, x0, y0)){
+      ROS_WARN("The origin for the sensor at (%.2f, %.2f) is out of map bounds. So, the costmap cannot raytrace for it.", ox, oy);
       return;
+    }
 
     //we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
     double map_end_x = origin_x_ + getSizeInMetersX();
