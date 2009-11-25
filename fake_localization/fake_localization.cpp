@@ -101,6 +101,9 @@ public:
 
       ros::NodeHandle private_nh("~");
       private_nh.param("odom_frame_id", odom_frame_id_, std::string("odom"));
+      private_nh.param("delta_x", delta_x_, 0.0);
+      private_nh.param("delta_y", delta_y_, 0.0);
+      private_nh.param("delta_yaw", delta_yaw_, 0.0);      
       m_particleCloud.header.stamp = ros::Time::now();
       m_particleCloud.header.frame_id = "/map";
       m_particleCloud.set_poses_size(1);
@@ -142,6 +145,7 @@ private:
   
     ros::Time                      m_lastUpdate;
     double                         m_maxPublishFrequency;
+    double                         delta_x_, delta_y_, delta_yaw_;
     bool                           m_base_pos_received;
     
     nav_msgs::Odometry  m_basePosMsg;
@@ -162,12 +166,15 @@ private:
   }
 public:
   void update(const tf::MessageNotifier<nav_msgs::Odometry>::MessagePtr & message){
-    tf::Transform txi(tf::Quaternion(message->pose.pose.orientation.x,
-				     message->pose.pose.orientation.y, 
-				     message->pose.pose.orientation.z, 
-				     message->pose.pose.orientation.w),
-		      tf::Point(message->pose.pose.position.x,
-				message->pose.pose.position.y,
+    tf::Quaternion delta_orientation( -delta_yaw_, 0, 0 );
+    tf::Quaternion orientation(message->pose.pose.orientation.x,
+        message->pose.pose.orientation.y, 
+        message->pose.pose.orientation.z, 
+        message->pose.pose.orientation.w);
+    orientation *= delta_orientation;
+    tf::Transform txi(orientation,
+		      tf::Point(message->pose.pose.position.x - delta_x_,
+				message->pose.pose.position.y - delta_y_,
                                 0.0*message->pose.pose.position.z )); // zero height for base_footprint
 
     double x = txi.getOrigin().x();
