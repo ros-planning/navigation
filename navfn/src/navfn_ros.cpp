@@ -43,10 +43,10 @@ PLUGINLIB_REGISTER_CLASS(NavfnROS, navfn::NavfnROS, nav_core::BaseGlobalPlanner)
 namespace navfn {
 
   NavfnROS::NavfnROS() 
-    : costmap_ros_(NULL),  planner_(), initialized_(false) {}
+    : costmap_ros_(NULL),  planner_(), initialized_(false), allow_unknown_(true) {}
 
   NavfnROS::NavfnROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros) 
-    : costmap_ros_(NULL),  planner_(), initialized_(false) {
+    : costmap_ros_(NULL),  planner_(), initialized_(false), allow_unknown_(true) {
       //initialize the planner
       initialize(name, costmap_ros);
   }
@@ -62,6 +62,9 @@ namespace navfn {
       ros::NodeHandle nh(name);
 
       plan_pub_ = nh.advertise<nav_msgs::Path>("plan", 1);
+
+      ros::NodeHandle private_nh("~/" + name);
+      private_nh.param("allow_unknown", allow_unknown_, true);
 
       //read parameters for the planner
       global_frame_ = costmap_ros_->getGlobalFrameID();
@@ -110,7 +113,7 @@ namespace navfn {
     costmap_ros_->clearRobotFootprint();
     costmap_ros_->getCostmapCopy(costmap_);
 
-    planner_->setCostmap(costmap_.getCharMap());
+    planner_->setCostmap(costmap_.getCharMap(), true, allow_unknown_);
 
     unsigned int mx, my;
     if(!costmap_.worldToMap(world_point.x, world_point.y, mx, my))
@@ -201,7 +204,7 @@ namespace navfn {
     tf::poseStampedMsgToTF(start, start_pose);
     clearRobotCell(start_pose, mx, my);
 
-    planner_->setCostmap(costmap_.getCharMap());
+    planner_->setCostmap(costmap_.getCharMap(), true, allow_unknown_);
 
     int map_start[2];
     map_start[0] = mx;

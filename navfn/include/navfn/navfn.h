@@ -116,8 +116,9 @@ positions at about 1/2 cell resolution; else returns 0.
        * @brief  Set up the cost array for the planner, usually from ROS  
        * @param cmap The costmap 
        * @param isROS Whether or not the costmap is coming in in ROS format
+       * @param allow_unknown Whether or not the planner should be allowed to plan through unknown space
        */
-      void setCostmap(const COSTTYPE *cmap, bool isROS=true); /**< sets up the cost map */
+      void setCostmap(const COSTTYPE *cmap, bool isROS=true, bool allow_unknown = true); /**< sets up the cost map */
 
       /**
        * @brief  Calculates a plan using the A* heuristic, returns true if one is found

@@ -231,7 +231,7 @@ namespace navfn {
   //
 
   void
-    NavFn::setCostmap(const COSTTYPE *cmap, bool isROS)
+    NavFn::setCostmap(const COSTTYPE *cmap, bool isROS, bool allow_unknown)
     {
       COSTTYPE *cm = costarr;
       if (isROS)			// ROS-type cost array
@@ -250,7 +250,7 @@ namespace navfn {
                 v = COST_OBS-1;
               *cm = v;
             }
-            else if(v == COST_UNKNOWN_ROS)
+            else if(v == COST_UNKNOWN_ROS && allow_unknown)
             {
               v = COST_OBS-1;
               *cm = v;
