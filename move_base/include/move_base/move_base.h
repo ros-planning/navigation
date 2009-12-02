@@ -130,13 +130,6 @@ namespace move_base {
       void loadDefaultRecoveryBehaviors();
 
       /**
-       * @brief  Resets the costmaps to the static map outside a given window
-       * @param size_x The x size of the window
-       * @param size_y The y size of the window
-       */
-      void resetCostmaps(double size_x, double size_y);
-
-      /**
        * @brief  Clears obstacles within a window around the robot
        * @param size_x The x size of the window
        * @param size_y The y size of the window

@@ -508,6 +508,7 @@ namespace move_base {
 
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
+        ROS_DEBUG("In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           recovery_behaviors_[recovery_index_]->runBehavior();
@@ -651,13 +652,6 @@ namespace move_base {
       planner_costmap_ros_->stop();
       controller_costmap_ros_->stop();
     }
-  }
-
-  void MoveBase::resetCostmaps(double size_x, double size_y){
-    planner_costmap_ros_->resetMapOutsideWindow(size_x, size_y);
-    controller_costmap_ros_->resetMapOutsideWindow(size_x, size_y);
-    planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-    controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
   }
 
 };
