@@ -43,6 +43,7 @@ namespace costmap_2d {
 
     obs_pub_ = ros_node.advertise<nav_msgs::GridCells>("obstacles", 1);
     inf_obs_pub_ = ros_node.advertise<nav_msgs::GridCells>("inflated_obstacles", 1);
+    unknown_space_pub_ = ros_node.advertise<nav_msgs::GridCells>("uknown_space", 1);
     footprint_pub_ = ros_node.advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);
 
     visualizer_thread_ = new boost::thread(boost::bind(&Costmap2DPublisher::mapPublishLoop, this, publish_frequency));
@@ -83,7 +84,7 @@ namespace costmap_2d {
   }
 
   void Costmap2DPublisher::updateCostmapData(const Costmap2D& costmap, const std::vector<geometry_msgs::Point>& footprint, const tf::Stamped<tf::Pose>& global_pose){
-    std::vector< std::pair<double, double> > raw_obstacles, inflated_obstacles;
+    std::vector< std::pair<double, double> > raw_obstacles, inflated_obstacles, unknown_space;
     for(unsigned int i = 0; i < costmap.getSizeInCellsX(); i++){
       for(unsigned int j = 0; j < costmap.getSizeInCellsY(); j++){
         double wx, wy;
@@ -95,12 +96,15 @@ namespace costmap_2d {
           raw_obstacles.push_back(p);
         else if(costmap.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
           inflated_obstacles.push_back(p);
+        else if(costmap.getCost(i, j) == costmap_2d::NO_INFORMATION)
+          unknown_space.push_back(p);
       }
     }
     lock_.lock();
     resolution_ = costmap.getResolution();
     raw_obstacles_ = raw_obstacles;
     inflated_obstacles_ = inflated_obstacles;
+    unknown_space_ = unknown_space;
     inscribed_radius_ = costmap.getInscribedRadius();
     footprint_ = footprint;
     global_pose_ = global_pose;
@@ -155,12 +159,13 @@ namespace costmap_2d {
   }
 
   void Costmap2DPublisher::publishCostmap(){
-    std::vector< std::pair<double, double> > raw_obstacles, inflated_obstacles;
+    std::vector< std::pair<double, double> > raw_obstacles, inflated_obstacles, unknown_space;
     double resolution;
 
     lock_.lock();
     raw_obstacles = raw_obstacles_;
     inflated_obstacles = inflated_obstacles_;
+    unknown_space = unknown_space_;
     resolution = resolution_;
     lock_.unlock();
 
@@ -199,6 +204,18 @@ namespace costmap_2d {
 
     ROS_DEBUG("Publishing inflated obstacles");
     inf_obs_pub_.publish(obstacle_cells);
+
+    point_count = unknown_space.size();
+    obstacle_cells.set_cells_size(point_count);
+
+    for(unsigned int i=0;i<point_count;i++){
+      obstacle_cells.cells[i].x = unknown_space[i].first;
+      obstacle_cells.cells[i].y = unknown_space[i].second;
+      obstacle_cells.cells[i].z = 0;
+    }
+
+    ROS_DEBUG("Publishing unknown space");
+    unknown_space_pub_.publish(obstacle_cells);
 
   }
 

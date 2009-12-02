@@ -47,7 +47,7 @@ namespace costmap_2d{
       double raytrace_range, double weight,
       const std::vector<unsigned char>& static_data, unsigned char lethal_threshold, unsigned int unknown_threshold, unsigned int mark_threshold)
     : Costmap2D(cells_size_x, cells_size_y, xy_resolution, origin_x, origin_y, inscribed_radius, circumscribed_radius,
-        inflation_radius, obstacle_range, cells_size_z * z_resolution + origin_z, raytrace_range, weight, static_data, lethal_threshold),
+        inflation_radius, obstacle_range, cells_size_z * z_resolution + origin_z, raytrace_range, weight, static_data, lethal_threshold, unknown_threshold < cells_size_z),
     voxel_grid_(cells_size_x, cells_size_y, cells_size_z), xy_resolution_(xy_resolution), z_resolution_(z_resolution),
     origin_z_(origin_z), unknown_threshold_(unknown_threshold + (VOXEL_BITS - cells_size_z)), mark_threshold_(mark_threshold), size_z_(cells_size_z)
   {

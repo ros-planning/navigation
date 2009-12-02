@@ -302,12 +302,6 @@ namespace costmap_2d {
 
       ROS_ASSERT(z_voxels >= 0 && unknown_threshold >= 0 && mark_threshold >= 0);
 
-      bool track_unknown_space = false;
-
-      //check if we'll be tracking unknown space or not
-      if(unknown_threshold < z_voxels)
-        track_unknown_space = true;
-
       costmap_ = new VoxelCostmap2D(map_width, map_height, z_voxels, map_resolution, z_resolution, map_origin_x, map_origin_y, map_origin_z, inscribed_radius,
           circumscribed_radius, inflation_radius, obstacle_range, raytrace_range, cost_scale, input_data, lethal_threshold, unknown_threshold, mark_threshold);
     }

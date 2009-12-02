@@ -92,10 +92,10 @@ namespace costmap_2d {
 
       std::string global_frame_;
       boost::thread* visualizer_thread_; ///< @brief A thread for publising to the visualizer
-      std::vector< std::pair<double, double> > raw_obstacles_, inflated_obstacles_;
+      std::vector< std::pair<double, double> > raw_obstacles_, inflated_obstacles_, unknown_space_;
       boost::recursive_mutex lock_; ///< @brief A lock
       bool active_, new_data_;
-      ros::Publisher obs_pub_, inf_obs_pub_, footprint_pub_;
+      ros::Publisher obs_pub_, inf_obs_pub_, unknown_space_pub_, footprint_pub_;
       double resolution_, inscribed_radius_;
       std::vector<geometry_msgs::Point> footprint_;
       tf::Stamped<tf::Pose> global_pose_;
