@@ -71,12 +71,12 @@ namespace estimation
       ekf_sent_counter_(0)
   {
     // paramters
-    node_.getParam("sensor_timeout", timeout_, 1.0);
-    node_.getParam("odom_used", odom_used_, true);
-    node_.getParam("imu_used",  imu_used_, true);
-    node_.getParam("vo_used",   vo_used_, true);
+    node_.param("sensor_timeout", timeout_, 1.0);
+    node_.param("odom_used", odom_used_, true);
+    node_.param("imu_used",  imu_used_, true);
+    node_.param("vo_used",   vo_used_, true);
     double freq;
-    node_.getParam("freq", freq, 30.0);
+    node_.param("freq", freq, 30.0);
 
     timer_ = node_.createTimer(ros::Duration(1.0/max(freq,1.0)), &OdomEstimationNode::spin, this);
 
