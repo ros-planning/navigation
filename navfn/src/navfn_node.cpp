@@ -63,7 +63,6 @@ protected:
   virtual void getCostmap(Costmap2D& cmap);
 
 private:
-  ros::NodeHandle node_;
   CmapPtr cmap_;
   ros::ServiceServer set_costmap_service_;
   ros::ServiceServer make_plan_service_;
@@ -88,14 +87,16 @@ bool NavfnWithLocalCostmap::makePlanService(MakeNavPlan::Request& req, MakeNavPl
 }
 
 
-NavfnWithLocalCostmap::NavfnWithLocalCostmap(string name, Costmap2DROS* cmap) : NavfnROS(name, cmap)
+NavfnWithLocalCostmap::NavfnWithLocalCostmap(string name, Costmap2DROS* cmap) : 
+  NavfnROS(name, cmap)
 {
   inscribed_radius_ = 0.0;
   circumscribed_radius_ = 0.0;
   inflation_radius_ = 0.0;
 
-  set_costmap_service_ = node_.advertiseService("~set_costmap", &NavfnWithLocalCostmap::setCostmap, this);
-  make_plan_service_ = node_.advertiseService("~make_plan", &NavfnWithLocalCostmap::makePlanService, this);
+  ros::NodeHandle private_nh("~");
+  set_costmap_service_ = private_nh.advertiseService("set_costmap", &NavfnWithLocalCostmap::setCostmap, this);
+  make_plan_service_ = private_nh.advertiseService("make_plan", &NavfnWithLocalCostmap::makePlanService, this);
 }
 
 
@@ -131,15 +132,15 @@ int main (int argc, char** argv)
   ros::init(argc, argv, "navfn_node");
   
 
-  ros::NodeHandle n;
+  ros::NodeHandle n("~");
   tf::TransformListener tf;
 
   // Set params
-  n.setParam("~dummy_costmap/global_frame", "/map");
-  n.setParam("~dummy_costmap/robot_base_frame", "/map"); // Do this so it doesn't complain about unavailable transform 
-  n.setParam("~dummy_costmap/publish_frequency", 0.0);
-  n.setParam("~dummy_costmap/observation_sources", string(""));
-  n.setParam("~dummy_costmap/static_map", false);
+  n.setParam("dummy_costmap/global_frame", "/map");
+  n.setParam("dummy_costmap/robot_base_frame", "/map"); // Do this so it doesn't complain about unavailable transform 
+  n.setParam("dummy_costmap/publish_frequency", 0.0);
+  n.setParam("dummy_costmap/observation_sources", string(""));
+  n.setParam("dummy_costmap/static_map", false);
 
   
   Costmap2DROS dummy_costmap("dummy_costmap", tf);
