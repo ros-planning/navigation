@@ -114,6 +114,96 @@ namespace costmap_2d{
     }
   }
 
+  void Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
+    //check for self windowing
+    if(this == &map){
+      ROS_ERROR("Cannot convert this costmap into a window of itself");
+      return;
+    }
+
+    //clean up old data
+    if(costmap_ != NULL) delete[] costmap_;
+    if(static_map_ != NULL) delete[] static_map_;
+    if(markers_ != NULL) delete[] markers_;
+
+    if(cached_distances_ != NULL){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+        if(cached_distances_[i] != NULL) delete[] cached_distances_[i];
+      }
+      delete[] cached_distances_;
+    }
+
+    if(cached_costs_ != NULL){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+        if(cached_costs_[i] != NULL) delete[] cached_costs_[i];
+      }
+      delete[] cached_costs_;
+    }
+
+    //compute the bounds of our new map
+    unsigned int lower_left_x, lower_left_y, upper_right_x, upper_right_y;
+    if(!map.worldToMap(win_origin_x, win_origin_y, lower_left_x, lower_left_y) 
+        || ! map.worldToMap(win_origin_x + win_size_x, win_origin_y + win_size_y, upper_right_x, upper_right_y)){
+      ROS_ERROR("Cannot window a map that the window bounds don't fit inside of");
+      return;
+    }
+
+    size_x_ = upper_right_x - lower_left_x;
+    size_y_ = upper_right_y - lower_left_y;
+    resolution_ = map.resolution_;
+    origin_x_ = win_origin_x;
+    origin_y_ = win_origin_y;
+
+    ROS_DEBUG("ll(%d, %d), ur(%d, %d), size(%d, %d), origin(%.2f, %.2f)", 
+        lower_left_x, lower_left_y, upper_right_x, upper_right_y, size_x_, size_y_, origin_x_, origin_y_);
+
+
+    //initialize our various maps
+    costmap_ = new unsigned char[size_x_ * size_y_];
+    static_map_ = new unsigned char[size_x_ * size_y_];
+    markers_ = new unsigned char[size_x_ * size_y_];
+
+    //reset markers for inflation
+    memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
+
+    //copy the window of the static map and the costmap that we're taking
+    for(unsigned int i = 0; i < size_y_; ++i){
+      unsigned int offset = i * size_x_;
+      unsigned int map_offset = (i + lower_left_y) * map.size_x_ + lower_left_x;
+      memcpy(static_map_ + offset, map.static_map_ + map_offset, size_x_ * sizeof(unsigned char));
+      memcpy(costmap_ + offset, map.costmap_ + map_offset, size_x_ * sizeof(unsigned char));
+    }
+
+    max_obstacle_range_ = map.max_obstacle_range_;
+    max_obstacle_height_ = map.max_obstacle_height_;
+    max_raytrace_range_ = map.max_raytrace_range_;
+
+    inscribed_radius_ = map.inscribed_radius_;
+    circumscribed_radius_ = map.circumscribed_radius_;
+    inflation_radius_ = map.inflation_radius_;
+
+    cell_inscribed_radius_ = map.cell_inscribed_radius_;
+    cell_circumscribed_radius_ = map.cell_circumscribed_radius_;
+    cell_inflation_radius_ = map.cell_inflation_radius_;
+
+    //set the cost for the circumscribed radius of the robot
+    circumscribed_cost_lb_ = map.circumscribed_cost_lb_;
+
+    weight_ = map.weight_;
+
+    //copy the cost and distance kernels
+    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
+        cached_distances_[i][j] = map.cached_distances_[i][j];
+        cached_costs_[i][j] = map.cached_costs_[i][j];
+      }
+    }
+  }
+
   Costmap2D& Costmap2D::operator=(const Costmap2D& map) {
     //check for self assignement
     if(this == &map)

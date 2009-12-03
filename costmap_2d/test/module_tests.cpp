@@ -287,6 +287,49 @@ TEST(costmap, testWaveInterference){
   ASSERT_EQ(update_count, 79);
 }
 
+/** Test for copying a window of a costmap */
+TEST(costmap, testWindowCopy){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+
+  /*
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      printf("%3d ", map.getCost(i, j));
+    }
+    printf("\n");
+  }
+  printf("\n");
+  */
+
+  Costmap2D windowCopy;
+
+  //first test that if we try to make a window that is too big, things fail
+  windowCopy.copyCostmapWindow(map, 2.0, 2.0, 6.0, 12.0);
+  ASSERT_EQ(windowCopy.getSizeInCellsX(), (unsigned int)0);
+  ASSERT_EQ(windowCopy.getSizeInCellsY(), (unsigned int)0);
+
+  //Next, test that trying to make a map window itself fails
+  map.copyCostmapWindow(map, 2.0, 2.0, 6.0, 6.0);
+  ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)10);
+  ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)10);
+
+  //Next, test that legal input generates the result that we expect
+  windowCopy.copyCostmapWindow(map, 2.0, 2.0, 6.0, 6.0);
+  ASSERT_EQ(windowCopy.getSizeInCellsX(), (unsigned int)6);
+  ASSERT_EQ(windowCopy.getSizeInCellsY(), (unsigned int)6);
+
+  //check that we actually get the windo that we expect
+  for(unsigned int i = 0; i < windowCopy.getSizeInCellsX(); ++i){
+    for(unsigned int j = 0; j < windowCopy.getSizeInCellsY(); ++j){
+      ASSERT_EQ(windowCopy.getCost(i, j), map.getCost(i + 2, j + 2));
+      //printf("%3d ", windowCopy.getCost(i, j));
+    }
+    //printf("\n");
+  }
+
+}
+
 /**
  * Test for ray tracing free space
  */
