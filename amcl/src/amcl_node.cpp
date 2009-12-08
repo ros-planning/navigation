@@ -846,7 +846,10 @@ AmclNode::initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedC
 {
   // Support old behavior, where null frame ids were accepted.
   if(msg->header.frame_id == "")
+  {
+    ROS_WARN("Received initialpose message with header.frame_id == "".  This behavior is deprecated; you should always set the frame_id");
     initialPoseReceived(msg);
+  }
 }
 
 void
