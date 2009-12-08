@@ -50,7 +50,7 @@ rosbuild_add_rostest(test/basic_localization_stage.xml)
 rosbuild_add_rostest(test/small_loop_prf.xml)
 rosbuild_add_rostest(test/small_loop_crazy_driving_prg.xml)
 rosbuild_add_rostest(test/texas_greenroom_loop.xml)
-rosbuild_add_rostest(test/texas_willow_hallway_loop.xml)
+#rosbuild_add_rostest(test/texas_willow_hallway_loop.xml)
 # Global localization needs some work.
 #rosbuild_add_rostest(test/global_localization_stage.xml)
 #endif(CMAKE_SYSTEM_NAME MATCHES "Linux")
