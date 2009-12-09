@@ -158,8 +158,9 @@ namespace costmap_2d{
     for(unsigned int i = start_x; i < (start_x + data_size_x); ++i){
       for(unsigned int j = start_y; j < (start_y + data_size_y); ++j){
         unsigned int index = getIndex(i, j);
+        unsigned int static_index = j * data_size_y + i;
         //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
-        costmap_[index] = static_data[index] >= lethal_threshold_ ? LETHAL_OBSTACLE : static_data[index];
+        costmap_[index] = static_data[static_index] >= lethal_threshold_ ? LETHAL_OBSTACLE : static_data[static_index];
         if(costmap_[index] == LETHAL_OBSTACLE){
           unsigned int mx, my;
           indexToCells(index, mx, my);
@@ -167,6 +168,7 @@ namespace costmap_2d{
         }
       }
     }
+
     //now... let's inflate the obstacles
     inflateObstacles(inflation_queue_);
 
@@ -174,8 +176,8 @@ namespace costmap_2d{
     unsigned int max_inflation_change = 2 * cell_inflation_radius_;
 
     //make sure that we don't go out of map bounds
-    unsigned int copy_sx = std::max((unsigned int)0, start_x - max_inflation_change);
-    unsigned int copy_sy = std::max((unsigned int)0, start_y - max_inflation_change);
+    unsigned int copy_sx = std::max(0, (int)start_x - (int)max_inflation_change);
+    unsigned int copy_sy = std::max(0, (int)start_y - (int)max_inflation_change);
     unsigned int copy_ex = std::min(size_x_, start_x + data_size_x + max_inflation_change);
     unsigned int copy_ey = std::min(size_y_, start_y + data_size_y + max_inflation_change);
 

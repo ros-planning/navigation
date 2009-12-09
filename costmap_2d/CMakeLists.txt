@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-set(ROS_BUILD_TYPE Release)
+set(ROS_BUILD_TYPE Debug)
 rosbuild_init()
 rosbuild_genmsg()
 
@@ -21,7 +21,7 @@ target_link_libraries(test/costmap_tester costmap_2d gtest)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test.bag test/simple_driving_test.bag 80a89edf83cd6d72f806db11121c4a2d)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
 
-rosbuild_add_rostest(test/simple_driving_test.xml)
+#rosbuild_add_rostest(test/simple_driving_test.xml)
 
 rosbuild_add_gtest(test/module_tests test/module_tests.cpp)
 target_link_libraries(test/module_tests costmap_2d)

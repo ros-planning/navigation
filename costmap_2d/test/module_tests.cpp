@@ -53,6 +53,15 @@ const unsigned char MAP_10_BY_10_CHAR[] = {
   0, 0, 0, 0, 0, 0, 0, 255, 255, 255
 };
 
+const unsigned char MAP_5_BY_5_CHAR[] = {
+  0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0,
+};
+
+std::vector<unsigned char> MAP_5_BY_5;
 std::vector<unsigned char> MAP_10_BY_10;
 std::vector<unsigned char> EMPTY_10_BY_10;
 std::vector<unsigned char> EMPTY_100_BY_100;
@@ -326,6 +335,65 @@ TEST(costmap, testWindowCopy){
       //printf("%3d ", windowCopy.getCost(i, j));
     }
     //printf("\n");
+  }
+
+}
+
+//test for updating costmaps with static data
+TEST(costmap, testFullyContainedStaticMapUpdate){
+  Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_5_BY_5, THRESHOLD);
+
+  Costmap2D static_map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+
+  map.updateStaticMapWindow(0, 0, 10, 10, MAP_10_BY_10);
+
+  for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
+    for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
+      ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
+    }
+  }
+}
+
+TEST(costmap, testOverlapStaticMapUpdate){
+  Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_5_BY_5, THRESHOLD);
+
+  Costmap2D static_map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+
+
+  printf("(%d, %d)\n", map.getSizeInCellsX(), map.getSizeInCellsY());
+  for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
+    for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
+      //ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
+      printf("%3d ", map.getCost(i, j));
+    }
+    printf("\n");
+  }
+
+  printf("\n");
+
+  for(unsigned int i = 0; i < static_map.getSizeInCellsX(); ++i){
+    for(unsigned int j = 0; j < static_map.getSizeInCellsY(); ++j){
+      //ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
+      printf("%3d ", static_map.getCost(i, j));
+    }
+    printf("\n");
+  }
+
+  printf("\n");
+
+  map.updateStaticMapWindow(-10, -10, 10, 10, MAP_10_BY_10);
+
+  printf("(%d, %d)\n", map.getSizeInCellsX(), map.getSizeInCellsY());
+  for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
+    for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
+      //ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
+      printf("%3d ", map.getCost(i, j));
+    }
+    printf("\n");
   }
 
 }
@@ -1009,6 +1077,10 @@ int main(int argc, char** argv){
   for(unsigned int i = 0; i< GRID_WIDTH * GRID_HEIGHT; i++){
     EMPTY_10_BY_10.push_back(0);
     MAP_10_BY_10.push_back(MAP_10_BY_10_CHAR[i]);
+  }
+
+  for(unsigned int i = 0; i< 5 * 5; i++){
+    MAP_5_BY_5.push_back(MAP_10_BY_10_CHAR[i]);
   }
 
   for(unsigned int i = 0; i< 100 * 100; i++)
