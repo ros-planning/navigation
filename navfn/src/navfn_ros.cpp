@@ -43,7 +43,7 @@ PLUGINLIB_REGISTER_CLASS(NavfnROS, navfn::NavfnROS, nav_core::BaseGlobalPlanner)
 namespace navfn {
 
   NavfnROS::NavfnROS() 
-    : costmap_ros_(NULL),  planner_(), initialized_(false), allow_unknown_(true) {}
+    : costmap_ros_(NULL),  planner_(), initialized_(false), allow_unknown_(true), costmap_publisher_(NULL) {}
 
   NavfnROS::NavfnROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros) 
     : costmap_ros_(NULL),  planner_(), initialized_(false), allow_unknown_(true) {
@@ -65,6 +65,11 @@ namespace navfn {
 
       ros::NodeHandle private_nh("~/" + name);
       private_nh.param("allow_unknown", allow_unknown_, true);
+      private_nh.param("planner_window_x", planner_window_x_, 0.0);
+      private_nh.param("planner_window_y", planner_window_y_, 0.0);
+        
+      double costmap_pub_freq;
+      private_nh.param("planner_costmap_publish_frequency", costmap_pub_freq, 0.0);
 
       //read parameters for the planner
       global_frame_ = costmap_ros_->getGlobalFrameID();
@@ -73,6 +78,9 @@ namespace navfn {
       inscribed_radius_ = costmap_ros_->getInscribedRadius();
       circumscribed_radius_ = costmap_ros_->getCircumscribedRadius();
       inflation_radius_ = costmap_ros_->getInflationRadius();
+
+      //initialize the costmap publisher
+      costmap_publisher_ = new costmap_2d::Costmap2DPublisher(ros::NodeHandle(nh, "NavfnROS_costmap"), costmap_pub_freq, global_frame_);
 
       initialized_ = true;
     }
@@ -110,8 +118,7 @@ namespace navfn {
     }
 
     //make sure that we have the latest copy of the costmap and that we clear the footprint of obstacles
-    costmap_ros_->clearRobotFootprint();
-    costmap_ros_->getCostmapCopy(costmap_);
+    getCostmap(costmap_);
 
     //make sure to resize the underlying array that Navfn uses
     planner_->setNavArr(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY());
@@ -162,7 +169,24 @@ namespace navfn {
     }
 
     costmap_ros_->clearRobotFootprint();
-    costmap_ros_->getCostmapCopy(costmap);
+
+    //if the user has requested that the planner use only a window of the costmap, we'll get that window here
+    if(planner_window_x_ > 1e-6 && planner_window_y_ > 1e-6){
+      costmap_ros_->getCostmapWindowCopy(planner_window_x_, planner_window_y_, costmap_);
+    }
+    else{
+      costmap_ros_->getCostmapCopy(costmap);
+    }
+
+    //if the user wants to publish information about the planner's costmap, we'll do that here
+    if(costmap_publisher_->active()){
+      std::vector<geometry_msgs::Point> oriented_footprint;
+      costmap_ros_->getOrientedFootprint(oriented_footprint);
+      tf::Stamped<tf::Pose> global_pose;
+      costmap_ros_->getRobotPose(global_pose);
+      costmap_publisher_->updateCostmapData(costmap, oriented_footprint, global_pose);
+    }
+    
   }
 
   bool NavfnROS::makePlan(const geometry_msgs::PoseStamped& start, 
@@ -176,7 +200,6 @@ namespace navfn {
     plan.clear();
 
     //make sure that we have the latest copy of the costmap and that we clear the footprint of obstacles
-
     getCostmap(costmap_);
 
     ros::NodeHandle n;
