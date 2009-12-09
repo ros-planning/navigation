@@ -113,6 +113,8 @@ namespace navfn {
     costmap_ros_->clearRobotFootprint();
     costmap_ros_->getCostmapCopy(costmap_);
 
+    //make sure to resize the underlying array that Navfn uses
+    planner_->setNavArr(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY());
     planner_->setCostmap(costmap_.getCharMap(), true, allow_unknown_);
 
     unsigned int mx, my;
@@ -204,6 +206,8 @@ namespace navfn {
     tf::poseStampedMsgToTF(start, start_pose);
     clearRobotCell(start_pose, mx, my);
 
+    //make sure to resize the underlying array that Navfn uses
+    planner_->setNavArr(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY());
     planner_->setCostmap(costmap_.getCharMap(), true, allow_unknown_);
 
     int map_start[2];
