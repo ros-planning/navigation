@@ -172,10 +172,10 @@ namespace costmap_2d{
     unsigned int max_inflation_change = 2 * cell_inflation_radius_;
 
     //make sure that we don't go out of map bounds
-    unsigned int copy_sx = std::max(0, (int)start_x - (int)max_inflation_change);
-    unsigned int copy_sy = std::max(0, (int)start_y - (int)max_inflation_change);
-    unsigned int copy_ex = std::min(size_x_, start_x + data_size_x + max_inflation_change);
-    unsigned int copy_ey = std::min(size_y_, start_y + data_size_y + max_inflation_change);
+    unsigned int copy_sx = std::min(std::max(0, (int)start_x - (int)max_inflation_change), (int)size_x_);
+    unsigned int copy_sy = std::min(std::max(0, (int)start_y - (int)max_inflation_change), (int)size_x_);
+    unsigned int copy_ex = std::max(std::min((int)size_x_, (int)start_x + (int)data_size_x + (int)max_inflation_change), 0);
+    unsigned int copy_ey = std::max(std::min((int)size_y_, (int)start_y + (int)data_size_y + (int)max_inflation_change), 0);
 
     unsigned int copy_size_x = copy_ex - copy_sx;
     unsigned int copy_size_y = copy_ey - copy_sy;

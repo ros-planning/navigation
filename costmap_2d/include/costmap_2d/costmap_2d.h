@@ -100,8 +100,8 @@ namespace costmap_2d {
       /**
        * @brief  Turn this costmap into a copy of a window of a costmap passed in
        * @param  map The costmap to copy
-       * @param win_origin_x The x origin for the window to copy, in meters
-       * @param win_origin_y The y origin for the window to copy, in meters
+       * @param win_origin_x The x origin (lower left corner) for the window to copy, in meters
+       * @param win_origin_y The y origin (lower left corner) for the window to copy, in meters
        * @param win_size_x The x size of the window, in meters
        * @param win_size_y The y size of the window, in meters
        */
@@ -361,10 +361,10 @@ namespace costmap_2d {
 
       /**
        * @brief  Update the costmap's static map with new data
-       * @param win_origin_x The x origin of the map we'll be using to replace the static map
-       * @param win_origin_y The y origin of the map we'll be using to replace the static map
-       * @param data_size_x The x size of the map we'll be using to replace the static map 
-       * @param data_size_y The y size of the map we'll be using to replace the static map 
+       * @param win_origin_x The x origin of the map we'll be using to replace the static map in meters
+       * @param win_origin_y The y origin of the map we'll be using to replace the static map in meters
+       * @param data_size_x The x size of the map we'll be using to replace the static map in cells
+       * @param data_size_y The y size of the map we'll be using to replace the static map in cells
        * @param static_data The data that we'll use for our new costmap
        */
       void updateStaticMapWindow(double win_origin_x, double win_origin_y, 

@@ -176,6 +176,28 @@ namespace costmap_2d {
       void getCostmapCopy(Costmap2D& costmap);
 
       /**
+       * @brief  Get a copy of a window of the costmap centered at the robot's
+       * position. If the requested size of the window does not fit within the
+       * bounds of the costmap, the window is truncated automatically to fit.
+       * @param win_size_x The x size of the desired window in meters
+       * @param win_size_y The y size of the desired window in meters
+       * @param costmap A reference to the map to populate
+       */
+      void getCostmapWindowCopy(double win_size_x, double win_size_y, Costmap2D& costmap);
+
+      /**
+       * @brief  Get a copy of a window of the costmap centered at a given
+       * position. If the requested size of the window does not fit within the
+       * bounds of the costmap, the window is truncated automatically to fit.
+       * @param win_center_x The x center point of the desired window in meters
+       * @param win_center_y The y center point of the desired window in meters
+       * @param win_size_x The x size of the desired window in meters
+       * @param win_size_y The y size of the desired window in meters
+       * @param costmap A reference to the map to populate
+       */
+      void getCostmapWindowCopy(double win_center_x, double win_center_y, double win_size_x, double win_size_y, Costmap2D& costmap);
+
+      /**
        * @brief  Returns the x size of the costmap in cells
        * @return The x size of the costmap in cells
        */

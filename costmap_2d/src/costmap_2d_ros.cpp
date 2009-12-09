@@ -630,6 +630,31 @@ namespace costmap_2d {
     costmap = *costmap_;
   }
 
+  void Costmap2DROS::getCostmapWindowCopy(double win_size_x, double win_size_y, Costmap2D& costmap){
+    boost::recursive_mutex::scoped_lock lock(lock_);
+    tf::Stamped<tf::Pose> global_pose;
+    if(!getRobotPose(global_pose)){
+      ROS_ERROR("Could not get a window of this costmap centered at the robot, because we failed to get the pose of the robot");
+      return;
+    }
+    getCostmapWindowCopy(global_pose.getOrigin().x(), global_pose.getOrigin().y(), win_size_x, win_size_y, costmap);
+  }
+
+  void Costmap2DROS::getCostmapWindowCopy(double win_center_x, double win_center_y, double win_size_x, double win_size_y, Costmap2D& costmap){
+    boost::recursive_mutex::scoped_lock lock(lock_);
+
+    //we need to compute legal bounds for the window and shrink it if necessary
+    double ll_x = std::min(std::max(win_center_x - win_size_x, costmap_->getOriginX()), costmap_->getSizeInMetersX());
+    double ll_y = std::min(std::max(win_center_y - win_size_y, costmap_->getOriginY()), costmap_->getSizeInMetersY());
+    double ur_x = std::min(std::max(win_center_x + win_size_x, costmap_->getOriginX()), costmap_->getSizeInMetersX());
+    double ur_y = std::min(std::max(win_center_y + win_size_y, costmap_->getOriginY()), costmap_->getSizeInMetersY());
+    double size_x = ur_x - ll_x;
+    double size_y = ur_y - ll_y;
+
+    //copy the appropriate window from our costmap into the one passed in by the user
+    costmap.copyCostmapWindow(*costmap_, ll_x, ll_y, size_x, size_y);
+  }
+
   unsigned int Costmap2DROS::getSizeInCellsX() {
     boost::recursive_mutex::scoped_lock lock(lock_);
     return costmap_->getSizeInCellsX();
