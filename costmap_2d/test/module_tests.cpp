@@ -365,8 +365,10 @@ TEST(costmap, testOverlapStaticMapUpdate){
 
   map.updateStaticMapWindow(-10, -10, 10, 10, MAP_10_BY_10);
 
-  ASSERT_EQ(map.getOriginX(), -10);
-  ASSERT_EQ(map.getOriginX(), -10);
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)15);
+  ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)15);
   for(unsigned int i = 0; i < 10; ++i){
     for(unsigned int j = 0; j < 10; ++j){
       ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
@@ -381,6 +383,27 @@ TEST(costmap, testOverlapStaticMapUpdate){
   for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
     for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
       ASSERT_EQ(map.getCost(i, j), 0);
+    }
+  }
+
+  std::vector<unsigned char> fully_contained(25);
+  fully_contained[0] = 254;
+  fully_contained[4] = 254;
+  fully_contained[5] = 254;
+  fully_contained[9] = 254;
+
+  Costmap2D small_static_map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, fully_contained, THRESHOLD);
+
+  map.updateStaticMapWindow(0, 0, 5, 5, fully_contained);
+
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)15);
+  ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)15);
+  for(unsigned int j = 0; j < 5; ++j){
+    for(unsigned int i = 0; i < 5; ++i){
+      ASSERT_EQ(map.getCost(i + 10, j + 10), small_static_map.getCost(i, j));
     }
   }
 

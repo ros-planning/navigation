@@ -82,19 +82,26 @@ namespace costmap_2d{
       //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
       ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
 
+      unsigned int index = 0;
+      unsigned char* costmap_index = costmap_;
+      std::vector<unsigned char>::const_iterator static_data_index =  static_data.begin();
+
       //initialize the costmap with static data
-      for(unsigned int i = 0; i < size_x_; ++i){
-        for(unsigned int j = 0; j < size_y_; ++j){
-          unsigned int index = getIndex(i, j);
+      for(unsigned int i = 0; i < size_y_; ++i){
+        for(unsigned int j = 0; j < size_x_; ++j){
           //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
-          costmap_[index] = static_data[index] >= lethal_threshold_ ? LETHAL_OBSTACLE : static_data[index];
-          if(costmap_[index] == LETHAL_OBSTACLE){
+          *costmap_index = *static_data_index >= lethal_threshold_ ? LETHAL_OBSTACLE : *static_data_index;
+          if(*costmap_index == LETHAL_OBSTACLE){
             unsigned int mx, my;
             indexToCells(index, mx, my);
             enqueue(index, mx, my, mx, my, inflation_queue_);
           }
+          ++costmap_index;
+          ++static_data_index;
+          ++index;
         }
       }
+
       //now... let's inflate the obstacles
       inflateObstacles(inflation_queue_);
 
@@ -125,19 +132,26 @@ namespace costmap_2d{
     //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
     ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
 
-    //copy static data into the costmap... this could be made more efficient if it becomes necessary
-    for(unsigned int i = 0; i < size_x_; ++i){
-      for(unsigned int j = 0; j < size_y_; ++j){
-        unsigned int index = getIndex(i, j);
+    unsigned int index = 0;
+    unsigned char* costmap_index = costmap_;
+    std::vector<unsigned char>::const_iterator static_data_index =  static_data.begin();
+
+    //copy static data into the costmap
+    for(unsigned int i = 0; i < size_y_; ++i){
+      for(unsigned int j = 0; j < size_x_; ++j){
         //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
-        costmap_[index] = static_data[index] >= lethal_threshold_ ? LETHAL_OBSTACLE : static_data[index];
-        if(costmap_[index] == LETHAL_OBSTACLE){
+        *costmap_index = *static_data_index >= lethal_threshold_ ? LETHAL_OBSTACLE : *static_data_index;
+        if(*costmap_index == LETHAL_OBSTACLE){
           unsigned int mx, my;
           indexToCells(index, mx, my);
           enqueue(index, mx, my, mx, my, inflation_queue_);
         }
+        ++costmap_index;
+        ++static_data_index;
+        ++index;
       }
     }
+
     //now... let's inflate the obstacles
     inflateObstacles(inflation_queue_);
 
