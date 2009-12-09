@@ -84,24 +84,11 @@ namespace costmap_2d{
     //we need a map to store the obstacles in the window temporarily
     unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
     unsigned int* local_voxel_map = new unsigned int[cell_size_x * cell_size_y];
+    unsigned int* voxel_map = voxel_grid_.getData();
 
     //copy the local window in the costmap to the local map
-    unsigned char* costmap_cell = &costmap_[getIndex(start_x, start_y)];
-    unsigned char* local_map_cell = local_map;
-    unsigned int* voxel_grid_cell = &(voxel_grid_.getData()[getIndex(start_x, start_y)]);
-    unsigned int* local_voxel = local_voxel_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *local_map_cell = *costmap_cell;
-        *local_voxel = *voxel_grid_cell;
-        local_map_cell++;
-        costmap_cell++;
-        local_voxel++;
-        voxel_grid_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-      voxel_grid_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(costmap_, start_x, start_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
+    copyMapRegion(voxel_map, start_x, start_y, size_x_, local_voxel_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
 
     //now we'll reset the costmap to the static map
     memcpy(costmap_, static_map_, size_x_ * size_y_ * sizeof(unsigned char));
@@ -110,22 +97,8 @@ namespace costmap_2d{
     voxel_grid_.reset();
 
     //now we want to copy the local map back into the costmap
-    costmap_cell = &costmap_[getIndex(start_x, start_y)];
-    local_map_cell = local_map;
-    voxel_grid_cell = &(voxel_grid_.getData()[getIndex(start_x, start_y)]);
-    local_voxel = local_voxel_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *costmap_cell = *local_map_cell;
-        *voxel_grid_cell = *local_voxel;
-        local_map_cell++;
-        costmap_cell++;
-        local_voxel++;
-        voxel_grid_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-      voxel_grid_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+    copyMapRegion(local_voxel_map, 0, 0, cell_size_x, voxel_map, start_x, start_y, size_x_, cell_size_x, cell_size_y);
 
     //clean up
     delete[] local_map;
@@ -283,24 +256,11 @@ namespace costmap_2d{
     //we need a map to store the obstacles in the window temporarily
     unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
     unsigned int* local_voxel_map = new unsigned int[cell_size_x * cell_size_y];
+    unsigned int* voxel_map = voxel_grid_.getData(); 
 
     //copy the local window in the costmap to the local map
-    unsigned char* costmap_cell = &costmap_[getIndex(lower_left_x, lower_left_y)];
-    unsigned char* local_map_cell = local_map;
-    unsigned int* voxel_grid_cell = &(voxel_grid_.getData()[getIndex(lower_left_x, lower_left_y)]);
-    unsigned int* local_voxel = local_voxel_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *local_map_cell = *costmap_cell;
-        *local_voxel = *voxel_grid_cell;
-        local_map_cell++;
-        costmap_cell++;
-        local_voxel++;
-        voxel_grid_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-      voxel_grid_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
+    copyMapRegion(voxel_map, lower_left_x, lower_left_y, size_x_, local_voxel_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
 
     //we'll only set the costmap to an unknown value if we care about unknown space
     if(unknown_threshold_ < VOXEL_BITS)
@@ -308,7 +268,6 @@ namespace costmap_2d{
     else  
       memset(costmap_, FREE_SPACE, size_x_ * size_y_ * sizeof(unsigned char));
     
-
     //the voxel grid will just go back to being unknown
     voxel_grid_.reset();
 
@@ -321,22 +280,8 @@ namespace costmap_2d{
     int start_y = lower_left_y - cell_oy;
 
     //now we want to copy the overlapping information back into the map, but in its new location
-    costmap_cell = &costmap_[getIndex(start_x, start_y)];
-    local_map_cell = local_map;
-    voxel_grid_cell = &(voxel_grid_.getData()[getIndex(start_x, start_y)]);
-    local_voxel = local_voxel_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *costmap_cell = *local_map_cell;
-        *voxel_grid_cell = *local_voxel;
-        local_map_cell++;
-        costmap_cell++;
-        local_voxel++;
-        voxel_grid_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-      voxel_grid_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+    copyMapRegion(local_voxel_map, 0, 0, cell_size_x, voxel_map, start_x, start_y, size_x_, cell_size_x, cell_size_y);
 
     //make sure to clean up
     delete[] local_map;

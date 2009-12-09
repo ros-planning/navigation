@@ -114,6 +114,111 @@ namespace costmap_2d{
     }
   }
 
+  /*
+  void Costmap2D::replaceFullMap(double win_origin_x, double win_origin_y,
+                             unsigned int data_size_x, unsigned int data_size_y,
+                             const std::vector<unsigned char>& static_data){
+    //delete our old maps
+    delete[] costmap_;
+    delete[] static_map_;
+    delete[] markers_;
+
+    //update the origin and size of the new map
+    size_x_ = data_size_x;
+    size_y_ = data_size_y;
+    origin_x_ = win_origin_x;
+    origin_y_ = win_origin_y;
+
+    //initialize our various maps
+    costmap_ = new unsigned char[size_x_ * size_y_];
+    static_map_ = new unsigned char[size_x_ * size_y_];
+    markers_ = new unsigned char[size_x_ * size_y_];
+
+    //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
+    ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
+
+    //initialize the costmap with static data
+    for(unsigned int i = 0; i < size_x_; ++i){
+      for(unsigned int j = 0; j < size_y_; ++j){
+        unsigned int index = getIndex(i, j);
+        //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
+        costmap_[index] = static_data[index] >= lethal_threshold ? LETHAL_OBSTACLE : static_data[index];
+        if(costmap_[index] == LETHAL_OBSTACLE){
+          unsigned int mx, my;
+          indexToCells(index, mx, my);
+          enqueue(index, mx, my, mx, my, inflation_queue_);
+        }
+      }
+    }
+    //now... let's inflate the obstacles
+    inflateObstacles(inflation_queue_);
+
+    //we also want to keep a copy of the current costmap as the static map
+    memcpy(static_map_, costmap_, size_x_ * size_y_ * sizeof(unsigned char));
+  }
+
+  void Costmap2D::reshapeCostmap(int m_ox, int m_oy, double win_origin_x, double win_origin_y,
+                                 unsigned int data_size_x, unsigned int data_size_y){
+    int bl_x = std::min(m_ox, 0);
+    int bl_y = std::min(m_oy, 0);
+    int ur_x = std::max(m_ox + data_size_x, size_x_);
+    int ur_y = std::max(m_oy + data_size_y, size_y_);
+
+    //update the origin, cache data we'll need
+    double cmap_origin_x = origin_x_;
+    double cmap_origin_y = origin_y_;
+    unsigned int cmap_size_x = size_x_;
+    unsigned int cmap_size_y = size_y_;
+
+    //delete our old costmap... the user will lose any 
+    //cost information not stored in the static map when reshaping a map
+    delete[] costmap_;
+
+    size_x_ = ur_x - bl_x;
+    size_y_ = ur_y - bl_y;
+    origin_x_ = std::min(origin_x_, win_origin_x);
+    origin_y_ = std::min(origin_y_, win_origin_y);
+
+    //initialize our various maps
+    costmap_ = new unsigned char[size_x_ * size_y_];
+    static_map_ = new unsigned char[size_x_ * size_y_];
+    markers_ = new unsigned char[size_x_ * size_y_];
+
+    //now, copy the old static map into the new costmap
+
+    delete[] static_map_;
+    delete[] markers_;
+  }
+
+  void Costmap2D::updateCostmapWindow(double win_origin_x, double win_origin_y, 
+                                      unsigned int data_size_x, unsigned int data_size_y, 
+                                      const std::vector<unsigned char>& static_data){
+
+    if(data_size_x * data_size_y != static_data.size()){
+      ROS_ERROR("The sizes passed in are incorrect for the size of the static data char array. Doing nothing.");
+      return;
+    }
+
+    //get the map coordinates of the origin of static map window
+    int m_ox, m_oy;
+    worldToMapNoBounds(win_origin_x, win_origin_y);
+
+    //if the static map contains the full costmap, then we'll just overwrite the costmap
+    if(m_ox <= 0 && m_oy <= 0 && (m_ox + data_size_x) >= size_x_ && (m_oy + data_size_y) >= size_y_){
+      replaceFullMap(win_origin_x, win_origin_y, data_size_x, data_size_y, static_data);
+    }
+    //if the static map overlaps with the costmap, but not completely... we'll have to resize the costmap and maintain certain information
+    else if(m_ox < 0 || m_oy < 0 || (m_ox + data_size_x) > size_x_ || (m_oy + data_size_y) > size_y_){
+      //first, we'll create a map of the right size and write the costmap into it
+
+      //next, we'll 
+    }
+    //if the costmap fully contains the changes we'll make with the static map... then we can just overwrite a portion of the costmap
+    else{
+    }
+  }
+  */
+
   void Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
     //check for self windowing
     if(this == &map){
@@ -122,9 +227,9 @@ namespace costmap_2d{
     }
 
     //clean up old data
-    if(costmap_ != NULL) delete[] costmap_;
-    if(static_map_ != NULL) delete[] static_map_;
-    if(markers_ != NULL) delete[] markers_;
+    delete[] costmap_;
+    delete[] static_map_;
+    delete[] markers_;
 
     if(cached_distances_ != NULL){
       for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
@@ -167,13 +272,9 @@ namespace costmap_2d{
     memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
 
     //copy the window of the static map and the costmap that we're taking
-    for(unsigned int i = 0; i < size_y_; ++i){
-      unsigned int offset = i * size_x_;
-      unsigned int map_offset = (i + lower_left_y) * map.size_x_ + lower_left_x;
-      memcpy(static_map_ + offset, map.static_map_ + map_offset, size_x_ * sizeof(unsigned char));
-      memcpy(costmap_ + offset, map.costmap_ + map_offset, size_x_ * sizeof(unsigned char));
-    }
-
+    copyMapRegion(map.costmap_, lower_left_x, lower_left_y, map.size_x_, costmap_, 0, 0, size_x_, size_x_, size_y_);
+    copyMapRegion(map.static_map_, lower_left_x, lower_left_y, map.size_x_, static_map_, 0, 0, size_x_, size_x_, size_y_);
+    
     max_obstacle_range_ = map.max_obstacle_range_;
     max_obstacle_height_ = map.max_obstacle_height_;
     max_raytrace_range_ = map.max_raytrace_range_;
@@ -380,31 +481,13 @@ namespace costmap_2d{
     unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
 
     //copy the local window in the costmap to the local map
-    unsigned char* costmap_cell = &costmap_[getIndex(start_x, start_y)];
-    unsigned char* local_map_cell = local_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *local_map_cell = *costmap_cell;
-        local_map_cell++;
-        costmap_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(costmap_, start_x, start_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
 
     //now we'll reset the costmap to the static map
     memcpy(costmap_, static_map_, size_x_ * size_y_ * sizeof(unsigned char));
 
     //now we want to copy the local map back into the costmap
-    costmap_cell = &costmap_[getIndex(start_x, start_y)];
-    local_map_cell = local_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *costmap_cell = *local_map_cell;
-        local_map_cell++;
-        costmap_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
 
     //clean up
     delete[] local_map;
@@ -713,16 +796,7 @@ namespace costmap_2d{
     unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
 
     //copy the local window in the costmap to the local map
-    unsigned char* costmap_cell = &costmap_[getIndex(lower_left_x, lower_left_y)];
-    unsigned char* local_map_cell = local_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *local_map_cell = *costmap_cell;
-        local_map_cell++;
-        costmap_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
 
     //now we'll set the costmap to be completely unknown if we track unknown space
     if(track_unknown_space_){
@@ -741,16 +815,7 @@ namespace costmap_2d{
     int start_y = lower_left_y - cell_oy;
 
     //now we want to copy the overlapping information back into the map, but in its new location
-    costmap_cell = &costmap_[getIndex(start_x, start_y)];
-    local_map_cell = local_map;
-    for(unsigned int y = 0; y < cell_size_y; ++y){
-      for(unsigned int x = 0; x < cell_size_x; ++x){
-        *costmap_cell = *local_map_cell;
-        local_map_cell++;
-        costmap_cell++;
-      }
-      costmap_cell += size_x_ - cell_size_x;
-    }
+    copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
 
     //make sure to clean up
     delete[] local_map;
