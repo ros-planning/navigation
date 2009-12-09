@@ -359,6 +359,18 @@ namespace costmap_2d {
        */
       void saveMap(std::string file_name);
 
+      /**
+       * @brief  Update the costmap's static map with new data
+       * @param win_origin_x The x origin of the map we'll be using to replace the static map
+       * @param win_origin_y The y origin of the map we'll be using to replace the static map
+       * @param data_size_x The x size of the map we'll be using to replace the static map 
+       * @param data_size_y The y size of the map we'll be using to replace the static map 
+       * @param static_data The data that we'll use for our new costmap
+       */
+      void updateCostmapWindow(double win_origin_x, double win_origin_y, 
+          unsigned int data_size_x, unsigned int data_size_y, 
+          const std::vector<unsigned char>& static_data);
+
     protected:
       /**
        * @brief  Given an index of a cell in the costmap, place it into a priority queue for obstacle inflation
@@ -434,19 +446,63 @@ namespace costmap_2d {
       void deleteMaps();
 
       /**
+       * @brief  Resets the costmap and static_map to be unknown space
+       */
+      void resetMaps();
+
+      /**
        * @brief  Deletes the cached kernels
        */
       void deleteKernels();
 
       /**
        * @brief  Initializes the costmap, static_map, and markers data structures
+       * @param size_x The x size to use for map initialization
+       * @param size_y The y size to use for map initialization
        */
-      void initMapData(unsigned int size_x, unsigned int size_y);
+      void initMaps(unsigned int size_x, unsigned int size_y);
 
       /**
        * @brief  Copies kernel information from a costmap
+       * @param map The costmap to copy kernel information from 
+       * @param cell_inflation_radius The radius to use when copying the kernel
        */
       void copyKernels(const Costmap2D& map, unsigned int cell_inflation_radius);
+
+      /**
+       * @brief  Replace the costmap with a map of a different size
+       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
+       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
+       * @param data_size_x The x size of the map we'll be using to replace the costmap 
+       * @param data_size_y The y size of the map we'll be using to replace the costmap 
+       * @param static_data The data that we'll use for our new costmap
+       */
+      void replaceFullMap(double win_origin_x, double win_origin_y,
+          unsigned int data_size_x, unsigned int data_size_y,
+          const std::vector<unsigned char>& static_data);
+
+      /**
+       * @brief  Reshape a map to take an update that is not fully contained within the costmap
+       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
+       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
+       * @param data_size_x The x size of the map we'll be using to replace the costmap 
+       * @param data_size_y The y size of the map we'll be using to replace the costmap 
+       * @param static_data The data that we'll use for our new costmap
+       */
+      void reshapeStaticMap(double win_origin_x, double win_origin_y,
+          unsigned int data_size_x, unsigned int data_size_y, const std::vector<unsigned char>& static_data);
+
+      /**
+       * @brief  Replace a window of the costmap with static data
+       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
+       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
+       * @param data_size_x The x size of the map we'll be using to replace the costmap 
+       * @param data_size_y The y size of the map we'll be using to replace the costmap 
+       * @param static_data The data that we'll use for our new costmap
+       */
+      void replaceStaticMapWindow(double win_origin_x, double win_origin_y, 
+          unsigned int data_size_x, unsigned int data_size_y, 
+          const std::vector<unsigned char>& static_data);
 
     private:
       /**
@@ -606,7 +662,7 @@ namespace costmap_2d {
       double inscribed_radius_, circumscribed_radius_, inflation_radius_;
       unsigned int cell_inscribed_radius_, cell_circumscribed_radius_, cell_inflation_radius_;
       double weight_;
-      unsigned char circumscribed_cost_lb_;
+      unsigned char circumscribed_cost_lb_, lethal_threshold_;
       bool track_unknown_space_;
       std::priority_queue<CellData> inflation_queue_;
 
