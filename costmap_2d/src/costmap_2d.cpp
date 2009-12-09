@@ -219,6 +219,51 @@ namespace costmap_2d{
   }
   */
 
+  void Costmap2D::deleteMaps(){
+    //clean up old data
+    delete[] costmap_;
+    delete[] static_map_;
+    delete[] markers_;
+  }
+
+  void Costmap2D::deleteKernels(){
+    if(cached_distances_ != NULL){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+        delete[] cached_distances_[i];
+      }
+      delete[] cached_distances_;
+    }
+
+    if(cached_costs_ != NULL){
+      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+        delete[] cached_costs_[i];
+      }
+      delete[] cached_costs_;
+    }
+  }
+
+  void Costmap2D::initMapData(unsigned int size_x, unsigned int size_y){
+    costmap_ = new unsigned char[size_x * size_y];
+    static_map_ = new unsigned char[size_x * size_y];
+    markers_ = new unsigned char[size_x * size_y];
+
+    //reset markers for inflation
+    memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
+  }
+  
+  void Costmap2D::copyKernels(const Costmap2D& map, unsigned int cell_inflation_radius){
+    cached_costs_ = new unsigned char*[cell_inflation_radius + 2];
+    cached_distances_ = new double*[cell_inflation_radius + 2];
+    for(unsigned int i = 0; i <= cell_inflation_radius + 1; ++i){
+      cached_costs_[i] = new unsigned char[cell_inflation_radius + 2];
+      cached_distances_[i] = new double[cell_inflation_radius + 2];
+      for(unsigned int j = 0; j <= cell_inflation_radius + 1; ++j){
+        cached_distances_[i][j] = map.cached_distances_[i][j];
+        cached_costs_[i][j] = map.cached_costs_[i][j];
+      }
+    }
+  }
+
   void Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
     //check for self windowing
     if(this == &map){
@@ -227,23 +272,8 @@ namespace costmap_2d{
     }
 
     //clean up old data
-    delete[] costmap_;
-    delete[] static_map_;
-    delete[] markers_;
-
-    if(cached_distances_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-        if(cached_distances_[i] != NULL) delete[] cached_distances_[i];
-      }
-      delete[] cached_distances_;
-    }
-
-    if(cached_costs_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-        if(cached_costs_[i] != NULL) delete[] cached_costs_[i];
-      }
-      delete[] cached_costs_;
-    }
+    deleteMaps();
+    deleteKernels();
 
     //compute the bounds of our new map
     unsigned int lower_left_x, lower_left_y, upper_right_x, upper_right_y;
@@ -263,13 +293,8 @@ namespace costmap_2d{
         lower_left_x, lower_left_y, upper_right_x, upper_right_y, size_x_, size_y_, origin_x_, origin_y_);
 
 
-    //initialize our various maps
-    costmap_ = new unsigned char[size_x_ * size_y_];
-    static_map_ = new unsigned char[size_x_ * size_y_];
-    markers_ = new unsigned char[size_x_ * size_y_];
-
-    //reset markers for inflation
-    memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
+    //initialize our various maps and reset markers for inflation
+    initMapData(size_x_, size_y_);
 
     //copy the window of the static map and the costmap that we're taking
     copyMapRegion(map.costmap_, lower_left_x, lower_left_y, map.size_x_, costmap_, 0, 0, size_x_, size_x_, size_y_);
@@ -293,16 +318,7 @@ namespace costmap_2d{
     weight_ = map.weight_;
 
     //copy the cost and distance kernels
-    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
-    cached_distances_ = new double*[cell_inflation_radius_ + 2];
-    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
-      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
-      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
-        cached_distances_[i][j] = map.cached_distances_[i][j];
-        cached_costs_[i][j] = map.cached_costs_[i][j];
-      }
-    }
+    copyKernels(map, cell_inflation_radius_);
   }
 
   Costmap2D& Costmap2D::operator=(const Costmap2D& map) {
@@ -311,23 +327,8 @@ namespace costmap_2d{
       return *this;
 
     //clean up old data
-    if(costmap_ != NULL) delete[] costmap_;
-    if(static_map_ != NULL) delete[] static_map_;
-    if(markers_ != NULL) delete[] markers_;
-
-    if(cached_distances_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-        if(cached_distances_[i] != NULL) delete[] cached_distances_[i];
-      }
-      delete[] cached_distances_;
-    }
-
-    if(cached_costs_ != NULL){
-      for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-        if(cached_costs_[i] != NULL) delete[] cached_costs_[i];
-      }
-      delete[] cached_costs_;
-    }
+    deleteMaps();
+    deleteKernels();
 
     size_x_ = map.size_x_;
     size_y_ = map.size_y_;
@@ -336,12 +337,7 @@ namespace costmap_2d{
     origin_y_ = map.origin_y_;
 
     //initialize our various maps
-    costmap_ = new unsigned char[size_x_ * size_y_];
-    static_map_ = new unsigned char[size_x_ * size_y_];
-    markers_ = new unsigned char[size_x_ * size_y_];
-
-    //reset markers for inflation
-    memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
+    initMapData(size_x_, size_y_);
 
     //copy the static map
     memcpy(static_map_, map.static_map_, size_x_ * size_y_ * sizeof(unsigned char));
@@ -367,16 +363,7 @@ namespace costmap_2d{
     weight_ = map.weight_;
 
     //copy the cost and distance kernels
-    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
-    cached_distances_ = new double*[cell_inflation_radius_ + 2];
-    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
-      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
-      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
-        cached_distances_[i][j] = map.cached_distances_[i][j];
-        cached_costs_[i][j] = map.cached_costs_[i][j];
-      }
-    }
+    copyKernels(map, cell_inflation_radius_);
 
     return *this;
   }
