@@ -363,37 +363,25 @@ TEST(costmap, testOverlapStaticMapUpdate){
   Costmap2D static_map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
       10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-
-  printf("(%d, %d)\n", map.getSizeInCellsX(), map.getSizeInCellsY());
-  for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
-    for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
-      //ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
-      printf("%3d ", map.getCost(i, j));
-    }
-    printf("\n");
-  }
-
-  printf("\n");
-
-  for(unsigned int i = 0; i < static_map.getSizeInCellsX(); ++i){
-    for(unsigned int j = 0; j < static_map.getSizeInCellsY(); ++j){
-      //ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
-      printf("%3d ", static_map.getCost(i, j));
-    }
-    printf("\n");
-  }
-
-  printf("\n");
-
   map.updateStaticMapWindow(-10, -10, 10, 10, MAP_10_BY_10);
 
-  printf("(%d, %d)\n", map.getSizeInCellsX(), map.getSizeInCellsY());
+  ASSERT_EQ(map.getOriginX(), -10);
+  ASSERT_EQ(map.getOriginX(), -10);
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
+    }
+  }
+
+  std::vector<unsigned char> blank(100);
+
+  //check to make sure that inflation on updates are being done correctly
+  map.updateStaticMapWindow(-10, -10, 10, 10, blank);
+
   for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
     for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
-      //ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
-      printf("%3d ", map.getCost(i, j));
+      ASSERT_EQ(map.getCost(i, j), 0);
     }
-    printf("\n");
   }
 
 }

@@ -154,25 +154,7 @@ namespace costmap_2d{
       return;
     }
 
-    //copy static data into the costmap... this could be made more efficient if it becomes necessary
-    for(unsigned int i = start_x; i < (start_x + data_size_x); ++i){
-      for(unsigned int j = start_y; j < (start_y + data_size_y); ++j){
-        unsigned int index = getIndex(i, j);
-        unsigned int static_index = j * data_size_y + i;
-        //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
-        costmap_[index] = static_data[static_index] >= lethal_threshold_ ? LETHAL_OBSTACLE : static_data[static_index];
-        if(costmap_[index] == LETHAL_OBSTACLE){
-          unsigned int mx, my;
-          indexToCells(index, mx, my);
-          enqueue(index, mx, my, mx, my, inflation_queue_);
-        }
-      }
-    }
-
-    //now... let's inflate the obstacles
-    inflateObstacles(inflation_queue_);
-
-    //we need to compute the region of the costmap that could've changed from inflation of obstacles
+    //we need to compute the region of the costmap that could change from inflation of new obstacles
     unsigned int max_inflation_change = 2 * cell_inflation_radius_;
 
     //make sure that we don't go out of map bounds
@@ -183,6 +165,39 @@ namespace costmap_2d{
 
     unsigned int copy_size_x = copy_ex - copy_sx;
     unsigned int copy_size_y = copy_ey - copy_sy;
+
+    //now... we have to compute the window
+    double ll_x, ll_y, ur_x, ur_y;
+    mapToWorld(copy_sx, copy_sy, ll_x, ll_y);
+    mapToWorld(copy_ex, copy_ey, ur_x, ur_y);
+    double mid_x = (ll_x + ur_x) / 2;
+    double mid_y = (ll_y + ur_y) / 2;
+    double size_x = ur_x - ll_x;
+    double size_y = ur_y - ll_y;
+
+    //finally... we'll clear all non-lethal costs in the area that could be affected by the map update
+    //we'll reinflate after the map update is complete
+    clearNonLethal(mid_x, mid_y, size_x, size_y);
+
+    //copy static data into the costmap
+    unsigned int start_index = start_y * size_x_ + start_x;
+    unsigned char* costmap_index = costmap_ + start_index;
+    std::vector<unsigned char>::const_iterator static_data_index =  static_data.begin();
+    for(unsigned int i = 0; i < data_size_y; ++i){
+      for(unsigned int j = 0; j < data_size_x; ++j){
+        //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
+        *costmap_index = *static_data_index >= lethal_threshold_ ? LETHAL_OBSTACLE : *static_data_index;
+        ++costmap_index;
+        ++static_data_index;
+      }
+      costmap_index += size_x_ - data_size_x;
+    }
+
+    //now, we're ready to reinflate obstacles in the window that has been updated
+    //we won't clear all non-lethal obstacles first because the static map update
+    //may have included non-lethal costs
+    reinflateWindow(mid_x, mid_y, size_x, size_y, false);
+
 
     //we also want to keep a copy of the current costmap as the static map... we'll only need to write the region that has changed
     copyMapRegion(costmap_, copy_sx, copy_sy, size_x_, static_map_, copy_sx, copy_sy, size_x_, copy_size_x, copy_size_y);
@@ -773,8 +788,10 @@ namespace costmap_2d{
     unsigned int map_sx, map_sy, map_ex, map_ey;
 
     //check for legality just in case
-    if(!worldToMap(start_x, start_y, map_sx, map_sy) || !worldToMap(end_x, end_y, map_ex, map_ey))
+    if(!worldToMap(start_x, start_y, map_sx, map_sy) || !worldToMap(end_x, end_y, map_ex, map_ey)){
+      ROS_ERROR("Bounds not legal for reset window. Doing nothing.");
       return;
+    }
 
     //we know that we want to clear all non-lethal obstacles in this window to get it ready for inflation
     unsigned int index = getIndex(map_sx, map_sy);
