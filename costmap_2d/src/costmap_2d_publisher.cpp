@@ -43,7 +43,7 @@ namespace costmap_2d {
 
     obs_pub_ = ros_node.advertise<nav_msgs::GridCells>("obstacles", 1);
     inf_obs_pub_ = ros_node.advertise<nav_msgs::GridCells>("inflated_obstacles", 1);
-    unknown_space_pub_ = ros_node.advertise<nav_msgs::GridCells>("uknown_space", 1);
+    unknown_space_pub_ = ros_node.advertise<nav_msgs::GridCells>("unknown_space", 1);
     footprint_pub_ = ros_node.advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);
 
     visualizer_thread_ = new boost::thread(boost::bind(&Costmap2DPublisher::mapPublishLoop, this, publish_frequency));
