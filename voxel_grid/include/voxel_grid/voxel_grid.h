@@ -70,6 +70,14 @@ namespace voxel_grid {
 
       ~VoxelGrid();
 
+      /**
+       * @brief  Resizes a voxel grid to the desired size
+       * @param size_x The x size of the grid
+       * @param size_y The y size of the grid
+       * @param size_z The z size of the grid, only sizes <= 16 are supported
+       */
+      void resize(unsigned int size_x, unsigned int size_y, unsigned int size_z);
+
       void reset();
       uint32_t* getData() {return data_;}
 

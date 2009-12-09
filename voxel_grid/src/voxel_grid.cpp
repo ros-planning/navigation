@@ -45,8 +45,10 @@ namespace voxel_grid {
     size_y_ = size_y; 
     size_z_ = size_z; 
 
-    if(size_z_ > 16)
+    if(size_z_ > 16){
       ROS_INFO("Error, this implementation can only support up to 16 z values"); 
+      size_z_ = 16;
+    }
 
     data_ = new uint32_t[size_x_ * size_y_];
     uint32_t unknown_col = ~((uint32_t)0)>>16;
@@ -56,6 +58,33 @@ namespace voxel_grid {
       ++col;
     }
   }
+
+  void VoxelGrid::resize(unsigned int size_x, unsigned int size_y, unsigned int size_z)
+  {
+    //if we're not actually changing the size, we can just reset things
+    if(size_x == size_x_ || size_y == size_y_ || size_z == size_z_){
+      reset();
+      return;
+    }
+
+    delete[] data_;
+    size_x_ = size_x; 
+    size_y_ = size_y; 
+    size_z_ = size_z; 
+
+    if(size_z_ > 16){
+      ROS_INFO("Error, this implementation can only support up to 16 z values"); 
+      size_z_ = 16;
+    }
+
+    data_ = new uint32_t[size_x_ * size_y_];
+    uint32_t unknown_col = ~((uint32_t)0)>>16;
+    uint32_t* col = data_;
+    for(unsigned int i = 0; i < size_x_ * size_y_; ++i){
+      *col = unknown_col;
+      ++col;
+    }
+   }
 
   VoxelGrid::~VoxelGrid()
   {

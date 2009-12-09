@@ -122,6 +122,20 @@ namespace costmap_2d {
         wz = origin_z + (mz + 0.5) * z_resolution;
       }
 
+    protected:
+      /**
+       * @brief  Resets the costmap, static_map, and voxel_grid to be unknown space
+       */
+      virtual void resetMaps();
+
+      /**
+       * @brief  Initializes the costmap, static_map, voxel grid, and markers data structures
+       * @param size_x The x size to use for map initialization
+       * @param size_y The y size to use for map initialization
+       */
+      virtual void initMaps(unsigned int size_x, unsigned int size_y);
+
+
     private:
       /**
        * @brief  Insert new obstacles into the cost map

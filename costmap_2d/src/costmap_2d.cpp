@@ -234,7 +234,7 @@ namespace costmap_2d{
     replaceStaticMapWindow(win_origin_x, win_origin_y, data_size_x, data_size_y, static_data);
   }
 
-  void Costmap2D::updateCostmapWindow(double win_origin_x, double win_origin_y, 
+  void Costmap2D::updateStaticMapWindow(double win_origin_x, double win_origin_y, 
                                       unsigned int data_size_x, unsigned int data_size_y, 
                                       const std::vector<unsigned char>& static_data){
 

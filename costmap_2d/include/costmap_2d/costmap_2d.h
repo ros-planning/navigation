@@ -367,7 +367,7 @@ namespace costmap_2d {
        * @param data_size_y The y size of the map we'll be using to replace the static map 
        * @param static_data The data that we'll use for our new costmap
        */
-      void updateCostmapWindow(double win_origin_x, double win_origin_y, 
+      void updateStaticMapWindow(double win_origin_x, double win_origin_y, 
           unsigned int data_size_x, unsigned int data_size_y, 
           const std::vector<unsigned char>& static_data);
 
@@ -443,12 +443,12 @@ namespace costmap_2d {
       /**
        * @brief  Deletes the costmap, static_map, and markers data structures
        */
-      void deleteMaps();
+      virtual void deleteMaps();
 
       /**
        * @brief  Resets the costmap and static_map to be unknown space
        */
-      void resetMaps();
+      virtual void resetMaps();
 
       /**
        * @brief  Deletes the cached kernels
@@ -460,7 +460,7 @@ namespace costmap_2d {
        * @param size_x The x size to use for map initialization
        * @param size_y The y size to use for map initialization
        */
-      void initMaps(unsigned int size_x, unsigned int size_y);
+      virtual void initMaps(unsigned int size_x, unsigned int size_y);
 
       /**
        * @brief  Copies kernel information from a costmap

@@ -55,6 +55,16 @@ namespace costmap_2d{
 
   VoxelCostmap2D::~VoxelCostmap2D(){}
 
+  void VoxelCostmap2D::initMaps(unsigned int size_x, unsigned int size_y){
+    Costmap2D::initMaps(size_x, size_y);
+    voxel_grid_.resize(size_x, size_y, size_z_);
+  }
+
+  void VoxelCostmap2D::resetMaps(){
+    Costmap2D::resetMaps();
+    voxel_grid_.reset();
+  }
+
   void VoxelCostmap2D::resetMapOutsideWindow(double wx, double wy, double w_size_x, double w_size_y){
     ROS_ASSERT_MSG(w_size_x >= 0 && w_size_y >= 0, "You cannot specify a negative size window");
 
@@ -262,14 +272,8 @@ namespace costmap_2d{
     copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
     copyMapRegion(voxel_map, lower_left_x, lower_left_y, size_x_, local_voxel_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
 
-    //we'll only set the costmap to an unknown value if we care about unknown space
-    if(unknown_threshold_ < VOXEL_BITS)
-      memset(costmap_, NO_INFORMATION, size_x_ * size_y_ * sizeof(unsigned char));
-    else  
-      memset(costmap_, FREE_SPACE, size_x_ * size_y_ * sizeof(unsigned char));
-    
-    //the voxel grid will just go back to being unknown
-    voxel_grid_.reset();
+    //we'll reset our maps to unknown space if appropriate
+    resetMaps();
 
     //update the origin with the appropriate world coordinates
     origin_x_ = new_grid_ox;
