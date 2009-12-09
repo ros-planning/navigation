@@ -630,6 +630,31 @@ namespace costmap_2d {
     costmap = *costmap_;
   }
 
+  void Costmap2DROS::updateStaticMap(const nav_msgs::OccupancyGrid& new_map){
+    std::vector<unsigned char> new_map_data;
+    // We are treating cells with no information as lethal obstacles based on the input data. This is not ideal but
+    // our planner and controller do not reason about the no obstacle case
+    unsigned int numCells = new_map.info.width * new_map.info.height;
+    for(unsigned int i = 0; i < numCells; i++){
+      new_map_data.push_back((unsigned char) new_map.data[i]);
+    }
+
+    double map_width = (unsigned int)new_map.info.width;
+    double map_height = (unsigned int)new_map.info.height;
+    double map_resolution = new_map.info.resolution;
+    double map_origin_x = new_map.info.origin.position.x;
+    double map_origin_y = new_map.info.origin.position.y;
+
+    boost::recursive_mutex::scoped_lock lock(lock_);
+    if(fabs(map_resolution - costmap_->getResolution()) > 1e-6){
+      ROS_ERROR("You cannot update a map with resolution: %.4f, with a new map that has resolution: %.4f", 
+          costmap_->getResolution(), map_resolution);
+      return;
+    }
+
+    costmap_->updateStaticMapWindow(map_origin_x, map_origin_y, map_width, map_height, new_map_data);
+  }
+
   void Costmap2DROS::getCostmapWindowCopy(double win_size_x, double win_size_y, Costmap2D& costmap){
     boost::recursive_mutex::scoped_lock lock(lock_);
     tf::Stamped<tf::Pose> global_pose;

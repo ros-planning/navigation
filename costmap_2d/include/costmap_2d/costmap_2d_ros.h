@@ -45,6 +45,7 @@
 #include <costmap_2d/observation_buffer.h>
 #include <costmap_2d/voxel_costmap_2d.h>
 #include <costmap_2d/VoxelGrid.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <map>
 #include <vector>
 #include <string>
@@ -174,6 +175,14 @@ namespace costmap_2d {
        * @param costmap A reference to the map to populate
        */
       void getCostmapCopy(Costmap2D& costmap);
+
+      /**
+       * @brief  Updates the costmap's static map with new information
+       * @param new_map The map to put into the costmap. The origin of the new
+       * map along with its size will determine what parts of the costmap's
+       * static map are overwritten.
+       */
+      void updateStaticMap(const nav_msgs::OccupancyGrid& new_map);
 
       /**
        * @brief  Get a copy of a window of the costmap centered at the robot's
