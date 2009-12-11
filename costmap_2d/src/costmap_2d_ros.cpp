@@ -104,7 +104,7 @@ namespace costmap_2d {
       source_node.param("observation_persistence", observation_keep_time, 0.0);
       source_node.param("expected_update_rate", expected_update_rate, 0.0);
       source_node.param("data_type", data_type, std::string("PointCloud"));
-      source_node.param("min_obstacle_height", min_obstacle_height, 0.05);
+      source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
       source_node.param("max_obstacle_height", max_obstacle_height, 2.0);
 
       ROS_ASSERT_MSG(data_type == "PointCloud" || data_type == "LaserScan", "Only topics that use point clouds or laser scans are currently supported");
