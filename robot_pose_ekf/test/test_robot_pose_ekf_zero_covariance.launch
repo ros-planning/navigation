@@ -13,7 +13,7 @@
   <remap from="/vo" to="/ins" />
 </node>
 
-<node pkg="rosrecord" type="rosplay" args="$(find robot_pose_ekf)/test/zero_covariance.bag" />
+<node pkg="rosrecord" name="rosplay" type="rosplay" args="$(find robot_pose_ekf)/test/zero_covariance.bag" />
 
 <test test-name="test_robot_pose_ekf" pkg="robot_pose_ekf" type="test_robot_pose_ekf_zero_covariance" />
 
