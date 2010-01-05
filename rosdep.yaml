@@ -1,0 +1,7 @@
+netpbm:
+  ubuntu: libnetpbm10-dev
+  debian: libnetpbm10-dev
+  arch: netpbm
+  macports: netpbm
+  fedora: netpbm
+  gentoo: netpbm
