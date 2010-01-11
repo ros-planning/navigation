@@ -52,8 +52,8 @@
 #include <sstream>
 
 #include <tf/transform_datatypes.h>
-#include <tf/message_notifier_base.h>
-#include <tf/message_notifier.h>
+#include <costmap_2d/deprecated/message_notifier_base.h>
+#include <costmap_2d/deprecated/message_notifier.h>
 #include <tf/transform_listener.h>
 
 #include <sensor_msgs/LaserScan.h>
@@ -306,14 +306,14 @@ namespace costmap_2d {
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
        */
-      void laserScanCallback(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+      void laserScanCallback(const MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
 
       /**
        * @brief  A callback to handle buffering PointCloud messages
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
        */
-      void pointCloudCallback(const tf::MessageNotifier<sensor_msgs::PointCloud>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+      void pointCloudCallback(const MessageNotifier<sensor_msgs::PointCloud>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
 
       /**
        * @brief  The loop that handles updating the costmap
@@ -343,7 +343,7 @@ namespace costmap_2d {
       std::string robot_base_frame_; ///< @brief The frame_id of the robot base
       boost::thread* map_update_thread_; ///< @brief A thread for updating the map
 
-      std::vector<boost::shared_ptr<tf::MessageNotifierBase> > observation_notifiers_; ///< @brief Used to make sure that transforms are available for each sensor
+      std::vector<boost::shared_ptr<MessageNotifierBase> > observation_notifiers_; ///< @brief Used to make sure that transforms are available for each sensor
       std::vector<boost::shared_ptr<ObservationBuffer> > observation_buffers_; ///< @brief Used to store observations from various sensors
       std::vector<boost::shared_ptr<ObservationBuffer> > marking_buffers_; ///< @brief Used to store observation buffers used for marking obstacles
       std::vector<boost::shared_ptr<ObservationBuffer> > clearing_buffers_; ///< @brief Used to store observation buffers used for clearing obstacles

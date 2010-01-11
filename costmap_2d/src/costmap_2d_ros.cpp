@@ -153,12 +153,12 @@ namespace costmap_2d {
 
       //create a callback for the topic
       if(data_type == "LaserScan"){
-        observation_notifiers_.push_back(boost::shared_ptr<tf::MessageNotifierBase>(new tf::MessageNotifier<sensor_msgs::LaserScan>(tf_, 
+        observation_notifiers_.push_back(boost::shared_ptr<MessageNotifierBase>(new MessageNotifier<sensor_msgs::LaserScan>(tf_, 
               boost::bind(&Costmap2DROS::laserScanCallback, this, _1, observation_buffers_.back()), topic, global_frame_, 50)));
         observation_notifiers_.back()->setTolerance(ros::Duration(0.05));
       }
       else{
-        observation_notifiers_.push_back(boost::shared_ptr<tf::MessageNotifierBase>(new tf::MessageNotifier<sensor_msgs::PointCloud>(tf_,
+        observation_notifiers_.push_back(boost::shared_ptr<MessageNotifierBase>(new MessageNotifier<sensor_msgs::PointCloud>(tf_,
               boost::bind(&Costmap2DROS::pointCloudCallback, this, _1, observation_buffers_.back()), topic, global_frame_, 50)));
       }
 
@@ -456,7 +456,7 @@ namespace costmap_2d {
       observation_buffers_.push_back(buffer);
   }
 
-  void Costmap2DROS::laserScanCallback(const tf::MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
+  void Costmap2DROS::laserScanCallback(const MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
     //project the laser into a point cloud
     sensor_msgs::PointCloud base_cloud;
     base_cloud.header = message->header;
@@ -478,7 +478,7 @@ namespace costmap_2d {
     buffer->unlock();
   }
 
-  void Costmap2DROS::pointCloudCallback(const tf::MessageNotifier<sensor_msgs::PointCloud>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
+  void Costmap2DROS::pointCloudCallback(const MessageNotifier<sensor_msgs::PointCloud>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
     //buffer the point cloud
     buffer->lock();
     buffer->bufferCloud(*message);
