@@ -56,7 +56,6 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
 
-#include <tf/message_notifier.h>
 #include <tf/transform_listener.h>
 
 #include <boost/thread.hpp>
