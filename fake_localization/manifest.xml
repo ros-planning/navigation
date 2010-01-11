@@ -9,5 +9,6 @@
   <depend package="nav_msgs" />
   <depend package="geometry_msgs" />
   <depend package="tf" />
+  <depend package="message_filters" />
   <depend package="angles" />
 </package>

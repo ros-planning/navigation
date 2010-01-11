@@ -83,7 +83,8 @@ Publishes to (name / type):
 
 #include "tf/transform_broadcaster.h"
 #include "tf/transform_listener.h"
-#include "tf/message_notifier.h"
+#include "tf/message_filter.h"
+#include "message_filters/subscriber.h"
 
 
 class FakeOdomNode
@@ -107,10 +108,10 @@ public:
       m_particleCloud.header.stamp = ros::Time::now();
       m_particleCloud.header.frame_id = "/map";
       m_particleCloud.set_poses_size(1);
-      notifier = new tf::MessageNotifier<nav_msgs::Odometry>(*m_tfListener, 
-                                                                           boost::bind(&FakeOdomNode::update, this, _1),
-                                                                           "",//empty topic it will be manually stuffed
-                                                                           odom_frame_id_, 100);
+      ros::NodeHandle nh;
+      filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "", 100);
+      filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, odom_frame_id_, 100);
+      filter_->registerCallback(boost::bind(&FakeOdomNode::update, this, _1));
       m_groundTruthSub = m_nh.subscribe("base_pose_ground_truth", 1, &FakeOdomNode::basePosReceived, this);
     }
     
@@ -141,7 +142,8 @@ private:
   ros::Subscriber m_groundTruthSub;
     tf::TransformBroadcaster       *m_tfServer;
     tf::TransformListener          *m_tfListener;
-    tf::MessageNotifier<nav_msgs::Odometry>* notifier;
+    tf::MessageFilter<nav_msgs::Odometry>* filter_;
+    message_filters::Subscriber<nav_msgs::Odometry>* filter_sub_;
   
     ros::Time                      m_lastUpdate;
     double                         m_maxPublishFrequency;
@@ -158,15 +160,15 @@ private:
   void basePosReceived(const nav_msgs::OdometryConstPtr& msg)
   {
     m_basePosMsg = *msg;
-    m_basePosMsg.header.frame_id = "base_footprint"; //hack to make the notifier do what I want (changed back later)
+    m_basePosMsg.header.frame_id = "base_footprint"; //hack to make the filter do what I want (changed back later)
     boost::shared_ptr<nav_msgs::Odometry>  message(new nav_msgs::Odometry);
     *message = m_basePosMsg;
-    notifier->enqueueMessage(message);
+    filter_->add(message);
     //    update();
   }
 public:
-  void update(const tf::MessageNotifier<nav_msgs::Odometry>::MessagePtr & message){
-    tf::Quaternion delta_orientation( -delta_yaw_, 0, 0 );
+  void update(const nav_msgs::OdometryConstPtr& message){
+    tf::Quaternion delta_orientation = tf::createQuaternionFromRPY(0, 0, -delta_yaw_ );
     tf::Quaternion orientation(message->pose.pose.orientation.x,
         message->pose.pose.orientation.y, 
         message->pose.pose.orientation.z, 
