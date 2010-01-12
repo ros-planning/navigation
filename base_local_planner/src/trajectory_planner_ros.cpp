@@ -197,9 +197,9 @@ namespace base_local_planner {
 
   bool TrajectoryPlannerROS::stopped(){
     boost::recursive_mutex::scoped_lock(odom_lock_);
-    return abs(last_cmd_vel_.angular.z) <= rot_stopped_velocity_ 
-      && abs(last_cmd_vel_.linear.x) <= trans_stopped_velocity_
-      && abs(last_cmd_vel_.linear.y) <= trans_stopped_velocity_;
+    return abs(base_odom_.twist.twist.angular.z) <= rot_stopped_velocity_ 
+      && abs(base_odom_.twist.twist.linear.x) <= trans_stopped_velocity_
+      && abs(base_odom_.twist.twist.linear.y) <= trans_stopped_velocity_;
   }
 
   double TrajectoryPlannerROS::distance(double x1, double y1, double x2, double y2){
@@ -244,29 +244,13 @@ namespace base_local_planner {
   }
 
   void TrajectoryPlannerROS::odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
+    //we assume that the odometry is published in the frame of the base
     boost::recursive_mutex::scoped_lock(odom_lock_);
-    try
-    {
-      tf::Stamped<btVector3> v_in(btVector3(msg->twist.twist.linear.x, msg->twist.twist.linear.y, 0), ros::Time(), msg->header.frame_id), v_out;
-      tf_->transformVector(robot_base_frame_, ros::Time(), v_in, msg->header.frame_id, v_out);
-      base_odom_.twist.twist.linear.x = v_in.x();
-      base_odom_.twist.twist.linear.y = v_in.y();
-      base_odom_.twist.twist.angular.z = msg->twist.twist.angular.z;
-      ROS_DEBUG("In the odometry callback with velocity values: (%.2f, %.2f, %.2f)",
-        v_in.x(), v_in.y(), base_odom_.twist.twist.angular.z);
-    }
-    catch(tf::LookupException& ex)
-    {
-      ROS_DEBUG("No odom->base Tx yet: %s", ex.what());
-    }
-    catch(tf::ConnectivityException& ex)
-    {
-      ROS_DEBUG("No odom->base Tx yet: %s\n", ex.what());
-    }
-    catch(tf::ExtrapolationException& ex)
-    {
-      ROS_DEBUG("Extrapolation exception");
-    }
+    base_odom_.twist.twist.linear.x = msg->twist.twist.linear.x;
+    base_odom_.twist.twist.linear.y = msg->twist.twist.linear.y;
+    base_odom_.twist.twist.angular.z = msg->twist.twist.angular.z;
+    ROS_DEBUG("In the odometry callback with velocity values: (%.2f, %.2f, %.2f)",
+        base_odom_.twist.twist.linear.x, base_odom_.twist.twist.linear.y, base_odom_.twist.twist.angular.z);
   }
 
   bool TrajectoryPlannerROS::isGoalReached(){
@@ -437,9 +421,9 @@ namespace base_local_planner {
     geometry_msgs::Twist global_vel;
 
     odom_lock_.lock();
-    global_vel.linear.x = last_cmd_vel_.linear.x;
-    global_vel.linear.y = last_cmd_vel_.linear.y;
-    global_vel.angular.z = last_cmd_vel_.angular.z;
+    global_vel.linear.x = base_odom_.twist.twist.linear.x;
+    global_vel.linear.y = base_odom_.twist.twist.linear.y;
+    global_vel.angular.z = base_odom_.twist.twist.angular.z;
     odom_lock_.unlock();
 
     tf::Stamped<tf::Pose> drive_cmds;
@@ -478,17 +462,14 @@ namespace base_local_planner {
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
-        last_cmd_vel_ = cmd_vel;
       }
       else {
         tc_->updatePlan(transformed_plan);
 
         //compute what trajectory to drive along
         Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
-        if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)){
-          last_cmd_vel_ = cmd_vel;
+        if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel))
           return false;
-        }
       }
 
       //publish an empty plan because we've reached our goal position
@@ -518,9 +499,6 @@ namespace base_local_planner {
     yaw = tf::getYaw(drive_cmds.getRotation());
 
     cmd_vel.angular.z = yaw;
-
-    //store the command for the next time we simulate
-    last_cmd_vel_ = cmd_vel;
 
     //if we cannot move... tell someone
     if(path.cost_ < 0){

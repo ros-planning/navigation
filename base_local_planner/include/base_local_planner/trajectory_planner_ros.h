@@ -206,7 +206,6 @@ namespace base_local_planner {
       boost::recursive_mutex odom_lock_;
       bool initialized_;
       double max_vel_th_, min_vel_th_;
-      geometry_msgs::Twist last_cmd_vel_;
   };
 
 };
