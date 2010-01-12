@@ -36,7 +36,6 @@
  *********************************************************************/
 #include <costmap_2d/costmap_2d_ros.h>
 
-#include <nav_msgs/GetMap.h>
 #include <limits>
 
 
@@ -48,7 +47,8 @@ namespace costmap_2d {
 
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
-                             initialized_(true), stopped_(false), map_update_thread_shutdown_(false), save_debug_pgm_(false) {
+                             initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
+                             save_debug_pgm_(false), map_initialized_(false) {
     ros::NodeHandle nh(name);
     ros::NodeHandle private_nh("~/" + name);
 
@@ -177,7 +177,6 @@ namespace costmap_2d {
     double map_origin_x, map_origin_y;
 
     private_nh.param("static_map", static_map, true);
-    std::vector<unsigned char> input_data;
 
     //check if we want a rolling window version of the costmap
     private_nh.param("rolling_window", rolling_window_, false);
@@ -192,16 +191,18 @@ namespace costmap_2d {
     map_height = (unsigned int)(map_height_meters / map_resolution);
 
     if(static_map){
-      nav_msgs::GetMap::Request map_req;
-      nav_msgs::GetMap::Response map_resp;
+      //we'll subscribe to the latched topic that the map server uses
+      ros::NodeHandle g_nh;
+
       ROS_INFO("Requesting the map...\n");
-      while(!ros::service::call("static_map", map_req, map_resp))
-      {
-        ROS_INFO("Request failed; trying again...\n");
-        usleep(1000000);
+      map_sub_ = g_nh.subscribe("map", 1, &Costmap2DROS::incomingMap, this);
+
+      ros::Rate r(1.0);
+      while(!map_initialized_ && ros::ok()){
+        ros::spinOnce();
+        ROS_INFO("Still waiting on map...\n");
+        r.sleep();
       }
-      ROS_INFO("Received a %d X %d map at %f m/pix\n",
-          map_resp.map.info.width, map_resp.map.info.height, map_resp.map.info.resolution);
 
       //check if the user has set any parameters that will be overwritten
       bool user_map_params = false;
@@ -214,18 +215,18 @@ namespace costmap_2d {
       if(user_map_params)
         ROS_WARN("You have set map parameters, but also requested to use the static map. Your parameters will be overwritten by those given by the map server");
 
-      // We are treating cells with no information as lethal obstacles based on the input data. This is not ideal but
-      // our planner and controller do not reason about the no obstacle case
-      unsigned int numCells = map_resp.map.info.width * map_resp.map.info.height;
-      for(unsigned int i = 0; i < numCells; i++){
-        input_data.push_back((unsigned char) map_resp.map.data[i]);
-      }
+      {
+        //lock just in case something weird is going on with the compiler or scheduler
+        boost::recursive_mutex::scoped_lock lock(map_data_lock_);
+        map_width = (unsigned int)map_meta_data_.width;
+        map_height = (unsigned int)map_meta_data_.height;
+        map_resolution = map_meta_data_.resolution;
+        map_origin_x = map_meta_data_.origin.position.x;
+        map_origin_y = map_meta_data_.origin.position.y;
 
-      map_width = (unsigned int)map_resp.map.info.width;
-      map_height = (unsigned int)map_resp.map.info.height;
-      map_resolution = map_resp.map.info.resolution;
-      map_origin_x = map_resp.map.info.origin.position.x;
-      map_origin_y = map_resp.map.info.origin.position.y;
+        ROS_INFO("Received a %d X %d map at %f m/pix\n",
+            map_width, map_height, map_resolution);
+      }
 
     }
 
@@ -283,9 +284,11 @@ namespace costmap_2d {
     double start_t, end_t, t_diff;
     gettimeofday(&start, NULL);
     if(map_type == "costmap"){
+      //make sure to lock the map data
+      boost::recursive_mutex::scoped_lock lock(map_data_lock_);
       costmap_ = new Costmap2D(map_width, map_height,
           map_resolution, map_origin_x, map_origin_y, inscribed_radius, circumscribed_radius, inflation_radius,
-          obstacle_range, max_obstacle_height, raytrace_range, cost_scale, input_data, lethal_threshold, track_unknown_space);
+          obstacle_range, max_obstacle_height, raytrace_range, cost_scale, input_data_, lethal_threshold, track_unknown_space);
     }
     else if(map_type == "voxel"){
 
@@ -302,8 +305,10 @@ namespace costmap_2d {
 
       ROS_ASSERT(z_voxels >= 0 && unknown_threshold >= 0 && mark_threshold >= 0);
 
+      //make sure to lock the map data
+      boost::recursive_mutex::scoped_lock lock(map_data_lock_);
       costmap_ = new VoxelCostmap2D(map_width, map_height, z_voxels, map_resolution, z_resolution, map_origin_x, map_origin_y, map_origin_z, inscribed_radius,
-          circumscribed_radius, inflation_radius, obstacle_range, raytrace_range, cost_scale, input_data, lethal_threshold, unknown_threshold, mark_threshold);
+          circumscribed_radius, inflation_radius, obstacle_range, raytrace_range, cost_scale, input_data_, lethal_threshold, unknown_threshold, mark_threshold);
     }
     else{
       ROS_ASSERT_MSG(false, "Unsuported map type");
@@ -630,9 +635,31 @@ namespace costmap_2d {
     costmap = *costmap_;
   }
 
+  void Costmap2DROS::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map){
+    if(!map_initialized_){
+      initFromMap(*new_map);
+      map_initialized_ = true;
+    }
+    else
+      updateStaticMap(*new_map);
+  }
+
+  void Costmap2DROS::initFromMap(const nav_msgs::OccupancyGrid& map){
+    boost::recursive_mutex::scoped_lock lock(map_data_lock_);
+
+    // We are treating cells with no information as lethal obstacles based on the input data. This is not ideal but
+    // our planner and controller do not reason about the no obstacle case
+    unsigned int numCells = map.info.width * map.info.height;
+    for(unsigned int i = 0; i < numCells; i++){
+      input_data_.push_back((unsigned char) map.data[i]);
+    }
+
+    map_meta_data_ = map.info;
+  }
+
   void Costmap2DROS::updateStaticMap(const nav_msgs::OccupancyGrid& new_map){
     std::vector<unsigned char> new_map_data;
-    // We are treating cells with no information as lethal obstacles based on the input data. This is not ideal but
+    // We are treating cells with no information as lethal obstacles based on the new data. This is not ideal but
     // our planner and controller do not reason about the no obstacle case
     unsigned int numCells = new_map.info.width * new_map.info.height;
     for(unsigned int i = 0; i < numCells; i++){
@@ -649,6 +676,11 @@ namespace costmap_2d {
     if(fabs(map_resolution - costmap_->getResolution()) > 1e-6){
       ROS_ERROR("You cannot update a map with resolution: %.4f, with a new map that has resolution: %.4f", 
           costmap_->getResolution(), map_resolution);
+      return;
+    }
+
+    if(new_map.header.frame_id != global_frame_){
+      ROS_ERROR("You cannot update a map with a global_frame of: %s, with a new map that has a global frame of: %s", global_frame_.c_str(), new_map.header.frame_id.c_str());
       return;
     }
 

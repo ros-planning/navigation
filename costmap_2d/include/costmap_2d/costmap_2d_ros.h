@@ -302,6 +302,20 @@ namespace costmap_2d {
 
     private:
       /**
+       * @brief  Callback to update the costmap's map from the map_server
+       * @param new_map The map to put into the costmap. The origin of the new
+       * map along with its size will determine what parts of the costmap's
+       * static map are overwritten.
+       */
+      void incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map);
+
+      /**
+       * @brief  Initialize static_data from a map
+       * @param new_map The map to initialize from
+       */
+      void initFromMap(const nav_msgs::OccupancyGrid& map);
+
+      /**
        * @brief  A callback to handle buffering LaserScan messages
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
@@ -358,6 +372,17 @@ namespace costmap_2d {
       boost::recursive_mutex lock_;
       bool map_update_thread_shutdown_;
       bool save_debug_pgm_;
+      ros::Subscriber map_sub_;
+      bool map_initialized_;
+
+      //we need this to be able to initialize the map using a latched topic approach
+      //strictly speaking, we don't need the lock, but since this all happens on startup
+      //and there is little overhead... we'll be careful and use it anyways just in case
+      //the compiler or scheduler does something weird with the code
+      boost::recursive_mutex map_data_lock_;
+      nav_msgs::MapMetaData map_meta_data_;
+      std::vector<unsigned char> input_data_;
+
 
   };
 };
