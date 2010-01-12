@@ -212,6 +212,8 @@ void NavViewPanel::loadMap()
   // Pad dimensions to power of 2
   map_width_ = resp.map.info.width;//(int)pow(2,ceil(log2(resp.map.info.width)));
   map_height_ = resp.map.info.height;//(int)pow(2,ceil(log2(resp.map.info.height)));
+  map_origin_x_ = resp.map.info.origin.position.x;
+  map_origin_y_ = resp.map.info.origin.position.y;
 
   //ROS_INFO("Padded dimensions to %d X %d\n", map_width_, map_height_);
 
@@ -432,7 +434,7 @@ void NavViewPanel::updateRadiusPosition()
     map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
 
     Ogre::SceneNode* node = radius_object_->getParentSceneNode();
-    node->setPosition( Ogre::Vector3(map_pose.getOrigin().x(), map_pose.getOrigin().y(), RADIUS_DEPTH) );
+    node->setPosition( Ogre::Vector3(map_pose.getOrigin().x() - map_origin_x_, map_pose.getOrigin().y() - map_origin_y_, RADIUS_DEPTH) );
     node->setOrientation( Ogre::Quaternion( Ogre::Radian( yaw ), Ogre::Vector3::UNIT_Z ) );
 
     queueRender();
@@ -471,7 +473,7 @@ void NavViewPanel::createObjectFromPath(Ogre::ManualObject*& object, const nav_m
 
       tf_client_->transformPoint(global_frame_id_, point, point);
 
-      object->position(point.x(), point.y(), point.z());
+      object->position(point.x() - map_origin_x_, point.y() - map_origin_y_, point.z());
       object->colour( color );
     }
 
@@ -519,7 +521,7 @@ void NavViewPanel::createObjectFromPolygon(Ogre::ManualObject*& object, const ge
 
       tf_client_->transformPoint(global_frame_id_, point, point);
 
-      object->position(point.x(), point.y(), point.z());
+      object->position(point.x() - map_origin_x_, point.y() - map_origin_y_, point.z());
       object->colour( color );
     }
 
@@ -560,7 +562,7 @@ void NavViewPanel::createObjectFromGridCells(Ogre::ManualObject*& object, const 
 
       tf_client_->transformPoint(global_frame_id_, point, point);
 
-      object->position(point.x(), point.y(), point.z());
+      object->position(point.x() - map_origin_x_, point.y() - map_origin_y_, point.z());
       object->colour( color );
     }
 

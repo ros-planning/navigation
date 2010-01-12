@@ -160,7 +160,7 @@ int PoseTool::processMouseEvent( wxMouseEvent& event, int last_x, int last_y, fl
 
       if ( is_goal_ )
       {
-        tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(tf::createQuaternionFromYaw(angle), tf::Point(pos_.x, pos_.y, 0.0)), ros::Time::now(), panel_->getGlobalFrame());
+        tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(tf::createQuaternionFromYaw(angle), tf::Point(pos_.x + panel_->getMapOriginX(), pos_.y + panel_->getMapOriginY(), 0.0)), ros::Time::now(), panel_->getGlobalFrame());
         geometry_msgs::PoseStamped goal;
         tf::poseStampedTFToMsg(p, goal);
         printf("setting goal: Position(%.3f, %.3f, %.3f), Orientation(%.3f, %.3f, %.3f, %.3f) = Angle: %.3f\n", goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
@@ -174,8 +174,8 @@ int PoseTool::processMouseEvent( wxMouseEvent& event, int last_x, int last_y, fl
         geometry_msgs::PoseWithCovarianceStamped pose;
         pose.header.frame_id = panel_->getGlobalFrame();
         pose.header.stamp = ros::Time::now(); 
-        pose.pose.pose.position.x = pos_.x;
-        pose.pose.pose.position.y = pos_.y;
+        pose.pose.pose.position.x = pos_.x + panel_->getMapOriginX();
+        pose.pose.pose.position.y = pos_.y + panel_->getMapOriginX();
         tf::quaternionTFToMsg(tf::createQuaternionFromYaw(angle),
                               pose.pose.pose.orientation);
         pose.pose.covariance[6*0+0] = 0.5 * 0.5;

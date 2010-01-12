@@ -157,6 +157,8 @@ public:
   float getMapResolution() { return map_resolution_; }
   int getMapWidth() { return map_width_; }
   int getMapHeight() { return map_height_; }
+  double getMapOriginX() { return map_origin_x_; }
+  double getMapOriginY() { return map_origin_y_; }
   const std::string& getGlobalFrame() { return global_frame_id_; }
 
 protected:
@@ -198,6 +200,7 @@ protected:
   float map_resolution_;
   int map_width_;
   int map_height_;
+  double map_origin_x_, map_origin_y_;
   Ogre::TexturePtr map_texture_;
 
   ros::Subscriber particle_cloud_sub_;
