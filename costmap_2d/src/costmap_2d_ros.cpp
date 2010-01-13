@@ -272,10 +272,12 @@ namespace costmap_2d {
     double cost_scale;
     private_nh.param("cost_scaling_factor", cost_scale, 10.0);
 
-    int temp_lethal_threshold;
+    int temp_lethal_threshold, temp_unknown_cost_value;
     private_nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
+    private_nh.param("unknown_cost_value", temp_unknown_cost_value, int(0));
 
     unsigned char lethal_threshold = std::max(std::min(temp_lethal_threshold, 255), 0);
+    unsigned char unknown_cost_value = std::max(std::min(temp_unknown_cost_value, 255), 0);
 
     bool track_unknown_space;
     private_nh.param("track_unknown_space", track_unknown_space, false);
@@ -288,7 +290,7 @@ namespace costmap_2d {
       boost::recursive_mutex::scoped_lock lock(map_data_lock_);
       costmap_ = new Costmap2D(map_width, map_height,
           map_resolution, map_origin_x, map_origin_y, inscribed_radius, circumscribed_radius, inflation_radius,
-          obstacle_range, max_obstacle_height, raytrace_range, cost_scale, input_data_, lethal_threshold, track_unknown_space);
+          obstacle_range, max_obstacle_height, raytrace_range, cost_scale, input_data_, lethal_threshold, track_unknown_space, unknown_cost_value);
     }
     else if(map_type == "voxel"){
 
@@ -308,7 +310,8 @@ namespace costmap_2d {
       //make sure to lock the map data
       boost::recursive_mutex::scoped_lock lock(map_data_lock_);
       costmap_ = new VoxelCostmap2D(map_width, map_height, z_voxels, map_resolution, z_resolution, map_origin_x, map_origin_y, map_origin_z, inscribed_radius,
-          circumscribed_radius, inflation_radius, obstacle_range, raytrace_range, cost_scale, input_data_, lethal_threshold, unknown_threshold, mark_threshold);
+          circumscribed_radius, inflation_radius, obstacle_range, raytrace_range, cost_scale, input_data_, lethal_threshold, unknown_threshold, mark_threshold,
+          unknown_cost_value);
     }
     else{
       ROS_ASSERT_MSG(false, "Unsuported map type");
@@ -647,8 +650,7 @@ namespace costmap_2d {
   void Costmap2DROS::initFromMap(const nav_msgs::OccupancyGrid& map){
     boost::recursive_mutex::scoped_lock lock(map_data_lock_);
 
-    // We are treating cells with no information as lethal obstacles based on the input data. This is not ideal but
-    // our planner and controller do not reason about the no obstacle case
+    // We need to cast to unsigned chars from int
     unsigned int numCells = map.info.width * map.info.height;
     for(unsigned int i = 0; i < numCells; i++){
       input_data_.push_back((unsigned char) map.data[i]);
@@ -659,8 +661,7 @@ namespace costmap_2d {
 
   void Costmap2DROS::updateStaticMap(const nav_msgs::OccupancyGrid& new_map){
     std::vector<unsigned char> new_map_data;
-    // We are treating cells with no information as lethal obstacles based on the new data. This is not ideal but
-    // our planner and controller do not reason about the no obstacle case
+    // We need to cast to unsigned chars from int
     unsigned int numCells = new_map.info.width * new_map.info.height;
     for(unsigned int i = 0; i < numCells; i++){
       new_map_data.push_back((unsigned char) new_map.data[i]);

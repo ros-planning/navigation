@@ -44,12 +44,12 @@ namespace costmap_2d{
       double resolution, double origin_x, double origin_y, double inscribed_radius,
       double circumscribed_radius, double inflation_radius, double max_obstacle_range,
       double max_obstacle_height, double max_raytrace_range, double weight,
-      const std::vector<unsigned char>& static_data, unsigned char lethal_threshold, bool track_unknown_space) : size_x_(cells_size_x),
+      const std::vector<unsigned char>& static_data, unsigned char lethal_threshold, bool track_unknown_space, unsigned char unknown_cost_value) : size_x_(cells_size_x),
   size_y_(cells_size_y), resolution_(resolution), origin_x_(origin_x), origin_y_(origin_y), static_map_(NULL),
   costmap_(NULL), markers_(NULL), max_obstacle_range_(max_obstacle_range), 
   max_obstacle_height_(max_obstacle_height), max_raytrace_range_(max_raytrace_range), cached_costs_(NULL), cached_distances_(NULL), 
   inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius), inflation_radius_(inflation_radius),
-  weight_(weight), lethal_threshold_(lethal_threshold), track_unknown_space_(track_unknown_space), inflation_queue_(){
+  weight_(weight), lethal_threshold_(lethal_threshold), track_unknown_space_(track_unknown_space), unknown_cost_value_(unknown_cost_value), inflation_queue_(){
     //creat the costmap, static_map, and markers
     costmap_ = new unsigned char[size_x_ * size_y_];
     static_map_ = new unsigned char[size_x_ * size_y_];
@@ -89,13 +89,20 @@ namespace costmap_2d{
       //initialize the costmap with static data
       for(unsigned int i = 0; i < size_y_; ++i){
         for(unsigned int j = 0; j < size_x_; ++j){
-          //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
-          *costmap_index = *static_data_index >= lethal_threshold_ ? LETHAL_OBSTACLE : *static_data_index;
+          //check if the static value is above the unknown or lethal thresholds
+          if(track_unknown_space_ && unknown_cost_value_ > 0 && *static_data_index == unknown_cost_value_)
+            *costmap_index = NO_INFORMATION;
+          else if(*static_data_index >= lethal_threshold_)
+            *costmap_index = LETHAL_OBSTACLE;
+          else
+            *costmap_index = FREE_SPACE;
+
           if(*costmap_index == LETHAL_OBSTACLE){
             unsigned int mx, my;
             indexToCells(index, mx, my);
             enqueue(index, mx, my, mx, my, inflation_queue_);
           }
+
           ++costmap_index;
           ++static_data_index;
           ++index;
@@ -139,8 +146,14 @@ namespace costmap_2d{
     //copy static data into the costmap
     for(unsigned int i = 0; i < size_y_; ++i){
       for(unsigned int j = 0; j < size_x_; ++j){
-        //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
-        *costmap_index = *static_data_index >= lethal_threshold_ ? LETHAL_OBSTACLE : *static_data_index;
+        //check if the static value is above the unknown or lethal thresholds
+        if(track_unknown_space_ && unknown_cost_value_ > 0 && *static_data_index == unknown_cost_value_)
+          *costmap_index = NO_INFORMATION;
+        else if(*static_data_index >= lethal_threshold_)
+          *costmap_index = LETHAL_OBSTACLE;
+        else
+          *costmap_index = FREE_SPACE;
+
         if(*costmap_index == LETHAL_OBSTACLE){
           unsigned int mx, my;
           indexToCells(index, mx, my);
@@ -199,8 +212,14 @@ namespace costmap_2d{
     std::vector<unsigned char>::const_iterator static_data_index =  static_data.begin();
     for(unsigned int i = 0; i < data_size_y; ++i){
       for(unsigned int j = 0; j < data_size_x; ++j){
-        //if the static value is above the threshold... it is a lethal obstacle... otherwise just take the cost
-        *costmap_index = *static_data_index >= lethal_threshold_ ? LETHAL_OBSTACLE : *static_data_index;
+        //check if the static value is above the unknown or lethal thresholds
+        if(track_unknown_space_ && unknown_cost_value_ > 0 && *static_data_index == unknown_cost_value_)
+          *costmap_index = NO_INFORMATION;
+        else if(*static_data_index >= lethal_threshold_)
+          *costmap_index = LETHAL_OBSTACLE;
+        else
+          *costmap_index = FREE_SPACE;
+
         ++costmap_index;
         ++static_data_index;
       }

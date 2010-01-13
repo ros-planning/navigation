@@ -75,13 +75,15 @@ namespace costmap_2d {
        * @param  lethal_threshold The cost threshold at which a point in the static data is considered a lethal obstacle
        * @param  unknown_threshold The maximum number of unknown voxel cells that can exist in a column considered as free space
        * @param  mark_threshold The maximum number of marked voxel cells that can exist in a column considered as free space
+       * @param  unknown_cost_value The cost value for which a point in the static data is considered unknown when tracking unknown space... 
+                 if not tracking unknown space, costs equal to this value will be considered free
        */
       VoxelCostmap2D(unsigned int cells_size_x, unsigned int cells_size_y, unsigned int cells_size_z,
           double xy_resolution, double z_resolution, double origin_x, double origin_y, double origin_z = 0.0, double inscribed_radius = 0.0,
           double circumscribed_radius = 0.0, double inflation_radius = 0.0, double obstacle_range = 0.0,
           double raytrace_range = 0.0, double weight = 25.0,
           const std::vector<unsigned char>& static_data = std::vector<unsigned char>(0), unsigned char lethal_threshold = 0,
-          unsigned int unknown_threshold = 0, unsigned int mark_threshold = 0);
+          unsigned int unknown_threshold = 0, unsigned int mark_threshold = 0, unsigned char unknown_cost_value = 0);
 
       /**
        * @brief  Destructor
