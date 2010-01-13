@@ -53,8 +53,7 @@ namespace estimation
 {
   // constructor
   OdomEstimationNode::OdomEstimationNode()
-    : node_("~"),
-      vel_desi_(2),
+    : vel_desi_(2),
       vel_active_(false),
       odom_active_(false),
       imu_active_(false),
@@ -70,18 +69,21 @@ namespace estimation
       vo_callback_counter_(0),
       ekf_sent_counter_(0)
   {
-    // paramters
-    node_.param("sensor_timeout", timeout_, 1.0);
-    node_.param("odom_used", odom_used_, true);
-    node_.param("imu_used",  imu_used_, true);
-    node_.param("vo_used",   vo_used_, true);
-    double freq;
-    node_.param("freq", freq, 30.0);
+    ros::NodeHandle nh_private("~");
+    ros::NodeHandle nh;
 
-    timer_ = node_.createTimer(ros::Duration(1.0/max(freq,1.0)), &OdomEstimationNode::spin, this);
+    // paramters
+    nh_private.param("sensor_timeout", timeout_, 1.0);
+    nh_private.param("odom_used", odom_used_, true);
+    nh_private.param("imu_used",  imu_used_, true);
+    nh_private.param("vo_used",   vo_used_, true);
+    double freq;
+    nh_private.param("freq", freq, 30.0);
+
+    timer_ = nh_private.createTimer(ros::Duration(1.0/max(freq,1.0)), &OdomEstimationNode::spin, this);
 
     // advertise our estimation
-    pose_pub_ = node_.advertise<geometry_msgs::PoseWithCovarianceStamped>(publish_name, 10);
+    pose_pub_ = nh_private.advertise<geometry_msgs::PoseWithCovarianceStamped>(publish_name, 10);
 
     // initialize
     filter_stamp_ = Time::now();
@@ -90,31 +92,31 @@ namespace estimation
     vo_camera_ = Transform(Quaternion(M_PI/2.0, -M_PI/2,0), Vector3(0,0,0));
 
     // subscribe to messages
-    cmd_vel_sub_ = node_.subscribe("/cmd_vel", 10, &OdomEstimationNode::velCallback, this);
+    cmd_vel_sub_ = nh.subscribe("cmd_vel", 10, &OdomEstimationNode::velCallback, this);
 
     // subscribe to odom messages
     if (odom_used_){
       ROS_DEBUG("Odom sensor can be used");
-      odom_sub_ = node_.subscribe("/odom", 10, &OdomEstimationNode::odomCallback, this);
+      odom_sub_ = nh.subscribe("odom", 10, &OdomEstimationNode::odomCallback, this);
     }
     else ROS_DEBUG("Odom sensor will NOT be used");
 
     // subscribe to imu messages
     if (imu_used_){
       ROS_DEBUG("Imu sensor can be used");
-      imu_sub_ = node_.subscribe("/imu_data", 10,  &OdomEstimationNode::imuCallback, this);
+      imu_sub_ = nh.subscribe("imu_data", 10,  &OdomEstimationNode::imuCallback, this);
     }
     else ROS_DEBUG("Imu sensor will NOT be used");
 
     // subscribe to vo messages
     if (vo_used_){
       ROS_DEBUG("VO sensor can be used");
-      vo_sub_ = node_.subscribe("/vo", 10, &OdomEstimationNode::voCallback, this);
+      vo_sub_ = nh.subscribe("vo", 10, &OdomEstimationNode::voCallback, this);
     }
     else ROS_DEBUG("VO sensor will NOT be used");
 
     // publish state service
-    state_srv_ = node_.advertiseService("get_status", &OdomEstimationNode::getStatus, this);
+    state_srv_ = nh_private.advertiseService("get_status", &OdomEstimationNode::getStatus, this);
 
 #ifdef __EKF_DEBUG_FILE__
     // open files for debugging
