@@ -50,6 +50,7 @@
 
 #include <message_filters/subscriber.h>
 #include <tf/message_filter.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 #include <list>
 
@@ -166,10 +167,10 @@ protected:
   void onRender( wxCommandEvent& event );
   void onUpdate( wxTimerEvent& event );
   virtual void onToolClicked( wxCommandEvent& event );
-  virtual void onReloadMap( wxCommandEvent& event );
   virtual void onChar( wxKeyEvent& event );
 
-  void loadMap();
+  void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
+  void displayMap(const nav_msgs::OccupancyGrid& map);
   void clearMap();
   void incomingPoseArray(const geometry_msgs::PoseArray::ConstPtr& msg);
   void incomingGuiPath(const nav_msgs::Path::ConstPtr& msg);
@@ -203,7 +204,8 @@ protected:
   double map_origin_x_, map_origin_y_;
   Ogre::TexturePtr map_texture_;
 
-  ros::Subscriber particle_cloud_sub_;
+  ros::Subscriber particle_cloud_sub_, map_sub_;
+  boost::mutex map_lock_;
 
   typedef tf::MessageFilter<nav_msgs::Path> PathFilter;
   typedef boost::shared_ptr<PathFilter> PathFilterPtr;

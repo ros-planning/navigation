@@ -158,21 +158,6 @@
                             <event name="OnToolRClicked"></event>
                             <event name="OnUpdateUI"></event>
                         </object>
-                        <object class="toolSeparator" expanded="1" />
-                        <object class="tool" expanded="1">
-                            <property name="bitmap"></property>
-                            <property name="id">ID_RELOAD_MAP</property>
-                            <property name="kind">wxITEM_NORMAL</property>
-                            <property name="label">Reload Map</property>
-                            <property name="name">tool_reload_map_</property>
-                            <property name="statusbar"></property>
-                            <property name="tooltip"></property>
-                            <event name="OnMenuSelection"></event>
-                            <event name="OnToolClicked">onReloadMap</event>
-                            <event name="OnToolEnter"></event>
-                            <event name="OnToolRClicked"></event>
-                            <event name="OnUpdateUI"></event>
-                        </object>
                     </object>
                 </object>
                 <object class="sizeritem" expanded="1">

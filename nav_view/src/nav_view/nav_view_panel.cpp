@@ -64,6 +64,8 @@ namespace nav_view
 NavViewPanel::NavViewPanel( wxWindow* parent )
 : NavViewPanelGenerated( parent )
 , ogre_root_( Ogre::Root::getSingletonPtr() )
+, map_origin_x_(0.0)
+, map_origin_y_(0.0)
 , map_object_( NULL )
 , cloud_object_( NULL )
 , radius_object_( NULL )
@@ -97,6 +99,9 @@ NavViewPanel::NavViewPanel( wxWindow* parent )
   nh_.param("/global_frame_id", global_frame_id_, std::string("/map"));
 
   particle_cloud_sub_ = nh_.subscribe("particlecloud", 1, &NavViewPanel::incomingPoseArray, this);
+
+  //subscribe to the map as a latched topic
+  map_sub_ = nh_.subscribe("map", 1, &NavViewPanel::mapCallback, this);
 
   global_plan_sub_.subscribe(nh_, "global_plan", 2);
   local_plan_sub_.subscribe(nh_, "local_plan", 2);
@@ -186,34 +191,21 @@ void NavViewPanel::onRender( wxCommandEvent& event )
   render_panel_->Refresh();
 }
 
-void NavViewPanel::loadMap()
+void NavViewPanel::mapCallback(const nav_msgs::OccupancyGridConstPtr& map){
+  displayMap(*map);
+}
+
+void NavViewPanel::displayMap(const nav_msgs::OccupancyGrid& map)
 {
-  nav_msgs::GetMap::Request  req;
-  nav_msgs::GetMap::Response resp;
-  ROS_INFO("Requesting the map...\n");
-  if( !ros::service::call("/static_map", req, resp) )
-  {
-    ROS_INFO("request failed\n");
+  boost::mutex::scoped_lock lock(map_lock_);
 
-    return;
-  }
-  ROS_INFO("Received a %d X %d map @ %.3f m/pix\n",
-         resp.map.info.width,
-         resp.map.info.height,
-         resp.map.info.resolution);
-
-  if (resp.map.info.width * resp.map.info.height == 0)
-  {
-    return;
-  }
-
-  map_resolution_ = resp.map.info.resolution;
+  map_resolution_ = map.info.resolution;
 
   // Pad dimensions to power of 2
-  map_width_ = resp.map.info.width;//(int)pow(2,ceil(log2(resp.map.info.width)));
-  map_height_ = resp.map.info.height;//(int)pow(2,ceil(log2(resp.map.info.height)));
-  map_origin_x_ = resp.map.info.origin.position.x;
-  map_origin_y_ = resp.map.info.origin.position.y;
+  map_width_ = map.info.width;//(int)pow(2,ceil(log2(map.info.width)));
+  map_height_ = map.info.height;//(int)pow(2,ceil(log2(map.info.height)));
+  map_origin_x_ = map.info.origin.position.x;
+  map_origin_y_ = map.info.origin.position.y;
 
   //ROS_INFO("Padded dimensions to %d X %d\n", map_width_, map_height_);
 
@@ -222,14 +214,14 @@ void NavViewPanel::loadMap()
   unsigned char* pixels = new unsigned char[pixels_size];
   memset(pixels, 255, pixels_size);
 
-  for(unsigned int j=0;j<resp.map.info.height;j++)
+  for(unsigned int j=0;j<map.info.height;j++)
   {
-    for(unsigned int i=0;i<resp.map.info.width;i++)
+    for(unsigned int i=0;i<map.info.width;i++)
     {
       unsigned char val;
-      if(resp.map.data[j*resp.map.info.width+i] == 100)
+      if(map.data[j*map.info.width+i] == 100)
         val = 0;
-      else if(resp.map.data[j*resp.map.info.width+i] == 0)
+      else if(map.data[j*map.info.width+i] == 0)
         val = 255;
       else
         val = 127;
@@ -376,18 +368,6 @@ void NavViewPanel::clearMap()
 
 void NavViewPanel::onUpdate( wxTimerEvent& event )
 {
-  if ( !map_object_ )
-  {
-    static int count = 0;
-    --count;
-
-    if ( count < 0 )
-    {
-      loadMap();
-      count = 100;
-    }
-  }
-
   updateRadiusPosition();
 
   ros::spinOnce();
@@ -745,12 +725,6 @@ void NavViewPanel::onToolClicked( wxCommandEvent& event )
   }
 
   ROS_ASSERT( current_tool_ );
-}
-
-void NavViewPanel::onReloadMap( wxCommandEvent& event )
-{
-  clearMap();
-  loadMap();
 }
 
 } // namespace nav_view

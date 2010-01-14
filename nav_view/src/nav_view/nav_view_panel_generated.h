@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Apr 21 2008)
+// C++ code generated with wxFormBuilder (version Dec 29 2008)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -27,7 +27,6 @@ namespace nav_view
 	#define ID_MOVE_TOOL 1000
 	#define ID_GOAL_TOOL 1001
 	#define ID_POSE_TOOL 1002
-	#define ID_RELOAD_MAP 1003
 	
 	///////////////////////////////////////////////////////////////////////////////
 	/// Class NavViewPanelGenerated
@@ -42,7 +41,6 @@ namespace nav_view
 			
 			// Virtual event handlers, overide them in your derived class
 			virtual void onToolClicked( wxCommandEvent& event ){ event.Skip(); }
-			virtual void onReloadMap( wxCommandEvent& event ){ event.Skip(); }
 			
 		
 		public:
