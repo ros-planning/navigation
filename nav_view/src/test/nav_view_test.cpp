@@ -43,6 +43,11 @@
 
 #include "OGRE/Ogre.h"
 
+#ifdef __WXMAC__
+#include <ApplicationServices/ApplicationServices.h>
+#endif
+
+
 using namespace nav_view;
 
 class MyFrame : public wxFrame
@@ -84,6 +89,13 @@ public:
 
   bool OnInit()
   {
+#ifdef __WXMAC__
+    ProcessSerialNumber PSN;
+    GetCurrentProcess(&PSN);
+    TransformProcessType(&PSN,kProcessTransformToForegroundApplication);
+    SetFrontProcess(&PSN);
+#endif
+
     // create our own copy of argv, with regular char*s.
     localArgv =  new char*[ argc ];
     for ( int i = 0; i < argc; ++i )
