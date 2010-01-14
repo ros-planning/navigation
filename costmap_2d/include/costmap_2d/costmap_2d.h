@@ -77,7 +77,7 @@ namespace costmap_2d {
        * @param  lethal_threshold The cost threshold at which a point in the static data is considered a lethal obstacle
        * @param  track_unknown_space Whether or not to keep track of what space is completely unknown, whether or not a sensor reading has seen through a cell
        * @param  unknown_cost_value The cost value for which a point in the static data is considered unknown when tracking unknown space... 
-                 if not tracking unknown space, costs equal to this value will be considered free
+                 if not tracking unknown space, costs equal to this value will be considered occupied
        */
       Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
           double resolution, double origin_x, double origin_y, double inscribed_radius = 0.0,
