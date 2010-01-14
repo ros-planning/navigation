@@ -78,11 +78,10 @@ namespace base_local_planner {
       //initialize the copy of the costmap the controller will use
       costmap_ros_->getCostmapCopy(costmap_);
 
-      ros::NodeHandle nh(name);
       ros::NodeHandle private_nh("~/" + name);
 
-      g_plan_pub_ = nh.advertise<nav_msgs::Path>("global_plan", 1);
-      l_plan_pub_ = nh.advertise<nav_msgs::Path>("local_plan", 1);
+      g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
+      l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
 
       global_frame_ = costmap_ros_->getGlobalFrameID();
       robot_base_frame_ = costmap_ros_->getBaseFrameID();

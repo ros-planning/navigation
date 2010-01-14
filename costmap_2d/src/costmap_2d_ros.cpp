@@ -49,7 +49,6 @@ namespace costmap_2d {
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
                              save_debug_pgm_(false), map_initialized_(false) {
-    ros::NodeHandle nh(name);
     ros::NodeHandle private_nh("~/" + name);
 
     std::string map_type;
@@ -58,7 +57,7 @@ namespace costmap_2d {
     private_nh.param("publish_voxel_map", publish_voxel_, false);
 
     if(publish_voxel_ && map_type == "voxel")
-      voxel_pub_ = nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
+      voxel_pub_ = private_nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
     else
       publish_voxel_ = false;
 
@@ -327,7 +326,7 @@ namespace costmap_2d {
     private_nh.param("publish_frequency", map_publish_frequency, 0.0);
 
     //create a publisher for the costmap if desired
-    costmap_publisher_ = new Costmap2DPublisher(nh, map_publish_frequency, global_frame_);
+    costmap_publisher_ = new Costmap2DPublisher(private_nh, map_publish_frequency, global_frame_);
     if(costmap_publisher_->active()){
       std::vector<geometry_msgs::Point> oriented_footprint;
       getOrientedFootprint(oriented_footprint);

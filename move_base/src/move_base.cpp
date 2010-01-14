@@ -63,7 +63,7 @@ namespace move_base {
 
     //for comanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-    current_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>( "current_goal", 0 );
+    current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
@@ -71,7 +71,8 @@ namespace move_base {
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
     //like nav_view and rviz
-    goal_sub_ = nh.subscribe<geometry_msgs::PoseStamped>("move_base_simple/goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
+    ros::NodeHandle simple_nh("move_base_simple");
+    goal_sub_ = simple_nh.subscribe<geometry_msgs::PoseStamped>("goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
 
     //we'll assume the radius of the robot to be consistent with what's specified for the costmaps
     private_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
@@ -112,7 +113,7 @@ namespace move_base {
     }
 
     //advertise a service for getting a plan
-    make_plan_srv_ = nh.advertiseService("make_plan", &MoveBase::planService, this);
+    make_plan_srv_ = private_nh.advertiseService("make_plan", &MoveBase::planService, this);
 
     //initially clear any unknown space around the robot
     planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);

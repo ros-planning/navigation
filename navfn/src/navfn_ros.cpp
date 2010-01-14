@@ -59,11 +59,10 @@ namespace navfn {
       //get an initial copy of the costmap
       costmap_ros_->getCostmapCopy(costmap_);
 
-      ros::NodeHandle nh(name);
-
-      plan_pub_ = nh.advertise<nav_msgs::Path>("plan", 1);
-
       ros::NodeHandle private_nh("~/" + name);
+
+      plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
+
       private_nh.param("allow_unknown", allow_unknown_, true);
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
@@ -80,7 +79,7 @@ namespace navfn {
       inflation_radius_ = costmap_ros_->getInflationRadius();
 
       //initialize the costmap publisher
-      costmap_publisher_ = new costmap_2d::Costmap2DPublisher(ros::NodeHandle(nh, "NavfnROS_costmap"), costmap_pub_freq, global_frame_);
+      costmap_publisher_ = new costmap_2d::Costmap2DPublisher(ros::NodeHandle(private_nh, "NavfnROS_costmap"), costmap_pub_freq, global_frame_);
 
       initialized_ = true;
     }
