@@ -51,6 +51,10 @@ namespace costmap_2d {
                              save_debug_pgm_(false), map_initialized_(false) {
     ros::NodeHandle private_nh("~/" + name);
 
+    //get our tf prefix
+    ros::NodeHandle prefix_nh;
+    tf_prefix_ = tf::getPrefixParam(prefix_nh);
+
     std::string map_type;
     private_nh.param("map_type", map_type, std::string("voxel"));
 
@@ -679,7 +683,7 @@ namespace costmap_2d {
       return;
     }
 
-    if(new_map.header.frame_id != global_frame_){
+    if(tf::resolve(tf_prefix_, new_map.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
       ROS_ERROR("You cannot update a map with a global_frame of: %s, with a new map that has a global frame of: %s", global_frame_.c_str(), new_map.header.frame_id.c_str());
       return;
     }

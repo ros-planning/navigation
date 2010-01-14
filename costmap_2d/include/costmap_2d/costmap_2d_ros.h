@@ -374,6 +374,7 @@ namespace costmap_2d {
       bool save_debug_pgm_;
       ros::Subscriber map_sub_;
       bool map_initialized_;
+      std::string tf_prefix_;
 
       //we need this to be able to initialize the map using a latched topic approach
       //strictly speaking, we don't need the lock, but since this all happens on startup
