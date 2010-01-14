@@ -83,7 +83,7 @@ namespace voxel_grid {
 
       inline void markVoxel(unsigned int x, unsigned int y, unsigned int z){
         if(x >= size_x_ || y >= size_y_ || z >= size_z_){
-          printf("Error, voxel out of bounds.\n");
+          ROS_DEBUG("Error, voxel out of bounds.\n");
           return;
         }
         uint32_t full_mask = ((uint32_t)1<<z<<16) | (1<<z);
@@ -92,7 +92,7 @@ namespace voxel_grid {
 
       inline bool markVoxelInMap(unsigned int x, unsigned int y, unsigned int z, unsigned int marked_threshold){
         if(x >= size_x_ || y >= size_y_ || z >= size_z_){
-          printf("Error, voxel out of bounds.\n");
+          ROS_DEBUG("Error, voxel out of bounds.\n");
           return false;
         }
 
@@ -109,7 +109,7 @@ namespace voxel_grid {
 
       inline void clearVoxel(unsigned int x, unsigned int y, unsigned int z){
         if(x >= size_x_ || y >= size_y_ || z >= size_z_){
-          printf("Error, voxel out of bounds.\n");
+          ROS_DEBUG("Error, voxel out of bounds.\n");
           return;
         }
         uint32_t full_mask = ((uint32_t)1<<z<<16) | (1<<z);
@@ -118,7 +118,7 @@ namespace voxel_grid {
 
       inline void clearVoxelInMap(unsigned int x, unsigned int y, unsigned int z){
         if(x >= size_x_ || y >= size_y_ || z >= size_z_){
-          printf("Error, voxel out of bounds.\n");
+          ROS_DEBUG("Error, voxel out of bounds.\n");
           return;
         }
         int index = y * size_x_ + x;
@@ -158,7 +158,7 @@ namespace voxel_grid {
           unsigned int size_x, unsigned int size_y, unsigned int size_z, const uint32_t* data)
       {
         if(x >= size_x || y >= size_y || z >= size_z){
-          ROS_INFO("Error, voxel out of bounds. (%d, %d, %d)\n", x, y, z);
+          ROS_DEBUG("Error, voxel out of bounds. (%d, %d, %d)\n", x, y, z);
           return UNKNOWN;
         }
         uint32_t full_mask = ((uint32_t)1<<z<<16) | (1<<z);

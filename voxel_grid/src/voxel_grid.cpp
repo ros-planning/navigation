@@ -102,7 +102,7 @@ namespace voxel_grid {
 
   void VoxelGrid::markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_INFO("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
+      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
           size_x_, size_y_, size_z_);
       return;
     }
@@ -113,7 +113,7 @@ namespace voxel_grid {
 
   void VoxelGrid::clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_INFO("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
+      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
           size_x_, size_y_, size_z_);
       return;
     }
@@ -131,7 +131,7 @@ namespace voxel_grid {
     }
 
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_INFO("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
+      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
           size_x_, size_y_, size_z_);
       return;
     }
@@ -143,7 +143,7 @@ namespace voxel_grid {
   VoxelStatus VoxelGrid::getVoxel(unsigned int x, unsigned int y, unsigned int z)
   {
     if(x >= size_x_ || y >= size_y_ || z >= size_z_){
-      ROS_INFO("Error, voxel out of bounds. (%d, %d, %d)\n", x, y, z);
+      ROS_DEBUG("Error, voxel out of bounds. (%d, %d, %d)\n", x, y, z);
       return UNKNOWN;
     }
     uint32_t full_mask = ((uint32_t)1<<z<<16) | (1<<z);
@@ -164,7 +164,7 @@ namespace voxel_grid {
   VoxelStatus VoxelGrid::getVoxelColumn(unsigned int x, unsigned int y, unsigned int unknown_threshold, unsigned int marked_threshold)
   {
     if(x >= size_x_ || y >= size_y_){
-      ROS_INFO("Error, voxel out of bounds. (%d, %d)\n", x, y);
+      ROS_DEBUG("Error, voxel out of bounds. (%d, %d)\n", x, y);
       return UNKNOWN;
     }
     
