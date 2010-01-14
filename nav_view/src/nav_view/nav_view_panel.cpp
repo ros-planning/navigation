@@ -79,6 +79,7 @@ NavViewPanel::NavViewPanel( wxWindow* parent )
 , mouse_y_(0)
 , scale_(10.0f)
 , current_tool_( NULL )
+, first_map_(true)
 {
   tf_client_ = new tf::TransformListener();
 
@@ -347,7 +348,11 @@ void NavViewPanel::displayMap(const nav_msgs::OccupancyGrid& map)
   }
   map_object_->end();
 
-  root_node_->setPosition(Ogre::Vector3(-map_width_*map_resolution_/2, -map_height_*map_resolution_/2, 0.0f));
+  //only center the position of the map if its the first received
+  if(first_map_){
+    root_node_->setPosition(Ogre::Vector3(-map_width_*map_resolution_/2, -map_height_*map_resolution_/2, 0.0f));
+    first_map_ = false;
+  }
   map_node->setPosition(Ogre::Vector3(0.0f, 0.0f, MAP_DEPTH));
 
   queueRender();

@@ -250,6 +250,8 @@ protected:
   wxTimer* update_timer_;
 
   Tool* current_tool_;
+
+  bool first_map_;
 };
 
 } // namespace nav_view
