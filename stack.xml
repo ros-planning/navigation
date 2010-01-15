@@ -5,16 +5,14 @@
     to a mobile base.
   </description>
   <author>Maintained by Eitan Marder-Eppstein eitan@willowgarage.com</author>
-  <license>BSD, LGPL (amcl)</license>
-  <review status="unreviewed" notes=""/>
+  <license>BSD,LGPL (amcl)</license>  
+  <review status="Doc reviewed" notes=""/>
   <url>http://ros.org/wiki/navigation</url>
-  
-
-  <depend stack="geometry"/> 
-  <depend stack="ros"/> 
-  <depend stack="visualization_common"/> 
-  <depend stack="common"/> 
-  <depend stack="common_msgs"/> 
-  <depend stack="laser_pipeline"/> 
+  <depend stack="common" /> <!-- actionlib, bfl, yaml_cpp, pluginlib -->
+  <depend stack="common_msgs" /> <!-- nav_msgs, sensor_msgs, actionlib_msgs, geometry_msgs -->
+  <depend stack="geometry" /> <!-- tf, bullet, angles -->
+  <depend stack="laser_pipeline" /> <!-- laser_geometry -->
+  <depend stack="ros" /> <!-- rosconsole, std_srvs, roscpp, message_filters, roslib, std_msgs, rostest, rospy, rosmsg, rosrecord, rostopic -->
+  <depend stack="visualization_common" /> <!-- ogre_tools, ogre, visualization_msgs -->
 
 </stack>
