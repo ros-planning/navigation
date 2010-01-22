@@ -19,7 +19,7 @@ rosbuild_link_boost(robot_pose_ekf thread)
 include(CMakeDetermineSystem)
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 
-rosbuild_download_test_data(http://pr.willowgarage.com/data/robot_pose_ekf/ekf_test.bag test/ekf_test.bag 490acffaf62c92ef79eb2ecef36d4e03)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/robot_pose_ekf/ekf_test2.bag test/ekf_test2.bag 3b8c5c6485c7e29b42318a12784d7bdd)
 rosbuild_add_executable(test_robot_pose_ekf test/test_robot_pose_ekf.cpp)
 rosbuild_link_boost(test_robot_pose_ekf thread)
 rosbuild_add_gtest_build_flags(test_robot_pose_ekf)

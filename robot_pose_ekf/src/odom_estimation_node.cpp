@@ -208,13 +208,23 @@ namespace estimation
     // receive data 
     boost::mutex::scoped_lock lock(imu_mutex_);
     imu_stamp_ = imu->header.stamp;
-    imu_time_  = Time::now();
     btQuaternion orientation;
     quaternionMsgToTF(imu->orientation, orientation);
     imu_meas_ = btTransform(orientation, btVector3(0,0,0));
     for (unsigned int i=0; i<3; i++)
       for (unsigned int j=0; j<3; j++)
         imu_covariance_(i+1, j+1) = imu->orientation_covariance[3*i+j];
+
+    // transform imu data to base_footprint frame
+    if (!robot_state_.waitForTransform("base_footprint", imu->header.frame_id, imu_stamp_, ros::Duration(0.5))){
+      ROS_ERROR("Could not transform imu message from %s to base_footprint", imu->header.frame_id.c_str());
+      return;
+    }
+    StampedTransform base_imu_offset;
+    robot_state_.lookupTransform("base_footprint", imu->header.frame_id, imu_stamp_, base_imu_offset);
+    imu_meas_ = imu_meas_ * base_imu_offset;
+
+    imu_time_  = Time::now();
 
     // manually set covariance untile imu sends covariance
     if (imu_covariance_(1,1) == 0.0){

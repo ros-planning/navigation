@@ -45,8 +45,8 @@
 using namespace ros;
 
 
-static const double time_end     = 1250701262.0;
-static const double ekf_duration = 20.0;
+static const double time_end     = 1264198883.0;
+static const double ekf_duration = 62.0;
 static const double EPS_trans_x    = 0.02;
 static const double EPS_trans_y    = 0.04;
 static const double EPS_trans_z    = 0.00001;
@@ -121,8 +121,8 @@ protected:
     ROS_INFO("Subscribing to robot_pose_ekf/odom_combined");
     ekf_sub_ = node_.subscribe("/robot_pose_ekf/odom_combined", 10, &TestEKF::EKFCallback, (TestEKF*)this);
 
-    ROS_INFO("Subscribing to pr2_base_odometry/odom");
-    odom_sub_ = node_.subscribe("/pr2_base_odometry/odom", 10 , &TestEKF::OdomCallback, (TestEKF*)this);
+    ROS_INFO("Subscribing to base_odometry/odom");
+    odom_sub_ = node_.subscribe("base_odometry/odom", 10 , &TestEKF::OdomCallback, (TestEKF*)this);
   }
 
   void TearDown()
@@ -153,9 +153,11 @@ TEST_F(TestEKF, test)
   Duration(2.0).sleep();
 
   // check if callback was called enough times
-  EXPECT_GT(ekf_counter_, 200);
+  ROS_INFO("Number of ekf callbacks: %f", ekf_counter_);
+  EXPECT_GT(ekf_counter_, 500);
 
   // check if time interval is correct
+  ROS_INFO("Ekf duration: %f", ekf_duration);
   EXPECT_LT(Duration(ekf_end_->header.stamp - ekf_time_begin_).toSec(), ekf_duration * 1.25);
   EXPECT_GT(Duration(ekf_end_->header.stamp - ekf_time_begin_).toSec(), ekf_duration * 0.85);
 
@@ -167,13 +169,13 @@ TEST_F(TestEKF, test)
   ROS_INFO("%f %f %f %f %f %f %f -- %f",ekf_end_->pose.pose.position.x, ekf_end_->pose.pose.position.y, ekf_end_->pose.pose.position.z,
             ekf_end_->pose.pose.orientation.x, ekf_end_->pose.pose.orientation.y, ekf_end_->pose.pose.orientation.z, ekf_end_->pose.pose.orientation.w,
             ekf_end_->header.stamp.toSec());
-  EXPECT_NEAR(ekf_end_->pose.pose.position.x, 3.835345, EPS_trans_x);
-  EXPECT_NEAR(ekf_end_->pose.pose.position.y, 0.556243, EPS_trans_y);
-  EXPECT_NEAR(ekf_end_->pose.pose.position.z, 0.000000, EPS_trans_z);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.x, 0.003916,  EPS_rot_x);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.y, -0.005158, EPS_rot_y);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.z, 0.666300,  EPS_rot_z);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.w, 0.745655,  EPS_rot_w);
+  EXPECT_NEAR(ekf_end_->pose.pose.position.x, -0.0586126, EPS_trans_x);
+  EXPECT_NEAR(ekf_end_->pose.pose.position.y, 0.0124321, EPS_trans_y);
+  EXPECT_NEAR(ekf_end_->pose.pose.position.z, 0.0, EPS_trans_z);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.x, 0.00419421,  EPS_rot_x);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.y,  0.00810739, EPS_rot_y);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.z, -0.0440686,  EPS_rot_z);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.w, 0.998987,  EPS_rot_w);
 
   SUCCEED();
 }
