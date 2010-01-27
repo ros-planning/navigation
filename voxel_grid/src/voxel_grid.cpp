@@ -123,7 +123,7 @@ namespace voxel_grid {
   }
 
   void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1, unsigned char *map_2d, 
-      unsigned int unknown_threshold, unsigned int mark_threshold, unsigned int max_length){
+      unsigned int unknown_threshold, unsigned int mark_threshold, unsigned char free_cost, unsigned char unknown_cost, unsigned int max_length){
     costmap = map_2d;
     if(map_2d == NULL){
       clearVoxelLine(x0, y0, z0, x1, y1, z1, max_length);
@@ -136,7 +136,7 @@ namespace voxel_grid {
       return;
     }
 
-    ClearVoxelInMap cvm(data_, costmap, unknown_threshold, mark_threshold);
+    ClearVoxelInMap cvm(data_, costmap, unknown_threshold, mark_threshold, free_cost, unknown_cost);
     raytraceLine(cvm, x0, y0, z0, x1, y1, z1, max_length);
   }
 

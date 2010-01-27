@@ -231,7 +231,8 @@ namespace costmap_2d{
         unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
         
         //voxel_grid_.markVoxelLine(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z);
-        voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z, costmap_, unknown_threshold_, mark_threshold_, cell_raytrace_range);
+        voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z, costmap_, 
+            unknown_threshold_, mark_threshold_, FREE_SPACE, NO_INFORMATION, cell_raytrace_range);
       }
     }
   }
