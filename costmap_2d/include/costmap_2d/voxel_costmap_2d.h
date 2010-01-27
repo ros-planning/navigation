@@ -107,6 +107,16 @@ namespace costmap_2d {
       void updateOrigin(double new_origin_x, double new_origin_y);
 
       /**
+       * @brief  Clears non lethal obstacles in a specified window
+       * @param wx The x coordinate of the center point of the window in world space (meters)
+       * @param wy The y coordinate of the center point of the window in world space (meters)
+       * @param w_size_x The x size of the window in meters
+       * @param w_size_y The y size of the window in meters
+       * @param clear_no_info If set to true, NO_INFORMATION will be cleared, if set to false NO_INFORMATION will be treated as a lethal obstacle
+       */
+      virtual void clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info = false);
+
+      /**
        * @brief Returns a point cloud for visualizing the voxel grid
        * @param cloud The point cloud to fill
        */

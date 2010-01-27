@@ -116,6 +116,10 @@ namespace voxel_grid {
         data_[y * size_x_ + x] &= ~(full_mask); //clear unknown and clear cell
       }
 
+      inline void clearVoxelColumn(unsigned int index){
+        data_[index] = 0;
+      }
+
       inline void clearVoxelInMap(unsigned int x, unsigned int y, unsigned int z){
         if(x >= size_x_ || y >= size_y_ || z >= size_z_){
           ROS_DEBUG("Error, voxel out of bounds.\n");
