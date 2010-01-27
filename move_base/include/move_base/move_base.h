@@ -150,6 +150,8 @@ namespace move_base {
 
       void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
 
+      bool isQuaternionValid(const geometry_msgs::Quaternion& q);
+
       geometry_msgs::PoseStamped goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg);
 
       tf::TransformListener& tf_;

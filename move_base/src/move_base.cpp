@@ -317,6 +317,36 @@ namespace move_base {
 
   }
 
+  bool MoveBase::isQuaternionValid(const geometry_msgs::Quaternion& q){
+    //first we need to check if the quaternion has nan's or infs
+    if(isnan(q.x) || isnan(q.y) || isnan(q.z) || isnan(q.w)){
+      ROS_ERROR("Quaternion has nans or infs... discarding as a navigation goal");
+      return false;
+    }
+
+    tf::Quaternion tf_q(q.x, q.y, q.z, q.w);
+
+    //next, we need to check if the length of the quaternion is close to zero
+    if(tf_q.length2() < 1e-6){
+      ROS_ERROR("Quaternion has length close to zero... discarding as navigation goal");
+      return false;
+    }
+
+    //next, we'll normalize the quaternion and check that it transforms the vertical vector correctly
+    tf_q.normalize();
+
+    btVector3 up(0, 0, 1);
+
+    double dot = up.dot(up.rotate(tf_q.getAxis(), tf_q.getAngle()));
+
+    if(fabs(dot - 1) > 1e-3){
+      ROS_ERROR("Quaternion is invalid... discarding as navigation goal");
+      return false;
+    }
+
+    return true;
+  }
+
   geometry_msgs::PoseStamped MoveBase::goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg){
     std::string global_frame = planner_costmap_ros_->getGlobalFrameID();
     tf::Stamped<tf::Pose> goal_pose, global_pose;
@@ -343,7 +373,13 @@ namespace move_base {
 
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
+    if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
+      as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+      return;
+    }
+
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+
     current_goal_pub_.publish(goal);
     std::vector<geometry_msgs::PoseStamped> global_plan;
 
@@ -360,7 +396,14 @@ namespace move_base {
       if(as_->isPreemptRequested()){
         if(as_->isNewGoalAvailable()){
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
-          goal = goalToGlobalFrame((*as_->acceptNewGoal()).target_pose);
+          move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
+
+          if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
+            as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+            return;
+          }
+
+          goal = goalToGlobalFrame(new_goal.target_pose);
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
@@ -409,7 +452,7 @@ namespace move_base {
     }
 
     //if the node is killed then we'll abort and return
-    as_->setAborted();
+    as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on the goal because the node has been killed");
     return;
   }
 
@@ -445,7 +488,7 @@ namespace move_base {
             //ABORT and SHUTDOWN COSTMAPS
             ROS_ERROR("Failed to pass global plan to the controller, aborting.");
             resetState();
-            as_->setAborted();
+            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to pass global plan to the controller.");
             return true;
           }
           ROS_DEBUG("Generated a plan from the base_global_planner");
@@ -479,7 +522,7 @@ namespace move_base {
         if(tc_->isGoalReached()){
           ROS_DEBUG("Goal reached!");
           resetState();
-          as_->setSucceeded();
+          as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           return true;
         }
 
@@ -495,7 +538,7 @@ namespace move_base {
           if(ros::Time::now() > attempt_end){
             ROS_ERROR("Aborting because of failure to find a valid control for %.2f seconds", controller_patience_);
             resetState();
-            as_->setAborted();
+            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control");
             return true;
           }
 
@@ -523,14 +566,14 @@ namespace move_base {
         else{
           ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
           resetState();
-          as_->setAborted();
+          as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
           return true;
         }
         break;
       default:
         ROS_ERROR("This case should never be reached, something is wrong, aborting");
         resetState();
-        as_->setAborted();
+        as_->setAborted(move_base_msgs::MoveBaseResult(), "Reached a case that should not be hit in move_base. This is a bug, please report it.");
         return true;
     }
 
