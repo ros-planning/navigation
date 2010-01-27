@@ -36,6 +36,7 @@
 *********************************************************************/
 #ifndef NAV_MOVE_BASE_ACTION_H_
 #define NAV_MOVE_BASE_ACTION_H_
+#include <math.h>
 #include <ros/ros.h>
 
 #include <actionlib/server/simple_action_server.h>
