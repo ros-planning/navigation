@@ -224,8 +224,10 @@ namespace navfn {
     double wy = start.pose.position.y;
 
     unsigned int mx, my;
-    if(!costmap_.worldToMap(wx, wy, mx, my))
+    if(!costmap_.worldToMap(wx, wy, mx, my)){
+      ROS_WARN("The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
       return false;
+    }
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
     tf::Stamped<tf::Pose> start_pose;
@@ -243,8 +245,10 @@ namespace navfn {
     wx = goal.pose.position.x;
     wy = goal.pose.position.y;
 
-    if(!costmap_.worldToMap(wx, wy, mx, my))
+    if(!costmap_.worldToMap(wx, wy, mx, my)){
+      ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
       return false;
+    }
 
     int map_goal[2];
     map_goal[0] = mx;
