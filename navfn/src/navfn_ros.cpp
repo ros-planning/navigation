@@ -81,6 +81,10 @@ namespace navfn {
       //initialize the costmap publisher
       costmap_publisher_ = new costmap_2d::Costmap2DPublisher(ros::NodeHandle(private_nh, "NavfnROS_costmap"), costmap_pub_freq, global_frame_);
 
+      //get the tf prefix
+      ros::NodeHandle prefix_nh;
+      tf_prefix_ = tf::getPrefixParam(prefix_nh);
+
       initialized_ = true;
     }
     else
@@ -204,15 +208,15 @@ namespace navfn {
     ros::NodeHandle n;
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::remap(goal.header.frame_id) != tf::remap(global_frame_)){
+    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::remap(global_frame_).c_str(), tf::remap(goal.header.frame_id).c_str());
+                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
       return false;
     }
 
-    if(tf::remap(start.header.frame_id) != tf::remap(global_frame_)){
+    if(tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
       ROS_ERROR("The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::remap(global_frame_).c_str(), tf::remap(start.header.frame_id).c_str());
+                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
       return false;
     }
 
@@ -272,6 +276,11 @@ namespace navfn {
         pose.header.frame_id = global_frame_;
         pose.pose.position.x = world_x;
         pose.pose.position.y = world_y;
+        pose.pose.position.z = 0.0;
+        pose.pose.orientation.x = 0.0;
+        pose.pose.orientation.y = 0.0;
+        pose.pose.orientation.z = 0.0;
+        pose.pose.orientation.w = 1.0;
         plan.push_back(pose);
       }
       

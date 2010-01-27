@@ -130,6 +130,7 @@ namespace navfn {
       std::string global_frame_;
       double planner_window_x_, planner_window_y_;
       costmap_2d::Costmap2DPublisher* costmap_publisher_;
+      std::string tf_prefix_;
   };
 };
 
