@@ -340,7 +340,7 @@ namespace move_base {
     double dot = up.dot(up.rotate(tf_q.getAxis(), tf_q.getAngle()));
 
     if(fabs(dot - 1) > 1e-3){
-      ROS_ERROR("Quaternion is invalid... discarding as navigation goal");
+      ROS_ERROR("Quaternion is invalid... for navigation the z-axis of the quaternion must be close to vertical.");
       return false;
     }
 
