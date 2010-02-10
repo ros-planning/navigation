@@ -325,4 +325,64 @@ namespace navfn {
 
     plan_pub_.publish(gui_path);
   }
+
+  bool NavfnROS::getPlanFromPotential(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
+    if(!initialized_){
+      ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
+      return false;
+    }
+
+    //clear the plan, just in case
+    plan.clear();
+
+    double wx = goal.pose.position.x;
+    double wy = goal.pose.position.y;
+
+    //the potential has already been computed, so we won't update our copy of the costmap
+    unsigned int mx, my;
+    if(!costmap_.worldToMap(wx, wy, mx, my)){
+      ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
+      return false;
+    }
+
+    int map_goal[2];
+    map_goal[0] = mx;
+    map_goal[1] = my;
+
+    planner_->setStart(map_goal);
+
+    planner_->calcPath(costmap_ros_->getSizeInCellsX() * 4);
+
+    //extract the plan
+    float *x = planner_->getPathX();
+    float *y = planner_->getPathY();
+    int len = planner_->getPathLen();
+    ros::Time plan_time = ros::Time::now();
+    std::string global_frame = costmap_ros_->getGlobalFrameID();
+    for(int i = 0; i < len; ++i){
+      unsigned int cell_x, cell_y;
+      cell_x = (unsigned int) x[i];
+      cell_y = (unsigned int) y[i];
+
+      //convert the plan to world coordinates
+      double world_x, world_y;
+      costmap_.mapToWorld(cell_x, cell_y, world_x, world_y);
+
+      geometry_msgs::PoseStamped pose;
+      pose.header.stamp = plan_time;
+      pose.header.frame_id = global_frame;
+      pose.pose.position.x = world_x;
+      pose.pose.position.y = world_y;
+      pose.pose.position.z = 0.0;
+      pose.pose.orientation.x = 0.0;
+      pose.pose.orientation.y = 0.0;
+      pose.pose.orientation.z = 0.0;
+      pose.pose.orientation.w = 1.0;
+      plan.push_back(pose);
+    }
+
+    //publish the plan for visualization purposes
+    publishPlan(plan, 0.0, 1.0, 0.0, 0.0);
+    return !plan.empty();
+  }
 };

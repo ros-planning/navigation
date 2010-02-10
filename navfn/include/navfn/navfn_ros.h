@@ -91,6 +91,14 @@ namespace navfn {
       bool computePotential(const geometry_msgs::Point& world_point);
 
       /**
+       * @brief Compute a plan to a goal after the potential for a start point has already been computed (Note: You should call computePotential first)
+       * @param goal The goal pose to create a plan to
+       * @param plan The plan... filled by the planner
+       * @return True if a valid plan was found, false otherwise
+       */
+      bool getPlanFromPotential(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
+
+      /**
        * @brief Get the potential, or naviagation cost, at a given point in the world (Note: You should call computePotential first)
        * @param world_point The point to get the potential for 
        * @return The navigation function's value at that point in the world
