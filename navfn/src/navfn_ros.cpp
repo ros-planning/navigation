@@ -335,6 +335,13 @@ namespace navfn {
     //clear the plan, just in case
     plan.clear();
 
+    //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
+    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+      ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
+                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+      return false;
+    }
+
     double wx = goal.pose.position.x;
     double wy = goal.pose.position.y;
 
