@@ -88,9 +88,6 @@ namespace estimation
     // initialize
     filter_stamp_ = Time::now();
 
-    // fiexed transform between camera frame and vo frame
-    vo_camera_ = Transform(Quaternion(M_PI/2.0, -M_PI/2,0), Vector3(0,0,0));
-
     // subscribe to messages
     cmd_vel_sub_ = nh.subscribe("cmd_vel", 10, &OdomEstimationNode::velCallback, this);
 
@@ -183,7 +180,7 @@ namespace estimation
 	odom_initializing_ = false;
 	ROS_INFO("Odom sensor activated");      
       }
-      else ROS_INFO("Waiting to activate Odom, because Odom measurements are still %f sec in the future.", 
+      else ROS_DEBUG("Waiting to activate Odom, because Odom measurements are still %f sec in the future.", 
 		    (odom_init_stamp_ - filter_stamp_).toSec());
     }
     
@@ -215,9 +212,13 @@ namespace estimation
       for (unsigned int j=0; j<3; j++)
         imu_covariance_(i+1, j+1) = imu->orientation_covariance[3*i+j];
 
-    // transform imu data to base_footprint frame
+    // Transforms imu data to base_footprint frame
     if (!robot_state_.waitForTransform("base_footprint", imu->header.frame_id, imu_stamp_, ros::Duration(0.5))){
-      ROS_ERROR("Could not transform imu message from %s to base_footprint", imu->header.frame_id.c_str());
+      // warn when imu was already activated, not when imu is not active yet
+      if (imu_active_)
+        ROS_ERROR("Could not transform imu message from %s to base_footprint", imu->header.frame_id.c_str());
+      else
+        ROS_DEBUG("Could not transform imu message from %s to base_footprint. Imu will not be activated yet.", imu->header.frame_id.c_str());
       return;
     }
     StampedTransform base_imu_offset;
@@ -249,7 +250,7 @@ namespace estimation
 	imu_initializing_ = false;
 	ROS_INFO("Imu sensor activated");      
       }
-      else ROS_INFO("Waiting to activate IMU, because IMU measurements are still %f sec in the future.", 
+      else ROS_DEBUG("Waiting to activate IMU, because IMU measurements are still %f sec in the future.", 
 		    (imu_init_stamp_ - filter_stamp_).toSec());
     }
     
@@ -293,7 +294,7 @@ namespace estimation
 	vo_initializing_ = false;
 	ROS_INFO("Vo sensor activated");      
       }
-      else ROS_INFO("Waiting to activate VO, because VO measurements are still %f sec in the future.", 
+      else ROS_DEBUG("Waiting to activate VO, because VO measurements are still %f sec in the future.", 
 		    (vo_init_stamp_ - filter_stamp_).toSec());
     }
     
@@ -401,12 +402,6 @@ namespace estimation
         my_filter_.initialize(odom_meas_, odom_stamp_);
         ROS_INFO("Fiter initialized");
       }
-      // initialize filter with visual odometry
-      //if ( vo_active_ && !my_filter_.isInitialized()){
-      //  my_filter_.initialize(vo_meas_, vo_stamp_);
-      //  ROS_INFO("Fiter initialized");
-      //}
-      
     }
   };
 

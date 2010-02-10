@@ -120,7 +120,7 @@ private:
   // vectors
   MatrixWrapper::ColumnVector vel_desi_;
   tf::Transform odom_meas_, imu_meas_, vo_meas_;
-  tf::Transform base_vo_init_, vo_camera_;
+  tf::Transform base_vo_init_;
   tf::StampedTransform camera_base_;
   ros::Time odom_time_, imu_time_, vo_time_;
   ros::Time odom_stamp_, imu_stamp_, vo_stamp_, filter_stamp_;
