@@ -820,7 +820,7 @@ namespace navfn {
     NavFn::calcPath(int n, int *st)
     {
       // test write
-      savemap("test");
+      //savemap("test");
 
       // check path arrays
       if (npathbuf < n)
@@ -910,7 +910,7 @@ namespace navfn {
           if (potarr[stc] >= POT_HIGH)
           {
             ROS_DEBUG("[PathCalc] No path found, high potential");
-            savemap("navfn_highpot");
+            //savemap("navfn_highpot");
             return 0;
           }
         }
@@ -965,7 +965,7 @@ namespace navfn {
 
       //  return npath;			// out of cycles, return failure
       ROS_DEBUG("[PathCalc] No path found, path too long");
-      savemap("navfn_pathlong");
+      //savemap("navfn_pathlong");
       return 0;			// out of cycles, return failure
     }
 
