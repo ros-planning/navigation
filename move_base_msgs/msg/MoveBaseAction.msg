@@ -1,4 +1,0 @@
-
-MoveBaseActionGoal action_goal
-MoveBaseActionResult action_result
-MoveBaseActionFeedback action_feedback
