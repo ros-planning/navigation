@@ -400,7 +400,7 @@ namespace estimation
       // initialize filer with odometry frame
       if ( odom_active_ && !my_filter_.isInitialized()){
         my_filter_.initialize(odom_meas_, odom_stamp_);
-        ROS_INFO("Fiter initialized");
+        ROS_INFO("Kalman filter initialized");
       }
     }
   };
