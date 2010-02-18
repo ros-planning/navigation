@@ -658,7 +658,7 @@ namespace move_base {
       //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
-      n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 2);
+      n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
       //first, we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createClassInstance("ClearCostmapRecovery"));
