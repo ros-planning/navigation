@@ -97,7 +97,7 @@ namespace navfn {
       return false;
     }
 
-    return getPointPotential(world_point) < COST_OBS_ROS;
+    return getPointPotential(world_point) < POT_HIGH;
   }
 
   double NavfnROS::getPointPotential(const geometry_msgs::Point& world_point){
