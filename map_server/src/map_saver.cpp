@@ -44,43 +44,36 @@ class MapGenerator
 {
 
   public:
-
-    /**
-     * @brief Create the map generation node and save the map.
-     */
-    MapGenerator(const std::string& mapname) 
+    MapGenerator(const std::string& mapname) : mapname_(mapname) 
     {
       ros::NodeHandle n;
-      const static std::string servname = "map";
-      ROS_INFO("Requesting the map from %s...", n.resolveName(servname).c_str());
-      nav_msgs::GetMap::Request  req;
-      nav_msgs::GetMap::Response resp;
-      while(n.ok() && !ros::service::call(servname, req, resp))
-      {
-        ROS_WARN("request to %s failed; trying again...", n.resolveName(servname).c_str());
-        usleep(1000000);
-      }
+      ROS_INFO("Waiting for the map");
+      map_sub_ = n.subscribe("map", 1, &MapGenerator::mapCallback, this);
+    }
+
+    void mapCallback(const nav_msgs::OccupancyGridConstPtr& map)
+    {
       ROS_INFO("Received a %d X %d map @ %.3f m/pix",
-               resp.map.info.width,
-               resp.map.info.height,
-               resp.map.info.resolution);
+               map->info.width,
+               map->info.height,
+               map->info.resolution);
 
 
-      std::string mapdatafile = mapname + ".pgm";
+      std::string mapdatafile = mapname_ + ".pgm";
       ROS_INFO("Writing map occupancy data to %s", mapdatafile.c_str());
       FILE* out = fopen(mapdatafile.c_str(), "w");
 
       fprintf(out, "P5\n# CREATOR: Map_generator.cpp %.3f m/pix\n%d %d\n255\n",
-              resp.map.info.resolution, resp.map.info.width, resp.map.info.height);
-      for(unsigned int y = 0; y < resp.map.info.height; y++) {
-        for(unsigned int x = 0; x < resp.map.info.width; x++) {
-          unsigned int i = x + (resp.map.info.height - y - 1) * resp.map.info.width;
-          if (resp.map.data[i] == 0) { //occ [0,0.1)
+              map->info.resolution, map->info.width, map->info.height);
+      for(unsigned int y = 0; y < map->info.height; y++) {
+        for(unsigned int x = 0; x < map->info.width; x++) {
+          unsigned int i = x + (map->info.height - y - 1) * map->info.width;
+          if (map->data[i] == 0) { //occ [0,0.1)
             fputc(254, out);
-          } else if (resp.map.data[i] == +100) { //occ (0.65,1]
+          } else if (map->data[i] == +100) { //occ (0.65,1]
             fputc(000, out);
           } else { //occ [0.1,0.65]
-            fputc(206, out);
+            fputc(205, out);
           }
         }
       }
@@ -88,7 +81,7 @@ class MapGenerator
       fclose(out);
 
 
-      std::string mapmetadatafile = mapname + ".yaml";
+      std::string mapmetadatafile = mapname_ + ".yaml";
       ROS_INFO("Writing map occupancy data to %s", mapmetadatafile.c_str());
       FILE* yaml = fopen(mapmetadatafile.c_str(), "w");
 
@@ -103,18 +96,21 @@ free_thresh: 0.196
 
        */
 
-      geometry_msgs::Quaternion & orientation = resp.map.info.origin.orientation;
+      geometry_msgs::Quaternion orientation = map->info.origin.orientation;
       btMatrix3x3 mat(btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w));
       double yaw, pitch, roll;
       mat.getEulerYPR(yaw, pitch, roll);
 
       fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n",
-              mapdatafile.c_str(), resp.map.info.resolution, resp.map.info.origin.position.x, resp.map.info.origin.position.y, yaw);
+              mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw);
 
       fclose(yaml);
 
       ROS_INFO("Done\n");
     }
+
+    std::string mapname_;
+    ros::Subscriber map_sub_;
 };
 
 #define USAGE "Usage: \n" \
@@ -151,6 +147,8 @@ int main(int argc, char** argv)
   }
   
   MapGenerator mg(mapname);
+
+  ros::spin();
 
   return 0;
 }
