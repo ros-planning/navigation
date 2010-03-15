@@ -528,7 +528,7 @@ namespace costmap_2d {
     }
   }
 
-  bool Costmap2DROS::getMarkingObservations(std::vector<Observation>& marking_observations){
+  bool Costmap2DROS::getMarkingObservations(std::vector<Observation>& marking_observations) const {
     bool current = true;
     //get the marking observations
     for(unsigned int i = 0; i < marking_buffers_.size(); ++i){
@@ -540,7 +540,7 @@ namespace costmap_2d {
     return current;
   }
 
-  bool Costmap2DROS::getClearingObservations(std::vector<Observation>& clearing_observations){
+  bool Costmap2DROS::getClearingObservations(std::vector<Observation>& clearing_observations) const {
     bool current = true;
     //get the clearing observations
     for(unsigned int i = 0; i < clearing_buffers_.size(); ++i){
@@ -640,7 +640,7 @@ namespace costmap_2d {
 
   }
 
-  void Costmap2DROS::getCostmapCopy(Costmap2D& costmap){
+  void Costmap2DROS::getCostmapCopy(Costmap2D& costmap) const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     costmap = *costmap_;
   }
@@ -695,7 +695,7 @@ namespace costmap_2d {
     costmap_->updateStaticMapWindow(map_origin_x, map_origin_y, map_width, map_height, new_map_data);
   }
 
-  void Costmap2DROS::getCostmapWindowCopy(double win_size_x, double win_size_y, Costmap2D& costmap){
+  void Costmap2DROS::getCostmapWindowCopy(double win_size_x, double win_size_y, Costmap2D& costmap) const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     tf::Stamped<tf::Pose> global_pose;
     if(!getRobotPose(global_pose)){
@@ -705,7 +705,7 @@ namespace costmap_2d {
     getCostmapWindowCopy(global_pose.getOrigin().x(), global_pose.getOrigin().y(), win_size_x, win_size_y, costmap);
   }
 
-  void Costmap2DROS::getCostmapWindowCopy(double win_center_x, double win_center_y, double win_size_x, double win_size_y, Costmap2D& costmap){
+  void Costmap2DROS::getCostmapWindowCopy(double win_center_x, double win_center_y, double win_size_x, double win_size_y, Costmap2D& costmap) const {
     boost::recursive_mutex::scoped_lock lock(lock_);
 
     //we need to compute legal bounds for the window and shrink it if necessary
@@ -720,22 +720,22 @@ namespace costmap_2d {
     costmap.copyCostmapWindow(*costmap_, ll_x, ll_y, size_x, size_y);
   }
 
-  unsigned int Costmap2DROS::getSizeInCellsX() {
+  unsigned int Costmap2DROS::getSizeInCellsX() const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     return costmap_->getSizeInCellsX();
   }
 
-  unsigned int Costmap2DROS::getSizeInCellsY() {
+  unsigned int Costmap2DROS::getSizeInCellsY() const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     return costmap_->getSizeInCellsY();
   }
 
-  double Costmap2DROS::getResolution() {
+  double Costmap2DROS::getResolution() const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     return costmap_->getResolution();
   }
 
-  bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose){
+  bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const {
     global_pose.setIdentity();
     tf::Stamped<tf::Pose> robot_pose;
     robot_pose.setIdentity();
@@ -777,11 +777,11 @@ namespace costmap_2d {
     clearRobotFootprint(global_pose);
   }
 
-  std::vector<geometry_msgs::Point> Costmap2DROS::getRobotFootprint(){
+  std::vector<geometry_msgs::Point> Costmap2DROS::getRobotFootprint() const {
     return footprint_spec_;
   }
 
-  void Costmap2DROS::getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint){
+  void Costmap2DROS::getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const {
     tf::Stamped<tf::Pose> global_pose;
     if(!getRobotPose(global_pose))
       return;
@@ -791,7 +791,7 @@ namespace costmap_2d {
     getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint);
   }
 
-  void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint){
+  void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint) const {
     //build the oriented footprint at the robot's current location
     double cos_th = cos(theta);
     double sin_th = sin(theta);
@@ -814,25 +814,25 @@ namespace costmap_2d {
     return success;
   }
 
-  std::string Costmap2DROS::getGlobalFrameID(){
+  std::string Costmap2DROS::getGlobalFrameID() const {
     return global_frame_;
   }
 
-  std::string Costmap2DROS::getBaseFrameID(){
+  std::string Costmap2DROS::getBaseFrameID() const {
     return robot_base_frame_;
   }
 
-  double Costmap2DROS::getInscribedRadius(){
+  double Costmap2DROS::getInscribedRadius() const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     return costmap_->getInscribedRadius();
   }
 
-  double Costmap2DROS::getCircumscribedRadius(){
+  double Costmap2DROS::getCircumscribedRadius() const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     return costmap_->getCircumscribedRadius();
   }
 
-  double Costmap2DROS::getInflationRadius(){
+  double Costmap2DROS::getInflationRadius() const {
     boost::recursive_mutex::scoped_lock lock(lock_);
     return costmap_->getInflationRadius();
   }
