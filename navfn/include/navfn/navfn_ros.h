@@ -46,6 +46,7 @@
 #include <tf/transform_datatypes.h>
 #include <vector>
 #include <nav_core/base_global_planner.h>
+#include <nav_msgs/GetPlan.h>
 
 namespace navfn {
   /**
@@ -119,6 +120,8 @@ namespace navfn {
 
       ~NavfnROS(){delete costmap_publisher_;}
 
+      bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
+
     protected:
 
       /**
@@ -139,6 +142,7 @@ namespace navfn {
       double planner_window_x_, planner_window_y_;
       costmap_2d::Costmap2DPublisher* costmap_publisher_;
       std::string tf_prefix_;
+      boost::mutex mutex_;
   };
 };
 

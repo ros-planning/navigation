@@ -192,8 +192,19 @@ namespace navfn {
     
   }
 
+  bool NavfnROS::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp){
+    makePlan(req.start, req.goal, resp.plan.poses);
+
+    resp.plan.header.stamp = ros::Time::now();
+    resp.plan.header.frame_id = global_frame_;
+
+    return true;
+  } 
+
+
   bool NavfnROS::makePlan(const geometry_msgs::PoseStamped& start, 
       const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
+    boost::mutex::scoped_lock lock(mutex_);
     if(!initialized_){
       ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
       return false;
