@@ -110,7 +110,7 @@ namespace costmap_2d {
       source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
       source_node.param("max_obstacle_height", max_obstacle_height, 2.0);
 
-      ROS_ASSERT_MSG(data_type == "PointCloud" || data_type == "LaserScan", "Only topics that use point clouds or laser scans are currently supported");
+      ROS_FATAL_COND(!(data_type == "PointCloud" || data_type == "LaserScan"), "Only topics that use point clouds or laser scans are currently supported");
 
 
       bool clearing, marking;
@@ -312,7 +312,7 @@ namespace costmap_2d {
       private_nh.param("unknown_threshold", unknown_threshold, z_voxels);
       private_nh.param("mark_threshold", mark_threshold, 0);
 
-      ROS_ASSERT(z_voxels >= 0 && unknown_threshold >= 0 && mark_threshold >= 0);
+      ROS_FATAL_COND(!(z_voxels >= 0 && unknown_threshold >= 0 && mark_threshold >= 0), "Values for z_voxels, unknown_threshold, and mark_threshold parameters must be positive.");
 
       //make sure to lock the map data
       boost::recursive_mutex::scoped_lock lock(map_data_lock_);
@@ -321,7 +321,7 @@ namespace costmap_2d {
           unknown_cost_value);
     }
     else{
-      ROS_ASSERT_MSG(false, "Unsuported map type");
+      ROS_FATAL_COND(true, "Unsuported map type");
     }
 
     gettimeofday(&end, NULL);
@@ -397,21 +397,21 @@ namespace costmap_2d {
     if(node.searchParam("footprint", footprint_param)){
       node.getParam(footprint_param, footprint_list);
       //make sure we have a list of lists
-      ROS_ASSERT_MSG(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeArray && footprint_list.size() > 2, 
+      ROS_FATAL_COND(!(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeArray && footprint_list.size() > 2), 
           "The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
       for(int i = 0; i < footprint_list.size(); ++i){
         //make sure we have a list of lists of size 2
         XmlRpc::XmlRpcValue point = footprint_list[i];
-        ROS_ASSERT_MSG(point.getType() == XmlRpc::XmlRpcValue::TypeArray && point.size() == 2, 
+        ROS_FATAL_COND(!(point.getType() == XmlRpc::XmlRpcValue::TypeArray && point.size() == 2), 
             "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
 
         //make sure that the value we're looking at is either a double or an int
-        ROS_ASSERT(point[0].getType() == XmlRpc::XmlRpcValue::TypeInt || point[0].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+        ROS_FATAL_COND(!(point[0].getType() == XmlRpc::XmlRpcValue::TypeInt || point[0].getType() == XmlRpc::XmlRpcValue::TypeDouble), "Values in the footprint specification must be numbers");
         pt.x = point[0].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[0]) : (double)(point[0]);
         pt.x += sign(pt.x) * padding;
 
         //make sure that the value we're looking at is either a double or an int
-        ROS_ASSERT(point[1].getType() == XmlRpc::XmlRpcValue::TypeInt || point[1].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+        ROS_FATAL_COND(!(point[1].getType() == XmlRpc::XmlRpcValue::TypeInt || point[1].getType() == XmlRpc::XmlRpcValue::TypeDouble), "Values in the footprint specification must be numbers");
         pt.y = point[1].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[1]) : (double)(point[1]);
         pt.y += sign(pt.y) * padding;
 
