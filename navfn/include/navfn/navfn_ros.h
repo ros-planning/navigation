@@ -143,6 +143,7 @@ namespace navfn {
       costmap_2d::Costmap2DPublisher* costmap_publisher_;
       std::string tf_prefix_;
       boost::mutex mutex_;
+      ros::ServiceServer make_plan_srv_;
   };
 };
 

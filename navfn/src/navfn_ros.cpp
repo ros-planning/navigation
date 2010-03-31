@@ -85,6 +85,8 @@ namespace navfn {
       ros::NodeHandle prefix_nh;
       tf_prefix_ = tf::getPrefixParam(prefix_nh);
 
+      make_plan_srv_ =  private_nh.advertiseService("make_plan", &NavfnROS::makePlanService, this);
+
       initialized_ = true;
     }
     else
