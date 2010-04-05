@@ -100,14 +100,14 @@ namespace costmap_2d {
        * @param marking_observations A reference to a vector that will be populated with the observations 
        * @return True if all the observation buffers are current, false otherwise
        */
-      bool getMarkingObservations(std::vector<Observation>& marking_observations);
+      bool getMarkingObservations(std::vector<Observation>& marking_observations) const;
 
       /**
        * @brief  Get the observations used to clear space
        * @param marking_observations A reference to a vector that will be populated with the observations 
        * @return True if all the observation buffers are current, false otherwise
        */
-      bool getClearingObservations(std::vector<Observation>& clearing_observations);
+      bool getClearingObservations(std::vector<Observation>& clearing_observations) const;
 
       /**
        * @brief  Update the underlying costmap with new sensor data. 
@@ -122,20 +122,20 @@ namespace costmap_2d {
        * @param  theta The orientation of the robot
        * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
        */
-      void getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint);
+      void getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint) const;
 
       /**
        * @brief  Build the oriented footprint of the robot at the robot's current pose
        * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
        */
-      void getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint);
+      void getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const;
 
       /**
        * @brief Get the pose of the robot in the global frame of the costmap
        * @param global_pose Will be set to the pose of the robot in the global frame of the costmap
        * @return True if the pose was set successfully, false otherwise
        */
-      bool getRobotPose(tf::Stamped<tf::Pose>& global_pose);
+      bool getRobotPose(tf::Stamped<tf::Pose>& global_pose) const;
 
       /**
        * @brief Clear the footprint of the robot in the costmap
@@ -174,7 +174,7 @@ namespace costmap_2d {
        * @brief  Returns a copy of the underlying costmap
        * @param costmap A reference to the map to populate
        */
-      void getCostmapCopy(Costmap2D& costmap);
+      void getCostmapCopy(Costmap2D& costmap) const;
 
       /**
        * @brief  Updates the costmap's static map with new information
@@ -192,7 +192,7 @@ namespace costmap_2d {
        * @param win_size_y The y size of the desired window in meters
        * @param costmap A reference to the map to populate
        */
-      void getCostmapWindowCopy(double win_size_x, double win_size_y, Costmap2D& costmap);
+      void getCostmapWindowCopy(double win_size_x, double win_size_y, Costmap2D& costmap) const;
 
       /**
        * @brief  Get a copy of a window of the costmap centered at a given
@@ -204,61 +204,61 @@ namespace costmap_2d {
        * @param win_size_y The y size of the desired window in meters
        * @param costmap A reference to the map to populate
        */
-      void getCostmapWindowCopy(double win_center_x, double win_center_y, double win_size_x, double win_size_y, Costmap2D& costmap);
+      void getCostmapWindowCopy(double win_center_x, double win_center_y, double win_size_x, double win_size_y, Costmap2D& costmap) const;
 
       /**
        * @brief  Returns the x size of the costmap in cells
        * @return The x size of the costmap in cells
        */
-      unsigned int getSizeInCellsX();
+      unsigned int getSizeInCellsX() const;
 
       /**
        * @brief  Returns the y size of the costmap in cells
        * @return The y size of the costmap in cells
        */
-      unsigned int getSizeInCellsY();
+      unsigned int getSizeInCellsY() const;
 
       /**
        * @brief  Returns the resolution of the costmap in meters
        * @return The resolution of the costmap in meters
        */
-      double getResolution();
+      double getResolution() const;
 
       /**
        * @brief  Returns the global frame of the costmap
        * @return The global frame of the costmap
        */
-      std::string getGlobalFrameID();
+      std::string getGlobalFrameID() const;
 
       /**
        * @brief  Returns the local frame of the costmap
        * @return The local frame of the costmap
        */
-      std::string getBaseFrameID();
+      std::string getBaseFrameID() const;
 
       /**
        * @brief  Returns the inscribed radius of the costmap
        * @return The inscribed radius of the costmap
        */
-      double getInscribedRadius();
+      double getInscribedRadius() const;
 
       /**
        * @brief  Returns the circumscribed radius of the costmap
        * @return The circumscribed radius of the costmap
        */
-      double getCircumscribedRadius();
+      double getCircumscribedRadius() const;
 
       /**
        * @brief  Returns the inflation radius of the costmap
        * @return The inflation radius of the costmap
        */
-      double getInflationRadius();
+      double getInflationRadius() const;
 
       /**
        * @brief  Returns the footprint of the robot in the robot_base_frame. To get the footprint in the global_frame use getOrientedFootprint
        * @return The footprint of the robot in the robot_base_frame
        */
-      std::vector<geometry_msgs::Point> getRobotFootprint();
+      std::vector<geometry_msgs::Point> getRobotFootprint() const;
 
       /**
        * @brief  Check if the observation buffers for the cost map are current
@@ -369,7 +369,7 @@ namespace costmap_2d {
       bool publish_voxel_;
       std::vector<geometry_msgs::Point> footprint_spec_;
       ros::Publisher voxel_pub_;
-      boost::recursive_mutex lock_;
+      mutable boost::recursive_mutex lock_;
       bool map_update_thread_shutdown_;
       bool save_debug_pgm_;
       ros::Subscriber map_sub_;
