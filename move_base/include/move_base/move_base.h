@@ -54,6 +54,7 @@
 #include <geometry_msgs/Twist.h>
 
 #include <pluginlib/class_loader.h>
+#include <std_srvs/Empty.h>
 
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
@@ -102,6 +103,14 @@ namespace move_base {
       bool executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
     private:
+      /**
+       * @brief  A service call that clears unknown space in the robot's immediate area
+       * @param req The service request 
+       * @param resp The service response
+       * @return True if the service call succeeds, false otherwise
+       */
+      bool clearUnknownService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp);
+
       /**
        * @brief  A service call that can be made when the action is inactive that will return a plan
        * @param  req The goal request
@@ -174,7 +183,7 @@ namespace move_base {
       double conservative_reset_dist_, clearing_radius_;
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
       ros::Subscriber goal_sub_;
-      ros::ServiceServer make_plan_srv_;
+      ros::ServiceServer make_plan_srv_, clear_unknown_srv_;
       bool shutdown_costmaps_, clearing_roatation_allowed_, recovery_behavior_enabled_;
 
       MoveBaseState state_;
