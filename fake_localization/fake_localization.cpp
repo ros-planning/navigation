@@ -109,6 +109,7 @@ public:
       m_particleCloud.header.frame_id = "/map";
       m_particleCloud.set_poses_size(1);
       ros::NodeHandle nh;
+      tf_prefix_ = tf::getPrefixParam(nh);
       filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "", 100);
       filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, odom_frame_id_, 100);
       filter_->registerCallback(boost::bind(&FakeOdomNode::update, this, _1));
@@ -156,11 +157,12 @@ private:
 
     //parameter for what odom to use
     std::string odom_frame_id_;
+    std::string tf_prefix_;
     
   void basePosReceived(const nav_msgs::OdometryConstPtr& msg)
   {
     m_basePosMsg = *msg;
-    m_basePosMsg.header.frame_id = "base_footprint"; //hack to make the filter do what I want (changed back later)
+    m_basePosMsg.header.frame_id = tf::resolve(tf_prefix_, "base_footprint"); //hack to make the filter do what I want (changed back later)
     boost::shared_ptr<nav_msgs::Odometry>  message(new nav_msgs::Odometry);
     *message = m_basePosMsg;
     filter_->add(message);
@@ -170,14 +172,14 @@ public:
   void update(const nav_msgs::OdometryConstPtr& message){
     tf::Quaternion delta_orientation = tf::createQuaternionFromRPY(0, 0, -delta_yaw_ );
     tf::Quaternion orientation(message->pose.pose.orientation.x,
-        message->pose.pose.orientation.y, 
-        message->pose.pose.orientation.z, 
-        message->pose.pose.orientation.w);
+                               message->pose.pose.orientation.y, 
+                               message->pose.pose.orientation.z, 
+                               message->pose.pose.orientation.w);
     orientation *= delta_orientation;
     tf::Transform txi(orientation,
-		      tf::Point(message->pose.pose.position.x - delta_x_,
-				message->pose.pose.position.y - delta_y_,
-                                0.0*message->pose.pose.position.z )); // zero height for base_footprint
+                      tf::Point(message->pose.pose.position.x - delta_x_,
+                                message->pose.pose.position.y - delta_y_,
+                                0.0 * message->pose.pose.position.z)); // zero height for base_footprint
 
     double x = txi.getOrigin().x();
     double y = txi.getOrigin().y();
@@ -202,8 +204,9 @@ public:
     tf::Stamped<tf::Pose> odom_to_map;
     try
     {
-      m_tfListener->transformPose(odom_frame_id_,tf::Stamped<tf::Pose> (txo.inverse(),
-                                                                message->header.stamp, "base_footprint"),odom_to_map);
+      m_tfListener->transformPose(odom_frame_id_,
+                                  tf::Stamped<tf::Pose> (txo.inverse(), message->header.stamp, "base_footprint"),
+                                  odom_to_map);
     }
     catch(tf::TransformException &e){
       ROS_DEBUG("Failed to transform to odom %s\n",e.what());
