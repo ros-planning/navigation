@@ -133,6 +133,7 @@ namespace navfn {
 
 
     private:
+      void mapToWorld(double mx, double my, double& wx, double& wy);
       void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
       costmap_2d::Costmap2D costmap_;
       std::string global_frame_;
