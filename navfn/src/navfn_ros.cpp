@@ -203,6 +203,11 @@ namespace navfn {
     return true;
   } 
 
+  void NavfnROS::mapToWorld(double mx, double my, double& wx, double& wy) {
+    wx = costmap_.getOriginX() + mx * costmap_.getResolution();
+    wy = costmap_.getOriginY() + my * costmap_.getResolution();
+  }
+
 
   bool NavfnROS::makePlan(const geometry_msgs::PoseStamped& start, 
       const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
@@ -280,13 +285,9 @@ namespace navfn {
       int len = planner_->getPathLen();
       ros::Time plan_time = ros::Time::now();
       for(int i = 0; i < len; ++i){
-        unsigned int cell_x, cell_y;
-        cell_x = (unsigned int) x[i];
-        cell_y = (unsigned int) y[i];
-
         //convert the plan to world coordinates
         double world_x, world_y;
-        costmap_.mapToWorld(cell_x, cell_y, world_x, world_y);
+        mapToWorld(x[i], y[i], world_x, world_y);
 
         geometry_msgs::PoseStamped pose;
         pose.header.stamp = plan_time;
@@ -380,13 +381,9 @@ namespace navfn {
     ros::Time plan_time = ros::Time::now();
     std::string global_frame = costmap_ros_->getGlobalFrameID();
     for(int i = 0; i < len; ++i){
-      unsigned int cell_x, cell_y;
-      cell_x = (unsigned int) x[i];
-      cell_y = (unsigned int) y[i];
-
       //convert the plan to world coordinates
       double world_x, world_y;
-      costmap_.mapToWorld(cell_x, cell_y, world_x, world_y);
+      mapToWorld(x[i], y[i], world_x, world_y);
 
       geometry_msgs::PoseStamped pose;
       pose.header.stamp = plan_time;
