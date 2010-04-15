@@ -62,7 +62,7 @@ namespace voxel_grid {
   void VoxelGrid::resize(unsigned int size_x, unsigned int size_y, unsigned int size_z)
   {
     //if we're not actually changing the size, we can just reset things
-    if(size_x == size_x_ || size_y == size_y_ || size_z == size_z_){
+    if(size_x == size_x_ && size_y == size_y_ && size_z == size_z_){
       reset();
       return;
     }
