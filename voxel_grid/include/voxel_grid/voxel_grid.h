@@ -45,6 +45,7 @@
 #include <limits.h>
 #include <algorithm>
 #include <ros/console.h>
+#include <ros/assert.h>
 
 
 /**
@@ -117,6 +118,7 @@ namespace voxel_grid {
       }
 
       inline void clearVoxelColumn(unsigned int index){
+        ROS_ASSERT(index < size_x_ * size_y_);
         data_[index] = 0;
       }
 
