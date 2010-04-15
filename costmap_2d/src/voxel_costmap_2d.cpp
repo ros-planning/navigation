@@ -58,6 +58,7 @@ namespace costmap_2d{
   void VoxelCostmap2D::initMaps(unsigned int size_x, unsigned int size_y){
     Costmap2D::initMaps(size_x, size_y);
     voxel_grid_.resize(size_x, size_y, size_z_);
+    ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
   }
 
   void VoxelCostmap2D::resetMaps(){
