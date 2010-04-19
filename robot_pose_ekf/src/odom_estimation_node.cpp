@@ -217,7 +217,9 @@ namespace estimation
       // warn when imu was already activated, not when imu is not active yet
       if (imu_active_)
         ROS_ERROR("Could not transform imu message from %s to base_footprint", imu->header.frame_id.c_str());
-      else
+      else if (my_filter_.isInitialized())
+        ROS_WARN("Could not transform imu message from %s to base_footprint. Imu will not be activated yet.", imu->header.frame_id.c_str());
+      else 
         ROS_DEBUG("Could not transform imu message from %s to base_footprint. Imu will not be activated yet.", imu->header.frame_id.c_str());
       return;
     }
