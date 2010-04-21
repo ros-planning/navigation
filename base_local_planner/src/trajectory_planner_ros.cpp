@@ -47,7 +47,7 @@ using namespace std;
 using namespace costmap_2d;
 
 //register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_REGISTER_CLASS(TrajectoryPlannerROS, base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
+PLUGINLIB_DECLARE_CLASS(base_local_planner, TrajectoryPlannerROS, base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
 
 namespace base_local_planner {
 

@@ -35,6 +35,7 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <move_base/move_base.h>
+#include <boost/algorithm/string.hpp>
 
 namespace move_base {
 
@@ -53,8 +54,8 @@ namespace move_base {
 
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
-    private_nh.param("base_global_planner", global_planner, std::string("NavfnROS"));
-    private_nh.param("base_local_planner", local_planner, std::string("TrajectoryPlannerROS"));
+    private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
+    private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
     private_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
     private_nh.param("controller_frequency", controller_frequency_, 20.0);
@@ -89,8 +90,22 @@ namespace move_base {
 
     //initialize the global planner
     try {
+      //check if a non fully qualified name has potentially been passed in
+      if(!bgp_loader_.isClassAvailable(global_planner)){
+        std::vector<std::string> classes = bgp_loader_.getDeclaredClasses();
+        for(unsigned int i = 0; i < classes.size(); ++i){
+          if(global_planner == bgp_loader_.getName(classes[i])){
+            //if we've found a match... we'll get the fully qualified name and break out of the loop
+            ROS_WARN("Planner specifications should now include the package name. You are using a deprecated API. Please switch from %s to %s in your yaml file.",
+                global_planner.c_str(), classes[i].c_str());
+            global_planner = classes[i];
+            break;
+          }
+        }
+      }
+
       planner_ = bgp_loader_.createClassInstance(global_planner);
-      planner_->initialize(global_planner, planner_costmap_ros_);
+      planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", global_planner.c_str(), ex.what());
@@ -104,8 +119,22 @@ namespace move_base {
 
     //create a local planner
     try {
+      //check if a non fully qualified name has potentially been passed in
+      if(!blp_loader_.isClassAvailable(local_planner)){
+        std::vector<std::string> classes = blp_loader_.getDeclaredClasses();
+        for(unsigned int i = 0; i < classes.size(); ++i){
+          if(local_planner == blp_loader_.getName(classes[i])){
+            //if we've found a match... we'll get the fully qualified name and break out of the loop
+            ROS_WARN("Planner specifications should now include the package name. You are using a deprecated API. Please switch from %s to %s in your yaml file.",
+                local_planner.c_str(), classes[i].c_str());
+            local_planner = classes[i];
+            break;
+          }
+        }
+      }
+
       tc_ = blp_loader_.createClassInstance(local_planner);
-      tc_->initialize(local_planner, &tf_, controller_costmap_ros_);
+      tc_->initialize(blp_loader_.getName(local_planner), &tf_, controller_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", local_planner.c_str(), ex.what());
@@ -628,6 +657,20 @@ namespace move_base {
         //if we've made it to this point, we know that the list is legal so we'll create all the recovery behaviors
         for(int i = 0; i < behavior_list.size(); ++i){
           try{
+            //check if a non fully qualified name has potentially been passed in
+            if(!recovery_loader_.isClassAvailable(behavior_list[i]["type"])){
+              std::vector<std::string> classes = recovery_loader_.getDeclaredClasses();
+              for(unsigned int i = 0; i < classes.size(); ++i){
+                if(behavior_list[i]["type"] == recovery_loader_.getName(classes[i])){
+                  //if we've found a match... we'll get the fully qualified name and break out of the loop
+                  ROS_WARN("Recovery behavior specifications should now include the package name. You are using a deprecated API. Please switch from %s to %s in your yaml file.",
+                      std::string(behavior_list[i]["type"]).c_str(), classes[i].c_str());
+                  behavior_list[i]["type"] = classes[i];
+                  break;
+                }
+              }
+            }
+
             boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createClassInstance(behavior_list[i]["type"]));
 
             //shouldn't be possible, but it won't hurt to check
@@ -671,17 +714,17 @@ namespace move_base {
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
       //first, we'll load a recovery behavior to clear the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createClassInstance("ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
 
       //next, we'll load a recovery behavior to rotate in place
-      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createClassInstance("RotateRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createClassInstance("rotate_recovery/RotateRecovery"));
       rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(rotate);
 
       //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createClassInstance("ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
 

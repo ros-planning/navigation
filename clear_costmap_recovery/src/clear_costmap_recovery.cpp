@@ -38,7 +38,7 @@
 #include <pluginlib/class_list_macros.h>
 
 //register this planner as a RecoveryBehavior plugin
-PLUGINLIB_REGISTER_CLASS(ClearCostmapRecovery, clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
+PLUGINLIB_DECLARE_CLASS(clear_costmap_recovery, ClearCostmapRecovery, clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
 
 namespace clear_costmap_recovery {
 ClearCostmapRecovery::ClearCostmapRecovery(): global_costmap_(NULL), local_costmap_(NULL), 

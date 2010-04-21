@@ -1,5 +1,5 @@
 <library path="lib/libclear_costmap_recovery">
-  <class name="ClearCostmapRecovery" type="clear_costmap_recovery::ClearCostmapRecovery" base_class_type="nav_core::RecoveryBehavior">
+  <class name="clear_costmap_recovery/ClearCostmapRecovery" type="clear_costmap_recovery::ClearCostmapRecovery" base_class_type="nav_core::RecoveryBehavior">
     <description>
       A recovery behavior that reverts the costmap to the static map outside of a user specified window.
     </description>
