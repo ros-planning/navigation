@@ -210,7 +210,7 @@ namespace base_local_planner {
     current.goal_dist = 0.0;
     current.goal_mark = true;
     goal_dist_queue.push(&current);
-    tc.computeGoalDistance(goal_dist_queue);
+    tc.map_.computeGoalDistance(goal_dist_queue, tc.costmap_);
 
     EXPECT_FLOAT_EQ(tc.map_(4, 8).goal_dist, 1.0);
     EXPECT_FLOAT_EQ(tc.map_(4, 7).goal_dist, 2.0);
@@ -236,7 +236,7 @@ namespace base_local_planner {
     current.path_dist = 0.0;
     current.path_mark = true;
     path_dist_queue.push(&current);
-    tc.computePathDistance(path_dist_queue);
+    tc.map_.computePathDistance(path_dist_queue, tc.costmap_);
 
     EXPECT_FLOAT_EQ(tc.map_(4, 8).path_dist, 1.0);
     EXPECT_FLOAT_EQ(tc.map_(4, 7).path_dist, 2.0);

@@ -169,18 +169,6 @@ namespace base_local_planner {
 
     private:
       /**
-       * @brief  Compute the distance from each cell in the local map grid to the planned path
-       * @param dist_queue A queue of the initial cells on the path 
-       */
-      void computePathDistance(std::queue<MapCell*>& dist_queue);
-
-      /**
-       * @brief  Compute the distance from each cell in the local map grid to the local goal point
-       * @param goal_queue A queue containing the local goal cell 
-       */
-      void computeGoalDistance(std::queue<MapCell*>& dist_queue);
-
-      /**
        * @brief  Create the trajectories we wish to explore, score them, and return the best option
        * @param x The x position of the robot  
        * @param y The y position of the robot  
@@ -252,11 +240,6 @@ namespace base_local_planner {
        */
       void getFillCells(std::vector<base_local_planner::Position2DInt>& footprint);
 
-      /**
-       * @brief Update what cells are considered path based on the global plan 
-       */
-      void setPathCells();
-
       MapGrid map_; ///< @brief The local map grid where we propagate goal and path distance 
       const costmap_2d::Costmap2D& costmap_; ///< @brief Provides access to cost map information
       WorldModel& world_model_; ///< @brief The world model that the controller uses for collision detection
@@ -307,54 +290,6 @@ namespace base_local_planner {
       bool simple_attractor_;  ///< @brief Enables simple attraction to a goal point
 
       std::vector<double> y_vels_; ///< @brief Y velocities to explore
-
-      /**
-       * @brief  Used to update the distance of a cell in path distance computation
-       * @param  current_cell The cell we're currently in 
-       * @param  check_cell The cell to be updated
-       */
-      inline void updatePathCell(MapCell* current_cell, MapCell* check_cell, 
-          std::queue<MapCell*>& dist_queue){
-        //mark the cell as visisted
-        check_cell->path_mark = true;
-
-        //if the cell is an obstacle set the max path distance
-        unsigned char cost = costmap_.getCost(check_cell->cx, check_cell->cy);
-        if(!map_(check_cell->cx, check_cell->cy).within_robot && (cost == costmap_2d::LETHAL_OBSTACLE || cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE || cost == costmap_2d::NO_INFORMATION)){
-          check_cell->path_dist = map_.map_.size();
-          return;
-        }
-
-        double new_path_dist = current_cell->path_dist + 1;
-        if(new_path_dist < check_cell->path_dist)
-          check_cell->path_dist = new_path_dist;
-
-        dist_queue.push(check_cell);
-      }
-
-      /**
-       * @brief  Used to update the distance of a cell in goal distance computation
-       * @param  current_cell The cell we're currently in 
-       * @param  check_cell The cell to be updated
-       */
-      inline void updateGoalCell(MapCell* current_cell, MapCell* check_cell, 
-          std::queue<MapCell*>& dist_queue){
-        ///mark the cell as visited
-        check_cell->goal_mark = true;
-
-        //if the cell is an obstacle set the max goal distance
-        unsigned char cost = costmap_.getCost(check_cell->cx, check_cell->cy);
-        if(!map_(check_cell->cx, check_cell->cy).within_robot && (cost == costmap_2d::LETHAL_OBSTACLE || cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE || cost == costmap_2d::NO_INFORMATION)){
-          check_cell->goal_dist = map_.map_.size();
-          return;
-        }
-
-        double new_goal_dist = current_cell->goal_dist + 1;
-        if(new_goal_dist < check_cell->goal_dist)
-          check_cell->goal_dist = new_goal_dist;
-
-        dist_queue.push(check_cell);
-      }
 
       /**
        * @brief  Compute x position based on velocity

@@ -113,4 +113,124 @@ namespace base_local_planner{
     }
   }
 
+  //update what map cells are considered path based on the global_plan
+  void MapGrid::setPathCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan){
+    int local_goal_x = -1;
+    int local_goal_y = -1;
+    bool started_path = false;
+    queue<MapCell*> path_dist_queue;
+    queue<MapCell*> goal_dist_queue;
+    for(unsigned int i = 0; i < global_plan.size(); ++i){
+      double g_x = global_plan[i].pose.position.x;
+      double g_y = global_plan[i].pose.position.y;
+      unsigned int map_x, map_y;
+      if(costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION){
+        MapCell& current = getCell(map_x, map_y);
+        current.path_dist = 0.0;
+        current.path_mark = true;
+        path_dist_queue.push(&current);
+        local_goal_x = map_x;
+        local_goal_y = map_y;
+        started_path = true;
+      }
+      else{
+        if(started_path)
+          break;
+      }
+    }
+
+    if(local_goal_x >= 0 && local_goal_y >= 0){
+      MapCell& current = getCell(local_goal_x, local_goal_y);
+      costmap.mapToWorld(local_goal_x, local_goal_y, goal_x_, goal_y_);
+      current.goal_dist = 0.0;
+      current.goal_mark = true;
+      goal_dist_queue.push(&current);
+    }
+    //compute our distances
+    computePathDistance(path_dist_queue, costmap);
+    computeGoalDistance(goal_dist_queue, costmap);
+  }
+
+  void MapGrid::computePathDistance(queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap){
+    MapCell* current_cell;
+    MapCell* check_cell;
+    unsigned int last_col = size_x_ - 1;
+    unsigned int last_row = size_y_ - 1;
+    while(!dist_queue.empty()){
+      current_cell = dist_queue.front();
+      check_cell = current_cell;
+      dist_queue.pop();
+
+      if(current_cell->cx > 0){
+        check_cell = current_cell - 1;
+        if(!check_cell->path_mark){
+          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+
+      if(current_cell->cx < last_col){
+        check_cell = current_cell + 1;
+        if(!check_cell->path_mark){
+          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+
+      if(current_cell->cy > 0){
+        check_cell = current_cell - size_x_;
+        if(!check_cell->path_mark){
+          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+
+      if(current_cell->cy < last_row){
+        check_cell = current_cell + size_x_;
+        if(!check_cell->path_mark){
+          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+    }
+  }
+
+  void MapGrid::computeGoalDistance(queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap){
+    MapCell* current_cell;
+    MapCell* check_cell;
+    unsigned int last_col = size_x_ - 1;
+    unsigned int last_row = size_y_ - 1;
+    while(!dist_queue.empty()){
+      current_cell = dist_queue.front();
+      current_cell->goal_mark = true;
+      check_cell = current_cell;
+      dist_queue.pop();
+
+      if(current_cell->cx > 0){
+        check_cell = current_cell - 1;
+        if(!check_cell->goal_mark){
+          updateGoalCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+
+      if(current_cell->cx < last_col){
+        check_cell = current_cell + 1;
+        if(!check_cell->goal_mark){
+          updateGoalCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+
+      if(current_cell->cy > 0){
+        check_cell = current_cell - size_x_;
+        if(!check_cell->goal_mark){
+          updateGoalCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+
+      if(current_cell->cy < last_row){
+        check_cell = current_cell + size_x_;
+        if(!check_cell->goal_mark){
+          updateGoalCell(current_cell, check_cell, dist_queue, costmap);
+        }
+      }
+    }
+  }
+
+
 };
