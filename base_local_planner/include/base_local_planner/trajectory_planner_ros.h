@@ -123,29 +123,6 @@ namespace base_local_planner {
 
     private:
       /**
-       * @brief  Check whether the robot is stopped or not
-       * @return True if the robot is stopped, false otherwise
-       */
-      bool stopped();
-
-      /**
-       * @brief  Check if the goal orientation has been achieved
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  goal_x The desired x value for the goal
-       * @param  goal_y The desired y value for the goal
-       * @return True if achieved, false otherwise
-       */
-      bool goalOrientationReached(const tf::Stamped<tf::Pose>& global_pose, double goal_th);
-
-      /**
-       * @brief  Check if the goal position has been achieved
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  goal_th The desired th value for the goal
-       * @return True if achieved, false otherwise
-       */
-      bool goalPositionReached(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y);
-
-      /**
        * @brief Once a goal position is reached... rotate to the goal orientation
        * @param  global_pose The pose of the robot in the global frame
        * @param  robot_vel The velocity of the robot
@@ -154,34 +131,6 @@ namespace base_local_planner {
        * @return  True if a valid trajectory was found, false otherwise
        */
       bool rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel);
-
-      /**
-       * @brief  Compute the distance between two points
-       * @param x1 The first x point 
-       * @param y1 The first y point 
-       * @param x2 The second x point 
-       * @param y2 The second y point 
-       */
-      double distance(double x1, double y1, double x2, double y2);
-
-      /**
-       * @brief  Trim off parts of the global plan that are far enough behind the robot
-       * @param global_pose The pose of the robot in the global frame
-       * @param plan The plan to be pruned
-       * @param global_plan The plan to be pruned inf the frame of the planner
-       */
-      void prunePlan(const tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan);
-
-      /**
-       * @brief  Transforms the global plan of the robot from the planner frame to the local frame
-       * @param transformed_plan Populated with the transformed plan
-       */
-      bool transformGlobalPlan(std::vector<geometry_msgs::PoseStamped>& transformed_plan);
-
-      /**
-       * @brief  Publish a plan for visualization purposes
-       */
-      void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub, double r, double g, double b, double a);
 
       void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
