@@ -37,6 +37,11 @@ using namespace std;
 
 namespace base_local_planner{
 
+  MapGrid::MapGrid()
+    : size_x_(0), size_y_(0)
+  {
+  }
+
   MapGrid::MapGrid(unsigned int size_x, unsigned int size_y) 
     : size_x_(size_x), size_y_(size_y)
   {
@@ -115,6 +120,7 @@ namespace base_local_planner{
 
   //update what map cells are considered path based on the global_plan
   void MapGrid::setPathCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan){
+    sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY(), costmap.getOriginX(), costmap.getOriginY());
     int local_goal_x = -1;
     int local_goal_y = -1;
     bool started_path = false;

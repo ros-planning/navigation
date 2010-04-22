@@ -52,6 +52,11 @@ namespace base_local_planner{
   class MapGrid{
     public:
       /**
+       * @brief  Creates a 0x0 map by default
+       */
+      MapGrid();
+
+      /**
        * @brief  Creates a map of size_x by size_y
        * @param size_x The width of the map 
        * @param size_y The height of the map 
