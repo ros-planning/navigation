@@ -402,7 +402,11 @@ namespace estimation
       // initialize filer with odometry frame
       if ( odom_active_ && !my_filter_.isInitialized()){
         my_filter_.initialize(odom_meas_, odom_stamp_);
-        ROS_INFO("Kalman filter initialized");
+        ROS_INFO("Kalman filter initialized with odom measurement");
+      }
+      else if ( vo_active_ && !my_filter_.isInitialized()){
+        my_filter_.initialize(vo_meas_, vo_stamp_);
+        ROS_INFO("Kalman filter initialized with vo measurement");
       }
     }
   };
