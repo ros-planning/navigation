@@ -33,12 +33,12 @@ target_link_libraries(bin/amcl amcl_sensors amcl_map amcl_pf)
 #if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 # Bags
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/basic_localization_stage.bag test/basic_localization_stage.bag 16735ad0261cbd67490dcef778e19db7)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/global_localization_stage.bag test/global_localization_stage.bag 623e80b6e7005d6e0acf3124a5d9b82e)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_prf.bag test/small_loop_prf.bag c7f330c742f0103f0737ebc5c7714afe)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_crazy_driving_prg.bag test/small_loop_crazy_driving_prg.bag 48fc62e04e10a35146a143451cb41f2f)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_greenroom_loop.bag test/texas_greenroom_loop.bag f8677cd74f817cc0fe5a205009fa6ea4)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_willow_hallway_loop.bag test/texas_willow_hallway_loop.bag e3e32f59a0c628c3dc0075ed3e235407)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/basic_localization_stage_indexed.bag test/basic_localization_stage_indexed.bag 322a0014f47bcfbb0ad16a317738b0dc)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/global_localization_stage_indexed.bag test/global_localization_stage_indexed.bag 9c56ae3d8f5ad760d7c8a49a158b0a11)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_prf_indexed.bag test/small_loop_prf_indexed.bag ca82d07db3b664b51031d18a34fab60c)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_crazy_driving_prg_indexed.bag test/small_loop_crazy_driving_prg_indexed.bag eb99f2e4fe8a529f2bb135abb39d0d1b)
+#rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_greenroom_loop.bag test/texas_greenroom_loop.bag f8677cd74f817cc0fe5a205009fa6ea4)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_willow_hallway_loop_indexed.bag test/texas_willow_hallway_loop_indexed.bag 494ded21388ae5223d9e1e02f8d129c6)
 
 # Maps
 rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/willow-full.pgm test/willow-full.pgm b84465cdbbfe3e2fb9eb4579e0bcaf0e)
@@ -49,7 +49,7 @@ rosbuild_add_rostest(test/set_initial_pose.xml)
 rosbuild_add_rostest(test/basic_localization_stage.xml)
 rosbuild_add_rostest(test/small_loop_prf.xml)
 rosbuild_add_rostest(test/small_loop_crazy_driving_prg.xml)
-rosbuild_add_rostest(test/texas_greenroom_loop.xml)
+#rosbuild_add_rostest(test/texas_greenroom_loop.xml)
 #rosbuild_add_rostest(test/texas_willow_hallway_loop.xml)
 # Global localization needs some work.
 #rosbuild_add_rostest(test/global_localization_stage.xml)
