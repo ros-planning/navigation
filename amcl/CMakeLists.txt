@@ -33,12 +33,12 @@ target_link_libraries(bin/amcl amcl_sensors amcl_map amcl_pf)
 #if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 # Bags
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/basic_localization_stage_indexed.bag test/basic_localization_stage_indexed.bag 322a0014f47bcfbb0ad16a317738b0dc)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/global_localization_stage_indexed.bag test/global_localization_stage_indexed.bag 9c56ae3d8f5ad760d7c8a49a158b0a11)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_prf_indexed.bag test/small_loop_prf_indexed.bag ca82d07db3b664b51031d18a34fab60c)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_crazy_driving_prg_indexed.bag test/small_loop_crazy_driving_prg_indexed.bag eb99f2e4fe8a529f2bb135abb39d0d1b)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_greenroom_loop_indexed.bag test/texas_greenroom_loop_indexed.bag 3cc9a97c4596553afb5ef783b1b0991e)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_willow_hallway_loop_indexed.bag test/texas_willow_hallway_loop_indexed.bag 494ded21388ae5223d9e1e02f8d129c6)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/basic_localization_stage_indexed.bag test/basic_localization_stage_indexed.bag 41fe43af189ec71e5e48eb9ed661a655)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/global_localization_stage_indexed.bag test/global_localization_stage_indexed.bag 752f711cf4f6e8d1d660675e2da096b0)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_prf_indexed.bag test/small_loop_prf_indexed.bag e4ef0fc006872b43f12ed8a7ce7dcd81)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_crazy_driving_prg_indexed.bag test/small_loop_crazy_driving_prg_indexed.bag 4a58d1a7962914009d99000d06e5939c)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_greenroom_loop_indexed.bag test/texas_greenroom_loop_indexed.bag 6e3432115cccdca1247f6c807038e13d)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_willow_hallway_loop_indexed.bag test/texas_willow_hallway_loop_indexed.bag 27deb742fdcd3af44cf446f39f2688a8)
 
 # Maps
 rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/willow-full.pgm test/willow-full.pgm b84465cdbbfe3e2fb9eb4579e0bcaf0e)
