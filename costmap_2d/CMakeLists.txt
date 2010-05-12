@@ -18,7 +18,7 @@ target_link_libraries(bin/costmap_2d_node costmap_2d)
 rosbuild_add_executable(test/costmap_tester test/costmap_tester.cpp)
 target_link_libraries(test/costmap_tester costmap_2d gtest)
 
-rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test.bag test/simple_driving_test.bag 80a89edf83cd6d72f806db11121c4a2d)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag test/simple_driving_test_indexed.bag 61168cff9425b11e093ea3a627c81c8d)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
 
 rosbuild_add_rostest(test/simple_driving_test.xml)
