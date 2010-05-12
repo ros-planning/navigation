@@ -500,7 +500,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     {
       this->tf_->transformPose(base_frame_id_, ident, laser_pose);
     }
-    catch(tf::TransformException e)
+    catch(tf::TransformException& e)
     {
       ROS_ERROR("Couldn't transform from %s to %s, "
                 "even though the message notifier is in use",
@@ -604,7 +604,35 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     ldata.sensor = lasers_[laser_index];
     ldata.range_count = laser_scan->ranges.size();
 
-    // Apply min/max thresholds, if the user supplied them
+    // To account for lasers that are mounted upside-down, we determine the
+    // min, max, and increment angles of the laser in the base frame.
+    //
+    // Construct min and max angles of laser, in the base_link frame.
+    tf::Quaternion q;
+    q.setRPY(0.0, 0.0, laser_scan->angle_min);
+    tf::Stamped<tf::Quaternion> min_q(q, laser_scan->header.stamp,
+                                      laser_scan->header.frame_id);
+    q.setRPY(0.0, 0.0, laser_scan->angle_max);
+    tf::Stamped<tf::Quaternion> max_q(q, laser_scan->header.stamp,
+                                      laser_scan->header.frame_id);
+    try
+    {
+      tf_->transformQuaternion(base_frame_id_, min_q, min_q);
+      tf_->transformQuaternion(base_frame_id_, max_q, max_q);
+    }
+    catch(tf::TransformException& e)
+    {
+      ROS_WARN("Unable to transform min/max laser angles into base frame: %s",
+               e.what());
+      return;
+    }
+
+    double angle_min = tf::getYaw(min_q);
+    double angle_max = tf::getYaw(max_q);
+    double angle_increment = (angle_max - angle_min) / laser_scan->ranges.size();
+    ROS_DEBUG("Laser angles in base frame: min: %.3f max: %.3f inc: %.3f", angle_min, angle_max, angle_increment);
+
+    // Apply range min/max thresholds, if the user supplied them
     if(laser_max_range_ > 0.0)
       ldata.range_max = std::min(laser_scan->range_max, (float)laser_max_range_);
     else
@@ -626,8 +654,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       else
         ldata.ranges[i][0] = laser_scan->ranges[i];
       // Compute bearing
-      ldata.ranges[i][1] = laser_scan->angle_min +
-              (i * laser_scan->angle_increment);
+      ldata.ranges[i][1] = angle_min +
+              (i * angle_increment);
     }
 
     lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata);
@@ -651,7 +679,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     geometry_msgs::PoseArray cloud_msg;
     cloud_msg.header.stamp = ros::Time::now();
     cloud_msg.header.frame_id = global_frame_id_;
-    cloud_msg.set_poses_size(set->sample_count);
+    cloud_msg.poses.resize(set->sample_count);
     for(int i=0;i<set->sample_count;i++)
     {
       tf::poseTFToMsg(tf::Pose(tf::createQuaternionFromYaw(set->samples[i].pose.v[2]),
