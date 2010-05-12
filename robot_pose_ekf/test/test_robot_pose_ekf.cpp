@@ -150,7 +150,7 @@ TEST_F(TestEKF, test)
   }
   ROS_INFO("End time reached");
   // give filter some time to catch up
-  Duration(2.0).sleep();
+  WallDuration(2.0).sleep();
 
   // check if callback was called enough times
   ROS_INFO("Number of ekf callbacks: %f", ekf_counter_);

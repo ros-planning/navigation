@@ -1,4 +1,7 @@
 <launch>
+  <!-- use sim time -->
+  <param name="use_sim_time" value="true"/>
+
   <!-- Robot pose ekf -->
   <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" output="screen">
     <param name="freq" value="30.0"/>
