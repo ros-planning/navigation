@@ -11,7 +11,7 @@
     <remap from="imu_data" to="torso_lift_imu/data" />
   </node>
 
-  <node pkg="rosrecord" name="rosplay" type="rosplay" args="$(find robot_pose_ekf)/test/ekf_test2.bag" />
+  <node pkg="rosrecord" name="rosplay" type="rosplay" args="-b 100 -s .4 $(find robot_pose_ekf)/test/ekf_test2.bag" />
 
   <test test-name="test_robot_pose_ekf" pkg="robot_pose_ekf" type="test_robot_pose_ekf" time-limit="120" />
 </launch>
