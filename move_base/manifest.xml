@@ -37,4 +37,7 @@ The move_base package provides an implementation of an action (see the <a href="
  <export>
  <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread`"/>
  </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
 </package>

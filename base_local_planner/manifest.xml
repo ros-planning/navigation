@@ -27,4 +27,7 @@ This package provides implementations of the Trajectory Rollout and Dynamic Wind
     <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lbase_local_planner" />
     <nav_core plugin="${prefix}/blp_plugin.xml" />
   </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
 </package>

@@ -24,4 +24,7 @@ navfn provides a fast interpolated navigation function that can be used to creat
   <cpp cflags="-I${prefix}/include -I${prefix}/srv/cpp -I${prefix}/msg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lnavfn"/>
   <nav_core plugin="${prefix}/bgp_plugin.xml" />
  </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
 </package>

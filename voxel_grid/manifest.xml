@@ -12,4 +12,7 @@ voxel_grid provides an implementation of an efficient 3D voxel grid. The occupan
 <export>
   <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lvoxel_grid"/>
 </export>
+  <platform os="ubuntu" version="9.04"/>
+  <platform os="ubuntu" version="9.10"/>
+  <platform os="ubuntu" version="10.04"/>
 </package>
