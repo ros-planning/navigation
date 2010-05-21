@@ -145,7 +145,7 @@ namespace costmap_2d {
       }
     } 
     else{
-      footprint_poly.polygon.set_points_size(footprint.size());
+      footprint_poly.polygon.points.resize(footprint.size());
 
       for(unsigned int i = 0; i < footprint.size(); ++i){
         footprint_poly.polygon.points[i].x = footprint[i].x;
@@ -181,7 +181,7 @@ namespace costmap_2d {
     obstacle_cells.cell_height = resolution;
 
     //set the size equal to the number of obstacles
-    obstacle_cells.set_cells_size(point_count);
+    obstacle_cells.cells.resize(point_count);
 
     for(unsigned int i=0;i<point_count;i++){
       obstacle_cells.cells[i].x = raw_obstacles[i].first;
@@ -194,7 +194,7 @@ namespace costmap_2d {
 
     //set the size equal to the number of inflated obstacles
     point_count = inflated_obstacles.size();
-    obstacle_cells.set_cells_size(point_count);
+    obstacle_cells.cells.resize(point_count);
 
     for(unsigned int i=0;i<point_count;i++){
       obstacle_cells.cells[i].x = inflated_obstacles[i].first;
@@ -206,7 +206,7 @@ namespace costmap_2d {
     inf_obs_pub_.publish(obstacle_cells);
 
     point_count = unknown_space.size();
-    obstacle_cells.set_cells_size(point_count);
+    obstacle_cells.cells.resize(point_count);
 
     for(unsigned int i=0;i<point_count;i++){
       obstacle_cells.cells[i].x = unknown_space[i].first;
