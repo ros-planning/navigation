@@ -90,7 +90,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   resp->map.info.origin.orientation.w = q.w();
 
   // Allocate space to hold the data
-  resp->map.set_data_size(resp->map.info.width * resp->map.info.height);
+  resp->map.data.resize(resp->map.info.width * resp->map.info.height);
 
   // Get values that we'll need to iterate through the pixels
   rowstride = img->pitch;
