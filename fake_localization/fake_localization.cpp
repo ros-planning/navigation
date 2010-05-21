@@ -102,18 +102,28 @@ public:
 
       ros::NodeHandle private_nh("~");
       private_nh.param("odom_frame_id", odom_frame_id_, std::string("odom"));
+      private_nh.param("base_frame_id", base_frame_id_, std::string("base_footprint")); // shouldn't this be base_link?
+      private_nh.param("global_frame_id", global_frame_id_, std::string("map"));
       private_nh.param("delta_x", delta_x_, 0.0);
       private_nh.param("delta_y", delta_y_, 0.0);
       private_nh.param("delta_yaw", delta_yaw_, 0.0);      
       m_particleCloud.header.stamp = ros::Time::now();
-      m_particleCloud.header.frame_id = "/map";
-      m_particleCloud.set_poses_size(1);
+      m_particleCloud.header.frame_id = global_frame_id_;
+      m_particleCloud.poses.resize(1);
       ros::NodeHandle nh;
+      
+      m_offsetTf = tf::Transform(tf::createQuaternionFromRPY(0, 0, -delta_yaw_ ), tf::Point(-delta_x_, -delta_y_, 0.0));
+      
       tf_prefix_ = tf::getPrefixParam(nh);
       filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "", 100);
       filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, odom_frame_id_, 100);
       filter_->registerCallback(boost::bind(&FakeOdomNode::update, this, _1));
       m_groundTruthSub = m_nh.subscribe("base_pose_ground_truth", 1, &FakeOdomNode::basePosReceived, this);
+      
+      // subscription to "2D Pose Estimate" from RViz:
+      m_initPoseSub = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh, "initialpose", 1);
+      m_initPoseFilter = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*m_initPoseSub, *m_tfListener, global_frame_id_, 1);
+      m_initPoseFilter->registerCallback(boost::bind(&FakeOdomNode::initPoseReceived, this, _1));
     }
     
     ~FakeOdomNode(void)
@@ -123,26 +133,15 @@ public:
     }
    
 
-  // Just kill time as spin is not working!
-    void run(void)
-    {
-      // A duration for sleeping will be 100 ms
-      ros::Duration snoozer;
-      snoozer.fromSec(0.1);
-
-      while(true){
-	snoozer.sleep();
-      }
-    }  
-
-    
 private:
   ros::NodeHandle m_nh;
   ros::Publisher m_posePub;
   ros::Publisher m_particlecloudPub;
   ros::Subscriber m_groundTruthSub;
+  message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseSub;
     tf::TransformBroadcaster       *m_tfServer;
     tf::TransformListener          *m_tfListener;
+    tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseFilter;
     tf::MessageFilter<nav_msgs::Odometry>* filter_;
     message_filters::Subscriber<nav_msgs::Odometry>* filter_sub_;
   
@@ -154,15 +153,18 @@ private:
     nav_msgs::Odometry  m_basePosMsg;
     geometry_msgs::PoseArray      m_particleCloud;
     geometry_msgs::PoseWithCovarianceStamped      m_currentPos;
+    tf::Transform m_offsetTf;
 
     //parameter for what odom to use
     std::string odom_frame_id_;
+    std::string base_frame_id_;
+    std::string global_frame_id_;
     std::string tf_prefix_;
     
   void basePosReceived(const nav_msgs::OdometryConstPtr& msg)
   {
     m_basePosMsg = *msg;
-    m_basePosMsg.header.frame_id = tf::resolve(tf_prefix_, "base_footprint"); //hack to make the filter do what I want (changed back later)
+    m_basePosMsg.header.frame_id = tf::resolve(tf_prefix_, base_frame_id_); //hack to make the filter do what I want (changed back later)
     boost::shared_ptr<nav_msgs::Odometry>  message(new nav_msgs::Odometry);
     *message = m_basePosMsg;
     filter_->add(message);
@@ -170,24 +172,10 @@ private:
   }
 public:
   void update(const nav_msgs::OdometryConstPtr& message){
-    tf::Quaternion delta_orientation = tf::createQuaternionFromRPY(0, 0, -delta_yaw_ );
-    tf::Quaternion orientation(message->pose.pose.orientation.x,
-                               message->pose.pose.orientation.y, 
-                               message->pose.pose.orientation.z, 
-                               message->pose.pose.orientation.w);
-    orientation *= delta_orientation;
-    tf::Transform txi(orientation,
-                      tf::Point(message->pose.pose.position.x - delta_x_,
-                                message->pose.pose.position.y - delta_y_,
-                                0.0 * message->pose.pose.position.z)); // zero height for base_footprint
-
-    double x = txi.getOrigin().x();
-    double y = txi.getOrigin().y();
-
-    double yaw, pitch, roll;
-    txi.getBasis().getEulerYPR(yaw, pitch, roll);
-    yaw = angles::normalize_angle(yaw);
-
+    tf::Pose txi;
+    tf::poseMsgToTF(message->pose.pose, txi);
+    
+    txi = m_offsetTf * txi;
     tf::Transform txo = txi;
     
     //tf::Transform txIdentity(tf::Quaternion(0, 0, 0), tf::Point(0, 0, 0));
@@ -205,7 +193,7 @@ public:
     try
     {
       m_tfListener->transformPose(odom_frame_id_,
-                                  tf::Stamped<tf::Pose> (txo.inverse(), message->header.stamp, "base_footprint"),
+                                  tf::Stamped<tf::Pose> (txo.inverse(), message->header.stamp, base_frame_id_),
                                   odom_to_map);
     }
     catch(tf::TransformException &e){
@@ -217,16 +205,15 @@ public:
     m_tfServer->sendTransform(tf::StampedTransform
 			      (odom_to_map.inverse(),
 			       message->header.stamp,
-			       "/map", odom_frame_id_));
+             global_frame_id_, odom_frame_id_));
 
     // Publish localized pose
     m_currentPos.header = message->header;
-    m_currentPos.header.frame_id = "/map"; ///\todo fixme hack
-    m_currentPos.pose.pose.position.x = x;
-    m_currentPos.pose.pose.position.y = y;
-    // Leave z as zero
-    tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw),
-                          m_currentPos.pose.pose.orientation);
+    m_currentPos.header.frame_id = global_frame_id_;
+    
+    tf::poseTFToMsg(txi, m_currentPos.pose.pose);
+    // Rely on correct z value from odometry...
+    
     // Leave covariance as zero
     m_posePub.publish(m_currentPos);
 
@@ -234,7 +221,29 @@ public:
     m_particleCloud.header = m_currentPos.header;
     m_particleCloud.poses[0] = m_currentPos.pose.pose;
     m_particlecloudPub.publish(m_particleCloud);
-  }   
+  }
+  
+  void initPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg){
+    tf::Pose pose;
+    tf::poseMsgToTF(msg->pose.pose, pose);
+    
+    if (msg->header.frame_id != global_frame_id_){
+      ROS_WARN("Frame ID of \"initialpose\" (%s) is different from the global frame %s", msg->header.frame_id.c_str(), global_frame_id_.c_str());
+    }
+    
+    // set offset so that current pose is set to "initialpose"    
+    tf::StampedTransform baseInMap;
+    try{
+      m_tfListener->lookupTransform(base_frame_id_, global_frame_id_, msg->header.stamp, baseInMap);
+    } catch(tf::TransformException){
+      ROS_WARN("Failed to lookup transform!");
+      return;
+    }
+    
+     tf::Transform delta = pose * baseInMap;
+     m_offsetTf = delta * m_offsetTf;
+     
+  }
 };
 
 int main(int argc, char** argv)
