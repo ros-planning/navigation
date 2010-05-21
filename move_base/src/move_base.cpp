@@ -293,7 +293,7 @@ namespace move_base {
     }
 
     //copy the plan into a message to send out
-    resp.plan.set_poses_size(global_plan.size());
+    resp.plan.poses.resize(global_plan.size());
     for(unsigned int i = 0; i < global_plan.size(); ++i){
       resp.plan.poses[i] = global_plan[i];
     }
