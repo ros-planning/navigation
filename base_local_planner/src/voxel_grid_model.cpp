@@ -190,7 +190,7 @@ namespace base_local_planner {
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
       const sensor_msgs::PointCloud& cloud = obs.cloud_;
-      for(unsigned int i = 0; i < cloud.get_points_size(); ++i){
+      for(unsigned int i = 0; i < cloud.points.size(); ++i){
         //filter out points that are too high
         if(cloud.points[i].z > max_z_)
           continue;

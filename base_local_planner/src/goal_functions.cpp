@@ -58,7 +58,7 @@ namespace base_local_planner {
 
     //create a path message
     nav_msgs::Path gui_path;
-    gui_path.set_poses_size(path.size());
+    gui_path.poses.resize(path.size());
     gui_path.header.frame_id = path[0].header.frame_id;
     gui_path.header.stamp = path[0].header.stamp;
 
