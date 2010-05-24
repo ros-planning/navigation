@@ -1,72 +1,72 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-* 
-*  Copyright (c) 2008, Willow Garage, Inc.
-*  All rights reserved.
-* 
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-* 
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Willow Garage nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-* 
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************/
+ * Software License Agreement (BSD License)
+ * 
+ *  Copyright (c) 2008, Willow Garage, Inc.
+ *  All rights reserved.
+ * 
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the Willow Garage nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ * 
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 /** \author Ioan Sucan */
 
 /**
 
-@mainpage
+  @mainpage
 
-@htmlinclude manifest.html
+  @htmlinclude manifest.html
 
-@b odom_localization Takes in ground truth pose information for a robot
-base (e.g., from a simulator or motion capture system) and republishes
-it as if a localization system were in use.
+  @b odom_localization Takes in ground truth pose information for a robot
+  base (e.g., from a simulator or motion capture system) and republishes
+  it as if a localization system were in use.
 
-<hr>
+  <hr>
 
-@section usage Usage
-@verbatim
-$ fake_localization
-@endverbatim
+  @section usage Usage
+  @verbatim
+  $ fake_localization
+  @endverbatim
 
-<hr>
+  <hr>
 
-@section topic ROS topics
+  @section topic ROS topics
 
-Subscribes to (name/type):
-- @b "base_pose_ground_truth" nav_msgs/Odometry : robot's odometric pose.  Only the position information is used (velocity is ignored).
+  Subscribes to (name/type):
+  - @b "base_pose_ground_truth" nav_msgs/Odometry : robot's odometric pose.  Only the position information is used (velocity is ignored).
 
-Publishes to (name / type):
-- @b "amcl_pose" geometry_msgs/PoseWithCovarianceStamped : robot's estimated pose in the map, with covariance
-- @b "particlecloud" geometry_msgs/PoseArray : fake set of poses being maintained by the filter (one paricle only).
+  Publishes to (name / type):
+  - @b "amcl_pose" geometry_msgs/PoseWithCovarianceStamped : robot's estimated pose in the map, with covariance
+  - @b "particlecloud" geometry_msgs/PoseArray : fake set of poses being maintained by the filter (one paricle only).
 
-<hr>
+  <hr>
 
-@section parameters ROS parameters
+  @section parameters ROS parameters
 
-- "~odom_frame_id" (string) : The odometry frame to be used, default: "odom"
+  - "~odom_frame_id" (string) : The odometry frame to be used, default: "odom"
 
  **/
 
@@ -89,20 +89,19 @@ Publishes to (name / type):
 
 class FakeOdomNode
 {
-public:
+  public:
     FakeOdomNode(void)
     {
       m_posePub = m_nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose",1);
       m_particlecloudPub = m_nh.advertise<geometry_msgs::PoseArray>("particlecloud",1);
       m_tfServer = new tf::TransformBroadcaster();	
       m_tfListener = new tf::TransformListener();
-     m_lastUpdate = ros::Time::now();
-      
+
       m_base_pos_received = false;
 
       ros::NodeHandle private_nh("~");
       private_nh.param("odom_frame_id", odom_frame_id_, std::string("odom"));
-      private_nh.param("base_frame_id", base_frame_id_, std::string("base_footprint")); // shouldn't this be base_link?
+      private_nh.param("base_frame_id", base_frame_id_, std::string("base_link")); 
       private_nh.param("global_frame_id", global_frame_id_, std::string("map"));
       private_nh.param("delta_x", delta_x_, 0.0);
       private_nh.param("delta_y", delta_y_, 0.0);
@@ -111,45 +110,40 @@ public:
       m_particleCloud.header.frame_id = global_frame_id_;
       m_particleCloud.poses.resize(1);
       ros::NodeHandle nh;
-      
+
       m_offsetTf = tf::Transform(tf::createQuaternionFromRPY(0, 0, -delta_yaw_ ), tf::Point(-delta_x_, -delta_y_, 0.0));
-      
-      tf_prefix_ = tf::getPrefixParam(nh);
-      filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "", 100);
+
+      filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "base_pose_ground_truth", 100);
       filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, odom_frame_id_, 100);
       filter_->registerCallback(boost::bind(&FakeOdomNode::update, this, _1));
-      m_groundTruthSub = m_nh.subscribe("base_pose_ground_truth", 1, &FakeOdomNode::basePosReceived, this);
-      
+
       // subscription to "2D Pose Estimate" from RViz:
       m_initPoseSub = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh, "initialpose", 1);
       m_initPoseFilter = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*m_initPoseSub, *m_tfListener, global_frame_id_, 1);
       m_initPoseFilter->registerCallback(boost::bind(&FakeOdomNode::initPoseReceived, this, _1));
     }
-    
+
     ~FakeOdomNode(void)
     {
       if (m_tfServer)
         delete m_tfServer; 
     }
-   
 
-private:
-  ros::NodeHandle m_nh;
-  ros::Publisher m_posePub;
-  ros::Publisher m_particlecloudPub;
-  ros::Subscriber m_groundTruthSub;
-  message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseSub;
+
+  private:
+    ros::NodeHandle m_nh;
+    ros::Publisher m_posePub;
+    ros::Publisher m_particlecloudPub;
+    message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseSub;
     tf::TransformBroadcaster       *m_tfServer;
     tf::TransformListener          *m_tfListener;
     tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseFilter;
     tf::MessageFilter<nav_msgs::Odometry>* filter_;
     message_filters::Subscriber<nav_msgs::Odometry>* filter_sub_;
-  
-    ros::Time                      m_lastUpdate;
-    double                         m_maxPublishFrequency;
+
     double                         delta_x_, delta_y_, delta_yaw_;
     bool                           m_base_pos_received;
-    
+
     nav_msgs::Odometry  m_basePosMsg;
     geometry_msgs::PoseArray      m_particleCloud;
     geometry_msgs::PoseWithCovarianceStamped      m_currentPos;
@@ -159,100 +153,67 @@ private:
     std::string odom_frame_id_;
     std::string base_frame_id_;
     std::string global_frame_id_;
-    std::string tf_prefix_;
-    
-  void basePosReceived(const nav_msgs::OdometryConstPtr& msg)
-  {
-    m_basePosMsg = *msg;
-    m_basePosMsg.header.frame_id = tf::resolve(tf_prefix_, base_frame_id_); //hack to make the filter do what I want (changed back later)
-    boost::shared_ptr<nav_msgs::Odometry>  message(new nav_msgs::Odometry);
-    *message = m_basePosMsg;
-    filter_->add(message);
-    //    update();
-  }
-public:
-  void update(const nav_msgs::OdometryConstPtr& message){
-    tf::Pose txi;
-    tf::poseMsgToTF(message->pose.pose, txi);
-    
-    txi = m_offsetTf * txi;
-    tf::Transform txo = txi;
-    
-    //tf::Transform txIdentity(tf::Quaternion(0, 0, 0), tf::Point(0, 0, 0));
-    
-    // Here we directly publish a transform from Map to base_link. We will skip the intermediate step of publishing a transform
-    // to the base footprint, as it seems unnecessary. However, if down the road we wish to use the base footprint data,
-    // and some other component is publishing it, this should change to publish the map -> base_footprint instead.
-    // A hack links the two frames.
-    // m_tfServer->sendTransform(tf::Stamped<tf::Transform>
-    //                           (txIdentity.inverse(),
-    //                            message->header.stamp,
-    //                            "base_footprint", "base_link"));  // this is published by base controller
-    // subtracting base to odom from map to base and send map to odom instead
-    tf::Stamped<tf::Pose> odom_to_map;
-    try
-    {
-      m_tfListener->transformPose(odom_frame_id_,
-                                  tf::Stamped<tf::Pose> (txo.inverse(), message->header.stamp, base_frame_id_),
-                                  odom_to_map);
-    }
-    catch(tf::TransformException &e){
-      ROS_DEBUG("Failed to transform to odom %s\n",e.what());
 
-      return;
+  public:
+    void update(const nav_msgs::OdometryConstPtr& message){
+      //here we just want to publish a zero offset from the odometric frame to the map frame
+      //we're essentially just republishing the odometry
+      tf::Transform map_to_odom;
+      map_to_odom.setOrigin(tf::Vector3(message->pose.pose.position.x, message->pose.pose.position.y, message->pose.pose.position.z));
+      map_to_odom.setRotation(tf::createQuaternionFromYaw(tf::getYaw(message->pose.pose.orientation)));
+      m_tfServer->sendTransform(tf::StampedTransform(m_offsetTf * map_to_odom, message->header.stamp, global_frame_id_, message->header.frame_id));
+
+      tf::Pose current;
+      tf::poseMsgToTF(message->pose.pose, current);
+
+      //also apply the offset to the pose
+      current = m_offsetTf * current;
+
+      geometry_msgs::Pose current_msg;
+      tf::poseTFToMsg(current, current_msg);
+
+      // Publish localized pose
+      m_currentPos.header = message->header;
+      m_currentPos.header.frame_id = global_frame_id_;
+      m_currentPos.pose.pose = current_msg;
+      m_posePub.publish(m_currentPos);
+
+      // The particle cloud is the current position. Quite convenient.
+      m_particleCloud.header = m_currentPos.header;
+      m_particleCloud.poses[0] = m_currentPos.pose.pose;
+      m_particlecloudPub.publish(m_particleCloud);
     }
 
-    m_tfServer->sendTransform(tf::StampedTransform
-			      (odom_to_map.inverse(),
-			       message->header.stamp,
-             global_frame_id_, odom_frame_id_));
+    void initPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg){
+      tf::Pose pose;
+      tf::poseMsgToTF(msg->pose.pose, pose);
 
-    // Publish localized pose
-    m_currentPos.header = message->header;
-    m_currentPos.header.frame_id = global_frame_id_;
-    
-    tf::poseTFToMsg(txi, m_currentPos.pose.pose);
-    // Rely on correct z value from odometry...
-    
-    // Leave covariance as zero
-    m_posePub.publish(m_currentPos);
+      if (msg->header.frame_id != global_frame_id_){
+        ROS_WARN("Frame ID of \"initialpose\" (%s) is different from the global frame %s", msg->header.frame_id.c_str(), global_frame_id_.c_str());
+      }
 
-    // The particle cloud is the current position. Quite convenient.
-    m_particleCloud.header = m_currentPos.header;
-    m_particleCloud.poses[0] = m_currentPos.pose.pose;
-    m_particlecloudPub.publish(m_particleCloud);
-  }
-  
-  void initPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg){
-    tf::Pose pose;
-    tf::poseMsgToTF(msg->pose.pose, pose);
-    
-    if (msg->header.frame_id != global_frame_id_){
-      ROS_WARN("Frame ID of \"initialpose\" (%s) is different from the global frame %s", msg->header.frame_id.c_str(), global_frame_id_.c_str());
+      // set offset so that current pose is set to "initialpose"    
+      tf::StampedTransform baseInMap;
+      try{
+        m_tfListener->lookupTransform(base_frame_id_, global_frame_id_, msg->header.stamp, baseInMap);
+      } catch(tf::TransformException){
+        ROS_WARN("Failed to lookup transform!");
+        return;
+      }
+
+      tf::Transform delta = pose * baseInMap;
+      m_offsetTf = delta * m_offsetTf;
+
     }
-    
-    // set offset so that current pose is set to "initialpose"    
-    tf::StampedTransform baseInMap;
-    try{
-      m_tfListener->lookupTransform(base_frame_id_, global_frame_id_, msg->header.stamp, baseInMap);
-    } catch(tf::TransformException){
-      ROS_WARN("Failed to lookup transform!");
-      return;
-    }
-    
-     tf::Transform delta = pose * baseInMap;
-     m_offsetTf = delta * m_offsetTf;
-     
-  }
 };
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "fake_localization");
-    
-    FakeOdomNode odom;
 
-    ros::spin();
-    
-    return 0;
+  FakeOdomNode odom;
+
+  ros::spin();
+
+  return 0;
 }
