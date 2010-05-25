@@ -62,6 +62,11 @@ class MapGenerator
       std::string mapdatafile = mapname_ + ".pgm";
       ROS_INFO("Writing map occupancy data to %s", mapdatafile.c_str());
       FILE* out = fopen(mapdatafile.c_str(), "w");
+      if (!out)
+      {
+        ROS_ERROR("Couldn't save map file to %s", mapdatafile.c_str());
+        return;
+      }
 
       fprintf(out, "P5\n# CREATOR: Map_generator.cpp %.3f m/pix\n%d %d\n255\n",
               map->info.resolution, map->info.width, map->info.height);
