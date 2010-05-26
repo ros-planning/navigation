@@ -258,7 +258,7 @@ namespace base_local_planner {
 
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     //get the global plan in our frame
-    if(!transformGlobalPlan(*tf_, global_plan_, costmap_, global_frame_, transformed_plan)){
+    if(!transformGlobalPlan(*tf_, global_plan_, *costmap_ros_, global_frame_, transformed_plan)){
       ROS_WARN("Could not transform the global plan to the frame of the controller");
       return false;
     }

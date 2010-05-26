@@ -109,7 +109,7 @@ namespace base_local_planner {
    * @param transformed_plan Populated with the transformed plan
    */
   bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2D& costmap, const std::string& global_frame, 
+      const costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
       std::vector<geometry_msgs::PoseStamped>& transformed_plan);
 
   /**
