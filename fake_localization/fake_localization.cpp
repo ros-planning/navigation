@@ -114,7 +114,7 @@ class FakeOdomNode
       m_offsetTf = tf::Transform(tf::createQuaternionFromRPY(0, 0, -delta_yaw_ ), tf::Point(-delta_x_, -delta_y_, 0.0));
 
       filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "base_pose_ground_truth", 100);
-      filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, odom_frame_id_, 100);
+      filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, base_frame_id_, 100);
       filter_->registerCallback(boost::bind(&FakeOdomNode::update, this, _1));
 
       // subscription to "2D Pose Estimate" from RViz:
@@ -156,12 +156,22 @@ class FakeOdomNode
 
   public:
     void update(const nav_msgs::OdometryConstPtr& message){
-      //here we just want to publish a zero offset from the odometric frame to the map frame
-      //we're essentially just republishing the odometry
-      tf::Transform map_to_odom;
-      map_to_odom.setOrigin(tf::Vector3(message->pose.pose.position.x, message->pose.pose.position.y, message->pose.pose.position.z));
-      map_to_odom.setRotation(tf::createQuaternionFromYaw(tf::getYaw(message->pose.pose.orientation)));
-      m_tfServer->sendTransform(tf::StampedTransform(m_offsetTf * map_to_odom, message->header.stamp, global_frame_id_, message->header.frame_id));
+      tf::Pose txi;
+      tf::poseMsgToTF(message->pose.pose, txi);
+      txi = m_offsetTf * txi;
+
+      tf::Stamped<tf::Pose> odom_to_map;
+      try
+      {
+        m_tfListener->transformPose(odom_frame_id_, tf::Stamped<tf::Pose>(txi.inverse(), message->header.stamp, base_frame_id_), odom_to_map);
+      }
+      catch(tf::TransformException &e)
+      {
+        ROS_ERROR("Failed to transform to %s from %s: %s\n", odom_frame_id_.c_str(), base_frame_id_.c_str(), e.what());
+        return;
+      }
+
+      m_tfServer->sendTransform(tf::StampedTransform(odom_to_map.inverse(), message->header.stamp, global_frame_id_, message->header.frame_id));
 
       tf::Pose current;
       tf::poseMsgToTF(message->pose.pose, current);
