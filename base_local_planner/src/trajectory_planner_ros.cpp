@@ -350,14 +350,37 @@ namespace base_local_planner {
           plan_pose.header.frame_id, plan_pose.header.stamp, 
           plan_pose.header.frame_id, transform);
 
+      //let's get the pose of the robot in the frame of the plan
+      tf::Stamped<tf::Pose> robot_pose;
+      robot_pose.setIdentity();
+      robot_pose.frame_id_ = costmap_ros_->getBaseFrameID();
+      robot_pose.stamp_ = ros::Time();
+      tf_->transformPose(plan_pose.header.frame_id, robot_pose, robot_pose);
+
+      //we'll keep points on the plan that are within the window that we're looking at
+      double dist_threshold = std::max(costmap_ros_->getSizeInCellsX() * costmap_ros_->getResolution() / 2.0, costmap_ros_->getSizeInCellsY() * costmap_ros_->getResolution() / 2.0);
+
+      unsigned int i = 0;
+      double sq_dist_threshold = dist_threshold * dist_threshold;
+      double sq_dist = DBL_MAX;
+
+      //we need to loop to a point on the plan that is within a certain distance of the robot
+      while(i < (unsigned int)global_plan_.size() && sq_dist > sq_dist_threshold){
+        double x_diff = robot_pose.getOrigin().x() - global_plan_[i].pose.position.x;
+        double y_diff = robot_pose.getOrigin().y() - global_plan_[i].pose.position.y;
+        sq_dist = x_diff * x_diff + y_diff * y_diff;
+        ++i;
+      }
 
       tf::Stamped<tf::Pose> tf_pose;
       geometry_msgs::PoseStamped newer_pose;
 
-      //we'll look ahead on the path the size of our window
-      unsigned int needed_path_length = std::max(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY());
+      //now we'll transform until points are outside of our distance threshold
+      while(i < (unsigned int)global_plan_.size() && sq_dist < sq_dist_threshold){
+        double x_diff = robot_pose.getOrigin().x() - global_plan_[i].pose.position.x;
+        double y_diff = robot_pose.getOrigin().y() - global_plan_[i].pose.position.y;
+        sq_dist = x_diff * x_diff + y_diff * y_diff;
 
-      for(unsigned int i = 0; i < std::min((unsigned int)global_plan_.size(), needed_path_length); ++i){
         const geometry_msgs::PoseStamped& pose = global_plan_[i];
         poseStampedMsgToTF(pose, tf_pose);
         tf_pose.setData(transform * tf_pose);
@@ -366,6 +389,8 @@ namespace base_local_planner {
         poseStampedTFToMsg(tf_pose, newer_pose);
 
         transformed_plan.push_back(newer_pose);
+
+        ++i;
       }
     }
     catch(tf::LookupException& ex) {
