@@ -132,9 +132,22 @@ namespace base_local_planner {
        */
       bool rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel);
 
+      /**
+       * @brief Stop the robot taking into account acceleration limits
+       * @param  global_pose The pose of the robot in the global frame
+       * @param  robot_vel The velocity of the robot
+       * @param  cmd_vel The velocity commands to be filled
+       * @return  True if a valid trajectory was found, false otherwise
+       */
+      bool stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel);
+
       void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
       std::vector<double> loadYVels(ros::NodeHandle node);
+
+      double sign(double x){
+        return x < 0.0 ? -1.0 : 1.0;
+      }
 
       WorldModel* world_model_; ///< @brief The world model that the controller will use
       TrajectoryPlanner* tc_; ///< @brief The trajectory controller
@@ -155,6 +168,8 @@ namespace base_local_planner {
       boost::recursive_mutex odom_lock_;
       bool initialized_;
       double max_vel_th_, min_vel_th_;
+      double acc_lim_x_, acc_lim_y_, acc_lim_theta_;
+      bool rotating_to_goal_;
   };
 
 };

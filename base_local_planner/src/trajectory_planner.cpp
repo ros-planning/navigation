@@ -114,6 +114,10 @@ namespace base_local_planner{
     else
       num_steps = int(sim_time_ / sim_granularity_ + 0.5);
 
+    //we at least want to take one step... even if we won't move, we want to score our current position
+    if(num_steps == 0)
+      num_steps = 1;
+
     double dt = sim_time_ / num_steps;
     double time = 0.0;
 
@@ -123,9 +127,6 @@ namespace base_local_planner{
     traj.yv_ = vy_samp; 
     traj.thetav_ = vtheta_samp;
     traj.cost_ = -1.0;
-
-    if(num_steps == 0)
-      return;
 
     //initialize the costs for the trajectory
     double path_dist = 0.0;
