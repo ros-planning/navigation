@@ -104,6 +104,18 @@ namespace base_local_planner {
       private_nh.param("acc_lim_x", acc_lim_x_, 2.5);
       private_nh.param("acc_lim_y", acc_lim_y_, 2.5);
       private_nh.param("acc_lim_th", acc_lim_theta_, 3.2);
+
+      //Since I screwed up nicely in my documentation, I'm going to add errors
+      //informing the user if they've set one of the wrong parameters
+      if(private_nh.hasParam("acc_limit_x"))
+        ROS_ERROR("You are using acc_limit_x where you should be using acc_lim_x. Please change your configuration files appropriately. The documentation used to be wrong on this, sorry for any confusion.");
+
+      if(private_nh.hasParam("acc_limit_y"))
+        ROS_ERROR("You are using acc_limit_y where you should be using acc_lim_y. Please change your configuration files appropriately. The documentation used to be wrong on this, sorry for any confusion.");
+
+      if(private_nh.hasParam("acc_limit_th"))
+        ROS_ERROR("You are using acc_limit_th where you should be using acc_lim_th. Please change your configuration files appropriately. The documentation used to be wrong on this, sorry for any confusion.");
+
       private_nh.param("sim_time", sim_time, 1.0);
       private_nh.param("sim_granularity", sim_granularity, 0.025);
       private_nh.param("vx_samples", vx_samples, 3);
