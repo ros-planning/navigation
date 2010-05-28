@@ -244,8 +244,9 @@ namespace base_local_planner{
     traj.thetav_ = vtheta_samp;
     traj.cost_ = -1.0;
 
+    //we at least want to take one step... even if we won't move, we want to score our current position
     if(num_steps == 0)
-      return;
+      num_steps = 1;
 
     //initialize the costs for the trajectory
     double path_dist = 0.0;

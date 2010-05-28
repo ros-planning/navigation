@@ -66,7 +66,7 @@ namespace base_local_planner {
       costmap_ros_ = costmap_ros;
       rot_stopped_velocity_ = 1e-2;
       trans_stopped_velocity_ = 1e-2;
-      double acc_lim_x, acc_lim_y, acc_lim_theta, sim_time, sim_granularity;
+      double sim_time, sim_granularity;
       int vx_samples, vtheta_samples;
       double pdist_scale, gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta;
       bool holonomic_robot, dwa, simple_attractor, heading_scoring;
@@ -74,6 +74,7 @@ namespace base_local_planner {
       double max_vel_x, min_vel_x;
       double backup_vel;
       string world_model_type;
+      rotating_to_goal_ = false;
 
       //initialize the copy of the costmap the controller will use
       costmap_ros_->getCostmapCopy(costmap_);
@@ -99,9 +100,9 @@ namespace base_local_planner {
       circumscribed_radius_ = costmap_ros_->getCircumscribedRadius();
       inflation_radius_ = costmap_ros_->getInflationRadius();
 
-      private_nh.param("acc_lim_x", acc_lim_x, 2.5);
-      private_nh.param("acc_lim_y", acc_lim_y, 2.5);
-      private_nh.param("acc_lim_th", acc_lim_theta, 3.2);
+      private_nh.param("acc_lim_x", acc_lim_x_, 2.5);
+      private_nh.param("acc_lim_y", acc_lim_y_, 2.5);
+      private_nh.param("acc_lim_th", acc_lim_theta_, 3.2);
       private_nh.param("sim_time", sim_time, 1.0);
       private_nh.param("sim_granularity", sim_granularity, 0.025);
       private_nh.param("vx_samples", vx_samples, 3);
@@ -144,7 +145,7 @@ namespace base_local_planner {
       std::vector<double> y_vels = loadYVels(private_nh);
 
       tc_ = new TrajectoryPlanner(*world_model_, costmap_, costmap_ros_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_,
-          acc_lim_x, acc_lim_y, acc_lim_theta, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
+          acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
           dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels);
@@ -196,9 +197,9 @@ namespace base_local_planner {
 
   bool TrajectoryPlannerROS::stopped(){
     boost::recursive_mutex::scoped_lock(odom_lock_);
-    return abs(base_odom_.twist.twist.angular.z) <= rot_stopped_velocity_ 
-      && abs(base_odom_.twist.twist.linear.x) <= trans_stopped_velocity_
-      && abs(base_odom_.twist.twist.linear.y) <= trans_stopped_velocity_;
+    return fabs(base_odom_.twist.twist.angular.z) <= rot_stopped_velocity_ 
+      && fabs(base_odom_.twist.twist.linear.x) <= trans_stopped_velocity_
+      && fabs(base_odom_.twist.twist.linear.y) <= trans_stopped_velocity_;
   }
 
   double TrajectoryPlannerROS::distance(double x1, double y1, double x2, double y2){
@@ -215,6 +216,35 @@ namespace base_local_planner {
     return fabs(angles::shortest_angular_distance(yaw, goal_th)) <= yaw_goal_tolerance_;
   }
 
+  bool TrajectoryPlannerROS::stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel){ 
+    //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible 
+    //but we'll use a tenth of a second to be consistent with the implementation of the local planner. 
+    double vx = sign(robot_vel.getOrigin().x()) * std::max(0.0, (fabs(robot_vel.getOrigin().x()) - acc_lim_x_ * .1)); 
+    double vy = sign(robot_vel.getOrigin().y()) * std::max(0.0, (fabs(robot_vel.getOrigin().y()) - acc_lim_y_ * .1)); 
+
+    double vel_yaw = tf::getYaw(robot_vel.getRotation()); 
+    double vth = sign(vel_yaw) * std::max(0.0, (fabs(vel_yaw) - acc_lim_theta_ * .1)); 
+
+    //we do want to check whether or not the command is valid 
+    double yaw = tf::getYaw(global_pose.getRotation()); 
+    bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw,  
+        robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), vel_yaw, vx, vy, vth); 
+
+    //if we have a valid command, we'll pass it on, otherwise we'll command all zeros 
+    if(valid_cmd){ 
+      ROS_DEBUG("Slowing down... using vx, vy, vth: %.2f, %.2f, %.2f", vx, vy, vth); 
+      cmd_vel.linear.x = vx; 
+      cmd_vel.linear.y = vy; 
+      cmd_vel.angular.z = vth; 
+      return true; 
+    } 
+
+    cmd_vel.linear.x = 0.0; 
+    cmd_vel.linear.y = 0.0; 
+    cmd_vel.angular.z = 0.0; 
+    return false; 
+  } 
+
   bool TrajectoryPlannerROS::rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel){
     double yaw = tf::getYaw(global_pose.getRotation());
     double vel_yaw = tf::getYaw(robot_vel.getRotation());
@@ -226,8 +256,19 @@ namespace base_local_planner {
         std::max(min_in_place_vel_th_, ang_diff)) : std::max(min_vel_th_,
         std::min(-1.0 * min_in_place_vel_th_, ang_diff));
 
+    //take the acceleration limits of the robot into account
+    double max_acc_vel = fabs(vel_yaw) + acc_lim_theta_ * .1;
+    double min_acc_vel = fabs(vel_yaw) - acc_lim_theta_ * .1;
+
+    v_theta_samp = sign(v_theta_samp) * std::min(std::max(fabs(v_theta_samp), min_acc_vel), max_acc_vel);
+
+    //we also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
+    double max_speed_to_stop = sqrt(2 * acc_lim_theta_ * fabs(ang_diff));
+
+    v_theta_samp = sign(v_theta_samp) * std::min(max_speed_to_stop, fabs(v_theta_samp));
+
     //we still want to lay down the footprint of the robot and check if the action is legal
-    bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw, 
+    bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw,
         robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), vel_yaw, 0.0, 0.0, v_theta_samp);
 
     ROS_DEBUG("Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
@@ -486,23 +527,42 @@ namespace base_local_planner {
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
+        rotating_to_goal_ = false;
       }
       else {
+        //we need to call the next two lines to make sure that the trajectory
+        //planner updates its path distance and goal distance grids
         tc_->updatePlan(transformed_plan);
-
-        //compute what trajectory to drive along
         Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
-        if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel))
-          return false;
+
+        //copy over the odometry information
+        nav_msgs::Odometry base_odom;
+        {
+          boost::recursive_mutex::scoped_lock(odom_lock_);
+          base_odom = base_odom_;
+        }
+
+        //if we're not stopped yet... we want to stop... taking into account the acceleration limits of the robot
+        if(!rotating_to_goal_ && !stopped()){
+          if(!stopWithAccLimits(global_pose, robot_vel, cmd_vel))
+            return false;
+        }
+        //if we're stopped... then we want to rotate to goal
+        else{
+          //set this so that we know its OK to be moving
+          rotating_to_goal_ = true;
+          if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel))
+            return false;
+        }
       }
-
-      //publish an empty plan because we've reached our goal position
-      publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
-      publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
-
-      //we don't actually want to run the controller when we're just rotating to goal
-      return true;
-    }
+ 
+       //publish an empty plan because we've reached our goal position
+       publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
+       publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
+ 
+       //we don't actually want to run the controller when we're just rotating to goal
+       return true;
+     }
 
     tc_->updatePlan(transformed_plan);
 
