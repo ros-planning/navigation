@@ -74,6 +74,7 @@ namespace base_local_planner {
       double heading_scoring_timestep;
       double max_vel_x, min_vel_x;
       double backup_vel;
+      double stop_time_buffer;
       string world_model_type;
       rotating_to_goal_ = false;
 
@@ -104,6 +105,8 @@ namespace base_local_planner {
       private_nh.param("acc_lim_x", acc_lim_x_, 2.5);
       private_nh.param("acc_lim_y", acc_lim_y_, 2.5);
       private_nh.param("acc_lim_th", acc_lim_theta_, 3.2);
+
+      private_nh.param("stop_time_buffer", stop_time_buffer, 0.2);
 
       //Since I screwed up nicely in my documentation, I'm going to add errors
       //informing the user if they've set one of the wrong parameters
@@ -161,7 +164,7 @@ namespace base_local_planner {
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
-          dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels);
+          dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels, stop_time_buffer);
 
       initialized_ = true;
     }
@@ -452,6 +455,42 @@ namespace base_local_planner {
     publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
     publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
     return true;
+  }
+
+  bool TrajectoryPlannerROS::checkTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map){
+    tf::Stamped<tf::Pose> global_pose;
+    if(costmap_ros_->getRobotPose(global_pose)){
+      if(update_map){
+        //we also want to clear the robot footprint from the costmap we're using
+        costmap_ros_->clearRobotFootprint();
+
+        //make sure to update the costmap we'll use for this cycle
+        costmap_ros_->getCostmapCopy(costmap_);
+
+        //we need to give the planne some sort of global plan, since we're only checking for legality
+        //we'll just give the robots current position
+        std::vector<geometry_msgs::PoseStamped> plan;
+        geometry_msgs::PoseStamped pose_msg;
+        tf::poseStampedTFToMsg(global_pose, pose_msg);
+        plan.push_back(pose_msg);
+        tc_->updatePlan(plan, true);
+      }
+
+      //copy over the odometry information
+      nav_msgs::Odometry base_odom;
+      {
+        boost::recursive_mutex::scoped_lock(odom_lock_);
+        base_odom = base_odom_;
+      }
+
+      return tc_->checkTrajectory(global_pose.getOrigin().x(), global_pose.getOrigin().y(), tf::getYaw(global_pose.getRotation()),
+          base_odom.twist.twist.linear.x,
+          base_odom.twist.twist.linear.y,
+          base_odom.twist.twist.angular.z, vx_samp, vy_samp, vtheta_samp);
+
+    }
+    ROS_WARN("Failed to get the pose of the robot. No trajectories will pass as legal in this case.");
+    return false;
   }
 
   bool TrajectoryPlannerROS::isGoalReached(){

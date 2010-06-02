@@ -121,6 +121,19 @@ namespace base_local_planner {
        */
       bool isGoalReached();
 
+      /**
+       * @brief  Generate and score a single trajectory
+       * @param vx_samp The x velocity used to seed the trajectory
+       * @param vy_samp The y velocity used to seed the trajectory
+       * @param vtheta_samp The theta velocity used to seed the trajectory
+       * @param update_map Whether or not to update the map for the planner
+       * when computing the legality of the trajectory, this is useful to set
+       * to false if you're going to be doing a lot of trajectory checking over
+       * a short period of time
+       * @return True if the trajectory is legal, false otherwise
+       */
+      bool checkTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map = true);
+
     private:
       /**
        * @brief Once a goal position is reached... rotate to the goal orientation

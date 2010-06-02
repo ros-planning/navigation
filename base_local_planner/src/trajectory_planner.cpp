@@ -56,7 +56,7 @@ namespace base_local_planner{
       double max_vel_th, double min_vel_th, double min_in_place_vel_th,
       double backup_vel,
       bool dwa, bool heading_scoring, double heading_scoring_timestep, bool simple_attractor,
-      vector<double> y_vels)
+      vector<double> y_vels, double stop_time_buffer)
     : map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()), costmap_(costmap), 
     world_model_(world_model), footprint_spec_(footprint_spec),
     inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius),
@@ -71,7 +71,7 @@ namespace base_local_planner{
     max_vel_th_(max_vel_th), min_vel_th_(min_vel_th), min_in_place_vel_th_(min_in_place_vel_th),
     backup_vel_(backup_vel),
     dwa_(dwa), heading_scoring_(heading_scoring), heading_scoring_timestep_(heading_scoring_timestep),
-    simple_attractor_(simple_attractor), y_vels_(y_vels)
+    simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer)
   {
     //the robot is not stuck to begin with
     stuck_left = false;
@@ -149,8 +149,20 @@ namespace base_local_planner{
 
       //if the footprint hits an obstacle this trajectory is invalid
       if(footprint_cost < 0){
-        traj.cost_ = -1.0;
-        return;
+        double max_vel_x, max_vel_y, max_vel_th;
+        //we want to compute the max allowable speeds to be able to stop
+        //to be safe... we'll make sure we can stop some time before we actually hit
+        getMaxSpeedToStopInTime(time - stop_time_buffer_, max_vel_x, max_vel_y, max_vel_th);
+
+        //check if we can stop in time
+        if(fabs(vx_samp) < max_vel_x && fabs(vy_samp) < max_vel_y && fabs(vtheta_samp) < max_vel_th){
+          //if we can stop... we'll just break out of the loop here.. no point in checking future points
+          break;
+        }
+        else{
+          traj.cost_ = -1.0;
+          return;
+        }
       }
 
       occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
@@ -169,8 +181,6 @@ namespace base_local_planner{
         path_dist = cell_pdist;
         goal_dist = cell_gdist;
       }
-
-      time += dt;
 
       //do we want to follow blindly
       if(simple_attractor_){
@@ -204,6 +214,8 @@ namespace base_local_planner{
       y_i = computeNewYPosition(y_i, vx_i, vy_i, theta_i, dt);
       theta_i = computeNewThetaPosition(theta_i, vtheta_i, dt);
 
+      //increment time
+      time += dt;
     }
 
     //ROS_INFO("OccCost: %f, vx: %.2f, vy: %.2f, vtheta: %.2f", occ_cost, vx_samp, vy_samp, vtheta_samp);
@@ -335,10 +347,19 @@ namespace base_local_planner{
     return cost;
   }
 
-  void TrajectoryPlanner::updatePlan(const vector<geometry_msgs::PoseStamped>& new_plan){
+  void TrajectoryPlanner::updatePlan(const vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists){
     global_plan_.resize(new_plan.size());
     for(unsigned int i = 0; i < new_plan.size(); ++i){
       global_plan_[i] = new_plan[i];
+    }
+
+    if(compute_dists){
+      //reset the map for new operations
+      map_.resetPathDist();
+
+      //make sure that we update our path based on the global plan and compute costs
+      map_.setPathCells(costmap_, global_plan_);
+      ROS_DEBUG("Path/Goal distance computed");
     }
   }
 

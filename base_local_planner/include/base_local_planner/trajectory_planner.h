@@ -121,7 +121,8 @@ namespace base_local_planner {
           double backup_vel = -0.1,
           bool dwa = false, bool heading_scoring = false, double heading_scoring_timestep = 0.1,
           bool simple_attractor = false,
-          std::vector<double> y_vels = std::vector<double>(0));
+          std::vector<double> y_vels = std::vector<double>(0),
+          double stop_time_buffer = 0.2);
 
       /**
        * @brief  Destructs a trajectory controller
@@ -141,8 +142,9 @@ namespace base_local_planner {
       /**
        * @brief  Update the plan that the controller is following
        * @param new_plan A new plan for the controller to follow 
+       * @param compute_dists Wheter or not to compute path/goal distances when a plan is updated
        */
-      void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan);
+      void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists = false);
 
       /**
        * @brief  Accessor for the goal the robot is currently pursuing in world corrdinates
@@ -291,6 +293,8 @@ namespace base_local_planner {
 
       std::vector<double> y_vels_; ///< @brief Y velocities to explore
 
+      double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
+
       /**
        * @brief  Compute x position based on velocity
        * @param  xi The current x position
@@ -341,6 +345,12 @@ namespace base_local_planner {
         if((vg - vi) >= 0)
           return std::min(vg, vi + a_max * dt);
         return std::max(vg, vi - a_max * dt);
+      }
+
+      void getMaxSpeedToStopInTime(double time, double& vx, double& vy, double& vth){
+        vx = -0.5 * acc_lim_x_ * std::max(time, 0.0);
+        vy = -0.5 * acc_lim_y_ * std::max(time, 0.0);
+        vth = -0.5 * acc_lim_theta_ * std::max(time, 0.0);
       }
 
       double lineCost(int x0, int x1, int y0, int y1);
