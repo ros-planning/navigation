@@ -99,7 +99,7 @@ namespace base_local_planner {
       return -1.0;
 
     //if all line costs are legal... then we can return that the footprint is legal
-    return line_cost;
+    return footprint_cost;
 
   }
 
