@@ -13,6 +13,7 @@ rosbuild_add_library(amcl_pf
 
 rosbuild_add_library(amcl_map
                     src/map/map.c
+                    src/map/map_cspace.cpp
                     src/map/map_range.c
                     src/map/map_store.c
                     src/map/map_draw.c)

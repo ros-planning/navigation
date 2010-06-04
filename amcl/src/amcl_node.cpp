@@ -330,8 +330,12 @@ AmclNode::AmclNode() :
     laser_->SetModelBeam(z_hit, z_short, z_max, z_rand,
                          sigma_hit, lambda_short, 0.0);
   else
+  {
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodField(z_hit, z_rand, sigma_hit,
                                     laser_likelihood_max_dist);
+    ROS_INFO("Done initializing likelihood field model.");
+  }
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2);

@@ -54,8 +54,8 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
   }
 
   // Read ppm header
-  fscanf(file, "%10s \n", magic);
-  if (strcmp(magic, "P5") != 0)
+  
+  if ((fscanf(file, "%10s \n", magic) != 1) || (strcmp(magic, "P5") != 0))
   {
     fprintf(stderr, "incorrect image format; must be PGM/binary");
     return -1;
@@ -67,7 +67,11 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
   ungetc(ch, file);
 
   // Read image dimensions
-  fscanf(file, " %d %d \n %d \n", &width, &height, &depth);
+  if(fscanf(file, " %d %d \n %d \n", &width, &height, &depth) != 3)
+  {
+    fprintf(stderr, "Failed ot read image dimensions");
+    return -1;
+  }
 
   // Allocate space in the map
   if (map->cells == NULL)
