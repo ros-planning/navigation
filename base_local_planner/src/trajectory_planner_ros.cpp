@@ -141,6 +141,8 @@ namespace base_local_planner {
       private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
 
       private_nh.param("backup_vel", backup_vel, -0.1);
+      if(backup_vel >= 0.0)
+        ROS_WARN("You've specified a positive backup velocity. This is probably not what you want and will cause the robot to move forward instead of backward. You should probably change your backup_vel parameter to be negative");
       private_nh.param("world_model", world_model_type, string("costmap")); 
       private_nh.param("dwa", dwa, true);
       private_nh.param("heading_scoring", heading_scoring, false);
