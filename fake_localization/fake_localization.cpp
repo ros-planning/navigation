@@ -113,7 +113,8 @@ class FakeOdomNode
 
       m_offsetTf = tf::Transform(tf::createQuaternionFromRPY(0, 0, -delta_yaw_ ), tf::Point(-delta_x_, -delta_y_, 0.0));
 
-      filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "base_pose_ground_truth", 100);
+      stuff_sub_ = nh.subscribe("base_pose_ground_truth", 100, &FakeOdomNode::stuffFilter, this);
+      filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "", 100);
       filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, base_frame_id_, 100);
       filter_->registerCallback(boost::bind(&FakeOdomNode::update, this, _1));
 
@@ -139,6 +140,7 @@ class FakeOdomNode
     tf::TransformListener          *m_tfListener;
     tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseFilter;
     tf::MessageFilter<nav_msgs::Odometry>* filter_;
+    ros::Subscriber stuff_sub_; 
     message_filters::Subscriber<nav_msgs::Odometry>* filter_sub_;
 
     double                         delta_x_, delta_y_, delta_yaw_;
@@ -155,6 +157,16 @@ class FakeOdomNode
     std::string global_frame_id_;
 
   public:
+    void stuffFilter(const nav_msgs::OdometryConstPtr& odom_msg){
+      //we have to do this to force the message filter to wait for transforms
+      //from odom_frame_id_ to base_frame_id_ to be available at time odom_msg.header.stamp
+      //really, the base_pose_ground_truth should come in with no frame_id b/c it doesn't make sense
+      boost::shared_ptr<nav_msgs::Odometry> stuff_msg(new nav_msgs::Odometry);
+      *stuff_msg = *odom_msg;
+      stuff_msg->header.frame_id = odom_frame_id_;
+      filter_->add(stuff_msg);
+    }
+
     void update(const nav_msgs::OdometryConstPtr& message){
       tf::Pose txi;
       tf::poseMsgToTF(message->pose.pose, txi);
