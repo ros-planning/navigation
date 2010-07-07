@@ -822,7 +822,7 @@ namespace costmap_2d {
 
   bool Costmap2DROS::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value){
     lock_.lock();
-    bool success = costmap_->setConvexPolygonCost(polygon, costmap_2d::FREE_SPACE);
+    bool success = costmap_->setConvexPolygonCost(polygon, cost_value);
     lock_.unlock();
 
     //make sure to take our active sensor data into account
