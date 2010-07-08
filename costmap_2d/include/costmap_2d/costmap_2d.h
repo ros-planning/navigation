@@ -373,6 +373,19 @@ namespace costmap_2d {
           unsigned int data_size_x, unsigned int data_size_y, 
           const std::vector<unsigned char>& static_data);
 
+      /**
+       * @brief  Replace the costmap with a map of a different size
+       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
+       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
+       * @param data_size_x The x size of the map we'll be using to replace the costmap 
+       * @param data_size_y The y size of the map we'll be using to replace the costmap 
+       * @param static_data The data that we'll use for our new costmap
+       */
+      void replaceFullMap(double win_origin_x, double win_origin_y,
+          unsigned int data_size_x, unsigned int data_size_y,
+          const std::vector<unsigned char>& static_data);
+
+
     protected:
       /**
        * @brief  Given an index of a cell in the costmap, place it into a priority queue for obstacle inflation
@@ -470,18 +483,6 @@ namespace costmap_2d {
        * @param cell_inflation_radius The radius to use when copying the kernel
        */
       void copyKernels(const Costmap2D& map, unsigned int cell_inflation_radius);
-
-      /**
-       * @brief  Replace the costmap with a map of a different size
-       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
-       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
-       * @param data_size_x The x size of the map we'll be using to replace the costmap 
-       * @param data_size_y The y size of the map we'll be using to replace the costmap 
-       * @param static_data The data that we'll use for our new costmap
-       */
-      void replaceFullMap(double win_origin_x, double win_origin_y,
-          unsigned int data_size_x, unsigned int data_size_y,
-          const std::vector<unsigned char>& static_data);
 
       /**
        * @brief  Reshape a map to take an update that is not fully contained within the costmap

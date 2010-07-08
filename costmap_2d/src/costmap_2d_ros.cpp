@@ -705,7 +705,12 @@ namespace costmap_2d {
     }
 
     if(tf::resolve(tf_prefix_, new_map.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
-      ROS_ERROR("You cannot update a map with a global_frame of: %s, with a new map that has a global frame of: %s", global_frame_.c_str(), new_map.header.frame_id.c_str());
+      ROS_DEBUG("Map with a global_frame of: %s, updated with a new map that has a global frame of: %s, wiping map", global_frame_.c_str(), new_map.header.frame_id.c_str());
+      //if the map has a new global frame... we'll actually wipe the whole map rather than trying to be efficient about updating a potential window
+      costmap_->replaceFullMap(map_origin_x, map_origin_y, map_width, map_height, new_map_data);
+
+      //we'll also update the global frame id for this costmap
+      global_frame_ = tf::resolve(tf_prefix_, new_map.header.frame_id);
       return;
     }
 
