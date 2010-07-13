@@ -71,7 +71,7 @@ namespace navfn {
       private_nh.param("planner_costmap_publish_frequency", costmap_pub_freq, 0.0);
 
       //read parameters for the planner
-      global_frame_ = costmap_ros_->getGlobalFrameID();
+      std::string global_frame = costmap_ros_->getGlobalFrameID();
 
       //we'll get the parameters for the robot radius from the costmap we're associated with
       inscribed_radius_ = costmap_ros_->getInscribedRadius();
@@ -79,7 +79,7 @@ namespace navfn {
       inflation_radius_ = costmap_ros_->getInflationRadius();
 
       //initialize the costmap publisher
-      costmap_publisher_ = new costmap_2d::Costmap2DPublisher(ros::NodeHandle(private_nh, "NavfnROS_costmap"), costmap_pub_freq, global_frame_);
+      costmap_publisher_ = new costmap_2d::Costmap2DPublisher(ros::NodeHandle(private_nh, "NavfnROS_costmap"), costmap_pub_freq, global_frame);
 
       //get the tf prefix
       ros::NodeHandle prefix_nh;
@@ -198,7 +198,7 @@ namespace navfn {
     makePlan(req.start, req.goal, resp.plan.poses);
 
     resp.plan.header.stamp = ros::Time::now();
-    resp.plan.header.frame_id = global_frame_;
+    resp.plan.header.frame_id = costmap_ros_->getGlobalFrameID();
 
     return true;
   } 
@@ -226,15 +226,15 @@ namespace navfn {
     ros::NodeHandle n;
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, costmap_ros_->getGlobalFrameID())){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                tf::resolve(tf_prefix_, costmap_ros_->getGlobalFrameID()).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
       return false;
     }
 
-    if(tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, costmap_ros_->getGlobalFrameID())){
       ROS_ERROR("The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
+                tf::resolve(tf_prefix_, costmap_ros_->getGlobalFrameID()).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
       return false;
     }
 
@@ -291,7 +291,7 @@ namespace navfn {
 
         geometry_msgs::PoseStamped pose;
         pose.header.stamp = plan_time;
-        pose.header.frame_id = global_frame_;
+        pose.header.frame_id = costmap_ros_->getGlobalFrameID();
         pose.pose.position.x = world_x;
         pose.pose.position.y = world_y;
         pose.pose.position.z = 0.0;
@@ -350,9 +350,9 @@ namespace navfn {
     plan.clear();
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, costmap_ros_->getGlobalFrameID())){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                tf::resolve(tf_prefix_, costmap_ros_->getGlobalFrameID()).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
       return false;
     }
 
