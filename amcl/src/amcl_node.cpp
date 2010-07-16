@@ -516,8 +516,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     pf_vector_t laser_pose_v;
     laser_pose_v.v[0] = laser_pose.getOrigin().x();
     laser_pose_v.v[1] = laser_pose.getOrigin().y();
-    double p,r;
-    laser_pose.getBasis().getEulerYPR(laser_pose_v.v[2],p,r);
+    // laser mounting angle gets computed later -> set to 0 here!
+    laser_pose_v.v[2] = 0;
     lasers_[laser_index]->SetLaserPose(laser_pose_v);
     ROS_DEBUG("Received laser's pose wrt robot: %.3f %.3f %.3f",
               laser_pose_v.v[0],
@@ -616,13 +616,13 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     q.setRPY(0.0, 0.0, laser_scan->angle_min);
     tf::Stamped<tf::Quaternion> min_q(q, laser_scan->header.stamp,
                                       laser_scan->header.frame_id);
-    q.setRPY(0.0, 0.0, laser_scan->angle_max);
-    tf::Stamped<tf::Quaternion> max_q(q, laser_scan->header.stamp,
+    q.setRPY(0.0, 0.0, laser_scan->angle_min + laser_scan->angle_increment);
+    tf::Stamped<tf::Quaternion> inc_q(q, laser_scan->header.stamp,
                                       laser_scan->header.frame_id);
     try
     {
       tf_->transformQuaternion(base_frame_id_, min_q, min_q);
-      tf_->transformQuaternion(base_frame_id_, max_q, max_q);
+      tf_->transformQuaternion(base_frame_id_, inc_q, inc_q);
     }
     catch(tf::TransformException& e)
     {
@@ -632,9 +632,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     }
 
     double angle_min = tf::getYaw(min_q);
-    double angle_max = tf::getYaw(max_q);
-    double angle_increment = (angle_max - angle_min) / laser_scan->ranges.size();
-    ROS_DEBUG("Laser angles in base frame: min: %.3f max: %.3f inc: %.3f", angle_min, angle_max, angle_increment);
+    double angle_increment = tf::getYaw(inc_q) - angle_min;
+
+    // wrapping angle to [-pi .. pi]
+    angle_increment = fmod(angle_increment + 5*M_PI, 2*M_PI) - M_PI;
+
+    ROS_DEBUG("Laser %d angles in base frame: min: %.3f inc: %.3f", laser_index, angle_min, angle_increment);
 
     // Apply range min/max thresholds, if the user supplied them
     if(laser_max_range_ > 0.0)

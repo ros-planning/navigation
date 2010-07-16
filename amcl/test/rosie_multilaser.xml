@@ -1,11 +1,11 @@
-<!-- setting pose: 47.943 21.421 -0.503
-setting pose: 30.329 34.644 3.142 
-117.5s -->
+<!-- Setting pose: 42.378 17.730 1.583
+Setting pose: 33.118 34.530 -0.519
+103.5s -->
 <launch>
     <param name="/use_sim_time" value="true"/>
     <node name="rosplay" pkg="rosrecord" type="rosplay" 
-          args="-s 5 -r 1 -b 10 $(find amcl)/test/basic_localization_stage_indexed.bag"/>
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find amcl)/test/willow-full.pgm 0.1"/>
+          args="-s 5 -r 1 -b 10 $(find amcl)/test/rosie_localization_stage.bag"/>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find amcl)/test/willow-full-0.05.pgm 0.05"/>
     <node pkg="amcl" type="amcl" name="amcl" respawn="false" output="screen">
       <remap from="scan" to="base_scan" />
       <param name="transform_tolerance" value="0.2" />
@@ -40,10 +40,10 @@ setting pose: 30.329 34.644 3.142
       <param name="transform_tolerance" value="0.1"/>
       <param name="recovery_alpha_slow" value="0.0"/>
       <param name="recovery_alpha_fast" value="0.0"/>
-      <param name="initial_pose_x" value="47.443"/>
-      <param name="initial_pose_y" value="21.421"/>
-      <param name="initial_pose_a" value="-1.003"/>
+      <param name="initial_pose_x" value="42.378"/>
+      <param name="initial_pose_y" value="17.730"/>
+      <param name="initial_pose_a" value="1.583"/>
     </node>
-  <test time-limit="180" test-name="basic_localization_stage" pkg="amcl" 
-        type="basic_localization.py" args="0 47.060 21.603 -1.053 0.75 0.75 90.0"/>
+  <test time-limit="180" test-name="basic_localization_stage_rosie" pkg="amcl"
+        type="basic_localization.py" args="0 42.08 16.43 1.56 0.75 0.4 103.5"/>
 </launch>

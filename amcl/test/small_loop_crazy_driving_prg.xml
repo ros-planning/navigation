@@ -45,5 +45,5 @@
       <param name="initial_cov_aa" value="0.1"/>
     </node>
   <test time-limit="180" test-name="small_loop_crazy_driving_prg" pkg="amcl" 
-        type="basic_localization.py" args="0 14.115 25.559 0.005 0.75 0.75 90.0"/>
+        type="basic_localization.py" args="0 14.115 25.559 3.121 0.75 0.75 90.0"/>
 </launch>

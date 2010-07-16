@@ -40,6 +40,7 @@ rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_prf_
 rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/small_loop_crazy_driving_prg_indexed.bag test/small_loop_crazy_driving_prg_indexed.bag 4a58d1a7962914009d99000d06e5939c)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_greenroom_loop_indexed.bag test/texas_greenroom_loop_indexed.bag 6e3432115cccdca1247f6c807038e13d)
 rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/texas_willow_hallway_loop_indexed.bag test/texas_willow_hallway_loop_indexed.bag 27deb742fdcd3af44cf446f39f2688a8)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/rosie_localization_stage.bag test/rosie_localization_stage.bag 3347bf3835724cfa45e958c5c1846066)
 
 # Maps
 rosbuild_download_test_data(http://pr.willowgarage.com/data/amcl/willow-full.pgm test/willow-full.pgm b84465cdbbfe3e2fb9eb4579e0bcaf0e)
@@ -51,6 +52,7 @@ rosbuild_add_rostest(test/basic_localization_stage.xml)
 rosbuild_add_rostest(test/small_loop_prf.xml)
 rosbuild_add_rostest(test/small_loop_crazy_driving_prg.xml)
 rosbuild_add_rostest(test/texas_greenroom_loop.xml)
+rosbuild_add_rostest(test/rosie_multilaser.xml)
 #rosbuild_add_rostest(test/texas_willow_hallway_loop.xml)
 # Global localization needs some work.
 #rosbuild_add_rostest(test/global_localization_stage.xml)

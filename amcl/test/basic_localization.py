@@ -6,12 +6,14 @@ roslib.load_manifest('amcl')
 import sys
 import time
 import math
+from math import fmod,pi
 
 import unittest
 import rospy
 import rostest
 
 from tf.msg import tfMessage
+from tf.transformations import euler_from_quaternion
 from std_srvs.srv import Empty
 
 class TestBasicLocalization(unittest.TestCase):
@@ -26,9 +28,18 @@ class TestBasicLocalization(unittest.TestCase):
     for t in msg.transforms:
       if t.header.frame_id == '/map':
         self.tf = t.transform
-        print 'Curr:\t %16.6f %16.6f' % (self.tf.translation.x, self.tf.translation.y)
-        print 'Target:\t %16.6f %16.6f' % (self.target_x, self.target_y)
-        print 'Diff:\t %16.6f %16.6f' % (abs(self.tf.translation.x-self.target_x),abs(self.tf.translation.y - self.target_y))
+        (a_curr, a_diff) = self.compute_angle_diff()
+        print 'Curr:\t %16.6f %16.6f %16.6f' % (self.tf.translation.x, self.tf.translation.y, a_curr)
+        print 'Target:\t %16.6f %16.6f %16.6f' % (self.target_x, self.target_y, self.target_a)
+        print 'Diff:\t %16.6f %16.6f %16.6f' % (abs(self.tf.translation.x-self.target_x),abs(self.tf.translation.y - self.target_y), a_diff)
+
+  def compute_angle_diff(self):
+    rot = self.tf.rotation
+    a = euler_from_quaternion([rot.x,rot.y,rot.z,rot.w])[2]
+    d_a = self.target_a
+
+    return ( a, abs(fmod(a - d_a + 5*pi, 2*pi) - pi) )
+    
 
   def test_basic_localization(self):
     global_localization = int(sys.argv[1])
@@ -56,13 +67,15 @@ class TestBasicLocalization(unittest.TestCase):
     while (rospy.rostime.get_time() - start_time) < target_time:
       #print 'Waiting for end time %.6f (current: %.6f)'%(target_time,(rospy.rostime.get_time() - start_time))
       time.sleep(0.1)
-    print 'Curr:\t %16.6f %16.6f' % (self.tf.translation.x, self.tf.translation.y)
-    print 'Target:\t %16.6f %16.6f' % (self.target_x, self.target_y)
-    print 'Diff:\t %16.6f %16.6f' % (abs(self.tf.translation.x-self.target_x),abs(self.tf.translation.y - self.target_y))
+
+    (a_curr, a_diff) = self.compute_angle_diff()
+    print 'Curr:\t %16.6f %16.6f %16.6f' % (self.tf.translation.x, self.tf.translation.y, a_curr)
+    print 'Target:\t %16.6f %16.6f %16.6f' % (self.target_x, self.target_y, self.target_a)
+    print 'Diff:\t %16.6f %16.6f %16.6f' % (abs(self.tf.translation.x-self.target_x),abs(self.tf.translation.y - self.target_y), a_diff)
     self.assertNotEquals(self.tf, None)
     self.assertTrue(abs(self.tf.translation.x - self.target_x) <= tolerance_d)
     self.assertTrue(abs(self.tf.translation.y - self.target_y) <= tolerance_d)
-    #TODO: Check orientation
+    self.assertTrue(a_diff <= tolerance_a)
 
 if __name__ == '__main__':
   rostest.run('amcl', 'amcl_localization', 
