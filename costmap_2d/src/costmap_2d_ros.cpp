@@ -704,6 +704,14 @@ namespace costmap_2d {
       return;
     }
 
+    if(fabs(new_map.info.origin.orientation.x) > 1e-6 
+       && fabs(new_map.info.origin.orientation.y) > 1e-6 
+       && fabs(new_map.info.origin.orientation.z) > 1e-6 
+       && (fabs(new_map.info.origin.orientation.w) > 1e-6 || fabs(new_map.info.origin.orientation.w - 1.0) > 1e-6)){
+      ROS_ERROR("The costmap does not support origins that contain rotations. The origin must be aligned with the global_frame.");
+      return;
+    }
+
     if(tf::resolve(tf_prefix_, new_map.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
       ROS_DEBUG("Map with a global_frame of: %s, updated with a new map that has a global frame of: %s, wiping map", global_frame_.c_str(), new_map.header.frame_id.c_str());
       //if the map has a new global frame... we'll actually wipe the whole map rather than trying to be efficient about updating a potential window
