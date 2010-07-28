@@ -388,14 +388,14 @@ namespace base_local_planner{
 
     //should we use the dynamic window approach?
     if(dwa_){
-      max_vel_x = min(max_vel_x_, vx + acc_x * .1);
+      max_vel_x = max(min(max_vel_x_, vx + acc_x * .1), min_vel_x_);
       min_vel_x = max(min_vel_x_, vx - acc_x * .1);
 
       max_vel_theta = min(max_vel_th_, vtheta + acc_theta * .1);
       min_vel_theta = max(min_vel_th_, vtheta - acc_theta * .1);
     }
     else{
-      max_vel_x = min(max_vel_x_, vx + acc_x * sim_time_);
+      max_vel_x = max(min(max_vel_x_, vx + acc_x * sim_time_), min_vel_x_);
       min_vel_x = max(min_vel_x_, vx - acc_x * sim_time_);
 
       max_vel_theta = min(max_vel_th_, vtheta + acc_theta * sim_time_);
