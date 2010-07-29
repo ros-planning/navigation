@@ -469,6 +469,23 @@ namespace move_base {
         }
       }
 
+      //we also want to check if we've changed global frames because we need to transform our goal pose
+      if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
+        goal = goalToGlobalFrame(goal);
+
+        //we want to go back to the planning state for the next execution cycle
+        recovery_index_ = 0;
+        state_ = PLANNING;
+
+        //publish the goal point to the visualizer
+        ROS_DEBUG("The global frame for move_base has changed, new frame: %s, new goal position x: %.2f, y: %.2f", goal.header.frame_id.c_str(), goal.pose.position.x, goal.pose.position.y);
+        current_goal_pub_.publish(goal);
+
+        //make sure to reset our timeouts
+        last_valid_control_ = ros::Time::now();
+        last_valid_plan_ = ros::Time::now();
+      }
+
       //for timing that gives real time even in simulation
       ros::WallTime start = ros::WallTime::now();
 
