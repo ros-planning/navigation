@@ -76,6 +76,65 @@ namespace costmap_2d {
     //check if the user wants to save pgms of the costmap for debugging
     private_nh.param("save_debug_pgm", save_debug_pgm_, false);
 
+    bool static_map;
+    unsigned int map_width, map_height;
+    double map_resolution;
+    double map_origin_x, map_origin_y;
+
+    private_nh.param("static_map", static_map, true);
+
+    //check if we want a rolling window version of the costmap
+    private_nh.param("rolling_window", rolling_window_, false);
+
+    double map_width_meters, map_height_meters;
+    private_nh.param("width", map_width_meters, 10.0);
+    private_nh.param("height", map_height_meters, 10.0);
+    private_nh.param("resolution", map_resolution, 0.05);
+    private_nh.param("origin_x", map_origin_x, 0.0);
+    private_nh.param("origin_y", map_origin_y, 0.0);
+    map_width = (unsigned int)(map_width_meters / map_resolution);
+    map_height = (unsigned int)(map_height_meters / map_resolution);
+
+    if(static_map){
+      //we'll subscribe to the latched topic that the map server uses
+      ros::NodeHandle g_nh;
+
+      ROS_INFO("Requesting the map...\n");
+      map_sub_ = g_nh.subscribe("map", 1, &Costmap2DROS::incomingMap, this);
+
+      ros::Rate r(1.0);
+      while(!map_initialized_ && ros::ok()){
+        ros::spinOnce();
+        ROS_INFO("Still waiting on map...\n");
+        r.sleep();
+      }
+
+      //check if the user has set any parameters that will be overwritten
+      bool user_map_params = false;
+      user_map_params |= private_nh.hasParam("width");
+      user_map_params |= private_nh.hasParam("height");
+      user_map_params |= private_nh.hasParam("resolution");
+      user_map_params |= private_nh.hasParam("origin_x");
+      user_map_params |= private_nh.hasParam("origin_y");
+
+      if(user_map_params)
+        ROS_WARN("You have set map parameters, but also requested to use the static map. Your parameters will be overwritten by those given by the map server");
+
+      {
+        //lock just in case something weird is going on with the compiler or scheduler
+        boost::recursive_mutex::scoped_lock lock(map_data_lock_);
+        map_width = (unsigned int)map_meta_data_.width;
+        map_height = (unsigned int)map_meta_data_.height;
+        map_resolution = map_meta_data_.resolution;
+        map_origin_x = map_meta_data_.origin.position.x;
+        map_origin_y = map_meta_data_.origin.position.y;
+
+        ROS_INFO("Received a %d X %d map at %f m/pix\n",
+            map_width, map_height, map_resolution);
+      }
+
+    }
+
     ros::Time last_error = ros::Time::now();
     std::string tf_error;
     //we need to make sure that the transform between the robot base frame and the global frame is available
@@ -173,65 +232,6 @@ namespace costmap_2d {
         target_frames.push_back(global_frame_);
         target_frames.push_back(sensor_frame);
         observation_notifiers_.back()->setTargetFrame(target_frames);
-      }
-
-    }
-
-    bool static_map;
-    unsigned int map_width, map_height;
-    double map_resolution;
-    double map_origin_x, map_origin_y;
-
-    private_nh.param("static_map", static_map, true);
-
-    //check if we want a rolling window version of the costmap
-    private_nh.param("rolling_window", rolling_window_, false);
-
-    double map_width_meters, map_height_meters;
-    private_nh.param("width", map_width_meters, 10.0);
-    private_nh.param("height", map_height_meters, 10.0);
-    private_nh.param("resolution", map_resolution, 0.05);
-    private_nh.param("origin_x", map_origin_x, 0.0);
-    private_nh.param("origin_y", map_origin_y, 0.0);
-    map_width = (unsigned int)(map_width_meters / map_resolution);
-    map_height = (unsigned int)(map_height_meters / map_resolution);
-
-    if(static_map){
-      //we'll subscribe to the latched topic that the map server uses
-      ros::NodeHandle g_nh;
-
-      ROS_INFO("Requesting the map...\n");
-      map_sub_ = g_nh.subscribe("map", 1, &Costmap2DROS::incomingMap, this);
-
-      ros::Rate r(1.0);
-      while(!map_initialized_ && ros::ok()){
-        ros::spinOnce();
-        ROS_INFO("Still waiting on map...\n");
-        r.sleep();
-      }
-
-      //check if the user has set any parameters that will be overwritten
-      bool user_map_params = false;
-      user_map_params |= private_nh.hasParam("width");
-      user_map_params |= private_nh.hasParam("height");
-      user_map_params |= private_nh.hasParam("resolution");
-      user_map_params |= private_nh.hasParam("origin_x");
-      user_map_params |= private_nh.hasParam("origin_y");
-
-      if(user_map_params)
-        ROS_WARN("You have set map parameters, but also requested to use the static map. Your parameters will be overwritten by those given by the map server");
-
-      {
-        //lock just in case something weird is going on with the compiler or scheduler
-        boost::recursive_mutex::scoped_lock lock(map_data_lock_);
-        map_width = (unsigned int)map_meta_data_.width;
-        map_height = (unsigned int)map_meta_data_.height;
-        map_resolution = map_meta_data_.resolution;
-        map_origin_x = map_meta_data_.origin.position.x;
-        map_origin_y = map_meta_data_.origin.position.y;
-
-        ROS_INFO("Received a %d X %d map at %f m/pix\n",
-            map_width, map_height, map_resolution);
       }
 
     }
@@ -681,6 +681,7 @@ namespace costmap_2d {
     }
 
     map_meta_data_ = map.info;
+    global_frame_ = tf::resolve(tf_prefix_, map.header.frame_id);
   }
 
   void Costmap2DROS::updateStaticMap(const nav_msgs::OccupancyGrid& new_map){
