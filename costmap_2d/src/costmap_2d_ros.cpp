@@ -203,7 +203,7 @@ namespace costmap_2d {
 
       //create an observation buffer
       observation_buffers_.push_back(boost::shared_ptr<ObservationBuffer>(new ObservationBuffer(topic, observation_keep_time, 
-              expected_update_rate, min_obstacle_height, max_obstacle_height, source_obstacle_range, source_raytrace_range, tf_, global_frame_, sensor_frame)));
+              expected_update_rate, min_obstacle_height, max_obstacle_height, source_obstacle_range, source_raytrace_range, tf_, global_frame_, sensor_frame, transform_tolerance_)));
 
       //check if we'll add this buffer to our marking observation buffers
       if(marking)
@@ -698,7 +698,6 @@ namespace costmap_2d {
     double map_origin_x = new_map.info.origin.position.x;
     double map_origin_y = new_map.info.origin.position.y;
 
-    boost::recursive_mutex::scoped_lock lock(lock_);
     if(fabs(map_resolution - costmap_->getResolution()) > 1e-6){
       ROS_ERROR("You cannot update a map with resolution: %.4f, with a new map that has resolution: %.4f", 
           costmap_->getResolution(), map_resolution);
@@ -714,15 +713,30 @@ namespace costmap_2d {
     }
 
     if(tf::resolve(tf_prefix_, new_map.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+      std::string new_global_frame = tf::resolve(tf_prefix_, new_map.header.frame_id);
+
       ROS_DEBUG("Map with a global_frame of: %s, updated with a new map that has a global frame of: %s, wiping map", global_frame_.c_str(), new_map.header.frame_id.c_str());
+
+      //we'll update all the observation buffers we have associated with this map
+      for(unsigned int i = 0; i < observation_buffers_.size(); ++i){
+        observation_buffers_[i]->lock();
+        observation_buffers_[i]->setGlobalFrame(new_global_frame);
+        observation_buffers_[i]->unlock();
+      }
+
+      //make sure to lock the costmap
+      boost::recursive_mutex::scoped_lock lock(lock_);
+
       //if the map has a new global frame... we'll actually wipe the whole map rather than trying to be efficient about updating a potential window
       costmap_->replaceFullMap(map_origin_x, map_origin_y, map_width, map_height, new_map_data);
 
       //we'll also update the global frame id for this costmap
-      global_frame_ = tf::resolve(tf_prefix_, new_map.header.frame_id);
+      global_frame_ = new_global_frame;
+
       return;
     }
 
+    boost::recursive_mutex::scoped_lock lock(lock_);
     costmap_->updateStaticMapWindow(map_origin_x, map_origin_y, map_width, map_height, new_map_data);
   }
 

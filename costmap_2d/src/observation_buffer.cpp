@@ -42,14 +42,53 @@ using namespace tf;
 namespace costmap_2d {
   ObservationBuffer::ObservationBuffer(string topic_name, double observation_keep_time, double expected_update_rate, 
       double min_obstacle_height, double max_obstacle_height, double obstacle_range, double raytrace_range,
-      TransformListener& tf, string global_frame, string sensor_frame) : tf_(tf),
+      TransformListener& tf, string global_frame, string sensor_frame, double tf_tolerance) : tf_(tf),
   observation_keep_time_(observation_keep_time), expected_update_rate_(expected_update_rate), last_updated_(ros::Time::now()),
   global_frame_(global_frame), sensor_frame_(sensor_frame), topic_name_(topic_name), min_obstacle_height_(min_obstacle_height),
-  max_obstacle_height_(max_obstacle_height), obstacle_range_(obstacle_range), raytrace_range_(raytrace_range)
+  max_obstacle_height_(max_obstacle_height), obstacle_range_(obstacle_range), raytrace_range_(raytrace_range), tf_tolerance_(tf_tolerance)
   {
   }
 
   ObservationBuffer::~ObservationBuffer(){}
+
+  bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame){
+    ros::Time transform_time = ros::Time::now();
+    std::string tf_error;
+
+    if(!tf_.waitForTransform(new_global_frame, global_frame_, transform_time, ros::Duration(tf_tolerance_), ros::Duration(0.01), &tf_error)){
+      ROS_ERROR("Transform between %s and %s with tolerance %.2f failed: %s.", new_global_frame.c_str(), global_frame_.c_str(), tf_tolerance_, tf_error.c_str());
+      return false;
+    }
+
+    list<Observation>::iterator obs_it;
+    for(obs_it = observation_list_.begin(); obs_it != observation_list_.end(); ++obs_it){
+      try{
+        Observation& obs = *obs_it;
+
+        geometry_msgs::PointStamped origin;
+        origin.header.frame_id = global_frame_;
+        origin.header.stamp = transform_time;
+        origin.point = obs.origin_;
+
+        //we need to transform the origin of the observation to the new global frame
+        tf_.transformPoint(new_global_frame, origin, origin);
+        obs.origin_ = origin.point;
+
+        //we also need to transform the cloud of the observation to the new global frame
+        tf_.transformPointCloud(new_global_frame, obs.cloud_, obs.cloud_);
+
+      }
+      catch(TransformException& ex){
+        ROS_ERROR("TF Error attempting to transform an observation from %s to %s: %s", global_frame_.c_str(), 
+            new_global_frame.c_str(), ex.what());
+        return false;
+      }
+    }
+
+    //now we need to update our global_frame member
+    global_frame_ = new_global_frame;
+    return true;
+  }
 
   void ObservationBuffer::bufferCloud(const sensor_msgs::PointCloud& cloud){
     Stamped<btVector3> global_origin;
@@ -94,6 +133,7 @@ namespace costmap_2d {
       //resize the cloud for the number of legal points
       observation_cloud.points.resize(point_count);
       observation_cloud.header.stamp = cloud.header.stamp;
+      observation_cloud.header.frame_id = global_frame_cloud.header.frame_id;
     }
     catch(TransformException& ex){
       //if an exception occurs, we need to remove the empty observation from the list
