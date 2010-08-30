@@ -348,9 +348,9 @@ namespace base_local_planner {
       }
 
       void getMaxSpeedToStopInTime(double time, double& vx, double& vy, double& vth){
-        vx = -0.5 * acc_lim_x_ * std::max(time, 0.0);
-        vy = -0.5 * acc_lim_y_ * std::max(time, 0.0);
-        vth = -0.5 * acc_lim_theta_ * std::max(time, 0.0);
+        vx = acc_lim_x_ * std::max(time, 0.0);
+        vy = acc_lim_y_ * std::max(time, 0.0);
+        vth = acc_lim_theta_ * std::max(time, 0.0);
       }
 
       double lineCost(int x0, int x1, int y0, int y1);
