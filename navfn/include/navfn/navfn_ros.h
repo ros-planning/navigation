@@ -85,6 +85,17 @@ namespace navfn {
           const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
+       * @brief Given a goal pose in the world, compute a plan
+       * @param start The start pose 
+       * @param goal The goal pose 
+       * @param tolerance The tolerance on the goal point for the planner
+       * @param plan The plan... filled by the planner
+       * @return True if a valid plan was found, false otherwise
+       */
+      bool makePlan(const geometry_msgs::PoseStamped& start, 
+          const geometry_msgs::PoseStamped& goal, double tolerance, std::vector<geometry_msgs::PoseStamped>& plan);
+
+      /**
        * @brief  Computes the full navigation function for the map given a point in the world to start from
        * @param world_point The point to use for seeding the navigation function 
        * @return True if the navigation function was computed successfully, false otherwise
@@ -136,10 +147,16 @@ namespace navfn {
 
 
     private:
+      inline double sq_distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2){
+        double dx = p1.pose.position.x - p2.pose.position.x;
+        double dy = p1.pose.position.y - p2.pose.position.y;
+        return dx*dx +dy*dy;
+      }
+
       void mapToWorld(double mx, double my, double& wx, double& wy);
       void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
       costmap_2d::Costmap2D costmap_;
-      double planner_window_x_, planner_window_y_;
+      double planner_window_x_, planner_window_y_, default_tolerance_;
       costmap_2d::Costmap2DPublisher* costmap_publisher_;
       std::string tf_prefix_;
       boost::mutex mutex_;
