@@ -48,7 +48,7 @@ namespace costmap_2d {
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
-                             save_debug_pgm_(false), map_initialized_(false) {
+                             save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false) {
     ros::NodeHandle private_nh("~/" + name);
 
     //get our tf prefix
@@ -354,6 +354,8 @@ namespace costmap_2d {
     double map_update_frequency;
     private_nh.param("update_frequency", map_update_frequency, 5.0);
     map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+
+    costmap_initialized_ = true;
 
   }
 
@@ -667,7 +669,7 @@ namespace costmap_2d {
       initFromMap(*new_map);
       map_initialized_ = true;
     }
-    else
+    else if(costmap_initialized_)
       updateStaticMap(*new_map);
   }
 
