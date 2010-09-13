@@ -125,6 +125,14 @@ namespace navfn {
       bool validPointPotential(const geometry_msgs::Point& world_point);
 
       /**
+       * @brief Check for a valid potential value at a given point in the world (Note: You should call computePotential first)
+       * @param world_point The point to get the potential for 
+       * @param tolerance The tolerance on searching around the world_point specified
+       * @return True if the navigation function is valid at that point in the world, false otherwise
+       */
+      bool validPointPotential(const geometry_msgs::Point& world_point, double tolerance);
+
+      /**
        * @brief  Publish a path for visualization purposes
        */
       void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, double r, double g, double b, double a);

@@ -95,12 +95,34 @@ namespace navfn {
   }
 
   bool NavfnROS::validPointPotential(const geometry_msgs::Point& world_point){
+    return validPointPotential(world_point, default_tolerance_);
+  }
+
+  bool NavfnROS::validPointPotential(const geometry_msgs::Point& world_point, double tolerance){
     if(!initialized_){
       ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
       return false;
     }
 
-    return getPointPotential(world_point) < POT_HIGH;
+    double resolution = costmap_ros_->getResolution();
+    geometry_msgs::Point p;
+    p = world_point;
+
+    p.y = world_point.y - tolerance;
+
+    while(p.y <= world_point.y + tolerance){
+      p.x = world_point.x - tolerance;
+      while(p.x <= world_point.x + tolerance){
+        double potential = getPointPotential(p);
+        if(potential < POT_HIGH){
+          return true;
+        }
+        p.x += resolution;
+      }
+      p.y += resolution;
+    }
+
+    return false;
   }
 
   double NavfnROS::getPointPotential(const geometry_msgs::Point& world_point){
