@@ -149,13 +149,21 @@ namespace base_local_planner{
 
       //if the footprint hits an obstacle this trajectory is invalid
       if(footprint_cost < 0){
+        traj.cost_ = -1.0;
+        return;
+        //TODO: Really look at getMaxSpeedToStopInTime... dues to discretization errors and high acceleration limits,
+        //it can actually cause the robot to hit obstacles. There may be something to be done to fix, but I'll have to 
+        //come back to it when I have time. Right now, pulling it out as it'll just make the robot a bit more conservative,
+        //but safe.
+        /*
         double max_vel_x, max_vel_y, max_vel_th;
         //we want to compute the max allowable speeds to be able to stop
         //to be safe... we'll make sure we can stop some time before we actually hit
-        getMaxSpeedToStopInTime(time - stop_time_buffer_, max_vel_x, max_vel_y, max_vel_th);
+        getMaxSpeedToStopInTime(time - stop_time_buffer_ - dt, max_vel_x, max_vel_y, max_vel_th);
 
         //check if we can stop in time
         if(fabs(vx_samp) < max_vel_x && fabs(vy_samp) < max_vel_y && fabs(vtheta_samp) < max_vel_th){
+          ROS_ERROR("v: (%.2f, %.2f, %.2f), m: (%.2f, %.2f, %.2f) t:%.2f, st: %.2f, dt: %.2f", vx_samp, vy_samp, vtheta_samp, max_vel_x, max_vel_y, max_vel_th, time, stop_time_buffer_, dt);
           //if we can stop... we'll just break out of the loop here.. no point in checking future points
           break;
         }
@@ -163,6 +171,7 @@ namespace base_local_planner{
           traj.cost_ = -1.0;
           return;
         }
+        */
       }
 
       occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
