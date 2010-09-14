@@ -291,8 +291,12 @@ namespace navfn {
     wy = goal.pose.position.y;
 
     if(!costmap_.worldToMap(wx, wy, mx, my)){
-      ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
-      return false;
+      if(tolerance <= 0.0){
+        ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
+        return false;
+      }
+      mx = 0;
+      my = 0;
     }
 
     int map_goal[2];
