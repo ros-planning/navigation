@@ -52,6 +52,8 @@ namespace move_base {
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
 
+    control_failure_recovery_ = false;
+
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
@@ -552,7 +554,8 @@ namespace move_base {
           state_ = CONTROLLING;
 
           //make sure to reset recovery_index_ since we were able to find a valid plan
-          recovery_index_ = 0;
+          if(!control_failure_recovery_)
+            recovery_index_ = 0;
 
         }
         else{
@@ -586,6 +589,8 @@ namespace move_base {
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
+          control_failure_recovery_ = false;
+          recovery_index_ = 0;
         }
         else {
           ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
@@ -593,9 +598,10 @@ namespace move_base {
           //check if we've tried to find a valid control for longer than our time limit
           if(ros::Time::now() > attempt_end){
             ROS_ERROR("Aborting because of failure to find a valid control for %.2f seconds", controller_patience_);
-            resetState();
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control");
-            return true;
+            //we'll move into our obstacle clearing mode
+            publishZeroVelocity();
+            state_ = CLEARING;
+            control_failure_recovery_ = true;
           }
 
           //otherwise, if we can't find a valid control, we'll go back to planning
@@ -620,9 +626,15 @@ namespace move_base {
           recovery_index_++;
         }
         else{
-          ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
+          if(control_failure_recovery_){
+            ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
+            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
+          }
+          else{
+            ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
+            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
+          }
           resetState();
-          as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
           return true;
         }
         break;
@@ -758,6 +770,7 @@ namespace move_base {
   void MoveBase::resetState(){
     state_ = PLANNING;
     recovery_index_ = 0;
+    control_failure_recovery_ = false;
     publishZeroVelocity();
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now

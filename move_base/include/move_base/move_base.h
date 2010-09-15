@@ -185,6 +185,7 @@ namespace move_base {
       ros::Subscriber goal_sub_;
       ros::ServiceServer make_plan_srv_, clear_unknown_srv_;
       bool shutdown_costmaps_, clearing_roatation_allowed_, recovery_behavior_enabled_;
+      bool control_failure_recovery_;
 
       MoveBaseState state_;
       ClearingState clearing_state_;
