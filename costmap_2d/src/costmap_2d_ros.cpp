@@ -464,6 +464,10 @@ namespace costmap_2d {
       }
       stopped_ = false;
     }
+    for (unsigned int i=0; i < observation_buffers_.size(); ++i){
+      if (observation_buffers_[i])
+        observation_buffers_[i]->resetLastUpdated();
+    } 
     stop_updates_ = false;
 
     //block until the costmap is re-initialized.. meaning one update cycle has run
