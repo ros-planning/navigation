@@ -198,4 +198,8 @@ namespace costmap_2d {
     return current;
   }
 
+  void ObservationBuffer::resetLastUpdated ()
+  {
+    last_updated_ = ros::Time::now();
+  }
 };

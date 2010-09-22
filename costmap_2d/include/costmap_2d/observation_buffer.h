@@ -115,6 +115,11 @@ namespace costmap_2d {
        * @brief  Lock the observation buffer
        */
       inline void unlock() { lock_.unlock(); }
+      
+      /**
+        * @brief Reset last updated timestamp
+        */
+      void resetLastUpdated ();
 
     private:
       /**

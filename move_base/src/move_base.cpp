@@ -89,6 +89,7 @@ namespace move_base {
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
+    planner_costmap_ros_->pause();
 
     //initialize the global planner
     try {
@@ -118,6 +119,7 @@ namespace move_base {
 
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
+    controller_costmap_ros_->pause();
 
     //create a local planner
     try {
@@ -142,6 +144,10 @@ namespace move_base {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", local_planner.c_str(), ex.what());
       exit(0);
     }
+
+    // Start actively updating costmaps based on sensor data
+    planner_costmap_ros_->start();
+    controller_costmap_ros_->start();
 
     //advertise a service for getting a plan
     make_plan_srv_ = private_nh.advertiseService("make_plan", &MoveBase::planService, this);
