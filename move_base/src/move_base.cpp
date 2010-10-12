@@ -437,6 +437,10 @@ namespace move_base {
       controller_costmap_ros_->start();
     }
 
+    //we want to make sure that we reset the last time we had a valid plan and control
+    last_valid_control_ = ros::Time::now();
+    last_valid_plan_ = ros::Time::now();
+
     ros::NodeHandle n;
     while(n.ok())
     {
