@@ -102,7 +102,6 @@ void RotateRecovery::runBehavior(){
   bool got_180 = false;
 
   double start_offset = 0 - angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
-  ROS_ERROR("Running behavior");
   while(n.ok()){
     local_costmap_->getRobotPose(global_pose);
 
