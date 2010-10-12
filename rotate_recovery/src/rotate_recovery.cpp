@@ -95,15 +95,16 @@ void RotateRecovery::runBehavior(){
   ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
   tf::Stamped<tf::Pose> global_pose;
-  global_costmap_->getRobotPose(global_pose);
+  local_costmap_->getRobotPose(global_pose);
 
   double current_angle = -1.0 * M_PI;
 
   bool got_180 = false;
 
   double start_offset = 0 - angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
+  ROS_ERROR("Running behavior");
   while(n.ok()){
-    global_costmap_->getRobotPose(global_pose);
+    local_costmap_->getRobotPose(global_pose);
 
     double norm_angle = angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
     current_angle = angles::normalize_angle(norm_angle + start_offset);
@@ -127,8 +128,11 @@ void RotateRecovery::runBehavior(){
       local_costmap_->getOrientedFootprint(position.x, position.y, theta, oriented_footprint);
 
       //make sure that the point is legal, if it isn't... we'll abort
-      if(world_model_->footprintCost(position, oriented_footprint, local_costmap_->getInscribedRadius(), local_costmap_->getCircumscribedRadius()) < 0)
+      double footprint_cost = world_model_->footprintCost(position, oriented_footprint, local_costmap_->getInscribedRadius(), local_costmap_->getCircumscribedRadius());
+      if(footprint_cost < 0.0){
+        ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f", footprint_cost);
         return;
+      }
 
       sim_angle += sim_granularity_;
     }
