@@ -87,6 +87,8 @@ namespace costmap_2d {
     private_nh.param("rolling_window", rolling_window_, false);
 
     double map_width_meters, map_height_meters;
+    std::string map_topic;
+    private_nh.param("map_topic", map_topic, std::string("map"));
     private_nh.param("width", map_width_meters, 10.0);
     private_nh.param("height", map_height_meters, 10.0);
     private_nh.param("resolution", map_resolution, 0.05);
@@ -100,7 +102,7 @@ namespace costmap_2d {
       ros::NodeHandle g_nh;
 
       ROS_INFO("Requesting the map...\n");
-      map_sub_ = g_nh.subscribe("map", 1, &Costmap2DROS::incomingMap, this);
+      map_sub_ = g_nh.subscribe(map_topic, 1, &Costmap2DROS::incomingMap, this);
 
       ros::Rate r(1.0);
       while(!map_initialized_ && ros::ok()){
