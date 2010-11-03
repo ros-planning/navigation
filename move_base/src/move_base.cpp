@@ -663,8 +663,7 @@ namespace move_base {
           recovery_behaviors_[recovery_index_]->runBehavior();
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
-          if(recovery_trigger_ == OSCILLATION_R)
-            last_oscillation_reset_ = ros::Time::now();
+          last_oscillation_reset_ = ros::Time::now();
 
           //we'll check if the recovery behavior actually worked
           state_ = PLANNING;
