@@ -66,14 +66,11 @@ namespace move_base {
     CLEARING
   };
 
-  enum ClearingState {
-    CONSERVATIVE_RESET,
-    IN_PLACE_ROTATION_1,
-    EXECUTE_ROTATE_1,
-    IN_PLACE_ROTATION_2,
-    EXECUTE_ROTATE_2,
-    AGGRESSIVE_RESET,
-    ABORT
+  enum RecoveryTrigger
+  {
+    PLANNING_R,
+    CONTROLLING_R,
+    OSCILLATION_R
   };
 
   /**
@@ -162,6 +159,8 @@ namespace move_base {
 
       bool isQuaternionValid(const geometry_msgs::Quaternion& q);
 
+      double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
+
       geometry_msgs::PoseStamped goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg);
 
       tf::TransformListener& tf_;
@@ -185,12 +184,13 @@ namespace move_base {
       ros::Subscriber goal_sub_;
       ros::ServiceServer make_plan_srv_, clear_unknown_srv_;
       bool shutdown_costmaps_, clearing_roatation_allowed_, recovery_behavior_enabled_;
-      bool control_failure_recovery_;
+      double oscillation_timeout_, oscillation_distance_;
 
       MoveBaseState state_;
-      ClearingState clearing_state_;
+      RecoveryTrigger recovery_trigger_;
 
-      ros::Time last_valid_plan_, last_valid_control_;
+      ros::Time last_valid_plan_, last_valid_control_, last_oscillation_reset_;
+      geometry_msgs::PoseStamped oscillation_pose_;
       pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_;
       pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
       pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
