@@ -130,6 +130,10 @@ namespace base_local_planner {
         ++i;
       }
 
+      //make sure not to count the first point that is too far away
+      if(i > 0)
+        --i;
+
       tf::Stamped<tf::Pose> tf_pose;
       geometry_msgs::PoseStamped newer_pose;
 
