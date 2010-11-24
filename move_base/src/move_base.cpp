@@ -590,17 +590,17 @@ namespace move_base {
 
           //check if we've tried to find a valid control for longer than our time limit
           if(ros::Time::now() > attempt_end){
-            ROS_ERROR("Aborting because of failure to find a valid control for %.2f seconds", controller_patience_);
             //we'll move into our obstacle clearing mode
             publishZeroVelocity();
             state_ = CLEARING;
             control_failure_recovery_ = true;
           }
-
-          //otherwise, if we can't find a valid control, we'll go back to planning
-          last_valid_plan_ = ros::Time::now();
-          state_ = PLANNING;
-          publishZeroVelocity();
+          else{
+            //otherwise, if we can't find a valid control, we'll go back to planning
+            last_valid_plan_ = ros::Time::now();
+            state_ = PLANNING;
+            publishZeroVelocity();
+          }
         }
 
         break;
