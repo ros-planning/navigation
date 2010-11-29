@@ -64,6 +64,7 @@ namespace navfn {
       plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
 
       private_nh.param("allow_unknown", allow_unknown_, true);
+      private_nh.param("clear_goal_position", clear_goal_position_, false);
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
       private_nh.param("default_tolerance", default_tolerance_, 0.0);
@@ -279,16 +280,33 @@ namespace navfn {
     tf::poseStampedMsgToTF(start, start_pose);
     clearRobotCell(start_pose, mx, my);
 
-    //make sure to resize the underlying array that Navfn uses
-    planner_->setNavArr(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY());
-    planner_->setCostmap(costmap_.getCharMap(), true, allow_unknown_);
-
     int map_start[2];
     map_start[0] = mx;
     map_start[1] = my;
 
     wx = goal.pose.position.x;
     wy = goal.pose.position.y;
+
+    if(clear_goal_position_)
+    {
+      //clear the goal cell to be able to plan even if the goal is within an obstacle
+      for(double x = wx - inscribed_radius_; x <= wx + inscribed_radius_; x += costmap_.getResolution())
+      {
+        for(double y = wy - inscribed_radius_; y <= wy + inscribed_radius_; y += costmap_.getResolution())
+        {
+          //if the point is off the map, there's nothing to do in the costmap
+          if(!costmap_.worldToMap(x, y, mx, my))
+          {
+            continue;
+          }
+          costmap_.setCost(mx, my, costmap_2d::FREE_SPACE);
+        }
+      }
+    }
+
+    //make sure to resize the underlying array that Navfn uses
+    planner_->setNavArr(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY());
+    planner_->setCostmap(costmap_.getCharMap(), true, allow_unknown_);
 
     if(!costmap_.worldToMap(wx, wy, mx, my)){
       if(tolerance <= 0.0){
