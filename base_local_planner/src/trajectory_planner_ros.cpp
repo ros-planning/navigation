@@ -108,6 +108,8 @@ namespace base_local_planner {
 
       private_nh.param("stop_time_buffer", stop_time_buffer, 0.2);
 
+      private_nh.param("latch_xy_goal_tolerance", latch_xy_goal_tolerance_, false);
+
       //Since I screwed up nicely in my documentation, I'm going to add errors
       //informing the user if they've set one of the wrong parameters
       if(private_nh.hasParam("acc_limit_x"))
@@ -300,6 +302,9 @@ namespace base_local_planner {
     global_plan_.clear();
     global_plan_ = orig_global_plan;
 
+    //when we get a new plan, we also want to clear any latch we may have on goal tolerances
+    xy_tolerance_latch_ = false;
+
     return true;
   }
 
@@ -370,7 +375,13 @@ namespace base_local_planner {
     double goal_th = yaw;
 
     //check to see if we've reached the goal position
-    if(goalPositionReached(global_pose, goal_x, goal_y, xy_goal_tolerance_)){
+    if(goalPositionReached(global_pose, goal_x, goal_y, xy_goal_tolerance_) || xy_tolerance_latch_){
+
+      //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
+      //just rotate in place
+      if(latch_xy_goal_tolerance_)
+        xy_tolerance_latch_ = true;
+
       //check to see if the goal orientation has been reached
       if(goalOrientationReached(global_pose, goal_th, yaw_goal_tolerance_)){
         //set the velocity command to zero
@@ -378,6 +389,7 @@ namespace base_local_planner {
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
         rotating_to_goal_ = false;
+        xy_tolerance_latch_ = false;
       }
       else {
         //we need to call the next two lines to make sure that the trajectory
