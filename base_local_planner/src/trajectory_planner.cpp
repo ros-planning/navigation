@@ -56,7 +56,7 @@ namespace base_local_planner{
       double max_vel_th, double min_vel_th, double min_in_place_vel_th,
       double backup_vel,
       bool dwa, bool heading_scoring, double heading_scoring_timestep, bool simple_attractor,
-      vector<double> y_vels, double stop_time_buffer)
+      vector<double> y_vels, double stop_time_buffer, double sim_period)
     : map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()), costmap_(costmap), 
     world_model_(world_model), footprint_spec_(footprint_spec),
     inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius),
@@ -71,7 +71,7 @@ namespace base_local_planner{
     max_vel_th_(max_vel_th), min_vel_th_(min_vel_th), min_in_place_vel_th_(min_in_place_vel_th),
     backup_vel_(backup_vel),
     dwa_(dwa), heading_scoring_(heading_scoring), heading_scoring_timestep_(heading_scoring_timestep),
-    simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer)
+    simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer), sim_period_(sim_period)
   {
     //the robot is not stuck to begin with
     stuck_left = false;
@@ -397,11 +397,11 @@ namespace base_local_planner{
 
     //should we use the dynamic window approach?
     if(dwa_){
-      max_vel_x = max(min(max_vel_x_, vx + acc_x * .1), min_vel_x_);
-      min_vel_x = max(min_vel_x_, vx - acc_x * .1);
+      max_vel_x = max(min(max_vel_x_, vx + acc_x * sim_period_), min_vel_x_);
+      min_vel_x = max(min_vel_x_, vx - acc_x * sim_period_);
 
-      max_vel_theta = min(max_vel_th_, vtheta + acc_theta * .1);
-      min_vel_theta = max(min_vel_th_, vtheta - acc_theta * .1);
+      max_vel_theta = min(max_vel_th_, vtheta + acc_theta * sim_period_);
+      min_vel_theta = max(min_vel_th_, vtheta - acc_theta * sim_period_);
     }
     else{
       max_vel_x = max(min(max_vel_x_, vx + acc_x * sim_time_), min_vel_x_);

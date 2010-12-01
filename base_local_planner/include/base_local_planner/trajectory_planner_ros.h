@@ -182,6 +182,7 @@ namespace base_local_planner {
       bool initialized_;
       double max_vel_th_, min_vel_th_;
       double acc_lim_x_, acc_lim_y_, acc_lim_theta_;
+      double sim_period_;
       bool rotating_to_goal_;
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
   };
