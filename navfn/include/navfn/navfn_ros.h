@@ -151,7 +151,7 @@ namespace navfn {
       boost::shared_ptr<NavFn> planner_;
       double inscribed_radius_, circumscribed_radius_, inflation_radius_;
       ros::Publisher plan_pub_;
-      bool initialized_, allow_unknown_, clear_goal_position_;
+      bool initialized_, allow_unknown_;
 
 
     private:
