@@ -22,6 +22,7 @@ This package provides implementations of the Trajectory Rollout and Dynamic Wind
   <depend package="visualization_msgs"/>
   <depend package="geometry_msgs"/>
   <depend package="nav_core"/>
+  <depend package="pcl"/>
   <repository>http://pr.willowgarage.com/repos</repository>
   <export>
     <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lbase_local_planner" />

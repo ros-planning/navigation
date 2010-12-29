@@ -189,7 +189,7 @@ namespace base_local_planner {
     //iterate through all observations and update the grid
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
-      const sensor_msgs::PointCloud& cloud = obs.cloud_;
+      const pcl::PointCloud<pcl::PointXYZ>& cloud = obs.cloud_;
       for(unsigned int i = 0; i < cloud.points.size(); ++i){
         //filter out points that are too high
         if(cloud.points[i].z > max_z_)
@@ -266,14 +266,14 @@ namespace base_local_planner {
     }
   }
 
-  void VoxelGridModel::getPoints(sensor_msgs::PointCloud& cloud){
+  void VoxelGridModel::getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud){
     for(unsigned int i = 0; i < obstacle_grid_.sizeX(); ++i){
       for(unsigned int j = 0; j < obstacle_grid_.sizeY(); ++j){
         for(unsigned int k = 0; k < obstacle_grid_.sizeZ(); ++k){
           if(obstacle_grid_.getVoxel(i, j, k)){
             double wx, wy, wz;
             mapToWorld3D(i, j, k, wx, wy, wz);
-            geometry_msgs::Point32 pt;
+            pcl::PointXYZ pt;
             pt.x = wx;
             pt.y = wy;
             pt.z = wz;

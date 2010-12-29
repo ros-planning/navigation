@@ -39,10 +39,12 @@
 #include <vector>
 #include <list>
 #include <cfloat>
-#include <sensor_msgs/PointCloud.h>
 #include <geometry_msgs/Point32.h>
 #include <costmap_2d/observation.h>
 #include <base_local_planner/world_model.h>
+
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
 
 //voxel grid stuff
 #include <voxel_grid/voxel_grid.h>
@@ -96,7 +98,7 @@ namespace base_local_planner {
       void updateWorld(const std::vector<geometry_msgs::Point>& footprint,
           const std::vector<costmap_2d::Observation>& observations, const std::vector<PlanarLaserScan>& laser_scans);
 
-      void getPoints(sensor_msgs::PointCloud& cloud);
+      void getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud);
 
     private:
       /**
@@ -153,7 +155,7 @@ namespace base_local_planner {
         return sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0) + (z1 - z0) * (z1 - z0));
       }
 
-      inline void insert(geometry_msgs::Point32 pt){
+      inline void insert(pcl::PointXYZ pt){
         unsigned int cell_x, cell_y, cell_z;
         if(!worldToMap3D(pt.x, pt.y, pt.z, cell_x, cell_y, cell_z))
           return;

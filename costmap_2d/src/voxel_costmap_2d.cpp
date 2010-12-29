@@ -121,7 +121,7 @@ namespace costmap_2d{
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
 
-      const sensor_msgs::PointCloud& cloud =obs.cloud_;
+      const pcl::PointCloud<pcl::PointXYZ>& cloud =obs.cloud_;
 
       double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
 
@@ -358,14 +358,14 @@ namespace costmap_2d{
     grid.resolutions.z = z_resolution_;
   }
 
-  void VoxelCostmap2D::getPoints(sensor_msgs::PointCloud& cloud){
+  void VoxelCostmap2D::getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud){
     for(unsigned int i = 0; i < voxel_grid_.sizeX(); ++i){
       for(unsigned int j = 0; j < voxel_grid_.sizeY(); ++j){
         for(unsigned int k = 0; k < voxel_grid_.sizeZ(); ++k){
           if(voxel_grid_.getVoxel(i, j, k) == voxel_grid::MARKED){
             double wx, wy, wz;
             mapToWorld3D(i, j, k, wx, wy, wz);
-            geometry_msgs::Point32 pt;
+            pcl::PointXYZ pt;
             pt.x = wx;
             pt.y = wy;
             pt.z = wz;

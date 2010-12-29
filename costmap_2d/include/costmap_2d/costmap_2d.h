@@ -42,7 +42,7 @@
 #include <costmap_2d/observation.h>
 #include <costmap_2d/cell_data.h>
 #include <costmap_2d/cost_values.h>
-#include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <boost/thread.hpp>
 
 namespace costmap_2d {

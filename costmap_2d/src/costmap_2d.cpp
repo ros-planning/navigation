@@ -615,7 +615,7 @@ namespace costmap_2d{
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
 
-      const sensor_msgs::PointCloud& cloud =obs.cloud_;
+      const pcl::PointCloud<pcl::PointXYZ>& cloud =obs.cloud_;
 
       double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
 
@@ -692,7 +692,7 @@ namespace costmap_2d{
 
     double ox = clearing_observation.origin_.x;
     double oy = clearing_observation.origin_.y;
-    sensor_msgs::PointCloud cloud = clearing_observation.cloud_;
+    pcl::PointCloud<pcl::PointXYZ> cloud = clearing_observation.cloud_;
 
     //get the map coordinates of the origin of the sensor 
     unsigned int x0, y0;

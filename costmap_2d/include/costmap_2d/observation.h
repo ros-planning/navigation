@@ -34,7 +34,8 @@
 
 
 #include <geometry_msgs/Point.h>
-#include <sensor_msgs/PointCloud.h>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
 
 namespace costmap_2d {
 
@@ -56,7 +57,7 @@ namespace costmap_2d {
      * @param obstacle_range The range out to which an observation should be able to insert obstacles
      * @param raytrace_range The range out to which an observation should be able to clear via raytracing
      */
-    Observation(geometry_msgs::Point& origin, sensor_msgs::PointCloud cloud, double obstacle_range, double raytrace_range): origin_(origin), 
+    Observation(geometry_msgs::Point& origin, pcl::PointCloud<pcl::PointXYZ> cloud, double obstacle_range, double raytrace_range): origin_(origin), 
     cloud_(cloud), obstacle_range_(obstacle_range), raytrace_range_(raytrace_range) {}
 
     /**
@@ -70,10 +71,10 @@ namespace costmap_2d {
      * @param cloud The point cloud of the observation
      * @param obstacle_range The range out to which an observation should be able to insert obstacles
      */
-    Observation(sensor_msgs::PointCloud cloud, double obstacle_range): cloud_(cloud), obstacle_range_(obstacle_range), raytrace_range_(0.0){}
+    Observation(pcl::PointCloud<pcl::PointXYZ> cloud, double obstacle_range): cloud_(cloud), obstacle_range_(obstacle_range), raytrace_range_(0.0){}
 
     geometry_msgs::Point origin_;
-    sensor_msgs::PointCloud cloud_;
+    pcl::PointCloud<pcl::PointXYZ> cloud_;
     double obstacle_range_, raytrace_range_;
   };
 

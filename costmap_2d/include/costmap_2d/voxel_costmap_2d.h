@@ -120,7 +120,7 @@ namespace costmap_2d {
        * @brief Returns a point cloud for visualizing the voxel grid
        * @param cloud The point cloud to fill
        */
-      void getPoints(sensor_msgs::PointCloud& cloud);
+      void getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud);
 
       void getVoxelGridMessage(VoxelGrid& grid);
 

@@ -35,6 +35,7 @@
  * Author: Eitan Marder-Eppstein
  *********************************************************************/
 #include <costmap_2d/costmap_2d_ros.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 
 #include <limits>
 
@@ -50,6 +51,7 @@ namespace costmap_2d {
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
                              save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false) {
     ros::NodeHandle private_nh("~/" + name);
+    ros::NodeHandle g_nh;
 
     //get our tf prefix
     ros::NodeHandle prefix_nh;
@@ -99,8 +101,6 @@ namespace costmap_2d {
 
     if(static_map){
       //we'll subscribe to the latched topic that the map server uses
-      ros::NodeHandle g_nh;
-
       ROS_INFO("Requesting the map...\n");
       map_sub_ = g_nh.subscribe(map_topic, 1, &Costmap2DROS::incomingMap, this);
 
@@ -220,20 +220,46 @@ namespace costmap_2d {
 
       //create a callback for the topic
       if(data_type == "LaserScan"){
-        observation_notifiers_.push_back(boost::shared_ptr<MessageNotifierBase>(new MessageNotifier<sensor_msgs::LaserScan>(tf_, 
-              boost::bind(&Costmap2DROS::laserScanCallback, this, _1, observation_buffers_.back()), topic, global_frame_, 50)));
+        boost::shared_ptr<message_filters::Subscriber<sensor_msgs::LaserScan> > sub(
+              new message_filters::Subscriber<sensor_msgs::LaserScan>(g_nh, topic, 50));
+
+        boost::shared_ptr<tf::MessageFilter<sensor_msgs::LaserScan> > filter(
+            new tf::MessageFilter<sensor_msgs::LaserScan>(*sub, tf_, global_frame_, 50));
+        filter->registerCallback(boost::bind(&Costmap2DROS::laserScanCallback, this, _1, observation_buffers_.back()));
+
+        observation_subscribers_.push_back(sub);
+        observation_notifiers_.push_back(filter);
+
         observation_notifiers_.back()->setTolerance(ros::Duration(0.05));
       }
+      else if(data_type == "PointCloud"){
+        boost::shared_ptr<message_filters::Subscriber<sensor_msgs::PointCloud> > sub(
+              new message_filters::Subscriber<sensor_msgs::PointCloud>(g_nh, topic, 50));
+
+        boost::shared_ptr<tf::MessageFilter<sensor_msgs::PointCloud> > filter(
+            new tf::MessageFilter<sensor_msgs::PointCloud>(*sub, tf_, global_frame_, 50));
+        filter->registerCallback(boost::bind(&Costmap2DROS::pointCloudCallback, this, _1, observation_buffers_.back()));
+
+        observation_subscribers_.push_back(sub);
+        observation_notifiers_.push_back(filter);
+      }
       else{
-        observation_notifiers_.push_back(boost::shared_ptr<MessageNotifierBase>(new MessageNotifier<sensor_msgs::PointCloud>(tf_,
-              boost::bind(&Costmap2DROS::pointCloudCallback, this, _1, observation_buffers_.back()), topic, global_frame_, 50)));
+        boost::shared_ptr<message_filters::Subscriber<sensor_msgs::PointCloud2> > sub(
+              new message_filters::Subscriber<sensor_msgs::PointCloud2>(g_nh, topic, 50));
+
+        boost::shared_ptr<tf::MessageFilter<sensor_msgs::PointCloud2> > filter(
+            new tf::MessageFilter<sensor_msgs::PointCloud2>(*sub, tf_, global_frame_, 50));
+        filter->registerCallback(boost::bind(&Costmap2DROS::pointCloud2Callback, this, _1, observation_buffers_.back()));
+
+        observation_subscribers_.push_back(sub);
+        observation_notifiers_.push_back(filter);
       }
 
       if(sensor_frame != ""){
         std::vector<std::string> target_frames;
         target_frames.push_back(global_frame_);
         target_frames.push_back(sensor_frame);
-        observation_notifiers_.back()->setTargetFrame(target_frames);
+        observation_notifiers_.back()->setTargetFrames(target_frames);
       }
 
     }
@@ -462,9 +488,9 @@ namespace costmap_2d {
     //check if we're stopped or just paused
     if(stopped_){
       //if we're stopped we need to re-subscribe to topics
-      for(unsigned int i = 0; i < observation_notifiers_.size(); ++i){
-        if(observation_notifiers_[i] != NULL)
-          observation_notifiers_[i]->subscribeToMessage();
+      for(unsigned int i = 0; i < observation_subscribers_.size(); ++i){
+        if(observation_subscribers_[i] != NULL)
+          observation_subscribers_[i]->subscribe();
       }
       stopped_ = false;
     }
@@ -483,9 +509,9 @@ namespace costmap_2d {
   void Costmap2DROS::stop(){
     stop_updates_ = true;
     //unsubscribe from topics
-    for(unsigned int i = 0; i < observation_notifiers_.size(); ++i){
-      if(observation_notifiers_[i] != NULL)
-        observation_notifiers_[i]->unsubscribeFromMessage();
+    for(unsigned int i = 0; i < observation_subscribers_.size(); ++i){
+      if(observation_subscribers_[i] != NULL)
+        observation_subscribers_[i]->unsubscribe();
     }
     initialized_ = false;
     stopped_ = true;
@@ -496,29 +522,43 @@ namespace costmap_2d {
       observation_buffers_.push_back(buffer);
   }
 
-  void Costmap2DROS::laserScanCallback(const MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
+  void Costmap2DROS::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
     //project the laser into a point cloud
-    sensor_msgs::PointCloud base_cloud;
-    base_cloud.header = message->header;
+    sensor_msgs::PointCloud2 cloud;
+    cloud.header = message->header;
 
     //project the scan into a point cloud
     try
     {
-      projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, base_cloud, tf_);
+      projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, tf_, cloud);
     }
     catch (tf::TransformException &ex)
     {
       ROS_WARN ("High fidelity enabled, but TF returned a transform exception to frame %s: %s", global_frame_.c_str (), ex.what ());
-      projector_.projectLaser(*message, base_cloud);
+      projector_.projectLaser(*message, cloud);
     }
 
     //buffer the point cloud
     buffer->lock();
-    buffer->bufferCloud(base_cloud);
+    buffer->bufferCloud(cloud);
     buffer->unlock();
   }
 
-  void Costmap2DROS::pointCloudCallback(const MessageNotifier<sensor_msgs::PointCloud>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
+  void Costmap2DROS::pointCloudCallback(const sensor_msgs::PointCloudConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
+    sensor_msgs::PointCloud2 cloud2;
+
+    if(!sensor_msgs::convertPointCloudToPointCloud2(*message, cloud2)){
+      ROS_ERROR("Failed to convert a PointCloud to a PointCloud2, dropping message");
+      return;
+    }
+
+    //buffer the point cloud
+    buffer->lock();
+    buffer->bufferCloud(cloud2);
+    buffer->unlock();
+  }
+
+  void Costmap2DROS::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
     //buffer the point cloud
     buffer->lock();
     buffer->bufferCloud(*message);

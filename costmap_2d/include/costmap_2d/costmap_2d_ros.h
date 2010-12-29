@@ -52,14 +52,19 @@
 #include <sstream>
 
 #include <tf/transform_datatypes.h>
-#include <costmap_2d/deprecated/message_notifier_base.h>
-#include <costmap_2d/deprecated/message_notifier.h>
+
+#include <tf/message_filter.h>
+#include <message_filters/subscriber.h>
+
 #include <tf/transform_listener.h>
 
 #include <sensor_msgs/LaserScan.h>
-#include <laser_geometry/laser_geometry.h>
+#include <laser_scan_geometry/laser_scan_geometry.h>
 
 #include <sensor_msgs/PointCloud.h>
+
+//Support for PointCloud2 messages
+#include <sensor_msgs/PointCloud2.h>
 
 // Thread suppport
 #include <boost/thread.hpp>
@@ -320,14 +325,21 @@ namespace costmap_2d {
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
        */
-      void laserScanCallback(const MessageNotifier<sensor_msgs::LaserScan>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+      void laserScanCallback(const sensor_msgs::LaserScanConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
 
       /**
        * @brief  A callback to handle buffering PointCloud messages
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
        */
-      void pointCloudCallback(const MessageNotifier<sensor_msgs::PointCloud>::MessagePtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+      void pointCloudCallback(const sensor_msgs::PointCloudConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+
+      /**
+       * @brief  A callback to handle buffering PointCloud2 messages
+       * @param message The message returned from a message notifier 
+       * @param buffer A pointer to the observation buffer to update
+       */
+      void pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
 
       /**
        * @brief  The loop that handles updating the costmap
@@ -351,13 +363,14 @@ namespace costmap_2d {
 
       std::string name_;
       tf::TransformListener& tf_; ///< @brief Used for transforming point clouds
-      laser_geometry::LaserProjection projector_; ///< @brief Used to project laser scans into point clouds
+      laser_scan_geometry::LaserProjection projector_; ///< @brief Used to project laser scans into point clouds
       Costmap2D* costmap_; ///< @brief The underlying costmap to update
       std::string global_frame_; ///< @brief The global frame for the costmap
       std::string robot_base_frame_; ///< @brief The frame_id of the robot base
       boost::thread* map_update_thread_; ///< @brief A thread for updating the map
 
-      std::vector<boost::shared_ptr<MessageNotifierBase> > observation_notifiers_; ///< @brief Used to make sure that transforms are available for each sensor
+      std::vector<boost::shared_ptr<tf::MessageFilterBase> > observation_notifiers_; ///< @brief Used to make sure that transforms are available for each sensor
+      std::vector<boost::shared_ptr<message_filters::SubscriberBase> > observation_subscribers_; ///< @brief Used for the observation message filters
       std::vector<boost::shared_ptr<ObservationBuffer> > observation_buffers_; ///< @brief Used to store observations from various sensors
       std::vector<boost::shared_ptr<ObservationBuffer> > marking_buffers_; ///< @brief Used to store observation buffers used for marking obstacles
       std::vector<boost::shared_ptr<ObservationBuffer> > clearing_buffers_; ///< @brief Used to store observation buffers used for clearing obstacles

@@ -75,7 +75,7 @@ namespace costmap_2d {
         obs.origin_ = origin.point;
 
         //we also need to transform the cloud of the observation to the new global frame
-        tf_.transformPointCloud(new_global_frame, obs.cloud_, obs.cloud_);
+        pcl::transformPointCloud(new_global_frame, obs.cloud_, obs.cloud_, tf_);
 
       }
       catch(TransformException& ex){
@@ -90,7 +90,20 @@ namespace costmap_2d {
     return true;
   }
 
-  void ObservationBuffer::bufferCloud(const sensor_msgs::PointCloud& cloud){
+  void ObservationBuffer::bufferCloud(const sensor_msgs::PointCloud2& cloud){
+    try {
+      //actually convert the PointCloud2 message into a type we can reason about
+      pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+      pcl::fromROSMsg(cloud, pcl_cloud);
+      bufferCloud(pcl_cloud);
+    }
+    catch(pcl::PCLException& ex){
+      ROS_ERROR("Failed to convert a message to a pcl type, dropping observation: %s", ex.what());
+      return;
+    }
+  }
+
+  void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud){
     Stamped<btVector3> global_origin;
 
     //create a new observation on the list to be populated
@@ -111,14 +124,14 @@ namespace costmap_2d {
       observation_list_.front().raytrace_range_ = raytrace_range_;
       observation_list_.front().obstacle_range_ = obstacle_range_;
 
-      sensor_msgs::PointCloud global_frame_cloud;
+      pcl::PointCloud<pcl::PointXYZ> global_frame_cloud;
 
       //transform the point cloud
-      tf_.transformPointCloud(global_frame_, cloud, global_frame_cloud);
+      pcl::transformPointCloud(global_frame_, cloud, global_frame_cloud, tf_);
       global_frame_cloud.header.stamp = cloud.header.stamp;
 
       //now we need to remove observations from the cloud that are below or above our height thresholds
-      sensor_msgs::PointCloud& observation_cloud = observation_list_.front().cloud_;
+      pcl::PointCloud<pcl::PointXYZ>& observation_cloud = observation_list_.front().cloud_;
       unsigned int cloud_size = global_frame_cloud.points.size();
       observation_cloud.points.resize(cloud_size);
       unsigned int point_count = 0;
