@@ -13,7 +13,7 @@ rosbuild_add_boost_directories()
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
 rosbuild_add_library(base_local_planner src/goal_functions.cpp src/map_cell.cpp src/map_grid.cpp src/point_grid.cpp src/costmap_model.cpp src/voxel_grid_model.cpp src/trajectory_planner.cpp 
-    src/trajectory.cpp src/trajectory_planner_ros.cpp)
+    src/trajectory.cpp src/trajectory_planner_ros.cpp src/map_grid_visualizer.cpp)
 rosbuild_link_boost(base_local_planner thread)
 
 rosbuild_add_executable(point_grid src/point_grid.cpp)

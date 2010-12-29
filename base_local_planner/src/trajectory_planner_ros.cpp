@@ -161,8 +161,7 @@ namespace base_local_planner {
       private_nh.param("point_grid/grid_resolution", grid_resolution, 0.2);
 
       ROS_ASSERT_MSG(world_model_type == "costmap", "At this time, only costmap world models are supported by this controller");
-      world_model_ = new CostmapModel(costmap_); 
-
+      world_model_ = new CostmapModel(costmap_);
       std::vector<double> y_vels = loadYVels(private_nh);
 
       tc_ = new TrajectoryPlanner(*world_model_, costmap_, costmap_ros_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_,
@@ -171,6 +170,7 @@ namespace base_local_planner {
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
           dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels, stop_time_buffer, sim_period_);
 
+      map_viz_.initialize(name, &costmap_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
     }
     else
@@ -397,6 +397,7 @@ namespace base_local_planner {
         //planner updates its path distance and goal distance grids
         tc_->updatePlan(transformed_plan);
         Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
+        map_viz_.publishCostCloud();
 
         //copy over the odometry information
         nav_msgs::Odometry base_odom;
@@ -432,6 +433,7 @@ namespace base_local_planner {
     //compute what trajectory to drive along
     Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
 
+    map_viz_.publishCostCloud();
     /* For timing uncomment
     gettimeofday(&end, NULL);
     start_t = start.tv_sec + double(start.tv_usec) / 1e6;
