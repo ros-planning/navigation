@@ -187,7 +187,6 @@ namespace base_local_planner {
       double sim_period_;
       bool rotating_to_goal_;
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
-      bool visualize_costs_;
   };
 
 };

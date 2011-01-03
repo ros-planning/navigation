@@ -170,11 +170,7 @@ namespace base_local_planner {
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
           dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels, stop_time_buffer, sim_period_);
 
-      //check if the user wants to visualize costs in rviz
-      private_nh.param("visualize_costs", visualize_costs_, false);
-      if(visualize_costs_)
-        map_viz_.initialize(name, &costmap_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
-
+      map_viz_.initialize(name, &costmap_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
     }
     else
@@ -401,9 +397,7 @@ namespace base_local_planner {
         //planner updates its path distance and goal distance grids
         tc_->updatePlan(transformed_plan);
         Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
-
-        if(visualize_costs_)
-          map_viz_.publishCostCloud();
+        map_viz_.publishCostCloud();
 
         //copy over the odometry information
         nav_msgs::Odometry base_odom;
@@ -439,8 +433,7 @@ namespace base_local_planner {
     //compute what trajectory to drive along
     Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
 
-    if(visualize_costs_)
-      map_viz_.publishCostCloud();
+    map_viz_.publishCostCloud();
     /* For timing uncomment
     gettimeofday(&end, NULL);
     start_t = start.tv_sec + double(start.tv_usec) / 1e6;
