@@ -10,8 +10,9 @@
   <url>http://ros.org/wiki/navigation</url>
   <depend stack="common" /> <!-- bfl, actionlib, yaml_cpp, pluginlib -->
   <depend stack="common_msgs" /> <!-- nav_msgs, sensor_msgs, actionlib_msgs, geometry_msgs, visualization_msgs -->
-  <depend stack="geometry" /> <!-- tf, angles, bullet -->
-  <depend stack="point_cloud_perception" /> <!-- pcl_tf, laser_scan_geometry, pcl -->
+  <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
+  <depend stack="geometry" /> <!-- tf, angles, bullet, eigen3 -->
+  <depend stack="point_cloud_perception" /> <!-- pcl_tf, laser_scan_geometry, pcl, pcl_ros -->
   <depend stack="ros" /> <!-- rosconsole, std_srvs, roscpp, message_filters, roslib, std_msgs, rostest, rospy, rosmsg, rosbag, rostopic -->
   <depend stack="visualization_common" /> <!-- ogre, ogre_tools -->
 
