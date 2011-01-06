@@ -121,8 +121,27 @@ namespace base_local_planner {
       if(private_nh.hasParam("acc_limit_th"))
         ROS_ERROR("You are using acc_limit_th where you should be using acc_lim_th. Please change your configuration files appropriately. The documentation used to be wrong on this, sorry for any confusion.");
 
+      //Assuming this planner is being run within the navigation stack, we can
+      //just do an upward search for the frequency at which its being run. This
+      //also allows the frequency to be overwritten locally.
+      std::string controller_frequency_param_name;
+      if(!private_nh.searchParam("controller_frequency", controller_frequency_param_name))
+        sim_period_ = 0.05;
+      else
+      {
+        double controller_frequency = 0;
+        private_nh.param(controller_frequency_param_name, controller_frequency, 20.0);
+        if(controller_frequency > 0)
+          sim_period_ = 1.0 / controller_frequency;
+        else
+        {
+          ROS_WARN("A controller_frequency less than 0 has been set. Ignoring the parameter, assuming a rate of 20Hz");
+          sim_period_ = 0.05;
+        }
+      }
+      ROS_INFO("Sim period is set to %.2f", sim_period_);
+
       private_nh.param("sim_time", sim_time, 1.0);
-      private_nh.param("sim_period", sim_period_, 0.1);
       private_nh.param("sim_granularity", sim_granularity, 0.025);
       private_nh.param("vx_samples", vx_samples, 3);
       private_nh.param("vtheta_samples", vtheta_samples, 20);
