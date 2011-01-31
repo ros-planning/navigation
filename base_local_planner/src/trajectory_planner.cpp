@@ -56,11 +56,11 @@ namespace base_local_planner{
       double max_vel_th, double min_vel_th, double min_in_place_vel_th,
       double backup_vel,
       bool dwa, bool heading_scoring, double heading_scoring_timestep, bool simple_attractor,
-      vector<double> y_vels, double stop_time_buffer, double sim_period)
+      vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
     : map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()), costmap_(costmap), 
     world_model_(world_model), footprint_spec_(footprint_spec),
     inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius),
-    sim_time_(sim_time), sim_granularity_(sim_granularity), 
+    sim_time_(sim_time), sim_granularity_(sim_granularity), angular_sim_granularity_(angular_sim_granularity),
     vx_samples_(vx_samples), vtheta_samples_(vtheta_samples),
     pdist_scale_(pdist_scale), gdist_scale_(gdist_scale), occdist_scale_(occdist_scale),
     acc_lim_x_(acc_lim_x), acc_lim_y_(acc_lim_y), acc_lim_theta_(acc_lim_theta),
@@ -125,7 +125,7 @@ namespace base_local_planner{
     //compute the number of steps we must take along this trajectory to be "safe"
     int num_steps;
     if(!heading_scoring_)
-      num_steps = int(max((vmag * sim_time_) / sim_granularity_, abs(vtheta_samp) / sim_granularity_) + 0.5);
+      num_steps = int(max((vmag * sim_time_) / sim_granularity_, fabs(vtheta_samp) / angular_sim_granularity_) + 0.5);
     else
       num_steps = int(sim_time_ / sim_granularity_ + 0.5);
 
@@ -272,7 +272,7 @@ namespace base_local_planner{
           //get the signed angle
           double vector_angle = atan2(perp_dot, dot);
 
-          heading_diff = abs(vector_angle);
+          heading_diff = fabs(vector_angle);
           return heading_diff;
 
         }

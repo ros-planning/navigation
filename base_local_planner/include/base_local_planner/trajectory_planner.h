@@ -104,6 +104,7 @@ namespace base_local_planner {
        * @param heading_scoring_timestep How far to look ahead in time when we score heading based trajectories
        * @param simple_attractor Set this to true to allow simple attraction to a goal point instead of intelligent cost propagation
        * @param y_vels A vector of the y velocities the controller will explore
+       * @param angular_sim_granularity The distance between simulation points for angular velocity should be small enough that the robot doesn't hit things
        */
       TrajectoryPlanner(WorldModel& world_model, 
           const costmap_2d::Costmap2D& costmap, 
@@ -123,7 +124,7 @@ namespace base_local_planner {
           bool simple_attractor = false,
           std::vector<double> y_vels = std::vector<double>(0),
           double stop_time_buffer = 0.2,
-          double sim_period = 0.1);
+          double sim_period = 0.1, double angular_sim_granularity = 0.025);
 
       /**
        * @brief  Destructs a trajectory controller
@@ -277,6 +278,7 @@ namespace base_local_planner {
 
       double sim_time_; ///< @brief The number of seconds each trajectory is "rolled-out"
       double sim_granularity_; ///< @brief The distance between simulation points
+      double angular_sim_granularity_; ///< @brief The distance between angular simulation points
 
       int vx_samples_; ///< @brief The number of samples we'll take in the x dimenstion of the control space
       int vtheta_samples_; ///< @brief The number of samples we'll take in the theta dimension of the control space
