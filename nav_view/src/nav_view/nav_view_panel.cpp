@@ -97,7 +97,8 @@ NavViewPanel::NavViewPanel( wxWindow* parent )
 
   render_panel_->getViewport()->setCamera( camera_ );
 
-  nh_.param("/global_frame_id", global_frame_id_, std::string("/map"));
+  ros::NodeHandle p_nh("~");
+  p_nh.param("global_frame_id", global_frame_id_, std::string("/map"));
 
   particle_cloud_sub_ = nh_.subscribe("particlecloud", 1, &NavViewPanel::incomingPoseArray, this);
 
