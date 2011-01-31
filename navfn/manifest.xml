@@ -21,7 +21,7 @@ navfn provides a fast interpolated navigation function that can be used to creat
  <rosdep name="fltk"/>
  <rosdep name="netpbm"/>
  <export>
-  <cpp cflags="-I${prefix}/include -I${prefix}/srv/cpp -I${prefix}/msg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lnavfn"/>
+  <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lnavfn"/>
   <nav_core plugin="${prefix}/bgp_plugin.xml" />
  </export>
   <platform os="ubuntu" version="9.04"/>

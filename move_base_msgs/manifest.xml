@@ -13,10 +13,6 @@
   <depend package="actionlib_msgs"/>
   <depend package="geometry_msgs"/>
 
-  <export>
-    <cpp cflags="-I${prefix}/msg/cpp"/>
-  </export>
-
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>

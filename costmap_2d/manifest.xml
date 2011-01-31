@@ -27,7 +27,7 @@
 <depend package="pcl" />
 <depend package="pcl_tf" />
 <export>
-  <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread` -lcostmap_2d"/>
+  <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread` -lcostmap_2d"/>
 </export>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>

@@ -17,7 +17,7 @@
   <depend package="angles" />
 
   <export>
-    <cpp cflags="-I${prefix}/include -I${prefix}/msg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lcarrot_planner"/>
+    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lcarrot_planner"/>
     <nav_core plugin="${prefix}/bgp_plugin.xml" />
   </export>
 
