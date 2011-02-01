@@ -163,9 +163,16 @@ namespace base_local_planner {
       min_vel_th_ = -1.0 * max_rotational_vel;
       private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
 
-      private_nh.param("backup_vel", backup_vel, -0.1);
+      backup_vel = -0.1;
+      if(private_nh.getParam("backup_vel", backup_vel))
+        ROS_WARN("The backup_vel parameter has been deprecated in favor of the escape_vel parameter. To switch, just change the parameter name in your configuration files.");
+
+      //if both backup_vel and escape_vel are set... we'll use escape_vel
+      private_nh.getParam("escape_vel", backup_vel);
+
       if(backup_vel >= 0.0)
-        ROS_WARN("You've specified a positive backup velocity. This is probably not what you want and will cause the robot to move forward instead of backward. You should probably change your backup_vel parameter to be negative");
+        ROS_WARN("You've specified a positive escape velocity. This is probably not what you want and will cause the robot to move forward instead of backward. You should probably change your escape_vel parameter to be negative");
+
       private_nh.param("world_model", world_model_type, string("costmap")); 
       private_nh.param("dwa", dwa, true);
       private_nh.param("heading_scoring", heading_scoring, false);
