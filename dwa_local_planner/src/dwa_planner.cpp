@@ -162,7 +162,9 @@ namespace dwa_local_planner {
     }
     path_cost = cell.path_dist;
     goal_cost = cell.goal_dist;
-    total_cost = pdist_scale_ * path_cost + gdist_scale_ * goal_cost + occdist_scale_ * occ_cost;
+
+    double resolution = costmap_.getResolution();
+    total_cost = pdist_scale_ * resolution * path_cost + gdist_scale_ * resolution * goal_cost + occdist_scale_ * occ_cost;
     return true;
   }
 
