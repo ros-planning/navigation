@@ -59,7 +59,7 @@
 #include <tf/transform_listener.h>
 
 #include <sensor_msgs/LaserScan.h>
-#include <laser_scan_geometry/laser_scan_geometry.h>
+#include <laser_geometry/laser_geometry.h>
 
 #include <sensor_msgs/PointCloud.h>
 
@@ -363,7 +363,7 @@ namespace costmap_2d {
 
       std::string name_;
       tf::TransformListener& tf_; ///< @brief Used for transforming point clouds
-      laser_scan_geometry::LaserProjection projector_; ///< @brief Used to project laser scans into point clouds
+      laser_geometry::LaserProjection projector_; ///< @brief Used to project laser scans into point clouds
       Costmap2D* costmap_; ///< @brief The underlying costmap to update
       std::string global_frame_; ///< @brief The global frame for the costmap
       std::string robot_base_frame_; ///< @brief The frame_id of the robot base

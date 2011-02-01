@@ -17,7 +17,7 @@
 <depend package="std_msgs" />
 <depend package="geometry_msgs" />
 <depend package="sensor_msgs" />
-<depend package="laser_scan_geometry" />
+<depend package="laser_geometry" />
 <depend package="tf" />
 <depend package="voxel_grid" />
 <depend package="nav_msgs" />

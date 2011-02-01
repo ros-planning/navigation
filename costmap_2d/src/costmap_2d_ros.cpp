@@ -530,7 +530,7 @@ namespace costmap_2d {
     //project the scan into a point cloud
     try
     {
-      projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, tf_, cloud);
+      projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, tf_);
     }
     catch (tf::TransformException &ex)
     {
