@@ -159,6 +159,9 @@ namespace move_base {
     //advertise a service for clearing the costmaps
     clear_unknown_srv_ = private_nh.advertiseService("clear_unknown_space", &MoveBase::clearUnknownService, this);
 
+    //advertise a service for clearing the costmaps
+    clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
+
     //initially clear any unknown space around the robot
     planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
     controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
@@ -253,6 +256,13 @@ namespace move_base {
     //clear any unknown space around the robot the same as we do on initialization
     planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
     controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
+    return true;
+  }
+
+  bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
+    //clear the costmaps
+    planner_costmap_ros_->resetMapOutsideWindow(0,0);
+    controller_costmap_ros_->resetMapOutsideWindow(0,0);
     return true;
   }
 
