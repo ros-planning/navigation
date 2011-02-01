@@ -172,6 +172,22 @@ namespace base_local_planner {
           double vtheta, double vx_samp, double vy_samp, double vtheta_samp);
 
       /**
+       * @brief  Generate and score a single trajectory
+       * @param x The x position of the robot  
+       * @param y The y position of the robot  
+       * @param theta The orientation of the robot
+       * @param vx The x velocity of the robot
+       * @param vy The y velocity of the robot
+       * @param vtheta The theta velocity of the robot
+       * @param vx_samp The x velocity used to seed the trajectory
+       * @param vy_samp The y velocity used to seed the trajectory
+       * @param vtheta_samp The theta velocity used to seed the trajectory
+       * @return The score (as double)
+       */
+      double scoreTrajectory(double x, double y, double theta, double vx, double vy, 
+          double vtheta, double vx_samp, double vy_samp, double vtheta_samp);
+
+      /**
        * @brief Compute the components and total cost for a map grid cell
        * @param cx The x coordinate of the cell in the map grid
        * @param cy The y coordinate of the cell in the map grid

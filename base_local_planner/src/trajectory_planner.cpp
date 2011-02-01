@@ -390,16 +390,26 @@ namespace base_local_planner{
   bool TrajectoryPlanner::checkTrajectory(double x, double y, double theta, double vx, double vy, 
       double vtheta, double vx_samp, double vy_samp, double vtheta_samp){
     Trajectory t; 
-    double impossible_cost = map_.map_.size();
-    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-        acc_lim_x_, acc_lim_y_, acc_lim_theta_, impossible_cost, t);
+
+    double cost = scoreTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp);
 
     //if the trajectory is a legal one... the check passes
-    if(t.cost_ >= 0)
+    if(cost >= 0)
       return true;
 
     //otherwise the check fails
     return false;
+  }
+
+  double TrajectoryPlanner::scoreTrajectory(double x, double y, double theta, double vx, double vy, 
+      double vtheta, double vx_samp, double vy_samp, double vtheta_samp){
+    Trajectory t; 
+    double impossible_cost = map_.map_.size();
+    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+        acc_lim_x_, acc_lim_y_, acc_lim_theta_, impossible_cost, t);
+
+    // return the cost.
+    return double( t.cost_ );
   }
 
   //create the trajectories we wish to score

@@ -550,6 +550,44 @@ namespace base_local_planner {
     return false;
   }
 
+
+  double TrajectoryPlannerROS::scoreTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map){
+    // Copy of checkTrajectory that returns a score instead of True / False
+    tf::Stamped<tf::Pose> global_pose;
+    if(costmap_ros_->getRobotPose(global_pose)){
+      if(update_map){
+        //we also want to clear the robot footprint from the costmap we're using
+        costmap_ros_->clearRobotFootprint();
+
+        //make sure to update the costmap we'll use for this cycle
+        costmap_ros_->getCostmapCopy(costmap_);
+
+        //we need to give the planne some sort of global plan, since we're only checking for legality
+        //we'll just give the robots current position
+        std::vector<geometry_msgs::PoseStamped> plan;
+        geometry_msgs::PoseStamped pose_msg;
+        tf::poseStampedTFToMsg(global_pose, pose_msg);
+        plan.push_back(pose_msg);
+        tc_->updatePlan(plan, true);
+      }
+
+      //copy over the odometry information
+      nav_msgs::Odometry base_odom;
+      {
+        boost::recursive_mutex::scoped_lock(odom_lock_);
+        base_odom = base_odom_;
+      }
+
+      return tc_->scoreTrajectory(global_pose.getOrigin().x(), global_pose.getOrigin().y(), tf::getYaw(global_pose.getRotation()),
+          base_odom.twist.twist.linear.x,
+          base_odom.twist.twist.linear.y,
+          base_odom.twist.twist.angular.z, vx_samp, vy_samp, vtheta_samp);
+
+    }
+    ROS_WARN("Failed to get the pose of the robot. No trajectories will pass as legal in this case.");
+    return -1.0;
+  }
+
   bool TrajectoryPlannerROS::isGoalReached(){
     if(!initialized_){
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
