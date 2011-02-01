@@ -47,6 +47,8 @@
 #include <vector>
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
+#include <navfn/potarr_point.h>
+#include <pcl_ros/publisher.h>
 
 namespace navfn {
   /**
@@ -151,7 +153,8 @@ namespace navfn {
       boost::shared_ptr<NavFn> planner_;
       double inscribed_radius_, circumscribed_radius_, inflation_radius_;
       ros::Publisher plan_pub_;
-      bool initialized_, allow_unknown_;
+      pcl_ros::Publisher<PotarrPoint> potarr_pub_;
+      bool initialized_, allow_unknown_, visualize_potential_;
 
 
     private:

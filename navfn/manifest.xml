@@ -17,6 +17,7 @@ navfn provides a fast interpolated navigation function that can be used to creat
  <depend package="nav_msgs"/>
  <depend package="tf"/>
  <depend package="visualization_msgs"/>
+ <depend package="pcl_ros" />
 
  <rosdep name="fltk"/>
  <rosdep name="netpbm"/>
