@@ -146,8 +146,21 @@ namespace base_local_planner {
       private_nh.param("angular_sim_granularity", angular_sim_granularity, sim_granularity);
       private_nh.param("vx_samples", vx_samples, 3);
       private_nh.param("vtheta_samples", vtheta_samples, 20);
+
       private_nh.param("path_distance_bias", pdist_scale, 0.6);
       private_nh.param("goal_distance_bias", gdist_scale, 0.8);
+
+      bool meter_scoring;
+      private_nh.param("meter_scoring", meter_scoring, false);
+
+      if(meter_scoring)
+      {
+        //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
+        double resolution = costmap_ros_->getResolution();
+        gdist_scale *= resolution;
+        pdist_scale *= resolution;
+      }
+
       private_nh.param("occdist_scale", occdist_scale, 0.01);
       private_nh.param("heading_lookahead", heading_lookahead, 0.325);
       private_nh.param("oscillation_reset_dist", oscillation_reset_dist, 0.05);
