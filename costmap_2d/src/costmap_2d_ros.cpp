@@ -171,7 +171,7 @@ namespace costmap_2d {
       source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
       source_node.param("max_obstacle_height", max_obstacle_height, 2.0);
 
-      if(!(data_type == "PointCloud" || data_type == "LaserScan")){
+      if(!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan")){
         ROS_FATAL("Only topics that use point clouds or laser scans are currently supported");
         throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
       }
