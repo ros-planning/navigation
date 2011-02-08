@@ -75,7 +75,7 @@ namespace costmap_2d {
         obs.origin_ = origin.point;
 
         //we also need to transform the cloud of the observation to the new global frame
-        pcl::transformPointCloud(new_global_frame, obs.cloud_, obs.cloud_, tf_);
+        pcl_ros::transformPointCloud(new_global_frame, obs.cloud_, obs.cloud_, tf_);
 
       }
       catch(TransformException& ex){
@@ -127,7 +127,7 @@ namespace costmap_2d {
       pcl::PointCloud<pcl::PointXYZ> global_frame_cloud;
 
       //transform the point cloud
-      pcl::transformPointCloud(global_frame_, cloud, global_frame_cloud, tf_);
+      pcl_ros::transformPointCloud(global_frame_, cloud, global_frame_cloud, tf_);
       global_frame_cloud.header.stamp = cloud.header.stamp;
 
       //now we need to remove observations from the cloud that are below or above our height thresholds

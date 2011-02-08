@@ -25,7 +25,7 @@
 <depend package="rosbag" />
 <depend package="map_server" />
 <depend package="pcl" />
-<depend package="pcl_tf" />
+<depend package="pcl_ros" />
 <export>
   <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread` -lcostmap_2d"/>
 </export>

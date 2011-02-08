@@ -14,7 +14,7 @@
   <depend stack="geometry" /> <!-- tf, angles, bullet -->
   <depend stack="geometry_experimental" /> <!-- eigen3 -->
   <depend stack="laser_pipeline" /> <!-- laser_geometry -->
-  <depend stack="point_cloud_perception" /> <!-- pcl_tf, pcl, pcl_ros -->
+  <depend stack="perception_pcl" /> <!-- pcl, pcl_ros -->
   <depend stack="ros" /> <!-- rosconsole, std_srvs, roscpp, message_filters, roslib, std_msgs, rostest, rospy, rosmsg, rosbag, rostopic -->
   <depend stack="visualization_common" /> <!-- ogre, ogre_tools -->
 
