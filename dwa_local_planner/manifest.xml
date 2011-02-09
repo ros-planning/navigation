@@ -21,7 +21,7 @@
   <depend package="roslib"/>
   <depend package="nav_core"/>
   <depend package="nav_msgs"/>
-  <depend package="eigen3" />
+  <depend package="eigen" />
   <depend package="base_local_planner" />
   <depend package="angles" />
   <depend package="dynamic_reconfigure" />

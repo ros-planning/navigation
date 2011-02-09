@@ -145,7 +145,7 @@ namespace dwa_local_planner {
 
     world_model_ = new base_local_planner::CostmapModel(costmap_);
 
-    prev_stationary_pos_ = Eigen3::Vector3f::Zero();
+    prev_stationary_pos_ = Eigen::Vector3f::Zero();
     resetOscillationFlags();
 
     map_viz_.initialize(name, &costmap_, boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
@@ -168,9 +168,9 @@ namespace dwa_local_planner {
     return true;
   }
 
-  Eigen3::Vector3f DWAPlanner::computeNewPositions(const Eigen3::Vector3f& pos, 
-      const Eigen3::Vector3f& vel, double dt){
-    Eigen3::Vector3f new_pos = Eigen3::Vector3f::Zero();
+  Eigen::Vector3f DWAPlanner::computeNewPositions(const Eigen::Vector3f& pos, 
+      const Eigen::Vector3f& vel, double dt){
+    Eigen::Vector3f new_pos = Eigen::Vector3f::Zero();
     new_pos[0] = pos[0] + (vel[0] * cos(pos[2]) + vel[1] * cos(M_PI_2 + pos[2])) * dt;
     new_pos[1] = pos[1] + (vel[0] * sin(pos[2]) + vel[1] * sin(M_PI_2 + pos[2])) * dt;
     new_pos[2] = pos[2] + vel[2] * dt;
@@ -200,7 +200,7 @@ namespace dwa_local_planner {
     }
   }
 
-  bool DWAPlanner::oscillationCheck(const Eigen3::Vector3f& vel){
+  bool DWAPlanner::oscillationCheck(const Eigen::Vector3f& vel){
     if(forward_pos_only_ && vel[0] < 0.0)
       return true;
 
@@ -222,7 +222,7 @@ namespace dwa_local_planner {
     return false;
   }
 
-  base_local_planner::Trajectory DWAPlanner::computeTrajectories(const Eigen3::Vector3f& pos, const Eigen3::Vector3f& vel){
+  base_local_planner::Trajectory DWAPlanner::computeTrajectories(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel){
     tf::Stamped<tf::Pose> robot_pose_tf;
     geometry_msgs::PoseStamped robot_pose;
 
@@ -237,17 +237,17 @@ namespace dwa_local_planner {
       two_point_scoring = false;
 
     //compute the feasible velocity space based on the rate at which we run
-    Eigen3::Vector3f max_vel = Eigen3::Vector3f::Zero();
+    Eigen::Vector3f max_vel = Eigen::Vector3f::Zero();
     max_vel[0] = std::min(max_vel_x_, vel[0] + acc_lim_[0] * sim_period_);
     max_vel[1] = std::min(max_vel_y_, vel[1] + acc_lim_[1] * sim_period_);
     max_vel[2] = std::min(max_vel_th_, vel[2] + acc_lim_[2] * sim_period_);
 
-    Eigen3::Vector3f min_vel = Eigen3::Vector3f::Zero();
+    Eigen::Vector3f min_vel = Eigen::Vector3f::Zero();
     min_vel[0] = std::max(min_vel_x_, vel[0] - acc_lim_[0] * sim_period_);
     min_vel[1] = std::max(min_vel_y_, vel[1] - acc_lim_[1] * sim_period_);
     min_vel[2] = std::max(min_vel_th_, vel[2] - acc_lim_[2] * sim_period_);
 
-    Eigen3::Vector3f dv = Eigen3::Vector3f::Zero();
+    Eigen::Vector3f dv = Eigen::Vector3f::Zero();
     //we want to sample the velocity space regularly
     for(unsigned int i = 0; i < 3; ++i){
       dv[i] = (max_vel[i] - min_vel[i]) / (std::max(1.0, double(vsamples_[i]) - 1));
@@ -260,7 +260,7 @@ namespace dwa_local_planner {
     base_local_planner::Trajectory* comp_traj = &traj_two_;
     comp_traj->cost_ = -1.0;
 
-    Eigen3::Vector3f vel_samp = Eigen3::Vector3f::Zero();
+    Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
 
     //ROS_ERROR("x(%.2f, %.2f), y(%.2f, %.2f), th(%.2f, %.2f)", min_vel[0], max_vel[0], min_vel[1], max_vel[1], min_vel[2], max_vel[2]);
     //ROS_ERROR("x(%.2f, %.2f), y(%.2f, %.2f), th(%.2f, %.2f)", min_vel_x_, max_vel_x_, min_vel_y_, max_vel_y_, min_vel_th_, max_vel_th_);
@@ -299,7 +299,7 @@ namespace dwa_local_planner {
 
   }
 
-  void DWAPlanner::resetOscillationFlagsIfPossible(const Eigen3::Vector3f& pos, const Eigen3::Vector3f& prev){
+  void DWAPlanner::resetOscillationFlagsIfPossible(const Eigen::Vector3f& pos, const Eigen::Vector3f& prev){
     double x_diff = pos[0] - prev[0];
     double y_diff = pos[1] - prev[1];
     double sq_dist = x_diff * x_diff + y_diff * y_diff;
@@ -392,7 +392,7 @@ namespace dwa_local_planner {
     return flag_set;
   }
 
-  double DWAPlanner::footprintCost(const Eigen3::Vector3f& pos, double scale){
+  double DWAPlanner::footprintCost(const Eigen::Vector3f& pos, double scale){
     double cos_th = cos(pos[2]);
     double sin_th = sin(pos[2]);
 
@@ -414,7 +414,7 @@ namespace dwa_local_planner {
     return footprint_cost;
   }
 
-  void DWAPlanner::generateTrajectory(Eigen3::Vector3f pos, const Eigen3::Vector3f& vel, base_local_planner::Trajectory& traj, bool two_point_scoring){
+  void DWAPlanner::generateTrajectory(Eigen::Vector3f pos, const Eigen::Vector3f& vel, base_local_planner::Trajectory& traj, bool two_point_scoring){
     //ROS_ERROR("%.2f, %.2f, %.2f - %.2f %.2f", vel[0], vel[1], vel[2], sim_time_, sim_granularity_);
     double impossible_cost = map_.map_.size();
 
@@ -459,7 +459,7 @@ namespace dwa_local_planner {
     }
 
     //we want to check against the absolute value of the velocities for collisions later
-    Eigen3::Vector3f abs_vel = vel.array().abs();
+    Eigen::Vector3f abs_vel = vel.array().abs();
 
     //simulate the trajectory and check for collisions, updating costs along the way
     for(int i = 0; i < num_steps; ++i){
@@ -505,7 +505,7 @@ namespace dwa_local_planner {
         /* TODO: I'm not convinced this code is working properly
         //we want to compute the max allowable speeds to be able to stop
         //to be safe... we'll make sure we can stop some time before we actually hit
-        Eigen3::Vector3f max_vel = getMaxSpeedToStopInTime(time - stop_time_buffer_);
+        Eigen::Vector3f max_vel = getMaxSpeedToStopInTime(time - stop_time_buffer_);
 
         //check if we can stop in time
         if(abs_vel[0] < max_vel[0] && abs_vel[1] < max_vel[1] && abs_vel[2] < max_vel[2]){
@@ -551,7 +551,7 @@ namespace dwa_local_planner {
     //ROS_ERROR("%.2f, %.2f, %.2f, %.2f", vel[0], vel[1], vel[2], traj.cost_);
   }
 
-  bool DWAPlanner::checkTrajectory(const Eigen3::Vector3f& pos, const Eigen3::Vector3f& vel){
+  bool DWAPlanner::checkTrajectory(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel){
     resetOscillationFlags();
     base_local_planner::Trajectory t;
     generateTrajectory(pos, vel, t, false);
@@ -581,8 +581,8 @@ namespace dwa_local_planner {
     //make sure to get an updated copy of the costmap before computing trajectories
     costmap_ros_->getCostmapCopy(costmap_);
 
-    Eigen3::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
-    Eigen3::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
+    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
+    Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
 
     //reset the map for new operations
     map_.resetPathDist();

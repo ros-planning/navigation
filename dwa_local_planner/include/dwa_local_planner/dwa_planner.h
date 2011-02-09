@@ -38,7 +38,7 @@
 #define DWA_LOCAL_PLANNER_DWA_PLANNER_H_
 #include <queue>
 #include <vector>
-#include <Eigen3/Core>
+#include <Eigen/Core>
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_listener.h>
@@ -81,7 +81,7 @@ namespace dwa_local_planner {
        * @param  dt The timestep
        * @return The new position after applying the velocity for a timestep
        */
-      Eigen3::Vector3f computeNewPositions(const Eigen3::Vector3f& pos, const Eigen3::Vector3f& vel, double dt);
+      Eigen::Vector3f computeNewPositions(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel, double dt);
 
 
       /**
@@ -93,7 +93,7 @@ namespace dwa_local_planner {
        * center point of the robot and a point directly in front of the center
        * point, or to score the trajectory only basaed on the center point of the robot
        */
-      void generateTrajectory(Eigen3::Vector3f pos, const Eigen3::Vector3f& vel, base_local_planner::Trajectory& traj, bool two_point_scoring);
+      void generateTrajectory(Eigen::Vector3f pos, const Eigen::Vector3f& vel, base_local_planner::Trajectory& traj, bool two_point_scoring);
 
       /**
        * @brief  Given the current position and velocity of the robot, computes
@@ -103,7 +103,7 @@ namespace dwa_local_planner {
        * @param  vel The current velocity of the robot
        * @return The highest scoring trajectory, a cost >= 0 corresponds to a valid trajectory
        */
-      base_local_planner::Trajectory computeTrajectories(const Eigen3::Vector3f& pos, const Eigen3::Vector3f& vel);
+      base_local_planner::Trajectory computeTrajectories(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel);
 
       /**
        * @brief  Check if a trajectory is legal for a position/velocity pari
@@ -111,7 +111,7 @@ namespace dwa_local_planner {
        * @param vel The desired velocity
        * @return True if the trajectory is valid, false otherwise
        */
-      bool checkTrajectory(const Eigen3::Vector3f& pos, const Eigen3::Vector3f& vel);
+      bool checkTrajectory(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel);
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
@@ -133,7 +133,7 @@ namespace dwa_local_planner {
        * @brief  Get the acceleration limits of the robot
        * @return  The acceleration limits of the robot
        */
-      Eigen3::Vector3f getAccLimits() { return acc_lim_; }
+      Eigen::Vector3f getAccLimits() { return acc_lim_; }
 
       /**
        * @brief Get the period at which the local planner is expected to run
@@ -165,7 +165,7 @@ namespace dwa_local_planner {
        * @param scale The scaling factor for the footprint
        * @return  A cost for the footprint... >= 0 is legal
        */
-      double footprintCost(const Eigen3::Vector3f& pos, double scale);
+      double footprintCost(const Eigen::Vector3f& pos, double scale);
 
       /**
        * @brief  Given two trajectories to compare... select the best one
@@ -187,7 +187,7 @@ namespace dwa_local_planner {
        * @param  prev The position at which the oscillation flags were last set
        * @return 
        */
-      void resetOscillationFlagsIfPossible(const Eigen3::Vector3f& pos, const Eigen3::Vector3f& prev);
+      void resetOscillationFlagsIfPossible(const Eigen::Vector3f& pos, const Eigen::Vector3f& prev);
 
       /**
        * @brief  Given a trajectory that's selected, set flags if needed to
@@ -210,21 +210,21 @@ namespace dwa_local_planner {
        * maximum velocity for the robot to be able to stop in the alloted time
        * period
        */
-      inline Eigen3::Vector3f getMaxSpeedToStopInTime(double time){
+      inline Eigen::Vector3f getMaxSpeedToStopInTime(double time){
         return acc_lim_ * std::max(time, 0.0);
       }
 
       /**
        * @brief  For a given velocity, check it it is illegal because of the oscillation flags set
        */
-      bool oscillationCheck(const Eigen3::Vector3f& vel);
+      bool oscillationCheck(const Eigen::Vector3f& vel);
 
       base_local_planner::MapGrid map_, front_map_;
       costmap_2d::Costmap2DROS* costmap_ros_;
       costmap_2d::Costmap2D costmap_;
       double stop_time_buffer_;
       double pdist_scale_, gdist_scale_, occdist_scale_, heading_scale_;
-      Eigen3::Vector3f acc_lim_, vsamples_, prev_stationary_pos_;
+      Eigen::Vector3f acc_lim_, vsamples_, prev_stationary_pos_;
       std::vector<geometry_msgs::Point> footprint_spec_;
       base_local_planner::CostmapModel* world_model_;
       double sim_time_, sim_granularity_;

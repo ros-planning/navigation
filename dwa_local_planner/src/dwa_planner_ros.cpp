@@ -96,7 +96,7 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlannerROS::stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel){
-    Eigen3::Vector3f acc_lim = dp_->getAccLimits();
+    Eigen::Vector3f acc_lim = dp_->getAccLimits();
     //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible
     //but we'll use a tenth of a second to be consistent with the implementation of the local planner.
     double vx = sign(robot_vel.getOrigin().x()) * std::max(0.0, (fabs(robot_vel.getOrigin().x()) - acc_lim[0] * dp_->getSimPeriod()));
@@ -107,8 +107,8 @@ namespace dwa_local_planner {
 
     //we do want to check whether or not the command is valid
     double yaw = tf::getYaw(global_pose.getRotation());
-    bool valid_cmd = dp_->checkTrajectory(Eigen3::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
-                                          Eigen3::Vector3f(vx, vy, vth));
+    bool valid_cmd = dp_->checkTrajectory(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
+                                          Eigen::Vector3f(vx, vy, vth));
 
     //if we have a valid command, we'll pass it on, otherwise we'll command all zeros
     if(valid_cmd){
@@ -126,7 +126,7 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlannerROS::rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel){
-    Eigen3::Vector3f acc_lim = dp_->getAccLimits();
+    Eigen::Vector3f acc_lim = dp_->getAccLimits();
     double yaw = tf::getYaw(global_pose.getRotation());
     double vel_yaw = tf::getYaw(robot_vel.getRotation());
     cmd_vel.linear.x = 0;
@@ -152,8 +152,8 @@ namespace dwa_local_planner {
       v_theta_samp = sign(v_theta_samp) * min_rot_vel_;
 
     //we still want to lay down the footprint of the robot and check if the action is legal
-    bool valid_cmd = dp_->checkTrajectory(Eigen3::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
-                                          Eigen3::Vector3f( 0.0, 0.0, v_theta_samp));
+    bool valid_cmd = dp_->checkTrajectory(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
+                                          Eigen::Vector3f( 0.0, 0.0, v_theta_samp));
 
     ROS_DEBUG("Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
 
