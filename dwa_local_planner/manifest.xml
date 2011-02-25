@@ -1,5 +1,5 @@
 <package>
-  <description brief="A local planner for a mobile base that using the Dynamic Window Approach to local control.">
+  <description brief="A local planner for a mobile base that uses the Dynamic Window Approach to local control.">
 
     This package provides an implementation of the Dynamic Window Approach to
     local robot navigation on a plane. Given a global plan to follow and a
