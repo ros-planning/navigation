@@ -130,6 +130,8 @@ private:
   bool odom_initializing_, imu_initializing_, vo_initializing_;
   double timeout_;
   MatrixWrapper::SymmetricMatrix odom_covariance_, imu_covariance_, vo_covariance_;
+  bool debug_, self_diagnose_;
+  std::string output_frame_;
 
   // mutex
   boost::mutex odom_mutex_, imu_mutex_, vo_mutex_, vel_mutex_;

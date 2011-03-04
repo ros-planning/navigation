@@ -44,7 +44,6 @@ using namespace tf;
 
 
 static const double EPS = 1e-5;
-static const string publish_name = "odom_combined";
 
 
 //#define __EKF_DEBUG_FILE__
@@ -73,17 +72,20 @@ namespace estimation
     ros::NodeHandle nh;
 
     // paramters
+    nh_private.param("output_frame", output_frame_, std::string("odom_combined"));
     nh_private.param("sensor_timeout", timeout_, 1.0);
     nh_private.param("odom_used", odom_used_, true);
     nh_private.param("imu_used",  imu_used_, true);
     nh_private.param("vo_used",   vo_used_, true);
+    nh_private.param("debug",   debug_, false);
+    nh_private.param("self_diagnose",  self_diagnose_, false);
     double freq;
     nh_private.param("freq", freq, 30.0);
 
     timer_ = nh_private.createTimer(ros::Duration(1.0/max(freq,1.0)), &OdomEstimationNode::spin, this);
 
     // advertise our estimation
-    pose_pub_ = nh_private.advertise<geometry_msgs::PoseWithCovarianceStamped>(publish_name, 10);
+    pose_pub_ = nh_private.advertise<geometry_msgs::PoseWithCovarianceStamped>(output_frame_, 10);
 
     // initialize
     filter_stamp_ = Time::now();
@@ -115,15 +117,15 @@ namespace estimation
     // publish state service
     state_srv_ = nh_private.advertiseService("get_status", &OdomEstimationNode::getStatus, this);
 
-#ifdef __EKF_DEBUG_FILE__
-    // open files for debugging
-    odom_file_.open("/tmp/odom_file.txt");
-    imu_file_.open("/tmp/imu_file.txt");
-    vo_file_.open("/tmp/vo_file.txt");
-    corr_file_.open("/tmp/corr_file.txt");
-    time_file_.open("/tmp/time_file.txt");
-    extra_file_.open("/tmp/extra_file.txt");
-#endif
+    if (debug_){
+      // open files for debugging
+      odom_file_.open("/tmp/odom_file.txt");
+      imu_file_.open("/tmp/imu_file.txt");
+      vo_file_.open("/tmp/vo_file.txt");
+      corr_file_.open("/tmp/corr_file.txt");
+      time_file_.open("/tmp/time_file.txt");
+      extra_file_.open("/tmp/extra_file.txt");
+    }
   };
 
 
@@ -132,15 +134,15 @@ namespace estimation
   // destructor
   OdomEstimationNode::~OdomEstimationNode(){
 
-#ifdef __EKF_DEBUG_FILE__
-    // close files for debugging
-    odom_file_.close();
-    imu_file_.close();
-    vo_file_.close();
-    corr_file_.close();
-    time_file_.close();
-    extra_file_.close();
-#endif
+    if (debug_){
+      // close files for debugging
+      odom_file_.close();
+      imu_file_.close();
+      vo_file_.close();
+      corr_file_.close();
+      time_file_.close();
+      extra_file_.close();
+    }
   };
 
 
@@ -184,12 +186,12 @@ namespace estimation
 		    (odom_init_stamp_ - filter_stamp_).toSec());
     }
     
-#ifdef __EKF_DEBUG_FILE__
-    // write to file
-    double tmp, yaw;
-    odom_meas_.getBasis().getEulerZYX(yaw, tmp, tmp);
-    odom_file_ << odom_meas_.getOrigin().x() << " " << odom_meas_.getOrigin().y() << "  " << yaw << "  " << endl;
-#endif
+    if (debug_){
+      // write to file
+      double tmp, yaw;
+      odom_meas_.getBasis().getEulerZYX(yaw, tmp, tmp);
+      odom_file_ << odom_meas_.getOrigin().x() << " " << odom_meas_.getOrigin().y() << "  " << yaw << "  " << endl;
+    }
   };
 
 
@@ -256,12 +258,12 @@ namespace estimation
 		    (imu_init_stamp_ - filter_stamp_).toSec());
     }
     
-#ifdef __EKF_DEBUG_FILE__
-    // write to file
-    double tmp, yaw;
-    imu_meas_.getBasis().getEulerZYX(yaw, tmp, tmp); 
-    imu_file_ << yaw << endl;
-#endif
+    if (debug_){
+      // write to file
+      double tmp, yaw;
+      imu_meas_.getBasis().getEulerZYX(yaw, tmp, tmp); 
+      imu_file_ << yaw << endl;
+    }
   };
 
 
@@ -300,13 +302,13 @@ namespace estimation
 		    (vo_init_stamp_ - filter_stamp_).toSec());
     }
     
-#ifdef __EKF_DEBUG_FILE__
-    // write to file
-    double Rx, Ry, Rz;
-    vo_meas_.getBasis().getEulerZYX(Rz, Ry, Rx);
-    vo_file_ << vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
-	     << Rx << " " << Ry << " " << Rz << endl;
-#endif
+    if (debug_){
+      // write to file
+      double Rx, Ry, Rz;
+      vo_meas_.getBasis().getEulerZYX(Rz, Ry, Rx);
+      vo_file_ << vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
+               << Rx << " " << Ry << " " << Rz << endl;
+    }
   };
 
 
@@ -385,18 +387,18 @@ namespace estimation
           my_filter_.getEstimate(ros::Time(), tmp);
           if(!vo_active_)
             tmp.getOrigin().setZ(0.0);
-          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, publish_name, "base_footprint"));
+          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, "base_footprint"));
           
-#ifdef __EKF_DEBUG_FILE__
-          // write to file
-          ColumnVector estimate; 
-          my_filter_.getEstimate(estimate);
-          for (unsigned int i=1; i<=6; i++)
-            corr_file_ << estimate(i) << " ";
-          corr_file_ << endl;
-#endif
+          if (debug_){
+            // write to file
+            ColumnVector estimate; 
+            my_filter_.getEstimate(estimate);
+            for (unsigned int i=1; i<=6; i++)
+              corr_file_ << estimate(i) << " ";
+            corr_file_ << endl;
+          }
         }
-        if (!diagnostics)
+        if (self_diagnose_ && !diagnostics)
           ROS_WARN("Robot pose ekf diagnostics discovered a potential problem");
       }
       // initialize filer with odometry frame
