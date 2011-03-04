@@ -285,7 +285,11 @@ namespace move_base {
     }
 
     geometry_msgs::PoseStamped start;
-    tf::poseStampedTFToMsg(global_pose, start);
+    //if the user does not specify a start pose, identified by an empty frame id, then use the robot's pose
+    if(req.start.header.frame_id == "")
+      tf::poseStampedTFToMsg(global_pose, start);
+    else
+      start = req.start;
 
     //update the copy of the costmap the planner uses
     clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
