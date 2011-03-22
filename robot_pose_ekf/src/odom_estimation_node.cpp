@@ -44,7 +44,6 @@ using namespace tf;
 
 
 static const double EPS = 1e-5;
-static const string publish_name = "odom_combined";
 
 
 //#define __EKF_DEBUG_FILE__
@@ -53,9 +52,7 @@ namespace estimation
 {
   // constructor
   OdomEstimationNode::OdomEstimationNode()
-    : vel_desi_(2),
-      vel_active_(false),
-      odom_active_(false),
+    : odom_active_(false),
       imu_active_(false),
       vo_active_(false),
       odom_initializing_(false),
@@ -73,23 +70,23 @@ namespace estimation
     ros::NodeHandle nh;
 
     // paramters
+    nh_private.param("output_frame", output_frame_, std::string("odom_combined"));
     nh_private.param("sensor_timeout", timeout_, 1.0);
     nh_private.param("odom_used", odom_used_, true);
     nh_private.param("imu_used",  imu_used_, true);
     nh_private.param("vo_used",   vo_used_, true);
+    nh_private.param("debug",   debug_, false);
+    nh_private.param("self_diagnose",  self_diagnose_, false);
     double freq;
     nh_private.param("freq", freq, 30.0);
 
     timer_ = nh_private.createTimer(ros::Duration(1.0/max(freq,1.0)), &OdomEstimationNode::spin, this);
 
     // advertise our estimation
-    pose_pub_ = nh_private.advertise<geometry_msgs::PoseWithCovarianceStamped>(publish_name, 10);
+    pose_pub_ = nh_private.advertise<geometry_msgs::PoseWithCovarianceStamped>(output_frame_, 10);
 
     // initialize
     filter_stamp_ = Time::now();
-
-    // subscribe to messages
-    cmd_vel_sub_ = nh.subscribe("cmd_vel", 10, &OdomEstimationNode::velCallback, this);
 
     // subscribe to odom messages
     if (odom_used_){
@@ -115,15 +112,15 @@ namespace estimation
     // publish state service
     state_srv_ = nh_private.advertiseService("get_status", &OdomEstimationNode::getStatus, this);
 
-#ifdef __EKF_DEBUG_FILE__
-    // open files for debugging
-    odom_file_.open("/tmp/odom_file.txt");
-    imu_file_.open("/tmp/imu_file.txt");
-    vo_file_.open("/tmp/vo_file.txt");
-    corr_file_.open("/tmp/corr_file.txt");
-    time_file_.open("/tmp/time_file.txt");
-    extra_file_.open("/tmp/extra_file.txt");
-#endif
+    if (debug_){
+      // open files for debugging
+      odom_file_.open("/tmp/odom_file.txt");
+      imu_file_.open("/tmp/imu_file.txt");
+      vo_file_.open("/tmp/vo_file.txt");
+      corr_file_.open("/tmp/corr_file.txt");
+      time_file_.open("/tmp/time_file.txt");
+      extra_file_.open("/tmp/extra_file.txt");
+    }
   };
 
 
@@ -132,15 +129,15 @@ namespace estimation
   // destructor
   OdomEstimationNode::~OdomEstimationNode(){
 
-#ifdef __EKF_DEBUG_FILE__
-    // close files for debugging
-    odom_file_.close();
-    imu_file_.close();
-    vo_file_.close();
-    corr_file_.close();
-    time_file_.close();
-    extra_file_.close();
-#endif
+    if (debug_){
+      // close files for debugging
+      odom_file_.close();
+      imu_file_.close();
+      vo_file_.close();
+      corr_file_.close();
+      time_file_.close();
+      extra_file_.close();
+    }
   };
 
 
@@ -156,7 +153,6 @@ namespace estimation
     assert(odom_used_);
 
     // receive data 
-    boost::mutex::scoped_lock lock(odom_mutex_);
     odom_stamp_ = odom->header.stamp;
     odom_time_  = Time::now();
     Quaternion q;
@@ -184,12 +180,12 @@ namespace estimation
 		    (odom_init_stamp_ - filter_stamp_).toSec());
     }
     
-#ifdef __EKF_DEBUG_FILE__
-    // write to file
-    double tmp, yaw;
-    odom_meas_.getBasis().getEulerZYX(yaw, tmp, tmp);
-    odom_file_ << odom_meas_.getOrigin().x() << " " << odom_meas_.getOrigin().y() << "  " << yaw << "  " << endl;
-#endif
+    if (debug_){
+      // write to file
+      double tmp, yaw;
+      odom_meas_.getBasis().getEulerZYX(yaw, tmp, tmp);
+      odom_file_ << odom_meas_.getOrigin().x() << " " << odom_meas_.getOrigin().y() << "  " << yaw << "  " << endl;
+    }
   };
 
 
@@ -203,7 +199,6 @@ namespace estimation
     assert(imu_used_);
 
     // receive data 
-    boost::mutex::scoped_lock lock(imu_mutex_);
     imu_stamp_ = imu->header.stamp;
     btQuaternion orientation;
     quaternionMsgToTF(imu->orientation, orientation);
@@ -256,12 +251,12 @@ namespace estimation
 		    (imu_init_stamp_ - filter_stamp_).toSec());
     }
     
-#ifdef __EKF_DEBUG_FILE__
-    // write to file
-    double tmp, yaw;
-    imu_meas_.getBasis().getEulerZYX(yaw, tmp, tmp); 
-    imu_file_ << yaw << endl;
-#endif
+    if (debug_){
+      // write to file
+      double tmp, yaw;
+      imu_meas_.getBasis().getEulerZYX(yaw, tmp, tmp); 
+      imu_file_ << yaw << endl;
+    }
   };
 
 
@@ -275,7 +270,6 @@ namespace estimation
     assert(vo_used_);
 
     // get data
-    boost::mutex::scoped_lock lock(vo_mutex_);
     vo_stamp_ = vo->header.stamp;
     vo_time_  = Time::now();
     poseMsgToTF(vo->pose.pose, vo_meas_);
@@ -300,27 +294,13 @@ namespace estimation
 		    (vo_init_stamp_ - filter_stamp_).toSec());
     }
     
-#ifdef __EKF_DEBUG_FILE__
-    // write to file
-    double Rx, Ry, Rz;
-    vo_meas_.getBasis().getEulerZYX(Rz, Ry, Rx);
-    vo_file_ << vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
-	     << Rx << " " << Ry << " " << Rz << endl;
-#endif
-  };
-
-
-
-
-  // callback function for vel data
-  void OdomEstimationNode::velCallback(const VelConstPtr& vel)
-  {
-    // receive data
-    boost::mutex::scoped_lock lock(vel_mutex_);
-    vel_desi_(1) = vel->linear.x;   vel_desi_(2) = vel->angular.z;
-
-    // active
-    //if (!vel_active_) vel_active_ = true;
+    if (debug_){
+      // write to file
+      double Rx, Ry, Rz;
+      vo_meas_.getBasis().getEulerZYX(Rz, Ry, Rx);
+      vo_file_ << vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
+               << Rx << " " << Ry << " " << Rz << endl;
+    }
   };
 
 
@@ -332,10 +312,6 @@ namespace estimation
   {
     ROS_DEBUG("Spin function at time %f", ros::Time::now().toSec());
 
-    boost::mutex::scoped_lock odom_lock(odom_mutex_);
-    boost::mutex::scoped_lock imu_lock(imu_mutex_);
-    boost::mutex::scoped_lock vo_lock(vo_mutex_);
-      
     // check for timing problems
     if ( (odom_initializing_ || odom_active_) && (imu_initializing_ || imu_active_) ){
       double diff = fabs( Duration(odom_stamp_ - imu_stamp_).toSec() );
@@ -385,18 +361,18 @@ namespace estimation
           my_filter_.getEstimate(ros::Time(), tmp);
           if(!vo_active_)
             tmp.getOrigin().setZ(0.0);
-          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, publish_name, "base_footprint"));
+          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, "base_footprint"));
           
-#ifdef __EKF_DEBUG_FILE__
-          // write to file
-          ColumnVector estimate; 
-          my_filter_.getEstimate(estimate);
-          for (unsigned int i=1; i<=6; i++)
-            corr_file_ << estimate(i) << " ";
-          corr_file_ << endl;
-#endif
+          if (debug_){
+            // write to file
+            ColumnVector estimate; 
+            my_filter_.getEstimate(estimate);
+            for (unsigned int i=1; i<=6; i++)
+              corr_file_ << estimate(i) << " ";
+            corr_file_ << endl;
+          }
         }
-        if (!diagnostics)
+        if (self_diagnose_ && !diagnostics)
           ROS_WARN("Robot pose ekf diagnostics discovered a potential problem");
       }
       // initialize filer with odometry frame
