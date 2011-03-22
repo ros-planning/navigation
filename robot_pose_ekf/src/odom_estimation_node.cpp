@@ -52,9 +52,7 @@ namespace estimation
 {
   // constructor
   OdomEstimationNode::OdomEstimationNode()
-    : vel_desi_(2),
-      vel_active_(false),
-      odom_active_(false),
+    : odom_active_(false),
       imu_active_(false),
       vo_active_(false),
       odom_initializing_(false),
@@ -89,9 +87,6 @@ namespace estimation
 
     // initialize
     filter_stamp_ = Time::now();
-
-    // subscribe to messages
-    cmd_vel_sub_ = nh.subscribe("cmd_vel", 10, &OdomEstimationNode::velCallback, this);
 
     // subscribe to odom messages
     if (odom_used_){
@@ -158,7 +153,6 @@ namespace estimation
     assert(odom_used_);
 
     // receive data 
-    boost::mutex::scoped_lock lock(odom_mutex_);
     odom_stamp_ = odom->header.stamp;
     odom_time_  = Time::now();
     Quaternion q;
@@ -205,7 +199,6 @@ namespace estimation
     assert(imu_used_);
 
     // receive data 
-    boost::mutex::scoped_lock lock(imu_mutex_);
     imu_stamp_ = imu->header.stamp;
     btQuaternion orientation;
     quaternionMsgToTF(imu->orientation, orientation);
@@ -277,7 +270,6 @@ namespace estimation
     assert(vo_used_);
 
     // get data
-    boost::mutex::scoped_lock lock(vo_mutex_);
     vo_stamp_ = vo->header.stamp;
     vo_time_  = Time::now();
     poseMsgToTF(vo->pose.pose, vo_meas_);
@@ -314,30 +306,12 @@ namespace estimation
 
 
 
-  // callback function for vel data
-  void OdomEstimationNode::velCallback(const VelConstPtr& vel)
-  {
-    // receive data
-    boost::mutex::scoped_lock lock(vel_mutex_);
-    vel_desi_(1) = vel->linear.x;   vel_desi_(2) = vel->angular.z;
-
-    // active
-    //if (!vel_active_) vel_active_ = true;
-  };
-
-
-
-
 
   // filter loop
   void OdomEstimationNode::spin(const ros::TimerEvent& e)
   {
     ROS_DEBUG("Spin function at time %f", ros::Time::now().toSec());
 
-    boost::mutex::scoped_lock odom_lock(odom_mutex_);
-    boost::mutex::scoped_lock imu_lock(imu_mutex_);
-    boost::mutex::scoped_lock vo_lock(vo_mutex_);
-      
     // check for timing problems
     if ( (odom_initializing_ || odom_active_) && (imu_initializing_ || imu_active_) ){
       double diff = fabs( Duration(odom_stamp_ - imu_stamp_).toSec() );

@@ -86,9 +86,6 @@ private:
   /// the mail filter loop that will be called periodically
   void spin(const ros::TimerEvent& e);
 
-  /// callback function for vel data
-  void velCallback(const VelConstPtr& vel);
-
   /// callback function for odo data
   void odomCallback(const OdomConstPtr& odom);
 
@@ -104,7 +101,7 @@ private:
   ros::NodeHandle node_;
   ros::Timer timer_;
   ros::Publisher pose_pub_;
-  ros::Subscriber cmd_vel_sub_, odom_sub_, imu_sub_, vo_sub_;
+  ros::Subscriber odom_sub_, imu_sub_, vo_sub_;
   ros::ServiceServer state_srv_;
 
   // ekf filter
@@ -118,23 +115,19 @@ private:
   tf::TransformBroadcaster odom_broadcaster_;
 
   // vectors
-  MatrixWrapper::ColumnVector vel_desi_;
   tf::Transform odom_meas_, imu_meas_, vo_meas_;
   tf::Transform base_vo_init_;
   tf::StampedTransform camera_base_;
   ros::Time odom_time_, imu_time_, vo_time_;
   ros::Time odom_stamp_, imu_stamp_, vo_stamp_, filter_stamp_;
   ros::Time odom_init_stamp_, imu_init_stamp_, vo_init_stamp_;
-  bool vel_active_, odom_active_, imu_active_, vo_active_;
+  bool odom_active_, imu_active_, vo_active_;
   bool odom_used_, imu_used_, vo_used_;
   bool odom_initializing_, imu_initializing_, vo_initializing_;
   double timeout_;
   MatrixWrapper::SymmetricMatrix odom_covariance_, imu_covariance_, vo_covariance_;
   bool debug_, self_diagnose_;
   std::string output_frame_;
-
-  // mutex
-  boost::mutex odom_mutex_, imu_mutex_, vo_mutex_, vel_mutex_;
 
   // log files for debugging
   std::ofstream odom_file_, imu_file_, vo_file_, corr_file_, time_file_, extra_file_;
