@@ -73,7 +73,12 @@ namespace costmap_2d {
     ROS_INFO("Subscribed to Topics: %s", topics_string.c_str());
 
     private_nh.param("global_frame", global_frame_, std::string("/map"));
+    //make sure that we set the global frame appropriately based on the tf_prefix
+    global_frame_ = tf::resolve(tf_prefix_, global_frame_);
+
     private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
+    //make sure that we set the base frame appropriately based on the tf_prefix
+    robot_base_frame_ = tf::resolve(tf_prefix_, robot_base_frame_);
 
     //check if the user wants to save pgms of the costmap for debugging
     private_nh.param("save_debug_pgm", save_debug_pgm_, false);
