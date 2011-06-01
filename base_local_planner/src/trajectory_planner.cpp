@@ -44,9 +44,6 @@ namespace base_local_planner{
   void TrajectoryPlanner::reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level) 
   {
       boost::mutex::scoped_lock l(configuration_mutex_);
-      
-      inscribed_radius_ = config.inscribed_radius;
-      circumscribed_radius_ = config.circumscribed_radius;
 
       acc_lim_x_ = config.acc_lim_x;
       acc_lim_y_ = config.acc_lim_y;
@@ -86,7 +83,7 @@ namespace base_local_planner{
 
       holonomic_robot_ = config.holonomic_robot;
       
-      backup_vel_ = config.backup_vel;
+      backup_vel_ = config.escape_vel;
 
       dwa_ = config.dwa;
 
@@ -96,6 +93,23 @@ namespace base_local_planner{
       simple_attractor_ = config.simple_attractor;
 
       angular_sim_granularity_ = config.angular_sim_granularity;
+
+      //y-vels
+      string y_string = config.y_vels;
+      vector<string> y_strs;
+      boost::split(y_strs, y_string, boost::is_any_of(", "), boost::token_compress_on);
+
+      vector<double>y_vels;
+      for(vector<string>::iterator it=y_strs.begin(); it != y_strs.end(); ++it) {
+          istringstream iss(*it);
+          double temp;
+          iss >> temp;
+          y_vels.push_back(temp);
+          //ROS_INFO("Adding y_vel: %e", temp);
+      }
+
+      y_vels_ = y_vels;
+      
   }
 
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model, 

@@ -38,6 +38,8 @@
 #define TRAJECTORY_ROLLOUT_TRAJECTORY_PLANNER_H_
 
 #include <vector>
+#include <string>
+#include <sstream>
 #include <math.h>
 #include <ros/console.h>
 #include <angles/angles.h>
@@ -65,6 +67,7 @@
 
 #include <dynamic_reconfigure/server.h>
 #include <base_local_planner/BaseLocalPlannerConfig.h>
+#include <boost/algorithm/string.hpp>
 
 namespace base_local_planner {
   /**
