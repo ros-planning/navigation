@@ -63,6 +63,9 @@
 //for some datatypes
 #include <tf/transform_datatypes.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <base_local_planner/BaseLocalPlannerConfig.h>
+
 namespace base_local_planner {
   /**
    * @class TrajectoryPlanner
@@ -200,6 +203,10 @@ namespace base_local_planner {
       bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
     private:
       /**
+       * @brief Callback to update the local planner's parameters based on dynamic reconfigure
+       */
+      void reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level);
+      /**
        * @brief  Create the trajectories we wish to explore, score them, and return the best option
        * @param x The x position of the robot  
        * @param y The y position of the robot  
@@ -326,6 +333,8 @@ namespace base_local_planner {
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
       double sim_period_; ///< @brief The number of seconds to use to compute max/min vels for dwa
 
+      dynamic_reconfigure::Server<BaseLocalPlannerConfig> dsrv_;
+      boost::mutex configuration_mutex_;
 
       /**
        * @brief  Compute x position based on velocity
