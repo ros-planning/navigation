@@ -115,6 +115,12 @@ class AmclNode
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
     void initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
+
+    void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
+    void freeMapDependentMemory();
+    map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
+    void applyInitialPose();
 
     double getYaw(tf::Pose& t);
 
@@ -123,6 +129,9 @@ class AmclNode
     //parameter for what base to use
     std::string base_frame_id_;
     std::string global_frame_id_;
+
+    bool use_map_topic_;
+    bool first_map_only_;
 
     ros::Duration gui_publish_period;
     ros::Time save_pose_last_time;
@@ -161,10 +170,10 @@ class AmclNode
     ros::Duration cloud_pub_interval;
     ros::Time last_cloud_pub_time;
 
-    map_t* requestMap();
+    void requestMap();
 
     // Helper to get odometric pose from transform system
-  bool getOdomPose(tf::Stamped<tf::Pose>& pose,
+    bool getOdomPose(tf::Stamped<tf::Pose>& pose,
                      double& x, double& y, double& yaw,
                      const ros::Time& t, const std::string& f);
 
@@ -178,6 +187,20 @@ class AmclNode
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::Subscriber initial_pose_sub_old_;
+    ros::Subscriber map_sub_;
+
+    amcl_hyp_t* initial_pose_hyp_;
+    bool first_map_received_;
+
+    int max_beams_, min_particles_, max_particles_;
+    double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
+    double alpha_slow_, alpha_fast_;
+    double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
+    double laser_likelihood_max_dist_;
+    odom_model_t odom_model_type_;
+    double init_pose_[3];
+    double init_cov_[3];
+    laser_model_t laser_model_type_;
 };
 
 #define USAGE "USAGE: amcl"
@@ -202,14 +225,15 @@ AmclNode::AmclNode() :
         map_(NULL),
         pf_(NULL),
         resample_count_(0),
-	private_nh_("~")
+        odom_(NULL),
+        laser_(NULL),
+	private_nh_("~"),
+        initial_pose_hyp_(NULL),
+        first_map_received_(false)
 {
   // Grab params off the param server
-  int max_beams, min_particles, max_particles;
-  double alpha1, alpha2, alpha3, alpha4, alpha5;
-  double alpha_slow, alpha_fast;
-  double z_hit, z_short, z_max, z_rand, sigma_hit, lambda_short;
-  double pf_err, pf_z;
+  private_nh_.param("use_map_topic", use_map_topic_, false);
+  private_nh_.param("first_map_only", first_map_only_, false);
 
   double tmp;
   private_nh_.param("gui_publish_rate", tmp, -1.0);
@@ -219,51 +243,47 @@ AmclNode::AmclNode() :
 
   private_nh_.param("laser_min_range", laser_min_range_, -1.0);
   private_nh_.param("laser_max_range", laser_max_range_, -1.0);
-  private_nh_.param("laser_max_beams", max_beams, 30);
-  private_nh_.param("min_particles", min_particles, 100);
-  private_nh_.param("max_particles", max_particles, 5000);
-  private_nh_.param("kld_err", pf_err, 0.01);
-  private_nh_.param("kld_z", pf_z, 0.99);
-  private_nh_.param("odom_alpha1", alpha1, 0.2);
-  private_nh_.param("odom_alpha2", alpha2, 0.2);
-  private_nh_.param("odom_alpha3", alpha3, 0.2);
-  private_nh_.param("odom_alpha4", alpha4, 0.2);
-  private_nh_.param("odom_alpha5", alpha5, 0.2);
+  private_nh_.param("laser_max_beams", max_beams_, 30);
+  private_nh_.param("min_particles", min_particles_, 100);
+  private_nh_.param("max_particles", max_particles_, 5000);
+  private_nh_.param("kld_err", pf_err_, 0.01);
+  private_nh_.param("kld_z", pf_z_, 0.99);
+  private_nh_.param("odom_alpha1", alpha1_, 0.2);
+  private_nh_.param("odom_alpha2", alpha2_, 0.2);
+  private_nh_.param("odom_alpha3", alpha3_, 0.2);
+  private_nh_.param("odom_alpha4", alpha4_, 0.2);
+  private_nh_.param("odom_alpha5", alpha5_, 0.2);
 
-  private_nh_.param("laser_z_hit", z_hit, 0.95);
-  private_nh_.param("laser_z_short", z_short, 0.1);
-  private_nh_.param("laser_z_max", z_max, 0.05);
-  private_nh_.param("laser_z_rand", z_rand, 0.05);
-  private_nh_.param("laser_sigma_hit", sigma_hit, 0.2);
-  private_nh_.param("laser_lambda_short", lambda_short, 0.1);
-  double laser_likelihood_max_dist;
-  private_nh_.param("laser_likelihood_max_dist",
-                               laser_likelihood_max_dist, 2.0);
+  private_nh_.param("laser_z_hit", z_hit_, 0.95);
+  private_nh_.param("laser_z_short", z_short_, 0.1);
+  private_nh_.param("laser_z_max", z_max_, 0.05);
+  private_nh_.param("laser_z_rand", z_rand_, 0.05);
+  private_nh_.param("laser_sigma_hit", sigma_hit_, 0.2);
+  private_nh_.param("laser_lambda_short", lambda_short_, 0.1);
+  private_nh_.param("laser_likelihood_max_dist", laser_likelihood_max_dist_, 2.0);
   std::string tmp_model_type;
-  laser_model_t laser_model_type;
   private_nh_.param("laser_model_type", tmp_model_type, std::string("likelihood_field"));
   if(tmp_model_type == "beam")
-    laser_model_type = LASER_MODEL_BEAM;
+    laser_model_type_ = LASER_MODEL_BEAM;
   else if(tmp_model_type == "likelihood_field")
-    laser_model_type = LASER_MODEL_LIKELIHOOD_FIELD;
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
   else
   {
     ROS_WARN("Unknown laser model type \"%s\"; defaulting to likelihood_field model",
              tmp_model_type.c_str());
-    laser_model_type = LASER_MODEL_LIKELIHOOD_FIELD;
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
   }
 
-  odom_model_t odom_model_type;
   private_nh_.param("odom_model_type", tmp_model_type, std::string("diff"));
   if(tmp_model_type == "diff")
-    odom_model_type = ODOM_MODEL_DIFF;
+    odom_model_type_ = ODOM_MODEL_DIFF;
   else if(tmp_model_type == "omni")
-    odom_model_type = ODOM_MODEL_OMNI;
+    odom_model_type_ = ODOM_MODEL_OMNI;
   else
   {
     ROS_WARN("Unknown odom model type \"%s\"; defaulting to diff model",
              tmp_model_type.c_str());
-    odom_model_type = ODOM_MODEL_DIFF;
+    odom_model_type_ = ODOM_MODEL_DIFF;
   }
 
   private_nh_.param("update_min_d", d_thresh_, 0.2);
@@ -274,68 +294,22 @@ AmclNode::AmclNode() :
   private_nh_.param("resample_interval", resample_interval_, 2);
   double tmp_tol;
   private_nh_.param("transform_tolerance", tmp_tol, 0.1);
-  private_nh_.param("recovery_alpha_slow", alpha_slow, 0.001);
-  private_nh_.param("recovery_alpha_fast", alpha_fast, 0.1);
+  private_nh_.param("recovery_alpha_slow", alpha_slow_, 0.001);
+  private_nh_.param("recovery_alpha_fast", alpha_fast_, 0.1);
 
   transform_tolerance_.fromSec(tmp_tol);
 
-  double init_pose[3];
-  private_nh_.param("initial_pose_x", init_pose[0], 0.0);
-  private_nh_.param("initial_pose_y", init_pose[1], 0.0);
-  private_nh_.param("initial_pose_a", init_pose[2], 0.0);
-  double init_cov[3];
-  private_nh_.param("initial_cov_xx", init_cov[0], 0.5 * 0.5);
-  private_nh_.param("initial_cov_yy", init_cov[1], 0.5 * 0.5);
-  private_nh_.param("initial_cov_aa", init_cov[2], 
+  private_nh_.param("initial_pose_x", init_pose_[0], 0.0);
+  private_nh_.param("initial_pose_y", init_pose_[1], 0.0);
+  private_nh_.param("initial_pose_a", init_pose_[2], 0.0);
+  private_nh_.param("initial_cov_xx", init_cov_[0], 0.5 * 0.5);
+  private_nh_.param("initial_cov_yy", init_cov_[1], 0.5 * 0.5);
+  private_nh_.param("initial_cov_aa", init_cov_[2], 
                                (M_PI/12.0) * (M_PI/12.0));
 
   cloud_pub_interval.fromSec(1.0);
   tfb_ = new tf::TransformBroadcaster();
   tf_ = new tf::TransformListener();
-
-  map_ = requestMap();
-
-  // Create the particle filter
-  pf_ = pf_alloc(min_particles, max_particles,
-                 alpha_slow, alpha_fast,
-                 (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
-                 (void *)map_);
-  pf_->pop_err = pf_err;
-  pf_->pop_z = pf_z;
-
-  // Initialize the filter
-  pf_vector_t pf_init_pose_mean = pf_vector_zero();
-  pf_init_pose_mean.v[0] = init_pose[0];
-  pf_init_pose_mean.v[1] = init_pose[1];
-  pf_init_pose_mean.v[2] = init_pose[2];
-  pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
-  pf_init_pose_cov.m[0][0] = init_cov[0];
-  pf_init_pose_cov.m[1][1] = init_cov[1];
-  pf_init_pose_cov.m[2][2] = init_cov[2];
-  pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
-  pf_init_ = false;
-
-  // Instantiate the sensor objects
-  // Odometry
-  odom_ = new AMCLOdom();
-  ROS_ASSERT(odom_);
-  if(odom_model_type == ODOM_MODEL_OMNI)
-    odom_->SetModelOmni(alpha1, alpha2, alpha3, alpha4, alpha5);
-  else
-    odom_->SetModelDiff(alpha1, alpha2, alpha3, alpha4);
-  // Laser
-  laser_ = new AMCLLaser(max_beams, map_);
-  ROS_ASSERT(laser_);
-  if(laser_model_type == LASER_MODEL_BEAM)
-    laser_->SetModelBeam(z_hit, z_short, z_max, z_rand,
-                         sigma_hit, lambda_short, 0.0);
-  else
-  {
-    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
-    laser_->SetModelLikelihoodField(z_hit, z_rand, sigma_hit,
-                                    laser_likelihood_max_dist);
-    ROS_INFO("Done initializing likelihood field model.");
-  }
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2);
@@ -355,14 +329,18 @@ AmclNode::AmclNode() :
   initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
 
   initial_pose_sub_old_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceivedOld, this);
+
+  if(use_map_topic_) {
+    map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);
+    ROS_INFO("Subscribed to map topic.");
+  } else {
+    requestMap();
+  }
 }
 
-map_t*
+void
 AmclNode::requestMap()
 {
-  map_t* map = map_alloc();
-  ROS_ASSERT(map);
-
   // get map via RPC
   nav_msgs::GetMap::Request  req;
   nav_msgs::GetMap::Response resp;
@@ -373,24 +351,124 @@ AmclNode::requestMap()
     ros::Duration d(0.5);
     d.sleep();
   }
-  ROS_INFO("Received a %d X %d map @ %.3f m/pix\n",
-           resp.map.info.width,
-           resp.map.info.height,
-           resp.map.info.resolution);
+  handleMapMessage( resp.map );
+}
 
-  map->size_x = resp.map.info.width;
-  map->size_y = resp.map.info.height;
-  map->scale = resp.map.info.resolution;
-  map->origin_x = resp.map.info.origin.position.x + (map->size_x / 2) * map->scale;
-  map->origin_y = resp.map.info.origin.position.y + (map->size_y / 2) * map->scale;
+void
+AmclNode::mapReceived(const nav_msgs::OccupancyGridConstPtr& msg)
+{
+  if( first_map_only_ && first_map_received_ ) {
+    return;
+  }
+
+  handleMapMessage( *msg );
+
+  first_map_received_ = true;
+}
+
+void
+AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
+{
+  pf_mutex_.lock();
+
+  ROS_INFO("Received a %d X %d map @ %.3f m/pix\n",
+           msg.info.width,
+           msg.info.height,
+           msg.info.resolution);
+
+  freeMapDependentMemory();
+
+  map_ = convertMap(msg);
+
+  // Create the particle filter
+  pf_ = pf_alloc(min_particles_, max_particles_,
+                 alpha_slow_, alpha_fast_,
+                 (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
+                 (void *)map_);
+  pf_->pop_err = pf_err_;
+  pf_->pop_z = pf_z_;
+
+  // Initialize the filter
+  pf_vector_t pf_init_pose_mean = pf_vector_zero();
+  pf_init_pose_mean.v[0] = init_pose_[0];
+  pf_init_pose_mean.v[1] = init_pose_[1];
+  pf_init_pose_mean.v[2] = init_pose_[2];
+  pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
+  pf_init_pose_cov.m[0][0] = init_cov_[0];
+  pf_init_pose_cov.m[1][1] = init_cov_[1];
+  pf_init_pose_cov.m[2][2] = init_cov_[2];
+  pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
+  pf_init_ = false;
+
+  // Instantiate the sensor objects
+  // Odometry
+  odom_ = new AMCLOdom();
+  ROS_ASSERT(odom_);
+  if(odom_model_type_ == ODOM_MODEL_OMNI)
+    odom_->SetModelOmni(alpha1_, alpha2_, alpha3_, alpha4_, alpha5_);
+  else
+    odom_->SetModelDiff(alpha1_, alpha2_, alpha3_, alpha4_);
+  // Laser
+  laser_ = new AMCLLaser(max_beams_, map_);
+  ROS_ASSERT(laser_);
+  if(laser_model_type_ == LASER_MODEL_BEAM)
+    laser_->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
+                         sigma_hit_, lambda_short_, 0.0);
+  else
+  {
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
+    laser_->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
+                                    laser_likelihood_max_dist_);
+    ROS_INFO("Done initializing likelihood field model.");
+  }
+
+  // In case the initial pose message arrived before the first map,
+  // try to apply the initial pose now that the map has arrived.
+  applyInitialPose();
+
+  pf_mutex_.unlock();
+}
+
+void
+AmclNode::freeMapDependentMemory()
+{
+  if( map_ != NULL ) {
+    map_free( map_ );
+    map_ = NULL;
+  }
+  if( pf_ != NULL ) {
+    pf_free( pf_ );
+    pf_ = NULL;
+  }
+  delete odom_;
+  odom_ = NULL;
+  delete laser_;
+  laser_ = NULL;
+}
+
+/**
+ * Convert an OccupancyGrid map message into the internal
+ * representation.  This allocates a map_t and returns it.
+ */
+map_t*
+AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
+{
+  map_t* map = map_alloc();
+  ROS_ASSERT(map);
+
+  map->size_x = map_msg.info.width;
+  map->size_y = map_msg.info.height;
+  map->scale = map_msg.info.resolution;
+  map->origin_x = map_msg.info.origin.position.x + (map->size_x / 2) * map->scale;
+  map->origin_y = map_msg.info.origin.position.y + (map->size_y / 2) * map->scale;
   // Convert to player format
   map->cells = (map_cell_t*)malloc(sizeof(map_cell_t)*map->size_x*map->size_y);
   ROS_ASSERT(map->cells);
   for(int i=0;i<map->size_x * map->size_y;i++)
   {
-    if(resp.map.data[i] == 0)
+    if(map_msg.data[i] == 0)
       map->cells[i].occ_state = -1;
-    else if(resp.map.data[i] == 100)
+    else if(map_msg.data[i] == 100)
       map->cells[i].occ_state = +1;
     else
       map->cells[i].occ_state = 0;
@@ -401,16 +479,13 @@ AmclNode::requestMap()
 
 AmclNode::~AmclNode()
 {
-  map_free(map_);
+  freeMapDependentMemory();
   delete laser_scan_filter_;
   delete laser_scan_sub_;
   delete initial_pose_filter_;
   delete initial_pose_sub_;
   delete tfb_;
   delete tf_;
-  pf_free(pf_);
-  delete laser_;
-  delete odom_;
   // TODO: delete everything allocated in constructor
 }
 
@@ -474,6 +549,9 @@ bool
 AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
                                      std_srvs::Empty::Response& res)
 {
+  if( map_ == NULL ) {
+    return true;
+  }
   pf_mutex_.lock();
   ROS_INFO("Initializing with uniform distribution");
   pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
@@ -486,6 +564,9 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
+  if( map_ == NULL ) {
+    return;
+  }
   int laser_index = -1;
 
   // Do we have the base->base_laser Tx yet?
@@ -935,8 +1016,27 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   }
   pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*3+3];
 
-  pf_mutex_.lock();
-  pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
-  pf_init_ = false;
-  pf_mutex_.unlock();
+  initial_pose_hyp_ = new amcl_hyp_t();
+  initial_pose_hyp_->pf_pose_mean = pf_init_pose_mean;
+  initial_pose_hyp_->pf_pose_cov = pf_init_pose_cov;
+  applyInitialPose();
+}
+
+/**
+ * If initial_pose_hyp_ and map_ are both non-null, apply the initial
+ * pose to the particle filter state.  initial_pose_hyp_ is deleted
+ * and set to NULL after it is used.
+ */
+void
+AmclNode::applyInitialPose()
+{
+  if( initial_pose_hyp_ != NULL && map_ != NULL ) {
+    pf_mutex_.lock();
+    pf_init(pf_, initial_pose_hyp_->pf_pose_mean, initial_pose_hyp_->pf_pose_cov);
+    pf_init_ = false;
+    pf_mutex_.unlock();
+
+    delete initial_pose_hyp_;
+    initial_pose_hyp_ = NULL;
+  }
 }
