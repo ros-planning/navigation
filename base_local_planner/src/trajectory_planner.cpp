@@ -41,8 +41,10 @@ using namespace std;
 using namespace costmap_2d;
 
 namespace base_local_planner{
-  void TrajectoryPlanner::reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level) 
+  void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg) 
   {
+      base_local_planner::BaseLocalPlannerConfig config(cfg);
+
       boost::mutex::scoped_lock l(configuration_mutex_);
 
       acc_lim_x_ = config.acc_lim_x;
@@ -115,7 +117,6 @@ namespace base_local_planner{
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model, 
       const Costmap2D& costmap, 
       std::vector<geometry_msgs::Point> footprint_spec,
-      double inscribed_radius, double circumscribed_radius,
       double acc_lim_x, double acc_lim_y, double acc_lim_theta,
       double sim_time, double sim_granularity, 
       int vx_samples, int vtheta_samples,
@@ -130,7 +131,6 @@ namespace base_local_planner{
       vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
     : map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()), costmap_(costmap), 
     world_model_(world_model), footprint_spec_(footprint_spec),
-    inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius),
     sim_time_(sim_time), sim_granularity_(sim_granularity), angular_sim_granularity_(angular_sim_granularity),
     vx_samples_(vx_samples), vtheta_samples_(vtheta_samples),
     pdist_scale_(pdist_scale), gdist_scale_(gdist_scale), occdist_scale_(occdist_scale),
@@ -155,9 +155,6 @@ namespace base_local_planner{
     strafe_right = false;
 
     escaping_ = false;
-    
-    dynamic_reconfigure::Server<BaseLocalPlannerConfig>::CallbackType cb = boost::bind(&TrajectoryPlanner::reconfigureCB, this, _1, _2);
-    dsrv_.setCallback(cb);
   }
 
   TrajectoryPlanner::~TrajectoryPlanner(){}
@@ -954,7 +951,7 @@ namespace base_local_planner{
     robot_position.y = y_i;
 
     //check if the footprint is legal
-    double footprint_cost = world_model_.footprintCost(robot_position, oriented_footprint, inscribed_radius_, circumscribed_radius_);
+    double footprint_cost = world_model_.footprintCost(robot_position, oriented_footprint, costmap_.getInscribedRadius(), costmap_.getCircumscribedRadius());
 
     return footprint_cost;
   }
