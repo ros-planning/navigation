@@ -393,7 +393,7 @@ namespace costmap_2d {
 
     costmap_initialized_ = true;
     
-    dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(private_nh);
+    dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/"+name));
     dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
   }
