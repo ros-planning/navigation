@@ -41,10 +41,8 @@ using namespace std;
 using namespace costmap_2d;
 
 namespace base_local_planner{
-  void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg) 
+  void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &config) 
   {
-      base_local_planner::BaseLocalPlannerConfig config(cfg);
-
       boost::mutex::scoped_lock l(configuration_mutex_);
 
       acc_lim_x_ = config.acc_lim_x;
