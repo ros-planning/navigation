@@ -138,7 +138,7 @@ namespace base_local_planner {
       /**
        * @brief Reconfigures the trajectory planner
        */
-      void reconfigure(BaseLocalPlannerConfig &config);
+      void reconfigure(BaseLocalPlannerConfig &cfg);
 
       /**
        * @brief  Given the current position, orientation, and velocity of the robot, return a trajectory to follow

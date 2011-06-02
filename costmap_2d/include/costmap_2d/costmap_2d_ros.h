@@ -70,6 +70,9 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <dynamic_reconfigure/server.h>
+#include <costmap_2d/Costmap2DConfig.h>
+
 namespace costmap_2d {
 
   /**
@@ -307,6 +310,11 @@ namespace costmap_2d {
 
     private:
       /**
+       * @brief Callback for dynamic_reconfigure
+       */
+      void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
+
+      /**
        * @brief  Callback to update the costmap's map from the map_server
        * @param new_map The map to put into the costmap. The origin of the new
        * map along with its size will determine what parts of the costmap's
@@ -398,7 +406,7 @@ namespace costmap_2d {
       std::vector<unsigned char> input_data_;
       bool costmap_initialized_;
 
-
+      dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
   };
 };
 

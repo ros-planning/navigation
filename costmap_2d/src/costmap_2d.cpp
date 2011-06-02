@@ -37,9 +37,15 @@
 #include <costmap_2d/costmap_2d.h>
 #include <cstdio>
 
+#include <costmap_2d/Costmap2DConfig.h>
+
 using namespace std;
 
 namespace costmap_2d{
+  void Costmap2D::reconfigure(Costmap2DConfig &config) {
+      //boost::mutex::scoped_lock l(configuration_mutex_);
+  }
+
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
       double resolution, double origin_x, double origin_y, double inscribed_radius,
       double circumscribed_radius, double inflation_radius, double max_obstacle_range,
@@ -180,6 +186,7 @@ namespace costmap_2d{
       ROS_ERROR("You must call replaceStaticMapWindow with a window origin and size that is contained within the map");
       return;
     }
+
 
     //we need to compute the region of the costmap that could change from inflation of new obstacles
     unsigned int max_inflation_change = 2 * cell_inflation_radius_;
@@ -426,6 +433,7 @@ namespace costmap_2d{
   }
 
   Costmap2D& Costmap2D::operator=(const Costmap2D& map) {
+
     //check for self assignement
     if(this == &map)
       return *this;

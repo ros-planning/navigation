@@ -46,6 +46,8 @@
 #include <boost/thread.hpp>
 
 namespace costmap_2d {
+  class Costmap2DConfig;
+
   //convenient for storing x/y point pairs
   struct MapLocation {
     unsigned int x;
@@ -119,6 +121,7 @@ namespace costmap_2d {
        */
       virtual ~Costmap2D();
 
+      void reconfigure(costmap_2d::Costmap2DConfig &config);
       /**
        * @brief  Revert to the static map outside of a specified window centered at a world coordinate
        * @param wx The x coordinate of the center point of the window in world space (meters)
@@ -648,6 +651,7 @@ namespace costmap_2d {
         return x > 0 ? 1.0 : -1.0;
       }
 
+      boost::mutex configuration_mutex_;
     protected:
       unsigned int size_x_;
       unsigned int size_y_;

@@ -46,6 +46,9 @@ namespace costmap_2d {
     return x < 0.0 ? -1.0 : 1.0;
   }
 
+  void Costmap2DROS::reconfigureCB(Costmap2DConfig &config, uint32_t level) {
+  }
+
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
@@ -389,7 +392,10 @@ namespace costmap_2d {
     map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
     costmap_initialized_ = true;
-
+    
+    dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(private_nh);
+    dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1, _2);
+    dsrv_->setCallback(cb);
   }
 
   double Costmap2DROS::distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1){
