@@ -59,6 +59,16 @@ namespace costmap_2d {
     map_update_thread_shutdown_ = false;
     double map_update_frequency = config.update_frequency;
     map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+
+    double map_publish_frequency = config.publish_frequency;
+    costmap_publisher_ = new Costmap2DPublisher(ros::NodeHandle("~/"+name_), map_publish_frequency, global_frame_);
+    if(costmap_publisher_->active()){
+      std::vector<geometry_msgs::Point> oriented_footprint;
+      getOrientedFootprint(oriented_footprint);
+      tf::Stamped<tf::Pose> global_pose;
+      getRobotPose(global_pose);
+      costmap_publisher_->updateCostmapData(*costmap_, oriented_footprint, global_pose);
+    }
   }
 
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
@@ -368,7 +378,6 @@ namespace costmap_2d {
         throw std::runtime_error("Values for z_voxels, unknown_threshold, and mark_threshold parameters must be positive.");
       }
 
-      //make sure to lock the map data
       boost::recursive_mutex::scoped_lock lock(map_data_lock_);
       costmap_ = new VoxelCostmap2D(map_width, map_height, z_voxels, map_resolution, z_resolution, map_origin_x, map_origin_y, map_origin_z, inscribed_radius,
           circumscribed_radius, inflation_radius, obstacle_range, raytrace_range, cost_scale, input_data_, lethal_threshold, unknown_threshold, mark_threshold,
