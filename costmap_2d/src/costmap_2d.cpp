@@ -43,7 +43,7 @@ using namespace std;
 
 namespace costmap_2d{
   void Costmap2D::reconfigure(Costmap2DConfig &config) {
-      //boost::mutex::scoped_lock l(configuration_mutex_);
+      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
   }
 
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 

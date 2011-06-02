@@ -651,7 +651,7 @@ namespace costmap_2d {
         return x > 0 ? 1.0 : -1.0;
       }
 
-      boost::mutex configuration_mutex_;
+      boost::recursive_mutex configuration_mutex_;
     protected:
       unsigned int size_x_;
       unsigned int size_y_;

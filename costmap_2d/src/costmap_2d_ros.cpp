@@ -47,6 +47,18 @@ namespace costmap_2d {
   }
 
   void Costmap2DROS::reconfigureCB(Costmap2DConfig &config, uint32_t level) {
+    boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
+
+    transform_tolerance_ = config.transform_tolerance;
+    rolling_window_ = config.rolling_window;
+
+    // shutdown and restart the map update loop at a new frequency
+    // needs a lock in Costmap2DROS::mapUpdateLoop so that it doesn't start before config is done
+    map_update_thread_shutdown_ = true;
+    map_update_thread_->join();
+    map_update_thread_shutdown_ = false;
+    double map_update_frequency = config.update_frequency;
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
   }
 
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
@@ -649,6 +661,7 @@ namespace costmap_2d {
     //update the global current status
     current_ = current;
 
+    boost::recursive_mutex::scoped_lock uml(configuration_mutex_);
     boost::recursive_mutex::scoped_lock lock(lock_);
     //if we're using a rolling buffer costmap... we need to update the origin using the robot's position
     if(rolling_window_){
@@ -840,6 +853,7 @@ namespace costmap_2d {
   }
 
   bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const {
+
     global_pose.setIdentity();
     tf::Stamped<tf::Pose> robot_pose;
     robot_pose.setIdentity();

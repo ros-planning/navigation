@@ -406,6 +406,8 @@ namespace costmap_2d {
       std::vector<unsigned char> input_data_;
       bool costmap_initialized_;
 
+
+      boost::recursive_mutex configuration_mutex_;
       dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
   };
 };
