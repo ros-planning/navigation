@@ -56,12 +56,15 @@ namespace costmap_2d {
     // needs a lock in Costmap2DROS::mapUpdateLoop so that it doesn't start before config is done
     map_update_thread_shutdown_ = true;
     map_update_thread_->join();
+    boost::mutex::scoped_lock ml(map_update_mutex_);
     map_update_thread_shutdown_ = false;
     double map_update_frequency = config.update_frequency;
     map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
+
     double map_publish_frequency = config.publish_frequency;
     costmap_publisher_ = new Costmap2DPublisher(ros::NodeHandle("~/"+name_), map_publish_frequency, global_frame_);
+    // Update the new publisher
     if(costmap_publisher_->active()){
       std::vector<geometry_msgs::Point> oriented_footprint;
       getOrientedFootprint(oriented_footprint);
@@ -74,7 +77,7 @@ namespace costmap_2d {
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
-                             save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false) {
+                             save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false){
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
@@ -601,6 +604,8 @@ namespace costmap_2d {
     //the user might not want to run the loop every cycle
     if(frequency == 0.0)
       return;
+
+    boost::mutex::scoped_lock ml(map_update_mutex_);
 
     ros::NodeHandle nh;
     ros::Rate r(frequency);

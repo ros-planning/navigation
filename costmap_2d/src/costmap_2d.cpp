@@ -44,6 +44,14 @@ using namespace std;
 namespace costmap_2d{
   void Costmap2D::reconfigure(Costmap2DConfig &config) {
       boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
+
+      max_obstacle_height_ = config.max_obstacle_height;
+      max_obstacle_range_ = config.max_obstacle_range;
+      max_raytrace_range_ = config.raytrace_range;
+      
+      inflation_radius_ = config.inflation_radius;
+
+      inflateObstacles(inflation_queue_);
   }
 
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
@@ -56,7 +64,7 @@ namespace costmap_2d{
   max_obstacle_height_(max_obstacle_height), max_raytrace_range_(max_raytrace_range), cached_costs_(NULL), cached_distances_(NULL), 
   inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius), inflation_radius_(inflation_radius),
   weight_(weight), lethal_threshold_(lethal_threshold), track_unknown_space_(track_unknown_space), unknown_cost_value_(unknown_cost_value), inflation_queue_(){
-    //creat the costmap, static_map, and markers
+    //create the costmap, static_map, and markers
     costmap_ = new unsigned char[size_x_ * size_y_];
     static_map_ = new unsigned char[size_x_ * size_y_];
     markers_ = new unsigned char[size_x_ * size_y_];
@@ -191,6 +199,8 @@ namespace costmap_2d{
     //we need to compute the region of the costmap that could change from inflation of new obstacles
     unsigned int max_inflation_change = 2 * cell_inflation_radius_;
 
+
+    
     //make sure that we don't go out of map bounds
     unsigned int copy_sx = std::min(std::max(0, (int)start_x - (int)max_inflation_change), (int)size_x_);
     unsigned int copy_sy = std::min(std::max(0, (int)start_y - (int)max_inflation_change), (int)size_x_);
@@ -376,6 +386,8 @@ namespace costmap_2d{
   }
 
   void Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
+    boost::recursive_mutex::scoped_lock cpl(configuration_mutex_);
+
     //check for self windowing
     if(this == &map){
       ROS_ERROR("Cannot convert this costmap into a window of itself");
@@ -579,6 +591,8 @@ namespace costmap_2d{
 
   void Costmap2D::updateWorld(double robot_x, double robot_y, 
       const vector<Observation>& observations, const vector<Observation>& clearing_observations){
+    boost::recursive_mutex::scoped_lock uwl(configuration_mutex_);
+
     //reset the markers for inflation
     memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
 
