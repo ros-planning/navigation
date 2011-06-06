@@ -50,6 +50,8 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <boost/tokenizer.hpp>
+#include <boost/foreach.hpp>
 
 #include <tf/transform_datatypes.h>
 

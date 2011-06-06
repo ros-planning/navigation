@@ -39,6 +39,7 @@
 
 #include <limits>
 
+using namespace std;
 
 namespace costmap_2d {
 
@@ -53,7 +54,6 @@ namespace costmap_2d {
     rolling_window_ = config.rolling_window;
 
     // shutdown and restart the map update loop at a new frequency
-    // needs a lock in Costmap2DROS::mapUpdateLoop so that it doesn't start before config is done
     map_update_thread_shutdown_ = true;
     map_update_thread_->join();
     boost::mutex::scoped_lock ml(map_update_mutex_);
@@ -61,9 +61,43 @@ namespace costmap_2d {
     double map_update_frequency = config.update_frequency;
     map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
-
     double map_publish_frequency = config.publish_frequency;
     costmap_publisher_ = new Costmap2DPublisher(ros::NodeHandle("~/"+name_), map_publish_frequency, global_frame_);
+
+
+    // Check and configure a new robot footprint
+    string footprint_string = config.footprint;
+    boost::char_separator<char> sep("[] ");
+    boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
+    vector<string> points(tokens.begin(), tokens.end());
+
+    vector<geometry_msgs::Point> footprint_spec;
+    if(points.size() >= 5) {
+      BOOST_FOREACH(string t, tokens) {
+        if (t != ",") {
+        ROS_INFO("%s", t.c_str());
+          boost::char_separator<char> pt_sep(", ");
+          boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
+
+          vector<double>tmp_pt;
+          BOOST_FOREACH(string p, pt_tokens) {
+            istringstream iss(p);
+            double temp;
+            iss >> temp;
+            tmp_pt.push_back(temp);
+          }
+          geometry_msgs::Point pt;
+          pt.x = tmp_pt[0];
+          pt.y = tmp_pt[1];
+
+          footprint_spec.push_back(pt);
+        }
+      }
+      footprint_spec_ = footprint_spec;
+    }
+    else
+        ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
+
     // Update the new publisher
     if(costmap_publisher_->active()){
       std::vector<geometry_msgs::Point> oriented_footprint;
