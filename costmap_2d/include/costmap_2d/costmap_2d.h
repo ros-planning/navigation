@@ -543,6 +543,11 @@ namespace costmap_2d {
           std::priority_queue<CellData>& inflation_queue, bool clear = true );
 
       /**
+       * @brief Based on the inflation radius compute distance and cost caches
+       */
+      void computeCaches();
+
+      /**
        * @brief  Raytrace a line and apply some action at each step
        * @param  at The action to take... a functor
        * @param  x0 The starting x coordinate

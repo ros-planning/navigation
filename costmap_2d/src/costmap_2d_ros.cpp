@@ -51,21 +51,17 @@ namespace costmap_2d {
     boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
 
     transform_tolerance_ = config.transform_tolerance;
-    rolling_window_ = config.rolling_window;
 
     // shutdown and restart the map update loop at a new frequency
     map_update_thread_shutdown_ = true;
     map_update_thread_->join();
     boost::mutex::scoped_lock ml(map_update_mutex_);
-    map_update_thread_shutdown_ = false;
-    double map_update_frequency = config.update_frequency;
-    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
     double map_publish_frequency = config.publish_frequency;
     costmap_publisher_ = new Costmap2DPublisher(ros::NodeHandle("~/"+name_), map_publish_frequency, global_frame_);
 
-
     // Check and configure a new robot footprint
+    static string last_foot = "[]";
     string footprint_string = config.footprint;
     boost::char_separator<char> sep("[] ");
     boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
@@ -95,8 +91,14 @@ namespace costmap_2d {
       }
       footprint_spec_ = footprint_spec;
     }
-    else
+    else if(footprint_string != last_foot) {
         ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
+        last_foot = footprint_string;
+    }
+
+    //robot_radius_ = config.robot_radius;
+
+    rolling_window_ = config.rolling_window;
 
     // Update the new publisher
     if(costmap_publisher_->active()){
@@ -106,6 +108,13 @@ namespace costmap_2d {
       getRobotPose(global_pose);
       costmap_publisher_->updateCostmapData(*costmap_, oriented_footprint, global_pose);
     }
+    
+    costmap_->reconfigure(config);
+
+    // once all configuration is done, restart the map update loop
+    map_update_thread_shutdown_ = false;
+    double map_update_frequency = config.update_frequency;
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
   }
 
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 

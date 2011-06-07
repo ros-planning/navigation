@@ -50,8 +50,10 @@ namespace costmap_2d{
       max_raytrace_range_ = config.raytrace_range;
       
       inflation_radius_ = config.inflation_radius;
+      cell_inflation_radius_ = cellDistance(inflation_radius_);
+      computeCaches();
 
-      inflateObstacles(inflation_queue_);
+      updateOrigin(config.origin_x, config.origin_y);
   }
 
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
@@ -78,17 +80,7 @@ namespace costmap_2d{
     //set the cost for the circumscribed radius of the robot
     circumscribed_cost_lb_ = computeCost(cell_circumscribed_radius_);
 
-    //based on the inflation radius... compute distance and cost caches
-    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
-    cached_distances_ = new double*[cell_inflation_radius_ + 2];
-    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
-      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
-      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
-        cached_distances_[i][j] = sqrt(i*i + j*j);
-        cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
-      }
-    }
+    computeCaches();
 
     if(!static_data.empty()){
       ROS_ASSERT_MSG(size_x_ * size_y_ == static_data.size(), "If you want to initialize a costmap with static data, their sizes must match.");
@@ -618,6 +610,7 @@ namespace costmap_2d{
   }
   
   void Costmap2D::reinflateWindow(double wx, double wy, double w_size_x, double w_size_y, bool clear){
+    boost::recursive_mutex::scoped_lock rwl(configuration_mutex_);
     //reset the markers for inflation
     memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
 
@@ -866,6 +859,20 @@ namespace costmap_2d{
     }
   }
 
+  void Costmap2D::computeCaches() {
+    //based on the inflation radius... compute distance and cost caches
+    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
+        cached_distances_[i][j] = sqrt(i*i + j*j);
+        cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
+      }
+    }
+  }
+
   void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y){
     //project the new origin into the grid
     int cell_ox, cell_oy;
@@ -914,7 +921,6 @@ namespace costmap_2d{
 
     //make sure to clean up
     delete[] local_map;
-
   }
 
   bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value) {
