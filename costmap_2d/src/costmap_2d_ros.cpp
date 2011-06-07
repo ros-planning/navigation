@@ -100,15 +100,6 @@ namespace costmap_2d {
 
     rolling_window_ = config.rolling_window;
 
-    // Update the new publisher
-    if(costmap_publisher_->active()){
-      std::vector<geometry_msgs::Point> oriented_footprint;
-      getOrientedFootprint(oriented_footprint);
-      tf::Stamped<tf::Pose> global_pose;
-      getRobotPose(global_pose);
-      costmap_publisher_->updateCostmapData(*costmap_, oriented_footprint, global_pose);
-    }
-    
     costmap_->reconfigure(config);
 
     // once all configuration is done, restart the map update loop
