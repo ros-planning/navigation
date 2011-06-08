@@ -85,6 +85,11 @@ namespace costmap_2d {
           const std::vector<unsigned char>& static_data = std::vector<unsigned char>(0), unsigned char lethal_threshold = 0,
           unsigned int unknown_threshold = 0, unsigned int mark_threshold = 0, unsigned char unknown_cost_value = 0);
 
+
+      VoxelCostmap2D(costmap_2d::Costmap2D& costmap, 
+          double z_resolution, unsigned int cells_size_z, double origin_z=0.0, 
+          unsigned int mark_threshold=0, unsigned int unknown_threshold=0);
+
       /**
        * @brief  Destructor
        */

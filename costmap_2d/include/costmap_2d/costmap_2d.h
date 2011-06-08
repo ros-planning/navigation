@@ -122,6 +122,9 @@ namespace costmap_2d {
       virtual ~Costmap2D();
 
       void reconfigure(costmap_2d::Costmap2DConfig &config);
+
+      //virtual void configureMapType(costmap_2d::Costmap2DConfig &config);
+
       /**
        * @brief  Revert to the static map outside of a specified window centered at a world coordinate
        * @param wx The x coordinate of the center point of the window in world space (meters)

@@ -92,14 +92,52 @@ namespace costmap_2d {
       footprint_spec_ = footprint_spec;
     }
     else if(footprint_string != last_foot) {
-        ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
-        last_foot = footprint_string;
+      ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
+      last_foot = footprint_string;
     }
 
     //robot_radius_ = config.robot_radius;
 
     rolling_window_ = config.rolling_window;
 
+    static string last_type = "";
+
+    boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
+
+    // Change map type and regenerate the new map
+    if(config.map_type == "voxel" && config.map_type != last_type) {
+      VoxelCostmap2D *temp = new VoxelCostmap2D(*costmap_, config.z_resolution, config.z_voxels, config.origin_z, config.mark_threshold, config.unknown_threshold); 
+      delete costmap_;
+      costmap_ = temp;
+
+      if(config.publish_voxel_map) {  
+        publish_voxel_ = true;
+        if(voxel_pub_ == NULL) {
+          ros::NodeHandle nh("~/" + name_);
+          voxel_pub_ = nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
+        }
+      }
+      last_type = "voxel";
+    }
+    else if(config.map_type == "costmap" && config.map_type != last_type) {
+      publish_voxel_ = false;
+      config.publish_voxel_map = false;
+      //regenerate costmap
+
+      Costmap2D *temp = new Costmap2D(*costmap_);
+      delete costmap_;
+      costmap_ = temp;
+
+      last_type = "costmap";
+    }
+    else if(config.map_type == "voxel" && config.publish_voxel_map) {
+        publish_voxel_ = true;
+    }
+    else {
+        publish_voxel_ = false;
+        config.publish_voxel_map = false;
+    }
+   
     costmap_->reconfigure(config);
 
     // once all configuration is done, restart the map update loop

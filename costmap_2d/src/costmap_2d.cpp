@@ -54,6 +54,9 @@ namespace costmap_2d{
       computeCaches();
 
       updateOrigin(config.origin_x, config.origin_y);
+
+      unknown_cost_value_ = config.unknown_cost_value;
+      lethal_threshold_ = config.lethal_cost_threshold;
   }
 
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
@@ -130,6 +133,8 @@ namespace costmap_2d{
   void Costmap2D::replaceFullMap(double win_origin_x, double win_origin_y,
                              unsigned int data_size_x, unsigned int data_size_y,
                              const std::vector<unsigned char>& static_data){
+    boost::recursive_mutex::scoped_lock rfml(configuration_mutex_);
+
     //delete our old maps
     deleteMaps();
 
@@ -181,6 +186,8 @@ namespace costmap_2d{
   void Costmap2D::replaceStaticMapWindow(double win_origin_x, double win_origin_y, 
                                          unsigned int data_size_x, unsigned int data_size_y, 
                                          const std::vector<unsigned char>& static_data){
+    boost::recursive_mutex::scoped_lock stwl(configuration_mutex_);
+
     unsigned int start_x, start_y;
     if(!worldToMap(win_origin_x, win_origin_y, start_x, start_y) || (start_x + data_size_x) > size_x_ || (start_y + data_size_y) > size_y_){
       ROS_ERROR("You must call replaceStaticMapWindow with a window origin and size that is contained within the map");
