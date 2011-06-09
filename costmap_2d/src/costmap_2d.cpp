@@ -57,6 +57,13 @@ namespace costmap_2d{
 
       unknown_cost_value_ = config.unknown_cost_value;
       lethal_threshold_ = config.lethal_cost_threshold;
+
+      weight_ = config.cost_scaling_factor;
+
+      if((config.footprint == "" || config.footprint == "[]") && config.robot_radius > 0) {
+        inscribed_radius_ = config.robot_radius;
+        circumscribed_radius_ = inscribed_radius_;
+      }
   }
 
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 

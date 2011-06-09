@@ -123,7 +123,7 @@ namespace costmap_2d {
 
       void reconfigure(costmap_2d::Costmap2DConfig &config);
 
-      //virtual void configureMapType(costmap_2d::Costmap2DConfig &config);
+      //virtual void finishConfiguration(costmap_2d::Costmap2DConfig &config);
 
       /**
        * @brief  Revert to the static map outside of a specified window centered at a world coordinate
