@@ -316,6 +316,8 @@ namespace costmap_2d {
        */
       void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
 
+      void movementCB(ros::TimerEvent &event);
+
       /**
        * @brief  Callback to update the costmap's map from the map_server
        * @param new_map The map to put into the costmap. The origin of the new
@@ -408,6 +410,7 @@ namespace costmap_2d {
       std::vector<unsigned char> input_data_;
       bool costmap_initialized_;
 
+      bool robot_stopped_;
       dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
       boost::mutex map_update_mutex_;
       boost::recursive_mutex configuration_mutex_;

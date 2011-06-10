@@ -47,212 +47,6 @@ namespace costmap_2d {
     return x < 0.0 ? -1.0 : 1.0;
   }
 
-  void Costmap2DROS::reconfigureCB(Costmap2DConfig &config, uint32_t level) {
-    static tf::Stamped<tf::Pose> old_pose;
-    tf::Stamped<tf::Pose> new_pose;
-    if(!getRobotPose(new_pose)){
-      ROS_WARN("Could not get robot pose, cancelling reconfiguration");
-      return;
-    }
-
-    //make sure that the robot is not moving before reconfiguring
-    if(new_pose.getRotation() != old_pose.getRotation() || new_pose.getOrigin() != old_pose.getOrigin()) {
-      ROS_ERROR("You are attempting to reconfigure the map while the robot is in motion, cancelling reconfiguration.");
-      old_pose = new_pose;
-      return;
-    }
-   
-    //lock before modifying anything
-    boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
-
-    transform_tolerance_ = config.transform_tolerance;
-
-    // shutdown and restart the map update loop at a new frequency
-    map_update_thread_shutdown_ = true;
-    map_update_thread_->join();
-    boost::mutex::scoped_lock ml(map_update_mutex_);
-
-    //check and configure a new robot footprint
-    //accepts a lis of points formatted [[x1, y1],[x2,y2],....[xn,yn]]
-    static string last_foot = "[]";
-    string footprint_string = config.footprint;
-    boost::char_separator<char> sep("[] ");
-    boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
-    vector<string> points(tokens.begin(), tokens.end());
-
-    //parse the input string into points
-    vector<geometry_msgs::Point> footprint_spec;
-    if(points.size() >= 5) {
-      BOOST_FOREACH(string t, tokens) {
-        if (t != ",") {
-          boost::char_separator<char> pt_sep(", ");
-          boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
-
-          vector<double>tmp_pt;
-          BOOST_FOREACH(string p, pt_tokens) {
-            istringstream iss(p);
-            double temp;
-            iss >> temp;
-            tmp_pt.push_back(temp);
-          }
-          geometry_msgs::Point pt;
-          pt.x = tmp_pt[0];
-          pt.y = tmp_pt[1];
-
-          footprint_spec.push_back(pt);
-        }
-      }
-      footprint_spec_ = footprint_spec;
-    }
-    //clear the footprint for a circular robot
-    else if(config.robot_radius > 0.0) {
-      footprint_spec_ = vector<geometry_msgs::Point>();
-    }
-    else if(footprint_string != last_foot && !config.robot_radius > 0.0) {
-      ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
-      last_foot = footprint_string;
-    }
-
-    static bool static_map=false;
-    static string map_topic="map";
-    //unmangle rolling_window and static map
-    //both can be false but if one is true then the other is not
-    if(!config.static_map && !config.rolling_window){
-        //wierd behavior here
-    }
-    else if(config.static_map && config.rolling_window){
-      ROS_WARN("You have selected both rolling window and static map, using static_map");
-      config.rolling_window = false;
-      //static_map_ = true;
-      rolling_window_ = false;
-    }
-    else if(config.rolling_window) {
-      rolling_window_ = true;
-      //static_map_ = false;
-    }
-    else if(config.static_map != static_map || config.map_topic != map_topic) {
-      static_map = true;
-      map_topic = config.map_topic;
-      rolling_window_ = false;
-
-      //we'll subscribe to the latched topic that the map server uses
-      ROS_INFO("Requesting new map...\n");
-      ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
-      map_sub_ = nh.subscribe(map_topic, 1, &Costmap2DROS::incomingMap, this);
-
-      ros::Rate r(1.0);
-      while(!map_initialized_ && ros::ok()){
-        ros::spinOnce();
-        ROS_INFO("Still waiting on new map...\n");
-        r.sleep();
-      }
-    }
-
-    boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
-    static string last_type = "";
-    static double l_width, l_height, l_resolution;
-
-    bool user_params = false;
-    if(config.width != l_width || config.height != l_height || config.resolution != l_resolution) {
-      user_params = true;
-
-      l_width = config.width;
-      l_height = config.height;
-      l_resolution = config.resolution;
-    }
-
-    if(user_params && !config.static_map) {
-        if(config.map_type == "voxel") {
-          unsigned int size_x, size_y, z_voxels;
-          unsigned char lethal_threshold, unknown_cost_value;
-          unsigned int unknown_threshold, mark_threshold;
-
-          size_x = ceil(config.width/config.resolution);
-          size_y = ceil(config.height/config.resolution);
-          z_voxels = config.z_voxels;
-
-          lethal_threshold = config.lethal_cost_threshold;
-          unknown_threshold = config.unknown_threshold;
-          mark_threshold = config.mark_threshold;
-
-          unknown_cost_value = config.unknown_cost_value;
-
-          VoxelCostmap2D *new_map = new VoxelCostmap2D(size_x, size_y, z_voxels, 
-                         config.resolution, config.z_resolution, costmap_->getOriginX(), costmap_->getOriginY(), config.origin_z, 
-                         costmap_->getInscribedRadius(), costmap_->getCircumscribedRadius(), config.inflation_radius, 
-                         config.max_obstacle_range, config.raytrace_range, config.cost_scaling_factor, 
-                         input_data_, lethal_threshold, unknown_threshold, mark_threshold, unknown_cost_value);
-
-          delete costmap_;
-          costmap_ = new_map;
-        }
-        else if(config.map_type == "costmap") {
-          unsigned int size_x, size_y;
-          unsigned char lethal_threshold, unknown_cost_value;
-
-          size_x = ceil(config.width/config.resolution);
-          size_y = ceil(config.height/config.resolution);
-
-          lethal_threshold = config.lethal_cost_threshold;
-          unknown_cost_value = config.unknown_cost_value;
-         
-          Costmap2D *new_map = new Costmap2D(size_x, size_y, config.resolution, costmap_->getOriginX(), costmap_->getOriginY(),
-                  costmap_->getInscribedRadius(), costmap_->getCircumscribedRadius(), config.inflation_radius,
-                  config.max_obstacle_range, config.max_obstacle_height, config.raytrace_range, config.cost_scaling_factor, 
-                  input_data_, lethal_threshold, config.track_unknown_space, unknown_cost_value);
-          delete costmap_;
-          costmap_ = new_map;
-        }
-    }
-    else if(user_params && config.static_map) {
-      ROS_WARN("You have set map parameters but have selected to use the static map, you paramters will be overidden");
-    }
-    // Change map type and regenerate the new map
-    else if(config.map_type == "voxel" && config.map_type != last_type) {
-      //copy the current costmap into a voxel costmap
-      VoxelCostmap2D *temp = new VoxelCostmap2D(*costmap_, config.z_resolution, config.z_voxels, config.origin_z, config.mark_threshold, config.unknown_threshold); 
-      delete costmap_;
-      costmap_ = temp;
-
-      if(config.publish_voxel_map) {  
-        publish_voxel_ = true;
-        if(voxel_pub_ == NULL) {
-          ros::NodeHandle nh("~/" + name_);
-          voxel_pub_ = nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
-        }
-      }
-    }
-    else if(config.map_type == "costmap" && config.map_type != last_type) {
-      ROS_INFO("Using costmap");
-      publish_voxel_ = false;
-      config.publish_voxel_map = false;
-
-      //regenerate costmap
-      Costmap2D *temp = new Costmap2D(*costmap_);
-      delete costmap_;
-      costmap_ = temp;
-    }
-    else if(config.map_type == "voxel" && config.publish_voxel_map) {
-      publish_voxel_ = true;
-    }
-    else {
-      publish_voxel_ = false;
-      config.publish_voxel_map = false;
-    }
-    last_type = config.map_type;
-
-    //reconfigure the underlying costmap 
-    costmap_->reconfigure(config);
-
-    double map_publish_frequency = config.publish_frequency;
-    costmap_publisher_ = new Costmap2DPublisher(ros::NodeHandle("~/"+name_), map_publish_frequency, global_frame_);
-
-    //once all configuration is done, restart the map update loop
-    map_update_thread_shutdown_ = false;
-    double map_update_frequency = config.update_frequency;
-    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
-  }
-
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
@@ -596,9 +390,238 @@ namespace costmap_2d {
 
     costmap_initialized_ = true;
     
+    //Create a time r to check if the robot is moving
+    ros::Timer timer = private_nh.createTimer(ros::Duration(0.1), &Costmap2DROS::movementCB, this);
     dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/"+name));
     dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
+  }
+
+  void Costmap2DROS::movementCB(ross:TimerEvent &event) {
+    //don't allow configuration to happen while this check occurs
+    boost::recursive_mutex::scoped_lock mcl(configuration_mutex_);
+
+    static tf::Stamped<tf::Pose> old_pose;
+    tf::Stamped<tf::Pose> new_pose;
+
+    if(!getRobotPose(new_pose)){
+      ROS_WARN("Could not get robot pose, cancelling reconfiguration");
+      robot_stopped_ = false
+      return;
+    }
+    //make sure that the robot is not moving 
+    if(new_pose.getRotation() != old_pose.getRotation() || new_pose.getOrigin() != old_pose.getOrigin()) {
+      ROS_ERROR("You are attempting to reconfigure the map while the robot is in motion, cancelling reconfiguration.");
+      old_pose = new_pose;
+      robot_stopped_ = false;
+      return;
+    }
+    else {
+      robot_stopped_ = true;
+    }
+  }
+
+  void Costmap2DROS::reconfigureCB(Costmap2DConfig &config, uint32_t level) {
+    static bool setup = false;
+
+    if(!setup) {
+
+    }
+    else if(setup && robot_stopped_) {
+      //lock before modifying anything
+      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
+ 
+      transform_tolerance_ = config.transform_tolerance;
+
+      // shutdown and restart the map update loop at a new frequency
+      map_update_thread_shutdown_ = true;
+      map_update_thread_->join();
+      boost::mutex::scoped_lock ml(map_update_mutex_);
+
+      //check and configure a new robot footprint
+      //accepts a lis of points formatted [[x1, y1],[x2,y2],....[xn,yn]]
+      static string last_foot = "[]";
+      string footprint_string = config.footprint;
+      boost::char_separator<char> sep("[] ");
+      boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
+      vector<string> points(tokens.begin(), tokens.end());
+
+      //parse the input string into points
+      vector<geometry_msgs::Point> footprint_spec;
+      bool circular = false;
+
+      if(points.size() >= 5) {
+        BOOST_FOREACH(string t, tokens) {
+          if (t != ",") {
+            boost::char_separator<char> pt_sep(", ");
+            boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
+
+            vector<double>tmp_pt;
+            BOOST_FOREACH(string p, pt_tokens) {
+              istringstream iss(p);
+              double temp;
+              iss >> temp;
+              tmp_pt.push_back(temp);
+            }
+            geometry_msgs::Point pt;
+            pt.x = tmp_pt[0];
+            pt.y = tmp_pt[1];
+
+            footprint_spec.push_back(pt);
+          }
+        }
+        footprint_spec_ = footprint_spec;
+      }
+      //clear the footprint for a circular robot
+      else if(config.robot_radius > 0.0) {
+        footprint_spec_ = vector<geometry_msgs::Point>();
+        circular = true;
+      }
+      else if(footprint_string != last_foot && !config.robot_radius > 0.0) {
+        ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
+        last_foot = footprint_string;
+      }
+
+      static bool static_map=false;
+      static string map_topic="map";
+      //unmangle rolling_window and static map
+      //both can be false but if one is true then the other is not
+      if(!config.static_map && !config.rolling_window){
+          //wierd behavior here
+      }
+      else if(config.static_map && config.rolling_window){
+        ROS_WARN("You have selected both rolling window and static map, using static_map");
+        config.rolling_window = false;
+        //static_map_ = true;
+        rolling_window_ = false;
+      }
+      else if(config.rolling_window) {
+        rolling_window_ = true;
+        //static_map_ = false;
+      }
+      else if(config.static_map != static_map || config.map_topic != map_topic) {
+        static_map = true;
+        map_topic = config.map_topic;
+        rolling_window_ = false;
+
+        //we'll subscribe to the latched topic that the map server uses
+        ROS_INFO("Requesting new map...\n");
+        ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
+        map_sub_ = nh.subscribe(map_topic, 1, &Costmap2DROS::incomingMap, this);
+
+        ros::Rate r(1.0);
+        while(!map_initialized_ && ros::ok()){
+          ros::spinOnce();
+          ROS_INFO("Still waiting on new map...\n");
+          r.sleep();
+        }
+      }
+
+      boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
+      static string last_type = "";
+      static double l_width, l_height, l_resolution;
+
+      //check to see if the map needs to be regenerated
+      bool user_params = false;
+      if(config.width != l_width || config.height != l_height || config.resolution != l_resolution || circular) {
+        user_params = true;
+ 
+        l_width = config.width;
+        l_height = config.height;
+        l_resolution = config.resolution;
+      }
+
+      if(user_params && !config.static_map) {
+        if(config.map_type == "voxel") {
+          unsigned int size_x, size_y, z_voxels;
+          unsigned char lethal_threshold, unknown_cost_value;
+          unsigned int unknown_threshold, mark_threshold;
+
+          size_x = ceil(config.width/config.resolution);
+          size_y = ceil(config.height/config.resolution);
+          z_voxels = config.z_voxels;
+
+          lethal_threshold = config.lethal_cost_threshold;
+          unknown_threshold = config.unknown_threshold;
+          mark_threshold = config.mark_threshold;
+
+          unknown_cost_value = config.unknown_cost_value;
+
+          VoxelCostmap2D *new_map = new VoxelCostmap2D(size_x, size_y, z_voxels, 
+                         config.resolution, config.z_resolution, costmap_->getOriginX(), costmap_->getOriginY(), config.origin_z, 
+                         costmap_->getInscribedRadius(), costmap_->getCircumscribedRadius(), config.inflation_radius, 
+                         config.max_obstacle_range, config.raytrace_range, config.cost_scaling_factor, 
+                         input_data_, lethal_threshold, unknown_threshold, mark_threshold, unknown_cost_value);
+
+          delete costmap_;
+          costmap_ = new_map;
+        }
+        else if(config.map_type == "costmap") {
+          unsigned int size_x, size_y;
+          unsigned char lethal_threshold, unknown_cost_value;
+
+          size_x = ceil(config.width/config.resolution);
+          size_y = ceil(config.height/config.resolution);
+  
+          lethal_threshold = config.lethal_cost_threshold;
+          unknown_cost_value = config.unknown_cost_value;
+         
+          Costmap2D *new_map = new Costmap2D(size_x, size_y, config.resolution, costmap_->getOriginX(), costmap_->getOriginY(),
+                  costmap_->getInscribedRadius(), costmap_->getCircumscribedRadius(), config.inflation_radius,
+                  config.max_obstacle_range, config.max_obstacle_height, config.raytrace_range, config.cost_scaling_factor, 
+                  input_data_, lethal_threshold, config.track_unknown_space, unknown_cost_value);
+          delete costmap_;
+          costmap_ = new_map;
+        }
+      }
+      else if(user_params && config.static_map) {
+        ROS_WARN("You have set map parameters but have selected to use the static map, you paramters will be overidden");
+      }
+      // Change map type and regenerate the new map
+      else if(config.map_type == "voxel" && config.map_type != last_type) {
+        //copy the current costmap into a voxel costmap
+        VoxelCostmap2D *temp = new VoxelCostmap2D(*costmap_, config.z_resolution, config.z_voxels, config.origin_z, config.mark_threshold, config.unknown_threshold); 
+        delete costmap_;
+        costmap_ = temp;
+
+        if(config.publish_voxel_map) {  
+          publish_voxel_ = true;
+          if(voxel_pub_ == NULL) {
+            ros::NodeHandle nh("~/" + name_);
+            voxel_pub_ = nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
+          }
+        }
+      }
+      else if(config.map_type == "costmap" && config.map_type != last_type) {
+        ROS_INFO("Using costmap");
+        publish_voxel_ = false;
+        config.publish_voxel_map = false;
+  
+        //regenerate costmap
+        Costmap2D *temp = new Costmap2D(*costmap_);
+        delete costmap_;
+        costmap_ = temp;
+      }
+      else if(config.map_type == "voxel" && config.publish_voxel_map) {
+        publish_voxel_ = true;
+      }
+      else {
+        publish_voxel_ = false;
+        config.publish_voxel_map = false;
+      }
+      last_type = config.map_type;
+
+      //reconfigure the underlying costmap 
+      costmap_->reconfigure(config);
+
+      double map_publish_frequency = config.publish_frequency;
+      costmap_publisher_ = new Costmap2DPublisher(ros::NodeHandle("~/"+name_), map_publish_frequency, global_frame_);
+
+      //once all configuration is done, restart the map update loop
+      map_update_thread_shutdown_ = false;
+      double map_update_frequency = config.update_frequency;
+      map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+    }
   }
 
   double Costmap2DROS::distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1){
