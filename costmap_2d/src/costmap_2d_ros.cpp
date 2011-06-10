@@ -80,11 +80,11 @@ namespace costmap_2d {
     boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
     vector<string> points(tokens.begin(), tokens.end());
 
+    //parse the input string into points
     vector<geometry_msgs::Point> footprint_spec;
     if(points.size() >= 5) {
       BOOST_FOREACH(string t, tokens) {
         if (t != ",") {
-        ROS_INFO("%s", t.c_str());
           boost::char_separator<char> pt_sep(", ");
           boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
 
@@ -113,7 +113,9 @@ namespace costmap_2d {
       last_foot = footprint_string;
     }
 
-    //unmangle rolling_windo and static map
+    static bool static_map=false;
+    static string map_topic="map";
+    //unmangle rolling_window and static map
     //both can be false but if one is true then the other is not
     if(!config.static_map && !config.rolling_window){
         //wierd behavior here
@@ -128,9 +130,22 @@ namespace costmap_2d {
       rolling_window_ = true;
       //static_map_ = false;
     }
-    else {
-      //static_map_ = true;
+    else if(config.static_map != static_map || config.map_topic != map_topic) {
+      static_map = true;
+      map_topic = config.map_topic;
       rolling_window_ = false;
+
+      //we'll subscribe to the latched topic that the map server uses
+      ROS_INFO("Requesting new map...\n");
+      ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
+      map_sub_ = nh.subscribe(map_topic, 1, &Costmap2DROS::incomingMap, this);
+
+      ros::Rate r(1.0);
+      while(!map_initialized_ && ros::ok()){
+        ros::spinOnce();
+        ROS_INFO("Still waiting on new map...\n");
+        r.sleep();
+      }
     }
 
     boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
@@ -189,6 +204,9 @@ namespace costmap_2d {
           costmap_ = new_map;
         }
     }
+    else if(user_params && config.static_map) {
+      ROS_WARN("You have set map parameters but have selected to use the static map, you paramters will be overidden");
+    }
     // Change map type and regenerate the new map
     else if(config.map_type == "voxel" && config.map_type != last_type) {
       //copy the current costmap into a voxel costmap
@@ -222,7 +240,7 @@ namespace costmap_2d {
       config.publish_voxel_map = false;
     }
     last_type = config.map_type;
-  
+
     //reconfigure the underlying costmap 
     costmap_->reconfigure(config);
 

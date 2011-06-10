@@ -47,6 +47,7 @@
 #include <costmap_2d/VoxelGrid.h>
 #include <sensor_msgs/PointCloud.h>
 #include <boost/thread.hpp>
+#include <costmap_2d/Costmap2DConfig.h>
 
 namespace costmap_2d {
   /**
@@ -204,6 +205,8 @@ namespace costmap_2d {
       inline double dist(double x0, double y0, double z0, double x1, double y1, double z1){
         return sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0) + (z1 - z0) * (z1 - z0));
       }
+
+      void finishConfiguration(costmap_2d::Costmap2DConfig &config);
 
     protected:
       voxel_grid::VoxelGrid voxel_grid_;

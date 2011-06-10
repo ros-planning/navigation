@@ -385,5 +385,9 @@ namespace costmap_2d{
     }
   }
 
+  void VoxelCostmap2D::finishConfiguration(costmap_2d::Costmap2DConfig &config) {
+    unknown_threshold_ = config.unknown_threshold;
+    mark_threshold_ = config.mark_threshold;
+  }
 
 };

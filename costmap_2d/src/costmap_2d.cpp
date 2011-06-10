@@ -64,6 +64,11 @@ namespace costmap_2d{
         inscribed_radius_ = config.robot_radius;
         circumscribed_radius_ = inscribed_radius_;
       }
+
+      finishConfiguration(config);
+  }
+
+  void Costmap2D::finishConfiguration(costmap_2d::Costmap2DConfig &config) {
   }
 
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
