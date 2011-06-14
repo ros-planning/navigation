@@ -392,7 +392,7 @@ namespace costmap_2d {
     costmap_initialized_ = true;
     
     //Create a time r to check if the robot is moving
-    timer_ = private_nh.createTimer(ros::Duration(.5), &Costmap2DROS::movementCB, this);
+    timer_ = private_nh.createTimer(ros::Duration(.1), &Costmap2DROS::movementCB, this);
     dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/"+name));
     dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
@@ -402,30 +402,20 @@ namespace costmap_2d {
     //don't allow configuration to happen while this check occurs
     boost::recursive_mutex::scoped_lock mcl(configuration_mutex_);
 
-    static tf::Stamped<tf::Pose> old_pose;
     tf::Stamped<tf::Pose> new_pose;
-
-    getRobotPose(old_pose);
-    ros::Duration(.1).sleep();
 
     if(!getRobotPose(new_pose)){
       ROS_WARN("Could not get robot pose, cancelling reconfiguration");
       robot_stopped_ = false;
     }
     //make sure that the robot is not moving 
-    if((new_pose.getRotation() != old_pose.getRotation()) || (new_pose.getOrigin() != old_pose.getOrigin())) {
-      old_pose = new_pose; 
+    if((new_pose.getRotation() != old_pose_.getRotation()) || (new_pose.getOrigin() != old_pose_.getOrigin())) {
+      old_pose_ = new_pose; 
       robot_stopped_ = false;
     }
     else {
-      old_pose = new_pose;
+      old_pose_ = new_pose;
       robot_stopped_ = true;
-
-      //TODO:call reconfigure to udpate anything that was lost while moving
-      /*ostringstream cmd;
-      cmd << "rosrun dynamic_reconfigure dynparam set " << ros::this_node::getName() << " rolling_window " << rolling_window_;
-      ROS_INFO("Reconfiguring using command: %s",cmd.str().c_str());
-      system(cmd.str().c_str());*/
     }
   }
 
