@@ -51,7 +51,7 @@ namespace costmap_2d {
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
                              save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false), 
-                             robot_stopped_(false), setup_(false) {
+                             robot_stopped_(false), setup_(false), l_foot_("") {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
@@ -492,7 +492,37 @@ namespace costmap_2d {
       }
       else if(footprint_string != l_foot_ && !config.robot_radius > 0.0) {
         ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
-        l_foot_ = footprint_string;
+      }
+      double inscribed_radius, circumscribed_radius;
+      inscribed_radius = config.robot_radius;
+      circumscribed_radius = inscribed_radius;
+
+      //if we have a footprint, recaclulate the radii
+      if(footprint_spec_.size() > 2){
+        //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
+        double min_dist = std::numeric_limits<double>::max();
+        double max_dist = 0.0;
+
+        for(unsigned int i = 0; i < footprint_spec_.size() - 1; ++i){
+          //check the distance from the robot center point to the first vertex
+          double vertex_dist = distance(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y);
+          double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y, footprint_spec_[i+1].x, footprint_spec_[i+1].y);
+          min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+          max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+        }
+      
+
+        //we also need to do the last vertex and the first vertex
+        double vertex_dist = distance(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y);
+        double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y, footprint_spec_.front().x, footprint_spec_.front().y);
+        min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+        max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+
+        inscribed_radius = min_dist;
+        circumscribed_radius = max_dist;
+      }
+      if(inscribed_radius > config.inflation_radius || circumscribed_radius > config.inflation_radius){
+        ROS_WARN("You have set an inflation radius that is less than the inscribed and circumscribed radii of the robot. This is dangerous and could casue the robot to hit obstacles. Please change your inflation radius setting appropraitely.");
       }
 
       //unmangle rolling_window and static map
@@ -531,14 +561,15 @@ namespace costmap_2d {
 
       //check to see if the map needs to be regenerated
       bool user_params = false;
-      if(config.width != l_width_ || config.height != l_height_ || config.resolution != l_resolution_ || circular || config.unknown_threshold != l_unknown_threshold_ || config.mark_threshold != l_mark_threshold_) {
+      if(config.width != l_width_ || config.height != l_height_ || config.resolution != l_resolution_ || config.footprint != l_foot_ ||  circular || config.unknown_threshold != l_unknown_threshold_ || config.mark_threshold != l_mark_threshold_) {
         user_params = true;
- 
+
         l_width_ = config.width;
         l_height_ = config.height;
         l_resolution_ = config.resolution;
         l_unknown_threshold_ = config.unknown_threshold;
         l_mark_threshold_ = config.mark_threshold;
+        l_foot_ = config.footprint;
       }
 
       if(user_params && !config.static_map) {
@@ -559,7 +590,7 @@ namespace costmap_2d {
 
           VoxelCostmap2D *new_map = new VoxelCostmap2D(size_x, size_y, z_voxels, 
                          config.resolution, config.z_resolution, costmap_->getOriginX(), costmap_->getOriginY(), config.origin_z, 
-                         costmap_->getInscribedRadius(), costmap_->getCircumscribedRadius(), config.inflation_radius, 
+                         inscribed_radius, circumscribed_radius, config.inflation_radius, 
                          config.max_obstacle_range, config.raytrace_range, config.cost_scaling_factor, 
                          input_data_, lethal_threshold, unknown_threshold, mark_threshold, unknown_cost_value);
 
@@ -577,7 +608,7 @@ namespace costmap_2d {
           unknown_cost_value = config.unknown_cost_value;
          
           Costmap2D *new_map = new Costmap2D(size_x, size_y, config.resolution, costmap_->getOriginX(), costmap_->getOriginY(),
-                  costmap_->getInscribedRadius(), costmap_->getCircumscribedRadius(), config.inflation_radius,
+                  inscribed_radius, circumscribed_radius, config.inflation_radius,
                   config.max_obstacle_range, config.max_obstacle_height, config.raytrace_range, config.cost_scaling_factor, 
                   input_data_, lethal_threshold, config.track_unknown_space, unknown_cost_value);
           delete costmap_;
