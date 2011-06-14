@@ -72,6 +72,7 @@
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <stdlib.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/Costmap2DConfig.h>
 
@@ -316,7 +317,7 @@ namespace costmap_2d {
        */
       void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
 
-      void movementCB(ros::TimerEvent &event);
+      void movementCB(const ros::TimerEvent &event);
 
       /**
        * @brief  Callback to update the costmap's map from the map_server
@@ -411,9 +412,12 @@ namespace costmap_2d {
       bool costmap_initialized_;
 
       bool robot_stopped_;
+      bool setup_;
       dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
       boost::mutex map_update_mutex_;
       boost::recursive_mutex configuration_mutex_;
+      ros::Timer timer_;
+      tf::Stamped<tf::Pose> old_pose_;
   };
 };
 

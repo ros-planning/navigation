@@ -50,7 +50,8 @@ namespace costmap_2d {
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
-                             save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false){
+                             save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false), 
+                             robot_stopped_(false), setup_(false) {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
@@ -391,43 +392,66 @@ namespace costmap_2d {
     costmap_initialized_ = true;
     
     //Create a time r to check if the robot is moving
-    ros::Timer timer = private_nh.createTimer(ros::Duration(0.1), &Costmap2DROS::movementCB, this);
+    timer_ = private_nh.createTimer(ros::Duration(.5), &Costmap2DROS::movementCB, this);
     dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/"+name));
     dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
   }
 
-  void Costmap2DROS::movementCB(ross:TimerEvent &event) {
+  void Costmap2DROS::movementCB(const ros::TimerEvent &event) {
     //don't allow configuration to happen while this check occurs
     boost::recursive_mutex::scoped_lock mcl(configuration_mutex_);
 
     static tf::Stamped<tf::Pose> old_pose;
     tf::Stamped<tf::Pose> new_pose;
 
+    getRobotPose(old_pose);
+    ros::Duration(.1).sleep();
+
     if(!getRobotPose(new_pose)){
       ROS_WARN("Could not get robot pose, cancelling reconfiguration");
-      robot_stopped_ = false
-      return;
+      robot_stopped_ = false;
     }
     //make sure that the robot is not moving 
-    if(new_pose.getRotation() != old_pose.getRotation() || new_pose.getOrigin() != old_pose.getOrigin()) {
-      ROS_ERROR("You are attempting to reconfigure the map while the robot is in motion, cancelling reconfiguration.");
-      old_pose = new_pose;
+    if((new_pose.getRotation() != old_pose.getRotation()) || (new_pose.getOrigin() != old_pose.getOrigin())) {
+      old_pose = new_pose; 
       robot_stopped_ = false;
-      return;
     }
     else {
+      old_pose = new_pose;
       robot_stopped_ = true;
+
+      //TODO:call reconfigure to udpate anything that was lost while moving
+      /*ostringstream cmd;
+      cmd << "rosrun dynamic_reconfigure dynparam set " << ros::this_node::getName() << " rolling_window " << rolling_window_;
+      ROS_INFO("Reconfiguring using command: %s",cmd.str().c_str());
+      system(cmd.str().c_str());*/
     }
   }
 
   void Costmap2DROS::reconfigureCB(Costmap2DConfig &config, uint32_t level) {
-    static bool setup = false;
+    ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
 
-    if(!setup) {
+    //change the configuration defaults to match the param server
+    //TODO:This should be removed dynamic_reconfigure does this 
+    if(!setup_) {
+      ostringstream oss;
+      bool first = true;
+      BOOST_FOREACH(geometry_msgs::Point p, footprint_spec_) {
+        if(first) {
+          oss << "[[" << p.x << "," << p.y << "]";
+        }
+        else {
+          oss << ",[" << p.x << "," << p.y << "]";
+        }
+      }
+      oss << "]";
+      config.footprint = oss.str();
+      ROS_INFO("Footprint is: %s", oss.str().c_str());
 
+      setup_ = true;
     }
-    else if(setup && robot_stopped_) {
+    else if(setup_ && robot_stopped_) {
       //lock before modifying anything
       boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
  
@@ -487,7 +511,7 @@ namespace costmap_2d {
       //unmangle rolling_window and static map
       //both can be false but if one is true then the other is not
       if(!config.static_map && !config.rolling_window){
-          //wierd behavior here
+        rolling_window_ = false;
       }
       else if(config.static_map && config.rolling_window){
         ROS_WARN("You have selected both rolling window and static map, using static_map");
@@ -506,7 +530,6 @@ namespace costmap_2d {
 
         //we'll subscribe to the latched topic that the map server uses
         ROS_INFO("Requesting new map...\n");
-        ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
         map_sub_ = nh.subscribe(map_topic, 1, &Costmap2DROS::incomingMap, this);
 
         ros::Rate r(1.0);
