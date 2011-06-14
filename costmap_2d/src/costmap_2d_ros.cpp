@@ -454,7 +454,6 @@ namespace costmap_2d {
 
       //check and configure a new robot footprint
       //accepts a lis of points formatted [[x1, y1],[x2,y2],....[xn,yn]]
-      static string last_foot = "[]";
       string footprint_string = config.footprint;
       boost::char_separator<char> sep("[] ");
       boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
@@ -491,13 +490,11 @@ namespace costmap_2d {
         footprint_spec_ = vector<geometry_msgs::Point>();
         circular = true;
       }
-      else if(footprint_string != last_foot && !config.robot_radius > 0.0) {
+      else if(footprint_string != l_foot_ && !config.robot_radius > 0.0) {
         ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
-        last_foot = footprint_string;
+        l_foot_ = footprint_string;
       }
 
-      static bool static_map=false;
-      static string map_topic="map";
       //unmangle rolling_window and static map
       //both can be false but if one is true then the other is not
       if(!config.static_map && !config.rolling_window){
@@ -506,21 +503,21 @@ namespace costmap_2d {
       else if(config.static_map && config.rolling_window){
         ROS_WARN("You have selected both rolling window and static map, using static_map");
         config.rolling_window = false;
-        //static_map_ = true;
+        static_map_ = true;
         rolling_window_ = false;
       }
       else if(config.rolling_window) {
         rolling_window_ = true;
-        //static_map_ = false;
+        static_map_ = false;
       }
-      else if(config.static_map != static_map || config.map_topic != map_topic) {
-        static_map = true;
-        map_topic = config.map_topic;
+      else if(config.static_map != static_map_ || config.map_topic != map_topic_) {
+        static_map_ = true;
+        map_topic_ = config.map_topic;
         rolling_window_ = false;
 
         //we'll subscribe to the latched topic that the map server uses
         ROS_INFO("Requesting new map...\n");
-        map_sub_ = nh.subscribe(map_topic, 1, &Costmap2DROS::incomingMap, this);
+        map_sub_ = nh.subscribe(map_topic_, 1, &Costmap2DROS::incomingMap, this);
 
         ros::Rate r(1.0);
         while(!map_initialized_ && ros::ok()){
@@ -531,17 +528,17 @@ namespace costmap_2d {
       }
 
       boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
-      static string last_type = "";
-      static double l_width, l_height, l_resolution;
 
       //check to see if the map needs to be regenerated
       bool user_params = false;
-      if(config.width != l_width || config.height != l_height || config.resolution != l_resolution || circular) {
+      if(config.width != l_width_ || config.height != l_height_ || config.resolution != l_resolution_ || circular || config.unknown_threshold != l_unknown_threshold_ || config.mark_threshold != l_mark_threshold_) {
         user_params = true;
  
-        l_width = config.width;
-        l_height = config.height;
-        l_resolution = config.resolution;
+        l_width_ = config.width;
+        l_height_ = config.height;
+        l_resolution_ = config.resolution;
+        l_unknown_threshold_ = config.unknown_threshold;
+        l_mark_threshold_ = config.mark_threshold;
       }
 
       if(user_params && !config.static_map) {
@@ -591,7 +588,7 @@ namespace costmap_2d {
         ROS_WARN("You have set map parameters but have selected to use the static map, you paramters will be overidden");
       }
       // Change map type and regenerate the new map
-      else if(config.map_type == "voxel" && config.map_type != last_type) {
+      else if(config.map_type == "voxel" && config.map_type != l_map_type_) {
         //copy the current costmap into a voxel costmap
         VoxelCostmap2D *temp = new VoxelCostmap2D(*costmap_, config.z_resolution, config.z_voxels, config.origin_z, config.mark_threshold, config.unknown_threshold); 
         delete costmap_;
@@ -605,7 +602,7 @@ namespace costmap_2d {
           }
         }
       }
-      else if(config.map_type == "costmap" && config.map_type != last_type) {
+      else if(config.map_type == "costmap" && config.map_type != l_map_type_) {
         ROS_INFO("Using costmap");
         publish_voxel_ = false;
         config.publish_voxel_map = false;
@@ -622,7 +619,7 @@ namespace costmap_2d {
         publish_voxel_ = false;
         config.publish_voxel_map = false;
       }
-      last_type = config.map_type;
+      l_map_type_ = config.map_type;
 
       //reconfigure the underlying costmap 
       costmap_->reconfigure(config);
@@ -634,6 +631,11 @@ namespace costmap_2d {
       map_update_thread_shutdown_ = false;
       double map_update_frequency = config.update_frequency;
       map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+
+      last_config_ = config;
+    }
+    else {
+      config = last_config_;
     }
   }
 
