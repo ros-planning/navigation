@@ -423,7 +423,6 @@ namespace costmap_2d {
     ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
 
     //change the configuration defaults to match the param server
-    //TODO:This should be removed dynamic_reconfigure does this 
     if(!setup_) {
       ostringstream oss;
       bool first = true;
@@ -437,7 +436,6 @@ namespace costmap_2d {
       }
       oss << "]";
       config.footprint = oss.str();
-      ROS_INFO("Footprint is: %s", oss.str().c_str());
 
       setup_ = true;
     }
@@ -634,7 +632,6 @@ namespace costmap_2d {
         }
       }
       else if(config.map_type == "costmap" && config.map_type != l_map_type_) {
-        ROS_INFO("Using costmap");
         publish_voxel_ = false;
         config.publish_voxel_map = false;
   

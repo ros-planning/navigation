@@ -42,35 +42,6 @@
 using namespace std;
 
 namespace costmap_2d{
-  void Costmap2D::reconfigure(Costmap2DConfig &config) {
-      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
-
-      max_obstacle_height_ = config.max_obstacle_height;
-      max_obstacle_range_ = config.max_obstacle_range;
-      max_raytrace_range_ = config.raytrace_range;
-      
-      inflation_radius_ = config.inflation_radius;
-      cell_inflation_radius_ = cellDistance(inflation_radius_);
-      computeCaches();
-
-      updateOrigin(config.origin_x, config.origin_y);
-
-      unknown_cost_value_ = config.unknown_cost_value;
-      lethal_threshold_ = config.lethal_cost_threshold;
-
-      weight_ = config.cost_scaling_factor;
-
-      if((config.footprint == "" || config.footprint == "[]") && config.robot_radius > 0) {
-        inscribed_radius_ = config.robot_radius;
-        circumscribed_radius_ = inscribed_radius_;
-      }
-
-      finishConfiguration(config);
-  }
-
-  void Costmap2D::finishConfiguration(costmap_2d::Costmap2DConfig &config) {
-  }
-
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
       double resolution, double origin_x, double origin_y, double inscribed_radius,
       double circumscribed_radius, double inflation_radius, double max_obstacle_range,
@@ -140,6 +111,35 @@ namespace costmap_2d{
       //everything is unknown initially if we don't have a static map unless we aren't tracking unkown space in which case it is free
       resetMaps();
     }
+  }
+
+  void Costmap2D::reconfigure(Costmap2DConfig &config) {
+      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
+
+      max_obstacle_height_ = config.max_obstacle_height;
+      max_obstacle_range_ = config.max_obstacle_range;
+      max_raytrace_range_ = config.raytrace_range;
+      
+      inflation_radius_ = config.inflation_radius;
+      cell_inflation_radius_ = cellDistance(inflation_radius_);
+      computeCaches();
+
+      updateOrigin(config.origin_x, config.origin_y);
+
+      unknown_cost_value_ = config.unknown_cost_value;
+      lethal_threshold_ = config.lethal_cost_threshold;
+
+      weight_ = config.cost_scaling_factor;
+
+      if((config.footprint == "" || config.footprint == "[]") && config.robot_radius > 0) {
+        inscribed_radius_ = config.robot_radius;
+        circumscribed_radius_ = inscribed_radius_;
+      }
+
+      finishConfiguration(config);
+  }
+
+  void Costmap2D::finishConfiguration(costmap_2d::Costmap2DConfig &config) {
   }
 
   void Costmap2D::replaceFullMap(double win_origin_x, double win_origin_y,
