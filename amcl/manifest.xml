@@ -20,6 +20,7 @@
   <depend package="message_filters" />
   <depend package="nav_msgs" />
   <depend package="std_srvs" />
+  <depend package="dynamic_reconfigure" />
   
   <!-- For tests -->
   <depend package="map_server"/>

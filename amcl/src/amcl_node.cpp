@@ -51,6 +51,10 @@
 #include "tf/message_filter.h"
 #include "message_filters/subscriber.h"
 
+// Dynamic_reconfigure
+#include "dynamic_reconfigure/server.h"
+#include "amcl/AMCLConfig.h"
+
 using namespace amcl;
 
 // Pose hypothesis
@@ -178,6 +182,11 @@ class AmclNode
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::Subscriber initial_pose_sub_old_;
+
+    boost::recursive_mutex configuration_mutex_;
+    dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
+
+    void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
 };
 
 #define USAGE "USAGE: amcl"
@@ -204,6 +213,8 @@ AmclNode::AmclNode() :
         resample_count_(0),
 	private_nh_("~")
 {
+  boost::recursive_mutex::scoped_lock l(configuration_mutex_);
+
   // Grab params off the param server
   int max_beams, min_particles, max_particles;
   double alpha1, alpha2, alpha3, alpha4, alpha5;
@@ -355,11 +366,103 @@ AmclNode::AmclNode() :
   initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
 
   initial_pose_sub_old_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceivedOld, this);
+
+  dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
+  dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
+  dsrv_->setCallback(cb);
+}
+
+void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
+{
+  boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
+
+  d_thresh_ = config.update_min_d;
+  a_thresh_ = config.update_min_a;
+
+  resample_interval_ = config.resample_interval;
+
+  laser_min_range_ = config.laser_min_range;
+  laser_max_range_ = config.laser_max_range;
+
+  gui_publish_period = ros::Duration(1.0/config.gui_publish_rate);
+  save_pose_period = ros::Duration(1.0/config.save_pose_rate);
+
+  transform_tolerance_.fromSec(config.transform_tolerance);
+
+  laser_model_t laser_model_type;
+  if(config.laser_model_type == "beam")
+    laser_model_type = LASER_MODEL_BEAM;
+  else if(config.laser_model_type == "likelihood_field")
+    laser_model_type = LASER_MODEL_LIKELIHOOD_FIELD;
+
+  odom_model_t odom_model_type;
+  if(config.odom_model_type == "diff")
+    odom_model_type = ODOM_MODEL_DIFF;
+  else if(config.odom_model_type == "omni")
+    odom_model_type = ODOM_MODEL_OMNI;
+
+  pf_ = pf_alloc(config.min_particles, config.max_particles,
+                 config.recovery_alpha_slow, config.recovery_alpha_fast,
+                 (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
+                 (void *)map_);
+  pf_->pop_err = config.kld_err;
+  pf_->pop_z = config.kld_z;
+
+  // Initialize the filter
+  pf_vector_t pf_init_pose_mean = pf_vector_zero();
+  pf_init_pose_mean.v[0] = config.initial_pose_x;
+  pf_init_pose_mean.v[1] = config.initial_pose_y;
+  pf_init_pose_mean.v[2] = config.initial_pose_a;;
+  pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
+  pf_init_pose_cov.m[0][0] = config.initial_cov_xx;
+  pf_init_pose_cov.m[1][1] = config.initial_cov_yy;
+  pf_init_pose_cov.m[2][2] = config.initial_cov_aa;
+  pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
+  pf_init_ = false;
+
+  // Instantiate the sensor objects
+  // Odometry
+  odom_ = new AMCLOdom();
+  ROS_ASSERT(odom_);
+  if(odom_model_type == ODOM_MODEL_OMNI)
+    odom_->SetModelOmni(config.odom_alpha1, config.odom_alpha2, config.odom_alpha3, config.odom_alpha4, config.odom_alpha5);
+  else
+    odom_->SetModelDiff(config.odom_alpha1, config.odom_alpha2, config.odom_alpha3, config.odom_alpha4);
+  // Laser
+  laser_ = new AMCLLaser(config.laser_max_beams, map_);
+  ROS_ASSERT(laser_);
+  if(laser_model_type == LASER_MODEL_BEAM)
+    laser_->SetModelBeam(config.laser_z_hit, config.laser_z_short, config.laser_z_max, config.laser_z_rand,
+                         config.laser_sigma_hit, config.laser_lambda_short, 0.0);
+  else
+  {
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
+    laser_->SetModelLikelihoodField(config.laser_z_hit, config.laser_z_rand, config.laser_sigma_hit,
+                                    config.laser_likelihood_max_dist);
+    ROS_INFO("Done initializing likelihood field model.");
+  }
+
+  odom_frame_id_ = config.odom_frame_id;
+  base_frame_id_ = config.base_frame_id;
+  global_frame_id_ = config.global_frame_id;
+
+  laser_scan_filter_ = 
+          new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
+                                                        *tf_, 
+                                                        odom_frame_id_, 
+                                                        100);
+  laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
+                                                   this, _1));
+
+  initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, global_frame_id_, 2);
+  initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
 }
 
 map_t*
 AmclNode::requestMap()
 {
+  boost::recursive_mutex::scoped_lock ml(configuration_mutex_);
+
   map_t* map = map_alloc();
   ROS_ASSERT(map);
 
@@ -474,6 +577,7 @@ bool
 AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
                                      std_srvs::Empty::Response& res)
 {
+  boost::recursive_mutex::scoped_lock gl(configuration_mutex_);
   pf_mutex_.lock();
   ROS_INFO("Initializing with uniform distribution");
   pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
@@ -486,6 +590,8 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
+  boost::recursive_mutex::scoped_lock lr(configuration_mutex_);
+
   int laser_index = -1;
 
   // Do we have the base->base_laser Tx yet?
@@ -890,6 +996,7 @@ AmclNode::initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedC
 void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
+  boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
   tf::StampedTransform tx_odom;
