@@ -39,6 +39,7 @@
 #include <ros/console.h>
 #include <sys/time.h>
 #include <pluginlib/class_list_macros.h>
+#include <boost/tokenizer.hpp>
 
 #include "geometry_msgs/PolygonStamped.h"
 #include "nav_msgs/Path.h"
@@ -227,21 +228,14 @@ namespace base_local_planner {
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
     std::vector<double> y_vels;
 
-    XmlRpc::XmlRpcValue y_vel_list;
+    std::string y_vel_list;
     if(node.getParam("y_vels", y_vel_list)){
-      ROS_ASSERT_MSG(y_vel_list.getType() == XmlRpc::XmlRpcValue::TypeArray, 
-          "The y velocities to explore must be specified as a list");
+      typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+      boost::char_separator<char> sep("[], ");
+      tokenizer tokens(y_vel_list, sep);
 
-      for(int i = 0; i < y_vel_list.size(); ++i){
-        //make sure we have a list of lists of size 2
-        XmlRpc::XmlRpcValue vel = y_vel_list[i];
-
-        //make sure that the value we're looking at is either a double or an int
-        ROS_ASSERT(vel.getType() == XmlRpc::XmlRpcValue::TypeInt || vel.getType() == XmlRpc::XmlRpcValue::TypeDouble);
-        double y_vel = vel.getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(vel) : (double)(vel);
-
-        y_vels.push_back(y_vel);
-
+      for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); i++){
+        y_vels.push_back(atof((*i).c_str()));
       }
     }
     else{
