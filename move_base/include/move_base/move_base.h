@@ -56,6 +56,9 @@
 #include <pluginlib/class_loader.h>
 #include <std_srvs/Empty.h>
 
+#include <dynamic_reconfigure/server.h>
+#include "move_base/MoveBaseConfig.h"
+
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
   typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
@@ -204,6 +207,12 @@ namespace move_base {
       pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
       pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
+      boost::recursive_mutex configuration_mutex_;
+      dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
+      std::string last_global_planner_;
+      std::string last_local_planner_;
+      
+      void reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level);
   };
 };
 #endif

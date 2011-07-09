@@ -186,6 +186,87 @@ namespace move_base {
 
     //we're all set up now so we can start the action server
     as_->start();
+
+    dsrv_ = new dynamic_reconfigure::Server<move_base::MoveBaseConfig>(ros::NodeHandle("~"));
+    dynamic_reconfigure::Server<move_base::MoveBaseConfig>::CallbackType cb = boost::bind(&MoveBase::reconfigureCB, this, _1, _2);
+    dsrv_->setCallback(cb);
+  }
+
+  void MoveBase::reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level){
+    boost::recursive_mutex::scoped_lock l(configuration_mutex_);
+
+    controller_frequency_ = config.controller_frequency;
+    planner_patience_ = config.planner_patience;
+    controller_patience_ = config.controller_patience;
+    conservative_reset_dist_ = config.conservative_reset_dist;
+
+    recovery_behavior_enabled_ = config.recovery_behavior_enabled;
+    clearing_roatation_allowed_ = config.clearing_rotation_allowed;
+    shutdown_costmaps_ = config.shutdown_costmaps;
+
+    oscillation_timeout_ = config.oscillation_timeout;
+    oscillation_distance_ = config.oscillation_distance;
+    if(config.base_global_planner != last_global_planner_) {
+      last_global_planner_ = config.base_global_planner;
+      delete planner_;
+      //initialize the global planner
+      try {
+        //check if a non fully qualified name has potentially been passed in
+        if(!bgp_loader_.isClassAvailable(config.base_global_planner)){
+          std::vector<std::string> classes = bgp_loader_.getDeclaredClasses();
+          for(unsigned int i = 0; i < classes.size(); ++i){
+            if(config.base_global_planner == bgp_loader_.getName(classes[i])){
+              //if we've found a match... we'll get the fully qualified name and break out of the loop
+              ROS_WARN("Planner specifications should now include the package name. You are using a deprecated API. Please switch from %s to %s in your yaml file.",
+                  config.base_global_planner.c_str(), classes[i].c_str());
+              config.base_global_planner = classes[i];
+              break;
+            }
+          }
+        }
+ 
+        planner_ = bgp_loader_.createClassInstance(config.base_global_planner);
+        planner_->initialize(bgp_loader_.getName(config.base_global_planner), planner_costmap_ros_);
+      } catch (const pluginlib::PluginlibException& ex)
+      {
+        ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", config.base_global_planner.c_str(), ex.what());
+        exit(0);
+      }
+    }
+
+    if(config.base_local_planner == last_local_planner_){
+      last_local_planner_ = config.base_local_planner;
+      delete tc_;
+      //create a local planner
+      try {
+        //check if a non fully qualified name has potentially been passed in
+        ROS_INFO("Loading local planner: %s", config.base_local_planner.c_str());
+        ROS_INFO("Planner available %d", blp_loader_.isClassAvailable(config.base_local_planner));
+        if(!blp_loader_.isClassAvailable(config.base_local_planner)){
+          std::vector<std::string> classes = blp_loader_.getDeclaredClasses();
+          for(unsigned int i = 0; i < classes.size(); ++i){
+            if(config.base_local_planner == blp_loader_.getName(classes[i])){
+              //if we've found a match... we'll get the fully qualified name and break out of the loop
+              ROS_WARN("Planner specifications should now include the package name. You are using a deprecated API. Please switch from %s to %s in your yaml file.",
+                  config.base_local_planner.c_str(), classes[i].c_str());
+              config.base_local_planner = classes[i];
+              break;
+            }
+          }
+        }
+        tc_ = blp_loader_.createClassInstance(config.base_local_planner);
+        ROS_INFO("Instance");
+        ROS_INFO("Getting name");
+        std::string name = blp_loader_.getName(config.base_local_planner);
+        ROS_INFO("Got name %s", name.c_str());
+        tc_->initialize(blp_loader_.getName(config.base_local_planner), &tf_, controller_costmap_ros_);
+        ROS_INFO("Init");
+      } catch (const pluginlib::PluginlibException& ex)
+      {
+        ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", config.base_local_planner.c_str(), ex.what());
+        exit(0);
+      }
+    }
   }
 
   void MoveBase::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal){
@@ -552,6 +633,7 @@ namespace move_base {
   }
 
   bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan){
+    boost::recursive_mutex::scoped_lock ecl(configuration_mutex_);
     //we need to be able to publish velocity commands
     geometry_msgs::Twist cmd_vel;
 
