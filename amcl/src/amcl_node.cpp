@@ -51,6 +51,10 @@
 #include "tf/message_filter.h"
 #include "message_filters/subscriber.h"
 
+// Dynamic_reconfigure
+#include "dynamic_reconfigure/server.h"
+#include "amcl/AMCLConfig.h"
+
 using namespace amcl;
 
 // Pose hypothesis
@@ -154,7 +158,6 @@ class AmclNode
 
     // Particle filter
     pf_t *pf_;
-    boost::mutex pf_mutex_;
     double pf_err_, pf_z_;
     bool pf_init_;
     pf_vector_t pf_odom_pose_;
@@ -191,6 +194,10 @@ class AmclNode
 
     amcl_hyp_t* initial_pose_hyp_;
     bool first_map_received_;
+    bool first_reconfigure_call_;
+
+    boost::recursive_mutex configuration_mutex_;
+    dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
 
     int max_beams_, min_particles_, max_particles_;
     double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
@@ -201,6 +208,8 @@ class AmclNode
     double init_pose_[3];
     double init_cov_[3];
     laser_model_t laser_model_type_;
+
+    void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
 };
 
 #define USAGE "USAGE: amcl"
@@ -227,10 +236,13 @@ AmclNode::AmclNode() :
         resample_count_(0),
         odom_(NULL),
         laser_(NULL),
-	private_nh_("~"),
+	      private_nh_("~"),
         initial_pose_hyp_(NULL),
-        first_map_received_(false)
+        first_map_received_(false),
+        first_reconfigure_call_(true)
 {
+  boost::recursive_mutex::scoped_lock l(configuration_mutex_);
+
   // Grab params off the param server
   private_nh_.param("use_map_topic", use_map_topic_, false);
   private_nh_.param("first_map_only", first_map_only_, false);
@@ -336,11 +348,141 @@ AmclNode::AmclNode() :
   } else {
     requestMap();
   }
+
+  dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
+  dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
+  dsrv_->setCallback(cb);
+}
+
+void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
+{
+  boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
+
+  //we don't want to do anything on the first call
+  //which corresponds to startup
+  if(first_reconfigure_call_)
+  {
+    first_reconfigure_call_ = false;
+    return;
+  }
+
+  d_thresh_ = config.update_min_d;
+  a_thresh_ = config.update_min_a;
+
+  resample_interval_ = config.resample_interval;
+
+  laser_min_range_ = config.laser_min_range;
+  laser_max_range_ = config.laser_max_range;
+
+  gui_publish_period = ros::Duration(1.0/config.gui_publish_rate);
+  save_pose_period = ros::Duration(1.0/config.save_pose_rate);
+
+  transform_tolerance_.fromSec(config.transform_tolerance);
+
+  max_beams_ = config.laser_max_beams;
+  alpha1_ = config.odom_alpha1;
+  alpha2_ = config.odom_alpha2;
+  alpha3_ = config.odom_alpha3;
+  alpha4_ = config.odom_alpha4;
+  alpha5_ = config.odom_alpha5;
+
+  z_hit_ = config.laser_z_hit;
+  z_short_ = config.laser_z_short;
+  z_max_ = config.laser_z_max;
+  z_rand_ = config.laser_z_rand;
+  sigma_hit_ = config.laser_sigma_hit;
+  lambda_short_ = config.laser_lambda_short;
+  laser_likelihood_max_dist_ = config.laser_likelihood_max_dist;
+
+  if(config.laser_model_type == "beam")
+    laser_model_type_ = LASER_MODEL_BEAM;
+  else if(config.laser_model_type == "likelihood_field")
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
+
+  if(config.odom_model_type == "diff")
+    odom_model_type_ = ODOM_MODEL_DIFF;
+  else if(config.odom_model_type == "omni")
+    odom_model_type_ = ODOM_MODEL_OMNI;
+
+  if(config.min_particles > config.max_particles)
+  {
+    ROS_WARN("You've set min_particles to be less than max particles, this isn't allowed so they'll be set to be equal.");
+    config.max_particles = config.min_particles;
+  }
+
+  min_particles_ = config.min_particles;
+  max_particles_ = config.max_particles;
+  alpha_slow_ = config.recovery_alpha_slow;
+  alpha_fast_ = config.recovery_alpha_fast;
+
+  pf_ = pf_alloc(min_particles_, max_particles_,
+                 alpha_slow_, alpha_fast_,
+                 (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
+                 (void *)map_);
+  pf_err_ = config.kld_err; 
+  pf_z_ = config.kld_z; 
+  pf_->pop_err = pf_err_;
+  pf_->pop_z = pf_z_;
+
+  // Initialize the filter
+  pf_vector_t pf_init_pose_mean = pf_vector_zero();
+  pf_init_pose_mean.v[0] = last_published_pose.pose.pose.position.x;
+  pf_init_pose_mean.v[1] = last_published_pose.pose.pose.position.y;
+  pf_init_pose_mean.v[2] = tf::getYaw(last_published_pose.pose.pose.orientation);
+  pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
+  pf_init_pose_cov.m[0][0] = last_published_pose.pose.covariance[6*0+0];
+  pf_init_pose_cov.m[1][1] = last_published_pose.pose.covariance[6*1+1];
+  pf_init_pose_cov.m[2][2] = last_published_pose.pose.covariance[6*3+3];
+  pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
+  pf_init_ = false;
+
+  // Instantiate the sensor objects
+  // Odometry
+  delete odom_;
+  odom_ = new AMCLOdom();
+  ROS_ASSERT(odom_);
+  if(odom_model_type_ == ODOM_MODEL_OMNI)
+    odom_->SetModelOmni(alpha1_, alpha2_, alpha3_, alpha4_, alpha5_);
+  else
+    odom_->SetModelDiff(alpha1_, alpha2_, alpha3_, alpha4_);
+  // Laser
+  delete laser_;
+  laser_ = new AMCLLaser(max_beams_, map_);
+  ROS_ASSERT(laser_);
+  if(laser_model_type_ == LASER_MODEL_BEAM)
+    laser_->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
+                         sigma_hit_, lambda_short_, 0.0);
+  else
+  {
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
+    laser_->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
+                                    laser_likelihood_max_dist_);
+    ROS_INFO("Done initializing likelihood field model.");
+  }
+
+  odom_frame_id_ = config.odom_frame_id;
+  base_frame_id_ = config.base_frame_id;
+  global_frame_id_ = config.global_frame_id;
+
+  delete laser_scan_filter_;
+  laser_scan_filter_ = 
+          new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
+                                                        *tf_, 
+                                                        odom_frame_id_, 
+                                                        100);
+  laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
+                                                   this, _1));
+
+  delete initial_pose_filter_;
+  initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, global_frame_id_, 2);
+  initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
 }
 
 void
 AmclNode::requestMap()
 {
+  boost::recursive_mutex::scoped_lock ml(configuration_mutex_);
+
   // get map via RPC
   nav_msgs::GetMap::Request  req;
   nav_msgs::GetMap::Response resp;
@@ -369,7 +511,7 @@ AmclNode::mapReceived(const nav_msgs::OccupancyGridConstPtr& msg)
 void
 AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
 {
-  pf_mutex_.lock();
+  boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
 
   ROS_INFO("Received a %d X %d map @ %.3f m/pix\n",
            msg.info.width,
@@ -402,6 +544,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
 
   // Instantiate the sensor objects
   // Odometry
+  delete odom_;
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
   if(odom_model_type_ == ODOM_MODEL_OMNI)
@@ -409,6 +552,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   else
     odom_->SetModelDiff(alpha1_, alpha2_, alpha3_, alpha4_);
   // Laser
+  delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
   ROS_ASSERT(laser_);
   if(laser_model_type_ == LASER_MODEL_BEAM)
@@ -426,7 +570,6 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   // try to apply the initial pose now that the map has arrived.
   applyInitialPose();
 
-  pf_mutex_.unlock();
 }
 
 void
@@ -552,12 +695,11 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
   if( map_ == NULL ) {
     return true;
   }
-  pf_mutex_.lock();
+  boost::recursive_mutex::scoped_lock gl(configuration_mutex_);
   ROS_INFO("Initializing with uniform distribution");
   pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                 (void *)map_);
   pf_init_ = false;
-  pf_mutex_.unlock();
   return true;
 }
 
@@ -567,6 +709,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   if( map_ == NULL ) {
     return;
   }
+  boost::recursive_mutex::scoped_lock lr(configuration_mutex_);
   int laser_index = -1;
 
   // Do we have the base->base_laser Tx yet?
@@ -621,7 +764,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     return;
   }
 
-  pf_mutex_.lock();
 
   pf_vector_t delta = pf_vector_zero();
 
@@ -885,7 +1027,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       catch(tf::TransformException)
       {
         ROS_DEBUG("Failed to subtract base to odom transform");
-        pf_mutex_.unlock();
         return;
       }
 
@@ -945,7 +1086,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     }
   }
 
-  pf_mutex_.unlock();
 }
 
 double
@@ -971,6 +1111,7 @@ AmclNode::initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedC
 void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
+  boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
   tf::StampedTransform tx_odom;
@@ -1016,6 +1157,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   }
   pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*3+3];
 
+  delete initial_pose_hyp_;
   initial_pose_hyp_ = new amcl_hyp_t();
   initial_pose_hyp_->pf_pose_mean = pf_init_pose_mean;
   initial_pose_hyp_->pf_pose_cov = pf_init_pose_cov;
@@ -1030,11 +1172,10 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
 void
 AmclNode::applyInitialPose()
 {
+  boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
   if( initial_pose_hyp_ != NULL && map_ != NULL ) {
-    pf_mutex_.lock();
     pf_init(pf_, initial_pose_hyp_->pf_pose_mean, initial_pose_hyp_->pf_pose_cov);
     pf_init_ = false;
-    pf_mutex_.unlock();
 
     delete initial_pose_hyp_;
     initial_pose_hyp_ = NULL;

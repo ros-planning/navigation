@@ -50,6 +50,8 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <boost/tokenizer.hpp>
+#include <boost/foreach.hpp>
 
 #include <tf/transform_datatypes.h>
 
@@ -69,6 +71,10 @@
 // Thread suppport
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include <stdlib.h>
+#include <dynamic_reconfigure/server.h>
+#include <costmap_2d/Costmap2DConfig.h>
 
 namespace costmap_2d {
 
@@ -307,6 +313,13 @@ namespace costmap_2d {
 
     private:
       /**
+       * @brief Callback for dynamic_reconfigure
+       */
+      void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
+
+      void movementCB(const ros::TimerEvent &event);
+
+      /**
        * @brief  Callback to update the costmap's map from the map_server
        * @param new_map The map to put into the costmap. The origin of the new
        * map along with its size will determine what parts of the costmap's
@@ -398,7 +411,17 @@ namespace costmap_2d {
       std::vector<unsigned char> input_data_;
       bool costmap_initialized_;
 
+      bool robot_stopped_, setup_, static_map_;
+      std::string l_foot_, l_map_type_, map_topic_; 
+      double l_width_, l_height_, l_resolution_, l_unknown_threshold_, l_mark_threshold_;
 
+
+      dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
+      boost::mutex map_update_mutex_;
+      boost::recursive_mutex configuration_mutex_;
+      costmap_2d::Costmap2DConfig last_config_;
+      ros::Timer timer_;
+      tf::Stamped<tf::Pose> old_pose_;
   };
 };
 

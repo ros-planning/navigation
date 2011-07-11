@@ -47,6 +47,7 @@
 #include <costmap_2d/VoxelGrid.h>
 #include <sensor_msgs/PointCloud.h>
 #include <boost/thread.hpp>
+#include <costmap_2d/Costmap2DConfig.h>
 
 namespace costmap_2d {
   /**
@@ -84,6 +85,11 @@ namespace costmap_2d {
           double raytrace_range = 0.0, double weight = 25.0,
           const std::vector<unsigned char>& static_data = std::vector<unsigned char>(0), unsigned char lethal_threshold = 0,
           unsigned int unknown_threshold = 0, unsigned int mark_threshold = 0, unsigned char unknown_cost_value = 0);
+
+
+      VoxelCostmap2D(costmap_2d::Costmap2D& costmap, 
+          double z_resolution, unsigned int cells_size_z, double origin_z=0.0, 
+          unsigned int mark_threshold=0, unsigned int unknown_threshold=0);
 
       /**
        * @brief  Destructor
@@ -199,6 +205,8 @@ namespace costmap_2d {
       inline double dist(double x0, double y0, double z0, double x1, double y1, double z1){
         return sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0) + (z1 - z0) * (z1 - z0));
       }
+
+      void finishConfiguration(costmap_2d::Costmap2DConfig &config);
 
     protected:
       voxel_grid::VoxelGrid voxel_grid_;
