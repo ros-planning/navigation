@@ -786,6 +786,7 @@ namespace costmap_2d {
   }
 
   Costmap2DROS::~Costmap2DROS(){
+    delete dsrv_;
     map_update_thread_shutdown_ = true;
     if(map_update_thread_ != NULL){
       map_update_thread_->join();

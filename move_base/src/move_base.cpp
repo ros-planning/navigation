@@ -45,7 +45,8 @@ namespace move_base {
     tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
     planner_(NULL), bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
-    recovery_loader_("nav_core", "nav_core::RecoveryBehavior"){
+    recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
+    setup_(false){
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -195,6 +196,15 @@ namespace move_base {
   void MoveBase::reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level){
     boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
+    //The first time we're called, we just want to make sure we have the
+    //original configuration
+    if(!setup_)
+    {
+      last_config_ = config;
+      setup_ = true;
+      return;
+    }
+
     controller_frequency_ = config.controller_frequency;
     planner_patience_ = config.planner_patience;
     controller_patience_ = config.controller_patience;
@@ -206,8 +216,7 @@ namespace move_base {
 
     oscillation_timeout_ = config.oscillation_timeout;
     oscillation_distance_ = config.oscillation_distance;
-    if(config.base_global_planner != last_global_planner_) {
-      last_global_planner_ = config.base_global_planner;
+    if(config.base_global_planner != last_config_.base_global_planner) {
       delete planner_;
       //initialize the global planner
       try {
@@ -234,8 +243,7 @@ namespace move_base {
       }
     }
 
-    if(config.base_local_planner == last_local_planner_){
-      last_local_planner_ = config.base_local_planner;
+    if(config.base_local_planner != last_config_.base_local_planner){
       delete tc_;
       //create a local planner
       try {
@@ -267,6 +275,8 @@ namespace move_base {
         exit(0);
       }
     }
+
+    last_config_ = config;
   }
 
   void MoveBase::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal){
@@ -412,6 +422,8 @@ namespace move_base {
 
   MoveBase::~MoveBase(){
     recovery_behaviors_.clear();
+
+    delete dsrv_;
 
     if(as_ != NULL)
       delete as_;

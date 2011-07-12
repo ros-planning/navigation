@@ -250,6 +250,9 @@ namespace base_local_planner {
   }
 
   TrajectoryPlannerROS::~TrajectoryPlannerROS(){
+    //make sure to clean things up
+    delete dsrv_;
+
     if(tc_ != NULL)
       delete tc_;
 

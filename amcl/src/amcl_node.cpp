@@ -622,6 +622,7 @@ AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
 
 AmclNode::~AmclNode()
 {
+  delete dsrv_;
   freeMapDependentMemory();
   delete laser_scan_filter_;
   delete laser_scan_sub_;
