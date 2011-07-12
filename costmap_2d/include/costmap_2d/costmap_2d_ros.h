@@ -412,9 +412,6 @@ namespace costmap_2d {
       bool costmap_initialized_;
 
       bool robot_stopped_, setup_, static_map_;
-      std::string l_foot_, l_map_type_, map_topic_; 
-      double l_width_, l_height_, l_resolution_, l_unknown_threshold_, l_mark_threshold_;
-
 
       dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
       boost::mutex map_update_mutex_;
