@@ -559,7 +559,7 @@ namespace costmap_2d {
 
       //check to see if the map needs to be regenerated
       bool user_params = false;
-      if(config.width != l_width_ || config.height != l_height_ || config.resolution != l_resolution_ || config.footprint != l_foot_ ||  circular || config.unknown_threshold != l_unknown_threshold_ || config.mark_threshold != l_mark_threshold_) {
+      if(config.width != l_width_ || config.height != l_height_ || config.resolution != l_resolution_ || config.footprint != l_foot_ ||  circular || config.unknown_threshold != l_unknown_threshold_ || config.mark_threshold != l_mark_threshold_ || config.z_voxels != last_config_.z_voxels) {
         user_params = true;
 
         l_width_ = config.width;
@@ -591,7 +591,6 @@ namespace costmap_2d {
                          inscribed_radius, circumscribed_radius, config.inflation_radius, 
                          config.max_obstacle_range, config.raytrace_range, config.cost_scaling_factor, 
                          input_data_, lethal_threshold, unknown_threshold, mark_threshold, unknown_cost_value);
-
           delete costmap_;
           costmap_ = new_map;
         }
@@ -647,6 +646,7 @@ namespace costmap_2d {
         publish_voxel_ = false;
         config.publish_voxel_map = false;
       }
+
       l_map_type_ = config.map_type;
 
       //reconfigure the underlying costmap 
