@@ -437,6 +437,7 @@ namespace costmap_2d {
       oss << "]";
       config.footprint = oss.str();
 
+      last_config_ = config;
       setup_ = true;
     }
     else if(setup_ && robot_stopped_) {
