@@ -147,7 +147,7 @@ namespace costmap_2d {
     ros::Time last_error = ros::Time::now();
     std::string tf_error;
     //we need to make sure that the transform between the robot base frame and the global frame is available
-    while(!tf_.waitForTransform(global_frame_, robot_base_frame_, ros::Time(), ros::Duration(0.1), ros::Duration(0.01), &tf_error)){
+    while(ros::ok() && !tf_.waitForTransform(global_frame_, robot_base_frame_, ros::Time(), ros::Duration(0.1), ros::Duration(0.01), &tf_error)){
       ros::spinOnce();
       if(last_error + ros::Duration(5.0) < ros::Time::now()){
         ROS_WARN("Waiting on transform from %s to %s to become available before running costmap, tf error: %s", 
@@ -819,7 +819,7 @@ namespace costmap_2d {
 
     //block until the costmap is re-initialized.. meaning one update cycle has run
     ros::Rate r(100.0);
-    while(!initialized_)
+    while(ros::ok() && !initialized_)
       r.sleep();
   }
 
