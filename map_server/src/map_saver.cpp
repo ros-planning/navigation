@@ -44,7 +44,7 @@ class MapGenerator
 {
 
   public:
-    MapGenerator(const std::string& mapname) : mapname_(mapname) 
+    MapGenerator(const std::string& mapname) : mapname_(mapname), saved_map_(false)
     {
       ros::NodeHandle n;
       ROS_INFO("Waiting for the map");
@@ -112,10 +112,13 @@ free_thresh: 0.196
       fclose(yaml);
 
       ROS_INFO("Done\n");
+      saved_map_ = true;
     }
 
     std::string mapname_;
     ros::Subscriber map_sub_;
+    bool saved_map_;
+
 };
 
 #define USAGE "Usage: \n" \
@@ -153,7 +156,8 @@ int main(int argc, char** argv)
   
   MapGenerator mg(mapname);
 
-  ros::spin();
+  while(!mg.saved_map_)
+    ros::spinOnce();
 
   return 0;
 }
