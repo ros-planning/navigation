@@ -565,7 +565,6 @@ namespace costmap_2d {
          config.resolution != last_config_.resolution ||
          config.origin_x != last_config_.origin_x ||
          config.origin_y != last_config_.origin_y ||
-         config.publish_voxel_map != last_config_.publish_voxel_map ||
          config.lethal_cost_threshold != last_config_.lethal_cost_threshold ||
          config.map_topic != last_config_.map_topic ||
          config.origin_z != last_config_.origin_z ||
