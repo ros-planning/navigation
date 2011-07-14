@@ -437,12 +437,28 @@ namespace costmap_2d {
       oss << "]";
       config.footprint = oss.str();
 
+      //make sure to disable the parameters that the user shouldn't be able to
+      //reconfigure
+      if(config.static_map)
+        config.groups.map_parameters.state = false;
+      else
+        config.groups.map_parameters.state = true;
+
+      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
+
       last_config_ = config;
+
       setup_ = true;
     }
     else if(setup_ && robot_stopped_) {
       //lock before modifying anything
       boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
+
+      //make sure to disable settings if static map is set
+      if(config.static_map)
+        config.groups.map_parameters.state = false;
+      else
+        config.groups.map_parameters.state = true;
  
       transform_tolerance_ = config.transform_tolerance;
 
@@ -524,38 +540,11 @@ namespace costmap_2d {
         ROS_WARN("You have set an inflation radius that is less than the inscribed and circumscribed radii of the robot. This is dangerous and could casue the robot to hit obstacles. Please change your inflation radius setting appropraitely.");
       }
 
-      //unmangle rolling_window and static map
-      //both can be false but if one is true then the other is not
-      if(!config.static_map && !config.rolling_window){
-        rolling_window_ = false;
-      }
-      else if(config.static_map && config.rolling_window){
+      //if both static map and rolling window are set, we'll use static map and warn
+      if(config.static_map && config.rolling_window){
         ROS_WARN("You have selected both rolling window and static map, using static_map");
         config.rolling_window = false;
-        static_map_ = true;
-        rolling_window_ = false;
       }
-      else if(config.rolling_window) {
-        rolling_window_ = true;
-        static_map_ = false;
-      }
-      else if(config.static_map != static_map_ || config.map_topic != last_config_.map_topic) {
-        static_map_ = true;
-        rolling_window_ = false;
-
-        //we'll subscribe to the latched topic that the map server uses
-        ROS_INFO("Requesting new map...\n");
-        map_sub_ = nh.subscribe(config.map_topic, 1, &Costmap2DROS::incomingMap, this);
-
-        ros::Rate r(1.0);
-        while(!map_initialized_ && ros::ok()){
-          ros::spinOnce();
-          ROS_INFO("Still waiting on new map...\n");
-          r.sleep();
-        }
-      }
-
-      boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
 
       //check to see if the map needs to be regenerated
       //TODO: Make sure that this check actually does the right things
@@ -584,7 +573,9 @@ namespace costmap_2d {
          config.unknown_threshold != last_config_.unknown_threshold ||
          config.mark_threshold != last_config_.mark_threshold ||
          config.track_unknown_space != last_config_.track_unknown_space ||
-         config.map_type != last_config_.map_type)
+         config.map_type != last_config_.map_type ||
+         config.static_map != last_config_.static_map ||
+         config.rolling_window != last_config_.rolling_window)
       {
         user_params = true;
       }
@@ -598,14 +589,80 @@ namespace costmap_2d {
         map_params = true;
       }
 
-      if(user_params && !config.static_map) {
+      if(user_params) {
+        //unmangle rolling_window and static map
+        //both can be false but if one is true then the other is not
+        if(!config.static_map && !config.rolling_window){
+          rolling_window_ = false;
+          static_map_ = false;
+
+          if(last_config_.static_map)
+          {
+            map_sub_.shutdown();
+            map_initialized_ = false;
+          }
+        }
+        else if(config.static_map) {
+          static_map_ = true;
+          rolling_window_ = false;
+
+          //we'll subscribe to the latched topic that the map server uses
+          ros::NodeHandle g_nh;
+          map_sub_.shutdown();
+          map_initialized_ = false;
+          map_sub_ = g_nh.subscribe(config.map_topic, 1, &Costmap2DROS::incomingMap, this);
+          ROS_INFO("Requesting new map on topic %s\n", map_sub_.getTopic().c_str());
+
+          ros::Rate r(1.0);
+          while(!map_initialized_ && ros::ok()){
+            ros::spinOnce();
+            ROS_INFO("Still waiting on new map...\n");
+            r.sleep();
+          }
+        }
+        else if(config.rolling_window) {
+          rolling_window_ = true;
+          static_map_ = false;
+
+          if(last_config_.static_map)
+          {
+            map_sub_.shutdown();
+            map_initialized_ = false;
+          }
+        }
+
+        //make sure to lock before we start messing with the map
+        boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
+
+        unsigned int size_x, size_y;
+        size_x = ceil(config.width/config.resolution);
+        size_y = ceil(config.height/config.resolution);
+        double resolution = config.resolution;
+        double origin_x = config.origin_x;
+        double origin_y = config.origin_y;
+
+        if(config.static_map)
+        {
+          if(map_params)
+          {
+            ROS_WARN("You're trying to change parameters that will be overwritten since static_map is set. Your changes will have no effect");
+          }
+
+          size_x = (unsigned int)map_meta_data_.width;
+          size_y = (unsigned int)map_meta_data_.height;
+          resolution = map_meta_data_.resolution;
+          origin_x = map_meta_data_.origin.position.x;
+          origin_y = map_meta_data_.origin.position.y;
+
+          ROS_INFO("Received a %d X %d map at %f m/pix\n",
+              size_x, size_y, resolution);
+        }
+
         if(config.map_type == "voxel") {
-          unsigned int size_x, size_y, z_voxels;
+          unsigned int z_voxels;
           unsigned char lethal_threshold, unknown_cost_value;
           unsigned int unknown_threshold, mark_threshold;
 
-          size_x = ceil(config.width/config.resolution);
-          size_y = ceil(config.height/config.resolution);
           z_voxels = config.z_voxels;
 
           lethal_threshold = config.lethal_cost_threshold;
@@ -615,7 +672,7 @@ namespace costmap_2d {
           unknown_cost_value = config.unknown_cost_value;
 
           VoxelCostmap2D *new_map = new VoxelCostmap2D(size_x, size_y, z_voxels, 
-                         config.resolution, config.z_resolution, costmap_->getOriginX(), costmap_->getOriginY(), config.origin_z, 
+                         resolution, config.z_resolution, origin_x, origin_y, config.origin_z, 
                          inscribed_radius, circumscribed_radius, config.inflation_radius, 
                          config.max_obstacle_range, config.raytrace_range, config.cost_scaling_factor, 
                          input_data_, lethal_threshold, unknown_threshold, mark_threshold, unknown_cost_value);
@@ -623,49 +680,18 @@ namespace costmap_2d {
           costmap_ = new_map;
         }
         else if(config.map_type == "costmap") {
-          unsigned int size_x, size_y;
           unsigned char lethal_threshold, unknown_cost_value;
 
-          size_x = ceil(config.width/config.resolution);
-          size_y = ceil(config.height/config.resolution);
-  
           lethal_threshold = config.lethal_cost_threshold;
           unknown_cost_value = config.unknown_cost_value;
          
-          Costmap2D *new_map = new Costmap2D(size_x, size_y, config.resolution, costmap_->getOriginX(), costmap_->getOriginY(),
+          Costmap2D *new_map = new Costmap2D(size_x, size_y, resolution, origin_x, origin_y,
                   inscribed_radius, circumscribed_radius, config.inflation_radius,
                   config.max_obstacle_range, config.max_obstacle_height, config.raytrace_range, config.cost_scaling_factor, 
                   input_data_, lethal_threshold, config.track_unknown_space, unknown_cost_value);
           delete costmap_;
           costmap_ = new_map;
         }
-      }
-      // Change map type and regenerate the new map
-      else if(config.map_type == "voxel" && user_params) {
-        if(map_params)
-        {
-          ROS_WARN("You're trying to change parameters that will be overwritten since static_map is set. Your changes will have no effect");
-        }
-
-        //copy the current costmap into a voxel costmap
-        VoxelCostmap2D *temp = new VoxelCostmap2D(*costmap_, config.z_resolution, config.z_voxels, config.origin_z, config.mark_threshold, config.unknown_threshold); 
-        delete costmap_;
-        costmap_ = temp;
-
-      }
-      else if(config.map_type == "costmap" && user_params) {
-        if(map_params)
-        {
-          ROS_WARN("You're trying to change parameters that will be overwritten since static_map is set. Your changes will have no effect");
-        }
-
-        publish_voxel_ = false;
-        config.publish_voxel_map = false;
-  
-        //regenerate costmap
-        Costmap2D *temp = new Costmap2D(*costmap_);
-        delete costmap_;
-        costmap_ = temp;
       }
 
       if(config.map_type == "voxel" && config.publish_voxel_map) {
@@ -679,6 +705,9 @@ namespace costmap_2d {
         publish_voxel_ = false;
         config.publish_voxel_map = false;
       }
+
+      //make sure that nothing else is modifying the costmap while we reconfigure it
+      boost::recursive_mutex::scoped_lock lock(lock_);
 
       //reconfigure the underlying costmap 
       costmap_->reconfigure(config);
@@ -991,7 +1020,6 @@ namespace costmap_2d {
       voxel_grid.header.stamp = ros::Time::now();
       voxel_pub_.publish(voxel_grid);
     }
-
   }
 
   void Costmap2DROS::clearNonLethalWindow(double size_x, double size_y){
@@ -1095,6 +1123,7 @@ namespace costmap_2d {
       }
 
       //make sure to lock the costmap
+      boost::recursive_mutex::scoped_lock uml(configuration_mutex_);
       boost::recursive_mutex::scoped_lock lock(lock_);
 
       //if the map has a new global frame... we'll actually wipe the whole map rather than trying to be efficient about updating a potential window
