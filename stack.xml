@@ -8,12 +8,15 @@
   <license>BSD,LGPL,LGPL (amcl)</license>  
   <review status="Doc reviewed" notes=""/>
   <url>http://ros.org/wiki/navigation</url>
-  <depend stack="common" /> <!-- bfl, actionlib, yaml_cpp, pluginlib -->
+  <depend stack="bullet" /> <!-- bullet -->
+  <depend stack="common" /> <!-- actionlib, yaml_cpp, bfl -->
   <depend stack="common_msgs" /> <!-- nav_msgs, sensor_msgs, actionlib_msgs, geometry_msgs, visualization_msgs -->
-  <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
-  <depend stack="geometry" /> <!-- tf, angles, bullet, eigen -->
+  <depend stack="dynamic_reconfigure" /> <!-- dynamic_reconfigure -->
+  <depend stack="eigen" /> <!-- eigen -->
+  <depend stack="geometry" /> <!-- tf, angles -->
   <depend stack="laser_pipeline" /> <!-- laser_geometry -->
   <depend stack="perception_pcl" /> <!-- pcl, pcl_ros -->
+  <depend stack="pluginlib" /> <!-- pluginlib -->
   <depend stack="ros" /> <!-- roslib -->
   <depend stack="ros_comm" /> <!-- rosconsole, std_srvs, roscpp, message_filters, std_msgs, rostest, rospy, rostopic, rosbag, rosmsg -->
 
