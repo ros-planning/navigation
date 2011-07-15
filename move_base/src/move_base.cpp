@@ -562,7 +562,6 @@ namespace move_base {
     ros::Rate r(planner_frequency_);
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
     while(n.ok()){
-      boost::recursive_mutex::scoped_lock ecl(configuration_mutex_);
       if(p_freq_change_)
       {
         r = ros::Rate(planner_frequency_);
@@ -586,14 +585,14 @@ namespace move_base {
 
       if(gotPlan){
         ROS_DEBUG("Got Plan!");
-        last_valid_plan_ = ros::Time::now();
-
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
         lock.lock();
         planner_plan_ = latest_plan_;
         latest_plan_ = temp_plan;
+        last_valid_plan_ = ros::Time::now();
+
 
         ROS_DEBUG("Generated a plan from the base_global_planner");
 
@@ -813,7 +812,7 @@ namespace move_base {
     }
 
     //if we have a new plan then grab it and give it to the controller
-    if(last_valid_plan_.toSec() > last_plan_swap_.toSec()){
+    if(last_valid_plan_ >= last_plan_swap_){
       ROS_DEBUG("new plan...swap pointers");
 
       //do a pointer swap under mutex
