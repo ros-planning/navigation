@@ -217,14 +217,14 @@ namespace move_base {
 
     if(planner_frequency_ != config.planner_frequency)
     {
-      p_freq_change_ = true;
       planner_frequency_ = config.planner_frequency;
+      p_freq_change_ = true;
     }
 
     if(controller_frequency_ != config.controller_frequency)
     {
-      c_freq_change_ = true;
       controller_frequency_ = config.controller_frequency;
+      c_freq_change_ = true;
     }
 
     planner_patience_ = config.planner_patience;
@@ -564,6 +564,7 @@ namespace move_base {
     while(n.ok()){
       if(p_freq_change_)
       {
+        ROS_INFO("Setting planner frequency to %.2f", planner_frequency_);
         r = ros::Rate(planner_frequency_);
         p_freq_change_ = false;
       }
@@ -617,7 +618,7 @@ namespace move_base {
         }
       }
 
-      if(planner_frequency_ > 0)
+      if(!p_freq_change_ && planner_frequency_ > 0)
         r.sleep();
 
       //take the mutex for the next iteration
@@ -662,7 +663,7 @@ namespace move_base {
     {
       if(c_freq_change_)
       {
-        boost::recursive_mutex::scoped_lock ecl(configuration_mutex_);
+        ROS_INFO("Setting controller frequency to %.2f", controller_frequency_);
         r = ros::Rate(controller_frequency_);
         c_freq_change_ = false;
       }
