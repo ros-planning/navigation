@@ -26,7 +26,7 @@ This package provides implementations of the Trajectory Rollout and Dynamic Wind
   <depend package="pcl_ros"/>
   <repository>http://pr.willowgarage.com/repos</repository>
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lbase_local_planner" />
+    <cpp cflags="-I${prefix}/include -I${prefix}/cfg/cpp" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lbase_local_planner" />
     <nav_core plugin="${prefix}/blp_plugin.xml" />
   </export>
   <platform os="ubuntu" version="9.04"/>
