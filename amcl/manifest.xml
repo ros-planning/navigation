@@ -16,6 +16,7 @@
   <license>LGPL</license>
   <review status="Doc reviewed"/>
   <depend package="roscpp" />
+  <depend package="rosbag" />
   <depend package="tf" />
   <depend package="message_filters" />
   <depend package="nav_msgs" />
