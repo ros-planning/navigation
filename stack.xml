@@ -11,7 +11,7 @@
   <depend stack="bullet" /> <!-- bullet -->
   <depend stack="common" /> <!-- actionlib, yaml_cpp, bfl -->
   <depend stack="common_msgs" /> <!-- nav_msgs, sensor_msgs, actionlib_msgs, geometry_msgs, visualization_msgs -->
-  <depend stack="dynamic_reconfigure" /> <!-- dynamic_reconfigure -->
+  <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
   <depend stack="eigen" /> <!-- eigen -->
   <depend stack="geometry" /> <!-- tf, angles -->
   <depend stack="laser_pipeline" /> <!-- laser_geometry -->
