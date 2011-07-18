@@ -437,13 +437,6 @@ namespace costmap_2d {
       oss << "]";
       config.footprint = oss.str();
 
-      //make sure to disable the parameters that the user shouldn't be able to
-      //reconfigure
-      if(config.static_map)
-        config.groups.map_parameters.state = false;
-      else
-        config.groups.map_parameters.state = true;
-
       boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
 
       last_config_ = config;
@@ -454,12 +447,6 @@ namespace costmap_2d {
       //lock before modifying anything
       boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
 
-      //make sure to disable settings if static map is set
-      if(config.static_map)
-        config.groups.map_parameters.state = false;
-      else
-        config.groups.map_parameters.state = true;
- 
       transform_tolerance_ = config.transform_tolerance;
 
       // shutdown and restart the map update loop at a new frequency
