@@ -432,7 +432,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
   pf_init_pose_cov.m[0][0] = last_published_pose.pose.covariance[6*0+0];
   pf_init_pose_cov.m[1][1] = last_published_pose.pose.covariance[6*1+1];
-  pf_init_pose_cov.m[2][2] = last_published_pose.pose.covariance[6*3+3];
+  pf_init_pose_cov.m[2][2] = last_published_pose.pose.covariance[6*5+5];
   pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
   pf_init_ = false;
 
@@ -989,8 +989,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       }
       // Report the overall filter covariance, rather than the
       // covariance for the highest-weight cluster
-      //p.covariance[6*3+3] = hyps[max_weight_hyp].pf_pose_cov.m[2][2];
-      p.pose.covariance[6*3+3] = set->cov.m[2][2];
+      //p.covariance[6*5+5] = hyps[max_weight_hyp].pf_pose_cov.m[2][2];
+      p.pose.covariance[6*5+5] = set->cov.m[2][2];
 
       /*
          printf("cov:\n");
@@ -1082,7 +1082,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       private_nh_.setParam("initial_cov_yy", 
                                       last_published_pose.pose.covariance[6*1+1]);
       private_nh_.setParam("initial_cov_aa", 
-                                      last_published_pose.pose.covariance[6*3+3]);
+                                      last_published_pose.pose.covariance[6*5+5]);
       save_pose_last_time = now;
     }
   }
@@ -1156,7 +1156,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
       pf_init_pose_cov.m[i][j] = msg->pose.covariance[6*i+j];
     }
   }
-  pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*3+3];
+  pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*5+5];
 
   delete initial_pose_hyp_;
   initial_pose_hyp_ = new amcl_hyp_t();
