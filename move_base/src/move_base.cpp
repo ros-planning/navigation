@@ -238,7 +238,7 @@ namespace move_base {
     oscillation_timeout_ = config.oscillation_timeout;
     oscillation_distance_ = config.oscillation_distance;
     if(config.base_global_planner != last_config_.base_global_planner) {
-      delete planner_;
+      nav_core::BaseGlobalPlanner* old_planner = planner_;
       //initialize the global planner
       try {
         //check if a non fully qualified name has potentially been passed in
@@ -256,16 +256,18 @@ namespace move_base {
         }
  
         planner_ = bgp_loader_.createClassInstance(config.base_global_planner);
+        delete old_planner;
         planner_->initialize(bgp_loader_.getName(config.base_global_planner), planner_costmap_ros_);
       } catch (const pluginlib::PluginlibException& ex)
       {
         ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", config.base_global_planner.c_str(), ex.what());
-        exit(0);
+        planner_ = old_planner;
+        config.base_global_planner = last_config_.base_global_planner;
       }
     }
 
     if(config.base_local_planner != last_config_.base_local_planner){
-      delete tc_;
+      nav_core::BaseLocalPlanner* old_planner = tc_;
       //create a local planner
       try {
         //check if a non fully qualified name has potentially been passed in
@@ -284,16 +286,13 @@ namespace move_base {
           }
         }
         tc_ = blp_loader_.createClassInstance(config.base_local_planner);
-        ROS_INFO("Instance");
-        ROS_INFO("Getting name");
-        std::string name = blp_loader_.getName(config.base_local_planner);
-        ROS_INFO("Got name %s", name.c_str());
+        delete old_planner;
         tc_->initialize(blp_loader_.getName(config.base_local_planner), &tf_, controller_costmap_ros_);
-        ROS_INFO("Init");
       } catch (const pluginlib::PluginlibException& ex)
       {
         ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", config.base_local_planner.c_str(), ex.what());
-        exit(0);
+        tc_ = old_planner;
+        config.base_local_planner = last_config_.base_local_planner;
       }
     }
 
