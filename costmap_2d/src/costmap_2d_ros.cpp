@@ -665,6 +665,12 @@ namespace costmap_2d {
           origin_x = map_meta_data_.origin.position.x;
           origin_y = map_meta_data_.origin.position.y;
 
+          config.width = size_x;
+          config.height = size_y;
+          config.resolution = resolution;
+          config.origin_x = origin_x;
+          config.origin_y = origin_y;
+
           ROS_INFO("Received a %d X %d map at %f m/pix\n",
               size_x, size_y, resolution);
         }
