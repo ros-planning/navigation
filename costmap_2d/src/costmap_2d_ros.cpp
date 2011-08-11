@@ -409,13 +409,15 @@ namespace costmap_2d {
       robot_stopped_ = false;
     }
     //make sure that the robot is not moving 
-    if((new_pose.getRotation() != old_pose_.getRotation()) || (new_pose.getOrigin() != old_pose_.getOrigin())) {
-      old_pose_ = new_pose; 
-      robot_stopped_ = false;
-    }
-    else {
+    else if(fabs((old_pose_.getOrigin() - new_pose.getOrigin()).length()) < 1e-3 && fabs(old_pose_.getRotation().angle(new_pose.getRotation())) < 1e-3)
+    {
       old_pose_ = new_pose;
       robot_stopped_ = true;
+    }
+    else
+    {
+      old_pose_ = new_pose; 
+      robot_stopped_ = false;
     }
   }
 
@@ -476,6 +478,7 @@ namespace costmap_2d {
             std::vector<string> point(pt_tokens.begin(), pt_tokens.end());
 
             if(point.size() != 2) {
+              ROS_WARN("Each point must have exatcly 2 coordinates");
               valid_foot = false;
               break;
             }
@@ -488,6 +491,7 @@ namespace costmap_2d {
                 tmp_pt.push_back(temp);
               }
               else {
+                ROS_WARN("Each coordinate must convert to a double.");
                 valid_foot = false;
                 break;
               }
@@ -757,6 +761,10 @@ namespace costmap_2d {
       last_config_ = config;
     }
     else {
+      if(setup_)
+      {
+        ROS_WARN("You cannot reconfigure the costmap unless the robot is stopped");
+      }
       config = last_config_;
     }
   }
