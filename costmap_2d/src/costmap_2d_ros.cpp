@@ -441,6 +441,7 @@ namespace costmap_2d {
       boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
 
       last_config_ = config;
+      maptype_config_ = config;
 
       setup_ = true;
     }
@@ -644,6 +645,17 @@ namespace costmap_2d {
 
         //make sure to lock before we start messing with the map
         boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
+
+        if(!config.static_map && last_config_.static_map) {
+          config.width = maptype_config_.width;
+          config.height = maptype_config_.height;
+          config.resolution = maptype_config_.resolution;
+          config.origin_x = maptype_config_.origin_x;
+          config.origin_y = maptype_config_.origin_y;
+
+          maptype_config_ = last_config_;
+        }
+
 
         unsigned int size_x, size_y;
         size_x = ceil(config.width/config.resolution);
