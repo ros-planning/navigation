@@ -52,6 +52,7 @@
 #include <sstream>
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <tf/transform_datatypes.h>
 

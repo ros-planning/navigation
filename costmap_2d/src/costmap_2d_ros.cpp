@@ -461,7 +461,8 @@ namespace costmap_2d {
       //check and configure a new robot footprint
       //accepts a lis of points formatted [[x1, y1],[x2,y2],....[xn,yn]]
       string footprint_string = config.footprint;
-      boost::char_separator<char> sep("[] ");
+      boost::erase_all(footprint_string, " ");
+      boost::char_separator<char> sep("[]");
       boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
       vector<string> points(tokens.begin(), tokens.end());
 
@@ -473,7 +474,7 @@ namespace costmap_2d {
       if(points.size() >= 5) {
         BOOST_FOREACH(string t, tokens) {
           if (t != ",") {
-            boost::char_separator<char> pt_sep(", ");
+            boost::char_separator<char> pt_sep(",  ");
             boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
             std::vector<string> point(pt_tokens.begin(), pt_tokens.end());
 
