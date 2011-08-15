@@ -240,6 +240,7 @@ namespace move_base {
     if(config.base_global_planner != last_config_.base_global_planner) {
       nav_core::BaseGlobalPlanner* old_planner = planner_;
       //initialize the global planner
+      ROS_INFO("Loading global planner %s", config.base_global_planner.c_str());
       try {
         //check if a non fully qualified name has potentially been passed in
         if(!bgp_loader_.isClassAvailable(config.base_global_planner)){
@@ -257,6 +258,11 @@ namespace move_base {
  
         planner_ = bgp_loader_.createClassInstance(config.base_global_planner);
         delete old_planner;
+        // Clean up before initializing the new planner
+        planner_plan_->clear();
+        latest_plan_->clear();
+        controller_plan_->clear();
+        resetState();
         planner_->initialize(bgp_loader_.getName(config.base_global_planner), planner_costmap_ros_);
       } catch (const pluginlib::PluginlibException& ex)
       {
@@ -272,7 +278,6 @@ namespace move_base {
       try {
         //check if a non fully qualified name has potentially been passed in
         ROS_INFO("Loading local planner: %s", config.base_local_planner.c_str());
-        ROS_INFO("Planner available %d", blp_loader_.isClassAvailable(config.base_local_planner));
         if(!blp_loader_.isClassAvailable(config.base_local_planner)){
           std::vector<std::string> classes = blp_loader_.getDeclaredClasses();
           for(unsigned int i = 0; i < classes.size(); ++i){
@@ -287,6 +292,11 @@ namespace move_base {
         }
         tc_ = blp_loader_.createClassInstance(config.base_local_planner);
         delete old_planner;
+        // Clean up before initializing the new planner
+        planner_plan_->clear();
+        latest_plan_->clear();
+        controller_plan_->clear();
+        resetState();
         tc_->initialize(blp_loader_.getName(config.base_local_planner), &tf_, controller_costmap_ros_);
       } catch (const pluginlib::PluginlibException& ex)
       {
