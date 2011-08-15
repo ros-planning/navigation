@@ -211,8 +211,15 @@ namespace move_base {
     if(!setup_)
     {
       last_config_ = config;
+      default_config_ = config;
       setup_ = true;
       return;
+    }
+
+    if(config.restore_defaults) {
+      config = default_config_;
+      //if someone sets restore defaults on the parameter server, prevent looping
+      config.restore_defaults = false;
     }
 
     if(planner_frequency_ != config.planner_frequency)

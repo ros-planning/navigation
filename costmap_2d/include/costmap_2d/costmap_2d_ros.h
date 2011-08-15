@@ -419,6 +419,7 @@ namespace costmap_2d {
       boost::recursive_mutex configuration_mutex_;
       costmap_2d::Costmap2DConfig last_config_;
       costmap_2d::Costmap2DConfig maptype_config_;
+      costmap_2d::Costmap2DConfig default_config_;
       ros::Timer timer_;
       tf::Stamped<tf::Pose> old_pose_;
   };

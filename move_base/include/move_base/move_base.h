@@ -228,6 +228,7 @@ namespace move_base {
       void reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level);
 
       move_base::MoveBaseConfig last_config_;
+      move_base::MoveBaseConfig default_config_;
       bool setup_, p_freq_change_, c_freq_change_;
   };
 };

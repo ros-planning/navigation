@@ -423,6 +423,12 @@ namespace costmap_2d {
 
   void Costmap2DROS::reconfigureCB(Costmap2DConfig &config, uint32_t level) {
     ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
+    
+    if(setup_ && config.restore_defaults) {
+      config = default_config_;
+      //in case someone set restore_defaults on the parameter server, avoid looping
+      config.restore_defaults = false;
+    }
 
     //change the configuration defaults to match the param server
     if(!setup_) {
@@ -444,6 +450,7 @@ namespace costmap_2d {
 
       last_config_ = config;
       maptype_config_ = config;
+      default_config_ = config;
 
       setup_ = true;
     }
