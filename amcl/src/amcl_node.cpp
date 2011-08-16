@@ -198,6 +198,7 @@ class AmclNode
 
     boost::recursive_mutex configuration_mutex_;
     dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
+    amcl::AMCLConfig default_config_;
 
     int max_beams_, min_particles_, max_particles_;
     double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
@@ -363,7 +364,14 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   if(first_reconfigure_call_)
   {
     first_reconfigure_call_ = false;
+    default_config_ = config;
     return;
+  }
+
+  if(config.restore_defaults) {
+    config = default_config_;
+    //avoid looping
+    config.restore_defaults = false;
   }
 
   d_thresh_ = config.update_min_d;

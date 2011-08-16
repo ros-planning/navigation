@@ -54,13 +54,24 @@ PLUGINLIB_DECLARE_CLASS(base_local_planner, TrajectoryPlannerROS, base_local_pla
 namespace base_local_planner {
 
   void TrajectoryPlannerROS::reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level) {
-      tc_->reconfigure(config);
+      if(setup_ && config.restore_defaults) {
+        config = default_config_;
+        //Avoid looping
+        config.restore_defaults = false;
+      }
+      if(!setup_) {
+        default_config_ = config;
+        setup_ = true;
+      }
+      else if(setup_) {
+        tc_->reconfigure(config);
+      }
   }
 
-  TrajectoryPlannerROS::TrajectoryPlannerROS() : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false) {}
+  TrajectoryPlannerROS::TrajectoryPlannerROS() : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {}
 
   TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf::TransformListener* tf, Costmap2DROS* costmap_ros) 
-    : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false){
+    : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {
 
       //initialize the planner
       initialize(name, tf, costmap_ros);

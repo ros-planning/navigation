@@ -209,6 +209,8 @@ namespace base_local_planner {
       bool rotating_to_goal_;
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
       dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
+      base_local_planner::BaseLocalPlannerConfig default_config_;
+      bool setup_;
   };
 
 };
