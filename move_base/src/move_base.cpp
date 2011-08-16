@@ -264,6 +264,10 @@ namespace move_base {
         }
  
         planner_ = bgp_loader_.createClassInstance(config.base_global_planner);
+        
+        // wait for the current planner to finish planning
+        boost::unique_lock<boost::mutex> lock(planner_mutex_);
+
         delete old_planner;
         // Clean up before initializing the new planner
         planner_plan_->clear();
@@ -271,6 +275,8 @@ namespace move_base {
         controller_plan_->clear();
         resetState();
         planner_->initialize(bgp_loader_.getName(config.base_global_planner), planner_costmap_ros_);
+
+        lock.unlock();
       } catch (const pluginlib::PluginlibException& ex)
       {
         ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", config.base_global_planner.c_str(), ex.what());
