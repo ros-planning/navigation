@@ -49,65 +49,63 @@ namespace dwa_local_planner {
       default_config_ = config;
       setup_ = true;
     }
-    else if(setup_) {
-      boost::mutex::scoped_lock l(configuration_mutex_);
+    boost::mutex::scoped_lock l(configuration_mutex_);
  
-      max_vel_x_ = config.max_vel_x;
-      min_vel_x_ = config.min_vel_x;
+    max_vel_x_ = config.max_vel_x;
+    min_vel_x_ = config.min_vel_x;
  
-      max_vel_y_ = config.max_vel_y;
-      min_vel_y_ = config.min_vel_y;
+    max_vel_y_ = config.max_vel_y;
+    min_vel_y_ = config.min_vel_y;
  
-      min_vel_trans_ = config.min_trans_vel;
-      max_vel_trans_ = config.max_trans_vel;
+    min_vel_trans_ = config.min_trans_vel;
+    max_vel_trans_ = config.max_trans_vel;
  
-      max_vel_th_ = config.max_rot_vel;
-      min_vel_th_ = -1.0 * max_vel_th_;
+    max_vel_th_ = config.max_rot_vel;
+    min_vel_th_ = -1.0 * max_vel_th_;
  
-      min_rot_vel_ = config.min_rot_vel;
+    min_rot_vel_ = config.min_rot_vel;
  
-      sim_time_ = config.sim_time;
-      sim_granularity_ = config.sim_granularity;
-      pdist_scale_ = config.path_distance_bias;
-      gdist_scale_ = config.goal_distance_bias;
-      occdist_scale_ = config.occdist_scale;
+    sim_time_ = config.sim_time;
+    sim_granularity_ = config.sim_granularity;
+    pdist_scale_ = config.path_distance_bias;
+    gdist_scale_ = config.goal_distance_bias;
+    occdist_scale_ = config.occdist_scale;
  
-      stop_time_buffer_ = config.stop_time_buffer;
-      oscillation_reset_dist_ = config.oscillation_reset_dist;
-      forward_point_distance_ = config.forward_point_distance;
+    stop_time_buffer_ = config.stop_time_buffer;
+    oscillation_reset_dist_ = config.oscillation_reset_dist;
+    forward_point_distance_ = config.forward_point_distance;
  
-      scaling_speed_ = config.scaling_speed;
-      max_scaling_factor_ = config.max_scaling_factor;
+    scaling_speed_ = config.scaling_speed;
+    max_scaling_factor_ = config.max_scaling_factor;
  
-      int vx_samp, vy_samp, vth_samp;
-      vx_samp = config.vx_samples;
-      vy_samp = config.vy_samples;
-      vth_samp = config.vth_samples;
+    int vx_samp, vy_samp, vth_samp;
+    vx_samp = config.vx_samples;
+    vy_samp = config.vy_samples;
+    vth_samp = config.vth_samples;
  
-      if(vx_samp <= 0){
-        ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
-        vx_samp = 1;
-        config.vx_samples = vx_samp;
-      }
- 
-      if(vy_samp <= 0){
-        ROS_WARN("You've specified that you don't want any samples in the y dimension. We'll at least assume that you want to sample one value... so we're going to set vy_samples to 1 instead");
-        vy_samp = 1;
-        config.vy_samples = vy_samp;
-      }
- 
-      if(vth_samp <= 0){
-        ROS_WARN("You've specified that you don't want any samples in the th dimension. We'll at least assume that you want to sample one value... so we're going to set vth_samples to 1 instead");
-        vth_samp = 1;
-        config.vth_samples = vth_samp;
-      }
- 
-      vsamples_[0] = vx_samp;
-      vsamples_[1] = vy_samp;
-      vsamples_[2] = vth_samp;
- 
-      penalize_negative_x_ = config.penalize_negative_x;
+    if(vx_samp <= 0){
+      ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
+      vx_samp = 1;
+      config.vx_samples = vx_samp;
     }
+ 
+    if(vy_samp <= 0){
+      ROS_WARN("You've specified that you don't want any samples in the y dimension. We'll at least assume that you want to sample one value... so we're going to set vy_samples to 1 instead");
+      vy_samp = 1;
+      config.vy_samples = vy_samp;
+    }
+ 
+    if(vth_samp <= 0){
+      ROS_WARN("You've specified that you don't want any samples in the th dimension. We'll at least assume that you want to sample one value... so we're going to set vth_samples to 1 instead");
+      vth_samp = 1;
+      config.vth_samples = vth_samp;
+    }
+ 
+    vsamples_[0] = vx_samp;
+    vsamples_[1] = vy_samp;
+    vsamples_[2] = vth_samp;
+ 
+    penalize_negative_x_ = config.penalize_negative_x;
   }
 
   DWAPlanner::DWAPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) : costmap_ros_(NULL), world_model_(NULL), dsrv_(ros::NodeHandle("~/" + name)), setup_(false), penalize_negative_x_(true) {
