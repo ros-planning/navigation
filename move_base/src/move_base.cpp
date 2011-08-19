@@ -483,6 +483,7 @@ namespace move_base {
     if(controller_costmap_ros_ != NULL)
       delete controller_costmap_ros_;
 
+    planner_thread_->interrupt();
     planner_thread_->join();
 
     delete planner_plan_;
@@ -495,13 +496,17 @@ namespace move_base {
     plan.clear();
 
     //since this gets called on handle activate
-    if(planner_costmap_ros_ == NULL)
+    if(planner_costmap_ros_ == NULL) {
+      ROS_ERROR("Planner costmap ROS is NULL, unable to create global plan");
       return false;
+    }
 
     //get the starting pose of the robot
     tf::Stamped<tf::Pose> global_pose;
-    if(!planner_costmap_ros_->getRobotPose(global_pose))
+    if(!planner_costmap_ros_->getRobotPose(global_pose)) {
+      ROS_WARN("Unable to get starting pose of robot, unable to create global plan");
       return false;
+    }
 
     geometry_msgs::PoseStamped start;
     tf::poseStampedTFToMsg(global_pose, start);
@@ -607,7 +612,7 @@ namespace move_base {
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
       if(gotPlan){
-        ROS_DEBUG("Got Plan!");
+        ROS_DEBUG("Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
@@ -835,7 +840,7 @@ namespace move_base {
     }
 
     //if we have a new plan then grab it and give it to the controller
-    if(last_valid_plan_ >= last_plan_swap_){
+    if(last_valid_plan_ > last_plan_swap_){
       ROS_DEBUG("new plan...swap pointers");
 
       //do a pointer swap under mutex
