@@ -203,7 +203,7 @@ namespace move_base {
       MoveBaseState state_;
       RecoveryTrigger recovery_trigger_;
 
-      ros::Time last_valid_plan_, last_valid_control_, last_oscillation_reset_, last_plan_swap_;
+      ros::Time last_valid_plan_, last_valid_control_, last_oscillation_reset_;
       geometry_msgs::PoseStamped oscillation_pose_;
       pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_;
       pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
@@ -230,6 +230,7 @@ namespace move_base {
       move_base::MoveBaseConfig last_config_;
       move_base::MoveBaseConfig default_config_;
       bool setup_, p_freq_change_, c_freq_change_;
+      bool new_global_plan_;
   };
 };
 #endif

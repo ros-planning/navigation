@@ -48,7 +48,7 @@ namespace move_base {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -620,7 +620,7 @@ namespace move_base {
         planner_plan_ = latest_plan_;
         latest_plan_ = temp_plan;
         last_valid_plan_ = ros::Time::now();
-
+        new_global_plan_ = true;
 
         ROS_DEBUG("Generated a plan from the base_global_planner");
 
@@ -683,7 +683,6 @@ namespace move_base {
     last_valid_control_ = ros::Time::now();
     last_valid_plan_ = ros::Time::now();
     last_oscillation_reset_ = ros::Time::now();
-    last_plan_swap_ = ros::Time::now();
 
     ros::NodeHandle n;
     while(n.ok())
@@ -726,7 +725,6 @@ namespace move_base {
           last_valid_control_ = ros::Time::now();
           last_valid_plan_ = ros::Time::now();
           last_oscillation_reset_ = ros::Time::now();
-          last_plan_swap_ = ros::Time::now();
         }
         else {
           //if we've been preempted explicitly we need to shut things down
@@ -764,7 +762,6 @@ namespace move_base {
         last_valid_control_ = ros::Time::now();
         last_valid_plan_ = ros::Time::now();
         last_oscillation_reset_ = ros::Time::now();
-        last_plan_swap_ = ros::Time::now();
       }
 
       //for timing that gives real time even in simulation
@@ -840,11 +837,13 @@ namespace move_base {
     }
 
     //if we have a new plan then grab it and give it to the controller
-    if(last_valid_plan_ > last_plan_swap_){
+    if(new_global_plan_){
+      //make sure to set the new plan flag to false
+      new_global_plan_ = false;
+
       ROS_DEBUG("new plan...swap pointers");
 
       //do a pointer swap under mutex
-      last_plan_swap_ = ros::Time::now();
       std::vector<geometry_msgs::PoseStamped>* temp_plan = controller_plan_;
 
       boost::unique_lock<boost::mutex> lock(planner_mutex_);
