@@ -867,6 +867,7 @@ namespace costmap_2d {
           }
           oss << "]";
           node.setParam(footprint_param, oss.str().c_str());
+          node.setParam("footprint", oss.str().c_str());
         }
       }
 
@@ -911,6 +912,7 @@ namespace costmap_2d {
         }
         if (valid_foot) {
           footprint = footprint_spec;
+          node.setParam("footprint", footprint_string);
         }
         else {
           ROS_FATAL("This footprint is not vaid it must be specified as a list of lists with at least 3 points, you specified %s", footprint_string.c_str());
