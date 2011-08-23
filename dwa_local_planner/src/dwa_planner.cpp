@@ -287,6 +287,9 @@ namespace dwa_local_planner {
       }
     }
 
+    ROS_DEBUG_NAMED("oscillation_flags", "forward_pos_only: %d, forward_neg_only: %d, strafe_pos_only: %d, strafe_neg_only: %d, rot_pos_only: %d, rot_neg_only: %d",
+        forward_pos_only_, forward_neg_only_, strafe_pos_only_, strafe_neg_only_, rot_pos_only_, rot_neg_only_);
+
     //ok... now we have our best trajectory
     if(best_traj->cost_ >= 0){
       //we want to check if we need to set any oscillation flags
