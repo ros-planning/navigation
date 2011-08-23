@@ -604,11 +604,11 @@ namespace dwa_local_planner {
     front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x + forward_point_distance_ * cos(tf::getYaw(front_global_plan.back().pose.orientation));
     front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + forward_point_distance_ * sin(tf::getYaw(front_global_plan.back().pose.orientation));
     front_map_.setPathCells(costmap_, front_global_plan);
-    ROS_DEBUG("Path/Goal distance computed");
+    ROS_DEBUG_NAMED("dwa_local_planner", "Path/Goal distance computed");
 
     //rollout trajectories and find the minimum cost one
     base_local_planner::Trajectory best = computeTrajectories(pos, vel);
-    ROS_DEBUG("Trajectories created");
+    ROS_DEBUG_NAMED("dwa_local_planner", "Trajectories created");
 
     //if we don't have a legal trajectory, we'll just command zero
     if(best.cost_ < 0){

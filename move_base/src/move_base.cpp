@@ -179,7 +179,7 @@ namespace move_base {
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
     if(shutdown_costmaps_){
-      ROS_DEBUG("Stopping costmaps initially");
+      ROS_DEBUG_NAMED("move_base","Stopping costmaps initially");
       planner_costmap_ros_->stop();
       controller_costmap_ros_->stop();
     }
@@ -323,7 +323,7 @@ namespace move_base {
   }
 
   void MoveBase::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal){
-    ROS_DEBUG("In ROS goal callback, wrapping the PoseStamped in the action message and re-sending to the server.");
+    ROS_DEBUG_NAMED("move_base","In ROS goal callback, wrapping the PoseStamped in the action message and re-sending to the server.");
     move_base_msgs::MoveBaseActionGoal action_goal;
     action_goal.header.stamp = ros::Time::now();
     action_goal.goal.target_pose = *goal;
@@ -445,7 +445,7 @@ namespace move_base {
             found_legal = true;
           }
           else
-            ROS_DEBUG("Failed to find a  plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+            ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
         }
         p.pose.position.x += resolution*3.0;
       }
@@ -513,7 +513,7 @@ namespace move_base {
 
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
-      ROS_DEBUG("Failed to find a  plan to point (%.2f, %.2f)", goal.pose.position.x, goal.pose.position.y);
+      ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", goal.pose.position.x, goal.pose.position.y);
       return false;
     }
 
@@ -584,7 +584,7 @@ namespace move_base {
   }
 
   void MoveBase::planThread(){
-    ROS_DEBUG("Starting planner thread...");
+    ROS_DEBUG_NAMED("move_base_plan_thread","Starting planner thread...");
     ros::NodeHandle n;
     ros::Rate r(planner_frequency_);
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
@@ -599,20 +599,20 @@ namespace move_base {
       //check if we should run the planner (the mutex is locked)
       while(!runPlanner_){
         //if we should not be running the planner then suspend this thread
-        ROS_DEBUG("Planner thread is suspending");
+        ROS_DEBUG_NAMED("move_base_plan_thread","Planner thread is suspending");
         planner_cond_.wait(lock);
       }
       //time to plan! get a copy of the goal and unlock the mutex
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
       lock.unlock();
-      ROS_DEBUG("Planning...");
+      ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
       //run planner
       planner_plan_->clear();
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
       if(gotPlan){
-        ROS_DEBUG("Got Plan with %zu points!", planner_plan_->size());
+        ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
@@ -622,7 +622,7 @@ namespace move_base {
         last_valid_plan_ = ros::Time::now();
         new_global_plan_ = true;
 
-        ROS_DEBUG("Generated a plan from the base_global_planner");
+        ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
         //make sure we only start the controller if we still haven't reached the goal
         if(runPlanner_)
@@ -633,7 +633,7 @@ namespace move_base {
       }
       //if we didn't get a plan and we are in the planning state (the robot isn't moving)
       else if(state_==PLANNING){
-        ROS_DEBUG("No Plan...");
+        ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
 
         //check if we've tried to make a plan for over our time limit
@@ -674,7 +674,7 @@ namespace move_base {
 
     ros::Rate r(controller_frequency_);
     if(shutdown_costmaps_){
-      ROS_DEBUG("Starting up costmaps that were shut down previously");
+      ROS_DEBUG_NAMED("move_base","Starting up costmaps that were shut down previously");
       planner_costmap_ros_->start();
       controller_costmap_ros_->start();
     }
@@ -718,7 +718,7 @@ namespace move_base {
           lock.unlock();
 
           //publish the goal point to the visualizer
-          ROS_DEBUG("move_base has received a goal of x: %.2f, y: %.2f", goal.pose.position.x, goal.pose.position.y);
+          ROS_DEBUG_NAMED("move_base","move_base has received a goal of x: %.2f, y: %.2f", goal.pose.position.x, goal.pose.position.y);
           current_goal_pub_.publish(goal);
 
           //make sure to reset our timeouts
@@ -731,7 +731,7 @@ namespace move_base {
           resetState();
 
           //notify the ActionServer that we've successfully preempted
-          ROS_DEBUG("Move base preempting the current goal");
+          ROS_DEBUG_NAMED("move_base","Move base preempting the current goal");
           as_->setPreempted();
 
           //we'll actually return from execute after preempting
@@ -755,7 +755,7 @@ namespace move_base {
         lock.unlock();
 
         //publish the goal point to the visualizer
-        ROS_DEBUG("The global frame for move_base has changed, new frame: %s, new goal position x: %.2f, y: %.2f", goal.header.frame_id.c_str(), goal.pose.position.x, goal.pose.position.y);
+        ROS_DEBUG_NAMED("move_base","The global frame for move_base has changed, new frame: %s, new goal position x: %.2f, y: %.2f", goal.header.frame_id.c_str(), goal.pose.position.x, goal.pose.position.y);
         current_goal_pub_.publish(goal);
 
         //make sure to reset our timeouts
@@ -777,7 +777,7 @@ namespace move_base {
       //check if execution of the goal has completed in some way
 
       ros::WallDuration t_diff = ros::WallTime::now() - start;
-      ROS_DEBUG("Full control cycle time: %.9f\n", t_diff.toSec());
+      ROS_DEBUG_NAMED("move_base","Full control cycle time: %.9f\n", t_diff.toSec());
 
       r.sleep();
       //make sure to sleep for the remainder of our cycle time
@@ -841,7 +841,7 @@ namespace move_base {
       //make sure to set the new plan flag to false
       new_global_plan_ = false;
 
-      ROS_DEBUG("new plan...swap pointers");
+      ROS_DEBUG_NAMED("move_base","Got a new plan...swap pointers");
 
       //do a pointer swap under mutex
       std::vector<geometry_msgs::PoseStamped>* temp_plan = controller_plan_;
@@ -850,7 +850,7 @@ namespace move_base {
       controller_plan_ = latest_plan_;
       latest_plan_ = temp_plan;
       lock.unlock();
-      ROS_DEBUG("pointers swapped!");
+      ROS_DEBUG_NAMED("move_base","pointers swapped!");
 
       if(!tc_->setPlan(*controller_plan_)){
         //ABORT and SHUTDOWN COSTMAPS
@@ -875,16 +875,16 @@ namespace move_base {
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan
       case PLANNING:
-        ROS_DEBUG("Waiting for plan...");
+        ROS_DEBUG_NAMED("move_base","Waiting for plan, in the planning state.");
         break;
 
       //if we're controlling, we'll attempt to find valid velocity commands
       case CONTROLLING:
-        ROS_DEBUG("In controlling state");
+        ROS_DEBUG_NAMED("move_base","In controlling state.");
 
         //check to see if we've reached our goal
         if(tc_->isGoalReached()){
-          ROS_DEBUG("Goal reached!");
+          ROS_DEBUG_NAMED("move_base","Goal reached!");
           resetState();
 
           //disable the planner thread
@@ -906,6 +906,7 @@ namespace move_base {
         }
 
         if(tc_->computeVelocityCommands(cmd_vel)){
+          ROS_DEBUG_NAMED("move_base", "Got a valid command from the local planner.");
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
@@ -913,6 +914,7 @@ namespace move_base {
             recovery_index_ = 0;
         }
         else {
+          ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
           ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
 
           //check if we've tried to find a valid control for longer than our time limit
@@ -940,7 +942,7 @@ namespace move_base {
 
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
-        ROS_DEBUG("In clearing/recovery state");
+        ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           recovery_behaviors_[recovery_index_]->runBehavior();
@@ -1119,7 +1121,7 @@ namespace move_base {
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
     if(shutdown_costmaps_){
-      ROS_DEBUG("Stopping costmaps");
+      ROS_DEBUG_NAMED("move_base","Stopping costmaps");
       planner_costmap_ros_->stop();
       controller_costmap_ros_->stop();
     }

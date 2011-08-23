@@ -91,7 +91,7 @@ namespace dwa_local_planner {
     base_odom_.twist.twist.linear.x = msg->twist.twist.linear.x;
     base_odom_.twist.twist.linear.y = msg->twist.twist.linear.y;
     base_odom_.twist.twist.angular.z = msg->twist.twist.angular.z;
-    ROS_DEBUG("In the odometry callback with velocity values: (%.2f, %.2f, %.2f)",
+    ROS_DEBUG_NAMED("dwa_local_planner", "In the odometry callback with velocity values: (%.2f, %.2f, %.2f)",
         base_odom_.twist.twist.linear.x, base_odom_.twist.twist.linear.y, base_odom_.twist.twist.angular.z);
   }
 
@@ -112,7 +112,7 @@ namespace dwa_local_planner {
 
     //if we have a valid command, we'll pass it on, otherwise we'll command all zeros
     if(valid_cmd){
-      ROS_DEBUG("Slowing down... using vx, vy, vth: %.2f, %.2f, %.2f", vx, vy, vth);
+      ROS_DEBUG_NAMED("dwa_local_planner", "Slowing down... using vx, vy, vth: %.2f, %.2f, %.2f", vx, vy, vth);
       cmd_vel.linear.x = vx;
       cmd_vel.linear.y = vy;
       cmd_vel.angular.z = vth;
@@ -155,7 +155,7 @@ namespace dwa_local_planner {
     bool valid_cmd = dp_->checkTrajectory(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
                                           Eigen::Vector3f( 0.0, 0.0, v_theta_samp));
 
-    ROS_DEBUG("Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
+    ROS_DEBUG_NAMED("dwa_local_planner", "Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
 
     if(valid_cmd){
       cmd_vel.angular.z = v_theta_samp;
@@ -284,6 +284,7 @@ namespace dwa_local_planner {
       return true;
     }
 
+    ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
     dp_->updatePlan(transformed_plan);
 
     //compute what trajectory to drive along
@@ -307,11 +308,16 @@ namespace dwa_local_planner {
 
     //if we cannot move... tell someone
     if(path.cost_ < 0){
+      ROS_DEBUG_NAMED("dwa_local_planner", 
+          "The dwa local planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
       local_plan.clear();
       base_local_planner::publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
       base_local_planner::publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
       return false;
     }
+
+    ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.", 
+                    cmd_vel.linear.x, cmd_vel.linear.y, yaw);
 
     // Fill out the local plan
     for(unsigned int i = 0; i < path.getPointsSize(); ++i){
