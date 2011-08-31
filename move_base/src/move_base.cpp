@@ -875,6 +875,11 @@ namespace move_base {
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan
       case PLANNING:
+        {
+          boost::mutex::scoped_lock lock(planner_mutex_);
+          runPlanner_ = true;
+          planner_cond_.notify_one();
+        }
         ROS_DEBUG_NAMED("move_base","Waiting for plan, in the planning state.");
         break;
 
@@ -945,22 +950,28 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
+          ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
 
           //we'll check if the recovery behavior actually worked
+          ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
           state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
         }
         else{
+          ROS_DEBUG_NAMED("move_base_recovery","All recovery behaviors have failed, locking the planner and disabling it.");
           //disable the planner thread
           boost::unique_lock<boost::mutex> lock(planner_mutex_);
           runPlanner_ = false;
           lock.unlock();
+
+          ROS_DEBUG_NAMED("move_base_recovery","Something should abort after this.");
+
           if(recovery_trigger_ == CONTROLLING_R){
             ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
