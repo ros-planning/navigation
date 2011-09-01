@@ -3,5 +3,5 @@ netpbm:
   debian: libnetpbm10-dev
   arch: netpbm
   macports: netpbm
-  fedora: netpbm
+  fedora: netpbm-devel
   gentoo: netpbm
