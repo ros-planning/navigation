@@ -55,6 +55,8 @@
 #include "dynamic_reconfigure/server.h"
 #include "amcl/AMCLConfig.h"
 
+#define NEW_UNIFORM_SAMPLING 1
+
 using namespace amcl;
 
 // Pose hypothesis
@@ -112,7 +114,9 @@ class AmclNode
     // Pose-generating function used to uniformly distribute particles over
     // the map
     static pf_vector_t uniformPoseGenerator(void* arg);
-
+#if NEW_UNIFORM_SAMPLING
+    static std::vector<std::pair<int,int> > free_space_indices;
+#endif
     // Message callbacks
     bool globalLocalizationCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
@@ -212,6 +216,8 @@ class AmclNode
 
     void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
 };
+
+std::vector<std::pair<int,int> > AmclNode::free_space_indices;
 
 #define USAGE "USAGE: amcl"
 
@@ -530,6 +536,14 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
 
   map_ = convertMap(msg);
 
+#if NEW_UNIFORM_SAMPLING
+  // Index of free space
+  free_space_indices.resize(0);
+  for(int i = 0; i < map_->size_x; i++)
+    for(int j = 0; j < map_->size_y; j++)
+      if(map_->cells[MAP_INDEX(map_,i,j)].occ_state == -1)
+        free_space_indices.push_back(std::make_pair(i,j));
+#endif
   // Create the particle filter
   pf_ = pf_alloc(min_particles_, max_particles_,
                  alpha_slow_, alpha_fast_,
@@ -671,6 +685,14 @@ pf_vector_t
 AmclNode::uniformPoseGenerator(void* arg)
 {
   map_t* map = (map_t*)arg;
+#if NEW_UNIFORM_SAMPLING
+  unsigned int rand_index = drand48() * free_space_indices.size();
+  std::pair<int,int> free_point = free_space_indices[rand_index];
+  pf_vector_t p;
+  p.v[0] = MAP_WXGX(map, free_point.first);
+  p.v[1] = MAP_WYGY(map, free_point.second);
+  p.v[2] = drand48() * 2 * M_PI - M_PI;
+#else
   double min_x, max_x, min_y, max_y;
 
   min_x = (map->size_x * map->scale)/2.0 - map->origin_x;
@@ -680,12 +702,12 @@ AmclNode::uniformPoseGenerator(void* arg)
 
   pf_vector_t p;
 
+  ROS_DEBUG("Generating new uniform sample");
   for(;;)
   {
     p.v[0] = min_x + drand48() * (max_x - min_x);
     p.v[1] = min_y + drand48() * (max_y - min_y);
     p.v[2] = drand48() * 2 * M_PI - M_PI;
-
     // Check that it's a free cell
     int i,j;
     i = MAP_GXWX(map, p.v[0]);
@@ -693,7 +715,7 @@ AmclNode::uniformPoseGenerator(void* arg)
     if(MAP_VALID(map,i,j) && (map->cells[MAP_INDEX(map,i,j)].occ_state == -1))
       break;
   }
-
+#endif
   return p;
 }
 
@@ -708,6 +730,7 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
   ROS_INFO("Initializing with uniform distribution");
   pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                 (void *)map_);
+  ROS_INFO("Global initialisation done!");
   pf_init_ = false;
   return true;
 }
