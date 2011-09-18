@@ -38,8 +38,6 @@
 #define TRAJECTORY_ROLLOUT_TRAJECTORY_PLANNER_H_
 
 #include <vector>
-#include <string>
-#include <sstream>
 #include <math.h>
 #include <ros/console.h>
 #include <angles/angles.h>
@@ -64,9 +62,6 @@
 
 //for some datatypes
 #include <tf/transform_datatypes.h>
-
-#include <base_local_planner/BaseLocalPlannerConfig.h>
-#include <boost/algorithm/string.hpp>
 
 namespace base_local_planner {
   /**
@@ -114,6 +109,7 @@ namespace base_local_planner {
       TrajectoryPlanner(WorldModel& world_model, 
           const costmap_2d::Costmap2D& costmap, 
           std::vector<geometry_msgs::Point> footprint_spec,
+          double inscribed_radius, double circumscribed_radius,
           double acc_lim_x = 1.0, double acc_lim_y = 1.0, double acc_lim_theta = 1.0,
           double sim_time = 1.0, double sim_granularity = 0.025, 
           int vx_samples = 20, int vtheta_samples = 20,
@@ -134,11 +130,6 @@ namespace base_local_planner {
        * @brief  Destructs a trajectory controller
        */
       ~TrajectoryPlanner();
-
-      /**
-       * @brief Reconfigures the trajectory planner
-       */
-      void reconfigure(BaseLocalPlannerConfig &cfg);
 
       /**
        * @brief  Given the current position, orientation, and velocity of the robot, return a trajectory to follow
@@ -207,6 +198,7 @@ namespace base_local_planner {
        * @return True if the cell is traversible and therefore a legal location for the robot to move to
        */
       bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
+      void updateFootprint(std::vector<geometry_msgs::Point> fp){footprint_spec_ = fp;};
     private:
       /**
        * @brief  Create the trajectories we wish to explore, score them, and return the best option
@@ -286,6 +278,8 @@ namespace base_local_planner {
 
       std::vector<geometry_msgs::Point> footprint_spec_; ///< @brief The footprint specification of the robot
 
+      double inscribed_radius_, circumscribed_radius_; ///< @brief The inscribed and circumscribed radii of the robot
+
       std::vector<geometry_msgs::PoseStamped> global_plan_; ///< @brief The global path for the robot to follow
 
       bool stuck_left, stuck_right; ///< @brief Booleans to keep the robot from oscillating during rotation
@@ -333,7 +327,6 @@ namespace base_local_planner {
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
       double sim_period_; ///< @brief The number of seconds to use to compute max/min vels for dwa
 
-      boost::mutex configuration_mutex_;
 
       /**
        * @brief  Compute x position based on velocity

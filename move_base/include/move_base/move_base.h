@@ -56,9 +56,6 @@
 #include <pluginlib/class_loader.h>
 #include <std_srvs/Empty.h>
 
-#include <dynamic_reconfigure/server.h>
-#include "move_base/MoveBaseConfig.h"
-
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
   typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
@@ -167,8 +164,6 @@ namespace move_base {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
-      void planThread();
-
       void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
 
       bool isQuaternionValid(const geometry_msgs::Quaternion& q);
@@ -191,7 +186,7 @@ namespace move_base {
       unsigned int recovery_index_;
 
       tf::Stamped<tf::Pose> global_pose_;
-      double planner_frequency_, controller_frequency_, inscribed_radius_, circumscribed_radius_;
+      double controller_frequency_, inscribed_radius_, circumscribed_radius_;
       double planner_patience_, controller_patience_;
       double conservative_reset_dist_, clearing_radius_;
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
@@ -209,28 +204,6 @@ namespace move_base {
       pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
       pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
-      //set up plan triple buffer
-      std::vector<geometry_msgs::PoseStamped>* planner_plan_;
-      std::vector<geometry_msgs::PoseStamped>* latest_plan_;
-      std::vector<geometry_msgs::PoseStamped>* controller_plan_;
-
-      //set up the planner's thread
-      bool runPlanner_;
-      boost::mutex planner_mutex_;
-      boost::condition_variable planner_cond_;
-      geometry_msgs::PoseStamped planner_goal_;
-      boost::thread* planner_thread_;
-
-
-      boost::recursive_mutex configuration_mutex_;
-      dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
-      
-      void reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level);
-
-      move_base::MoveBaseConfig last_config_;
-      move_base::MoveBaseConfig default_config_;
-      bool setup_, p_freq_change_, c_freq_change_;
-      bool new_global_plan_;
   };
 };
 #endif

@@ -41,82 +41,10 @@ using namespace std;
 using namespace costmap_2d;
 
 namespace base_local_planner{
-  void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg) 
-  {
-      base_local_planner::BaseLocalPlannerConfig config(cfg);
-
-      boost::mutex::scoped_lock l(configuration_mutex_);
-
-      acc_lim_x_ = config.acc_lim_x;
-      acc_lim_y_ = config.acc_lim_y;
-      acc_lim_theta_ = config.acc_lim_theta;
-
-      max_vel_x_ = config.max_vel_x;
-      min_vel_x_ = config.min_vel_x;
-      max_vel_th_ = config.max_vel_theta;
-      min_in_place_vel_th_ = config.min_in_place_vel_theta;
-
-      sim_time_ = config.sim_time;
-      sim_granularity_ = config.sim_granularity;
-
-      pdist_scale_ = config.pdist_scale;
-      gdist_scale_ = config.gdist_scale;
-      occdist_scale_ = config.occdist_scale;
-
-      oscillation_reset_dist_ = config.oscillation_reset_dist;
-      escape_reset_dist_ = config.escape_reset_dist;
-      escape_reset_theta_ = config.escape_reset_theta;
-
-      vx_samples_ = config.vx_samples;
-      vtheta_samples_ = config.vtheta_samples;
-
-      if (vx_samples_ <= 0) {
-          config.vx_samples = 1;
-          vx_samples_ = config.vx_samples;
-          ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
-      }
-      if(vtheta_samples_ <= 0) {
-          config.vtheta_samples = 1;
-          vtheta_samples_ = config.vtheta_samples;
-          ROS_WARN("You've specified that you don't want any samples in the theta dimension. We'll at least assume that you want to sample one value... so we're going to set vtheta_samples to 1 instead");
-      }
-
-      heading_lookahead_ = config.heading_lookahead;
-
-      holonomic_robot_ = config.holonomic_robot;
-      
-      backup_vel_ = config.escape_vel;
-
-      dwa_ = config.dwa;
-
-      heading_scoring_ = config.heading_scoring;
-      heading_scoring_timestep_ = config.heading_scoring_timestep;
-
-      simple_attractor_ = config.simple_attractor;
-
-      angular_sim_granularity_ = config.angular_sim_granularity;
-
-      //y-vels
-      string y_string = config.y_vels;
-      vector<string> y_strs;
-      boost::split(y_strs, y_string, boost::is_any_of(", "), boost::token_compress_on);
-
-      vector<double>y_vels;
-      for(vector<string>::iterator it=y_strs.begin(); it != y_strs.end(); ++it) {
-          istringstream iss(*it);
-          double temp;
-          iss >> temp;
-          y_vels.push_back(temp);
-          //ROS_INFO("Adding y_vel: %e", temp);
-      }
-
-      y_vels_ = y_vels;
-      
-  }
-
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model, 
       const Costmap2D& costmap, 
       std::vector<geometry_msgs::Point> footprint_spec,
+      double inscribed_radius, double circumscribed_radius,
       double acc_lim_x, double acc_lim_y, double acc_lim_theta,
       double sim_time, double sim_granularity, 
       int vx_samples, int vtheta_samples,
@@ -131,6 +59,7 @@ namespace base_local_planner{
       vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
     : map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()), costmap_(costmap), 
     world_model_(world_model), footprint_spec_(footprint_spec),
+    inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius),
     sim_time_(sim_time), sim_granularity_(sim_granularity), angular_sim_granularity_(angular_sim_granularity),
     vx_samples_(vx_samples), vtheta_samples_(vtheta_samples),
     pdist_scale_(pdist_scale), gdist_scale_(gdist_scale), occdist_scale_(occdist_scale),
@@ -155,6 +84,7 @@ namespace base_local_planner{
     strafe_right = false;
 
     escaping_ = false;
+
   }
 
   TrajectoryPlanner::~TrajectoryPlanner(){}
@@ -179,10 +109,6 @@ namespace base_local_planner{
       double vtheta, double vx_samp, double vy_samp, double vtheta_samp, 
       double acc_x, double acc_y, double acc_theta, double impossible_cost,
       Trajectory& traj){
-
-    // make sure the configuration doesn't change mid run
-    boost::mutex::scoped_lock l(configuration_mutex_);
-
     double x_i = x;
     double y_i = y;
     double theta_i = theta;
@@ -951,7 +877,7 @@ namespace base_local_planner{
     robot_position.y = y_i;
 
     //check if the footprint is legal
-    double footprint_cost = world_model_.footprintCost(robot_position, oriented_footprint, costmap_.getInscribedRadius(), costmap_.getCircumscribedRadius());
+    double footprint_cost = world_model_.footprintCost(robot_position, oriented_footprint, inscribed_radius_, circumscribed_radius_);
 
     return footprint_cost;
   }

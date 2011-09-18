@@ -67,9 +67,6 @@
 
 #include <nav_core/base_local_planner.h>
 
-#include <dynamic_reconfigure/server.h>
-#include <base_local_planner/BaseLocalPlannerConfig.h>
-
 namespace base_local_planner {
   /**
    * @class TrajectoryPlannerROS
@@ -151,12 +148,8 @@ namespace base_local_planner {
        */
       double scoreTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map = true);
 
+      void updateFootprint(){tc_->updateFootprint(costmap_ros_->getRobotFootprint());};
     private:
-      /**
-       * @brief Callback for dynamic_reconfigure
-       */
-      void reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level);
-
       /**
        * @brief Once a goal position is reached... rotate to the goal orientation
        * @param  global_pose The pose of the robot in the global frame
@@ -196,7 +189,7 @@ namespace base_local_planner {
       std::string robot_base_frame_; ///< @brief Used as the base frame id of the robot
       double rot_stopped_velocity_, trans_stopped_velocity_;
       double xy_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_;
-      double inflation_radius_; 
+      double inscribed_radius_, circumscribed_radius_, inflation_radius_; 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       bool prune_plan_;
       ros::Publisher g_plan_pub_, l_plan_pub_;
@@ -208,9 +201,6 @@ namespace base_local_planner {
       double sim_period_;
       bool rotating_to_goal_;
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
-      dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
-      base_local_planner::BaseLocalPlannerConfig default_config_;
-      bool setup_;
   };
 
 };

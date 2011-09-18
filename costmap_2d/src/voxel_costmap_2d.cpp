@@ -53,15 +53,6 @@ namespace costmap_2d{
   {
   }
 
-  VoxelCostmap2D::VoxelCostmap2D(costmap_2d::Costmap2D& costmap, 
-      double z_resolution, unsigned int cells_size_z, double origin_z, 
-      unsigned int mark_threshold, unsigned int unknown_threshold)
-    : Costmap2D(costmap), voxel_grid_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY(), cells_size_z), 
-        xy_resolution_(costmap.getResolution()), z_resolution_(z_resolution), origin_z_(origin_z), 
-        unknown_threshold_(unknown_threshold + (VOXEL_BITS - cells_size_z)), mark_threshold_(mark_threshold), size_z_(cells_size_z)
-  {
-  }
-
   VoxelCostmap2D::~VoxelCostmap2D(){}
 
   void VoxelCostmap2D::initMaps(unsigned int size_x, unsigned int size_y){
@@ -336,7 +327,7 @@ namespace costmap_2d{
     for(unsigned int j = map_sy; j <= map_ey; ++j){
       for(unsigned int i = map_sx; i <= map_ex; ++i){
         //if the cell is a lethal obstacle... we'll keep it and queue it, otherwise... we'll clear it
-        if(*current != LETHAL_OBSTACLE){
+        if(*current != LETHAL_OBSTACLE && *current != TALL_OBSTACLE){
           if(clear_no_info || *current != NO_INFORMATION){
             *current = FREE_SPACE;
             voxel_grid_.clearVoxelColumn(index);
@@ -385,9 +376,5 @@ namespace costmap_2d{
     }
   }
 
-  void VoxelCostmap2D::finishConfiguration(costmap_2d::Costmap2DConfig &config) {
-    unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
-    mark_threshold_ = config.mark_threshold;
-  }
 
 };

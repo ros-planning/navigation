@@ -39,7 +39,6 @@
 
 #include <limits>
 
-using namespace std;
 
 namespace costmap_2d {
 
@@ -50,8 +49,7 @@ namespace costmap_2d {
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
                              map_update_thread_(NULL), costmap_publisher_(NULL), stop_updates_(false), 
                              initialized_(true), stopped_(false), map_update_thread_shutdown_(false), 
-                             save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false), 
-                             robot_stopped_(false), setup_(false){
+                             save_debug_pgm_(false), map_initialized_(false), costmap_initialized_(false) {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
@@ -147,7 +145,7 @@ namespace costmap_2d {
     ros::Time last_error = ros::Time::now();
     std::string tf_error;
     //we need to make sure that the transform between the robot base frame and the global frame is available
-    while(ros::ok() && !tf_.waitForTransform(global_frame_, robot_base_frame_, ros::Time(), ros::Duration(0.1), ros::Duration(0.01), &tf_error)){
+    while(!tf_.waitForTransform(global_frame_, robot_base_frame_, ros::Time(), ros::Duration(0.1), ros::Duration(0.01), &tf_error)){
       ros::spinOnce();
       if(last_error + ros::Duration(5.0) < ros::Time::now()){
         ROS_WARN("Waiting on transform from %s to %s to become available before running costmap, tf error: %s", 
@@ -355,6 +353,7 @@ namespace costmap_2d {
         throw std::runtime_error("Values for z_voxels, unknown_threshold, and mark_threshold parameters must be positive.");
       }
 
+      //make sure to lock the map data
       boost::recursive_mutex::scoped_lock lock(map_data_lock_);
       costmap_ = new VoxelCostmap2D(map_width, map_height, z_voxels, map_resolution, z_resolution, map_origin_x, map_origin_y, map_origin_z, inscribed_radius,
           circumscribed_radius, inflation_radius, obstacle_range, raytrace_range, cost_scale, input_data_, lethal_threshold, unknown_threshold, mark_threshold,
@@ -390,378 +389,7 @@ namespace costmap_2d {
     map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
     costmap_initialized_ = true;
-    
-    //Create a time r to check if the robot is moving
-    timer_ = private_nh.createTimer(ros::Duration(.1), &Costmap2DROS::movementCB, this);
-    dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/"+name));
-    dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1, _2);
-    dsrv_->setCallback(cb);
-  }
 
-  void Costmap2DROS::movementCB(const ros::TimerEvent &event) {
-    //don't allow configuration to happen while this check occurs
-    boost::recursive_mutex::scoped_lock mcl(configuration_mutex_);
-
-    tf::Stamped<tf::Pose> new_pose;
-
-    if(!getRobotPose(new_pose)){
-      ROS_WARN("Could not get robot pose, cancelling reconfiguration");
-      robot_stopped_ = false;
-    }
-    //make sure that the robot is not moving 
-    else if(fabs((old_pose_.getOrigin() - new_pose.getOrigin()).length()) < 1e-3 && fabs(old_pose_.getRotation().angle(new_pose.getRotation())) < 1e-3)
-    {
-      old_pose_ = new_pose;
-      robot_stopped_ = true;
-    }
-    else
-    {
-      old_pose_ = new_pose; 
-      robot_stopped_ = false;
-    }
-  }
-
-  void Costmap2DROS::reconfigureCB(Costmap2DConfig &config, uint32_t level) {
-    ros::NodeHandle nh = ros::NodeHandle("~/"+name_);
-    
-    if(setup_ && config.restore_defaults) {
-      config = default_config_;
-      //in case someone set restore_defaults on the parameter server, avoid looping
-      config.restore_defaults = false;
-    }
-
-    //change the configuration defaults to match the param server
-    if(!setup_) {
-      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
-
-      last_config_ = config;
-      maptype_config_ = config;
-      default_config_ = config;
-
-      setup_ = true;
-    }
-    else if(setup_ && robot_stopped_) {
-      //lock before modifying anything
-      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
-
-      transform_tolerance_ = config.transform_tolerance;
-
-      // shutdown and restart the map update loop at a new frequency
-      map_update_thread_shutdown_ = true;
-      map_update_thread_->join();
-      boost::mutex::scoped_lock ml(map_update_mutex_);
-
-      //check and configure a new robot footprint
-      //accepts a lis of points formatted [[x1, y1],[x2,y2],....[xn,yn]]
-      string footprint_string = config.footprint;
-      boost::erase_all(footprint_string, " ");
-      boost::char_separator<char> sep("[]");
-      boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
-      vector<string> points(tokens.begin(), tokens.end());
-
-      //parse the input string into points
-      vector<geometry_msgs::Point> footprint_spec;
-      bool circular = false;
-      bool valid_foot = true;
-
-      if(points.size() >= 5) {
-        BOOST_FOREACH(string t, tokens) {
-          if (t != ",") {
-            boost::erase_all(t, " ");
-            boost::char_separator<char> pt_sep(",");
-            boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
-            std::vector<string> point(pt_tokens.begin(), pt_tokens.end());
-
-            if(point.size() != 2) {
-              ROS_WARN("Each point must have exactly 2 coordinates");
-              valid_foot = false;
-              break;
-            }
-
-            vector<double>tmp_pt;
-            BOOST_FOREACH(string p, point) {
-              istringstream iss(p);
-              double temp;
-              if(iss >> temp) {
-                tmp_pt.push_back(temp);
-              }
-              else {
-                ROS_WARN("Each coordinate must convert to a double.");
-                valid_foot = false;
-                break;
-              }
-            }
-            if(!valid_foot)
-              break;
-
-            geometry_msgs::Point pt;
-            pt.x = tmp_pt[0];
-            pt.y = tmp_pt[1];
-
-            footprint_spec.push_back(pt);
-          }
-        }
-        if (valid_foot) {
-          footprint_spec_ = footprint_spec;
-        }
-      }
-      //clear the footprint for a circular robot
-      else if(footprint_string == "" && config.robot_radius > 0.0) {
-        footprint_spec_ = vector<geometry_msgs::Point>();
-        circular = true;
-      }
-      else if(config.footprint != last_config_.footprint) {
-        ROS_ERROR("You must specify at least three points for the robot footprint, reverting to previous footprint");
-        config.footprint = last_config_.footprint;
-      }
-      
-      if(!valid_foot) {
-        ROS_FATAL("The footprint must be specified as a list of at least three points, you specified %s", footprint_string.c_str());
-        config.footprint = last_config_.footprint;
-      }
-
-      double inscribed_radius, circumscribed_radius;
-      inscribed_radius = config.robot_radius;
-      circumscribed_radius = inscribed_radius;
-
-      //if we have a footprint, recaclulate the radii
-      if(footprint_spec_.size() > 2){
-        //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
-        double min_dist = std::numeric_limits<double>::max();
-        double max_dist = 0.0;
-
-        for(unsigned int i = 0; i < footprint_spec_.size() - 1; ++i){
-          //check the distance from the robot center point to the first vertex
-          double vertex_dist = distance(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y);
-          double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y, footprint_spec_[i+1].x, footprint_spec_[i+1].y);
-          min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
-          max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-        }
-
-
-        //we also need to do the last vertex and the first vertex
-        double vertex_dist = distance(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y);
-        double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y, footprint_spec_.front().x, footprint_spec_.front().y);
-        min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
-        max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-
-        inscribed_radius = min_dist;
-        circumscribed_radius = max_dist;
-      }
-      if(inscribed_radius > config.inflation_radius || circumscribed_radius > config.inflation_radius){
-        ROS_WARN("You have set an inflation radius that is less than the inscribed and circumscribed radii of the robot. This is dangerous and could casue the robot to hit obstacles. Please change your inflation radius setting appropraitely.");
-      }
-
-      //if both static map and rolling window are set, we'll use static map and warn
-      if(config.static_map && config.rolling_window){
-        ROS_WARN("You have selected both rolling window and static map, using static_map");
-        config.rolling_window = false;
-      }
-
-      //check to see if the map needs to be regenerated
-      //TODO: Make sure that this check actually does the right things
-      bool user_params = false;
-      bool map_params = false;
-      if(config.max_obstacle_height != last_config_.max_obstacle_height ||
-         config.max_obstacle_range != last_config_.max_obstacle_range ||
-         config.raytrace_range != last_config_.raytrace_range ||
-         config.cost_scaling_factor != last_config_.cost_scaling_factor ||
-         config.inflation_radius != last_config_.inflation_radius ||
-         config.footprint != last_config_.footprint ||
-         config.robot_radius != last_config_.robot_radius ||
-         config.static_map != last_config_.static_map ||
-         config.rolling_window != last_config_.rolling_window ||
-         config.unknown_cost_value != last_config_.unknown_cost_value ||
-         config.width != last_config_.width ||
-         config.height != last_config_.height ||
-         config.resolution != last_config_.resolution ||
-         config.origin_x != last_config_.origin_x ||
-         config.origin_y != last_config_.origin_y ||
-         config.lethal_cost_threshold != last_config_.lethal_cost_threshold ||
-         config.map_topic != last_config_.map_topic ||
-         config.origin_z != last_config_.origin_z ||
-         config.z_resolution != last_config_.z_resolution ||
-         config.unknown_threshold != last_config_.unknown_threshold ||
-         config.mark_threshold != last_config_.mark_threshold ||
-         config.track_unknown_space != last_config_.track_unknown_space ||
-         config.map_type != last_config_.map_type ||
-         config.static_map != last_config_.static_map ||
-         config.rolling_window != last_config_.rolling_window)
-      {
-        user_params = true;
-      }
-
-      if(config.width != last_config_.width ||
-         config.height != last_config_.height ||
-         config.resolution != last_config_.resolution ||
-         config.origin_x != last_config_.origin_x ||
-         config.origin_y != last_config_.origin_y)
-      {
-        map_params = true;
-      }
-
-      if(user_params) {
-        //unmangle rolling_window and static map
-        //both can be false but if one is true then the other is not
-        if(!config.static_map && !config.rolling_window){
-          rolling_window_ = false;
-          static_map_ = false;
-
-          if(last_config_.static_map)
-          {
-            map_sub_.shutdown();
-            map_initialized_ = false;
-          }
-        }
-        else if(config.static_map) {
-          static_map_ = true;
-          rolling_window_ = false;
-
-          //we'll subscribe to the latched topic that the map server uses
-          ros::NodeHandle g_nh;
-          map_sub_.shutdown();
-          map_initialized_ = false;
-          map_sub_ = g_nh.subscribe(config.map_topic, 1, &Costmap2DROS::incomingMap, this);
-          ROS_INFO("Requesting new map on topic %s\n", map_sub_.getTopic().c_str());
-
-          ros::Rate r(1.0);
-          while(!map_initialized_ && ros::ok()){
-            ros::spinOnce();
-            ROS_INFO("Still waiting on new map...\n");
-            r.sleep();
-          }
-        }
-        else if(config.rolling_window) {
-          rolling_window_ = true;
-          static_map_ = false;
-
-          if(last_config_.static_map)
-          {
-            map_sub_.shutdown();
-            map_initialized_ = false;
-          }
-        }
-
-        //make sure to lock before we start messing with the map
-        boost::recursive_mutex::scoped_lock mdl(map_data_lock_);
-
-        if(!config.static_map && last_config_.static_map) {
-          config.width = maptype_config_.width;
-          config.height = maptype_config_.height;
-          config.resolution = maptype_config_.resolution;
-          config.origin_x = maptype_config_.origin_x;
-          config.origin_y = maptype_config_.origin_y;
-
-          maptype_config_ = last_config_;
-        }
-
-
-        unsigned int size_x, size_y;
-        size_x = ceil(config.width/config.resolution);
-        size_y = ceil(config.height/config.resolution);
-        double resolution = config.resolution;
-        double origin_x = config.origin_x;
-        double origin_y = config.origin_y;
-
-        if(config.static_map)
-        {
-          if(map_params)
-          {
-            ROS_WARN("You're trying to change parameters that will be overwritten since static_map is set. Your changes will have no effect");
-          }
-
-          size_x = (unsigned int)map_meta_data_.width;
-          size_y = (unsigned int)map_meta_data_.height;
-          resolution = map_meta_data_.resolution;
-          origin_x = map_meta_data_.origin.position.x;
-          origin_y = map_meta_data_.origin.position.y;
-
-          config.width = size_x;
-          config.height = size_y;
-          config.resolution = resolution;
-          config.origin_x = origin_x;
-          config.origin_y = origin_y;
-
-          ROS_INFO("Received a %d X %d map at %f m/pix\n",
-              size_x, size_y, resolution);
-        }
-
-        if(config.map_type == "voxel") {
-          unsigned int z_voxels;
-          unsigned char lethal_threshold, unknown_cost_value;
-          unsigned int unknown_threshold, mark_threshold;
-
-          z_voxels = config.z_voxels;
-
-          lethal_threshold = config.lethal_cost_threshold;
-          unknown_threshold = config.unknown_threshold;
-          mark_threshold = config.mark_threshold;
-
-          unknown_cost_value = config.unknown_cost_value;
-
-          VoxelCostmap2D *new_map = new VoxelCostmap2D(size_x, size_y, z_voxels, 
-                         resolution, config.z_resolution, origin_x, origin_y, config.origin_z, 
-                         inscribed_radius, circumscribed_radius, config.inflation_radius, 
-                         config.max_obstacle_range, config.raytrace_range, config.cost_scaling_factor, 
-                         input_data_, lethal_threshold, unknown_threshold, mark_threshold, unknown_cost_value);
-          delete costmap_;
-          costmap_ = new_map;
-        }
-        else if(config.map_type == "costmap") {
-          unsigned char lethal_threshold, unknown_cost_value;
-
-          lethal_threshold = config.lethal_cost_threshold;
-          unknown_cost_value = config.unknown_cost_value;
-         
-          Costmap2D *new_map = new Costmap2D(size_x, size_y, resolution, origin_x, origin_y,
-                  inscribed_radius, circumscribed_radius, config.inflation_radius,
-                  config.max_obstacle_range, config.max_obstacle_height, config.raytrace_range, config.cost_scaling_factor, 
-                  input_data_, lethal_threshold, config.track_unknown_space, unknown_cost_value);
-          delete costmap_;
-          costmap_ = new_map;
-        }
-      }
-
-      if(config.map_type == "voxel" && config.publish_voxel_map) {
-        publish_voxel_ = true;
-        if(voxel_pub_ == NULL) {
-          ros::NodeHandle nh("~/" + name_);
-          voxel_pub_ = nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
-        }
-      }
-      else {
-        publish_voxel_ = false;
-        config.publish_voxel_map = false;
-      }
-
-      //make sure that nothing else is modifying the costmap while we reconfigure it
-      boost::recursive_mutex::scoped_lock lock(lock_);
-
-      //reconfigure the underlying costmap 
-      costmap_->reconfigure(config);
-
-      if(config.publish_frequency != last_config_.publish_frequency)
-      {
-        double map_publish_frequency = config.publish_frequency;
-        delete costmap_publisher_;
-        costmap_publisher_ = new Costmap2DPublisher(ros::NodeHandle("~/"+name_), map_publish_frequency, global_frame_);
-      }
-
-      //once all configuration is done, restart the map update loop
-      delete map_update_thread_;
-      map_update_thread_shutdown_ = false;
-      double map_update_frequency = config.update_frequency;
-      map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
-
-      last_config_ = config;
-    }
-    else {
-      if(setup_)
-      {
-        ROS_WARN("You cannot reconfigure the costmap unless the robot is stopped");
-      }
-      config = last_config_;
-    }
   }
 
   double Costmap2DROS::distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1){
@@ -808,123 +436,45 @@ namespace costmap_2d {
 
     //grab the footprint from the parameter server if possible
     XmlRpc::XmlRpcValue footprint_list;
-    std::string footprint_string;
-    std::vector<string> footstring_list;
     if(node.searchParam("footprint", footprint_param)){
       node.getParam(footprint_param, footprint_list);
-      if(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeString) {
-        footprint_string = std::string(footprint_list);
-        boost::erase_all(footprint_string, " ");
-
-        boost::char_separator<char> sep("[]");
-        boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
-        footstring_list = std::vector<string>(tokens.begin(), tokens.end());
-      }
       //make sure we have a list of lists
-      if(!(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeArray && footprint_list.size() > 2) && !(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeString && footstring_list.size() > 5)){
-        ROS_FATAL("The footprint must be specified as list of lists on the parameter server, %s was specified as %s", footprint_param.c_str(), std::string(footprint_list).c_str());
+      if(!(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeArray && footprint_list.size() > 2)){
+        ROS_FATAL("The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
         throw std::runtime_error("The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
       }
-
-      if(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeArray) {
-        for(int i = 0; i < footprint_list.size(); ++i){
-          //make sure we have a list of lists of size 2
-          XmlRpc::XmlRpcValue point = footprint_list[i];
-          if(!(point.getType() == XmlRpc::XmlRpcValue::TypeArray && point.size() == 2)){
-            ROS_FATAL("The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
-            throw std::runtime_error("The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
-          }
-       
-          //make sure that the value we're looking at is either a double or an int
-          if(!(point[0].getType() == XmlRpc::XmlRpcValue::TypeInt || point[0].getType() == XmlRpc::XmlRpcValue::TypeDouble)){
-            ROS_FATAL("Values in the footprint specification must be numbers");
-            throw std::runtime_error("Values in the footprint specification must be numbers");
-          }
-          pt.x = point[0].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[0]) : (double)(point[0]);
-          pt.x += sign(pt.x) * padding;
-       
-          //make sure that the value we're looking at is either a double or an int
-          if(!(point[1].getType() == XmlRpc::XmlRpcValue::TypeInt || point[1].getType() == XmlRpc::XmlRpcValue::TypeDouble)){
-            ROS_FATAL("Values in the footprint specification must be numbers");
-            throw std::runtime_error("Values in the footprint specification must be numbers");
-          }
-          pt.y = point[1].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[1]) : (double)(point[1]);
-          pt.y += sign(pt.y) * padding;
-       
-          footprint.push_back(pt);
-
-          node.deleteParam(footprint_param);
-          ostringstream oss;
-          bool first = true;
-          BOOST_FOREACH(geometry_msgs::Point p, footprint) {
-            if(first) {
-              oss << "[[" << p.x << "," << p.y << "]";
-              first = false;
-            }
-            else {
-              oss << ",[" << p.x << "," << p.y << "]";
-            }
-          }
-          oss << "]";
-          node.setParam(footprint_param, oss.str().c_str());
-          node.setParam("footprint", oss.str().c_str());
+      for(int i = 0; i < footprint_list.size(); ++i){
+        //make sure we have a list of lists of size 2
+        XmlRpc::XmlRpcValue point = footprint_list[i];
+        if(!(point.getType() == XmlRpc::XmlRpcValue::TypeArray && point.size() == 2)){
+          ROS_FATAL("The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
+          throw std::runtime_error("The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
         }
-      }
 
-      else if(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeString) {
-        std::vector<geometry_msgs::Point> footprint_spec;
-        bool valid_foot = true;
-        BOOST_FOREACH(string t, footstring_list) {
-          if( t != "," ) {
-            boost::erase_all(t, " ");
-            boost::char_separator<char> pt_sep(",");
-            boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
-            std::vector<string> point(pt_tokens.begin(), pt_tokens.end());
-
-            if(point.size() != 2) {
-              ROS_WARN("Each point must have exactly 2 coordinates");
-              valid_foot = false;
-              break;
-            }
-
-            vector<double>tmp_pt;
-            BOOST_FOREACH(string p, point) {
-              istringstream iss(p);
-              double temp;
-              if(iss >> temp) {
-                tmp_pt.push_back(temp);
-              }
-              else {
-                ROS_WARN("Each coordinate must convert to a double.");
-                valid_foot = false;
-                break;
-              }
-            }
-            if(!valid_foot)
-              break;
-
-            geometry_msgs::Point pt;
-            pt.x = tmp_pt[0];
-            pt.y = tmp_pt[1];
-
-            footprint_spec.push_back(pt);
-          }
+        //make sure that the value we're looking at is either a double or an int
+        if(!(point[0].getType() == XmlRpc::XmlRpcValue::TypeInt || point[0].getType() == XmlRpc::XmlRpcValue::TypeDouble)){
+          ROS_FATAL("Values in the footprint specification must be numbers");
+          throw std::runtime_error("Values in the footprint specification must be numbers");
         }
-        if (valid_foot) {
-          footprint = footprint_spec;
-          node.setParam("footprint", footprint_string);
+        pt.x = point[0].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[0]) : (double)(point[0]);
+        pt.x += sign(pt.x) * padding;
+
+        //make sure that the value we're looking at is either a double or an int
+        if(!(point[1].getType() == XmlRpc::XmlRpcValue::TypeInt || point[1].getType() == XmlRpc::XmlRpcValue::TypeDouble)){
+          ROS_FATAL("Values in the footprint specification must be numbers");
+          throw std::runtime_error("Values in the footprint specification must be numbers");
         }
-        else {
-          ROS_FATAL("This footprint is not vaid it must be specified as a list of lists with at least 3 points, you specified %s", footprint_string.c_str());
-          throw std::runtime_error("The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
-        }
+        pt.y = point[1].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[1]) : (double)(point[1]);
+        pt.y += sign(pt.y) * padding;
+
+        footprint.push_back(pt);
+
       }
     }
     return footprint;
   }
 
   Costmap2DROS::~Costmap2DROS(){
-    delete dsrv_;
     map_update_thread_shutdown_ = true;
     if(map_update_thread_ != NULL){
       map_update_thread_->join();
@@ -957,7 +507,7 @@ namespace costmap_2d {
 
     //block until the costmap is re-initialized.. meaning one update cycle has run
     ros::Rate r(100.0);
-    while(ros::ok() && !initialized_)
+    while(!initialized_)
       r.sleep();
   }
 
@@ -1012,7 +562,6 @@ namespace costmap_2d {
     buffer->bufferCloud(cloud2);
     buffer->unlock();
   }
-  boost::recursive_mutex::scoped_lock(configuration_mutex);
 
   void Costmap2DROS::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
     //buffer the point cloud
@@ -1025,9 +574,6 @@ namespace costmap_2d {
     //the user might not want to run the loop every cycle
     if(frequency == 0.0)
       return;
-
-    boost::mutex::scoped_lock ml(map_update_mutex_);
-    boost::recursive_mutex::scoped_lock(configuration_mutex);
 
     ros::NodeHandle nh;
     ros::Rate r(frequency);
@@ -1097,7 +643,6 @@ namespace costmap_2d {
     //update the global current status
     current_ = current;
 
-    boost::recursive_mutex::scoped_lock uml(configuration_mutex_);
     boost::recursive_mutex::scoped_lock lock(lock_);
     //if we're using a rolling buffer costmap... we need to update the origin using the robot's position
     if(rolling_window_){
@@ -1129,6 +674,7 @@ namespace costmap_2d {
       voxel_grid.header.stamp = ros::Time::now();
       voxel_pub_.publish(voxel_grid);
     }
+
   }
 
   void Costmap2DROS::clearNonLethalWindow(double size_x, double size_y){
@@ -1232,7 +778,6 @@ namespace costmap_2d {
       }
 
       //make sure to lock the costmap
-      boost::recursive_mutex::scoped_lock uml(configuration_mutex_);
       boost::recursive_mutex::scoped_lock lock(lock_);
 
       //if the map has a new global frame... we'll actually wipe the whole map rather than trying to be efficient about updating a potential window
@@ -1289,7 +834,6 @@ namespace costmap_2d {
   }
 
   bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const {
-
     global_pose.setIdentity();
     tf::Stamped<tf::Pose> robot_pose;
     robot_pose.setIdentity();
@@ -1436,6 +980,43 @@ namespace costmap_2d {
     costmap_->reinflateWindow(global_pose.getOrigin().x(), global_pose.getOrigin().y(), 
         max_inflation_dist + 2 * costmap_->getInflationRadius(), max_inflation_dist + 2 * costmap_->getInflationRadius(), false);
 
+  }
+
+
+  void Costmap2DROS::setFootprint(std::vector<geometry_msgs::Point> fp, double padding){
+    boost::recursive_mutex::scoped_lock lock(lock_);
+    //printf("1\n");
+    footprint_spec_.clear();
+    for(unsigned int i=0; i<fp.size(); i++)
+      footprint_spec_.push_back(fp[i]);
+    //printf("2\n");
+
+    if(footprint_spec_.size() > 2){
+      //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
+      double min_dist = std::numeric_limits<double>::max();
+      double max_dist = 0.0;
+
+      for(unsigned int i = 0; i < footprint_spec_.size() - 1; ++i){
+        //check the distance from the robot center point to the first vertex
+        double vertex_dist = distance(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y);
+        double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_[i].x, footprint_spec_[i].y, footprint_spec_[i+1].x, footprint_spec_[i+1].y);
+        min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+        max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+      }
+      //printf("3\n");
+
+      //we also need to do the last vertex and the first vertex
+      double vertex_dist = distance(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y);
+      double edge_dist = distanceToLine(0.0, 0.0, footprint_spec_.back().x, footprint_spec_.back().y, footprint_spec_.front().x, footprint_spec_.front().y);
+      min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+      max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+
+      double inscribed_radius = min_dist;
+      double circumscribed_radius = max_dist;
+      double inflation_radius = circumscribed_radius + padding;
+      printf("calling updateFootprint\n");
+      costmap_->updateFootprint(inscribed_radius,circumscribed_radius,inflation_radius);
+    }
   }
 
 };

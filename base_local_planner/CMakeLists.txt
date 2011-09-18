@@ -16,10 +16,6 @@ rosbuild_add_library(base_local_planner src/goal_functions.cpp src/map_cell.cpp 
     src/trajectory.cpp src/trajectory_planner_ros.cpp src/map_grid_visualizer.cpp)
 rosbuild_link_boost(base_local_planner thread)
 
-rosbuild_find_ros_package(dynamic_reconfigure)
-include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
-gencfg()
-
 rosbuild_add_executable(point_grid src/point_grid.cpp)
 
 rosbuild_add_gtest(test/utest test/utest.cpp)

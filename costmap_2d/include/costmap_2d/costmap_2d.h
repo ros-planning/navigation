@@ -46,8 +46,6 @@
 #include <boost/thread.hpp>
 
 namespace costmap_2d {
-  class Costmap2DConfig;
-
   //convenient for storing x/y point pairs
   struct MapLocation {
     unsigned int x;
@@ -120,10 +118,6 @@ namespace costmap_2d {
        * @brief  Destructor
        */
       virtual ~Costmap2D();
-
-      void reconfigure(costmap_2d::Costmap2DConfig &config);
-
-      virtual void finishConfiguration(costmap_2d::Costmap2DConfig &config);
 
       /**
        * @brief  Revert to the static map outside of a specified window centered at a world coordinate
@@ -391,6 +385,7 @@ namespace costmap_2d {
           unsigned int data_size_x, unsigned int data_size_y,
           const std::vector<unsigned char>& static_data);
 
+      void updateFootprint(double inscribed_radius, double circumscribed_radius, double inflation_radius);
 
     protected:
       /**
@@ -546,11 +541,6 @@ namespace costmap_2d {
           std::priority_queue<CellData>& inflation_queue, bool clear = true );
 
       /**
-       * @brief Based on the inflation radius compute distance and cost caches
-       */
-      void computeCaches();
-
-      /**
        * @brief  Raytrace a line and apply some action at each step
        * @param  at The action to take... a functor
        * @param  x0 The starting x coordinate
@@ -623,7 +613,7 @@ namespace costmap_2d {
         unsigned char* cell_cost = &costmap_[index];
         if(*cell_cost != NO_INFORMATION)
           *cell_cost = std::max(cost, *cell_cost);
-        else if(cost == LETHAL_OBSTACLE)
+        else if(cost >= LETHAL_OBSTACLE)
           *cell_cost = cost;
       }
 
@@ -659,7 +649,6 @@ namespace costmap_2d {
         return x > 0 ? 1.0 : -1.0;
       }
 
-      boost::recursive_mutex configuration_mutex_;
     protected:
       unsigned int size_x_;
       unsigned int size_y_;

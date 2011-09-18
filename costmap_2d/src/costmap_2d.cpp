@@ -37,8 +37,6 @@
 #include <costmap_2d/costmap_2d.h>
 #include <cstdio>
 
-#include <costmap_2d/Costmap2DConfig.h>
-
 using namespace std;
 
 namespace costmap_2d{
@@ -52,7 +50,7 @@ namespace costmap_2d{
   max_obstacle_height_(max_obstacle_height), max_raytrace_range_(max_raytrace_range), cached_costs_(NULL), cached_distances_(NULL), 
   inscribed_radius_(inscribed_radius), circumscribed_radius_(circumscribed_radius), inflation_radius_(inflation_radius),
   weight_(weight), lethal_threshold_(lethal_threshold), track_unknown_space_(track_unknown_space), unknown_cost_value_(unknown_cost_value), inflation_queue_(){
-    //create the costmap, static_map, and markers
+    //creat the costmap, static_map, and markers
     costmap_ = new unsigned char[size_x_ * size_y_];
     static_map_ = new unsigned char[size_x_ * size_y_];
     markers_ = new unsigned char[size_x_ * size_y_];
@@ -66,7 +64,19 @@ namespace costmap_2d{
     //set the cost for the circumscribed radius of the robot
     circumscribed_cost_lb_ = computeCost(cell_circumscribed_radius_);
 
-    computeCaches();
+    //based on the inflation radius... compute distance and cost caches
+    ROS_ERROR("cell inflation radius+2 %d\n",cell_inflation_radius_+2);
+    ROS_ERROR("weight %f in %d out %d\n",weight_,cell_inscribed_radius_,cell_circumscribed_radius_);
+    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
+        cached_distances_[i][j] = sqrt(i*i + j*j);
+        cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
+      }
+    }
 
     if(!static_data.empty()){
       ROS_ASSERT_MSG(size_x_ * size_y_ == static_data.size(), "If you want to initialize a costmap with static data, their sizes must match.");
@@ -84,12 +94,14 @@ namespace costmap_2d{
           //check if the static value is above the unknown or lethal thresholds
           if(track_unknown_space_ && unknown_cost_value_ > 0 && *static_data_index == unknown_cost_value_)
             *costmap_index = NO_INFORMATION;
-          else if(*static_data_index >= lethal_threshold_)
+          else if(*static_data_index > lethal_threshold_)
+            *costmap_index = TALL_OBSTACLE;
+          else if(*static_data_index == lethal_threshold_)
             *costmap_index = LETHAL_OBSTACLE;
           else
             *costmap_index = FREE_SPACE;
 
-          if(*costmap_index == LETHAL_OBSTACLE){
+          if(*costmap_index == LETHAL_OBSTACLE || *costmap_index == TALL_OBSTACLE){
             unsigned int mx, my;
             indexToCells(index, mx, my);
             enqueue(index, mx, my, mx, my, inflation_queue_);
@@ -113,40 +125,9 @@ namespace costmap_2d{
     }
   }
 
-  void Costmap2D::reconfigure(Costmap2DConfig &config) {
-      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
-
-      max_obstacle_height_ = config.max_obstacle_height;
-      max_obstacle_range_ = config.max_obstacle_range;
-      max_raytrace_range_ = config.raytrace_range;
-      
-      inflation_radius_ = config.inflation_radius;
-      cell_inflation_radius_ = cellDistance(inflation_radius_);
-      computeCaches();
-
-      updateOrigin(config.origin_x, config.origin_y);
-
-      unknown_cost_value_ = config.unknown_cost_value;
-      lethal_threshold_ = config.lethal_cost_threshold;
-
-      weight_ = config.cost_scaling_factor;
-
-      if((config.footprint == "" || config.footprint == "[]") && config.robot_radius > 0) {
-        inscribed_radius_ = config.robot_radius;
-        circumscribed_radius_ = inscribed_radius_;
-      }
-
-      finishConfiguration(config);
-  }
-
-  void Costmap2D::finishConfiguration(costmap_2d::Costmap2DConfig &config) {
-  }
-
   void Costmap2D::replaceFullMap(double win_origin_x, double win_origin_y,
                              unsigned int data_size_x, unsigned int data_size_y,
                              const std::vector<unsigned char>& static_data){
-    boost::recursive_mutex::scoped_lock rfml(configuration_mutex_);
-
     //delete our old maps
     deleteMaps();
 
@@ -172,12 +153,14 @@ namespace costmap_2d{
         //check if the static value is above the unknown or lethal thresholds
         if(track_unknown_space_ && unknown_cost_value_ > 0 && *static_data_index == unknown_cost_value_)
           *costmap_index = NO_INFORMATION;
-        else if(*static_data_index >= lethal_threshold_)
+        else if(*static_data_index > lethal_threshold_)
+          *costmap_index = TALL_OBSTACLE;
+        else if(*static_data_index == lethal_threshold_)
           *costmap_index = LETHAL_OBSTACLE;
         else
           *costmap_index = FREE_SPACE;
 
-        if(*costmap_index == LETHAL_OBSTACLE){
+        if(*costmap_index == LETHAL_OBSTACLE || *costmap_index == TALL_OBSTACLE){
           unsigned int mx, my;
           indexToCells(index, mx, my);
           enqueue(index, mx, my, mx, my, inflation_queue_);
@@ -198,20 +181,15 @@ namespace costmap_2d{
   void Costmap2D::replaceStaticMapWindow(double win_origin_x, double win_origin_y, 
                                          unsigned int data_size_x, unsigned int data_size_y, 
                                          const std::vector<unsigned char>& static_data){
-    boost::recursive_mutex::scoped_lock stwl(configuration_mutex_);
-
     unsigned int start_x, start_y;
     if(!worldToMap(win_origin_x, win_origin_y, start_x, start_y) || (start_x + data_size_x) > size_x_ || (start_y + data_size_y) > size_y_){
       ROS_ERROR("You must call replaceStaticMapWindow with a window origin and size that is contained within the map");
       return;
     }
 
-
     //we need to compute the region of the costmap that could change from inflation of new obstacles
     unsigned int max_inflation_change = 2 * cell_inflation_radius_;
 
-
-    
     //make sure that we don't go out of map bounds
     unsigned int copy_sx = std::min(std::max(0, (int)start_x - (int)max_inflation_change), (int)size_x_);
     unsigned int copy_sy = std::min(std::max(0, (int)start_y - (int)max_inflation_change), (int)size_x_);
@@ -243,7 +221,9 @@ namespace costmap_2d{
         //check if the static value is above the unknown or lethal thresholds
         if(track_unknown_space_ && unknown_cost_value_ > 0 && *static_data_index == unknown_cost_value_)
           *costmap_index = NO_INFORMATION;
-        else if(*static_data_index >= lethal_threshold_)
+        else if(*static_data_index > lethal_threshold_)
+          *costmap_index = TALL_OBSTACLE;
+        else if(*static_data_index == lethal_threshold_)
           *costmap_index = LETHAL_OBSTACLE;
         else
           *costmap_index = FREE_SPACE;
@@ -397,8 +377,6 @@ namespace costmap_2d{
   }
 
   void Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
-    boost::recursive_mutex::scoped_lock cpl(configuration_mutex_);
-
     //check for self windowing
     if(this == &map){
       ROS_ERROR("Cannot convert this costmap into a window of itself");
@@ -456,7 +434,6 @@ namespace costmap_2d{
   }
 
   Costmap2D& Costmap2D::operator=(const Costmap2D& map) {
-
     //check for self assignement
     if(this == &map)
       return *this;
@@ -602,8 +579,6 @@ namespace costmap_2d{
 
   void Costmap2D::updateWorld(double robot_x, double robot_y, 
       const vector<Observation>& observations, const vector<Observation>& clearing_observations){
-    boost::recursive_mutex::scoped_lock uwl(configuration_mutex_);
-
     //reset the markers for inflation
     memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
 
@@ -629,7 +604,6 @@ namespace costmap_2d{
   }
   
   void Costmap2D::reinflateWindow(double wx, double wy, double w_size_x, double w_size_y, bool clear){
-    boost::recursive_mutex::scoped_lock rwl(configuration_mutex_);
     //reset the markers for inflation
     memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
 
@@ -640,6 +614,7 @@ namespace costmap_2d{
     resetInflationWindow(wx, wy, w_size_x, w_size_y, inflation_queue_, clear);
 
     //inflate the obstacles
+    //printf("inflate obstacles\n");
     inflateObstacles(inflation_queue_);
 
   }
@@ -688,25 +663,32 @@ namespace costmap_2d{
   }
 
   void Costmap2D::inflateObstacles(priority_queue<CellData>& inflation_queue){
+    int count = 0;
+    int init_s = inflation_queue.size();
     while(!inflation_queue.empty()){
+      count++;
       //get the highest priority cell and pop it off the priority queue
       const CellData& current_cell = inflation_queue.top();
 
       unsigned int index = current_cell.index_;
-      unsigned int mx = current_cell.x_;
-      unsigned int my = current_cell.y_;
-      unsigned int sx = current_cell.src_x_;
-      unsigned int sy = current_cell.src_y_;
+      int mx = current_cell.x_;
+      int my = current_cell.y_;
+      int sx = current_cell.src_x_;
+      int sy = current_cell.src_y_;
 
       //attempt to put the neighbors of the current cell onto the queue
-      if(mx > 0)
+      if(mx > 0){
         enqueue(index - 1, mx - 1, my, sx, sy, inflation_queue); 
-      if(my > 0)
+      }
+      if(my > 0){
         enqueue(index - size_x_, mx, my - 1, sx, sy, inflation_queue);
-      if(mx < size_x_ - 1)
+      }
+      if(mx < size_x_ - 1){
         enqueue(index + 1, mx + 1, my, sx, sy, inflation_queue);
-      if(my < size_y_ - 1)
+      }
+      if(my < size_y_ - 1){
         enqueue(index + size_x_, mx, my + 1, sx, sy, inflation_queue);
+      }
 
       //remove the current cell from the priority queue
       inflation_queue.pop();
@@ -819,7 +801,7 @@ namespace costmap_2d{
     for(unsigned int j = map_sy; j <= map_ey; ++j){
       for(unsigned int i = map_sx; i <= map_ex; ++i){
         //if the cell is a lethal obstacle... we'll keep it and queue it, otherwise... we'll clear it
-        if(*current != LETHAL_OBSTACLE){
+        if(*current != LETHAL_OBSTACLE && *current != TALL_OBSTACLE){
           if(clear_no_info || *current != NO_INFORMATION) 
             *current = FREE_SPACE;
         }
@@ -866,7 +848,7 @@ namespace costmap_2d{
     for(unsigned int j = map_sy; j <= map_ey; ++j){
       for(unsigned int i = map_sx; i <= map_ex; ++i){
         //if the cell is a lethal obstacle... we'll keep it and queue it, otherwise... we'll clear it
-        if(*current == LETHAL_OBSTACLE)
+        if(*current == LETHAL_OBSTACLE || *current == TALL_OBSTACLE)
           enqueue(index, i, j, i, j, inflation_queue);
         else if(clear && *current != NO_INFORMATION)
           *current = FREE_SPACE;
@@ -875,20 +857,6 @@ namespace costmap_2d{
       }
       current += size_x_ - (map_ex - map_sx) - 1;
       index += size_x_ - (map_ex - map_sx) - 1;
-    }
-  }
-
-  void Costmap2D::computeCaches() {
-    //based on the inflation radius... compute distance and cost caches
-    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
-    cached_distances_ = new double*[cell_inflation_radius_ + 2];
-    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
-      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
-      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
-      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
-        cached_distances_[i][j] = sqrt(i*i + j*j);
-        cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
-      }
     }
   }
 
@@ -940,6 +908,7 @@ namespace costmap_2d{
 
     //make sure to clean up
     delete[] local_map;
+
   }
 
   bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value) {
@@ -1090,8 +1059,11 @@ namespace costmap_2d{
     for(unsigned int iy = 0; iy < size_y_; iy++) {
       for(unsigned int ix = 0; ix < size_x_; ix++) {
         unsigned char cost = getCost(ix,iy);
-        if (cost == LETHAL_OBSTACLE) {
+        if (cost == TALL_OBSTACLE) {
           fprintf(fp, "255 ");
+        } 
+        else if (cost == LETHAL_OBSTACLE) {
+          fprintf(fp, "220 ");
         } 
         else if (cost == NO_INFORMATION){
           fprintf(fp, "180 ");
@@ -1109,6 +1081,43 @@ namespace costmap_2d{
       fprintf(fp, "\n");
     }
     fclose(fp);
+  }
+
+  void Costmap2D::updateFootprint(double inscribed_radius, double circumscribed_radius, double inflation_radius){
+
+    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+      delete [] cached_costs_[i];
+      delete [] cached_distances_[i];
+    }
+    delete [] cached_costs_;
+    delete [] cached_distances_;
+
+    inscribed_radius_ = inscribed_radius;
+    circumscribed_radius_ = circumscribed_radius;
+    inflation_radius_ = inflation_radius;
+
+    cell_inscribed_radius_ = cellDistance(inscribed_radius);
+    cell_circumscribed_radius_ = cellDistance(circumscribed_radius);
+    cell_inflation_radius_ = cellDistance(inflation_radius);
+
+    circumscribed_cost_lb_ = computeCost(cell_circumscribed_radius_);
+
+    //based on the inflation radius... compute distance and cost caches
+    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+    for(unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i){
+      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      for(unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j){
+        cached_distances_[i][j] = sqrt(i*i + j*j);
+        cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
+      }
+    }
+    printf("cell inflation radius %d\n",cell_inflation_radius_);
+
+    printf("before inflation\n");
+    reinflateWindow(0, 0, getSizeInMetersX(), getSizeInMetersY(), true);
+    printf("after inflation\n");
   }
 
 };

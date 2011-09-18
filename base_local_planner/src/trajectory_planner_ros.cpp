@@ -39,7 +39,6 @@
 #include <ros/console.h>
 #include <sys/time.h>
 #include <pluginlib/class_list_macros.h>
-#include <boost/tokenizer.hpp>
 
 #include "geometry_msgs/PolygonStamped.h"
 #include "nav_msgs/Path.h"
@@ -53,25 +52,10 @@ PLUGINLIB_DECLARE_CLASS(base_local_planner, TrajectoryPlannerROS, base_local_pla
 
 namespace base_local_planner {
 
-  void TrajectoryPlannerROS::reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level) {
-      if(setup_ && config.restore_defaults) {
-        config = default_config_;
-        //Avoid looping
-        config.restore_defaults = false;
-      }
-      if(!setup_) {
-        default_config_ = config;
-        setup_ = true;
-      }
-      else if(setup_) {
-        tc_->reconfigure(config);
-      }
-  }
-
-  TrajectoryPlannerROS::TrajectoryPlannerROS() : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {}
+  TrajectoryPlannerROS::TrajectoryPlannerROS() : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false) {}
 
   TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf::TransformListener* tf, Costmap2DROS* costmap_ros) 
-    : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {
+    : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false){
 
       //initialize the planner
       initialize(name, tf, costmap_ros);
@@ -98,7 +82,7 @@ namespace base_local_planner {
       costmap_ros_->getCostmapCopy(costmap_);
 
       ros::NodeHandle private_nh("~/" + name);
-      
+
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
 
@@ -114,6 +98,8 @@ namespace base_local_planner {
       odom_sub_ = global_node.subscribe<nav_msgs::Odometry>("odom", 1, boost::bind(&TrajectoryPlannerROS::odomCallback, this, _1));
 
       //we'll get the parameters for the robot radius from the costmap we're associated with
+      inscribed_radius_ = costmap_ros_->getInscribedRadius();
+      circumscribed_radius_ = costmap_ros_->getCircumscribedRadius();
       inflation_radius_ = costmap_ros_->getInflationRadius();
 
       private_nh.param("acc_lim_x", acc_lim_x_, 2.5);
@@ -218,7 +204,7 @@ namespace base_local_planner {
       world_model_ = new CostmapModel(costmap_);
       std::vector<double> y_vels = loadYVels(private_nh);
 
-      tc_ = new TrajectoryPlanner(*world_model_, costmap_, costmap_ros_->getRobotFootprint(),
+      tc_ = new TrajectoryPlanner(*world_model_, costmap_, costmap_ros_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_,
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
@@ -226,11 +212,6 @@ namespace base_local_planner {
 
       map_viz_.initialize(name, &costmap_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
-
-      dsrv_ = new dynamic_reconfigure::Server<BaseLocalPlannerConfig>(private_nh);
-      dynamic_reconfigure::Server<BaseLocalPlannerConfig>::CallbackType cb = boost::bind(&TrajectoryPlannerROS::reconfigureCB, this, _1, _2);
-      dsrv_->setCallback(cb);
-
     }
     else
       ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");
@@ -239,14 +220,21 @@ namespace base_local_planner {
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
     std::vector<double> y_vels;
 
-    std::string y_vel_list;
+    XmlRpc::XmlRpcValue y_vel_list;
     if(node.getParam("y_vels", y_vel_list)){
-      typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
-      boost::char_separator<char> sep("[], ");
-      tokenizer tokens(y_vel_list, sep);
+      ROS_ASSERT_MSG(y_vel_list.getType() == XmlRpc::XmlRpcValue::TypeArray, 
+          "The y velocities to explore must be specified as a list");
 
-      for(tokenizer::iterator i = tokens.begin(); i != tokens.end(); i++){
-        y_vels.push_back(atof((*i).c_str()));
+      for(int i = 0; i < y_vel_list.size(); ++i){
+        //make sure we have a list of lists of size 2
+        XmlRpc::XmlRpcValue vel = y_vel_list[i];
+
+        //make sure that the value we're looking at is either a double or an int
+        ROS_ASSERT(vel.getType() == XmlRpc::XmlRpcValue::TypeInt || vel.getType() == XmlRpc::XmlRpcValue::TypeDouble);
+        double y_vel = vel.getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(vel) : (double)(vel);
+
+        y_vels.push_back(y_vel);
+
       }
     }
     else{
@@ -261,9 +249,6 @@ namespace base_local_planner {
   }
 
   TrajectoryPlannerROS::~TrajectoryPlannerROS(){
-    //make sure to clean things up
-    delete dsrv_;
-
     if(tc_ != NULL)
       delete tc_;
 
