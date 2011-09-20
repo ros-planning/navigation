@@ -121,7 +121,7 @@ namespace costmap_2d {
        */
       virtual ~Costmap2D();
 
-      void reconfigure(costmap_2d::Costmap2DConfig &config);
+      void reconfigure(costmap_2d::Costmap2DConfig &config, const costmap_2d::Costmap2DConfig& last_config);
 
       virtual void finishConfiguration(costmap_2d::Costmap2DConfig &config);
 

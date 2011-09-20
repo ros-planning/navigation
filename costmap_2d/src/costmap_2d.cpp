@@ -113,18 +113,23 @@ namespace costmap_2d{
     }
   }
 
-  void Costmap2D::reconfigure(Costmap2DConfig &config) {
+  void Costmap2D::reconfigure(Costmap2DConfig &config, const Costmap2DConfig &last_config) {
       boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
 
       max_obstacle_height_ = config.max_obstacle_height;
       max_obstacle_range_ = config.max_obstacle_range;
       max_raytrace_range_ = config.raytrace_range;
       
-      inflation_radius_ = config.inflation_radius;
-      cell_inflation_radius_ = cellDistance(inflation_radius_);
-      computeCaches();
+      if(last_config.inflation_radius != config.inflation_radius)
+      {
+        inflation_radius_ = config.inflation_radius;
+        cell_inflation_radius_ = cellDistance(inflation_radius_);
+        computeCaches();
+      }
 
-      updateOrigin(config.origin_x, config.origin_y);
+      //only update the origin for the map if the
+      if(!config.static_map && (last_config.origin_x != config.origin_x || last_config.origin_y != config.origin_y))
+        updateOrigin(config.origin_x, config.origin_y);
 
       unknown_cost_value_ = config.unknown_cost_value;
       lethal_threshold_ = config.lethal_cost_threshold;

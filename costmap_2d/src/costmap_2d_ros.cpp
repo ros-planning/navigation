@@ -738,7 +738,7 @@ namespace costmap_2d {
       boost::recursive_mutex::scoped_lock lock(lock_);
 
       //reconfigure the underlying costmap 
-      costmap_->reconfigure(config);
+      costmap_->reconfigure(config, last_config_);
 
       if(config.publish_frequency != last_config_.publish_frequency)
       {
