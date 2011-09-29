@@ -506,7 +506,7 @@ namespace costmap_2d {
         }
       }
       //clear the footprint for a circular robot
-      else if(footprint_string == "" && config.robot_radius > 0.0) {
+      else if((footprint_string == "[]" || footprint_string == "") && config.robot_radius > 0.0) {
         footprint_spec_ = vector<geometry_msgs::Point>();
         circular = true;
       }
@@ -814,6 +814,11 @@ namespace costmap_2d {
       node.getParam(footprint_param, footprint_list);
       if(footprint_list.getType() == XmlRpc::XmlRpcValue::TypeString) {
         footprint_string = std::string(footprint_list);
+
+        //if there's just an empty footprint up there, return
+        if(footprint_string == "[]" || footprint_string == "")
+          return footprint;
+
         boost::erase_all(footprint_string, " ");
 
         boost::char_separator<char> sep("[]");
