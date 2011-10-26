@@ -258,7 +258,7 @@ namespace dwa_local_planner {
         //copy over the odometry information
         nav_msgs::Odometry base_odom;
         {
-          boost::recursive_mutex::scoped_lock lock(odom_lock_);
+          boost::mutex::scoped_lock lock(odom_mutex_);
           base_odom = base_odom_;
         }
 
@@ -345,7 +345,7 @@ namespace dwa_local_planner {
     //copy over the odometry information
     nav_msgs::Odometry base_odom;
     {
-      boost::recursive_mutex::scoped_lock lock(odom_lock_);
+      boost::mutex::scoped_lock lock(odom_mutex_);
       base_odom = base_odom_;
     }
 
