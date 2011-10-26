@@ -1017,7 +1017,6 @@ namespace costmap_2d {
     buffer->bufferCloud(cloud2);
     buffer->unlock();
   }
-  boost::recursive_mutex::scoped_lock(configuration_mutex);
 
   void Costmap2DROS::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
     //buffer the point cloud
@@ -1032,7 +1031,6 @@ namespace costmap_2d {
       return;
 
     boost::mutex::scoped_lock ml(map_update_mutex_);
-    boost::recursive_mutex::scoped_lock(configuration_mutex);
 
     ros::NodeHandle nh;
     ros::Rate r(frequency);

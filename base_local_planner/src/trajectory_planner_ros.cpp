@@ -340,7 +340,7 @@ namespace base_local_planner {
 
   void TrajectoryPlannerROS::odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
     //we assume that the odometry is published in the frame of the base
-    boost::recursive_mutex::scoped_lock(odom_lock_);
+    boost::recursive_mutex::scoped_lock lock(odom_lock_);
     base_odom_.twist.twist.linear.x = msg->twist.twist.linear.x;
     base_odom_.twist.twist.linear.y = msg->twist.twist.linear.y;
     base_odom_.twist.twist.angular.z = msg->twist.twist.angular.z;
@@ -457,7 +457,7 @@ namespace base_local_planner {
         //copy over the odometry information
         nav_msgs::Odometry base_odom;
         {
-          boost::recursive_mutex::scoped_lock(odom_lock_);
+          boost::recursive_mutex::scoped_lock lock(odom_lock_);
           base_odom = base_odom_;
         }
 
@@ -551,7 +551,7 @@ namespace base_local_planner {
       //copy over the odometry information
       nav_msgs::Odometry base_odom;
       {
-        boost::recursive_mutex::scoped_lock(odom_lock_);
+        boost::recursive_mutex::scoped_lock lock(odom_lock_);
         base_odom = base_odom_;
       }
 
@@ -589,7 +589,7 @@ namespace base_local_planner {
       //copy over the odometry information
       nav_msgs::Odometry base_odom;
       {
-        boost::recursive_mutex::scoped_lock(odom_lock_);
+        boost::recursive_mutex::scoped_lock lock(odom_lock_);
         base_odom = base_odom_;
       }
 
@@ -612,7 +612,7 @@ namespace base_local_planner {
     //copy over the odometry information
     nav_msgs::Odometry base_odom;
     {
-    boost::recursive_mutex::scoped_lock(odom_lock_);
+      boost::recursive_mutex::scoped_lock lock(odom_lock_);
       base_odom = base_odom_;
     }
 
