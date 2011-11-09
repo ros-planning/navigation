@@ -94,6 +94,8 @@ angle_diff(double a, double b)
     return(d2);
 }
 
+static const std::string scan_topic_ = "scan";
+
 class AmclNode
 {
   public:
@@ -203,6 +205,7 @@ class AmclNode
     boost::recursive_mutex configuration_mutex_;
     dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
     amcl::AMCLConfig default_config_;
+    ros::Timer check_laser_timer_;
 
     int max_beams_, min_particles_, max_particles_;
     double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
@@ -215,6 +218,10 @@ class AmclNode
     laser_model_t laser_model_type_;
 
     void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
+
+    ros::Time last_laser_received_ts_;
+    ros::Duration laser_check_interval_;
+    void checkLaserReceived(const ros::TimerEvent& event);
 };
 
 std::vector<std::pair<int,int> > AmclNode::free_space_indices;
@@ -335,7 +342,7 @@ AmclNode::AmclNode() :
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
-  laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, "scan", 100);
+  laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
   laser_scan_filter_ = 
           new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
                                                         *tf_, 
@@ -359,6 +366,11 @@ AmclNode::AmclNode() :
   dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
   dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+
+  // 15s timer to warn on lack of receipt of laser scans, #5209
+  laser_check_interval_ = ros::Duration(15.0);
+  check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
+                                       boost::bind(&AmclNode::checkLaserReceived, this, _1));
 }
 
 void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
@@ -490,6 +502,18 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   delete initial_pose_filter_;
   initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, global_frame_id_, 2);
   initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
+}
+
+void 
+AmclNode::checkLaserReceived(const ros::TimerEvent& event)
+{
+  ros::Duration d = ros::Time::now() - last_laser_received_ts_;
+  if(d > laser_check_interval_)
+  {
+    ROS_WARN("No laser scan received (and thus no pose updates have been published) for %f seconds.  Verify that data is being published on the %s topic.",
+             d.toSec(),
+             ros::names::resolve(scan_topic_).c_str());
+  }
 }
 
 void
@@ -738,6 +762,7 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
+  last_laser_received_ts_ = ros::Time::now();
   if( map_ == NULL ) {
     return;
   }
