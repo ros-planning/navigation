@@ -124,7 +124,6 @@ class AmclNode
                                     std_srvs::Empty::Response& res);
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
-    void initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
     void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
 
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
@@ -156,8 +155,7 @@ class AmclNode
 
     message_filters::Subscriber<sensor_msgs::LaserScan>* laser_scan_sub_;
     tf::MessageFilter<sensor_msgs::LaserScan>* laser_scan_filter_;
-    message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>* initial_pose_sub_;
-    tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* initial_pose_filter_;
+    ros::Subscriber initial_pose_sub_;
     std::vector< AMCLLaser* > lasers_;
     std::vector< bool > lasers_update_;
     std::map< std::string, int > frame_to_laser_;
@@ -350,11 +348,7 @@ AmclNode::AmclNode() :
                                                         100);
   laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
                                                    this, _1));
-  initial_pose_sub_ = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh_, "initialpose", 2);
-  initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, global_frame_id_, 2);
-  initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
-
-  initial_pose_sub_old_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceivedOld, this);
+  initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 
   if(use_map_topic_) {
     map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);
@@ -499,9 +493,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
                                                    this, _1));
 
-  delete initial_pose_filter_;
-  initial_pose_filter_ = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*initial_pose_sub_, *tf_, global_frame_id_, 2);
-  initial_pose_filter_->registerCallback(boost::bind(&AmclNode::initialPoseReceived, this, _1));
+  initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 }
 
 void 
@@ -672,8 +664,6 @@ AmclNode::~AmclNode()
   freeMapDependentMemory();
   delete laser_scan_filter_;
   delete laser_scan_sub_;
-  delete initial_pose_filter_;
-  delete initial_pose_sub_;
   delete tfb_;
   delete tf_;
   // TODO: delete everything allocated in constructor
@@ -1155,20 +1145,23 @@ AmclNode::getYaw(tf::Pose& t)
 }
 
 void
-AmclNode::initialPoseReceivedOld(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
-{
-  // Support old behavior, where null frame ids were accepted.
-  if(msg->header.frame_id == "")
-  {
-    ROS_WARN("Received initialpose message with header.frame_id == "".  This behavior is deprecated; you should always set the frame_id");
-    initialPoseReceived(msg);
-  }
-}
-
-void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
   boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
+  if(msg->header.frame_id == "")
+  {
+    // This should be removed at some point
+    ROS_WARN("Received initial pose with empty frame_id.  You should always supply a frame_id.");
+  }
+  // We only accept initial pose estimates in the global frame, #5148.
+  else if(tf_->resolve(msg->header.frame_id) != tf_->resolve(global_frame_id_))
+  {
+    ROS_WARN("Ignoring initial pose in frame \"%s\"; initial poses must be in the global frame, \"%s\"",
+             msg->header.frame_id.c_str(),
+             global_frame_id_.c_str());
+    return;
+  }
+
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
   tf::StampedTransform tx_odom;
@@ -1192,6 +1185,8 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   tf::Pose pose_old, pose_new;
   tf::poseMsgToTF(msg->pose.pose, pose_old);
   pose_new = tx_odom.inverse() * pose_old;
+
+  // Transform into the global frame
 
   ROS_INFO("Setting pose (%.6f): %.3f %.3f %.3f",
            ros::Time::now().toSec(),
