@@ -587,6 +587,10 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
            msg.info.resolution);
 
   freeMapDependentMemory();
+  // Clear queued laser objects because they hold pointers to the existing
+  // map, #5202.
+  lasers_.clear();
+  lasers_update_.clear();
 
   map_ = convertMap(msg);
 
