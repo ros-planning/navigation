@@ -334,40 +334,34 @@ AmclNode::AmclNode() :
   double tmp_pos;
   private_nh_.param("initial_pose_x", tmp_pos, init_pose_[0]);
   if(!std::isnan(tmp_pos))
-  {
-    ROS_WARN("ignoring NAN in initial pose");
     init_pose_[0] = tmp_pos;
-  }
+  else 
+    ROS_WARN("ignoring NAN in initial pose X position");
   private_nh_.param("initial_pose_y", tmp_pos, init_pose_[1]);
   if(!std::isnan(tmp_pos))
-  {
-    ROS_WARN("ignoring NAN in initial pose");
     init_pose_[1] = tmp_pos;
-  }
+  else
+    ROS_WARN("ignoring NAN in initial pose Y position");
   private_nh_.param("initial_pose_a", tmp_pos, init_pose_[2]);
   if(!std::isnan(tmp_pos))
-  {
-    ROS_WARN("ignoring NAN in initial pose");
     init_pose_[2] = tmp_pos;
-  }
+  else
+    ROS_WARN("ignoring NAN in initial pose Yaw");
   private_nh_.param("initial_cov_xx", tmp_pos, init_cov_[0]);
   if(!std::isnan(tmp_pos))
-  {
-    ROS_WARN("ignoring NAN in initial pose");
-    init_cov_[0] = tmp_pos;
-  }
+    init_cov_[0] =tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial covariance XX");
   private_nh_.param("initial_cov_yy", tmp_pos, init_cov_[1]);
   if(!std::isnan(tmp_pos))
-  {
-    ROS_WARN("ignoring NAN in initial pose");
     init_cov_[1] = tmp_pos;
-  }
+  else
+    ROS_WARN("ignoring NAN in initial covariance YY");
   private_nh_.param("initial_cov_aa", tmp_pos, init_cov_[2]);
   if(!std::isnan(tmp_pos))
-  {
-    ROS_WARN("ignoring NAN in initial pose");
     init_cov_[2] = tmp_pos;
-  }
+  else
+    ROS_WARN("ignoring NAN in initial covariance AA");
 
   cloud_pub_interval.fromSec(1.0);
   tfb_ = new tf::TransformBroadcaster();
