@@ -72,7 +72,6 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   {
     std::string errmsg = std::string("failed to open image file \"") + 
             std::string(fname) + std::string("\"");
-    printf("%s\n", errmsg.c_str());
     throw std::runtime_error(errmsg);
   }
 
