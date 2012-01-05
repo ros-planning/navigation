@@ -405,7 +405,7 @@ namespace costmap_2d {
     tf::Stamped<tf::Pose> new_pose;
 
     if(!getRobotPose(new_pose)){
-      ROS_WARN("Could not get robot pose, cancelling reconfiguration");
+      ROS_WARN_THROTTLE(1.0, "Could not get robot pose, cancelling reconfiguration");
       robot_stopped_ = false;
     }
     //make sure that the robot is not moving 
@@ -1305,20 +1305,20 @@ namespace costmap_2d {
       tf_.transformPose(global_frame_, robot_pose, global_pose);
     }
     catch(tf::LookupException& ex) {
-      ROS_ERROR("No Transform available Error: %s\n", ex.what());
+      ROS_ERROR_THROTTLE(1.0, "No Transform available Error looking up robot pose: %s\n", ex.what());
       return false;
     }
     catch(tf::ConnectivityException& ex) {
-      ROS_ERROR("Connectivity Error: %s\n", ex.what());
+      ROS_ERROR_THROTTLE(1.0, "Connectivity Error looking up robot pose: %s\n", ex.what());
       return false;
     }
     catch(tf::ExtrapolationException& ex) {
-      ROS_ERROR("Extrapolation Error: %s\n", ex.what());
+      ROS_ERROR_THROTTLE(1.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
       return false;
     }
     // check global_pose timeout
     if (current_time.toSec() - global_pose.stamp_.toSec() > transform_tolerance_) {
-      ROS_WARN("Costmap2DROS transform timeout. Current time: %.4f, global_pose stamp: %.4f, tolerance: %.4f",
+      ROS_WARN_THROTTLE(1.0, "Costmap2DROS transform timeout. Current time: %.4f, global_pose stamp: %.4f, tolerance: %.4f",
           current_time.toSec() ,global_pose.stamp_.toSec() ,transform_tolerance_);
       return false;
     }
