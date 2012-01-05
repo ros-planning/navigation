@@ -180,7 +180,7 @@ namespace costmap_2d{
     double oz = clearing_observation.origin_.z;
 
     if(!worldToMap3DFloat(ox, oy, oz, sensor_x, sensor_y, sensor_z)){
-      ROS_WARN("The origin for the sensor at (%.2f, %.2f, %.2f) is out of map bounds. So, the costmap cannot raytrace for it.", ox, oy, oz);
+      ROS_WARN_THROTTLE(1.0, "The origin for the sensor at (%.2f, %.2f, %.2f) is out of map bounds. So, the costmap cannot raytrace for it.", ox, oy, oz);
       return;
     }
 
