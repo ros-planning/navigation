@@ -183,7 +183,7 @@ namespace estimation
     if (debug_){
       // write to file
       double tmp, yaw;
-      odom_meas_.getBasis().getEulerZYX(yaw, tmp, tmp);
+      odom_meas_.getBasis().getEulerYPR(yaw, tmp, tmp);
       odom_file_ << odom_meas_.getOrigin().x() << " " << odom_meas_.getOrigin().y() << "  " << yaw << "  " << endl;
     }
   };
@@ -200,9 +200,9 @@ namespace estimation
 
     // receive data 
     imu_stamp_ = imu->header.stamp;
-    btQuaternion orientation;
+    tf::Quaternion orientation;
     quaternionMsgToTF(imu->orientation, orientation);
-    imu_meas_ = btTransform(orientation, btVector3(0,0,0));
+    imu_meas_ = tf::Transform(orientation, tf::Vector3(0,0,0));
     for (unsigned int i=0; i<3; i++)
       for (unsigned int j=0; j<3; j++)
         imu_covariance_(i+1, j+1) = imu->orientation_covariance[3*i+j];
@@ -254,7 +254,7 @@ namespace estimation
     if (debug_){
       // write to file
       double tmp, yaw;
-      imu_meas_.getBasis().getEulerZYX(yaw, tmp, tmp); 
+      imu_meas_.getBasis().getEulerYPR(yaw, tmp, tmp); 
       imu_file_ << yaw << endl;
     }
   };
@@ -297,7 +297,7 @@ namespace estimation
     if (debug_){
       // write to file
       double Rx, Ry, Rz;
-      vo_meas_.getBasis().getEulerZYX(Rz, Ry, Rx);
+      vo_meas_.getBasis().getEulerYPR(Rz, Ry, Rx);
       vo_file_ << vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
                << Rx << " " << Ry << " " << Rz << endl;
     }

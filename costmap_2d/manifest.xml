@@ -27,6 +27,8 @@
 <depend package="pcl" />
 <depend package="pcl_ros" />
 <depend package="dynamic_reconfigure" />
+<depend package="common_rosdeps" />
+<rosdep name="eigen" />
 <export>
     <cpp cflags="-I${prefix}/cfg/cpp -I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread` -lcostmap_2d"/>
 </export>

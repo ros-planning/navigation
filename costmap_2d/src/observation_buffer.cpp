@@ -104,7 +104,7 @@ namespace costmap_2d {
   }
 
   void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud){
-    Stamped<btVector3> global_origin;
+    Stamped<tf::Vector3> global_origin;
 
     //create a new observation on the list to be populated
     observation_list_.push_front(Observation());
@@ -114,7 +114,7 @@ namespace costmap_2d {
 
     try{
       //given these observations come from sensors... we'll need to store the origin pt of the sensor
-      Stamped<btVector3> local_origin(btVector3(0, 0, 0), cloud.header.stamp, origin_frame);
+      Stamped<tf::Vector3> local_origin(tf::Vector3(0, 0, 0), cloud.header.stamp, origin_frame);
       tf_.transformPoint(global_frame_, local_origin, global_origin);
       observation_list_.front().origin_.x = global_origin.getX();
       observation_list_.front().origin_.y = global_origin.getY();

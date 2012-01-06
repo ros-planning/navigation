@@ -618,9 +618,9 @@ namespace dwa_local_planner {
       drive_velocities.setIdentity();
     }
     else{
-      btVector3 start(best.xv_, best.yv_, 0);
+      tf::Vector3 start(best.xv_, best.yv_, 0);
       drive_velocities.setOrigin(start);
-      btMatrix3x3 matrix;
+      tf::Matrix3x3 matrix;
       matrix.setRotation(tf::createQuaternionFromYaw(best.thetav_));
       drive_velocities.setBasis(matrix);
     }

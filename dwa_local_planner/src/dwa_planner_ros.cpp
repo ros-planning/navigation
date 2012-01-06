@@ -209,7 +209,7 @@ namespace dwa_local_planner {
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
 
     tf::Stamped<tf::Pose> robot_vel;
-    robot_vel.setData(btTransform(tf::createQuaternionFromYaw(global_vel.angular.z), btVector3(global_vel.linear.x, global_vel.linear.y, 0)));
+    robot_vel.setData(tf::Transform(tf::createQuaternionFromYaw(global_vel.angular.z), tf::Vector3(global_vel.linear.x, global_vel.linear.y, 0)));
     robot_vel.frame_id_ = costmap_ros_->getBaseFrameID();
     robot_vel.stamp_ = ros::Time();
 

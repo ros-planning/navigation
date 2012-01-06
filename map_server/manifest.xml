@@ -12,8 +12,8 @@
   <depend package="roscpp"/>
   <depend package="rospy" />
   <depend package="nav_msgs"/>
-  <depend package="bullet"/>
-  <depend package="yaml_cpp"/>
+  <depend package="tf"/>
+  <depend package="common_rosdeps" />
   <export>
      <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread`"/>
   </export>
@@ -25,6 +25,7 @@
   <rosdep name="sdl-image"/>
   <rosdep name="python-imaging"/>
   <rosdep name="python-yaml"/>
+  <rosdep name="yaml-cpp" />
 
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>

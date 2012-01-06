@@ -43,7 +43,7 @@
 #include <SDL/SDL_image.h>
 
 #include "map_server/image_loader.h"
-#include "LinearMath/btMatrix3x3.h"
+#include <tf/tf.h>
 
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
@@ -82,7 +82,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   resp->map.info.origin.position.x = *(origin);
   resp->map.info.origin.position.y = *(origin+1);
   resp->map.info.origin.position.z = 0.0;
-  btQuaternion q;
+  tf::Quaternion q;
   q.setRPY(0,0, *(origin+2));
   resp->map.info.origin.orientation.x = q.x();
   resp->map.info.origin.orientation.y = q.y();
