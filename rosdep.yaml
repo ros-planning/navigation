@@ -5,3 +5,15 @@ netpbm:
   macports: netpbm
   fedora: netpbm-devel
   gentoo: netpbm
+sdl-image:
+  ubuntu: libsdl-image1.2-dev
+  debian: libsdl-image1.2-dev
+  fedora: SDL_image-devel
+  arch: sdl_image
+  macports: libsdl_image
+  gentoo: sdl-image
+  osxbrew:
+    lion:
+      homebrew:
+        packages: [ sdl_image ]
+

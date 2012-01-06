@@ -21,6 +21,8 @@
   <rosdep name="python-imaging"/>
   <rosdep name="python-yaml"/>
   <rosdep name="yaml-cpp" />
+  <rosdep name="sdl-image" />
+
 
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
