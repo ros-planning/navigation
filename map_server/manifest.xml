@@ -18,11 +18,6 @@
      <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib `rosboost-cfg --lflags thread`"/>
   </export>
 
-  <!-- <depend package="sdl_image"/> -->
-
-
-
-  <rosdep name="sdl-image"/>
   <rosdep name="python-imaging"/>
   <rosdep name="python-yaml"/>
   <rosdep name="yaml-cpp" />
