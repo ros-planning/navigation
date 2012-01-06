@@ -50,6 +50,7 @@
 #include "tf/transform_broadcaster.h"
 #include "tf/transform_listener.h"
 #include "tf/message_filter.h"
+#include "tf/tf.h"
 #include "message_filters/subscriber.h"
 
 // Dynamic_reconfigure
@@ -711,8 +712,8 @@ AmclNode::getOdomPose(tf::Stamped<tf::Pose>& odom_pose,
                       const ros::Time& t, const std::string& f)
 {
   // Get the robot's pose
-  tf::Stamped<tf::Pose> ident (btTransform(tf::createIdentityQuaternion(),
-                                           btVector3(0,0,0)), t, f);
+  tf::Stamped<tf::Pose> ident (tf::Transform(tf::createIdentityQuaternion(),
+                                           tf::Vector3(0,0,0)), t, f);
   try
   {
     this->tf_->transformPose(odom_frame_id_, ident, odom_pose);
@@ -803,8 +804,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     lasers_update_.push_back(true);
     laser_index = frame_to_laser_.size();
 
-    tf::Stamped<tf::Pose> ident (btTransform(tf::createIdentityQuaternion(),
-                                             btVector3(0,0,0)),
+    tf::Stamped<tf::Pose> ident (tf::Transform(tf::createIdentityQuaternion(),
+                                             tf::Vector3(0,0,0)),
                                  ros::Time(), laser_scan->header.frame_id);
     tf::Stamped<tf::Pose> laser_pose;
     try
@@ -996,7 +997,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     for(int i=0;i<set->sample_count;i++)
     {
       tf::poseTFToMsg(tf::Pose(tf::createQuaternionFromYaw(set->samples[i].pose.v[2]),
-                               btVector3(set->samples[i].pose.v[0],
+                               tf::Vector3(set->samples[i].pose.v[0],
                                          set->samples[i].pose.v[1], 0)),
                       cloud_msg.poses[i]);
 
@@ -1175,7 +1176,7 @@ double
 AmclNode::getYaw(tf::Pose& t)
 {
   double yaw, pitch, roll;
-  btMatrix3x3 mat = t.getBasis();
+  tf::Matrix3x3 mat = t.getBasis();
   mat.getEulerYPR(yaw,pitch,roll);
   return yaw;
 }

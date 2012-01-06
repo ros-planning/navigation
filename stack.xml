@@ -9,6 +9,7 @@
   <review status="Doc reviewed" notes=""/>
   <url>http://ros.org/wiki/navigation</url>
   <depend stack="actionlib" /> <!-- actionlib -->
+  <depend stack="bfl" /> <!-- bfl -->
   <depend stack="common_msgs" /> <!-- nav_msgs, sensor_msgs, actionlib_msgs, geometry_msgs, visualization_msgs -->
   <depend stack="common_rosdeps" /> <!-- common_rosdeps -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
