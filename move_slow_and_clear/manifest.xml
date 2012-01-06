@@ -14,6 +14,8 @@
   <depend package="geometry_msgs"/>
   <depend package="pluginlib"/>
   <depend package="dynamic_reconfigure"/>
+  <depend package="common_rosdeps" />
+  <rosdep name="eigen" />
 
   <export>
     <nav_core plugin="${prefix}/recovery_plugin.xml" />

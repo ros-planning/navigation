@@ -16,6 +16,8 @@
   <depend package="base_local_planner"/>
   <depend package="pluginlib"/>
   <depend package="angles"/>
+  <depend package="common_rosdeps" />
+  <rosdep name="eigen" />
 
   <export>
     <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrotate_recovery" />
