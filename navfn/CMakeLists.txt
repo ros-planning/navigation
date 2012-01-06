@@ -15,6 +15,9 @@ rosbuild_init()
 rosbuild_gensrv()
 rosbuild_genmsg()
 
+find_package(Eigen REQUIRED)
+include_directories(${EIGEN_INCLUDE_DIRS})
+
 rosbuild_add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
 
 rosbuild_add_executable(bin/navfn_node src/navfn_node.cpp)
