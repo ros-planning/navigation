@@ -13,8 +13,10 @@ rosbuild_find_ros_package(dynamic_reconfigure)
 include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 gencfg()
 
-find_package(Eigen REQUIRED)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(PkgConfig)
+pkg_check_modules(PC_EIGEN REQUIRED eigen3)
+include_directories(${PC_EIGEN_INCLUDE_DIRS})
+add_definitions(${PC_EIGEN_CFLAGS_OTHER})
 
 rosbuild_add_executable(bin/costmap_2d_markers src/costmap_2d_markers.cpp)
 rosbuild_add_executable(bin/costmap_2d_cloud src/costmap_2d_cloud.cpp)

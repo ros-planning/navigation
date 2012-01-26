@@ -12,8 +12,10 @@ rosbuild_add_boost_directories()
 #set(ROS_COMPILE_FLAGS "-g" ${ROS_COMPILE_FLAGS})
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
-find_package(Eigen REQUIRED)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(PkgConfig)
+pkg_check_modules(PC_EIGEN REQUIRED eigen3)
+include_directories(${PC_EIGEN_INCLUDE_DIRS})
+add_definitions(${PC_EIGEN_CFLAGS_OTHER})
 
 rosbuild_add_library(base_local_planner src/goal_functions.cpp src/map_cell.cpp src/map_grid.cpp src/point_grid.cpp src/costmap_model.cpp src/voxel_grid_model.cpp src/trajectory_planner.cpp 
     src/trajectory.cpp src/trajectory_planner_ros.cpp src/map_grid_visualizer.cpp)

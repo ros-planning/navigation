@@ -15,8 +15,10 @@ rosbuild_init()
 rosbuild_gensrv()
 rosbuild_genmsg()
 
-find_package(Eigen REQUIRED)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(PkgConfig)
+pkg_check_modules(PC_EIGEN REQUIRED eigen3)
+include_directories(${PC_EIGEN_INCLUDE_DIRS})
+add_definitions(${PC_EIGEN_CFLAGS_OTHER})
 
 rosbuild_add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
 
