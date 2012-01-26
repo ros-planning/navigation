@@ -88,9 +88,6 @@ AMCLLaser::SetModelLikelihoodField(double z_hit,
 // Apply the laser sensor model
 bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 {
-  AMCLLaserData *ndata;
-
-  ndata = (AMCLLaserData*) data;
   if (this->max_beams < 2)
     return false;
 
