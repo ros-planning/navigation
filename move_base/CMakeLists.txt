@@ -8,10 +8,9 @@ rosbuild_find_ros_package(dynamic_reconfigure)
 include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 gencfg()
 
-find_package(PkgConfig)
-pkg_check_modules(PC_EIGEN REQUIRED eigen3)
-include_directories(${PC_EIGEN_INCLUDE_DIRS})
-add_definitions(${PC_EIGEN_CFLAGS_OTHER})
+find_package(Eigen)
+include_directories(${EIGEN_INCLUDE_DIRS})
+add_definitions(${EIGEN_DEFINITIONS})
 
 rosbuild_add_boost_directories()
 
