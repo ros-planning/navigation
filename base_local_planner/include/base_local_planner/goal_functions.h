@@ -55,34 +55,24 @@
 #include <costmap_2d/costmap_2d_ros.h>
 
 namespace base_local_planner {
-  /**
-   * @brief  Compute the distance between two points
-   * @param x1 The first x point 
-   * @param y1 The first y point 
-   * @param x2 The second x point 
-   * @param y2 The second y point 
-   */
-  double distance(double x1, double y1, double x2, double y2);
 
   /**
-   * @brief  Check if the goal position has been achieved
+   * @brief  return squared distance to check if the goal position has been achieved
    * @param  global_pose The pose of the robot in the global frame
    * @param  goal_x The desired x value for the goal
    * @param  goal_y The desired y value for the goal
-   * @param  xy_goal_tolerance The tolerance on the position
-   * @return True if achieved, false otherwise
+   * @return distance to goal
    */
-  bool goalPositionReached(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y, double xy_goal_tolerance);
+  double getGoalPositionDistance(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y);
 
   /**
-   * @brief  Check if the goal orientation has been achieved
+   * @brief  return angle difference to goal to check if the goal orientation has been achieved
    * @param  global_pose The pose of the robot in the global frame
    * @param  goal_x The desired x value for the goal
    * @param  goal_y The desired y value for the goal
-   * @param  yaw_goal_tolerance The tolerance on the position
-   * @return True if achieved, false otherwise
+   * @return angular difference
    */
-  bool goalOrientationReached(const tf::Stamped<tf::Pose>& global_pose, double goal_th, double yaw_goal_tolerance);
+  double getGoalOrientationAngleDifference(const tf::Stamped<tf::Pose>& global_pose, double goal_th);
 
   /**
    * @brief  Publish a plan for visualization purposes

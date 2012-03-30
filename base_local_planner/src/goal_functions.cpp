@@ -37,21 +37,20 @@
 #include <base_local_planner/goal_functions.h>
 
 namespace base_local_planner {
-  double distance(double x1, double y1, double x2, double y2){
-    return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+  double getGoalPositionDistance(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y) {
+    double dist =
+        (goal_x - global_pose.getOrigin().x()) * (goal_x - global_pose.getOrigin().x()) +
+        (goal_y - global_pose.getOrigin().y()) * (goal_y - global_pose.getOrigin().y());
+    return sqrt(dist);
   }
 
-  bool goalPositionReached(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y, double xy_goal_tolerance){
-    double dist = distance(global_pose.getOrigin().x(), global_pose.getOrigin().y(), goal_x, goal_y);
-    return fabs(dist) <= xy_goal_tolerance;
-  }
-
-  bool goalOrientationReached(const tf::Stamped<tf::Pose>& global_pose, double goal_th, double yaw_goal_tolerance){
+  double getGoalOrientationAngleDifference(const tf::Stamped<tf::Pose>& global_pose, double goal_th) {
     double yaw = tf::getYaw(global_pose.getRotation());
-    return fabs(angles::shortest_angular_distance(yaw, goal_th)) <= yaw_goal_tolerance;
+    return angles::shortest_angular_distance(yaw, goal_th);
   }
 
-  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub){
+  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub) {
     //given an empty path we won't do anything
     if(path.empty())
       return;
@@ -89,8 +88,11 @@ namespace base_local_planner {
     }
   }
 
-  bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
+  bool transformGlobalPlan(
+      const tf::TransformListener& tf,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const costmap_2d::Costmap2DROS& costmap,
+      const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan){
     const geometry_msgs::PoseStamped& plan_pose = global_plan[0];
 
@@ -232,9 +234,9 @@ namespace base_local_planner {
       return false;
 
     //check to see if we've reached the goal position
-    if(goalPositionReached(global_pose, goal_x, goal_y, xy_goal_tolerance)) {
+    if(getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance) {
       //check to see if the goal orientation has been reached
-      if(goalOrientationReached(global_pose, goal_th, yaw_goal_tolerance)) {
+      if(fabs(getGoalOrientationAngleDifference(global_pose, goal_th)) <= yaw_goal_tolerance) {
         //make sure that we're actually stopped before returning success
         if(stopped(base_odom, rot_stopped_vel, trans_stopped_vel))
           return true;

@@ -431,23 +431,23 @@ namespace base_local_planner {
     double goal_th = yaw;
 
     //check to see if we've reached the goal position
-    if(goalPositionReached(global_pose, goal_x, goal_y, xy_goal_tolerance_) || xy_tolerance_latch_){
+    if (xy_tolerance_latch_ || (getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance_)) {
 
       //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
       //just rotate in place
-      if(latch_xy_goal_tolerance_)
+      if (latch_xy_goal_tolerance_)
         xy_tolerance_latch_ = true;
 
+      double angle = getGoalOrientationAngleDifference(global_pose, goal_th);
       //check to see if the goal orientation has been reached
-      if(goalOrientationReached(global_pose, goal_th, yaw_goal_tolerance_)){
+      if (fabs(angle) <= yaw_goal_tolerance_) {
         //set the velocity command to zero
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
         rotating_to_goal_ = false;
         xy_tolerance_latch_ = false;
-      }
-      else {
+      } else {
         //we need to call the next two lines to make sure that the trajectory
         //planner updates its path distance and goal distance grids
         tc_->updatePlan(transformed_plan);
@@ -462,16 +462,18 @@ namespace base_local_planner {
         }
 
         //if we're not stopped yet... we want to stop... taking into account the acceleration limits of the robot
-        if(!rotating_to_goal_ && !base_local_planner::stopped(base_odom, rot_stopped_velocity_, trans_stopped_velocity_)){
-          if(!stopWithAccLimits(global_pose, robot_vel, cmd_vel))
+        if ( ! rotating_to_goal_ && !base_local_planner::stopped(base_odom, rot_stopped_velocity_, trans_stopped_velocity_)) {
+          if ( ! stopWithAccLimits(global_pose, robot_vel, cmd_vel)) {
             return false;
+          }
         }
         //if we're stopped... then we want to rotate to goal
         else{
           //set this so that we know its OK to be moving
           rotating_to_goal_ = true;
-          if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel))
+          if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
             return false;
+          }
         }
       }
 

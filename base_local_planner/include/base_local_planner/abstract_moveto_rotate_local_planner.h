@@ -107,7 +107,7 @@ void AbstractMoveToRotateLocalPlanner::initialize(
     std::string name,
     tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* costmap_ros) {
-  if(! isInitialized()){
+  if (! isInitialized()) {
     AbstractLocalPlannerOdom::initialize(name, tf, costmap_ros);
     rotating_to_goal_ = false;
 
@@ -128,7 +128,7 @@ bool AbstractMoveToRotateLocalPlanner::setPlan(const std::vector<geometry_msgs::
  * Meaning we might have overshot on the position beyond tolerance, yet still return true.
  */
 bool AbstractMoveToRotateLocalPlanner::isGoalReached() {
-  if(!isInitialized()){
+  if (! isInitialized()) {
     ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
     return false;
   }
@@ -154,17 +154,18 @@ bool AbstractMoveToRotateLocalPlanner::isGoalReached() {
   base_local_planner::LocalPlannerLimitsConfig limits = getCurrentLimits();
 
   //check to see if we've reached the goal position
-  if(xy_tolerance_latch_ || base_local_planner::goalPositionReached(global_pose, goal_x, goal_y, limits.xy_goal_tolerance)) {
+  if (xy_tolerance_latch_ || base_local_planner::getGoalPositionDistance(global_pose, goal_x, goal_y) <= limits.xy_goal_tolerance) {
     //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
     //just rotate in place
     if (latch_xy_goal_tolerance_ && ! xy_tolerance_latch_) {
-      ROS_INFO("Goal position reached (check), stopping and turning in place");
+      ROS_DEBUG("Goal position reached (check), stopping and turning in place");
       xy_tolerance_latch_ = true;
     }
+    double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
     //check to see if the goal orientation has been reached
-    if(base_local_planner::goalOrientationReached(global_pose, goal_th, limits.yaw_goal_tolerance)) {
+    if (fabs(angle) <= limits.yaw_goal_tolerance) {
       //make sure that we're actually stopped before returning success
-      if(base_local_planner::stopped(base_odom, limits.rot_stopped_vel, limits.trans_stopped_vel)) {
+      if (base_local_planner::stopped(base_odom, limits.rot_stopped_vel, limits.trans_stopped_vel)) {
         return true;
       }
     }
@@ -174,7 +175,7 @@ bool AbstractMoveToRotateLocalPlanner::isGoalReached() {
 
 bool AbstractMoveToRotateLocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
   tf::Stamped<tf::Pose> global_pose;
-  if (!getRobotPose(global_pose)) {
+  if ( ! getRobotPose(global_pose)) {
     return false;
   }
   //we assume the global goal is the last point in the global plan
@@ -190,7 +191,7 @@ bool AbstractMoveToRotateLocalPlanner::computeVelocityCommands(geometry_msgs::Tw
 
   double goal_distance = base_local_planner::getGoalPositionDistance(global_pose, goal_x, goal_y);
   //check to see if we've reached the goal position
-  if(xy_tolerance_latch_ || goal_distance <= limits.xy_goal_tolerance) {
+  if (xy_tolerance_latch_ || goal_distance <= limits.xy_goal_tolerance) {
     //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
     //just rotate in place
     if (latch_xy_goal_tolerance_ && ! xy_tolerance_latch_ ) {
@@ -198,7 +199,8 @@ bool AbstractMoveToRotateLocalPlanner::computeVelocityCommands(geometry_msgs::Tw
       xy_tolerance_latch_ = true;
     }
     //check to see if the goal orientation has been reached
-    if(base_local_planner::goalOrientationReached(global_pose, goal_th, limits.yaw_goal_tolerance)) {
+    double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
+    if (fabs(angle) <= limits.yaw_goal_tolerance) {
       //set the velocity command to zero
       cmd_vel.linear.x = 0.0;
       cmd_vel.linear.y = 0.0;
@@ -212,8 +214,8 @@ bool AbstractMoveToRotateLocalPlanner::computeVelocityCommands(geometry_msgs::Tw
       getOdom(base_odom);
 
       //if we're not stopped yet... we want to stop... taking into account the acceleration limits of the robot
-      if(!rotating_to_goal_ && !base_local_planner::stopped(base_odom, limits.rot_stopped_vel, limits.trans_stopped_vel)){
-        if(!stopWithAccLimits(global_pose, robot_vel, cmd_vel)) {
+      if ( ! rotating_to_goal_ && !base_local_planner::stopped(base_odom, limits.rot_stopped_vel, limits.trans_stopped_vel)) {
+        if ( ! stopWithAccLimits(global_pose, robot_vel, cmd_vel)) {
           return false;
         }
         ROS_DEBUG("Stopping...");
@@ -222,7 +224,7 @@ bool AbstractMoveToRotateLocalPlanner::computeVelocityCommands(geometry_msgs::Tw
       else {
         //set this so that we know its OK to be moving
         rotating_to_goal_ = true;
-        if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
+        if ( ! rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
           return false;
         }
         ROS_DEBUG("Rotating...");
