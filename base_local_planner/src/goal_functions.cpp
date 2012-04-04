@@ -51,7 +51,7 @@ namespace base_local_planner {
     return fabs(angles::shortest_angular_distance(yaw, goal_th)) <= yaw_goal_tolerance;
   }
 
-  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub, double r, double g, double b, double a){
+  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub){
     //given an empty path we won't do anything
     if(path.empty())
       return;

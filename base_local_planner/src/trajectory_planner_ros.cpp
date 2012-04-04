@@ -476,8 +476,8 @@ namespace base_local_planner {
       }
 
       //publish an empty plan because we've reached our goal position
-      publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
-      publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
+      publishPlan(transformed_plan, g_plan_pub_);
+      publishPlan(local_plan, l_plan_pub_);
 
       //we don't actually want to run the controller when we're just rotating to goal
       return true;
@@ -507,8 +507,8 @@ namespace base_local_planner {
     //if we cannot move... tell someone
     if(path.cost_ < 0){
       local_plan.clear();
-      publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
-      publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
+      publishPlan(transformed_plan, g_plan_pub_);
+      publishPlan(local_plan, l_plan_pub_);
       return false;
     }
 
@@ -524,8 +524,8 @@ namespace base_local_planner {
     }
 
     //publish information to the visualizer
-    publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
-    publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
+    publishPlan(transformed_plan, g_plan_pub_);
+    publishPlan(local_plan, l_plan_pub_);
     return true;
   }
 

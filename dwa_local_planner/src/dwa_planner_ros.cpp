@@ -279,8 +279,8 @@ namespace dwa_local_planner {
       }
 
       //publish an empty plan because we've reached our goal position
-      base_local_planner::publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
-      base_local_planner::publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
+      base_local_planner::publishPlan(transformed_plan, g_plan_pub_);
+      base_local_planner::publishPlan(local_plan, l_plan_pub_);
 
       //we don't actually want to run the controller when we're just rotating to goal
       return true;
@@ -313,8 +313,8 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner", 
           "The dwa local planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
       local_plan.clear();
-      base_local_planner::publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
-      base_local_planner::publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
+      base_local_planner::publishPlan(transformed_plan, g_plan_pub_);
+      base_local_planner::publishPlan(local_plan, l_plan_pub_);
       return false;
     }
 
@@ -333,8 +333,8 @@ namespace dwa_local_planner {
     }
 
     //publish information to the visualizer
-    base_local_planner::publishPlan(transformed_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
-    base_local_planner::publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
+    base_local_planner::publishPlan(transformed_plan, g_plan_pub_);
+    base_local_planner::publishPlan(local_plan, l_plan_pub_);
     return true;
   }
 

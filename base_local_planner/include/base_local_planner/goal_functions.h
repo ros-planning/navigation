@@ -90,7 +90,7 @@ namespace base_local_planner {
    * @param  pub The published to use
    * @param  r,g,b,a The color and alpha value to use when publishing
    */
-  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub, double r, double g, double b, double a);
+  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub);
 
   /**
    * @brief  Trim off parts of the global plan that are far enough behind the robot
