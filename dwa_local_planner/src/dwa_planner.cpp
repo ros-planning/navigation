@@ -342,8 +342,11 @@ namespace dwa_local_planner {
     double y_diff = pos[1] - prev[1];
     double sq_dist = x_diff * x_diff + y_diff * y_diff;
 
+    double th_diff = pos[2] - prev[2];
+    
     //if we've moved far enough... we can reset our flags
-    if(sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_){
+    if (sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_ ||
+        th_diff > 0.2) {
       ROS_DEBUG_NAMED("dwa_local_planner", "Reset Oscillation Flags");
       resetOscillationFlags();
     }
