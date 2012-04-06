@@ -163,7 +163,11 @@ namespace dwa_local_planner {
         return false;
     }
     occ_cost = costmap_.getCost(cx, cy);
-    if (cell.path_dist >= map_.map_.size() || cell.goal_dist >= map_.map_.size() || occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+    if (cell.path_dist == map_.obstacleCosts() ||
+        cell.goal_dist == map_.obstacleCosts() ||
+        cell.path_dist == map_.unreachableCellCosts() ||
+        cell.goal_dist == map_.unreachableCellCosts() ||
+        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         return false;
     }
     path_cost = cell.path_dist;
@@ -553,9 +557,11 @@ namespace dwa_local_planner {
         front_goal_dist = front_map_(front_cell_x, front_cell_y).goal_dist;
       }
 
-      double impossible_cost = map_.map_.size();
       //if a point on this trajectory has no clear path to the goal... it is invalid
-      if (impossible_cost <= goal_dist || impossible_cost <= path_dist) {
+      if (path_dist == map_.obstacleCosts() ||
+          goal_dist == map_.obstacleCosts() ||
+          path_dist == map_.unreachableCellCosts() ||
+          goal_dist == map_.unreachableCellCosts()) {
         traj.cost_ = -2.0; //-2.0 means that we were blocked because propagation failed
         return;
       }

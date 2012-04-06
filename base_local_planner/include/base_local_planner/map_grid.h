@@ -142,6 +142,21 @@ namespace base_local_planner{
       size_t getIndex(int x, int y);
 
       /**
+       * return a value that indicates cell is in obstacle
+       */
+      inline double obstacleCosts() {
+        return map_.size();
+      }
+
+      /**
+       * returns a value indicating cell was not reached by wavefront
+       * propagation of set cells. (is behind walls, regarding the region covered by grid)
+       */
+      inline double unreachableCellCosts() {
+        return DBL_MAX;
+      }
+
+      /**
        * @brief  Used to update the distance of a cell in path distance computation
        * @param  current_cell The cell we're currently in 
        * @param  check_cell The cell to be updated
@@ -154,13 +169,14 @@ namespace base_local_planner{
         //if the cell is an obstacle set the max path distance
         unsigned char cost = costmap.getCost(check_cell->cx, check_cell->cy);
         if(!getCell(check_cell->cx, check_cell->cy).within_robot && (cost == costmap_2d::LETHAL_OBSTACLE || cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE || cost == costmap_2d::NO_INFORMATION)){
-          check_cell->path_dist = map_.size();
+          check_cell->path_dist = obstacleCosts();
           return;
         }
 
         double new_path_dist = current_cell->path_dist + 1;
-        if(new_path_dist < check_cell->path_dist)
+        if (new_path_dist < check_cell->path_dist) {
           check_cell->path_dist = new_path_dist;
+        }
 
         dist_queue.push(check_cell);
       }
@@ -206,14 +222,18 @@ namespace base_local_planner{
        */
       void setPathCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan);
 
+      double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
+
       unsigned int size_x_, size_y_; ///< @brief The dimensions of the grid
-      std::vector<MapCell> map_; ///< @brief Storage for the MapCells
 
       double scale; ///< @brief grid scale in meters/cell
 
-      double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
-
       double origin_x, origin_y; ///< @brief lower left corner of grid in world space
+
+    private:
+
+      std::vector<MapCell> map_; ///< @brief Storage for the MapCells
+
   };
 };
 

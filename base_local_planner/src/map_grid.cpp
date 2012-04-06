@@ -110,8 +110,8 @@ namespace base_local_planner{
   //reset the path_dist and goal_dist fields for all cells
   void MapGrid::resetPathDist(){
     for(unsigned int i = 0; i < map_.size(); ++i){
-      map_[i].path_dist = DBL_MAX;
-      map_[i].goal_dist = DBL_MAX;
+      map_[i].path_dist = unreachableCellCosts();
+      map_[i].goal_dist = unreachableCellCosts();
       map_[i].path_mark = false;
       map_[i].goal_mark = false;
       map_[i].within_robot = false;

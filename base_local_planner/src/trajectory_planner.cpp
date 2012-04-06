@@ -180,7 +180,11 @@ namespace base_local_planner{
         return false;
     }
     occ_cost = costmap_.getCost(cx, cy);
-    if (cell.path_dist >= map_.map_.size() || cell.goal_dist >= map_.map_.size() || occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+    if (cell.path_dist == map_.obstacleCosts() ||
+        cell.goal_dist == map_.obstacleCosts() ||
+        cell.path_dist == map_.unreachableCellCosts() ||
+        cell.goal_dist == map_.unreachableCellCosts() ||
+        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         return false;
     }
     path_cost = cell.path_dist;
@@ -493,7 +497,7 @@ namespace base_local_planner{
   double TrajectoryPlanner::scoreTrajectory(double x, double y, double theta, double vx, double vy, 
       double vtheta, double vx_samp, double vy_samp, double vtheta_samp){
     Trajectory t; 
-    double impossible_cost = map_.map_.size();
+    double impossible_cost = map_.obstacleCosts();
     generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
         acc_lim_x_, acc_lim_y_, acc_lim_theta_, impossible_cost, t);
 
@@ -544,7 +548,7 @@ namespace base_local_planner{
     Trajectory* swap = NULL;
 
     //any cell with a cost greater than the size of the map is impossible
-    double impossible_cost = map_.map_.size();
+    double impossible_cost = map_.obstacleCosts();
 
     //if we're performing an escape we won't allow moving forward
     if(!escaping_){
