@@ -155,6 +155,12 @@ namespace dwa_local_planner {
     resetOscillationFlags();
 
     map_viz_.initialize(name, &costmap_, boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
+
+    std::string frame_id;
+    pn.param("global_frame_id", frame_id, std::string("odom"));
+
+    traj_cloud_.header.frame_id = frame_id;
+    traj_cloud_pub_.advertise(pn, "trajectory_cloud", 1);
   }
 
   bool DWAPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
@@ -227,6 +233,10 @@ namespace dwa_local_planner {
     return false;
   }
 
+  void DWAPlanner::publishTrajectories() {
+    traj_cloud_pub_.publish(traj_cloud_);
+  }
+
   /**
    * Generate Trajectories and select the best one
    *
@@ -284,7 +294,10 @@ namespace dwa_local_planner {
     //ROS_ERROR("x(%.2f, %.2f), y(%.2f, %.2f), th(%.2f, %.2f)", min_vel[0], max_vel[0], min_vel[1], max_vel[1], min_vel[2], max_vel[2]);
     //ROS_ERROR("x(%.2f, %.2f), y(%.2f, %.2f), th(%.2f, %.2f)", min_vel_x_, max_vel_x_, min_vel_y_, max_vel_y_, min_vel_th_, max_vel_th_);
     //ROS_ERROR("dv %.2f %.2f %.2f", dv[0], dv[1], dv[2]);
-
+    traj_cloud_.points.clear();
+    traj_cloud_.header.stamp = ros::Time::now();
+    double px, py, pth;
+    base_local_planner::MapGridCostPoint pt;
     for(VelocityIterator x_it(min_vel[0], max_vel[0], dv[0]); !x_it.isFinished(); x_it++){
       vel_samp[0] = x_it.getVelocity();
       for(VelocityIterator y_it(min_vel[1], max_vel[1], dv[1]); !y_it.isFinished(); y_it++){
@@ -292,10 +305,21 @@ namespace dwa_local_planner {
         for(VelocityIterator th_it(min_vel[2], max_vel[2], dv[2]); !th_it.isFinished(); th_it++){
           vel_samp[2] = th_it.getVelocity();
           generateTrajectory(pos, vel_samp, *comp_traj, two_point_scoring, limits);
+          if (comp_traj->cost_ >= 0.0) {
+            for (unsigned int i = 0; i < comp_traj->getPointsSize(); i++) {
+              comp_traj->getPoint(i, px, py, pth);
+              pt.x = (double) px;
+              pt.y = (double) py;
+              pt.z = (double) 0;
+              pt.total_cost = comp_traj->cost_;
+              traj_cloud_.push_back(pt);
+            }
+          }
           selectBestTrajectory(best_traj, comp_traj);
         }
       }
     }
+    publishTrajectories();
 
     ROS_DEBUG_NAMED("oscillation_flags", "forward_pos_only: %d, forward_neg_only: %d, strafe_pos_only: %d, strafe_neg_only: %d, rot_pos_only: %d, rot_neg_only: %d",
         forward_pos_only_, forward_neg_only_, strafe_pos_only_, strafe_neg_only_, rot_pos_only_, rot_neg_only_);
