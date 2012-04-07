@@ -53,8 +53,8 @@ namespace base_local_planner {
 
 class WavefrontMapAccessor : public costmap_2d::Costmap2D {
   public:
-    WavefrontMapAccessor(MapGrid &map, double outer_radius)
-      : costmap_2d::Costmap2D(map.size_x_, map.size_y_, map.scale, map.origin_x, map.origin_y, 5, 10, 15),
+    WavefrontMapAccessor(MapGrid* map, double outer_radius)
+      : costmap_2d::Costmap2D(map->size_x_, map->size_y_, map->scale, map->origin_x, map->origin_y, 5, 10, 15),
         map_(map), outer_radius_(outer_radius) {
       synchronize();
     }
@@ -66,9 +66,9 @@ class WavefrontMapAccessor : public costmap_2d::Costmap2D {
       for(unsigned int x = 0; x < size_x_; x++){
         for (unsigned int y = 0; y < size_y_; y++){
           unsigned int ind = x + (y * size_x_);
-          if(map_(x, y).occ_state == 1)
+          if(map_->operator ()(x, y).occ_state == 1)
             costmap_[ind] = costmap_2d::LETHAL_OBSTACLE;
-          else if(map_(x, y).occ_dist < outer_radius_)
+          else if(map_->operator ()(x, y).occ_dist < outer_radius_)
             costmap_[ind] = costmap_2d::INSCRIBED_INFLATED_OBSTACLE/2;
           else
             costmap_[ind] = 0;
@@ -77,26 +77,26 @@ class WavefrontMapAccessor : public costmap_2d::Costmap2D {
     }
 
   private:
-    MapGrid& map_;
+    MapGrid* map_;
     double outer_radius_;
 };
 
 class TrajectoryPlannerTest : public testing::Test {
   public:
-    TrajectoryPlannerTest(MapGrid& g, WavefrontMapAccessor* wave, const costmap_2d::Costmap2D& map, std::vector<geometry_msgs::Point> footprint_spec);
+    TrajectoryPlannerTest(MapGrid* g, WavefrontMapAccessor* wave, const costmap_2d::Costmap2D& map, std::vector<geometry_msgs::Point> footprint_spec);
     void correctFootprint();
     void footprintObstacles();
     void checkGoalDistance();
     void checkPathDistance();
     virtual void TestBody(){}
 
-    MapGrid& map_;
+    MapGrid* map_;
     WavefrontMapAccessor* wa;
     CostmapModel cm;
     TrajectoryPlanner tc;
 };
 
-TrajectoryPlannerTest::TrajectoryPlannerTest(MapGrid& g, WavefrontMapAccessor* wave, const costmap_2d::Costmap2D& map, std::vector<geometry_msgs::Point> footprint_spec)
+TrajectoryPlannerTest::TrajectoryPlannerTest(MapGrid* g, WavefrontMapAccessor* wave, const costmap_2d::Costmap2D& map, std::vector<geometry_msgs::Point> footprint_spec)
 : map_(g), wa(wave), cm(map), tc(cm, map, footprint_spec, 0.0, 1.0, 1.0, 1.0, 1.0, 2.0)
 {}
 
@@ -166,7 +166,7 @@ void TrajectoryPlannerTest::correctFootprint(){
 
 void TrajectoryPlannerTest::footprintObstacles(){
   //place an obstacle
-  map_(4, 6).occ_state = 1;
+  map_->operator ()(4, 6).occ_state = 1;
   wa->synchronize();
   EXPECT_EQ(wa->getCost(4,6), costmap_2d::LETHAL_OBSTACLE);
   Trajectory traj(0, 0, 0, 30);
@@ -176,12 +176,12 @@ void TrajectoryPlannerTest::footprintObstacles(){
   EXPECT_FLOAT_EQ(traj.cost_, -1.0);
 
   //place a wall next to the footprint of the robot
-  map_(7, 1).occ_state = 1;
-  map_(7, 3).occ_state = 1;
-  map_(7, 4).occ_state = 1;
-  map_(7, 5).occ_state = 1;
-  map_(7, 6).occ_state = 1;
-  map_(7, 7).occ_state = 1;
+  map_->operator ()(7, 1).occ_state = 1;
+  map_->operator ()(7, 3).occ_state = 1;
+  map_->operator ()(7, 4).occ_state = 1;
+  map_->operator ()(7, 5).occ_state = 1;
+  map_->operator ()(7, 6).occ_state = 1;
+  map_->operator ()(7, 7).occ_state = 1;
   wa->synchronize();
 
   //try to rotate into it
@@ -193,14 +193,14 @@ void TrajectoryPlannerTest::footprintObstacles(){
 
 void TrajectoryPlannerTest::checkGoalDistance(){
   //let's box a cell in and make sure that its distance gets set to max
-  map_(1, 2).occ_state = 1;
-  map_(1, 1).occ_state = 1;
-  map_(1, 0).occ_state = 1;
-  map_(2, 0).occ_state = 1;
-  map_(3, 0).occ_state = 1;
-  map_(3, 1).occ_state = 1;
-  map_(3, 2).occ_state = 1;
-  map_(2, 2).occ_state = 1;
+  map_->operator ()(1, 2).occ_state = 1;
+  map_->operator ()(1, 1).occ_state = 1;
+  map_->operator ()(1, 0).occ_state = 1;
+  map_->operator ()(2, 0).occ_state = 1;
+  map_->operator ()(3, 0).occ_state = 1;
+  map_->operator ()(3, 1).occ_state = 1;
+  map_->operator ()(3, 2).occ_state = 1;
+  map_->operator ()(2, 2).occ_state = 1;
   wa->synchronize();
 
   //set a goal
@@ -280,50 +280,53 @@ TEST(MapGrid, properGridConstruction){
 
 TrajectoryPlannerTest* tct = NULL;
 
+TrajectoryPlannerTest* setup_testclass_singleton() {
+  if (tct == NULL) {
+    MapGrid* mg = new MapGrid (10, 10, 1, 0, 0);
+    WavefrontMapAccessor* wa = new WavefrontMapAccessor(mg, .25);
+    const costmap_2d::Costmap2D& map = *wa;
+    std::vector<geometry_msgs::Point> footprint_spec;
+    geometry_msgs::Point pt;
+    //create a square footprint
+    pt.x = 2;
+    pt.y = 2;
+    footprint_spec.push_back(pt);
+    pt.x = 2;
+    pt.y = -2;
+    footprint_spec.push_back(pt);
+    pt.x = -2;
+    pt.y = -2;
+    footprint_spec.push_back(pt);
+    pt.x = -2;
+    pt.y = 2;
+    footprint_spec.push_back(pt);
+
+    tct = new base_local_planner::TrajectoryPlannerTest(mg, wa, map, footprint_spec);
+  }
+  return tct;
+}
+
 TEST(TrajectoryPlannerTest, correctFootprint){
+  TrajectoryPlannerTest* tct = setup_testclass_singleton();
   tct->correctFootprint();
 }
 
 //make sure that trajectories that intersect obstacles are invalidated
 TEST(TrajectoryPlannerTest, footprintObstacles){
+  TrajectoryPlannerTest* tct = setup_testclass_singleton();
   tct->footprintObstacles();
 }
 
 //make sure that goal distance is being computed as expected
 TEST(TrajectoryPlannerTest, checkGoalDistance){
+  TrajectoryPlannerTest* tct = setup_testclass_singleton();
   tct->checkGoalDistance();
 }
 
 //make sure that path distance is being computed as expected
 TEST(TrajectoryPlannerTest, checkPathDistance){
+  TrajectoryPlannerTest* tct = setup_testclass_singleton();
   tct->checkPathDistance();
 }
 
 }; //namespace
-
-//test some stuff
-int main(int argc, char** argv){
-  base_local_planner::MapGrid mg(10, 10, 1, 0, 0);
-  base_local_planner::WavefrontMapAccessor wa(mg, .25);
-  const costmap_2d::Costmap2D& map = wa;
-  std::vector<geometry_msgs::Point> footprint_spec;
-  geometry_msgs::Point pt;
-  //create a square footprint
-  pt.x = 2;
-  pt.y = 2;
-  footprint_spec.push_back(pt);
-  pt.x = 2;
-  pt.y = -2;
-  footprint_spec.push_back(pt);
-  pt.x = -2;
-  pt.y = -2;
-  footprint_spec.push_back(pt);
-  pt.x = -2;
-  pt.y = 2;
-  footprint_spec.push_back(pt);
-
-  base_local_planner::tct = new base_local_planner::TrajectoryPlannerTest(mg, &wa, map, footprint_spec);
-
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
