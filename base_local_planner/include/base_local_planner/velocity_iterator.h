@@ -37,6 +37,7 @@
 #ifndef DWA_LOCAL_PLANNER_VELOCITY_ITERATOR_H_
 #define DWA_LOCAL_PLANNER_VELOCITY_ITERATOR_H_
 #include <algorithm>
+#include <cmath>
 
 namespace base_local_planner {
 
@@ -45,47 +46,49 @@ namespace base_local_planner {
    */
   class VelocityIterator {
     public:
-      VelocityIterator(double min, double max, double num_samples):
-        min_(min),
-        max_(max),
-        step_size_((max - min) / (std::max(1.0, -1.0))),
-        current_sample_(min),
-        finished_(false)
+      VelocityIterator(double min, double max, int num_samples):
+        current_index(0)
       {
+        if (min == max) {
+          samples_.push_back(min);
+        } else {
+          if (num_samples < 2) {
+            num_samples = 2;
+          }
+          // e.g. for 4 samples, split distance in 3 even parts
+          double step_size = (max - min) / double(std::max(1, (num_samples - 1)));
+
+          // we make sure to avoid rounding errors around min and max.
+          double current, next;
+          for (int j = 0; j < num_samples - 1; ++j) {
+            current = min + double(j * step_size);
+            next = min + double((j + 1) * step_size);
+            samples_.push_back(current);
+            // mathematical trick: if 0 is among samples, this is never true. Else it inserts a 0 between the positive and negative samples
+            if (current * next < 0.0) {
+              samples_.push_back(0.0);
+            }
+          }
+          samples_.push_back(max);
+        }
       }
 
       double getVelocity(){
-        return current_sample_;
+        return samples_.at(current_index);
       }
 
       VelocityIterator& operator++(int){
-        if(current_sample_ == max_){
-          finished_ = true;
-          return *this;
-        }
-
-        double next_sample_ = current_sample_ + step_size_;
-
-        // grant that we also use zero as a sampling value
-        if (next_sample_ * current_sample_ < 0.0) {
-          current_sample_ = 0.0;
-        } else {
-          current_sample_ = next_sample_;
-        }
-
-        if(current_sample_ >= max_) {
-          current_sample_ = max_;
-        }
+        current_index++;
         return *this;
       }
 
       bool isFinished(){
-        return finished_;
+        return current_index >= samples_.size();
       }
 
     private:
-      double min_, max_, step_size_, current_sample_;
-      bool finished_;
+      std::vector<double> samples_;
+      unsigned int current_index;
   };
 };
 #endif
