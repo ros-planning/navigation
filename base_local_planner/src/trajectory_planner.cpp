@@ -37,6 +37,20 @@
 
 #include <base_local_planner/trajectory_planner.h>
 
+#include <string>
+#include <sstream>
+#include <math.h>
+#include <angles/angles.h>
+
+
+
+#include <boost/algorithm/string.hpp>
+
+#include <ros/console.h>
+
+//for computing path distance
+#include <queue>
+
 using namespace std;
 using namespace costmap_2d;
 
@@ -53,6 +67,7 @@ namespace base_local_planner{
 
       max_vel_x_ = config.max_vel_x;
       min_vel_x_ = config.min_vel_x;
+      
       max_vel_th_ = config.max_vel_theta;
       min_in_place_vel_th_ = config.min_in_place_vel_theta;
 

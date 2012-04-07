@@ -36,24 +36,30 @@
 *********************************************************************/
 #ifndef DWA_LOCAL_PLANNER_DWA_PLANNER_H_
 #define DWA_LOCAL_PLANNER_DWA_PLANNER_H_
-#include <queue>
+
 #include <vector>
 #include <Eigen/Core>
-#include <costmap_2d/costmap_2d.h>
-#include <costmap_2d/costmap_2d_ros.h>
+
 #include <tf/transform_listener.h>
+
 #include <base_local_planner/trajectory.h>
-#include <base_local_planner/map_grid.h>
 #include <base_local_planner/costmap_model.h>
+
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
-#include <ros/ros.h>
-#include <dwa_local_planner/velocity_iterator.h>
 
 #include <dynamic_reconfigure/server.h>
+#include <dwa_local_planner/velocity_iterator.h>
 #include <dwa_local_planner/DWAPlannerConfig.h>
 
+//for creating a local cost grid
+#include <base_local_planner/map_grid.h>
 #include <base_local_planner/map_grid_visualizer.h>
+
+//for obstacle data access
+#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d_ros.h>
+
 
 namespace dwa_local_planner {
   /**

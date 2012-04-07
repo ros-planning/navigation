@@ -35,7 +35,14 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <dwa_local_planner/dwa_planner.h>
+#include <cmath>
+
+//for computing path distance
+#include <queue>
+
 #include <angles/angles.h>
+
+#include <ros/ros.h>
 
 namespace dwa_local_planner {
   void DWAPlanner::reconfigureCB(DWAPlannerConfig &config, uint32_t level)

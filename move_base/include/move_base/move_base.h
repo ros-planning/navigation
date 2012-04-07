@@ -36,7 +36,10 @@
 *********************************************************************/
 #ifndef NAV_MOVE_BASE_ACTION_H_
 #define NAV_MOVE_BASE_ACTION_H_
-#include <cmath>
+
+#include <vector>
+#include <string>
+
 #include <ros/ros.h>
 
 #include <actionlib/server/simple_action_server.h>
@@ -48,10 +51,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
-#include <vector>
-#include <string>
 #include <nav_msgs/GetPlan.h>
-#include <geometry_msgs/Twist.h>
 
 #include <pluginlib/class_loader.h>
 #include <std_srvs/Empty.h>

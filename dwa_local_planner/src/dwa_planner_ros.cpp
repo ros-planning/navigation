@@ -38,6 +38,8 @@
 
 #include <dwa_local_planner/dwa_planner_ros.h>
 #include <base_local_planner/goal_functions.h>
+#include <Eigen/Core>
+#include <cmath>
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_DECLARE_CLASS(dwa_local_planner, DWAPlannerROS, dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)

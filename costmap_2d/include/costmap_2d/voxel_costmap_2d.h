@@ -45,8 +45,7 @@
 #include <costmap_2d/cost_values.h>
 #include <voxel_grid/voxel_grid.h>
 #include <costmap_2d/VoxelGrid.h>
-#include <sensor_msgs/PointCloud.h>
-#include <boost/thread.hpp>
+
 #include <costmap_2d/Costmap2DConfig.h>
 
 namespace costmap_2d {

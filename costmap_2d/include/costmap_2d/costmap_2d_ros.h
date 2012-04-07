@@ -37,21 +37,18 @@
 #ifndef COSTMAP_COSTMAP_2D_ROS_H_
 #define COSTMAP_COSTMAP_2D_ROS_H_
 
-#include <XmlRpc.h>
 #include <ros/ros.h>
-#include <ros/console.h>
+
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <costmap_2d/observation_buffer.h>
-#include <costmap_2d/voxel_costmap_2d.h>
-#include <costmap_2d/VoxelGrid.h>
+
 #include <nav_msgs/OccupancyGrid.h>
-#include <map>
+
 #include <vector>
 #include <string>
-#include <sstream>
-#include <boost/tokenizer.hpp>
-#include <boost/foreach.hpp>
+
+
 #include <boost/algorithm/string.hpp>
 
 #include <tf/transform_datatypes.h>

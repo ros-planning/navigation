@@ -36,7 +36,12 @@
 *         Mike Phillips (put the planner in its own thread)
 *********************************************************************/
 #include <move_base/move_base.h>
+#include <cmath>
+
 #include <boost/algorithm/string.hpp>
+#include <boost/thread.hpp>
+
+#include <geometry_msgs/Twist.h>
 
 namespace move_base {
 

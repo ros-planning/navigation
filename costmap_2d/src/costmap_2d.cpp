@@ -36,6 +36,8 @@
 *********************************************************************/
 #include <costmap_2d/costmap_2d.h>
 #include <cstdio>
+#include <sensor_msgs/PointCloud2.h>
+
 
 #include <costmap_2d/Costmap2DConfig.h>
 

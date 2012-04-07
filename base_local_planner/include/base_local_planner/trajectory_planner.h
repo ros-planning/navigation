@@ -38,35 +38,26 @@
 #define TRAJECTORY_ROLLOUT_TRAJECTORY_PLANNER_H_
 
 #include <vector>
-#include <string>
-#include <sstream>
-#include <math.h>
-#include <ros/console.h>
-#include <angles/angles.h>
-
-//for creating a local cost grid
-#include <base_local_planner/map_cell.h>
-#include <base_local_planner/map_grid.h>
+#include <cmath>
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
-#include <base_local_planner/world_model.h>
 
+#include <base_local_planner/world_model.h>
 #include <base_local_planner/trajectory.h>
+#include <base_local_planner/Position2DInt.h>
+#include <base_local_planner/BaseLocalPlannerConfig.h>
 
 //we'll take in a path as a vector of poses
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
-#include <base_local_planner/Position2DInt.h>
-
-//for computing path distance
-#include <queue>
 
 //for some datatypes
 #include <tf/transform_datatypes.h>
 
-#include <base_local_planner/BaseLocalPlannerConfig.h>
-#include <boost/algorithm/string.hpp>
+//for creating a local cost grid
+#include <base_local_planner/map_cell.h>
+#include <base_local_planner/map_grid.h>
 
 namespace base_local_planner {
   /**

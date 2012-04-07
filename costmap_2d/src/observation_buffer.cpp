@@ -36,6 +36,10 @@
 *********************************************************************/
 #include <costmap_2d/observation_buffer.h>
 
+#include <pcl/point_types.h>
+#include <pcl_ros/transforms.h>
+#include <pcl/ros/conversions.h>
+
 using namespace std;
 using namespace tf;
 
