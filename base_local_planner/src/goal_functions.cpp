@@ -174,13 +174,10 @@ namespace base_local_planner {
     return true;
   }
 
-  bool isGoalReached(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2DROS& costmap_ros, const std::string& global_frame, 
-      const nav_msgs::Odometry& base_odom, double rot_stopped_vel, double trans_stopped_vel,
-      double xy_goal_tolerance, double yaw_goal_tolerance){
+  bool getGoalPose(const tf::TransformListener& tf,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const std::string& global_frame, tf::Stamped<tf::Pose> &goal_pose) {
     const geometry_msgs::PoseStamped& plan_goal_pose = global_plan.back();
-    tf::Stamped<tf::Pose> goal_pose;
-
     try{
       if (!global_plan.size() > 0)
       {
@@ -189,8 +186,8 @@ namespace base_local_planner {
       }
 
       tf::StampedTransform transform;
-      tf.lookupTransform(global_frame, ros::Time(), 
-          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp, 
+      tf.lookupTransform(global_frame, ros::Time(),
+          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
           plan_goal_pose.header.frame_id, transform);
 
       poseStampedMsgToTF(plan_goal_pose, goal_pose);
@@ -214,23 +211,30 @@ namespace base_local_planner {
 
       return false;
     }
+    return true;
+  }
 
-    //we assume the global goal is the last point in the global plan
+  bool isGoalReached(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
+      const costmap_2d::Costmap2DROS& costmap_ros, const std::string& global_frame, 
+      const nav_msgs::Odometry& base_odom, double rot_stopped_vel, double trans_stopped_vel,
+      double xy_goal_tolerance, double yaw_goal_tolerance){
+
+	//we assume the global goal is the last point in the global plan
+    tf::Stamped<tf::Pose> goal_pose;
+    getGoalPose(tf, global_plan, global_frame, goal_pose);
+
     double goal_x = goal_pose.getOrigin().getX();
     double goal_y = goal_pose.getOrigin().getY();
-
-    double yaw = tf::getYaw(goal_pose.getRotation());
-
-    double goal_th = yaw;
+    double goal_th = tf::getYaw(goal_pose.getRotation());
 
     tf::Stamped<tf::Pose> global_pose;
     if(!costmap_ros.getRobotPose(global_pose))
       return false;
 
     //check to see if we've reached the goal position
-    if(goalPositionReached(global_pose, goal_x, goal_y, xy_goal_tolerance)){
+    if(goalPositionReached(global_pose, goal_x, goal_y, xy_goal_tolerance)) {
       //check to see if the goal orientation has been reached
-      if(goalOrientationReached(global_pose, goal_th, yaw_goal_tolerance)){
+      if(goalOrientationReached(global_pose, goal_th, yaw_goal_tolerance)) {
         //make sure that we're actually stopped before returning success
         if(stopped(base_odom, rot_stopped_vel, trans_stopped_vel))
           return true;

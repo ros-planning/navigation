@@ -44,6 +44,7 @@
 
 #include <base_local_planner/trajectory.h>
 #include <base_local_planner/costmap_model.h>
+#include <base_local_planner/LocalPlannerLimitsConfig.h>
 
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
@@ -99,7 +100,12 @@ namespace dwa_local_planner {
        * center point of the robot and a point directly in front of the center
        * point, or to score the trajectory only basaed on the center point of the robot
        */
-      void generateTrajectory(Eigen::Vector3f pos, const Eigen::Vector3f& vel, base_local_planner::Trajectory& traj, bool two_point_scoring);
+      void generateTrajectory(
+          Eigen::Vector3f pos,
+          const Eigen::Vector3f& vel,
+          base_local_planner::Trajectory& traj,
+          bool two_point_scoring,
+          const base_local_planner::LocalPlannerLimitsConfig& limits);
 
       /**
        * @brief  Given the current position and velocity of the robot, computes
@@ -109,7 +115,10 @@ namespace dwa_local_planner {
        * @param  vel The current velocity of the robot
        * @return The highest scoring trajectory, a cost >= 0 corresponds to a valid trajectory
        */
-      base_local_planner::Trajectory computeTrajectories(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel);
+      base_local_planner::Trajectory computeTrajectories(
+          const Eigen::Vector3f& pos,
+          const Eigen::Vector3f& vel,
+          const base_local_planner::LocalPlannerLimitsConfig& limits);
 
       /**
        * @brief  Check if a trajectory is legal for a position/velocity pari
@@ -117,7 +126,10 @@ namespace dwa_local_planner {
        * @param vel The desired velocity
        * @return True if the trajectory is valid, false otherwise
        */
-      bool checkTrajectory(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel);
+      bool checkTrajectory(
+          const Eigen::Vector3f& pos,
+          const Eigen::Vector3f& vel,
+          const base_local_planner::LocalPlannerLimitsConfig& limits);
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
@@ -126,8 +138,11 @@ namespace dwa_local_planner {
        * @param drive_velocities The velocities to send to the robot base
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
-      base_local_planner::Trajectory findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel, 
-          tf::Stamped<tf::Pose>& drive_velocities);
+      base_local_planner::Trajectory findBestPath(
+          tf::Stamped<tf::Pose> global_pose,
+          tf::Stamped<tf::Pose> global_vel,
+          tf::Stamped<tf::Pose>& drive_velocities,
+          const base_local_planner::LocalPlannerLimitsConfig& limits);
 
       /**
        * @brief  Take in a new global plan for the local planner to follow
@@ -201,7 +216,7 @@ namespace dwa_local_planner {
        * @param  t The selected trajectory
        * @return True if a flag was set, false otherwise
        */
-      bool setOscillationFlags(base_local_planner::Trajectory* t);
+      bool setOscillationFlags(base_local_planner::Trajectory* t, double min_vel_trans);
 
       /**
        * @brief Compute the square distance between two poses
@@ -234,9 +249,7 @@ namespace dwa_local_planner {
       std::vector<geometry_msgs::Point> footprint_spec_;
       base_local_planner::CostmapModel* world_model_;
       double sim_time_, sim_granularity_;
-      double max_vel_x_, min_vel_x_;
-      double max_vel_y_, min_vel_y_, min_vel_trans_, max_vel_trans_;
-      double max_vel_th_, min_vel_th_, min_rot_vel_;
+
       double sim_period_;
       base_local_planner::Trajectory traj_one_, traj_two_;
       bool strafe_pos_only_, strafe_neg_only_, strafing_pos_, strafing_neg_;

@@ -39,47 +39,31 @@
 #include <angles/angles.h>
 #include <dwa_local_planner/dwa_planner.h>
 #include <boost/shared_ptr.hpp>
-#include <nav_core/base_local_planner.h>
+#include <base_local_planner/abstract_moveto_rotate_local_planner.h>
 
 namespace dwa_local_planner {
   /**
    * @class DWAPlannerROS
-   * @brief ROS Wrapper for the DWAPlanner that adheres to the BaseLocalPlanner interface and can be used as a plugin for move_base.
+   * @brief ROS Wrapper for the DWAPlanner that adheres to the
+   * BaseLocalPlanner interface and can be used as a plugin for move_base.
    */
-  class DWAPlannerROS : public nav_core::BaseLocalPlanner {
+  class DWAPlannerROS : public base_local_planner::AbstractMoveToRotateLocalPlanner {
     public:
       /**
        * @brief  Constructor for DWAPlannerROS wrapper
        */
-      DWAPlannerROS() : costmap_ros_(NULL), tf_(NULL), initialized_(false) {}
+      DWAPlannerROS() {}
+
+      void initialize(std::string name, tf::TransformListener* tf,
+            costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
-       * @brief  Constructs the ros wrapper
-       * @param name The name to give this instance of the trajectory planner
-       * @param tf A pointer to a transform listener
-       * @param costmap The cost map to use for assigning costs to trajectories
-       */
-      void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros);
-
-      /**
-       * @brief  Check if the goal pose has been achieved
-       * @return True if achieved, false otherwise
-       */
-      bool isGoalReached();
-
-      /**
-       * @brief  Set the plan that the controller is following
-       * @param orig_global_plan The plan to pass to the controller
-       * @return True if the plan was updated successfully, false otherwise
-       */
-      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
-
-      /**
-       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
+       * @brief  Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base
        * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
        * @return True if a valid trajectory was found, false otherwise
        */
-      bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+      bool doComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
 
     private:
       inline double sign(double x){
@@ -104,27 +88,13 @@ namespace dwa_local_planner {
        */
       bool stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel);
 
-      /**
-       * @brief  Callback for receiving odometry data
-       * @param msg An Odometry message 
-       */
-      void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
+      void updateDataPassive(tf::Stamped<tf::Pose>& global_pose);
 
-      costmap_2d::Costmap2DROS* costmap_ros_;
-      tf::TransformListener* tf_;
-      double max_vel_th_, min_vel_th_, min_rot_vel_;
-      double rot_stopped_vel_, trans_stopped_vel_;
-      double yaw_goal_tolerance_, xy_goal_tolerance_;
-      bool prune_plan_;
-      bool initialized_;
-      ros::Subscriber odom_sub_;
-      ros::Publisher g_plan_pub_, l_plan_pub_;
-      boost::mutex odom_mutex_;
-      nav_msgs::Odometry base_odom_;
+      bool isPrunePlanActivated();
+
       boost::shared_ptr<DWAPlanner> dp_;
       std::vector<geometry_msgs::PoseStamped> global_plan_;
-      bool rotating_to_goal_;
-      bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
+
   };
 };
 #endif
