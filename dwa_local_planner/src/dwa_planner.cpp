@@ -476,7 +476,11 @@ namespace dwa_local_planner {
     }
 
     //compute the number of steps we must take along this trajectory to be "safe"
-    int num_steps = ceil(std::max((vmag * sim_time_) / sim_granularity_, fabs(vel[2]) / sim_granularity_));
+    double sim_time_distance = (vmag * sim_time_); // the distance the robot would travel in sim_time if it did not change velocity
+    double sim_time_angle = (fabs(vel[2]) * sim_time_); // the angle the robot would rotate in sim_time
+    int num_steps =
+        ceil(std::max(sim_time_distance / sim_granularity_,
+                      sim_time_angle / 0.1)); // 0.1 radians is ca. 6 degrees
 
     //compute a timestep
     double dt = sim_time_ / num_steps;
