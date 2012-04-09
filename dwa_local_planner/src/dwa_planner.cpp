@@ -276,12 +276,6 @@ namespace dwa_local_planner {
     min_vel[1] = std::max(limits.min_vel_y, vel[1] - acc_lim_[1] * sim_period);
     min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim_[2] * sim_period);
 
-    Eigen::Vector3f dv = Eigen::Vector3f::Zero();
-    //we want to sample the velocity space regularly
-    for(unsigned int i = 0; i < 3; ++i){
-      dv[i] = (max_vel[i] - min_vel[i]) / (std::max(1.0, double(vsamples_[i]) - 1));
-    }
-
     //keep track of the best trajectory seen so far... we'll re-use two member vars for efficiency
     base_local_planner::Trajectory* best_traj = &traj_one_;
     best_traj->cost_ = -1.0;
@@ -298,11 +292,11 @@ namespace dwa_local_planner {
     traj_cloud_.header.stamp = ros::Time::now();
     double px, py, pth;
     base_local_planner::MapGridCostPoint pt;
-    for(VelocityIterator x_it(min_vel[0], max_vel[0], dv[0]); !x_it.isFinished(); x_it++){
+    for(base_local_planner::VelocityIterator x_it(min_vel[0], max_vel[0], vsamples_[0]); !x_it.isFinished(); x_it++) {
       vel_samp[0] = x_it.getVelocity();
-      for(VelocityIterator y_it(min_vel[1], max_vel[1], dv[1]); !y_it.isFinished(); y_it++){
+      for(base_local_planner::VelocityIterator y_it(min_vel[1], max_vel[1], vsamples_[1]); !y_it.isFinished(); y_it++) {
         vel_samp[1] = y_it.getVelocity();
-        for(VelocityIterator th_it(min_vel[2], max_vel[2], dv[2]); !th_it.isFinished(); th_it++){
+        for(base_local_planner::VelocityIterator th_it(min_vel[2], max_vel[2], vsamples_[2]); !th_it.isFinished(); th_it++) {
           vel_samp[2] = th_it.getVelocity();
           generateTrajectory(pos, vel_samp, *comp_traj, two_point_scoring, limits);
           if (comp_traj->cost_ >= 0.0) {

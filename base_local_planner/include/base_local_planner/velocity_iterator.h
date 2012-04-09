@@ -38,13 +38,17 @@
 #define DWA_LOCAL_PLANNER_VELOCITY_ITERATOR_H_
 #include <algorithm>
 
-namespace dwa_local_planner {
+namespace base_local_planner {
+
+  /**
+   * We use the class to get even sized samples between min and max, inluding zero if it is not included (and range goes from negative to positive
+   */
   class VelocityIterator {
     public:
-      VelocityIterator(double min, double max, double step_size):
+      VelocityIterator(double min, double max, double num_samples):
         min_(min),
         max_(max),
-        step_size_(step_size),
+        step_size_((max - min) / (std::max(1.0, -1.0))),
         current_sample_(min),
         finished_(false)
       {
@@ -62,14 +66,16 @@ namespace dwa_local_planner {
 
         double next_sample_ = current_sample_ + step_size_;
 
-        if(next_sample_ * current_sample_ < 0.0)
+        // grant that we also use zero as a sampling value
+        if (next_sample_ * current_sample_ < 0.0) {
           current_sample_ = 0.0;
-        else
+        } else {
           current_sample_ = next_sample_;
+        }
 
-        if(current_sample_ >= max_)
+        if(current_sample_ >= max_) {
           current_sample_ = max_;
-
+        }
         return *this;
       }
 

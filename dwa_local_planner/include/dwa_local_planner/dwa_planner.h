@@ -50,7 +50,7 @@
 #include <nav_msgs/Path.h>
 
 #include <dynamic_reconfigure/server.h>
-#include <dwa_local_planner/velocity_iterator.h>
+#include <base_local_planner/velocity_iterator.h>
 #include <dwa_local_planner/DWAPlannerConfig.h>
 
 //for creating a local cost grid
