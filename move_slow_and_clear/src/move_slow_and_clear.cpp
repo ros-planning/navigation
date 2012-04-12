@@ -78,8 +78,7 @@ namespace move_slow_and_clear
       ROS_ERROR("This recovery behavior has not been initialized, doing nothing.");
       return;
     }
-
-    ROS_DEBUG("Running move slow and clear behavior");
+    ROS_WARN("Move slow and clear recovery behavior started.");
     tf::Stamped<tf::Pose> global_pose, local_pose;
     global_costmap_->getRobotPose(global_pose);
     local_costmap_->getRobotPose(local_pose);

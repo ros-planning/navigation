@@ -74,6 +74,7 @@ void ClearCostmapRecovery::runBehavior(){
     ROS_ERROR("The costmaps passed to the ClearCostmapRecovery object cannot be NULL. Doing nothing.");
     return;
   }
+  ROS_WARN("Clearing costmap to unstuck robot.");
 
   double gc_radius = global_costmap_->getCircumscribedRadius();
   double lc_radius = local_costmap_->getCircumscribedRadius();
