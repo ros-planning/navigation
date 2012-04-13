@@ -161,6 +161,10 @@ namespace base_local_planner{
           break;
       }
     }
+    if (!started_path) {
+      ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");
+      return;
+    }
 
     computeTargetDistance(path_dist_queue, costmap);
   }
@@ -188,6 +192,10 @@ namespace base_local_planner{
       } else if (started_path) {
           break;
       }
+    }
+    if (!started_path) {
+      ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");
+      return;
     }
 
     if (local_goal_x >= 0 && local_goal_y >= 0) {
