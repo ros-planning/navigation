@@ -108,10 +108,10 @@ namespace dwa_local_planner {
           const base_local_planner::LocalPlannerLimitsConfig& limits);
 
       /**
-       * @brief  Take in a new global plan for the local planner to follow
+       * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
        * @param  new_plan The new global plan
        */
-      void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan);
+      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose, const std::vector<geometry_msgs::PoseStamped>& new_plan);
 
       /**
        * @brief  Get the acceleration limits of the robot
@@ -143,8 +143,6 @@ namespace dwa_local_planner {
        */
       void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
-
-      void publishTrajectories();
 
       const costmap_2d::Costmap2DROS* costmap_ros_;
       costmap_2d::Costmap2D costmap_;

@@ -36,10 +36,19 @@
 *********************************************************************/
 #ifndef DWA_LOCAL_PLANNER_DWA_PLANNER_ROS_H_
 #define DWA_LOCAL_PLANNER_DWA_PLANNER_ROS_H_
-#include <angles/angles.h>
 #include <dwa_local_planner/dwa_planner.h>
+
 #include <boost/shared_ptr.hpp>
-#include <base_local_planner/abstract_moveto_rotate_local_planner.h>
+#include <boost/thread.hpp>
+
+#include <angles/angles.h>
+
+#include <nav_msgs/Odometry.h>
+
+#include <nav_core/base_local_planner.h>
+#include <base_local_planner/latched_stop_rotate_controller.h>
+#include <base_local_planner/local_planner_util.h>
+#include <base_local_planner/odometry_helper_ros.h>
 
 namespace dwa_local_planner {
   /**
@@ -47,54 +56,55 @@ namespace dwa_local_planner {
    * @brief ROS Wrapper for the DWAPlanner that adheres to the
    * BaseLocalPlanner interface and can be used as a plugin for move_base.
    */
-  class DWAPlannerROS : public base_local_planner::AbstractMoveToRotateLocalPlanner {
+  class DWAPlannerROS : public nav_core::BaseLocalPlanner {
     public:
       /**
        * @brief  Constructor for DWAPlannerROS wrapper
        */
-      DWAPlannerROS() {}
+      DWAPlannerROS();
 
       void initialize(std::string name, tf::TransformListener* tf,
             costmap_2d::Costmap2DROS* costmap_ros);
 
-      /**
-       * @brief  Given the current position, orientation, and velocity of the robot,
-       * compute velocity commands to send to the base
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
-       */
-      bool doComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
+      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
-    private:
-      inline double sign(double x){
-        return x < 0.0 ? -1.0 : 1.0;
+      bool isGoalReached();
+
+      bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+
+      bool isInitialized() {
+        return initialized_;
       }
 
       /**
-       * @brief Once a goal position is reached... rotate to the goal orientation
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  robot_vel The velocity of the robot
-       * @param  goal_th The desired th value for the goal
-       * @param  cmd_vel The velocity commands to be filled
-       * @return  True if a valid trajectory was found, false otherwise
+       * @brief  Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base, using dynamic window approach
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @return True if a valid trajectory was found, false otherwise
        */
-      bool rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel);
-      /**
-       * @brief Stop the robot taking into account acceleration limits
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  robot_vel The velocity of the robot
-       * @param  cmd_vel The velocity commands to be filled
-       * @return  True if a valid trajectory was found, false otherwise
-       */
-      bool stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel);
+      bool dwaComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
+
+    private:
+
+
 
       void updateDataPassive(tf::Stamped<tf::Pose>& global_pose);
 
-      bool isPrunePlanActivated();
+      bool isPrunePlanActivated() {
+        return prune_plan_;
+      }
 
       boost::shared_ptr<DWAPlanner> dp_;
       std::vector<geometry_msgs::PoseStamped> global_plan_;
+      base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
+
+      // whether to discard points we have passed
+      bool prune_plan_;
+      bool initialized_;
+
+      base_local_planner::LocalPlannerUtil planner_util_;
+      base_local_planner::OdometryHelperRos odom_helper_;
   };
 };
 #endif

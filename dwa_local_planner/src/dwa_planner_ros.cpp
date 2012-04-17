@@ -46,122 +46,45 @@ PLUGINLIB_DECLARE_CLASS(dwa_local_planner, DWAPlannerROS, dwa_local_planner::DWA
 
 namespace dwa_local_planner {
 
+  DWAPlannerROS::DWAPlannerROS() : initialized_(false),
+      odom_helper_("odom") {}
+
   void DWAPlannerROS::initialize(
       std::string name,
       tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
     if(! isInitialized()) {
-      AbstractMoveToRotateLocalPlanner::initialize(name, tf, costmap_ros);
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
+      planner_util_.initialize(name, tf, costmap_ros);
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(planner_util_.getName(), planner_util_.getCostmapRos()));
 
+      initialized_ = true;
     }
     else{
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
   }
 
+  bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
+    //when we get a new plan, we also want to clear any latch we may have on goal tolerances
+    latchedStopRotateController_.resetLatching();
 
+    ROS_INFO("Got new plan");
+    return planner_util_.setPlan(orig_global_plan);
+  }
 
-  bool DWAPlannerROS::stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel) {
-    Eigen::Vector3f acc_lim = dp_->getAccLimits();
-    //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible
-    //but we'll use a tenth of a second to be consistent with the implementation of the local planner.
-    double vx = sign(robot_vel.getOrigin().x()) * std::max(0.0, (fabs(robot_vel.getOrigin().x()) - acc_lim[0] * dp_->getSimPeriod()));
-    double vy = sign(robot_vel.getOrigin().y()) * std::max(0.0, (fabs(robot_vel.getOrigin().y()) - acc_lim[1] * dp_->getSimPeriod()));
-
-    double vel_yaw = tf::getYaw(robot_vel.getRotation());
-    double vth = sign(vel_yaw) * std::max(0.0, (fabs(vel_yaw) - acc_lim[2] * dp_->getSimPeriod()));
-
-    //we do want to check whether or not the command is valid
-    double yaw = tf::getYaw(global_pose.getRotation());
-    bool valid_cmd = dp_->checkTrajectory(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
-                                          Eigen::Vector3f(vx, vy, vth),
-                                          planner_util_.getCurrentLimits());
-
-    //if we have a valid command, we'll pass it on, otherwise we'll command all zeros
-    if(valid_cmd){
-      ROS_DEBUG_NAMED("dwa_local_planner", "Slowing down... using vx, vy, vth: %.2f, %.2f, %.2f", vx, vy, vth);
-      cmd_vel.linear.x = vx;
-      cmd_vel.linear.y = vy;
-      cmd_vel.angular.z = vth;
+  bool DWAPlannerROS::isGoalReached() {
+    if(latchedStopRotateController_.isGoalReached(planner_util_, odom_helper_)) {
+      ROS_INFO("Goal reached");
       return true;
+    } else {
+      return false;
     }
-    ROS_WARN("Stopping cmd invalid");
-    cmd_vel.linear.x = 0.0;
-    cmd_vel.linear.y = 0.0;
-    cmd_vel.angular.z = 0.0;
-    return false;
   }
 
-  bool DWAPlannerROS::rotateToGoal(
-      const tf::Stamped<tf::Pose>& global_pose,
-      const tf::Stamped<tf::Pose>& robot_vel,
-      double goal_th, geometry_msgs::Twist& cmd_vel){
-    Eigen::Vector3f acc_lim = dp_->getAccLimits();
-    double yaw = tf::getYaw(global_pose.getRotation());
-    double vel_yaw = tf::getYaw(robot_vel.getRotation());
-    cmd_vel.linear.x = 0;
-    cmd_vel.linear.y = 0;
-    double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
-    double v_theta_samp = 0;
-    base_local_planner::LocalPlannerLimitsConfig limits = planner_util_.getCurrentLimits();
 
-    v_theta_samp = std::min(limits.max_rot_vel, std::max(limits.min_rot_vel, fabs(ang_diff)));
-
-    //take the acceleration limits of the robot into account
-    double max_acc_vel = fabs(vel_yaw) + acc_lim[2] * dp_->getSimPeriod();
-    double min_acc_vel = fabs(vel_yaw) - acc_lim[2] * dp_->getSimPeriod();
-
-    v_theta_samp = std::min(std::max(fabs(v_theta_samp), min_acc_vel), max_acc_vel);
-
-    //we also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
-    double max_speed_to_stop = sqrt(2 * acc_lim[2] * fabs(ang_diff));
-    v_theta_samp = std::min(max_speed_to_stop, fabs(v_theta_samp));
-
-    v_theta_samp = std::min(limits.max_rot_vel, std::max(limits.min_rot_vel, v_theta_samp));
-
-    if (ang_diff < 0) {
-      v_theta_samp = - v_theta_samp;
-    }
-
-    //we still want to lay down the footprint of the robot and check if the action is legal
-    bool valid_cmd = dp_->checkTrajectory(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
-                                          Eigen::Vector3f( 0.0, 0.0, v_theta_samp),
-                                          limits);
-
-    if (valid_cmd) {
-      ROS_DEBUG_NAMED("dwa_local_planner", "Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
-      cmd_vel.angular.z = v_theta_samp;
-      return true;
-    }
-    ROS_WARN("Rotation cmd invalid");
-    cmd_vel.angular.z = 0.0;
-    return false;
-
-  }
-
-  void DWAPlannerROS::updateDataPassive(tf::Stamped<tf::Pose>& global_pose) {
-    std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    if ( ! planner_util_.getLocalPlan(global_pose, transformed_plan)) {
-      return;
-    }
-    tf::Stamped<tf::Pose> robot_vel;
-    odom_helper_.getRobotVel(robot_vel);
-
-    //if the global plan passed in is empty... we won't do anything
-    if(transformed_plan.empty()) {
-      return;
-    }
-    tf::Stamped<tf::Pose> drive_cmds;
-    drive_cmds.frame_id_ = planner_util_.getCostmapRos()->getBaseFrameID();
-    //we need to call the next two lines to make sure that the dwa
-    //planner updates its path distance and goal distance grids
-    dp_->updatePlan(transformed_plan);
-    dp_->findBestPath(global_pose, robot_vel, drive_cmds, planner_util_.getCurrentLimits());
-  }
-
-  bool DWAPlannerROS::doComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, geometry_msgs::Twist& cmd_vel) {
+  bool DWAPlannerROS::dwaComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, geometry_msgs::Twist& cmd_vel) {
+    // dynamic window samplig approach to get useful velocity commands
     if(! isInitialized()){
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
@@ -169,18 +92,6 @@ namespace dwa_local_planner {
 
     tf::Stamped<tf::Pose> robot_vel;
     odom_helper_.getRobotVel(robot_vel);
-
-    std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    if ( ! planner_util_.getLocalPlan(global_pose, transformed_plan)) {
-      return false;
-    }
-
-    //if the global plan passed in is empty... we won't do anything
-    if(transformed_plan.empty()) {
-      return false;
-    }
-    ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
-    dp_->updatePlan(transformed_plan);
 
     //we also want to clear the robot footprint from the costmap we're using
     planner_util_.getCostmapRos()->clearRobotFootprint();
@@ -220,7 +131,7 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner", 
           "The dwa local planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
       local_plan.clear();
-      planner_util_.publishGlobalPlan(transformed_plan);
+      std::vector<geometry_msgs::PoseStamped> transformed_plan;
       planner_util_.publishLocalPlan(local_plan);
       return false;
     }
@@ -245,11 +156,59 @@ namespace dwa_local_planner {
     }
 
     //publish information to the visualizer
-    planner_util_.publishGlobalPlan(transformed_plan);
+
     planner_util_.publishLocalPlan(local_plan);
     return true;
   }
 
+
+
+
+  bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
+    // dispatches to either dwa samplig control or stop and rotate control, depending on whether we have been close enough to goal
+    tf::Stamped<tf::Pose> global_pose;
+    if ( ! planner_util_.getRobotPose(global_pose)) {
+      ROS_ERROR("Could not get robot pose");
+      return false;
+    }
+    std::vector<geometry_msgs::PoseStamped> transformed_plan;
+    if ( ! planner_util_.getLocalPlan(global_pose, transformed_plan)) {
+      return false;
+    }
+
+    //if the global plan passed in is empty... we won't do anything
+    if(transformed_plan.empty()) {
+      return false;
+    }
+    ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
+    // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
+    dp_->updatePlanAndLocalCosts(global_pose, transformed_plan);
+
+    if (latchedStopRotateController_.isPositionReached(planner_util_, odom_helper_)) {
+      //publish an empty plan because we've reached our goal position
+      std::vector<geometry_msgs::PoseStamped> local_plan;
+      std::vector<geometry_msgs::PoseStamped> transformed_plan;
+      planner_util_.publishGlobalPlan(transformed_plan);
+      planner_util_.publishLocalPlan(local_plan);
+
+      return latchedStopRotateController_.computeVelocityCommandsStopRotate(
+          cmd_vel,
+          dp_->getAccLimits(),
+          dp_->getSimPeriod(),
+          planner_util_,
+          odom_helper_,
+          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
+    } else {
+      bool isOk =  dwaComputeVelocityCommands(global_pose, cmd_vel);
+      if (isOk) {
+        planner_util_.publishGlobalPlan(transformed_plan);
+      } else {
+        std::vector<geometry_msgs::PoseStamped> transformed_plan;
+        planner_util_.publishGlobalPlan(transformed_plan);
+      }
+      return isOk;
+    }
+  }
 
 
 };

@@ -17,17 +17,18 @@ include_directories(${EIGEN_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 rosbuild_add_library(base_local_planner 
-	src/goal_functions.cpp 
-	src/map_cell.cpp 
+	src/goal_functions.cpp
+	src/map_cell.cpp
 	src/map_grid.cpp
 	src/map_grid_visualizer.cpp
 	src/map_grid_cost_function.cpp
+	src/latched_stop_rotate_controller.cpp
 	src/local_planner_util.cpp
 	src/odometry_helper_ros.cpp
 	src/obstacle_cost_function.cpp
 	src/oscillation_cost_function.cpp
 	src/prefer_forward_cost_function.cpp
-	src/point_grid.cpp 
+	src/point_grid.cpp
 	src/costmap_model.cpp
 	src/simple_trajectory_generator.cpp 
 	src/trajectory_planner.cpp

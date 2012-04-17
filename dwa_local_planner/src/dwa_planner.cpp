@@ -175,6 +175,10 @@ namespace dwa_local_planner {
     pn.param("acc_lim_y", acc_lim_y, 2.5);
     pn.param("acc_lim_th", acc_lim_th, 3.2);
 
+    acc_lim_[0] = acc_lim_x;
+    acc_lim_[1] = acc_lim_y;
+    acc_lim_[2] = acc_lim_th;
+
     //Assuming this planner is being run within the navigation stack, we can
     //just do an upward search for the frequency at which its being run. This
     //also allows the frequency to be overwritten locally.
@@ -192,10 +196,6 @@ namespace dwa_local_planner {
       }
     }
     ROS_INFO("Sim period is set to %.2f", sim_period_);
-
-    acc_lim_[0] = acc_lim_x;
-    acc_lim_[1] = acc_lim_y;
-    acc_lim_[2] = acc_lim_th;
 
     dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = boost::bind(&DWAPlanner::reconfigureCB, this, _1, _2);
     dsrv_.setCallback(cb);
@@ -225,17 +225,37 @@ namespace dwa_local_planner {
   }
 
 
-
-  void DWAPlanner::publishTrajectories() {
-    traj_cloud_pub_.publish(traj_cloud_);
-  }
-
-
-
-  void DWAPlanner::updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan){
+  void DWAPlanner::updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose, const std::vector<geometry_msgs::PoseStamped>& new_plan){
     global_plan_.resize(new_plan.size());
     for (unsigned int i = 0; i < new_plan.size(); ++i) {
       global_plan_[i] = new_plan[i];
+    }
+
+    // costs for going away from path
+    path_costs_.setTargetPoses(global_plan_);
+
+    // costs for not going towards the local goal as much as possible
+    goal_costs_.setTargetPoses(global_plan_);
+
+    // alignment costs
+    geometry_msgs::PoseStamped goal_pose = global_plan_.back();
+
+    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
+    double sq_dist =
+        (pos[0] - goal_pose.pose.position.x) * (pos[0] - goal_pose.pose.position.x) +
+        (pos[1] - goal_pose.pose.position.y) * (pos[1] - goal_pose.pose.position.y);
+
+    // keeping the nose on the target
+    if (sq_dist > forward_point_distance_ * forward_point_distance_ * 2) {
+      // costs for robot being aligned with path (nose on path, not just center on path)
+      alignment_costs_.setScale(1.0);
+      goal_front_costs_.setScale(1.0);
+      alignment_costs_.setTargetPoses(global_plan_);
+      goal_front_costs_.setTargetPoses(global_plan_);
+    } else {
+      // once we are close to base, trying to keep the nose close to anything destabilizes behavior.
+      alignment_costs_.setScale(0.0);
+      goal_front_costs_.setScale(0.0);
     }
   }
 
@@ -260,31 +280,6 @@ namespace dwa_local_planner {
 
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(limits.max_trans_vel, max_scaling_factor_, scaling_speed_);
-
-    // costs for going away from path
-    path_costs_.setTargetPoses(global_plan_);
-
-    // costs for not going towards the local goal as much as possible
-    goal_costs_.setTargetPoses(global_plan_);
-
-    geometry_msgs::PoseStamped goal_pose = global_plan_.back();
-    double sq_dist =
-        (pos[0] - goal_pose.pose.position.x) * (pos[0] - goal_pose.pose.position.x) +
-        (pos[1] - goal_pose.pose.position.y) * (pos[1] - goal_pose.pose.position.y);
-
-    // keeping the nose on the target
-    if (sq_dist > forward_point_distance_ * forward_point_distance_ * 2) {
-      // costs for robot being aligned with path (nose on path, not just center on path)
-      alignment_costs_.setScale(1.0);
-      goal_front_costs_.setScale(1.0);
-      alignment_costs_.setTargetPoses(global_plan_);
-      goal_front_costs_.setTargetPoses(global_plan_);
-    } else {
-      // once we are close to base, trying to keep the nose close to anything destabilizes behavior.
-      alignment_costs_.setScale(0.0);
-      goal_front_costs_.setScale(0.0);
-    }
-
 
     prefer_forward_costs_.setPenalty(backward_motion_penalty_); // TODO make param
 
