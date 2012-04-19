@@ -93,10 +93,6 @@ namespace dwa_local_planner {
 
       void updateDataPassive(tf::Stamped<tf::Pose>& global_pose);
 
-      bool isPrunePlanActivated() {
-        return prune_plan_;
-      }
-
       // for visualisation, publishers of global and local plan
       ros::Publisher g_plan_pub_, l_plan_pub_;
 
@@ -105,8 +101,6 @@ namespace dwa_local_planner {
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
 
-      // whether to discard points we have passed
-      bool prune_plan_;
       bool initialized_;
 
 
