@@ -140,7 +140,6 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner", 
           "The dwa local planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
       local_plan.clear();
-      std::vector<geometry_msgs::PoseStamped> transformed_plan;
       publishLocalPlan(local_plan);
       return false;
     }
