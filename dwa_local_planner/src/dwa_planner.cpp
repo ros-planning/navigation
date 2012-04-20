@@ -250,6 +250,9 @@ namespace dwa_local_planner {
       global_plan_[i] = new_plan[i];
     }
 
+    // make sure to update the costmap we'll use for this cycle
+    costmap_ros_->getCostmapCopy(costmap_);
+
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
 
@@ -291,9 +294,6 @@ namespace dwa_local_planner {
 
     //we want to clear the robot footprint from the costmap we're using
     planner_util_.getCostmapRos()->clearRobotFootprint();
-
-    // update costmap member
-    costmap_ros_->getCostmapCopy(costmap_);
 
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
