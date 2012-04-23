@@ -45,20 +45,12 @@
 #include <ros/ros.h>
 
 namespace dwa_local_planner {
-  void DWAPlanner::reconfigureCB(DWAPlannerConfig &config, uint32_t level)
+  void DWAPlanner::reconfigure(DWAPlannerConfig &cfg)
   {
-    if (setup_ && config.restore_defaults) {
-      config = default_config_;
-      config.restore_defaults = false;
-    }
+    DWAPlannerConfig config(cfg);
 
-    if ( ! setup_) {
-      default_config_ = config;
-      setup_ = true;
-    }
     boost::mutex::scoped_lock l(configuration_mutex_);
- 
- 
+
     generator_.setParameters(config.sim_time, config.sim_granularity, config.angular_sim_granularity);
 
     double resolution = costmap_.getResolution();
@@ -139,8 +131,6 @@ namespace dwa_local_planner {
   }
 
   DWAPlanner::DWAPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) :
-      dsrv_(ros::NodeHandle("~/" + name)),
-      setup_(false),
       penalize_negative_x_(true),
       obstacle_costs_(costmap_ros),
       prefer_forward_costs_(0.0),
@@ -182,9 +172,6 @@ namespace dwa_local_planner {
       }
     }
     ROS_INFO("Sim period is set to %.2f", sim_period_);
-
-    dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = boost::bind(&DWAPlanner::reconfigureCB, this, _1, _2);
-    dsrv_.setCallback(cb);
 
 
     oscillation_costs_.resetOscillationFlags();

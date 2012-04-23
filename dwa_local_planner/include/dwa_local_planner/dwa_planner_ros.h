@@ -41,6 +41,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
+#include <dynamic_reconfigure/server.h>
+#include <dwa_local_planner/DWAPlannerConfig.h>
+
 #include <angles/angles.h>
 
 #include <nav_msgs/Odometry.h>
@@ -78,11 +81,21 @@ namespace dwa_local_planner {
       ~DWAPlannerROS();
 
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
+       * @brief  Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base
        * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
        * @return True if a valid trajectory was found, false otherwise
        */
       bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+
+
+      /**
+       * @brief  Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base, using dynamic window approach
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @return True if a valid trajectory was found, false otherwise
+       */
+      bool dwaComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
 
       /**
        * @brief  Set the plan that the controller is following
@@ -103,16 +116,11 @@ namespace dwa_local_planner {
         return initialized_;
       }
 
-      /**
-       * @brief  Given the current position, orientation, and velocity of the robot,
-       * compute velocity commands to send to the base, using dynamic window approach
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
-       */
-      bool dwaComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
-
     private:
-
+      /**
+       * @brief Callback to update the local planner's parameters based on dynamic reconfigure
+       */
+      void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
       void publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
@@ -124,6 +132,10 @@ namespace dwa_local_planner {
       ros::Publisher g_plan_pub_, l_plan_pub_;
 
       boost::shared_ptr<DWAPlanner> dp_;
+
+      dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
+      dwa_local_planner::DWAPlannerConfig default_config_;
+      bool setup_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 

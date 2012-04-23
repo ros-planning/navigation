@@ -41,7 +41,6 @@
 #include <Eigen/Core>
 
 
-#include <dynamic_reconfigure/server.h>
 #include <dwa_local_planner/DWAPlannerConfig.h>
 
 //for creating a local cost grid
@@ -82,9 +81,13 @@ namespace dwa_local_planner {
        */
       ~DWAPlanner() {}
 
+      /**
+       * @brief Reconfigures the trajectory planner
+       */
+      void reconfigure(DWAPlannerConfig &cfg);
 
       /**
-       * @brief  Check if a trajectory is legal for a position/velocity pari
+       * @brief  Check if a trajectory is legal for a position/velocity pair
        * @param pos The robot's position
        * @param vel The robot's velocity
        * @param vel_samples The desired velocity
@@ -111,7 +114,8 @@ namespace dwa_local_planner {
        * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
        * @param  new_plan The new global plan
        */
-      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose, const std::vector<geometry_msgs::PoseStamped>& new_plan);
+      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose,
+          const std::vector<geometry_msgs::PoseStamped>& new_plan);
 
       /**
        * @brief  Get the acceleration limits of the robot
@@ -140,10 +144,6 @@ namespace dwa_local_planner {
       base_local_planner::LocalPlannerUtil* getPlannerUtil();
 
     private:
-      /**
-       * @brief  Callback to update the local planner's parameters based on dynamic reconfigure
-       */
-      void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
       base_local_planner::LocalPlannerUtil planner_util_;
 
@@ -160,9 +160,6 @@ namespace dwa_local_planner {
 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
 
-      dynamic_reconfigure::Server<DWAPlannerConfig> dsrv_;
-      dwa_local_planner::DWAPlannerConfig default_config_;
-      bool setup_;
       boost::mutex configuration_mutex_;
       bool penalize_negative_x_;
       pcl::PointCloud<base_local_planner::MapGridCostPoint> traj_cloud_;

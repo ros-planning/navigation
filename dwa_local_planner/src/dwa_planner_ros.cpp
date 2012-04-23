@@ -52,6 +52,18 @@ PLUGINLIB_DECLARE_CLASS(dwa_local_planner, DWAPlannerROS, dwa_local_planner::DWA
 
 namespace dwa_local_planner {
 
+  void DWAPlannerROS::reconfigureCB(DWAPlannerConfig &config, uint32_t level) {
+      if (setup_ && config.restore_defaults) {
+        config = default_config_;
+        config.restore_defaults = false;
+      }
+      if ( ! setup_) {
+        default_config_ = config;
+        setup_ = true;
+      }
+      dp_->reconfigure(config);
+  }
+
   DWAPlannerROS::DWAPlannerROS() : initialized_(false),
       odom_helper_("odom") {
 
@@ -63,14 +75,18 @@ namespace dwa_local_planner {
       costmap_2d::Costmap2DROS* costmap_ros) {
     if (! isInitialized()) {
 
-      ros::NodeHandle pn("~/" + name);
-      g_plan_pub_ = pn.advertise<nav_msgs::Path>("global_plan", 1);
-      l_plan_pub_ = pn.advertise<nav_msgs::Path>("local_plan", 1);
+      ros::NodeHandle private_nh("~/" + name);
+      g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
+      l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, tf, costmap_ros));
 
       initialized_ = true;
+
+      dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
+      dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = boost::bind(&DWAPlannerROS::reconfigureCB, this, _1, _2);
+      dsrv_->setCallback(cb);
     }
     else{
       ROS_WARN("This planner has already been initialized, doing nothing.");
@@ -106,6 +122,12 @@ namespace dwa_local_planner {
   void DWAPlannerROS::publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
     base_local_planner::publishPlan(path, g_plan_pub_);
   }
+
+  DWAPlannerROS::~DWAPlannerROS(){
+    //make sure to clean things up
+    delete dsrv_;
+  }
+
 
 
   bool DWAPlannerROS::dwaComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, geometry_msgs::Twist& cmd_vel) {
