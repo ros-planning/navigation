@@ -36,6 +36,7 @@
 #ifndef __base_local_planner__LOCALPLANNERLIMITS_H__
 #define __base_local_planner__LOCALPLANNERLIMITS_H__
 
+#include <Eigen/Core>
 
 namespace base_local_planner
 {
@@ -108,6 +109,17 @@ public:
 
   ~LocalPlannerLimits() {}
 
+  /**
+   * @brief  Get the acceleration limits of the robot
+   * @return  The acceleration limits of the robot
+   */
+  Eigen::Vector3f getAccLimits() {
+    Eigen::Vector3f acc_limits;
+    acc_limits[0] = acc_lim_x;
+    acc_limits[1] = acc_lim_y;
+    acc_limits[2] = acc_lim_theta;
+    return acc_limits;
+  }
 
 };
 

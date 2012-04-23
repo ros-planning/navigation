@@ -143,15 +143,6 @@ namespace dwa_local_planner {
 
     planner_util_.initialize(tf, costmap_ros);
 
-    double acc_lim_x, acc_lim_y, acc_lim_th;
-    pn.param("acc_lim_x", acc_lim_x, 2.5);
-    pn.param("acc_lim_y", acc_lim_y, 2.5);
-    pn.param("acc_lim_th", acc_lim_th, 3.2);
-
-    acc_lim_[0] = acc_lim_x;
-    acc_lim_[1] = acc_lim_y;
-    acc_lim_[2] = acc_lim_th;
-
     //Assuming this planner is being run within the navigation stack, we can
     //just do an upward search for the frequency at which its being run. This
     //also allows the frequency to be overwritten locally.
@@ -304,7 +295,7 @@ namespace dwa_local_planner {
     base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
 
     // prepare cost functions and generator for this run
-    generator_.initialise(pos, vel, &limits, sim_period_, acc_lim_, vsamples_);
+    generator_.initialise(pos, vel, &limits, sim_period_, limits.getAccLimits(), vsamples_);
 
     // find best trajectory by sampling and scoring the samples
     scored_sampling_planner_.findBestTrajectory(result_traj_, NULL);

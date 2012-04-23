@@ -118,12 +118,6 @@ namespace dwa_local_planner {
           const std::vector<geometry_msgs::PoseStamped>& new_plan);
 
       /**
-       * @brief  Get the acceleration limits of the robot
-       * @return  The acceleration limits of the robot
-       */
-      Eigen::Vector3f getAccLimits() { return acc_lim_; }
-
-      /**
        * @brief Get the period at which the local planner is expected to run
        * @return The simulation period
        */
@@ -151,7 +145,7 @@ namespace dwa_local_planner {
       costmap_2d::Costmap2D costmap_;
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
       double pdist_scale_, gdist_scale_, occdist_scale_;
-      Eigen::Vector3f acc_lim_, vsamples_;
+      Eigen::Vector3f vsamples_;
 
       double sim_period_;///< @brief The number of seconds to use to compute max/min vels for dwa
       base_local_planner::Trajectory result_traj_;

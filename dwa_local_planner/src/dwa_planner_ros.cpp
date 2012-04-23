@@ -230,10 +230,10 @@ namespace dwa_local_planner {
       std::vector<geometry_msgs::PoseStamped> transformed_plan;
       publishGlobalPlan(transformed_plan);
       publishLocalPlan(local_plan);
-
+      base_local_planner::LocalPlannerLimits limits = dp_->getPlannerUtil()->getCurrentLimits();
       return latchedStopRotateController_.computeVelocityCommandsStopRotate(
           cmd_vel,
-          dp_->getAccLimits(),
+          limits.getAccLimits(),
           dp_->getSimPeriod(),
           dp_->getPlannerUtil(),
           odom_helper_,
