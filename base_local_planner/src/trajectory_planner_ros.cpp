@@ -71,10 +71,11 @@ namespace base_local_planner {
       tc_->reconfigure(config);
   }
 
-  TrajectoryPlannerROS::TrajectoryPlannerROS() : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {}
+  TrajectoryPlannerROS::TrajectoryPlannerROS() :
+      world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), setup_(false), initialized_(false), odom_helper_("odom") {}
 
-  TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros)
-    : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {
+  TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) :
+      world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), setup_(false), initialized_(false), odom_helper_("odom") {
 
       //initialize the planner
       initialize(name, tf, costmap_ros);
@@ -116,10 +117,6 @@ namespace base_local_planner {
 
       private_nh.param("yaw_goal_tolerance", yaw_goal_tolerance_, 0.05);
       private_nh.param("xy_goal_tolerance", xy_goal_tolerance_, 0.10);
-
-      //to get odometery information, we need to get a handle to the topic in the global namespace of the node
-      ros::NodeHandle global_node;
-      odom_sub_ = global_node.subscribe<nav_msgs::Odometry>("odom", 1, boost::bind(&TrajectoryPlannerROS::odomCallback, this, _1));
 
       //we'll get the parameters for the robot radius from the costmap we're associated with
       inflation_radius_ = costmap_ros_->getInflationRadius();
@@ -346,16 +343,6 @@ namespace base_local_planner {
 
   }
 
-  void TrajectoryPlannerROS::odomCallback(const nav_msgs::Odometry::ConstPtr& msg){
-    //we assume that the odometry is published in the frame of the base
-    boost::recursive_mutex::scoped_lock lock(odom_lock_);
-    base_odom_.twist.twist.linear.x = msg->twist.twist.linear.x;
-    base_odom_.twist.twist.linear.y = msg->twist.twist.linear.y;
-    base_odom_.twist.twist.angular.z = msg->twist.twist.angular.z;
-    ROS_DEBUG("In the odometry callback with velocity values: (%.2f, %.2f, %.2f)",
-        base_odom_.twist.twist.linear.x, base_odom_.twist.twist.linear.y, base_odom_.twist.twist.angular.z);
-  }
-
   bool TrajectoryPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan){
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
@@ -402,22 +389,11 @@ namespace base_local_planner {
     //make sure to update the costmap we'll use for this cycle
     costmap_ros_->getCostmapCopy(costmap_);
 
-    // Set current velocities from odometry
-    geometry_msgs::Twist global_vel;
-
-    odom_lock_.lock();
-    global_vel.linear.x = base_odom_.twist.twist.linear.x;
-    global_vel.linear.y = base_odom_.twist.twist.linear.y;
-    global_vel.angular.z = base_odom_.twist.twist.angular.z;
-    odom_lock_.unlock();
-
     tf::Stamped<tf::Pose> drive_cmds;
     drive_cmds.frame_id_ = robot_base_frame_;
 
     tf::Stamped<tf::Pose> robot_vel;
-    robot_vel.setData(tf::Transform(tf::createQuaternionFromYaw(global_vel.angular.z), tf::Vector3(global_vel.linear.x, global_vel.linear.y, 0)));
-    robot_vel.frame_id_ = robot_base_frame_;
-    robot_vel.stamp_ = ros::Time();
+    odom_helper_.getRobotVel(robot_vel);
 
     /* For timing uncomment
     struct timeval start, end;
@@ -466,10 +442,7 @@ namespace base_local_planner {
 
         //copy over the odometry information
         nav_msgs::Odometry base_odom;
-        {
-          boost::recursive_mutex::scoped_lock lock(odom_lock_);
-          base_odom = base_odom_;
-        }
+        odom_helper_.getOdom(base_odom);
 
         //if we're not stopped yet... we want to stop... taking into account the acceleration limits of the robot
         if ( ! rotating_to_goal_ && !base_local_planner::stopped(base_odom, rot_stopped_velocity_, trans_stopped_velocity_)) {
@@ -557,10 +530,7 @@ namespace base_local_planner {
 
     //copy over the odometry information
     nav_msgs::Odometry base_odom;
-    {
-      boost::recursive_mutex::scoped_lock lock(odom_lock_);
-      base_odom = base_odom_;
-    }
+    odom_helper_.getOdom(base_odom);
 
     return base_local_planner::isGoalReached(*tf_, global_plan_, *costmap_ros_, global_frame_, base_odom, 
         rot_stopped_velocity_, trans_stopped_velocity_, xy_goal_tolerance_, yaw_goal_tolerance_);
