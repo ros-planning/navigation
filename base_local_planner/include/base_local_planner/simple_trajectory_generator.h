@@ -63,15 +63,29 @@ public:
    * @param vel current robot velocity
    * @param limits Current velocity limits
    * @param sim_period distance between points in one trajectory
-   * @param acc_lim acceleration limits (TODO: use from limits)
+   * @param vsamples: in how many samples to divide the given dimension
+   * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from.
+   */
+  void initialise(
+      const Eigen::Vector3f& pos,
+      const Eigen::Vector3f& vel,
+      base_local_planner::LocalPlannerLimits* limits,
+      const double sim_period,
+      const Eigen::Vector3f& vsamples,
+      std::vector<Eigen::Vector3f> additional_samples);
+
+  /**
+   * @param pos current robot position
+   * @param vel current robot velocity
+   * @param limits Current velocity limits
+   * @param sim_period distance between points in one trajectory
    * @param vsamples: in how many samples to divide the given dimension
    */
   void initialise(
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
-      const base_local_planner::LocalPlannerLimits* limits,
+      base_local_planner::LocalPlannerLimits* limits,
       const double sim_period,
-      const Eigen::Vector3f& acc_lim,
       const Eigen::Vector3f& vsamples);
 
   void setParameters(double sim_time, double sim_granularity, double angular_sim_granularity);
@@ -93,7 +107,6 @@ public:
   bool generateTrajectory(
         Eigen::Vector3f pos,
         Eigen::Vector3f& vel,
-        const base_local_planner::LocalPlannerLimits* limits,
         base_local_planner::Trajectory& traj);
 
 protected:
@@ -101,8 +114,7 @@ protected:
   unsigned int next_sample_index_;
   // to store sample params of each sample between init and generation
   std::vector<Eigen::Vector3f> sample_params_;
-
-  const base_local_planner::LocalPlannerLimits* limits_;
+  base_local_planner::LocalPlannerLimits* limits_;
   Eigen::Vector3f pos_;
 
   double sim_time_, sim_granularity_, angular_sim_granularity_;
