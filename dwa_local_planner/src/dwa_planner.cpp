@@ -104,8 +104,6 @@ namespace dwa_local_planner {
     vsamples_[1] = vy_samp;
     vsamples_[2] = vth_samp;
  
-    penalize_negative_x_ = config.penalize_negative_x;
-
     base_local_planner::LocalPlannerLimits limits;
     limits.max_trans_vel = config.max_trans_vel;
     limits.min_trans_vel = config.min_trans_vel;
@@ -131,7 +129,6 @@ namespace dwa_local_planner {
   }
 
   DWAPlanner::DWAPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) :
-      penalize_negative_x_(true),
       obstacle_costs_(costmap_ros),
       prefer_forward_costs_(0.0),
       path_costs_(costmap_ros),
