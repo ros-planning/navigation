@@ -64,6 +64,7 @@ public:
    * @param limits Current velocity limits
    * @param sim_period distance between points in one trajectory
    * @param vsamples: in how many samples to divide the given dimension
+   * @param use_acceleration_limits: if true use physical model, else idealized robot model
    * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from.
    */
   void initialise(
@@ -72,6 +73,7 @@ public:
       base_local_planner::LocalPlannerLimits* limits,
       const double sim_period,
       const Eigen::Vector3f& vsamples,
+      bool use_acceleration_limits,
       std::vector<Eigen::Vector3f> additional_samples);
 
   /**
@@ -80,13 +82,15 @@ public:
    * @param limits Current velocity limits
    * @param sim_period distance between points in one trajectory
    * @param vsamples: in how many samples to divide the given dimension
+   * @param use_acceleration_limits: if true use physical model, else idealized robot model
    */
   void initialise(
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
       base_local_planner::LocalPlannerLimits* limits,
       const double sim_period,
-      const Eigen::Vector3f& vsamples);
+      const Eigen::Vector3f& vsamples,
+      bool use_acceleration_limits);
 
   void setParameters(double sim_time, double sim_granularity, double angular_sim_granularity);
 
@@ -104,9 +108,12 @@ public:
   static Eigen::Vector3f computeNewPositions(const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel, double dt);
 
+  Eigen::Vector3f computeNewVelocities(const Eigen::Vector3f& sample_target_vel, const Eigen::Vector3f& vel, double dt);
+
   bool generateTrajectory(
         Eigen::Vector3f pos,
-        Eigen::Vector3f& vel,
+        Eigen::Vector3f vel,
+        Eigen::Vector3f sample_target_vel,
         base_local_planner::Trajectory& traj);
 
 protected:
@@ -116,6 +123,10 @@ protected:
   std::vector<Eigen::Vector3f> sample_params_;
   base_local_planner::LocalPlannerLimits* limits_;
   Eigen::Vector3f pos_;
+  Eigen::Vector3f vel_;
+
+  // whether velocity of trajectory changes over time or not
+  bool use_acceleration_limits_;
 
   double sim_time_, sim_granularity_, angular_sim_granularity_;
 };
