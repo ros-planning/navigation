@@ -138,47 +138,6 @@ namespace dwa_local_planner {
     planner_util_.reconfigureCB(limits, config.restore_defaults);
   }
 
-  // used for visualization only, total_costs are not really total costs
-  bool DWAPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
-
-    path_cost = path_costs_.getCellCosts(cx, cy);
-    goal_cost = goal_costs_.getCellCosts(cx, cy);
-    occ_cost = costmap_.getCost(cx, cy);
-    if (path_cost == path_costs_.obstacleCosts() ||
-        path_cost == path_costs_.unreachableCellCosts() ||
-        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-      return false;
-    }
-
-    double resolution = costmap_.getResolution();
-    total_cost =
-        pdist_scale_ * resolution * path_cost +
-        gdist_scale_ * resolution * goal_cost +
-        occdist_scale_ * occ_cost;
-    return true;
-  }
-
-  base_local_planner::LocalPlannerUtil* DWAPlanner::getPlannerUtil() {
-    return &planner_util_;
-  }
-
-  bool DWAPlanner::checkTrajectory(Eigen::Vector3f pos,
-      Eigen::Vector3f vel){
-    oscillation_costs_.resetOscillationFlags();
-    base_local_planner::Trajectory traj;
-    const base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
-    generator_.generateTrajectory(pos, vel, &limits, traj);
-    double cost = scored_sampling_planner_.scoreTrajectory(traj);
-    //if the trajectory is a legal one... the check passes
-    if(cost >= 0) {
-      return true;
-    }
-    ROS_WARN("Invalid Trajectory %f, %f, %f, cost: %f", vel[0], vel[1], vel[2], cost);
-
-    //otherwise the check fails
-    return false;
-  }
-
   DWAPlanner::DWAPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) :
       dsrv_(ros::NodeHandle("~/" + name)),
       setup_(false),
@@ -251,8 +210,57 @@ namespace dwa_local_planner {
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(&generator_, critics);
   }
 
+  // used for visualization only, total_costs are not really total costs
+  bool DWAPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
 
-  void DWAPlanner::updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose, const std::vector<geometry_msgs::PoseStamped>& new_plan){
+    path_cost = path_costs_.getCellCosts(cx, cy);
+    goal_cost = goal_costs_.getCellCosts(cx, cy);
+    occ_cost = costmap_.getCost(cx, cy);
+    if (path_cost == path_costs_.obstacleCosts() ||
+        path_cost == path_costs_.unreachableCellCosts() ||
+        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+      return false;
+    }
+
+    double resolution = costmap_.getResolution();
+    total_cost =
+        pdist_scale_ * resolution * path_cost +
+        gdist_scale_ * resolution * goal_cost +
+        occdist_scale_ * occ_cost;
+    return true;
+  }
+
+  base_local_planner::LocalPlannerUtil* DWAPlanner::getPlannerUtil() {
+    return &planner_util_;
+  }
+
+  /**
+   * This function is used when other strategies are to be applied,
+   * but the cost functions for obstacles are to be reused.
+   */
+  bool DWAPlanner::checkTrajectory(
+      Eigen::Vector3f pos,
+      Eigen::Vector3f vel, // not used for this local planner
+      Eigen::Vector3f vel_samples){
+    oscillation_costs_.resetOscillationFlags();
+    base_local_planner::Trajectory traj;
+    const base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+    generator_.generateTrajectory(pos, vel_samples, &limits, traj);
+    double cost = scored_sampling_planner_.scoreTrajectory(traj);
+    //if the trajectory is a legal one... the check passes
+    if(cost >= 0) {
+      return true;
+    }
+    ROS_WARN("Invalid Trajectory %f, %f, %f, cost: %f", vel_samples[0], vel_samples[1], vel_samples[2], cost);
+
+    //otherwise the check fails
+    return false;
+  }
+
+
+  void DWAPlanner::updatePlanAndLocalCosts(
+      tf::Stamped<tf::Pose> global_pose,
+      const std::vector<geometry_msgs::PoseStamped>& new_plan) {
     global_plan_.resize(new_plan.size());
     for (unsigned int i = 0; i < new_plan.size(); ++i) {
       global_plan_[i] = new_plan[i];
@@ -286,7 +294,10 @@ namespace dwa_local_planner {
     }
   }
 
-  //given the current state of the robot, find a good trajectory
+
+  /*
+   * given the current state of the robot, find a good trajectory
+   */
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       tf::Stamped<tf::Pose> global_pose,
       tf::Stamped<tf::Pose> global_vel,

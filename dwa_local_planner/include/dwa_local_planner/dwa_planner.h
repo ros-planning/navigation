@@ -40,9 +40,6 @@
 #include <vector>
 #include <Eigen/Core>
 
-#include <base_local_planner/trajectory.h>
-#include <base_local_planner/local_planner_limits.h>
-
 
 #include <dynamic_reconfigure/server.h>
 #include <dwa_local_planner/DWAPlannerConfig.h>
@@ -55,6 +52,8 @@
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_ros.h>
 
+#include <base_local_planner/trajectory.h>
+#include <base_local_planner/local_planner_limits.h>
 #include <base_local_planner/local_planner_util.h>
 #include <base_local_planner/simple_trajectory_generator.h>
 
@@ -86,13 +85,15 @@ namespace dwa_local_planner {
 
       /**
        * @brief  Check if a trajectory is legal for a position/velocity pari
-       * @param pos The robot's position 
-       * @param vel The desired velocity
+       * @param pos The robot's position
+       * @param vel The robot's velocity
+       * @param vel_samples The desired velocity
        * @return True if the trajectory is valid, false otherwise
        */
       bool checkTrajectory(
           const Eigen::Vector3f pos,
-          const Eigen::Vector3f vel);
+          const Eigen::Vector3f vel,
+          const Eigen::Vector3f vel_samples);
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
@@ -148,11 +149,11 @@ namespace dwa_local_planner {
 
       const costmap_2d::Costmap2DROS* costmap_ros_;
       costmap_2d::Costmap2D costmap_;
-      double stop_time_buffer_;
+      double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
       double pdist_scale_, gdist_scale_, occdist_scale_;
       Eigen::Vector3f acc_lim_, vsamples_;
 
-      double sim_period_;
+      double sim_period_;///< @brief The number of seconds to use to compute max/min vels for dwa
       base_local_planner::Trajectory result_traj_;
 
       double forward_point_distance_;

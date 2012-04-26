@@ -61,7 +61,7 @@ namespace dwa_local_planner {
       std::string name,
       tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
-    if(! isInitialized()) {
+    if (! isInitialized()) {
 
       ros::NodeHandle pn("~/" + name);
       g_plan_pub_ = pn.advertise<nav_msgs::Path>("global_plan", 1);
@@ -78,6 +78,10 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
+    if (! isInitialized()) {
+      ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+      return false;
+    }
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
     latchedStopRotateController_.resetLatching();
 
@@ -211,7 +215,7 @@ namespace dwa_local_planner {
           dp_->getSimPeriod(),
           dp_->getPlannerUtil(),
           odom_helper_,
-          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2));
+          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
     } else {
       bool isOk =  dwaComputeVelocityCommands(global_pose, cmd_vel);
       if (isOk) {

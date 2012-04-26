@@ -63,14 +63,41 @@ namespace dwa_local_planner {
        */
       DWAPlannerROS();
 
+      /**
+       * @brief  Constructs the ros wrapper
+       * @param name The name to give this instance of the trajectory planner
+       * @param tf A pointer to a transform listener
+       * @param costmap The cost map to use for assigning costs to trajectories
+       */
       void initialize(std::string name, tf::TransformListener* tf,
-            costmap_2d::Costmap2DROS* costmap_ros);
+          costmap_2d::Costmap2DROS* costmap_ros);
 
+      /**
+       * @brief  Destructor for the wrapper
+       */
+      ~DWAPlannerROS();
+
+      /**
+       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @return True if a valid trajectory was found, false otherwise
+       */
+      bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+
+      /**
+       * @brief  Set the plan that the controller is following
+       * @param orig_global_plan The plan to pass to the controller
+       * @return True if the plan was updated successfully, false otherwise
+       */
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
+      /**
+       * @brief  Check if the goal pose has been achieved
+       * @return True if achieved, false otherwise
+       */
       bool isGoalReached();
 
-      bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+
 
       bool isInitialized() {
         return initialized_;
