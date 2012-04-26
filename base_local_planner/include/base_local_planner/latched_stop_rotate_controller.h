@@ -45,7 +45,8 @@ public:
       Eigen::Vector3f acc_lim,
       double sim_period,
       boost::function<bool (Eigen::Vector3f pos,
-                            Eigen::Vector3f vel)> obstacle_check);
+                            Eigen::Vector3f vel,
+                            Eigen::Vector3f vel_samples)> obstacle_check);
 
   /**
    * @brief Once a goal position is reached... rotate to the goal orientation
@@ -63,7 +64,8 @@ public:
       double sim_period,
       base_local_planner::LocalPlannerLimits& limits,
       boost::function<bool (Eigen::Vector3f pos,
-                            Eigen::Vector3f vel)> obstacle_check);
+                            Eigen::Vector3f vel,
+                            Eigen::Vector3f vel_samples)> obstacle_check);
 
   bool computeVelocityCommandsStopRotate(geometry_msgs::Twist& cmd_vel,
       Eigen::Vector3f acc_lim,
@@ -71,7 +73,8 @@ public:
       LocalPlannerUtil* planner_util,
       OdometryHelperRos& odom_helper,
       boost::function<bool (Eigen::Vector3f pos,
-                            Eigen::Vector3f vel)> obstacle_check);
+                            Eigen::Vector3f vel,
+                            Eigen::Vector3f vel_samples)> obstacle_check);
 
 private:
   inline double sign(double x){
