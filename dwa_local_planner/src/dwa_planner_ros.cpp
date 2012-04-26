@@ -205,7 +205,7 @@ namespace dwa_local_planner {
 
 
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
-    // dispatches to either dwa samplig control or stop and rotate control, depending on whether we have been close enough to goal
+    // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
     tf::Stamped<tf::Pose> global_pose;
     if ( ! dp_->getPlannerUtil()->getRobotPose(global_pose)) {
       ROS_ERROR("Could not get robot pose");
@@ -218,6 +218,7 @@ namespace dwa_local_planner {
 
     //if the global plan passed in is empty... we won't do anything
     if(transformed_plan.empty()) {
+      ROS_WARN_NAMED("base_local_planner", "Received an empty transformed plan.");
       return false;
     }
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
@@ -243,8 +244,8 @@ namespace dwa_local_planner {
       if (isOk) {
         publishGlobalPlan(transformed_plan);
       } else {
-        std::vector<geometry_msgs::PoseStamped> transformed_plan;
-        publishGlobalPlan(transformed_plan);
+        std::vector<geometry_msgs::PoseStamped> empty_plan;
+        publishGlobalPlan(empty_plan);
       }
       return isOk;
     }

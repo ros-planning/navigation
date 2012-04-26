@@ -36,10 +36,11 @@
 *********************************************************************/
 #ifndef DWA_LOCAL_PLANNER_DWA_PLANNER_ROS_H_
 #define DWA_LOCAL_PLANNER_DWA_PLANNER_ROS_H_
-#include <dwa_local_planner/dwa_planner.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+
+#include <tf/transform_listener.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <dwa_local_planner/DWAPlannerConfig.h>
@@ -48,10 +49,14 @@
 
 #include <nav_msgs/Odometry.h>
 
+#include <costmap_2d/costmap_2d_ros.h>
+
 #include <nav_core/base_local_planner.h>
 #include <base_local_planner/latched_stop_rotate_controller.h>
 
 #include <base_local_planner/odometry_helper_ros.h>
+
+#include <dwa_local_planner/dwa_planner.h>
 
 namespace dwa_local_planner {
   /**
@@ -126,12 +131,10 @@ namespace dwa_local_planner {
 
       void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
-      void updateDataPassive(tf::Stamped<tf::Pose>& global_pose);
-
       // for visualisation, publishers of global and local plan
       ros::Publisher g_plan_pub_, l_plan_pub_;
 
-      boost::shared_ptr<DWAPlanner> dp_;
+      boost::shared_ptr<DWAPlanner> dp_; ///< @brief The trajectory controller
 
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;

@@ -139,7 +139,7 @@ namespace dwa_local_planner {
     costmap_ros_ = costmap_ros;
     costmap_ros_->getCostmapCopy(costmap_);
 
-    ros::NodeHandle pn("~/" + name);
+    ros::NodeHandle private_nh("~/" + name);
 
     planner_util_.initialize(tf, costmap_ros);
 
@@ -147,11 +147,11 @@ namespace dwa_local_planner {
     //just do an upward search for the frequency at which its being run. This
     //also allows the frequency to be overwritten locally.
     std::string controller_frequency_param_name;
-    if(!pn.searchParam("controller_frequency", controller_frequency_param_name)) {
+    if(!private_nh.searchParam("controller_frequency", controller_frequency_param_name)) {
       sim_period_ = 0.05;
     } else {
       double controller_frequency = 0;
-      pn.param(controller_frequency_param_name, controller_frequency, 20.0);
+      private_nh.param(controller_frequency_param_name, controller_frequency, 20.0);
       if(controller_frequency > 0) {
         sim_period_ = 1.0 / controller_frequency;
       } else {
@@ -164,14 +164,14 @@ namespace dwa_local_planner {
 
     oscillation_costs_.resetOscillationFlags();
 
-    pn.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
+    private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
     map_viz_.initialize(name, boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
 
     std::string frame_id;
-    pn.param("global_frame_id", frame_id, std::string("odom"));
+    private_nh.param("global_frame_id", frame_id, std::string("odom"));
 
     traj_cloud_.header.frame_id = frame_id;
-    traj_cloud_pub_.advertise(pn, "trajectory_cloud", 1);
+    traj_cloud_pub_.advertise(private_nh, "trajectory_cloud", 1);
 
     // set up all the cost functions that will be applied in order (any returning negative values will abort scoring)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
