@@ -133,43 +133,81 @@ namespace base_local_planner{
     }
   }
 
+  void MapGrid::adjustPlanResolution(const std::vector<geometry_msgs::PoseStamped>& global_plan_in,
+      std::vector<geometry_msgs::PoseStamped>& global_plan_out, double resolution) {
+    double last_x = global_plan_in[0].pose.position.x;
+    double last_y = global_plan_in[0].pose.position.y;
+    global_plan_out.push_back(global_plan_in[0]);
+
+    // we can take "holes" in the plan smaller than 2 grid cells (squared = 4)
+    double min_sq_resolution = resolution * resolution * 4;
+
+    for (unsigned int i = 1; i < global_plan_in.size(); ++i) {
+      double loop_x = global_plan_in[i].pose.position.x;
+      double loop_y = global_plan_in[i].pose.position.y;
+      double sqdist = (loop_x - last_x) * (loop_x - last_x) + (loop_y - last_y) * (loop_y - last_y);
+      if (sqdist > min_sq_resolution) {
+        int steps = (sqrt(sqdist) - sqrt(min_sq_resolution)) / resolution;
+        // add a points in-between
+        double deltax = (loop_x - last_x) / steps;
+        double deltay = (loop_y - last_y) / steps;
+        // TODO: Interpolate orientation
+        for (int j = 1; j < steps; ++j) {
+          geometry_msgs::PoseStamped pose;
+          pose.pose.position.x = loop_x + j * deltax;
+          pose.pose.position.y = loop_y + j * deltay;
+          pose.pose.position.z = global_plan_in[i].pose.position.z;
+          pose.pose.orientation = global_plan_in[i].pose.orientation;
+          pose.header = global_plan_in[i].header;
+          global_plan_out.push_back(pose);
+        }
+      }
+      global_plan_out.push_back(global_plan_in[i]);
+      last_x = loop_x;
+      last_y = loop_y;
+    }
+  }
+
   //update what map cells are considered path based on the global_plan
   void MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
       const std::vector<geometry_msgs::PoseStamped>& global_plan) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 
-    int local_goal_x = -1;
-    int local_goal_y = -1;
     bool started_path = false;
 
     queue<MapCell*> path_dist_queue;
 
+    std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
+    adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
+    if (adjusted_global_plan.size() != global_plan.size()) {
+      ROS_DEBUG("Adjusted global plan resolution, added %zu points", adjusted_global_plan.size() - global_plan.size());
+    }
+    unsigned int i;
     // put global path points into local map until we reach the border of the local map
-    for (unsigned int i = 0; i < global_plan.size(); ++i) {
-      double g_x = global_plan[i].pose.position.x;
-      double g_y = global_plan[i].pose.position.y;
+    for (i = 0; i < adjusted_global_plan.size(); ++i) {
+      double g_x = adjusted_global_plan[i].pose.position.x;
+      double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
         MapCell& current = getCell(map_x, map_y);
         current.target_dist = 0.0;
         current.target_mark = true;
         path_dist_queue.push(&current);
-        local_goal_x = map_x;
-        local_goal_y = map_y;
         started_path = true;
       } else if (started_path) {
           break;
       }
     }
     if (!started_path) {
-      ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");
+      ROS_ERROR("None of the %d first of %zu (%zu) points of the global plan were in the local costmap and free",
+          i, adjusted_global_plan.size(), global_plan.size());
       return;
     }
 
     computeTargetDistance(path_dist_queue, costmap);
   }
 
-  //update what map cells are considered path based on the global_plan
+  //mark the point of the costmap as local goal where global_plan first leaves the area (or its last point)
   void MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
       const std::vector<geometry_msgs::PoseStamped>& global_plan) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
@@ -178,19 +216,22 @@ namespace base_local_planner{
     int local_goal_y = -1;
     bool started_path = false;
 
-    queue<MapCell*> path_dist_queue;
+    std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
+    adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
 
-    // put global path points into local map until we reach the border of the local map
-    for (unsigned int i = 0; i < global_plan.size(); ++i) {
-      double g_x = global_plan[i].pose.position.x;
-      double g_y = global_plan[i].pose.position.y;
+    // skip global path points until we reach the border of the local map
+    for (unsigned int i = 0; i < adjusted_global_plan.size(); ++i) {
+      double g_x = adjusted_global_plan[i].pose.position.x;
+      double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
-      } else if (started_path) {
+      } else {
+        if (started_path) {
           break;
+        }// else we might have a non pruned path, so we just continue
       }
     }
     if (!started_path) {
@@ -198,6 +239,7 @@ namespace base_local_planner{
       return;
     }
 
+    queue<MapCell*> path_dist_queue;
     if (local_goal_x >= 0 && local_goal_y >= 0) {
       MapCell& current = getCell(local_goal_x, local_goal_y);
       costmap.mapToWorld(local_goal_x, local_goal_y, goal_x_, goal_y_);

@@ -154,6 +154,16 @@ namespace base_local_planner{
           std::queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap);
 
       /**
+       * increase global plan resolution to match that of the costmap by adding points linearly between global plan points
+       * This is necessary where global planners produce plans with few points.
+       * @param global_plan_in input
+       * @param global_plan_output output
+       * @param resolution desired distance between waypoints
+       */
+      static void adjustPlanResolution(const std::vector<geometry_msgs::PoseStamped>& global_plan_in,
+            std::vector<geometry_msgs::PoseStamped>& global_plan_out, double resolution);
+
+      /**
        * @brief  Compute the distance from each cell in the local map grid to the planned path
        * @param dist_queue A queue of the initial cells on the path 
        */
