@@ -53,7 +53,7 @@ namespace dwa_local_planner {
     if(! isInitialized()) {
       AbstractMoveToRotateLocalPlanner::initialize(name, tf, costmap_ros);
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
-      dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(getName(), getCostmapRos()));
+      dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(planner_util_.getName(), planner_util_.getCostmapRos()));
 
     }
     else{
@@ -77,7 +77,7 @@ namespace dwa_local_planner {
     double yaw = tf::getYaw(global_pose.getRotation());
     bool valid_cmd = dp_->checkTrajectory(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
                                           Eigen::Vector3f(vx, vy, vth),
-                                          getCurrentLimits());
+                                          planner_util_.getCurrentLimits());
 
     //if we have a valid command, we'll pass it on, otherwise we'll command all zeros
     if(valid_cmd){
@@ -105,7 +105,7 @@ namespace dwa_local_planner {
     cmd_vel.linear.y = 0;
     double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
     double v_theta_samp = 0;
-    base_local_planner::LocalPlannerLimitsConfig limits = getCurrentLimits();
+    base_local_planner::LocalPlannerLimitsConfig limits = planner_util_.getCurrentLimits();
 
     v_theta_samp = std::min(limits.max_rot_vel, std::max(limits.min_rot_vel, fabs(ang_diff)));
 
@@ -144,22 +144,22 @@ namespace dwa_local_planner {
 
   void DWAPlannerROS::updateDataPassive(tf::Stamped<tf::Pose>& global_pose) {
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    if ( ! getLocalPlan(global_pose, transformed_plan)) {
+    if ( ! planner_util_.getLocalPlan(global_pose, transformed_plan)) {
       return;
     }
     tf::Stamped<tf::Pose> robot_vel;
-    getRobotVel(robot_vel);
+    odom_helper_.getRobotVel(robot_vel);
 
     //if the global plan passed in is empty... we won't do anything
     if(transformed_plan.empty()) {
       return;
     }
     tf::Stamped<tf::Pose> drive_cmds;
-    drive_cmds.frame_id_ = getCostmapRos()->getBaseFrameID();
+    drive_cmds.frame_id_ = planner_util_.getCostmapRos()->getBaseFrameID();
     //we need to call the next two lines to make sure that the dwa
     //planner updates its path distance and goal distance grids
     dp_->updatePlan(transformed_plan);
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, getCurrentLimits());
+    dp_->findBestPath(global_pose, robot_vel, drive_cmds, planner_util_.getCurrentLimits());
   }
 
   bool DWAPlannerROS::doComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, geometry_msgs::Twist& cmd_vel) {
@@ -169,10 +169,10 @@ namespace dwa_local_planner {
     }
 
     tf::Stamped<tf::Pose> robot_vel;
-    getRobotVel(robot_vel);
+    odom_helper_.getRobotVel(robot_vel);
 
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    if ( ! getLocalPlan(global_pose, transformed_plan)) {
+    if ( ! planner_util_.getLocalPlan(global_pose, transformed_plan)) {
       return false;
     }
 
@@ -184,11 +184,11 @@ namespace dwa_local_planner {
     dp_->updatePlan(transformed_plan);
 
     //we also want to clear the robot footprint from the costmap we're using
-    getCostmapRos()->clearRobotFootprint();
+    planner_util_.getCostmapRos()->clearRobotFootprint();
 
 
     tf::Stamped<tf::Pose> drive_cmds;
-    drive_cmds.frame_id_ = getCostmapRos()->getBaseFrameID();
+    drive_cmds.frame_id_ = planner_util_.getCostmapRos()->getBaseFrameID();
 
     /* For timing uncomment
     struct timeval start, end;
@@ -199,7 +199,7 @@ namespace dwa_local_planner {
 
 
     //compute what trajectory to drive along
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, getCurrentLimits());
+    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, planner_util_.getCurrentLimits());
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment
@@ -221,8 +221,8 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner", 
           "The dwa local planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
       local_plan.clear();
-      publishGlobalPlan(transformed_plan);
-      publishLocalPlan(local_plan);
+      planner_util_.publishGlobalPlan(transformed_plan);
+      planner_util_.publishLocalPlan(local_plan);
       return false;
     }
 
@@ -239,15 +239,15 @@ namespace dwa_local_planner {
     				  tf::createQuaternionFromYaw(p_th),
     				  tf::Point(p_x, p_y, 0.0)),
     				  ros::Time::now(),
-    				  getCostmapRos()->getGlobalFrameID());
+    				  planner_util_.getCostmapRos()->getGlobalFrameID());
       geometry_msgs::PoseStamped pose;
       tf::poseStampedTFToMsg(p, pose);
       local_plan.push_back(pose);
     }
 
     //publish information to the visualizer
-    publishGlobalPlan(transformed_plan);
-    publishLocalPlan(local_plan);
+    planner_util_.publishGlobalPlan(transformed_plan);
+    planner_util_.publishLocalPlan(local_plan);
     return true;
   }
 

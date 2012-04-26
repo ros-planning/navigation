@@ -16,8 +16,19 @@ find_package(Eigen)
 include_directories(${EIGEN_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
-rosbuild_add_library(base_local_planner src/goal_functions.cpp src/map_cell.cpp src/map_grid.cpp src/point_grid.cpp src/costmap_model.cpp src/voxel_grid_model.cpp src/trajectory_planner.cpp 
-    src/trajectory.cpp src/trajectory_planner_ros.cpp src/map_grid_visualizer.cpp)
+rosbuild_add_library(base_local_planner
+ src/goal_functions.cpp
+ src/map_cell.cpp
+ src/map_grid.cpp
+ src/local_planner_util.cpp
+ src/odometry_helper_ros.cpp
+ src/point_grid.cpp
+ src/costmap_model.cpp
+ src/voxel_grid_model.cpp
+ src/trajectory_planner.cpp 
+ src/trajectory.cpp
+ src/trajectory_planner_ros.cpp
+ src/map_grid_visualizer.cpp)
 rosbuild_link_boost(base_local_planner thread)
 
 rosbuild_find_ros_package(dynamic_reconfigure)
