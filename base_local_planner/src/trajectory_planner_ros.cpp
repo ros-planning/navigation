@@ -168,19 +168,25 @@ namespace base_local_planner {
 
       private_nh.param("path_distance_bias", pdist_scale, 0.6);
       private_nh.param("goal_distance_bias", gdist_scale, 0.8);
+      private_nh.param("occdist_scale", occdist_scale, 0.01);
 
       bool meter_scoring;
-      private_nh.param("meter_scoring", meter_scoring, false);
+      if ( ! private_nh.hasParam("meter_scoring")) {
+        ROS_WARN("Trajectory Rollout planner initialized with param meter_scoring not set. Set it to true to make your settins robust against changes of costmap resolution.");
+      } else {
+        private_nh.param("meter_scoring", meter_scoring, false);
 
-      if(meter_scoring)
-      {
-        //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
-        double resolution = costmap_ros_->getResolution();
-        gdist_scale *= resolution;
-        pdist_scale *= resolution;
+        if(meter_scoring) {
+          //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
+          double resolution = costmap_ros_->getResolution();
+          gdist_scale *= resolution;
+          pdist_scale *= resolution;
+          occdist_scale *= resolution;
+        } else {
+          ROS_WARN("Trajectory Rollout planner initialized with param meter_scoring set to false. Set it to true to make your settins robust against changes of costmap resolution.");
+        }
       }
 
-      private_nh.param("occdist_scale", occdist_scale, 0.01);
       private_nh.param("heading_lookahead", heading_lookahead, 0.325);
       private_nh.param("oscillation_reset_dist", oscillation_reset_dist, 0.05);
       private_nh.param("escape_reset_dist", escape_reset_dist, 0.10);
@@ -227,7 +233,7 @@ namespace base_local_planner {
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
-          dwa, heading_scoring, heading_scoring_timestep, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
+          dwa, heading_scoring, heading_scoring_timestep, meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
 
       map_viz_.initialize(name, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;

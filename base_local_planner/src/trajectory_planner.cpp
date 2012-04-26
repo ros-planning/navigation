@@ -80,6 +80,14 @@ namespace base_local_planner{
       gdist_scale_ = config.gdist_scale;
       occdist_scale_ = config.occdist_scale;
 
+      if (meter_scoring_) {
+        //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
+        double resolution = costmap_.getResolution();
+        gdist_scale_ *= resolution;
+        pdist_scale_ *= resolution;
+        occdist_scale_ *= resolution;
+      }
+
       oscillation_reset_dist_ = config.oscillation_reset_dist;
       escape_reset_dist_ = config.escape_reset_dist;
       escape_reset_theta_ = config.escape_reset_theta;
@@ -142,7 +150,7 @@ namespace base_local_planner{
       double max_vel_x, double min_vel_x,
       double max_vel_th, double min_vel_th, double min_in_place_vel_th,
       double backup_vel,
-      bool dwa, bool heading_scoring, double heading_scoring_timestep, bool simple_attractor,
+      bool dwa, bool heading_scoring, double heading_scoring_timestep, bool meter_scoring, bool simple_attractor,
       vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
     : path_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
       goal_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),

@@ -98,6 +98,7 @@ namespace base_local_planner {
        * @param dwa Set this to true to use the Dynamic Window Approach, false to use acceleration limits
        * @param heading_scoring Set this to true to score trajectories based on the robot's heading after 1 timestep
        * @param heading_scoring_timestep How far to look ahead in time when we score heading based trajectories
+       * @param meter_scoring adapt parameters to costmap resolution
        * @param simple_attractor Set this to true to allow simple attraction to a goal point instead of intelligent cost propagation
        * @param y_vels A vector of the y velocities the controller will explore
        * @param angular_sim_granularity The distance between simulation points for angular velocity should be small enough that the robot doesn't hit things
@@ -116,6 +117,7 @@ namespace base_local_planner {
           double max_vel_th = 1.0, double min_vel_th = -1.0, double min_in_place_vel_th = 0.4,
           double backup_vel = -0.1,
           bool dwa = false, bool heading_scoring = false, double heading_scoring_timestep = 0.1,
+          bool meter_scoring = true,
           bool simple_attractor = false,
           std::vector<double> y_vels = std::vector<double>(0),
           double stop_time_buffer = 0.2,
@@ -287,6 +289,7 @@ namespace base_local_planner {
       bool strafe_right, strafe_left; ///< @brief Booleans to keep track of strafe direction for the robot
 
       bool escaping_; ///< @brief Boolean to keep track of whether we're in escape mode
+      bool meter_scoring_;
 
       double goal_x_,goal_y_; ///< @brief Storage for the local goal the robot is pursuing
 
