@@ -59,13 +59,11 @@ namespace base_local_planner {
         //Avoid looping
         config.restore_defaults = false;
       }
-      if(!setup_) {
+      if ( ! setup_) {
         default_config_ = config;
         setup_ = true;
       }
-      else if(setup_) {
-        tc_->reconfigure(config);
-      }
+      tc_->reconfigure(config);
   }
 
   TrajectoryPlannerROS::TrajectoryPlannerROS() : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {}
