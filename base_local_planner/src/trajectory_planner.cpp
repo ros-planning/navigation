@@ -300,35 +300,38 @@ namespace base_local_planner{
 
       occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
 
-      double cell_pdist = path_map_(cell_x, cell_y).target_dist;
-      double cell_gdist = goal_map_(cell_x, cell_y).target_dist;
-
-      //update path and goal distances
-      if (!heading_scoring_) {
-        path_dist = cell_pdist;
-        goal_dist = cell_gdist;
-      }
-      else if (time >= heading_scoring_timestep_ && time < heading_scoring_timestep_ + dt) {
-        heading_diff = headingDiff(cell_x, cell_y, x_i, y_i, theta_i);
-        //update path and goal distances
-        path_dist = cell_pdist;
-        goal_dist = cell_gdist;
-      }
-
       //do we want to follow blindly
       if (simple_attractor_) {
         goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
           (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y);
-        path_dist = 0.0;
       } else {
-        //if a point on this trajectory has no clear path to goal it is invalid
-        if(impossible_cost <= goal_dist || impossible_cost <= path_dist){
-          ROS_DEBUG("No path to goal with goal distance = %f, path_distance = %f and max cost = %f", 
-              goal_dist, path_dist, impossible_cost);
-          traj.cost_ = -2.0;
-          return;
+
+        bool update_path_and_goal_distances = true;
+
+        // with heading scoring, we take into account heading diff, and also only score
+        // path and goal distance for one point of the trajectory
+        if (heading_scoring_) {
+          if (time >= heading_scoring_timestep_ && time < heading_scoring_timestep_ + dt) {
+            heading_diff = headingDiff(cell_x, cell_y, x_i, y_i, theta_i);
+          } else {
+            update_path_and_goal_distances = false;
+          }
+        }
+
+        if (update_path_and_goal_distances) {
+          //update path and goal distances
+          path_dist = path_map_(cell_x, cell_y).target_dist;
+          goal_dist = goal_map_(cell_x, cell_y).target_dist;
+
+          //if a point on this trajectory has no clear path to goal it is invalid
+          if(impossible_cost <= goal_dist || impossible_cost <= path_dist){
+//            ROS_DEBUG("No path to goal with goal distance = %f, path_distance = %f and max cost = %f",
+//                goal_dist, path_dist, impossible_cost);
+            traj.cost_ = -2.0;
+            return;
+          }
         }
       }
 
