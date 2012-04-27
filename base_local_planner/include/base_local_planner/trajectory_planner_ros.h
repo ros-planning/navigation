@@ -106,7 +106,8 @@ namespace base_local_planner {
       ~TrajectoryPlannerROS();
       
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
+       * @brief  Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base
        * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
        * @return True if a valid trajectory was found, false otherwise
        */
@@ -125,9 +126,13 @@ namespace base_local_planner {
        */
       bool isGoalReached();
 
+      bool isInitialized() {
+        return initialized_;
+      }
+
     private:
       /**
-       * @brief Callback for dynamic_reconfigure
+       * @brief Callback to update the local planner's parameters based on dynamic reconfigure
        */
       void reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level);
 
@@ -173,7 +178,6 @@ namespace base_local_planner {
       double inflation_radius_; 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       bool prune_plan_;
-      ros::Publisher g_plan_pub_, l_plan_pub_;
       ros::Subscriber odom_sub_;
       boost::recursive_mutex odom_lock_;
       bool initialized_;
@@ -182,6 +186,9 @@ namespace base_local_planner {
       double sim_period_;
       bool rotating_to_goal_;
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
+
+      ros::Publisher g_plan_pub_, l_plan_pub_;
+
       dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
       base_local_planner::BaseLocalPlannerConfig default_config_;
       bool setup_;

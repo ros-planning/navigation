@@ -36,17 +36,22 @@
 *********************************************************************/
 
 #include <base_local_planner/trajectory_planner_ros.h>
-#include <ros/console.h>
+
 #include <sys/time.h>
-#include <pluginlib/class_list_macros.h>
 #include <boost/tokenizer.hpp>
 
-#include "geometry_msgs/PolygonStamped.h"
-#include "nav_msgs/Path.h"
-#include "base_local_planner/goal_functions.h"
+#include <Eigen/Core>
+#include <cmath>
 
-using namespace std;
-using namespace costmap_2d;
+#include <ros/console.h>
+
+#include <pluginlib/class_list_macros.h>
+
+#include <base_local_planner/goal_functions.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <nav_msgs/Path.h>
+
+
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_DECLARE_CLASS(base_local_planner, TrajectoryPlannerROS, base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
@@ -54,7 +59,7 @@ PLUGINLIB_DECLARE_CLASS(base_local_planner, TrajectoryPlannerROS, base_local_pla
 namespace base_local_planner {
 
   void TrajectoryPlannerROS::reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level) {
-      if(setup_ && config.restore_defaults) {
+      if (setup_ && config.restore_defaults) {
         config = default_config_;
         //Avoid looping
         config.restore_defaults = false;
@@ -68,15 +73,24 @@ namespace base_local_planner {
 
   TrajectoryPlannerROS::TrajectoryPlannerROS() : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {}
 
-  TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf::TransformListener* tf, Costmap2DROS* costmap_ros) 
+  TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros)
     : world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), initialized_(false), setup_(false) {
 
       //initialize the planner
       initialize(name, tf, costmap_ros);
   }
 
-  void TrajectoryPlannerROS::initialize(std::string name, tf::TransformListener* tf, Costmap2DROS* costmap_ros){
-    if(!initialized_){
+  void TrajectoryPlannerROS::initialize(
+      std::string name,
+      tf::TransformListener* tf,
+      costmap_2d::Costmap2DROS* costmap_ros){
+    if (! isInitialized()) {
+
+      ros::NodeHandle private_nh("~/" + name);
+      g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
+      l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
+
+
       tf_ = tf;
       costmap_ros_ = costmap_ros;
       rot_stopped_velocity_ = 1e-2;
@@ -89,16 +103,12 @@ namespace base_local_planner {
       double max_vel_x, min_vel_x;
       double backup_vel;
       double stop_time_buffer;
-      string world_model_type;
+      std::string world_model_type;
       rotating_to_goal_ = false;
 
       //initialize the copy of the costmap the controller will use
       costmap_ros_->getCostmapCopy(costmap_);
 
-      ros::NodeHandle private_nh("~/" + name);
-      
-      g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
-      l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
 
       global_frame_ = costmap_ros_->getGlobalFrameID();
       robot_base_frame_ = costmap_ros_->getBaseFrameID();
@@ -198,7 +208,7 @@ namespace base_local_planner {
       if(backup_vel >= 0.0)
         ROS_WARN("You've specified a positive escape velocity. This is probably not what you want and will cause the robot to move forward instead of backward. You should probably change your escape_vel parameter to be negative");
 
-      private_nh.param("world_model", world_model_type, string("costmap")); 
+      private_nh.param("world_model", world_model_type, std::string("costmap"));
       private_nh.param("dwa", dwa, true);
       private_nh.param("heading_scoring", heading_scoring, false);
       private_nh.param("heading_scoring_timestep", heading_scoring_timestep, 0.8);
@@ -229,9 +239,9 @@ namespace base_local_planner {
       dynamic_reconfigure::Server<BaseLocalPlannerConfig>::CallbackType cb = boost::bind(&TrajectoryPlannerROS::reconfigureCB, this, _1, _2);
       dsrv_->setCallback(cb);
 
+    } else {
+      ROS_WARN("This planner has already been initialized, doing nothing");
     }
-    else
-      ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");
   }
 
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
@@ -258,7 +268,7 @@ namespace base_local_planner {
     return y_vels;
   }
 
-  TrajectoryPlannerROS::~TrajectoryPlannerROS(){
+  TrajectoryPlannerROS::~TrajectoryPlannerROS() {
     //make sure to clean things up
     delete dsrv_;
 
@@ -347,7 +357,7 @@ namespace base_local_planner {
   }
 
   bool TrajectoryPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan){
-    if(!initialized_){
+    if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
@@ -363,19 +373,20 @@ namespace base_local_planner {
   }
 
   bool TrajectoryPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel){
-    if(!initialized_){
+    if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
 
     std::vector<geometry_msgs::PoseStamped> local_plan;
     tf::Stamped<tf::Pose> global_pose;
-    if(!costmap_ros_->getRobotPose(global_pose))
+    if (!costmap_ros_->getRobotPose(global_pose)) {
       return false;
+    }
 
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     //get the global plan in our frame
-    if(!transformGlobalPlan(*tf_, global_plan_, *costmap_ros_, global_frame_, transformed_plan)){
+    if (!transformGlobalPlan(*tf_, global_plan_, *costmap_ros_, global_frame_, transformed_plan)) {
       ROS_WARN("Could not transform the global plan to the frame of the controller");
       return false;
     }
@@ -433,8 +444,9 @@ namespace base_local_planner {
 
       //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
       //just rotate in place
-      if (latch_xy_goal_tolerance_)
+      if (latch_xy_goal_tolerance_) {
         xy_tolerance_latch_ = true;
+      }
 
       double angle = getGoalOrientationAngleDifference(global_pose, goal_th);
       //check to see if the goal orientation has been reached
@@ -500,24 +512,31 @@ namespace base_local_planner {
     //pass along drive commands
     cmd_vel.linear.x = drive_cmds.getOrigin().getX();
     cmd_vel.linear.y = drive_cmds.getOrigin().getY();
-    yaw = tf::getYaw(drive_cmds.getRotation());
-
-    cmd_vel.angular.z = yaw;
+    cmd_vel.angular.z = tf::getYaw(drive_cmds.getRotation());
 
     //if we cannot move... tell someone
-    if(path.cost_ < 0){
+    if (path.cost_ < 0) {
+      ROS_DEBUG_NAMED("trajectory_planner_ros",
+          "The rollout planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
       local_plan.clear();
       publishPlan(transformed_plan, g_plan_pub_);
       publishPlan(local_plan, l_plan_pub_);
       return false;
     }
 
+    ROS_DEBUG_NAMED("trajectory_planner_ros", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.",
+        cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z);
+
     // Fill out the local plan
-    for(unsigned int i = 0; i < path.getPointsSize(); ++i){
+    for (unsigned int i = 0; i < path.getPointsSize(); ++i) {
       double p_x, p_y, p_th;
       path.getPoint(i, p_x, p_y, p_th);
-
-      tf::Stamped<tf::Pose> p = tf::Stamped<tf::Pose>(tf::Pose(tf::createQuaternionFromYaw(p_th), tf::Point(p_x, p_y, 0.0)), ros::Time::now(), global_frame_);
+      tf::Stamped<tf::Pose> p =
+          tf::Stamped<tf::Pose>(tf::Pose(
+              tf::createQuaternionFromYaw(p_th),
+              tf::Point(p_x, p_y, 0.0)),
+              ros::Time::now(),
+              global_frame_);
       geometry_msgs::PoseStamped pose;
       tf::poseStampedTFToMsg(p, pose);
       local_plan.push_back(pose);
@@ -530,8 +549,8 @@ namespace base_local_planner {
   }
 
 
-  bool TrajectoryPlannerROS::isGoalReached(){
-    if(!initialized_){
+  bool TrajectoryPlannerROS::isGoalReached() {
+    if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }

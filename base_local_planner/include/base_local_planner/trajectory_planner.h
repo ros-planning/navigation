@@ -374,8 +374,9 @@ namespace base_local_planner {
        * @return The new velocity
        */
       inline double computeNewVelocity(double vg, double vi, double a_max, double dt){
-        if((vg - vi) >= 0)
+        if((vg - vi) >= 0) {
           return std::min(vg, vi + a_max * dt);
+        }
         return std::max(vg, vi - a_max * dt);
       }
 
