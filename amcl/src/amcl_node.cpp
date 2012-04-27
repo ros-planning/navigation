@@ -1176,8 +1176,7 @@ double
 AmclNode::getYaw(tf::Pose& t)
 {
   double yaw, pitch, roll;
-  tf::Matrix3x3 mat = t.getBasis();
-  mat.getEulerYPR(yaw,pitch,roll);
+  t.getBasis().getEulerYPR(yaw,pitch,roll);
   return yaw;
 }
 
