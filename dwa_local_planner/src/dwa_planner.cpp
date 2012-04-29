@@ -317,6 +317,7 @@ namespace dwa_local_planner {
         // use_acceleration_limits (TODO make param)
         false);
 
+    result_traj_.cost_ = -7;
     // find best trajectory by sampling and scoring the samples
     scored_sampling_planner_.findBestTrajectory(result_traj_, NULL);
 
