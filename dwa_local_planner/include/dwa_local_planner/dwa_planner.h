@@ -149,18 +149,14 @@ namespace dwa_local_planner {
       const costmap_2d::Costmap2DROS* costmap_ros_;
       costmap_2d::Costmap2D costmap_;
       double stop_time_buffer_;
-      double pdist_scale_, gdist_scale_, occdist_scale_, heading_scale_;
+      double pdist_scale_, gdist_scale_, occdist_scale_;
       Eigen::Vector3f acc_lim_, vsamples_;
-
-      double sim_time_, sim_granularity_;
 
       double sim_period_;
       base_local_planner::Trajectory result_traj_;
 
-
       double forward_point_distance_;
-      double scaling_speed_, max_scaling_factor_;
-      double backward_motion_penalty_;
+
       std::vector<geometry_msgs::PoseStamped> global_plan_;
 
       dynamic_reconfigure::Server<DWAPlannerConfig> dsrv_;

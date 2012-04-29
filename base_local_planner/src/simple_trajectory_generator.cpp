@@ -93,6 +93,13 @@ void SimpleTrajectoryGenerator::initialise(
   }
 }
 
+void SimpleTrajectoryGenerator::setParameters(double sim_time, double sim_granularity, double sim_rot_granularity) {
+  // TODO: get parameters from reference in prepare()
+  sim_time_ = sim_time;
+  sim_granularity_ = sim_granularity;
+  sim_rot_granularity_ = sim_rot_granularity;
+}
+
 /**
  * Whether this generator can create more trajectories
  */
@@ -110,8 +117,6 @@ bool SimpleTrajectoryGenerator::nextTrajectory(Trajectory &comp_traj) {
         pos_,
         sample_params_[next_sample_index_],
         limits_,
-        sim_time_,
-        sim_granularity_,
         comp_traj)) {
       result = true;
     }
@@ -124,8 +129,6 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
       Eigen::Vector3f pos,
       Eigen::Vector3f& vel,
       const base_local_planner::LocalPlannerLimits* limits,
-      double sim_time,
-      double sim_granularity,
       base_local_planner::Trajectory& traj) {
     //ROS_ERROR("%.2f, %.2f, %.2f - %.2f %.2f", vel[0], vel[1], vel[2], sim_time_, sim_granularity_);
 
@@ -142,14 +145,14 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     }
 
     //compute the number of steps we must take along this trajectory to be "safe"
-    double sim_time_distance = (vmag * sim_time); // the distance the robot would travel in sim_time if it did not change velocity
-    double sim_time_angle = (fabs(vel[2]) * sim_time); // the angle the robot would rotate in sim_time
+    double sim_time_distance = (vmag * sim_time_); // the distance the robot would travel in sim_time if it did not change velocity
+    double sim_time_angle = (fabs(vel[2]) * sim_time_); // the angle the robot would rotate in sim_time
     int num_steps =
-        ceil(std::max(sim_time_distance / sim_granularity,
-                      sim_time_angle / 0.1)); // 0.1 radians is ca. 6 degrees
+        ceil(std::max(sim_time_distance / sim_granularity_,
+                      sim_time_angle / sim_rot_granularity_)); // 0.1 radians is ca. 6 degrees
 
     //compute a timestep
-    double dt = sim_time / num_steps;
+    double dt = sim_time_ / num_steps;
 
     //create a potential trajectory... it might be reused so we'll make sure to reset it
     traj.resetPoints();

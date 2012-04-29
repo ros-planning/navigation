@@ -60,9 +60,7 @@ public:
 
   void updateOscillationFlags(Eigen::Vector3f pos, base_local_planner::Trajectory* traj, double min_vel_trans);
 
-  void setOscillationResetDist(double dist) {
-    oscillation_reset_dist_ = dist;
-  }
+  void setOscillationResetDist(double dist, double angle);
 
 private:
 
@@ -82,7 +80,7 @@ private:
   bool forward_pos_only_, forward_neg_only_, forward_pos_, forward_neg_;
 
   // param
-  double oscillation_reset_dist_;
+  double oscillation_reset_dist_, oscillation_reset_angle_;
 
   Eigen::Vector3f prev_stationary_pos_;
 };

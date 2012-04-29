@@ -59,12 +59,11 @@ namespace dwa_local_planner {
     boost::mutex::scoped_lock l(configuration_mutex_);
  
  
-    sim_time_ = config.sim_time;
-    sim_granularity_ = config.sim_granularity;
-    generator_.setParameters(sim_time_, sim_granularity_);
+    generator_.setParameters(config.sim_time, config.sim_granularity, config.angular_sim_granularity);
 
     double resolution = costmap_.getResolution();
     pdist_scale_ = config.path_distance_bias;
+    // pdistscale used for both path and alignment, set  forward_point_distance to zero to discard alignment
     path_costs_.setScale(resolution * pdist_scale_ * 0.5);
     alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
 
@@ -74,18 +73,17 @@ namespace dwa_local_planner {
 
     occdist_scale_ = config.occdist_scale;
     obstacle_costs_.setScale(resolution * occdist_scale_);
-//    alignment_costs_.setScale(resolution * adist_scale_);//TODO
 
     stop_time_buffer_ = config.stop_time_buffer;
-    oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist);
+    oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist, config.oscillation_reset_angle);
     forward_point_distance_ = config.forward_point_distance;
     goal_front_costs_.setXShift(forward_point_distance_);
     alignment_costs_.setXShift(forward_point_distance_);
  
-    scaling_speed_ = config.scaling_speed;
-    max_scaling_factor_ = config.max_scaling_factor;
+    // obstacle costs can vary due to scaling footprint feature
+    obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
 
-    backward_motion_penalty_ = 100.0; // TODO: Make dynamic parameter
+    prefer_forward_costs_.setPenalty(config.backward_motion_penalty);
  
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
@@ -169,7 +167,7 @@ namespace dwa_local_planner {
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     const base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
-    generator_.generateTrajectory(pos, vel, &limits, sim_time_, sim_granularity_, traj);
+    generator_.generateTrajectory(pos, vel, &limits, traj);
     double cost = scored_sampling_planner_.scoreTrajectory(traj);
     //if the trajectory is a legal one... the check passes
     if(cost >= 0) {
@@ -312,11 +310,6 @@ namespace dwa_local_planner {
 
     // prepare cost functions and generator for this run
     generator_.initialise(pos, vel, &limits, sim_period_, acc_lim_, vsamples_);
-
-    // obstacle costs can vary due to scaling footprint feature
-    obstacle_costs_.setParams(planner_util_.getCurrentLimits().max_trans_vel, max_scaling_factor_, scaling_speed_);
-
-    prefer_forward_costs_.setPenalty(backward_motion_penalty_); // TODO make param
 
     // find best trajectory by sampling and scoring the samples
     scored_sampling_planner_.findBestTrajectory(result_traj_, NULL);

@@ -48,6 +48,11 @@ OscillationCostFunction::~OscillationCostFunction() {
   prev_stationary_pos_ = Eigen::Vector3f::Zero();
 }
 
+void OscillationCostFunction::setOscillationResetDist(double dist, double angle) {
+  oscillation_reset_dist_ = dist;
+  oscillation_reset_angle_ = angle;
+}
+
 void OscillationCostFunction::updateOscillationFlags(Eigen::Vector3f pos, base_local_planner::Trajectory* traj, double min_vel_trans) {
   if (traj->cost_ >= 0) {
     if (setOscillationFlags(traj, min_vel_trans)) {
@@ -70,11 +75,9 @@ void OscillationCostFunction::resetOscillationFlagsIfPossible(const Eigen::Vecto
   double th_diff = pos[2] - prev[2];
 
   //if we've moved far enough... we can reset our flags
-  if(sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_){
-    if (sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_ ||
-        th_diff > 0.2) {
-      resetOscillationFlags();
-    }
+  if (sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_ ||
+      fabs(th_diff) > oscillation_reset_angle_) {
+    resetOscillationFlags();
   }
 }
 
