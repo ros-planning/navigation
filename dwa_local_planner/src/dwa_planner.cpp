@@ -291,6 +291,12 @@ namespace dwa_local_planner {
     // find best trajectory by sampling and scoring the samples
     scored_sampling_planner_.findBestTrajectory(result_traj_, NULL);
 
+    // verbose publishing of point clouds
+    if (publish_cost_grid_pc_) {
+      //we'll publish the visualization of the costs to rviz before returning our best trajectory
+      map_viz_.publishCostCloud(costmap_);
+    }
+
     // debrief stateful scoring functions
     oscillation_costs_.updateOscillationFlags(pos, &result_traj_, limits.min_trans_vel);
 
@@ -304,9 +310,6 @@ namespace dwa_local_planner {
       matrix.setRotation(tf::createQuaternionFromYaw(result_traj_.thetav_));
       drive_velocities.setBasis(matrix);
     }
-
-    //we'll publish the visualization of the costs to rviz before returning our best trajectory
-    map_viz_.publishCostCloud(costmap_);
 
     return result_traj_;
   }
