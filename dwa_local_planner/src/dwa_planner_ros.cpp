@@ -47,16 +47,22 @@ PLUGINLIB_DECLARE_CLASS(dwa_local_planner, DWAPlannerROS, dwa_local_planner::DWA
 namespace dwa_local_planner {
 
   DWAPlannerROS::DWAPlannerROS() : initialized_(false),
-      odom_helper_("odom") {}
+      odom_helper_("odom") {
+
+  }
 
   void DWAPlannerROS::initialize(
       std::string name,
       tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
     if(! isInitialized()) {
+
+      ros::NodeHandle pn("~/" + name);
+      g_plan_pub_ = pn.advertise<nav_msgs::Path>("global_plan", 1);
+      l_plan_pub_ = pn.advertise<nav_msgs::Path>("local_plan", 1);
+
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
-      planner_util_.initialize(name, tf, costmap_ros);
-      dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(planner_util_.getName(), planner_util_.getCostmapRos()));
+      dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, tf, costmap_ros));
 
       initialized_ = true;
     }
@@ -70,16 +76,25 @@ namespace dwa_local_planner {
     latchedStopRotateController_.resetLatching();
 
     ROS_INFO("Got new plan");
-    return planner_util_.setPlan(orig_global_plan);
+    return dp_->getPlannerUtil()->setPlan(orig_global_plan);
   }
 
   bool DWAPlannerROS::isGoalReached() {
-    if(latchedStopRotateController_.isGoalReached(planner_util_, odom_helper_)) {
+    if(latchedStopRotateController_.isGoalReached(dp_->getPlannerUtil(), odom_helper_)) {
       ROS_INFO("Goal reached");
       return true;
     } else {
       return false;
     }
+  }
+
+  void DWAPlannerROS::publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
+    base_local_planner::publishPlan(path, l_plan_pub_);
+  }
+
+
+  void DWAPlannerROS::publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
+    base_local_planner::publishPlan(path, g_plan_pub_);
   }
 
 
@@ -93,13 +108,6 @@ namespace dwa_local_planner {
     tf::Stamped<tf::Pose> robot_vel;
     odom_helper_.getRobotVel(robot_vel);
 
-    //we also want to clear the robot footprint from the costmap we're using
-    planner_util_.getCostmapRos()->clearRobotFootprint();
-
-
-    tf::Stamped<tf::Pose> drive_cmds;
-    drive_cmds.frame_id_ = planner_util_.getCostmapRos()->getBaseFrameID();
-
     /* For timing uncomment
     struct timeval start, end;
     double start_t, end_t, t_diff;
@@ -109,7 +117,8 @@ namespace dwa_local_planner {
 
 
     //compute what trajectory to drive along
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, planner_util_.getCurrentLimits());
+    tf::Stamped<tf::Pose> drive_cmds;
+    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment
@@ -132,7 +141,7 @@ namespace dwa_local_planner {
           "The dwa local planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
       local_plan.clear();
       std::vector<geometry_msgs::PoseStamped> transformed_plan;
-      planner_util_.publishLocalPlan(local_plan);
+      publishLocalPlan(local_plan);
       return false;
     }
 
@@ -149,7 +158,7 @@ namespace dwa_local_planner {
     				  tf::createQuaternionFromYaw(p_th),
     				  tf::Point(p_x, p_y, 0.0)),
     				  ros::Time::now(),
-    				  planner_util_.getCostmapRos()->getGlobalFrameID());
+    				  dp_->getPlannerUtil()->getCostmapRos()->getGlobalFrameID());
       geometry_msgs::PoseStamped pose;
       tf::poseStampedTFToMsg(p, pose);
       local_plan.push_back(pose);
@@ -157,7 +166,7 @@ namespace dwa_local_planner {
 
     //publish information to the visualizer
 
-    planner_util_.publishLocalPlan(local_plan);
+    publishLocalPlan(local_plan);
     return true;
   }
 
@@ -167,12 +176,12 @@ namespace dwa_local_planner {
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     // dispatches to either dwa samplig control or stop and rotate control, depending on whether we have been close enough to goal
     tf::Stamped<tf::Pose> global_pose;
-    if ( ! planner_util_.getRobotPose(global_pose)) {
+    if ( ! dp_->getPlannerUtil()->getRobotPose(global_pose)) {
       ROS_ERROR("Could not get robot pose");
       return false;
     }
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    if ( ! planner_util_.getLocalPlan(global_pose, transformed_plan)) {
+    if ( ! dp_->getPlannerUtil()->getLocalPlan(global_pose, transformed_plan)) {
       return false;
     }
 
@@ -184,27 +193,27 @@ namespace dwa_local_planner {
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
     dp_->updatePlanAndLocalCosts(global_pose, transformed_plan);
 
-    if (latchedStopRotateController_.isPositionReached(planner_util_, odom_helper_)) {
+    if (latchedStopRotateController_.isPositionReached(dp_->getPlannerUtil(), odom_helper_)) {
       //publish an empty plan because we've reached our goal position
       std::vector<geometry_msgs::PoseStamped> local_plan;
       std::vector<geometry_msgs::PoseStamped> transformed_plan;
-      planner_util_.publishGlobalPlan(transformed_plan);
-      planner_util_.publishLocalPlan(local_plan);
+      publishGlobalPlan(transformed_plan);
+      publishLocalPlan(local_plan);
 
       return latchedStopRotateController_.computeVelocityCommandsStopRotate(
           cmd_vel,
           dp_->getAccLimits(),
           dp_->getSimPeriod(),
-          planner_util_,
+          dp_->getPlannerUtil(),
           odom_helper_,
-          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
+          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2));
     } else {
       bool isOk =  dwaComputeVelocityCommands(global_pose, cmd_vel);
       if (isOk) {
-        planner_util_.publishGlobalPlan(transformed_plan);
+        publishGlobalPlan(transformed_plan);
       } else {
         std::vector<geometry_msgs::PoseStamped> transformed_plan;
-        planner_util_.publishGlobalPlan(transformed_plan);
+        publishGlobalPlan(transformed_plan);
       }
       return isOk;
     }

@@ -22,10 +22,10 @@ public:
   LatchedStopRotateController();
   virtual ~LatchedStopRotateController();
 
-  bool isPositionReached(LocalPlannerUtil& planner_util,
+  bool isPositionReached(LocalPlannerUtil* planner_util,
       OdometryHelperRos& odom_helper);
 
-  bool isGoalReached(LocalPlannerUtil& planner_util,
+  bool isGoalReached(LocalPlannerUtil* planner_util,
       OdometryHelperRos& odom_helper);
 
   void resetLatching() {
@@ -44,10 +44,8 @@ public:
       geometry_msgs::Twist& cmd_vel,
       Eigen::Vector3f acc_lim,
       double sim_period,
-      base_local_planner::LocalPlannerLimitsConfig limits,
       boost::function<bool (Eigen::Vector3f pos,
-                   Eigen::Vector3f vel,
-                   const base_local_planner::LocalPlannerLimitsConfig& limits)> obstacle_check);
+                            Eigen::Vector3f vel)> obstacle_check);
 
   /**
    * @brief Once a goal position is reached... rotate to the goal orientation
@@ -63,19 +61,17 @@ public:
       geometry_msgs::Twist& cmd_vel,
       Eigen::Vector3f acc_lim,
       double sim_period,
-      base_local_planner::LocalPlannerLimitsConfig& limits,
+      base_local_planner::LocalPlannerLimits& limits,
       boost::function<bool (Eigen::Vector3f pos,
-                   Eigen::Vector3f vel,
-                   const base_local_planner::LocalPlannerLimitsConfig& limits)> obstacle_check);
+                            Eigen::Vector3f vel)> obstacle_check);
 
   bool computeVelocityCommandsStopRotate(geometry_msgs::Twist& cmd_vel,
       Eigen::Vector3f acc_lim,
       double sim_period,
-      LocalPlannerUtil& planner_util,
+      LocalPlannerUtil* planner_util,
       OdometryHelperRos& odom_helper,
       boost::function<bool (Eigen::Vector3f pos,
-          Eigen::Vector3f vel,
-          const base_local_planner::LocalPlannerLimitsConfig& limits)> obstacle_check);
+                            Eigen::Vector3f vel)> obstacle_check);
 
 private:
   inline double sign(double x){

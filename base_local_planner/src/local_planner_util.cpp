@@ -41,24 +41,14 @@
 
 namespace base_local_planner {
 
-void LocalPlannerUtil::initialize(std::string name,
+void LocalPlannerUtil::initialize(
     tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* costmap_ros) {
   if(!initialized_) {
     tf_ = tf;
     costmap_ros_ = costmap_ros;
 
-    name_ = name;
 
-    ros::NodeHandle pn("~/" + getName());
-    g_plan_pub_ = pn.advertise<nav_msgs::Path>("global_plan", 1);
-    l_plan_pub_ = pn.advertise<nav_msgs::Path>("local_plan", 1);
-
-    ros::NodeHandle pn2("~/localPlannerLimits");
-    dsrv_ = new dynamic_reconfigure::Server<LocalPlannerLimitsConfig>(pn2);
-
-    dynamic_reconfigure::Server<LocalPlannerLimitsConfig>::CallbackType cb = boost::bind(&LocalPlannerUtil::reconfigureCB, this, _1, _2);
-    dsrv_->setCallback(cb);
 
     initialized_ = true;
   }
@@ -67,11 +57,10 @@ void LocalPlannerUtil::initialize(std::string name,
   }
 }
 
-void LocalPlannerUtil::reconfigureCB(LocalPlannerLimitsConfig &config, uint32_t level)
+void LocalPlannerUtil::reconfigureCB(LocalPlannerLimits &config, bool restore_defaults)
 {
-  if(setup_ && config.restore_defaults) {
+  if(setup_ && restore_defaults) {
     config = default_limits_;
-    config.restore_defaults = false;
   }
 
   if(!setup_) {
@@ -79,9 +68,25 @@ void LocalPlannerUtil::reconfigureCB(LocalPlannerLimitsConfig &config, uint32_t 
     setup_ = true;
   }
   boost::mutex::scoped_lock l(limits_configuration_mutex_);
-  limits_ = LocalPlannerLimitsConfig(config);
+  limits_ = LocalPlannerLimits(config);
 }
 
+costmap_2d::Costmap2DROS* LocalPlannerUtil::getCostmapRos() {
+  return costmap_ros_;
+}
+
+tf::TransformListener* LocalPlannerUtil::getTfListener() {
+  return tf_;
+}
+
+std::string LocalPlannerUtil::getName() {
+  return name_;
+}
+
+
+LocalPlannerLimits LocalPlannerUtil::getCurrentLimits() {
+  return limits_;
+}
 
 
 
@@ -136,13 +141,6 @@ bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vec
 }
 
 
-void LocalPlannerUtil::publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
-  base_local_planner::publishPlan(path, l_plan_pub_);
-}
 
-
-void LocalPlannerUtil::publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
-  base_local_planner::publishPlan(path, g_plan_pub_);
-}
 
 } // namespace

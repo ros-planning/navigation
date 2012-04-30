@@ -47,7 +47,7 @@
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 
-#include <base_local_planner/LocalPlannerLimitsConfig.h>
+#include <base_local_planner/local_planner_limits.h>
 
 
 namespace base_local_planner {
@@ -68,15 +68,12 @@ private:
 
 
   std::vector<geometry_msgs::PoseStamped> global_plan_;
-  // for visualisation, publishers of global and local plan
-  ros::Publisher g_plan_pub_, l_plan_pub_;
 
 
-  dynamic_reconfigure::Server<LocalPlannerLimitsConfig> *dsrv_;
   boost::mutex limits_configuration_mutex_;
   bool setup_;
-  LocalPlannerLimitsConfig default_limits_;
-  LocalPlannerLimitsConfig limits_;
+  LocalPlannerLimits default_limits_;
+  LocalPlannerLimits limits_;
   bool initialized_;
 
 public:
@@ -84,7 +81,7 @@ public:
   /**
    * @brief  Callback to update the local planner's parameters based on dynamic reconfigure
    */
-  void reconfigureCB(LocalPlannerLimitsConfig &config, uint32_t level);
+  void reconfigureCB(LocalPlannerLimits &config, bool restore_defaults);
 
   LocalPlannerUtil() : initialized_(false) {}
 
@@ -92,12 +89,9 @@ public:
    * @brief  Destructs a trajectory controller
    */
   ~LocalPlannerUtil() {
-    if (initialized_) {
-      delete(dsrv_);
-    }
   }
 
-  void initialize(std::string name, tf::TransformListener* tf,
+  void initialize(tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap_ros);
 
   bool getRobotPose(tf::Stamped<tf::Pose>& global_pose);
@@ -108,26 +102,14 @@ public:
 
   bool getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan);
 
-  void publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
-  void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
+  costmap_2d::Costmap2DROS* getCostmapRos();
 
-  costmap_2d::Costmap2DROS* getCostmapRos() {
-    return costmap_ros_;
-  }
+  tf::TransformListener* getTfListener();
 
-  tf::TransformListener* getTfListener() {
-    return tf_;
-  }
+  std::string getName();
 
-  std::string getName() {
-    return name_;
-  }
-
-
-  LocalPlannerLimitsConfig getCurrentLimits() {
-    return limits_;
-  }
+  LocalPlannerLimits getCurrentLimits();
 };
 
 

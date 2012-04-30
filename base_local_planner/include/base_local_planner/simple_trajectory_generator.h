@@ -39,7 +39,7 @@
 #define SIMPLE_TRAJECTORY_GENERATOR_H_
 
 #include <base_local_planner/trajectory_sample_generator.h>
-#include <base_local_planner/LocalPlannerLimitsConfig.h>
+#include <base_local_planner/local_planner_limits.h>
 #include <Eigen/Core>
 
 namespace base_local_planner {
@@ -69,7 +69,7 @@ public:
   void initialise(
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
-      const base_local_planner::LocalPlannerLimitsConfig* limits,
+      const base_local_planner::LocalPlannerLimits* limits,
       const double sim_period,
       const Eigen::Vector3f& acc_lim,
       const Eigen::Vector3f& vsamples);
@@ -96,7 +96,7 @@ public:
   static bool generateTrajectory(
         Eigen::Vector3f pos,
         Eigen::Vector3f& vel,
-        const base_local_planner::LocalPlannerLimitsConfig* limits,
+        const base_local_planner::LocalPlannerLimits* limits,
         double sim_time_,
         double sim_granularity_,
         base_local_planner::Trajectory& traj);
@@ -107,7 +107,7 @@ private:
   // to store sample params of each sample between init and generation
   std::vector<Eigen::Vector3f> sample_params_;
 
-  const base_local_planner::LocalPlannerLimitsConfig* limits_;
+  const base_local_planner::LocalPlannerLimits* limits_;
   Eigen::Vector3f pos_;
 
   double sim_time_, sim_granularity_;

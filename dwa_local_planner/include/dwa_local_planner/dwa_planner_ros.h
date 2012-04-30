@@ -47,7 +47,7 @@
 
 #include <nav_core/base_local_planner.h>
 #include <base_local_planner/latched_stop_rotate_controller.h>
-#include <base_local_planner/local_planner_util.h>
+
 #include <base_local_planner/odometry_helper_ros.h>
 
 namespace dwa_local_planner {
@@ -87,6 +87,9 @@ namespace dwa_local_planner {
     private:
 
 
+      void publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path);
+
+      void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
       void updateDataPassive(tf::Stamped<tf::Pose>& global_pose);
 
@@ -94,8 +97,11 @@ namespace dwa_local_planner {
         return prune_plan_;
       }
 
+      // for visualisation, publishers of global and local plan
+      ros::Publisher g_plan_pub_, l_plan_pub_;
+
       boost::shared_ptr<DWAPlanner> dp_;
-      std::vector<geometry_msgs::PoseStamped> global_plan_;
+
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
 
@@ -103,7 +109,7 @@ namespace dwa_local_planner {
       bool prune_plan_;
       bool initialized_;
 
-      base_local_planner::LocalPlannerUtil planner_util_;
+
       base_local_planner::OdometryHelperRos odom_helper_;
   };
 };

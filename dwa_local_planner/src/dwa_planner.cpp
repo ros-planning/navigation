@@ -115,6 +115,29 @@ namespace dwa_local_planner {
     vsamples_[2] = vth_samp;
  
     penalize_negative_x_ = config.penalize_negative_x;
+
+    base_local_planner::LocalPlannerLimits limits;
+    limits.max_trans_vel = config.max_trans_vel;
+    limits.min_trans_vel = config.min_trans_vel;
+    limits.max_vel_x = config.max_vel_x;
+    limits.min_vel_x = config.min_vel_x;
+    limits.max_vel_y = config.max_vel_y;
+    limits.min_vel_y = config.min_vel_y;
+    limits.max_rot_vel = config.max_rot_vel;
+    limits.min_rot_vel = config.min_rot_vel;
+    limits.acc_lim_x = config.acc_lim_x;
+    limits.acc_lim_y = config.acc_lim_y;
+    limits.acc_lim_theta = config.acc_lim_theta;
+    limits.acc_limit_trans = config.acc_limit_trans;
+    limits.xy_goal_tolerance = config.xy_goal_tolerance;
+    limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
+    // TODO
+//    limits.jerk_lim_trans = config.jerk_lim_trans;
+//    limits.jerk_lim_rot = config.jerk_lim_rot;
+    limits.prune_plan = config.prune_plan;
+    limits.trans_stopped_vel = config.trans_stopped_vel;
+    limits.rot_stopped_vel = config.rot_stopped_vel;
+    planner_util_.reconfigureCB(limits, config.restore_defaults);
   }
 
   // used for visualization only, total_costs are not really total costs
@@ -137,11 +160,15 @@ namespace dwa_local_planner {
     return true;
   }
 
+  base_local_planner::LocalPlannerUtil* DWAPlanner::getPlannerUtil() {
+    return &planner_util_;
+  }
+
   bool DWAPlanner::checkTrajectory(Eigen::Vector3f pos,
-      Eigen::Vector3f vel,
-      const base_local_planner::LocalPlannerLimitsConfig& limits){
+      Eigen::Vector3f vel){
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
+    const base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
     generator_.generateTrajectory(pos, vel, &limits, sim_time_, sim_granularity_, traj);
     double cost = scored_sampling_planner_.scoreTrajectory(traj);
     //if the trajectory is a legal one... the check passes
@@ -154,7 +181,7 @@ namespace dwa_local_planner {
     return false;
   }
 
-  DWAPlanner::DWAPlanner(std::string name, const costmap_2d::Costmap2DROS* costmap_ros) :
+  DWAPlanner::DWAPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) :
       dsrv_(ros::NodeHandle("~/" + name)),
       setup_(false),
       penalize_negative_x_(true),
@@ -169,6 +196,8 @@ namespace dwa_local_planner {
     costmap_ros_->getCostmapCopy(costmap_);
 
     ros::NodeHandle pn("~/" + name);
+
+    planner_util_.initialize(tf, costmap_ros);
 
     double acc_lim_x, acc_lim_y, acc_lim_th;
     pn.param("acc_lim_x", acc_lim_x, 2.5);
@@ -263,8 +292,12 @@ namespace dwa_local_planner {
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       tf::Stamped<tf::Pose> global_pose,
       tf::Stamped<tf::Pose> global_vel,
-      tf::Stamped<tf::Pose>& drive_velocities,
-      const base_local_planner::LocalPlannerLimitsConfig& limits) {
+      tf::Stamped<tf::Pose>& drive_velocities) {
+
+    drive_velocities.frame_id_ = planner_util_.getCostmapRos()->getBaseFrameID();
+
+    //we want to clear the robot footprint from the costmap we're using
+    planner_util_.getCostmapRos()->clearRobotFootprint();
 
     // update costmap member
     costmap_ros_->getCostmapCopy(costmap_);
@@ -275,11 +308,13 @@ namespace dwa_local_planner {
     Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
     Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
 
+    base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+
     // prepare cost functions and generator for this run
     generator_.initialise(pos, vel, &limits, sim_period_, acc_lim_, vsamples_);
 
     // obstacle costs can vary due to scaling footprint feature
-    obstacle_costs_.setParams(limits.max_trans_vel, max_scaling_factor_, scaling_speed_);
+    obstacle_costs_.setParams(planner_util_.getCurrentLimits().max_trans_vel, max_scaling_factor_, scaling_speed_);
 
     prefer_forward_costs_.setPenalty(backward_motion_penalty_); // TODO make param
 
@@ -293,7 +328,7 @@ namespace dwa_local_planner {
     }
 
     // debrief stateful scoring functions
-    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, limits.min_trans_vel);
+    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_.getCurrentLimits().min_trans_vel);
 
     //if we don't have a legal trajectory, we'll just command zero
     if (result_traj_.cost_ < 0) {

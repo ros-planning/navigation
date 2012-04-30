@@ -41,7 +41,7 @@
 #include <Eigen/Core>
 
 #include <base_local_planner/trajectory.h>
-#include <base_local_planner/LocalPlannerLimitsConfig.h>
+#include <base_local_planner/local_planner_limits.h>
 
 
 #include <dynamic_reconfigure/server.h>
@@ -55,6 +55,7 @@
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_ros.h>
 
+#include <base_local_planner/local_planner_util.h>
 #include <base_local_planner/simple_trajectory_generator.h>
 
 #include <base_local_planner/oscillation_cost_function.h>
@@ -75,7 +76,7 @@ namespace dwa_local_planner {
        * @param name The name of the planner 
        * @param costmap_ros A pointer to the costmap instance the planner should use
        */
-      DWAPlanner(std::string name, const costmap_2d::Costmap2DROS* costmap_ros);
+      DWAPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
        * @brief  Destructor for the planner
@@ -91,8 +92,7 @@ namespace dwa_local_planner {
        */
       bool checkTrajectory(
           const Eigen::Vector3f pos,
-          const Eigen::Vector3f vel,
-          const base_local_planner::LocalPlannerLimitsConfig& limits);
+          const Eigen::Vector3f vel);
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
@@ -104,8 +104,7 @@ namespace dwa_local_planner {
       base_local_planner::Trajectory findBestPath(
           tf::Stamped<tf::Pose> global_pose,
           tf::Stamped<tf::Pose> global_vel,
-          tf::Stamped<tf::Pose>& drive_velocities,
-          const base_local_planner::LocalPlannerLimitsConfig& limits);
+          tf::Stamped<tf::Pose>& drive_velocities);
 
       /**
        * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
@@ -137,12 +136,15 @@ namespace dwa_local_planner {
        */
       bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
 
+      base_local_planner::LocalPlannerUtil* getPlannerUtil();
+
     private:
       /**
        * @brief  Callback to update the local planner's parameters based on dynamic reconfigure
        */
       void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
+      base_local_planner::LocalPlannerUtil planner_util_;
 
       const costmap_2d::Costmap2DROS* costmap_ros_;
       costmap_2d::Costmap2D costmap_;

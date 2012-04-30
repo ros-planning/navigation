@@ -47,7 +47,7 @@ namespace base_local_planner {
 void SimpleTrajectoryGenerator::initialise(
     const Eigen::Vector3f& pos,
     const Eigen::Vector3f& vel,
-    const base_local_planner::LocalPlannerLimitsConfig* limits,
+    const base_local_planner::LocalPlannerLimits* limits,
     const double sim_period,
     const Eigen::Vector3f& acc_lim,
     const Eigen::Vector3f& vsamples) {
@@ -74,16 +74,11 @@ void SimpleTrajectoryGenerator::initialise(
   min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_period);
   min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period);
 
-  ROS_DEBUG("Sampling x %f - %f : # %f", min_vel[0], max_vel[0], vsamples[0]);
-  ROS_DEBUG("Sampling y %f - %f : # %f", min_vel[1], max_vel[1], vsamples[1]);
-  ROS_DEBUG("Sampling th %f - %f : # %f", min_vel[2], max_vel[2], vsamples[2]);
-
   Eigen::Vector3f dv = Eigen::Vector3f::Zero();
   //we want to sample the velocity space regularly
   for(unsigned int i = 0; i < 3; ++i){
     dv[i] = (max_vel[i] - min_vel[i]) / (std::max(1.0, double(vsamples[i]) - 1));
   }
-  int count = 0;
   Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
   for(VelocityIterator x_it(min_vel[0], max_vel[0], vsamples[0]); !x_it.isFinished(); x_it++) {
     vel_samp[0] = x_it.getVelocity();
@@ -93,11 +88,9 @@ void SimpleTrajectoryGenerator::initialise(
         vel_samp[2] = th_it.getVelocity();
         //ROS_DEBUG("Sample %f, %f, %f", vel_samp[0], vel_samp[1], vel_samp[2]);
         sample_params_.push_back(vel_samp);
-        count++;
       }
     }
   }
-  ROS_DEBUG("Generated %d trajectories", count);
 }
 
 /**
@@ -130,7 +123,7 @@ bool SimpleTrajectoryGenerator::nextTrajectory(Trajectory &comp_traj) {
 bool SimpleTrajectoryGenerator::generateTrajectory(
       Eigen::Vector3f pos,
       Eigen::Vector3f& vel,
-      const base_local_planner::LocalPlannerLimitsConfig* limits,
+      const base_local_planner::LocalPlannerLimits* limits,
       double sim_time,
       double sim_granularity,
       base_local_planner::Trajectory& traj) {
