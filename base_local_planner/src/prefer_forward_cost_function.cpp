@@ -7,14 +7,18 @@
 
 #include <base_local_planner/prefer_forward_cost_function.h>
 
+# include <math.h>
+
 namespace base_local_planner {
 
 
 double PreferForwardCostFunction::scoreTrajectory(Trajectory &traj) {
+  // backward motions bad on a robot without backward sensors
   if (traj.xv_ < 0.0) {
     return penalty_;
   }
-  if (traj.xv_ < 0.1 && traj.thetav_ < 0.2) {
+  // strafing motions also bad on such a robot
+  if (traj.xv_ < 0.1 && fabs(traj.thetav_) < 0.2) {
     return penalty_;
   }
   return 0.0;
