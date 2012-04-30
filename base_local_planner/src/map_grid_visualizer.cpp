@@ -39,9 +39,8 @@ namespace base_local_planner {
   MapGridVisualizer::MapGridVisualizer() {}
 
 
-  void MapGridVisualizer::initialize(const std::string& name,const costmap_2d::Costmap2D * costmap, boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function) {
+  void MapGridVisualizer::initialize(const std::string& name, boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function) {
     name_ = name;
-    costmap_p_ = costmap;
     cost_function_ = cost_function;
 
     ns_nh_ = ros::NodeHandle("~/" + name_);
@@ -52,10 +51,10 @@ namespace base_local_planner {
     pub_.advertise(ns_nh_, "cost_cloud", 1);
   }
 
-  void MapGridVisualizer::publishCostCloud() {
+  void MapGridVisualizer::publishCostCloud(const costmap_2d::Costmap2D& costmap_p_) {
     if (publish_cost_grid_pc_) {
-      unsigned int x_size = costmap_p_->getSizeInCellsX();
-      unsigned int y_size = costmap_p_->getSizeInCellsY();
+      unsigned int x_size = costmap_p_.getSizeInCellsX();
+      unsigned int y_size = costmap_p_.getSizeInCellsY();
       double z_coord = 0.0;
       double x_coord, y_coord;
       MapGridCostPoint pt;
@@ -64,7 +63,7 @@ namespace base_local_planner {
       float path_cost, goal_cost, occ_cost, total_cost;
       for (unsigned int cx = 0; cx < x_size; cx++) {
         for (unsigned int cy = 0; cy < y_size; cy++) {
-          costmap_p_->mapToWorld(cx, cy, x_coord, y_coord);
+          costmap_p_.mapToWorld(cx, cy, x_coord, y_coord);
           if (cost_function_(cx, cy, path_cost, goal_cost, occ_cost, total_cost)) {
             pt.x = x_coord;
             pt.y = y_coord;

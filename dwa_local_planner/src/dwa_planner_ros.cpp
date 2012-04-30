@@ -87,7 +87,7 @@ namespace dwa_local_planner {
       cmd_vel.angular.z = vth;
       return true;
     }
-
+    ROS_WARN("Stopping cmd invalid");
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
@@ -130,13 +130,12 @@ namespace dwa_local_planner {
                                           Eigen::Vector3f( 0.0, 0.0, v_theta_samp),
                                           limits);
 
-    ROS_DEBUG_NAMED("dwa_local_planner", "Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
-
-    if(valid_cmd){
+    if (valid_cmd) {
+      ROS_DEBUG_NAMED("dwa_local_planner", "Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
       cmd_vel.angular.z = v_theta_samp;
       return true;
     }
-    ROS_WARN("No valid cmd found");
+    ROS_WARN("Rotation cmd invalid");
     cmd_vel.angular.z = 0.0;
     return false;
 
