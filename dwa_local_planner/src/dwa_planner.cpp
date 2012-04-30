@@ -182,7 +182,11 @@ namespace dwa_local_planner {
     critics.push_back(&goal_front_costs_); // prefers trajectories that make the nose go towards (local) nose goal
     critics.push_back(&alignment_costs_); // prefers trajectories that keep the robot nose on nose path
     critics.push_back(&prefer_forward_costs_); // prefers moving forward to moving backwards
-    scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(&generator_, critics);
+    // trajectory generators
+    std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
+    generator_list.push_back(&generator_);
+
+    scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
   }
 
   // used for visualization only, total_costs are not really total costs
@@ -244,6 +248,9 @@ namespace dwa_local_planner {
     // make sure to update the costmap we'll use for this cycle
     costmap_ros_->getCostmapCopy(costmap_);
 
+    //we want to clear the robot footprint from the costmap we're using
+    planner_util_.getCostmapRos()->clearRobotFootprint();
+
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
 
@@ -282,9 +289,6 @@ namespace dwa_local_planner {
       tf::Stamped<tf::Pose>& drive_velocities) {
 
     drive_velocities.frame_id_ = planner_util_.getCostmapRos()->getBaseFrameID();
-
-    //we want to clear the robot footprint from the costmap we're using
-    planner_util_.getCostmapRos()->clearRobotFootprint();
 
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);

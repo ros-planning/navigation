@@ -74,7 +74,7 @@ public:
       const Eigen::Vector3f& acc_lim,
       const Eigen::Vector3f& vsamples);
 
-  void setParameters(double sim_time, double sim_granularity, double sim_rot_granularity);
+  void setParameters(double sim_time, double sim_granularity, double angular_sim_granularity);
 
   /**
    * Whether this generator can create more trajectories
@@ -96,7 +96,7 @@ public:
         const base_local_planner::LocalPlannerLimits* limits,
         base_local_planner::Trajectory& traj);
 
-private:
+protected:
 
   unsigned int next_sample_index_;
   // to store sample params of each sample between init and generation
@@ -105,7 +105,7 @@ private:
   const base_local_planner::LocalPlannerLimits* limits_;
   Eigen::Vector3f pos_;
 
-  double sim_time_, sim_granularity_, sim_rot_granularity_;
+  double sim_time_, sim_granularity_, angular_sim_granularity_;
 };
 
 } /* namespace base_local_planner */

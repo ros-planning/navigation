@@ -37,6 +37,7 @@
 
 #include <base_local_planner/simple_trajectory_generator.h>
 
+#include <cmath>
 #include <math.h>
 
 #include <base_local_planner/velocity_iterator.h>
@@ -93,11 +94,11 @@ void SimpleTrajectoryGenerator::initialise(
   }
 }
 
-void SimpleTrajectoryGenerator::setParameters(double sim_time, double sim_granularity, double sim_rot_granularity) {
+void SimpleTrajectoryGenerator::setParameters(double sim_time, double sim_granularity, double angular_sim_granularity) {
   // TODO: get parameters from reference in prepare()
   sim_time_ = sim_time;
   sim_granularity_ = sim_granularity;
-  sim_rot_granularity_ = sim_rot_granularity;
+  angular_sim_granularity_ = angular_sim_granularity;
 }
 
 /**
@@ -149,7 +150,7 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     double sim_time_angle = (fabs(vel[2]) * sim_time_); // the angle the robot would rotate in sim_time
     int num_steps =
         ceil(std::max(sim_time_distance / sim_granularity_,
-                      sim_time_angle / sim_rot_granularity_)); // 0.1 radians is ca. 6 degrees
+                      sim_time_angle / angular_sim_granularity_));
 
     //compute a timestep
     double dt = sim_time_ / num_steps;

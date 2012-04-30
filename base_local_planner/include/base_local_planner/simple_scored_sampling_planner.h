@@ -63,12 +63,17 @@ public:
   SimpleScoredSamplingPlanner() {}
 
   /**
-   * passing max_samples = -1 (default), Sampling planner will continue to call
+   * Takes a list of generators and critics. Critics return costs > 0, or negative costs for invalid trajectories.
+   * Generators other than the first are fallback generators,  meaning they only get to generate if the previous
+   * generator did not find a valid trajectory.
+   * Will use every generator until it stops returning trajectories or count reaches max_samples.
+   * Then resets count and tries for the next in the list.
+   * passing max_samples = -1 (default): Each Sampling planner will continue to call
    * generator until generator runs out of samples (or forever if that never happens)
    */
-  SimpleScoredSamplingPlanner(TrajectorySampleGenerator* gen, std::vector<TrajectoryCostFunction*>& critics, int max_samples = -1) {
+  SimpleScoredSamplingPlanner(std::vector<TrajectorySampleGenerator*> gen_list, std::vector<TrajectoryCostFunction*>& critics, int max_samples = -1) {
     max_samples_ = max_samples;
-    gen_ = gen;
+    gen_list_ = gen_list;
     critics_ = critics;
   }
 
@@ -114,7 +119,7 @@ public:
     Trajectory best_traj;
     double loop_traj_cost, best_traj_cost = -1;
     bool gen_success;
-    int count = 0;
+    int count;
     for (std::vector<TrajectoryCostFunction*>::iterator loop_critic = critics_.begin(); loop_critic != critics_.end(); ++loop_critic) {
       TrajectoryCostFunction* loop_critic_p = *loop_critic;
       if (loop_critic_p->prepare() == false) {
@@ -123,41 +128,49 @@ public:
       }
     }
 
-    while (gen_->hasMoreTrajectories()) {
-      gen_success = gen_->nextTrajectory(loop_traj);
-      if (gen_success == false) {
-        // TODO use this for debugging
-        continue;
-      }
-      loop_traj_cost = scoreTrajectory(loop_traj);
-      if (all_explored != NULL) {
-        loop_traj.cost_ = loop_traj_cost;
-        all_explored->push_back(loop_traj);
-      }
+    for (std::vector<TrajectorySampleGenerator*>::iterator loop_gen = gen_list_.begin(); loop_gen != gen_list_.end(); ++loop_gen) {
+      count = 0;
+      TrajectorySampleGenerator* gen_ = *loop_gen;
+      while (gen_->hasMoreTrajectories()) {
+        gen_success = gen_->nextTrajectory(loop_traj);
+        if (gen_success == false) {
+          // TODO use this for debugging
+          continue;
+        }
+        loop_traj_cost = scoreTrajectory(loop_traj);
+        if (all_explored != NULL) {
+          loop_traj.cost_ = loop_traj_cost;
+          all_explored->push_back(loop_traj);
+        }
 
-      count++;
-      if (max_samples_ > 0 && count >= max_samples_) {
+        count++;
+        if (max_samples_ > 0 && count >= max_samples_) {
+          break;
+        }
+
+        if (loop_traj_cost < 0) {
+          continue;
+        }
+        if (best_traj_cost < 0 || loop_traj_cost < best_traj_cost) {
+          best_traj_cost = loop_traj_cost;
+          best_traj = loop_traj;
+        }
+      }
+      if (best_traj_cost >= 0) {
+        traj.xv_ = best_traj.xv_;
+        traj.yv_ = best_traj.yv_;
+        traj.thetav_ = best_traj.thetav_;
+        traj.cost_ = best_traj_cost;
+        traj.resetPoints();
+        double px, py, pth;
+        for (unsigned int i = 0; i < best_traj.getPointsSize(); i++) {
+          best_traj.getPoint(i, px, py, pth);
+          traj.addPoint(px, py, pth);
+        }
+      }
+      if (best_traj_cost >= 0) {
+        // do not try fallback generators
         break;
-      }
-
-      if (loop_traj_cost < 0) {
-        continue;
-      }
-      if (best_traj_cost < 0 || loop_traj_cost < best_traj_cost) {
-        best_traj_cost = loop_traj_cost;
-        best_traj = loop_traj;
-      }
-    }
-    if (best_traj_cost >= 0) {
-      traj.xv_ = best_traj.xv_;
-      traj.yv_ = best_traj.yv_;
-      traj.thetav_ = best_traj.thetav_;
-      traj.cost_ = best_traj_cost;
-      traj.resetPoints();
-      double px, py, pth;
-      for (unsigned int i = 0; i < best_traj.getPointsSize(); i++) {
-        best_traj.getPoint(i, px, py, pth);
-        traj.addPoint(px, py, pth);
       }
     }
     return best_traj_cost >= 0;
@@ -165,7 +178,7 @@ public:
 
 
 private:
-  TrajectorySampleGenerator *gen_;
+  std::vector<TrajectorySampleGenerator*> gen_list_;
   std::vector<TrajectoryCostFunction*> critics_;
 
   int max_samples_;
