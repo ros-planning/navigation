@@ -30,7 +30,8 @@ rosbuild_add_library(base_local_planner
 	src/prefer_forward_cost_function.cpp
 	src/point_grid.cpp
 	src/costmap_model.cpp
-	src/simple_trajectory_generator.cpp 
+	src/simple_scored_sampling_planner.cpp
+	src/simple_trajectory_generator.cpp
 	src/trajectory_planner.cpp
 	src/trajectory.cpp
 	src/trajectory_planner_ros.cpp
