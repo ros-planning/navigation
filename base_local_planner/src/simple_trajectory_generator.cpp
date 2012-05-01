@@ -176,6 +176,8 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
   double vmag = sqrt(sample_target_vel[0] * sample_target_vel[0] + sample_target_vel[1] * sample_target_vel[1]);
   double eps = 1e-4;
   traj.cost_   = -1.0; // placed here in case we return early
+  //trajectory might be reused so we'll make sure to reset it
+  traj.resetPoints();
 
   // make sure that the robot would at least be moving with one of
   // the required minimum velocities for translation and rotation (if set)
@@ -200,24 +202,24 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
             sim_time_angle    / angular_sim_granularity_));
   }
 
-  Eigen::Vector3f loop_vel;
-  if (continued_acceleration_) {
-    // we use a realistic model, start with current velocity and change it over time
-    loop_vel = vel;
-  } else {
-    // we use an idealized model, just assume the robot can jump to new velocity instantly
-    loop_vel = sample_target_vel;
-  }
-
   //compute a timestep
   double dt = sim_time_ / num_steps;
   traj.time_delta_ = dt;
 
-  //create a potential trajectory... it might be reused so we'll make sure to reset it
-  traj.resetPoints();
-  traj.xv_     = sample_target_vel[0];
-  traj.yv_     = sample_target_vel[1];
-  traj.thetav_ = sample_target_vel[2];
+  Eigen::Vector3f loop_vel;
+  if (continued_acceleration_) {
+    // assuming the velocity of the first cycle is the one we want to store in the trajectory object
+    loop_vel = computeNewVelocities(sample_target_vel, vel, dt);
+    traj.xv_     = loop_vel[0];
+    traj.yv_     = loop_vel[1];
+    traj.thetav_ = loop_vel[2];
+  } else {
+    // assuming sample_vel is our target velocity within acc limits for one timestep
+    loop_vel = sample_target_vel;
+    traj.xv_     = sample_target_vel[0];
+    traj.yv_     = sample_target_vel[1];
+    traj.thetav_ = sample_target_vel[2];
+  }
 
   //simulate the trajectory and check for collisions, updating costs along the way
   for (int i = 0; i < num_steps; ++i) {
