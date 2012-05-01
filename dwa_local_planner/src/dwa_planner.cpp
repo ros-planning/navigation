@@ -51,7 +51,12 @@ namespace dwa_local_planner {
 
     boost::mutex::scoped_lock l(configuration_mutex_);
 
-    generator_.setParameters(config.sim_time, config.sim_granularity, config.angular_sim_granularity);
+    generator_.setParameters(
+        config.sim_time,
+        config.sim_granularity,
+        config.angular_sim_granularity,
+        config.use_dwa,
+        sim_period_);
 
     double resolution = costmap_.getResolution();
     pdist_scale_ = config.path_distance_bias;
@@ -76,7 +81,7 @@ namespace dwa_local_planner {
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
 
     prefer_forward_costs_.setPenalty(config.backward_motion_penalty);
- 
+
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
@@ -312,10 +317,7 @@ namespace dwa_local_planner {
     generator_.initialise(pos,
         vel,
         &limits,
-        sim_period_,
-        vsamples_,
-        // use_acceleration_limits (TODO make param)
-        false);
+        vsamples_);
 
     result_traj_.cost_ = -7;
     // find best trajectory by sampling and scoring the samples

@@ -48,6 +48,15 @@ namespace base_local_planner {
  * generates trajectories based on equi-distant discretisation of the degrees of freedom.
  * This is supposed to be a simple and robust implementation of the TrajectorySampleGenerator
  * interface, more efficient implementations are thinkable.
+ *
+ * This can be used for both dwa and trajectory rollout approaches.
+ * As an example, assuming these values:
+ * sim_time = 1s, sim_period=200ms, dt = 200ms,
+ * vsamples_x=5,
+ * acc_limit_x = 1m/s^2, vel_x=0 (robot at rest, values just for easy calculations)
+ * dwa_planner will sample max-x-velocities from 0m/s to 0.2m/s.
+ * trajectory rollout approach will sample max-x-velocities 0m/s up to 1m/s
+ * trajectory rollout approach does so respecting the acceleration limit, so it gradually increases velocity
  */
 class SimpleTrajectoryGenerator: public base_local_planner::TrajectorySampleGenerator {
 public:
@@ -72,9 +81,7 @@ public:
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
       base_local_planner::LocalPlannerLimits* limits,
-      const double sim_period,
       const Eigen::Vector3f& vsamples,
-      bool use_acceleration_limits,
       std::vector<Eigen::Vector3f> additional_samples,
       bool discretize_by_time = false);
 
@@ -91,12 +98,17 @@ public:
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
       base_local_planner::LocalPlannerLimits* limits,
-      const double sim_period,
       const Eigen::Vector3f& vsamples,
-      bool use_acceleration_limits,
       bool discretize_by_time = false);
 
-  void setParameters(double sim_time, double sim_granularity, double angular_sim_granularity);
+  /**
+   * This function is to be called only when parameters change
+   */
+  void setParameters(double sim_time,
+      double sim_granularity,
+      double angular_sim_granularity,
+      bool use_dwa = false,
+      double sim_period = 0.0);
 
   /**
    * Whether this generator can create more trajectories
@@ -134,6 +146,8 @@ protected:
   bool discretize_by_time_;
 
   double sim_time_, sim_granularity_, angular_sim_granularity_;
+  bool use_dwa_;
+  double sim_period_; // only for dwa
 };
 
 } /* namespace base_local_planner */

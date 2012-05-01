@@ -48,12 +48,10 @@ void SimpleTrajectoryGenerator::initialise(
     const Eigen::Vector3f& pos,
     const Eigen::Vector3f& vel,
     base_local_planner::LocalPlannerLimits* limits,
-    const double sim_period,
     const Eigen::Vector3f& vsamples,
-    bool use_acceleration_limits,
     std::vector<Eigen::Vector3f> additional_samples,
     bool discretize_by_time) {
-  initialise(pos, vel, limits, sim_period, vsamples, use_acceleration_limits, discretize_by_time);
+  initialise(pos, vel, limits, vsamples, discretize_by_time);
   // add static samples if any
   sample_params_.insert(sample_params_.end(), additional_samples.begin(), additional_samples.end());
 }
@@ -63,9 +61,7 @@ void SimpleTrajectoryGenerator::initialise(
     const Eigen::Vector3f& pos,
     const Eigen::Vector3f& vel,
     base_local_planner::LocalPlannerLimits* limits,
-    const double sim_period,
     const Eigen::Vector3f& vsamples,
-    bool continued_acceleration,
     bool discretize_by_time) {
   /*
    * We actually generate all velocity sample vectors here, from which to generate trajectories later on
@@ -76,7 +72,6 @@ void SimpleTrajectoryGenerator::initialise(
   Eigen::Vector3f acc_lim = limits->getAccLimits();
   pos_ = pos;
   vel_ = vel;
-  continued_acceleration_ = continued_acceleration;
   limits_ = limits;
   next_sample_index_ = 0;
   sample_params_.clear();
@@ -88,8 +83,8 @@ void SimpleTrajectoryGenerator::initialise(
     Eigen::Vector3f max_vel = Eigen::Vector3f::Zero();
     Eigen::Vector3f min_vel = Eigen::Vector3f::Zero();
 
-    if (continued_acceleration) {
-      // if we use continously accelerate, we can sample the max velocity we can reach in sim_time_
+    if ( ! use_dwa_) {
+      // if we use continous acceleration, we can sample the max velocity we can reach in sim_time_
       max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_time_);
       max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_time_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_time_);
@@ -98,14 +93,14 @@ void SimpleTrajectoryGenerator::initialise(
       min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_time_);
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_time_);
     } else {
-      // without do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
-      max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_period);
-      max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_period);
-      max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period);
+      // with dwa do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
+      max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_period_);
+      max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_period_);
+      max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
 
-      min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_period);
-      min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_period);
-      min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period);
+      min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_period_);
+      min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_period_);
+      min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
     }
 
     Eigen::Vector3f dv = Eigen::Vector3f::Zero();
@@ -128,11 +123,18 @@ void SimpleTrajectoryGenerator::initialise(
   }
 }
 
-void SimpleTrajectoryGenerator::setParameters(double sim_time, double sim_granularity, double angular_sim_granularity) {
-  // TODO: get parameters from reference in prepare()
+void SimpleTrajectoryGenerator::setParameters(
+    double sim_time,
+    double sim_granularity,
+    double angular_sim_granularity,
+    bool use_dwa,
+    double sim_period) {
   sim_time_ = sim_time;
   sim_granularity_ = sim_granularity;
   angular_sim_granularity_ = angular_sim_granularity;
+  use_dwa_ = use_dwa;
+  continued_acceleration_ = ! use_dwa_;
+  sim_period_ = sim_period;
 }
 
 /**
