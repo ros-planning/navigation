@@ -47,11 +47,12 @@ namespace base_local_planner {
 void SimpleTrajectoryGenerator::initialise(
     const Eigen::Vector3f& pos,
     const Eigen::Vector3f& vel,
+    const Eigen::Vector3f& goal,
     base_local_planner::LocalPlannerLimits* limits,
     const Eigen::Vector3f& vsamples,
     std::vector<Eigen::Vector3f> additional_samples,
     bool discretize_by_time) {
-  initialise(pos, vel, limits, vsamples, discretize_by_time);
+  initialise(pos, vel, goal, limits, vsamples, discretize_by_time);
   // add static samples if any
   sample_params_.insert(sample_params_.end(), additional_samples.begin(), additional_samples.end());
 }
@@ -60,6 +61,7 @@ void SimpleTrajectoryGenerator::initialise(
 void SimpleTrajectoryGenerator::initialise(
     const Eigen::Vector3f& pos,
     const Eigen::Vector3f& vel,
+    const Eigen::Vector3f& goal,
     base_local_planner::LocalPlannerLimits* limits,
     const Eigen::Vector3f& vsamples,
     bool discretize_by_time) {

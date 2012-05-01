@@ -80,6 +80,7 @@ public:
   void initialise(
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
+      const Eigen::Vector3f& goal,
       base_local_planner::LocalPlannerLimits* limits,
       const Eigen::Vector3f& vsamples,
       std::vector<Eigen::Vector3f> additional_samples,
@@ -97,6 +98,7 @@ public:
   void initialise(
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
+      const Eigen::Vector3f& goal,
       base_local_planner::LocalPlannerLimits* limits,
       const Eigen::Vector3f& vsamples,
       bool discretize_by_time = false);

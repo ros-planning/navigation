@@ -312,12 +312,14 @@ namespace dwa_local_planner {
 
     Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
     Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
-
+    geometry_msgs::PoseStamped goal_pose = global_plan_.back();
+    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
     base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
 
     // prepare cost functions and generators for this run
     generator_.initialise(pos,
         vel,
+        goal,
         &limits,
         vsamples_);
 
