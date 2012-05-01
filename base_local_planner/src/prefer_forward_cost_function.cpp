@@ -21,7 +21,8 @@ double PreferForwardCostFunction::scoreTrajectory(Trajectory &traj) {
   if (traj.xv_ < 0.1 && fabs(traj.thetav_) < 0.2) {
     return penalty_;
   }
-  return 0.0;
+  // the more we rotate, the less we progress forward
+  return fabs(traj.thetav_) * 10;
 }
 
 } /* namespace base_local_planner */
