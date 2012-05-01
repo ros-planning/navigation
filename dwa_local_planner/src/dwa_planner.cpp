@@ -178,15 +178,17 @@ namespace dwa_local_planner {
     traj_cloud_.header.frame_id = frame_id;
     traj_cloud_pub_.advertise(private_nh, "trajectory_cloud", 1);
 
-    // set up all the cost functions that will be applied in order (any returning negative values will abort scoring)
+    // set up all the cost functions that will be applied in order
+    // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
     critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
+    critics.push_back(&prefer_forward_costs_); // prefers moving forward to moving backwards
     critics.push_back(&obstacle_costs_); // discards trajectories that move into obstacles
-    critics.push_back(&path_costs_); // prefers trajectories on global path
-    critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
     critics.push_back(&goal_front_costs_); // prefers trajectories that make the nose go towards (local) nose goal
     critics.push_back(&alignment_costs_); // prefers trajectories that keep the robot nose on nose path
-    critics.push_back(&prefer_forward_costs_); // prefers moving forward to moving backwards
+    critics.push_back(&path_costs_); // prefers trajectories on global path
+    critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
+
     // trajectory generators
     std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
     generator_list.push_back(&generator_);
@@ -229,7 +231,7 @@ namespace dwa_local_planner {
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     generator_.generateTrajectory(pos, vel, vel_samples, traj);
-    double cost = scored_sampling_planner_.scoreTrajectory(traj);
+    double cost = scored_sampling_planner_.scoreTrajectory(traj, -1);
     //if the trajectory is a legal one... the check passes
     if(cost >= 0) {
       return true;

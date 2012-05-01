@@ -47,11 +47,7 @@ namespace base_local_planner {
     critics_ = critics;
   }
 
-  /**
-   * runs all scoring functions over the trajectory creating a weigthed sum
-   * of positive costs, or returns the first negative costs encountered if any.
-   */
-  double SimpleScoredSamplingPlanner::scoreTrajectory(Trajectory& traj) {
+  double SimpleScoredSamplingPlanner::scoreTrajectory(Trajectory& traj, double best_traj_cost) {
     double traj_cost = 0;
     for(std::vector<TrajectoryCostFunction*>::iterator score_function = critics_.begin(); score_function != critics_.end(); ++score_function) {
       TrajectoryCostFunction* score_function_p = *score_function;
@@ -67,23 +63,18 @@ namespace base_local_planner {
         cost *= score_function_p->getScale();
       }
       traj_cost += cost;
+      if (best_traj_cost > 0) {
+        // since we keep adding positives, once we are worse than the best, we will stay worse
+        if (traj_cost > best_traj_cost) {
+          break;
+        }
+      }
     }
 
 
     return traj_cost;
   }
 
-  /**
-   * Calls generator until generator has no more samples or max_samples is reached.
-   * For each generated traj, calls critics in turn. If any critic returns negative
-   * value, that value is assumed as costs, else the costs are the sum of all critics
-   * result. Returns true and sets the traj parameter to the first trajectory with
-   * minimal non-negative costs if sampling yields trajectories with non-negative costs,
-   * else returns false.
-   *
-   * @param traj The container to write the result to
-   * @param all_explored pass NULL or a container to collect all trajectories for debugging (has a penalty)
-   */
   bool SimpleScoredSamplingPlanner::findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) {
     Trajectory loop_traj;
     Trajectory best_traj;
@@ -108,7 +99,7 @@ namespace base_local_planner {
           // TODO use this for debugging
           continue;
         }
-        loop_traj_cost = scoreTrajectory(loop_traj);
+        loop_traj_cost = scoreTrajectory(loop_traj, best_traj_cost);
         if (all_explored != NULL) {
           loop_traj.cost_ = loop_traj_cost;
           all_explored->push_back(loop_traj);

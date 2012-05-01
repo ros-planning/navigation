@@ -75,9 +75,10 @@ public:
 
   /**
    * runs all scoring functions over the trajectory creating a weigthed sum
-   * of positive costs, or returns the first negative costs encountered if any.
+   * of positive costs, aborting as soon as a negative cost are found or costs greater
+   * than positive best_traj_cost accumulated
    */
-  double scoreTrajectory(Trajectory& traj);
+  double scoreTrajectory(Trajectory& traj, double best_traj_cost);
 
   /**
    * Calls generator until generator has no more samples or max_samples is reached.
