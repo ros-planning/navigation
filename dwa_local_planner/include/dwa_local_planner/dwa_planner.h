@@ -137,6 +137,11 @@ namespace dwa_local_planner {
 
       base_local_planner::LocalPlannerUtil* getPlannerUtil();
 
+      /**
+       * sets new plan and resets state
+       */
+      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+
     private:
 
       base_local_planner::LocalPlannerUtil planner_util_;

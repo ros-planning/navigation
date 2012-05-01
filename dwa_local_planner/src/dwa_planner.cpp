@@ -220,6 +220,11 @@ namespace dwa_local_planner {
     return &planner_util_;
   }
 
+  bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
+    oscillation_costs_.resetOscillationFlags();
+    return getPlannerUtil()->setPlan(orig_global_plan);
+  }
+
   /**
    * This function is used when other strategies are to be applied,
    * but the cost functions for obstacles are to be reused.

@@ -102,7 +102,7 @@ namespace dwa_local_planner {
     latchedStopRotateController_.resetLatching();
 
     ROS_INFO("Got new plan");
-    return dp_->getPlannerUtil()->setPlan(orig_global_plan);
+    return dp_->setPlan(orig_global_plan);
   }
 
   bool DWAPlannerROS::isGoalReached() {
