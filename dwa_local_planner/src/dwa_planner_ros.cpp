@@ -169,8 +169,8 @@ namespace dwa_local_planner {
     //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
     if(path.cost_ < 0) {
-      ROS_DEBUG_NAMED("dwa_local_planner", 
-          "The dwa local planner failed to find a valid plan. This means that the footprint of the robot was in collision for all simulated trajectories.");
+      ROS_DEBUG_NAMED("dwa_local_planner",
+          "The dwa local planner failed to find a valid plan, cost functions discarded all candidates. This can mean there is an obstacle too close to the robot.");
       local_plan.clear();
       publishLocalPlan(local_plan);
       return false;
@@ -213,12 +213,13 @@ namespace dwa_local_planner {
     }
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     if ( ! dp_->getPlannerUtil()->getLocalPlan(global_pose, transformed_plan)) {
+      ROS_ERROR("Could not get local plan");
       return false;
     }
 
     //if the global plan passed in is empty... we won't do anything
     if(transformed_plan.empty()) {
-      ROS_WARN_NAMED("base_local_planner", "Received an empty transformed plan.");
+      ROS_WARN_NAMED("dwa_local_planner", "Received an empty transformed plan.");
       return false;
     }
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
@@ -244,6 +245,7 @@ namespace dwa_local_planner {
       if (isOk) {
         publishGlobalPlan(transformed_plan);
       } else {
+        ROS_WARN_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
         std::vector<geometry_msgs::PoseStamped> empty_plan;
         publishGlobalPlan(empty_plan);
       }

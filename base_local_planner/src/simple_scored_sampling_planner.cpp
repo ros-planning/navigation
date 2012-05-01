@@ -49,6 +49,7 @@ namespace base_local_planner {
 
   double SimpleScoredSamplingPlanner::scoreTrajectory(Trajectory& traj, double best_traj_cost) {
     double traj_cost = 0;
+    int gen_id = 0;
     for(std::vector<TrajectoryCostFunction*>::iterator score_function = critics_.begin(); score_function != critics_.end(); ++score_function) {
       TrajectoryCostFunction* score_function_p = *score_function;
       if (score_function_p->getScale() == 0) {
@@ -56,6 +57,7 @@ namespace base_local_planner {
       }
       double cost = score_function_p->scoreTrajectory(traj);
       if (cost < 0) {
+        ROS_DEBUG("Discarded by cost function  %d with cost: %f", gen_id, cost);
         traj_cost = cost;
         break;
       }
@@ -69,6 +71,7 @@ namespace base_local_planner {
           break;
         }
       }
+      gen_id ++;
     }
 
 
@@ -129,7 +132,7 @@ namespace base_local_planner {
           traj.addPoint(px, py, pth);
         }
       }
-      //ROS_DEBUG("Evaluated %d trajectories, found %d valid", count, count_valid);
+      ROS_DEBUG("Evaluated %d trajectories, found %d valid", count, count_valid);
       if (best_traj_cost >= 0) {
         // do not try fallback generators
         break;
