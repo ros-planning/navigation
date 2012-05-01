@@ -230,6 +230,14 @@ namespace dwa_local_planner {
       Eigen::Vector3f vel_samples){
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
+    geometry_msgs::PoseStamped goal_pose = global_plan_.back();
+    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
+    base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+    generator_.initialise(pos,
+        vel,
+        goal,
+        &limits,
+        vsamples_);
     generator_.generateTrajectory(pos, vel, vel_samples, traj);
     double cost = scored_sampling_planner_.scoreTrajectory(traj, -1);
     //if the trajectory is a legal one... the check passes
