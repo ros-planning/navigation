@@ -264,17 +264,28 @@ namespace dwa_local_planner {
         (pos[0] - goal_pose.pose.position.x) * (pos[0] - goal_pose.pose.position.x) +
         (pos[1] - goal_pose.pose.position.y) * (pos[1] - goal_pose.pose.position.y);
 
-    // keeping the nose on the target
-    if (sq_dist > forward_point_distance_ * forward_point_distance_ * 2) {
-      // costs for robot being aligned with path (nose on path, not just center on path)
+    // we want the robot nose to be drawn to its final position
+    // (before robot turns towards goal orientation), not the end of the
+    // path for the robot center. Choosing the final position after
+    // turning towards goal orientation causes instability when the
+    // robot needs to make a 180 degree turn at the end
+    std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
+    double angle_to_goal = atan2(goal_pose.pose.position.y - pos[1], goal_pose.pose.position.x - pos[0]);
+    front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x +
+      forward_point_distance_ * cos(angle_to_goal);
+    front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + forward_point_distance_ *
+      sin(angle_to_goal);
+
+    goal_front_costs_.setTargetPoses(front_global_plan);
+    
+    // keeping the nose on the path
+    if (sq_dist > forward_point_distance_ * forward_point_distance_ ) {
       alignment_costs_.setScale(1.0);
-      goal_front_costs_.setScale(1.0);
+      // costs for robot being aligned with path (nose on path, not ju
       alignment_costs_.setTargetPoses(global_plan_);
-      goal_front_costs_.setTargetPoses(global_plan_);
     } else {
-      // once we are close to base, trying to keep the nose close to anything destabilizes behavior.
+      // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
       alignment_costs_.setScale(0.0);
-      goal_front_costs_.setScale(0.0);
     }
   }
 
