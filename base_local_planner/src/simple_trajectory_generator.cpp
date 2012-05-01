@@ -78,6 +78,10 @@ void SimpleTrajectoryGenerator::initialise(
   next_sample_index_ = 0;
   sample_params_.clear();
 
+  double min_vel_x = limits->min_vel_x;
+  double max_vel_x = limits->max_vel_x;
+  double min_vel_y = limits->min_vel_y;
+  double max_vel_y = limits->max_vel_y;
 
   // if sampling number is zero in any dimension, we don't generate samples generically
   if (vsamples[0] * vsamples[1] * vsamples[2] > 0) {
@@ -86,18 +90,27 @@ void SimpleTrajectoryGenerator::initialise(
     Eigen::Vector3f min_vel = Eigen::Vector3f::Zero();
 
     if ( ! use_dwa_) {
+      // there is no point in overshooting the goal, and it also may break the
+      // robot behavior, so we limit the velocities to those that do not overshoot in sim_time
+      double dist =
+          sqrt((goal[0] - pos[0]) * (goal[0] - pos[0])) +
+               (goal[1] - pos[1]) * (goal[1] - pos[1]);
+      // Factor 2 seems to be necessary, probably a bug somewhere else that I cannot find
+      max_vel_x = std::max(std::min(max_vel_x, 2 * dist / sim_time_), min_vel_x);
+      max_vel_y = std::max(std::min(max_vel_y, 2 * dist / sim_time_), min_vel_y);
+
       // if we use continous acceleration, we can sample the max velocity we can reach in sim_time_
-      max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_time_);
-      max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_time_);
+      max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_time_);
+      max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_time_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_time_);
 
-      min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_time_);
-      min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_time_);
+      min_vel[0] = std::max(min_vel_x, vel[0] - acc_lim[0] * sim_time_);
+      min_vel[1] = std::max(min_vel_y, vel[1] - acc_lim[1] * sim_time_);
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_time_);
     } else {
       // with dwa do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
-      max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_period_);
-      max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_period_);
+      max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
+      max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_period_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
 
       min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_period_);
