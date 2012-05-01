@@ -52,20 +52,20 @@ namespace base_local_planner {
         if (min == max) {
           samples_.push_back(min);
         } else {
-          if (num_samples < 2) {
-            num_samples = 2;
-          }
+          num_samples = std::max(2, num_samples);
+
           // e.g. for 4 samples, split distance in 3 even parts
           double step_size = (max - min) / double(std::max(1, (num_samples - 1)));
 
           // we make sure to avoid rounding errors around min and max.
-          double current, next;
+          double current;
+          double next = min;
           for (int j = 0; j < num_samples - 1; ++j) {
-            current = min + double(j * step_size);
-            next = min + double((j + 1) * step_size);
+            current = next;
+            next += step_size;
             samples_.push_back(current);
-            // mathematical trick: if 0 is among samples, this is never true. Else it inserts a 0 between the positive and negative samples
-            if (current * next < 0.0) {
+            // if 0 is among samples, this is never true. Else it inserts a 0 between the positive and negative samples
+            if ((current < 0) && (next > 0)) {
               samples_.push_back(0.0);
             }
           }
@@ -80,6 +80,10 @@ namespace base_local_planner {
       VelocityIterator& operator++(int){
         current_index++;
         return *this;
+      }
+
+      void reset(){
+        current_index = 0;
       }
 
       bool isFinished(){
