@@ -126,11 +126,11 @@ namespace base_local_planner{
     bool started_path = false;
     queue<MapCell*> path_dist_queue;
     queue<MapCell*> goal_dist_queue;
-    for(unsigned int i = 0; i < global_plan.size(); ++i){
+    for (unsigned int i = 0; i < global_plan.size(); ++i) {
       double g_x = global_plan[i].pose.position.x;
       double g_y = global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      if(costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION){
+      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
         MapCell& current = getCell(map_x, map_y);
         current.path_dist = 0.0;
         current.path_mark = true;
@@ -138,14 +138,14 @@ namespace base_local_planner{
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
-      }
-      else{
-        if(started_path)
+      } else {
+        if(started_path) {
           break;
+        }
       }
     }
 
-    if(local_goal_x >= 0 && local_goal_y >= 0){
+    if (local_goal_x >= 0 && local_goal_y >= 0) {
       MapCell& current = getCell(local_goal_x, local_goal_y);
       costmap.mapToWorld(local_goal_x, local_goal_y, goal_x_, goal_y_);
       current.goal_dist = 0.0;

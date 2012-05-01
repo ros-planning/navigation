@@ -53,7 +53,7 @@ namespace base_local_planner {
   }
 
   void MapGridVisualizer::publishCostCloud() {
-    if(publish_cost_grid_pc_) {
+    if (publish_cost_grid_pc_) {
       unsigned int x_size = costmap_p_->getSizeInCellsX();
       unsigned int y_size = costmap_p_->getSizeInCellsY();
       double z_coord = 0.0;
@@ -63,9 +63,9 @@ namespace base_local_planner {
       cost_cloud_.header.stamp = ros::Time::now();
       float path_cost, goal_cost, occ_cost, total_cost;
       for (unsigned int cx = 0; cx < x_size; cx++) {
-        for(unsigned int cy = 0; cy < y_size; cy++) {
+        for (unsigned int cy = 0; cy < y_size; cy++) {
           costmap_p_->mapToWorld(cx, cy, x_coord, y_coord);
-          if(cost_function_(cx, cy, path_cost, goal_cost, occ_cost, total_cost)) {
+          if (cost_function_(cx, cy, path_cost, goal_cost, occ_cost, total_cost)) {
             pt.x = x_coord;
             pt.y = y_coord;
             pt.z = z_coord;

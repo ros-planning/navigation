@@ -47,12 +47,12 @@
 namespace dwa_local_planner {
   void DWAPlanner::reconfigureCB(DWAPlannerConfig &config, uint32_t level)
   {
-    if(setup_ && config.restore_defaults) {
+    if (setup_ && config.restore_defaults) {
       config = default_config_;
       config.restore_defaults = false;
     }
 
-    if(!setup_) {
+    if ( ! setup_) {
       default_config_ = config;
       setup_ = true;
     }
@@ -77,19 +77,19 @@ namespace dwa_local_planner {
     vy_samp = config.vy_samples;
     vth_samp = config.vth_samples;
  
-    if(vx_samp <= 0){
+    if (vx_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
       vx_samp = 1;
       config.vx_samples = vx_samp;
     }
  
-    if(vy_samp <= 0){
+    if (vy_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the y dimension. We'll at least assume that you want to sample one value... so we're going to set vy_samples to 1 instead");
       vy_samp = 1;
       config.vy_samples = vy_samp;
     }
  
-    if(vth_samp <= 0){
+    if (vth_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the th dimension. We'll at least assume that you want to sample one value... so we're going to set vth_samples to 1 instead");
       vth_samp = 1;
       config.vth_samples = vth_samp;
@@ -126,16 +126,14 @@ namespace dwa_local_planner {
     //just do an upward search for the frequency at which its being run. This
     //also allows the frequency to be overwritten locally.
     std::string controller_frequency_param_name;
-    if(!pn.searchParam("controller_frequency", controller_frequency_param_name))
+    if(!pn.searchParam("controller_frequency", controller_frequency_param_name)) {
       sim_period_ = 0.05;
-    else
-    {
+    } else {
       double controller_frequency = 0;
       pn.param(controller_frequency_param_name, controller_frequency, 20.0);
-      if(controller_frequency > 0)
+      if(controller_frequency > 0) {
         sim_period_ = 1.0 / controller_frequency;
-      else
-      {
+      } else {
         ROS_WARN("A controller_frequency less than 0 has been set. Ignoring the parameter, assuming a rate of 20Hz");
         sim_period_ = 0.05;
       }
@@ -187,13 +185,14 @@ namespace dwa_local_planner {
   
   void DWAPlanner::selectBestTrajectory(base_local_planner::Trajectory* &best, base_local_planner::Trajectory* &comp){
     //check if the comp trajectory is better than the current best and, if so, swap them
-    bool best_valid = best->cost_ >= 0.0;
-    bool best_forward = best->xv_ >= 0.0;
-    bool comp_valid = comp->cost_ >= 0.0;
-    bool comp_forward = comp->xv_ >= 0.0;
+    bool best_valid   = (best->cost_ >= 0.0);
+    bool best_forward = (best->xv_   >= 0.0);
 
-    //if we don't have a valid trajecotry... then do nothing
-    if(!comp_valid) {
+    bool comp_valid   = (comp->cost_ >= 0.0);
+    bool comp_forward = (comp->xv_   >= 0.0);
+
+    //if we don't have a valid trajectory... then do nothing
+    if( ! comp_valid) {
       return;
     }
 
@@ -202,8 +201,9 @@ namespace dwa_local_planner {
       return;
     }
 
-
-    if(comp_valid && ((comp->cost_ < best->cost_ || !best_valid) || (penalize_negative_x_ && comp_forward && !best_forward))){
+    if ((comp->cost_ < best->cost_) ||
+        (! best_valid) ||
+        (penalize_negative_x_ && comp_forward && !best_forward)) {
       base_local_planner::Trajectory* swap = best;
       best = comp;
       comp = swap;
@@ -223,6 +223,13 @@ namespace dwa_local_planner {
     return false;
   }
 
+  /**
+   * Generate Trajectories and select the best one
+   *
+   * :param pos: current robot position
+   * :param vel: current robot velocity
+   * :param limits: trajectory limits
+   */
   base_local_planner::Trajectory DWAPlanner::computeTrajectories(
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
@@ -242,17 +249,18 @@ namespace dwa_local_planner {
     }
     double max_vel_th = limits.max_rot_vel;
     double min_vel_th = -1.0 * max_vel_th;
+    double sim_period = getSimPeriod();
 
     //compute the feasible velocity space based on the rate at which we run
     Eigen::Vector3f max_vel = Eigen::Vector3f::Zero();
-    max_vel[0] = std::min(limits.max_vel_x, vel[0] + acc_lim_[0] * sim_period_);
-    max_vel[1] = std::min(limits.max_vel_y, vel[1] + acc_lim_[1] * sim_period_);
-    max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim_[2] * sim_period_);
+    max_vel[0] = std::min(limits.max_vel_x, vel[0] + acc_lim_[0] * sim_period);
+    max_vel[1] = std::min(limits.max_vel_y, vel[1] + acc_lim_[1] * sim_period);
+    max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim_[2] * sim_period);
 
     Eigen::Vector3f min_vel = Eigen::Vector3f::Zero();
-    min_vel[0] = std::max(limits.min_vel_x, vel[0] - acc_lim_[0] * sim_period_);
-    min_vel[1] = std::max(limits.min_vel_y, vel[1] - acc_lim_[1] * sim_period_);
-    min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim_[2] * sim_period_);
+    min_vel[0] = std::max(limits.min_vel_x, vel[0] - acc_lim_[0] * sim_period);
+    min_vel[1] = std::max(limits.min_vel_y, vel[1] - acc_lim_[1] * sim_period);
+    min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim_[2] * sim_period);
 
     Eigen::Vector3f dv = Eigen::Vector3f::Zero();
     //we want to sample the velocity space regularly
@@ -260,7 +268,7 @@ namespace dwa_local_planner {
       dv[i] = (max_vel[i] - min_vel[i]) / (std::max(1.0, double(vsamples_[i]) - 1));
     }
 
-    //keep track of the best trajectory seen so far... we'll re-use two memeber vars for efficiency
+    //keep track of the best trajectory seen so far... we'll re-use two member vars for efficiency
     base_local_planner::Trajectory* best_traj = &traj_one_;
     best_traj->cost_ = -1.0;
 
@@ -289,38 +297,38 @@ namespace dwa_local_planner {
         forward_pos_only_, forward_neg_only_, strafe_pos_only_, strafe_neg_only_, rot_pos_only_, rot_neg_only_);
 
     //ok... now we have our best trajectory
-    if(best_traj->cost_ >= 0){
+    if (best_traj->cost_ >= 0) {
       //we want to check if we need to set any oscillation flags
-      if(setOscillationFlags(best_traj, limits.min_trans_vel)){
+      if (setOscillationFlags(best_traj, limits.min_trans_vel)) {
         prev_stationary_pos_ = pos;
       }
 
       //if we've got restrictions... check if we can reset any oscillation flags
-      if(forward_pos_only_ || forward_neg_only_ 
-          || strafe_pos_only_ || strafe_neg_only_
-          || rot_pos_only_ || rot_neg_only_){
+      if (forward_pos_only_ || forward_neg_only_ ||
+          strafe_pos_only_  || strafe_neg_only_ ||
+          rot_pos_only_     || rot_neg_only_) {
         resetOscillationFlagsIfPossible(pos, prev_stationary_pos_);
       }
     }
-
-    //TODO: Think about whether we want to try to do things like back up when a valid trajectory is not found
 
     return *best_traj;
 
   }
 
-  void DWAPlanner::resetOscillationFlagsIfPossible(const Eigen::Vector3f& pos, const Eigen::Vector3f& prev){
+  void DWAPlanner::resetOscillationFlagsIfPossible(const Eigen::Vector3f& pos, const Eigen::Vector3f& prev) {
     double x_diff = pos[0] - prev[0];
     double y_diff = pos[1] - prev[1];
     double sq_dist = x_diff * x_diff + y_diff * y_diff;
 
     //if we've moved far enough... we can reset our flags
     if(sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_){
+      ROS_DEBUG_NAMED("dwa_local_planner", "Reset Oscillation Flags");
       resetOscillationFlags();
     }
   }
 
-  void DWAPlanner::resetOscillationFlags(){
+  void DWAPlanner::resetOscillationFlags() {
+    ROS_DEBUG_NAMED("dwa_local_planner", "Reset Oscillation Flags");
     strafe_pos_only_ = false;
     strafe_neg_only_ = false;
     strafing_pos_ = false;
@@ -337,19 +345,19 @@ namespace dwa_local_planner {
     forward_neg_ = false;
   }
   
-  bool DWAPlanner::setOscillationFlags(base_local_planner::Trajectory* t, double min_vel_trans){
+  bool DWAPlanner::setOscillationFlags(base_local_planner::Trajectory* t, double min_vel_trans) {
     bool flag_set = false;
     //set oscillation flags for moving forward and backward
-    if(t->xv_ < 0.0){
-      if(forward_pos_){
+    if (t->xv_ < 0.0) {
+      if (forward_pos_) {
         forward_neg_only_ = true;
         flag_set = true;
       }
       forward_pos_ = false;
       forward_neg_ = true;
     }
-    if(t->xv_ > 0.0){
-      if(forward_neg_){
+    if (t->xv_ > 0.0) {
+      if (forward_neg_) {
         forward_pos_only_ = true;
         flag_set = true;
       }
@@ -358,10 +366,10 @@ namespace dwa_local_planner {
     }
 
     //we'll only set flags for strafing and rotating when we're not moving forward at all
-    if(fabs(t->xv_) <= min_vel_trans){
+    if (fabs(t->xv_) <= min_vel_trans) {
       //check negative strafe
-      if(t->yv_ < 0){
-        if(strafing_pos_){
+      if (t->yv_ < 0) {
+        if (strafing_pos_) {
           strafe_neg_only_ = true;
           flag_set = true;
         }
@@ -370,8 +378,8 @@ namespace dwa_local_planner {
       }
 
       //check positive strafe
-      if(t->yv_ > 0){
-        if(strafing_neg_){
+      if (t->yv_ > 0) {
+        if (strafing_neg_) {
           strafe_pos_only_ = true;
           flag_set = true;
         }
@@ -380,8 +388,8 @@ namespace dwa_local_planner {
       }
 
       //check negative rotation
-      if(t->thetav_ < 0){
-        if(rotating_pos_){
+      if (t->thetav_ < 0) {
+        if (rotating_pos_) {
           rot_neg_only_ = true;
           flag_set = true;
         }
@@ -390,8 +398,8 @@ namespace dwa_local_planner {
       }
 
       //check positive rotation
-      if(t->thetav_ > 0){
-        if(rotating_neg_){
+      if (t->thetav_ > 0) {
+        if (rotating_neg_) {
           rot_pos_only_ = true;
           flag_set = true;
         }
@@ -402,12 +410,12 @@ namespace dwa_local_planner {
     return flag_set;
   }
 
-  double DWAPlanner::footprintCost(const Eigen::Vector3f& pos, double scale){
+  double DWAPlanner::footprintCost(const Eigen::Vector3f& pos, double scale) {
     double cos_th = cos(pos[2]);
     double sin_th = sin(pos[2]);
 
     std::vector<geometry_msgs::Point> scaled_oriented_footprint;
-    for(unsigned int i  = 0; i < footprint_spec_.size(); ++i){
+    for(unsigned int i  = 0; i < footprint_spec_.size(); ++i) {
       geometry_msgs::Point new_pt;
       new_pt.x = pos[0] + (scale * footprint_spec_[i].x * cos_th - scale * footprint_spec_[i].y * sin_th);
       new_pt.y = pos[1] + (scale * footprint_spec_[i].x * sin_th + scale * footprint_spec_[i].y * cos_th);
@@ -429,17 +437,18 @@ namespace dwa_local_planner {
       const Eigen::Vector3f& vel,
       base_local_planner::Trajectory& traj,
       bool two_point_scoring,
-      const base_local_planner::LocalPlannerLimitsConfig& limits){
+      const base_local_planner::LocalPlannerLimitsConfig& limits) {
     //ROS_ERROR("%.2f, %.2f, %.2f - %.2f %.2f", vel[0], vel[1], vel[2], sim_time_, sim_granularity_);
-    double impossible_cost = map_.map_.size();
 
     double vmag = sqrt(vel[0] * vel[0] + vel[1] * vel[1]);
     double eps = 1e-4;
 
-    //make sure that the robot is at least moving with one of the required velocities
-    if((vmag + eps < limits.min_trans_vel && fabs(vel[2]) + eps < limits.min_rot_vel) ||
-        vmag - eps > limits.max_trans_vel ||
-        oscillationCheck(vel)){
+    //make sure that the robot would at least be moving with one of
+    // the required minimum velocities, but not exceeding any of the maximum
+    // velocities
+    if ((vmag + eps < limits.min_trans_vel && fabs(vel[2]) + eps < limits.min_rot_vel) ||
+        (vmag - eps > limits.max_trans_vel) ||
+        oscillationCheck(vel)) {
       traj.cost_ = -1.0;
       return;
     }
@@ -449,14 +458,13 @@ namespace dwa_local_planner {
 
     //compute a timestep
     double dt = sim_time_ / num_steps;
-    double time = 0.0;
 
     //initialize the costs for the trajectory
     double path_dist = 0.0;
     double goal_dist = 0.0;
     double occ_cost = 0.0;
 
-    //we'll also be scoring a point infront of the robot
+    //we may also be scoring a point in front of the robot
     double front_path_dist = 0.0;
     double front_goal_dist = 0.0;
 
@@ -468,7 +476,7 @@ namespace dwa_local_planner {
     traj.cost_ = -1.0;
 
     //if we're not actualy going to simulate... we may as well just return now
-    if(num_steps == 0){
+    if (num_steps == 0) {
       traj.cost_ = -1.0;
       return;
     }
@@ -477,12 +485,12 @@ namespace dwa_local_planner {
     Eigen::Vector3f abs_vel = vel.array().abs();
 
     //simulate the trajectory and check for collisions, updating costs along the way
-    for(int i = 0; i < num_steps; ++i){
-      //get the mapp coordinates of a point
+    for (int i = 0; i < num_steps; ++i) {
+      //get the gridmap coordinates of a point
       unsigned int cell_x, cell_y;
 
       //we won't allow trajectories that go off the map... shouldn't happen that often anyways
-      if(!costmap_.worldToMap(pos[0], pos[1], cell_x, cell_y)){
+      if ( ! costmap_.worldToMap(pos[0], pos[1], cell_x, cell_y)) {
         //we're off the map
         traj.cost_ = -1.0;
         return;
@@ -493,7 +501,7 @@ namespace dwa_local_planner {
 
       unsigned int front_cell_x, front_cell_y;
       //we won't allow trajectories that go off the map... shouldn't happen that often anyways
-      if(!costmap_.worldToMap(front_x, front_y, front_cell_x, front_cell_y)){
+      if ( ! costmap_.worldToMap(front_x, front_y, front_cell_x, front_cell_y)) {
         //we're off the map
         traj.cost_ = -1.0;
         return;
@@ -503,7 +511,7 @@ namespace dwa_local_planner {
       //if we're over a certain speed threshold, we'll scale the robot's
       //footprint to make it either slow down or stay further from walls
       double scale = 1.0;
-      if(vmag > scaling_speed_){
+      if (vmag > scaling_speed_) {
         //scale up to the max scaling factor linearly... this could be changed later
         double ratio = (vmag - scaling_speed_) / (limits.max_trans_vel - scaling_speed_);
         scale = max_scaling_factor_ * ratio + 1.0;
@@ -513,7 +521,7 @@ namespace dwa_local_planner {
       double footprint_cost = footprintCost(pos, scale);
 
       //if the footprint hits an obstacle... we'll check if we can stop before we hit it... given the time to get there
-      if(footprint_cost < 0){
+      if (footprint_cost < 0) {
         traj.cost_ = -1.0;
         return;
 
@@ -540,11 +548,14 @@ namespace dwa_local_planner {
       path_dist = map_(cell_x, cell_y).path_dist;
       goal_dist = map_(cell_x, cell_y).goal_dist;
 
-      front_path_dist = front_map_(front_cell_x, front_cell_y).path_dist;
-      front_goal_dist = front_map_(front_cell_x, front_cell_y).goal_dist;
+      if (two_point_scoring) {
+        front_path_dist = front_map_(front_cell_x, front_cell_y).path_dist;
+        front_goal_dist = front_map_(front_cell_x, front_cell_y).goal_dist;
+      }
 
+      double impossible_cost = map_.map_.size();
       //if a point on this trajectory has no clear path to the goal... it is invalid
-      if(impossible_cost <= goal_dist || impossible_cost <= path_dist){
+      if (impossible_cost <= goal_dist || impossible_cost <= path_dist) {
         traj.cost_ = -2.0; //-2.0 means that we were blocked because propagation failed
         return;
       }
@@ -554,15 +565,16 @@ namespace dwa_local_planner {
 
       //update the position of the robot using the velocities passed in
       pos = computeNewPositions(pos, vel, dt);
-      time += dt;
-    }
+
+    } // end for simulation steps
 
     double resolution = costmap_.getResolution();
     //if we're not at the last point in the plan, then we can just score 
-    if(two_point_scoring)
+    if (two_point_scoring) {
       traj.cost_ = pdist_scale_ * resolution * ((front_path_dist + path_dist) / 2.0) + gdist_scale_ * resolution * ((front_goal_dist + goal_dist) / 2.0) + occdist_scale_ * occ_cost;
-    else
-      traj.cost_ = pdist_scale_ * resolution * path_dist + gdist_scale_ * resolution * goal_dist + occdist_scale_ * occ_cost;
+    } else {
+      traj.cost_ = pdist_scale_ * resolution * path_dist                             + gdist_scale_ * resolution * goal_dist + occdist_scale_ * occ_cost;
+    }
     //ROS_ERROR("%.2f, %.2f, %.2f, %.2f", vel[0], vel[1], vel[2], traj.cost_);
   }
 
@@ -575,8 +587,9 @@ namespace dwa_local_planner {
     generateTrajectory(pos, vel, t, false, limits);
 
     //if the trajectory is a legal one... the check passes
-    if(t.cost_ >= 0)
+    if (t.cost_ >= 0) {
       return true;
+    }
 
     //otherwise the check fails
     return false;
@@ -584,7 +597,7 @@ namespace dwa_local_planner {
 
   void DWAPlanner::updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan){
     global_plan_.resize(new_plan.size());
-    for(unsigned int i = 0; i < new_plan.size(); ++i){
+    for (unsigned int i = 0; i < new_plan.size(); ++i) {
       global_plan_[i] = new_plan[i];
     }
   }
@@ -612,6 +625,7 @@ namespace dwa_local_planner {
     //make sure that we update our path based on the global plan and compute costs
     map_.setPathCells(costmap_, global_plan_);
 
+    // The front_map_ is the same for all points except the last, where we want to move the robot so that it faces in the goal orientation
     std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
     front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x + forward_point_distance_ * cos(tf::getYaw(front_global_plan.back().pose.orientation));
     front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + forward_point_distance_ * sin(tf::getYaw(front_global_plan.back().pose.orientation));
@@ -623,10 +637,9 @@ namespace dwa_local_planner {
     ROS_DEBUG_NAMED("dwa_local_planner", "Trajectories created");
 
     //if we don't have a legal trajectory, we'll just command zero
-    if(best.cost_ < 0){
+    if (best.cost_ < 0) {
       drive_velocities.setIdentity();
-    }
-    else{
+    } else {
       tf::Vector3 start(best.xv_, best.yv_, 0);
       drive_velocities.setOrigin(start);
       tf::Matrix3x3 matrix;
