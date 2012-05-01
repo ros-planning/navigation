@@ -103,22 +103,22 @@ void SimpleTrajectoryGenerator::initialise(
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
     }
 
-    Eigen::Vector3f dv = Eigen::Vector3f::Zero();
-    //we want to sample the velocity space regularly
-    for(unsigned int i = 0; i < 3; ++i){
-      dv[i] = (max_vel[i] - min_vel[i]) / (std::max(1.0, double(vsamples[i]) - 1));
-    }
     Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
-    for(VelocityIterator x_it(min_vel[0], max_vel[0], vsamples[0]); !x_it.isFinished(); x_it++) {
+    VelocityIterator x_it(min_vel[0], max_vel[0], vsamples[0]);
+    VelocityIterator y_it(min_vel[1], max_vel[1], vsamples[1]);
+    VelocityIterator th_it(min_vel[2], max_vel[2], vsamples[2]);
+    for(; !x_it.isFinished(); x_it++) {
       vel_samp[0] = x_it.getVelocity();
-      for(VelocityIterator y_it(min_vel[1], max_vel[1], vsamples[1]); !y_it.isFinished(); y_it++) {
+      for(; !y_it.isFinished(); y_it++) {
         vel_samp[1] = y_it.getVelocity();
-        for(VelocityIterator th_it(min_vel[2], max_vel[2], vsamples[2]); !th_it.isFinished(); th_it++) {
+        for(; !th_it.isFinished(); th_it++) {
           vel_samp[2] = th_it.getVelocity();
           //ROS_DEBUG("Sample %f, %f, %f", vel_samp[0], vel_samp[1], vel_samp[2]);
           sample_params_.push_back(vel_samp);
         }
+        th_it.reset();
       }
+      y_it.reset();
     }
   }
 }
