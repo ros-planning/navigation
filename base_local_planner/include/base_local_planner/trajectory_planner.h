@@ -271,7 +271,8 @@ namespace base_local_planner {
        */
       void getFillCells(std::vector<base_local_planner::Position2DInt>& footprint);
 
-      MapGrid map_; ///< @brief The local map grid where we propagate goal and path distance 
+      MapGrid path_map_; ///< @brief The local map grid where we propagate path distance
+      MapGrid goal_map_; ///< @brief The local map grid where we propagate goal distance
       const costmap_2d::Costmap2D& costmap_; ///< @brief Provides access to cost map information
       WorldModel& world_model_; ///< @brief The world model that the controller uses for collision detection
 

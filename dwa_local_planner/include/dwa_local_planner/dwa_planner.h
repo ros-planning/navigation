@@ -244,7 +244,7 @@ namespace dwa_local_planner {
 
       void publishTrajectories();
 
-      base_local_planner::MapGrid map_, front_map_;
+      base_local_planner::MapGrid path_map_, goal_map_, front_map_;
       costmap_2d::Costmap2DROS* costmap_ros_;
       costmap_2d::Costmap2D costmap_;
       double stop_time_buffer_;

@@ -111,7 +111,7 @@ namespace dwa_local_planner {
     costmap_ros_ = costmap_ros;
     costmap_ros_->getCostmapCopy(costmap_);
 
-    map_ = base_local_planner::MapGrid(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY(), 
+    path_map_ = base_local_planner::MapGrid(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY(), 
         costmap_.getResolution(), costmap_.getOriginX(), costmap_.getOriginY());
     front_map_ = base_local_planner::MapGrid(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY(), 
         costmap_.getResolution(), costmap_.getOriginX(), costmap_.getOriginY());
@@ -164,20 +164,19 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
-    base_local_planner::MapCell cell = map_(cx, cy);
+    base_local_planner::MapCell cell = path_map_(cx, cy);
+    base_local_planner::MapCell goal_cell = goal_map_(cx, cy);
     if (cell.within_robot) {
         return false;
     }
     occ_cost = costmap_.getCost(cx, cy);
-    if (cell.path_dist == map_.obstacleCosts() ||
-        cell.goal_dist == map_.obstacleCosts() ||
-        cell.path_dist == map_.unreachableCellCosts() ||
-        cell.goal_dist == map_.unreachableCellCosts() ||
+    if (cell.target_dist == path_map_.obstacleCosts() ||
+        cell.target_dist == path_map_.unreachableCellCosts() ||
         occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-        return false;
+      return false;
     }
-    path_cost = cell.path_dist;
-    goal_cost = cell.goal_dist;
+    path_cost = cell.target_dist;
+    goal_cost = goal_cell.target_dist;
 
     double resolution = costmap_.getResolution();
     total_cost = pdist_scale_ * resolution * path_cost + gdist_scale_ * resolution * goal_cost + occdist_scale_ * occ_cost;
@@ -261,6 +260,7 @@ namespace dwa_local_planner {
     if(sq_dist < forward_point_distance_ * forward_point_distance_) {
       two_point_scoring = false;
     }
+
     double max_vel_th = limits.max_rot_vel;
     double min_vel_th = -1.0 * max_vel_th;
     double sim_period = getSimPeriod();
@@ -298,6 +298,7 @@ namespace dwa_local_planner {
         vel_samp[1] = y_it.getVelocity();
         for(base_local_planner::VelocityIterator th_it(min_vel[2], max_vel[2], vsamples_[2]); !th_it.isFinished(); th_it++) {
           vel_samp[2] = th_it.getVelocity();
+
           generateTrajectory(pos, vel_samp, *comp_traj, two_point_scoring, limits);
           if (comp_traj->cost_ >= 0.0) {
             for (unsigned int i = 0; i < comp_traj->getPointsSize(); i++) {
@@ -574,19 +575,17 @@ namespace dwa_local_planner {
 
       //compute the costs for this point on the trajectory
       occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
-      path_dist = map_(cell_x, cell_y).path_dist;
-      goal_dist = map_(cell_x, cell_y).goal_dist;
+      path_dist = path_map_(cell_x, cell_y).target_dist;
+      goal_dist = goal_map_(cell_x, cell_y).target_dist;
 
       if (two_point_scoring) {
-        front_path_dist = front_map_(front_cell_x, front_cell_y).path_dist;
-        front_goal_dist = front_map_(front_cell_x, front_cell_y).goal_dist;
+        front_path_dist = front_map_(front_cell_x, front_cell_y).target_dist;
+        front_goal_dist = front_map_(front_cell_x, front_cell_y).target_dist;
       }
 
       //if a point on this trajectory has no clear path to the goal... it is invalid
-      if (path_dist == map_.obstacleCosts() ||
-          goal_dist == map_.obstacleCosts() ||
-          path_dist == map_.unreachableCellCosts() ||
-          goal_dist == map_.unreachableCellCosts()) {
+      if (path_dist == path_map_.obstacleCosts() ||
+          path_dist == path_map_.unreachableCellCosts()) {
         traj.cost_ = -2.0; //-2.0 means that we were blocked because propagation failed
         return;
       }
@@ -608,6 +607,7 @@ namespace dwa_local_planner {
     }
     //ROS_ERROR("%.2f, %.2f, %.2f, %.2f", vel[0], vel[1], vel[2], traj.cost_);
   }
+
 
   bool DWAPlanner::checkTrajectory(
       const Eigen::Vector3f& pos,
@@ -650,17 +650,23 @@ namespace dwa_local_planner {
     Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
 
     //reset the map for new operations
-    map_.resetPathDist();
+    path_map_.resetPathDist();
+    goal_map_.resetPathDist();
     front_map_.resetPathDist();
 
+    std::vector<geometry_msgs::PoseStamped> goal;
+    goal.push_back(global_plan_.back());
+
     //make sure that we update our path based on the global plan and compute costs
-    map_.setPathCells(costmap_, global_plan_);
+    path_map_.setTargetCells(costmap_, global_plan_);
+    goal_map_.setTargetCells(costmap_, goal);
 
     // The front_map_ is the same for all points except the last, where we want to move the robot so that it faces in the goal orientation
     std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
     front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x + forward_point_distance_ * cos(tf::getYaw(front_global_plan.back().pose.orientation));
     front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + forward_point_distance_ * sin(tf::getYaw(front_global_plan.back().pose.orientation));
-    front_map_.setPathCells(costmap_, front_global_plan);
+    front_map_.setTargetCells(costmap_, front_global_plan);
+
     ROS_DEBUG_NAMED("dwa_local_planner", "Path/Goal distance computed");
 
     //rollout trajectories and find the minimum cost one

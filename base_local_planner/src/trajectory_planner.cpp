@@ -144,7 +144,9 @@ namespace base_local_planner{
       double backup_vel,
       bool dwa, bool heading_scoring, double heading_scoring_timestep, bool simple_attractor,
       vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
-    : map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()), costmap_(costmap), 
+    : path_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
+      goal_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
+      costmap_(costmap),
     world_model_(world_model), footprint_spec_(footprint_spec),
     sim_time_(sim_time), sim_granularity_(sim_granularity), angular_sim_granularity_(angular_sim_granularity),
     vx_samples_(vx_samples), vtheta_samples_(vtheta_samples),
@@ -175,20 +177,19 @@ namespace base_local_planner{
   TrajectoryPlanner::~TrajectoryPlanner(){}
 
   bool TrajectoryPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
-    MapCell cell = map_(cx, cy);
+    MapCell cell = path_map_(cx, cy);
+    MapCell goal_cell = goal_map_(cx, cy);
     if (cell.within_robot) {
         return false;
     }
     occ_cost = costmap_.getCost(cx, cy);
-    if (cell.path_dist == map_.obstacleCosts() ||
-        cell.goal_dist == map_.obstacleCosts() ||
-        cell.path_dist == map_.unreachableCellCosts() ||
-        cell.goal_dist == map_.unreachableCellCosts() ||
+    if (cell.target_dist == path_map_.obstacleCosts() ||
+        cell.target_dist == path_map_.unreachableCellCosts() ||
         occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         return false;
     }
-    path_cost = cell.path_dist;
-    goal_cost = cell.goal_dist;
+    path_cost = cell.target_dist;
+    goal_cost = goal_cell.target_dist;
     total_cost = pdist_scale_ * path_cost + gdist_scale_ * goal_cost + occdist_scale_ * occ_cost;
     return true;
   }
@@ -284,8 +285,8 @@ namespace base_local_planner{
 
       occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
 
-      double cell_pdist = map_(cell_x, cell_y).path_dist;
-      double cell_gdist = map_(cell_x, cell_y).goal_dist;
+      double cell_pdist = path_map_(cell_x, cell_y).target_dist;
+      double cell_gdist = goal_map_(cell_x, cell_y).target_dist;
 
       //update path and goal distances
       if(!heading_scoring_){
@@ -472,10 +473,12 @@ namespace base_local_planner{
 
     if(compute_dists){
       //reset the map for new operations
-      map_.resetPathDist();
+      path_map_.resetPathDist();
+      goal_map_.resetPathDist();
 
       //make sure that we update our path based on the global plan and compute costs
-      map_.setPathCells(costmap_, global_plan_);
+      path_map_.setTargetCells(costmap_, global_plan_);
+      goal_map_.setLocalGoal(costmap_, global_plan_);
       ROS_DEBUG("Path/Goal distance computed");
     }
   }
@@ -497,7 +500,7 @@ namespace base_local_planner{
   double TrajectoryPlanner::scoreTrajectory(double x, double y, double theta, double vx, double vy, 
       double vtheta, double vx_samp, double vy_samp, double vtheta_samp){
     Trajectory t; 
-    double impossible_cost = map_.obstacleCosts();
+    double impossible_cost = path_map_.obstacleCosts();
     generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
         acc_lim_x_, acc_lim_y_, acc_lim_theta_, impossible_cost, t);
 
@@ -548,7 +551,7 @@ namespace base_local_planner{
     Trajectory* swap = NULL;
 
     //any cell with a cost greater than the size of the map is impossible
-    double impossible_cost = map_.obstacleCosts();
+    double impossible_cost = path_map_.obstacleCosts();
 
     //if we're performing an escape we won't allow moving forward
     if(!escaping_){
@@ -643,7 +646,7 @@ namespace base_local_planner{
 
         //make sure that we'll be looking at a legal cell
         if(costmap_.worldToMap(x_r, y_r, cell_x, cell_y)){
-          double ahead_gdist = map_(cell_x, cell_y).goal_dist;
+          double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
           if(ahead_gdist < heading_dist){
             //if we haven't already tried rotating left since we've moved forward
             if(vtheta_samp < 0 && !stuck_left){
@@ -745,7 +748,7 @@ namespace base_local_planner{
 
           //make sure that we'll be looking at a legal cell
           if(costmap_.worldToMap(x_r, y_r, cell_x, cell_y)){
-            double ahead_gdist = map_(cell_x, cell_y).goal_dist;
+            double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
             if(ahead_gdist < heading_dist){
               //if we haven't already tried strafing left since we've moved forward
               if(vy_samp > 0 && !stuck_left_strafe){
@@ -893,18 +896,20 @@ namespace base_local_planner{
     double vtheta = vel_yaw;
 
     //reset the map for new operations
-    map_.resetPathDist();
+    path_map_.resetPathDist();
+    goal_map_.resetPathDist();
 
     //temporarily remove obstacles that are within the footprint of the robot
     vector<base_local_planner::Position2DInt> footprint_list = getFootprintCells(x, y, theta, true);
 
     //mark cells within the initial footprint of the robot
     for(unsigned int i = 0; i < footprint_list.size(); ++i){
-      map_(footprint_list[i].x, footprint_list[i].y).within_robot = true;
+      path_map_(footprint_list[i].x, footprint_list[i].y).within_robot = true;
     }
 
     //make sure that we update our path based on the global plan and compute costs
-    map_.setPathCells(costmap_, global_plan_);
+    path_map_.setTargetCells(costmap_, global_plan_);
+    goal_map_.setLocalGoal(costmap_, global_plan_);
     ROS_DEBUG("Path/Goal distance computed");
 
     //rollout trajectories and find the minimum cost one
@@ -1158,8 +1163,8 @@ namespace base_local_planner{
   }
 
   void TrajectoryPlanner::getLocalGoal(double& x, double& y){
-    x = map_.goal_x_;
-    y = map_.goal_y_;
+    x = path_map_.goal_x_;
+    y = path_map_.goal_y_;
   }
 
 };
