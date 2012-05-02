@@ -17,6 +17,7 @@ include_directories(${EIGEN_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 rosbuild_add_library(base_local_planner 
+	src/footprint_helper.cpp
 	src/goal_functions.cpp
 	src/map_cell.cpp
 	src/map_grid.cpp

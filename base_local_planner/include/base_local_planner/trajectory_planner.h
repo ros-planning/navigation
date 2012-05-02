@@ -43,6 +43,8 @@
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
 
+#include <base_local_planner/footprint_helper.h>
+
 #include <base_local_planner/world_model.h>
 #include <base_local_planner/trajectory.h>
 #include <base_local_planner/Position2DInt.h>
@@ -247,32 +249,8 @@ namespace base_local_planner {
        */
       double footprintCost(double x_i, double y_i, double theta_i);
 
-      /**
-       * @brief  Used to get the cells that make up the footprint of the robot
-       * @param x_i The x position of the robot
-       * @param y_i The y position of the robot
-       * @param theta_i The orientation of the robot
-       * @param  fill If true: returns all cells in the footprint of the robot. If false: returns only the cells that make up the outline of the footprint.
-       * @return The cells that make up either the outline or entire footprint of the robot depending on fill
-       */
-      std::vector<base_local_planner::Position2DInt> getFootprintCells(double x_i, double y_i, double theta_i, bool fill);
-
-      /**
-       * @brief  Use Bresenham's algorithm to trace a line between two points in a grid
-       * @param  x0 The x coordinate of the first point
-       * @param  x1 The x coordinate of the second point
-       * @param  y0 The y coordinate of the first point
-       * @param  y1 The y coordinate of the second point
-       * @param  pts Will be filled with the cells that lie on the line in the grid
-       */
-      void getLineCells(int x0, int x1, int y0, int y1, std::vector<base_local_planner::Position2DInt>& pts);
-
-      /**
-       * @brief Fill the outline of a polygon, in this case the robot footprint, in a grid
-       * @param footprint The list of cells making up the footprint in the grid, will be modified to include all cells inside the footprint
-       */
-      void getFillCells(std::vector<base_local_planner::Position2DInt>& footprint);
-
+      base_local_planner::FootprintHelper footprint_helper_;
+    
       MapGrid path_map_; ///< @brief The local map grid where we propagate path distance
       MapGrid goal_map_; ///< @brief The local map grid where we propagate goal distance
       const costmap_2d::Costmap2D& costmap_; ///< @brief Provides access to cost map information
