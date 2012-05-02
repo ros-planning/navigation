@@ -46,5 +46,5 @@ gencfg()
 
 rosbuild_add_executable(point_grid src/point_grid.cpp)
 
-rosbuild_add_gtest(test/utest test/gtest_main.cpp test/utest.cpp test/velocity_iterator_test.cpp)
+rosbuild_add_gtest(test/utest test/gtest_main.cpp test/utest.cpp test/velocity_iterator_test.cpp test/footprint_helper_test.cpp)
 target_link_libraries(test/utest base_local_planner)
