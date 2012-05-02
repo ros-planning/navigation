@@ -36,6 +36,8 @@
 *********************************************************************/
 #include <base_local_planner/costmap_model.h>
 
+#include <base_local_planner/footprint_helper.h>
+
 using namespace std;
 using namespace costmap_2d;
 
@@ -106,80 +108,24 @@ namespace base_local_planner {
   //calculate the cost of a ray-traced line
   double CostmapModel::lineCost(int x0, int x1, 
       int y0, int y1){
-    //Bresenham Ray-Tracing
-    int deltax = abs(x1 - x0);        // The difference between the x's
-    int deltay = abs(y1 - y0);        // The difference between the y's
-    int x = x0;                       // Start x off at the first pixel
-    int y = y0;                       // Start y off at the first pixel
-
-    int xinc1, xinc2, yinc1, yinc2;
-    int den, num, numadd, numpixels;
-
+    unsigned int j = 0;
     double line_cost = 0.0;
     double point_cost = -1.0;
+    FootprintHelper footprint_helper;
+    std::vector<base_local_planner::Position2DInt> pointlist;
+    footprint_helper.getLineCells(x0, x1, y0, y1, pointlist);
 
-    if (x1 >= x0)                 // The x-values are increasing
-    {
-      xinc1 = 1;
-      xinc2 = 1;
-    }
-    else                          // The x-values are decreasing
-    {
-      xinc1 = -1;
-      xinc2 = -1;
-    }
-
-    if (y1 >= y0)                 // The y-values are increasing
-    {
-      yinc1 = 1;
-      yinc2 = 1;
-    }
-    else                          // The y-values are decreasing
-    {
-      yinc1 = -1;
-      yinc2 = -1;
-    }
-
-    if (deltax >= deltay)         // There is at least one x-value for every y-value
-    {
-      xinc1 = 0;                  // Don't change the x when numerator >= denominator
-      yinc2 = 0;                  // Don't change the y for every iteration
-      den = deltax;
-      num = deltax / 2;
-      numadd = deltay;
-      numpixels = deltax;         // There are more x-values than y-values
-    }
-    else                          // There is at least one y-value for every x-value
-    {
-      xinc2 = 0;                  // Don't change the x for every iteration
-      yinc1 = 0;                  // Don't change the y when numerator >= denominator
-      den = deltay;
-      num = deltay / 2;
-      numadd = deltax;
-      numpixels = deltay;         // There are more y-values than x-values
-    }
-
-    for (int curpixel = 0; curpixel <= numpixels; curpixel++)
-    {
-      point_cost = pointCost(x, y); //Score the current point
-
-      if(point_cost < 0)
-        return -1;
-
-      if(line_cost < point_cost)
-        line_cost = point_cost;
-
-      num += numadd;              // Increase the numerator by the top of the fraction
-      if (num >= den)             // Check if numerator >= denominator
-      {
-        num -= den;               // Calculate the new numerator value
-        x += xinc1;               // Change the x as appropriate
-        y += yinc1;               // Change the y as appropriate
+    while (j < pointlist.size() - 1) {
+      point_cost = pointCost(pointlist[j].x, pointlist[j].y); //Score the current point
+      if(point_cost < 0) {
+        line_cost = -1;
+        break;
       }
-      x += xinc2;                 // Change the x as appropriate
-      y += yinc2;                 // Change the y as appropriate
+      if(line_cost < point_cost) {
+        line_cost = point_cost;
+      }
+      j++;
     }
-
     return line_cost;
   }
 
