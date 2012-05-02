@@ -51,8 +51,9 @@ void SimpleTrajectoryGenerator::initialise(
     const double sim_period,
     const Eigen::Vector3f& vsamples,
     bool use_acceleration_limits,
-    std::vector<Eigen::Vector3f> additional_samples) {
-  initialise(pos, vel, limits, sim_period, vsamples, use_acceleration_limits);
+    std::vector<Eigen::Vector3f> additional_samples,
+    bool discretize_by_time) {
+  initialise(pos, vel, limits, sim_period, vsamples, use_acceleration_limits, discretize_by_time);
   // add static samples if any
   sample_params_.insert(sample_params_.end(), additional_samples.begin(), additional_samples.end());
 }
@@ -64,16 +65,18 @@ void SimpleTrajectoryGenerator::initialise(
     base_local_planner::LocalPlannerLimits* limits,
     const double sim_period,
     const Eigen::Vector3f& vsamples,
-    bool use_acceleration_limits) {
+    bool continued_acceleration,
+    bool discretize_by_time) {
   /*
    * We actually generate all velocity sample vectors here, from which to generate trajectories later on
    */
   double max_vel_th = limits->max_rot_vel;
   double min_vel_th = -1.0 * max_vel_th;
+  discretize_by_time_ = discretize_by_time;
   Eigen::Vector3f acc_lim = limits->getAccLimits();
   pos_ = pos;
   vel_ = vel;
-  use_acceleration_limits_ = use_acceleration_limits;
+  continued_acceleration_ = continued_acceleration;
   limits_ = limits;
   next_sample_index_ = 0;
   sample_params_.clear();
@@ -83,14 +86,27 @@ void SimpleTrajectoryGenerator::initialise(
   if (vsamples[0] * vsamples[1] * vsamples[2] > 0) {
     //compute the feasible velocity space based on the rate at which we run
     Eigen::Vector3f max_vel = Eigen::Vector3f::Zero();
-    max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_period);
-    max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_period);
-    max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period);
-
     Eigen::Vector3f min_vel = Eigen::Vector3f::Zero();
-    min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_period);
-    min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_period);
-    min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period);
+
+    if (continued_acceleration) {
+      // if we use continously accelerate, we can sample the max velocity we can reach in sim_time_
+      max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_time_);
+      max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_time_);
+      max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_time_);
+
+      min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_time_);
+      min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_time_);
+      min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_time_);
+    } else {
+      // without do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
+      max_vel[0] = std::min(limits->max_vel_x, vel[0] + acc_lim[0] * sim_period);
+      max_vel[1] = std::min(limits->max_vel_y, vel[1] + acc_lim[1] * sim_period);
+      max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period);
+
+      min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_period);
+      min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_period);
+      min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period);
+    }
 
     Eigen::Vector3f dv = Eigen::Vector3f::Zero();
     //we want to sample the velocity space regularly
@@ -153,8 +169,6 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
       Eigen::Vector3f vel,
       Eigen::Vector3f sample_target_vel,
       base_local_planner::Trajectory& traj) {
-
-  //ROS_ERROR("%.2f, %.2f, %.2f - %.2f %.2f", vel[0], vel[1], vel[2], sim_time_, sim_granularity_);
   double vmag = sqrt(sample_target_vel[0] * sample_target_vel[0] + sample_target_vel[1] * sample_target_vel[1]);
   double eps = 1e-4;
   traj.cost_   = -1.0; // placed here in case we return early
@@ -170,8 +184,20 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     return false;
   }
 
+  int num_steps;
+  if (discretize_by_time_) {
+    num_steps = ceil(sim_time_ / sim_granularity_);
+  } else {
+    //compute the number of steps we must take along this trajectory to be "safe"
+    double sim_time_distance = vmag * sim_time_; // the distance the robot would travel in sim_time if it did not change velocity
+    double sim_time_angle = fabs(sample_target_vel[2]) * sim_time_; // the angle the robot would rotate in sim_time
+    num_steps =
+        ceil(std::max(sim_time_distance / sim_granularity_,
+            sim_time_angle    / angular_sim_granularity_));
+  }
+
   Eigen::Vector3f loop_vel;
-  if (use_acceleration_limits_) {
+  if (continued_acceleration_) {
     // we use a realistic model, start with current velocity and change it over time
     loop_vel = vel;
   } else {
@@ -179,15 +205,9 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     loop_vel = sample_target_vel;
   }
 
-  //compute the number of steps we must take along this trajectory to be "safe"
-  double sim_time_distance = vmag * sim_time_; // the distance the robot would travel in sim_time if it did not change velocity
-  double sim_time_angle = fabs(sample_target_vel[2]) * sim_time_; // the angle the robot would rotate in sim_time
-  int num_steps =
-      ceil(std::max(sim_time_distance / sim_granularity_,
-          sim_time_angle / angular_sim_granularity_));
-
   //compute a timestep
   double dt = sim_time_ / num_steps;
+  traj.time_delta_ = dt;
 
   //create a potential trajectory... it might be reused so we'll make sure to reset it
   traj.resetPoints();
@@ -201,7 +221,7 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     //add the point to the trajectory so we can draw it later if we want
     traj.addPoint(pos[0], pos[1], pos[2]);
 
-    if (use_acceleration_limits_) {
+    if (continued_acceleration_) {
       //calculate velocities
       loop_vel = computeNewVelocities(loop_vel, vel, dt);
     }

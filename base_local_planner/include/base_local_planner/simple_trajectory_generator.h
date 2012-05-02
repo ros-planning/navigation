@@ -66,6 +66,7 @@ public:
    * @param vsamples: in how many samples to divide the given dimension
    * @param use_acceleration_limits: if true use physical model, else idealized robot model
    * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from.
+   * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
    */
   void initialise(
       const Eigen::Vector3f& pos,
@@ -74,7 +75,8 @@ public:
       const double sim_period,
       const Eigen::Vector3f& vsamples,
       bool use_acceleration_limits,
-      std::vector<Eigen::Vector3f> additional_samples);
+      std::vector<Eigen::Vector3f> additional_samples,
+      bool discretize_by_time = false);
 
   /**
    * @param pos current robot position
@@ -83,6 +85,7 @@ public:
    * @param sim_period distance between points in one trajectory
    * @param vsamples: in how many samples to divide the given dimension
    * @param use_acceleration_limits: if true use physical model, else idealized robot model
+   * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
    */
   void initialise(
       const Eigen::Vector3f& pos,
@@ -90,7 +93,8 @@ public:
       base_local_planner::LocalPlannerLimits* limits,
       const double sim_period,
       const Eigen::Vector3f& vsamples,
-      bool use_acceleration_limits);
+      bool use_acceleration_limits,
+      bool discretize_by_time = false);
 
   void setParameters(double sim_time, double sim_granularity, double angular_sim_granularity);
 
@@ -126,7 +130,8 @@ protected:
   Eigen::Vector3f vel_;
 
   // whether velocity of trajectory changes over time or not
-  bool use_acceleration_limits_;
+  bool continued_acceleration_;
+  bool discretize_by_time_;
 
   double sim_time_, sim_granularity_, angular_sim_granularity_;
 };

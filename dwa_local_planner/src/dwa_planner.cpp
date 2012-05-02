@@ -219,12 +219,11 @@ namespace dwa_local_planner {
    */
   bool DWAPlanner::checkTrajectory(
       Eigen::Vector3f pos,
-      Eigen::Vector3f vel, // not used for this local planner
+      Eigen::Vector3f vel,
       Eigen::Vector3f vel_samples){
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
-    const base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
-    generator_.generateTrajectory(pos, vel_samples, &limits, traj);
+    generator_.generateTrajectory(pos, vel, vel_samples, traj);
     double cost = scored_sampling_planner_.scoreTrajectory(traj);
     //if the trajectory is a legal one... the check passes
     if(cost >= 0) {
@@ -298,8 +297,14 @@ namespace dwa_local_planner {
 
     base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
 
-    // prepare cost functions and generator for this run
-    generator_.initialise(pos, vel, &limits, sim_period_, limits.getAccLimits(), vsamples_);
+    // prepare cost functions and generators for this run
+    generator_.initialise(pos,
+        vel,
+        &limits,
+        sim_period_,
+        vsamples_,
+        // use_acceleration_limits (TODO make param)
+        false);
 
     // find best trajectory by sampling and scoring the samples
     scored_sampling_planner_.findBestTrajectory(result_traj_, NULL);

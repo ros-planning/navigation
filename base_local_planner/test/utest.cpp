@@ -172,7 +172,7 @@ void TrajectoryPlannerTest::footprintObstacles(){
   map_->operator ()(4, 6).target_dist = 1;
   wa->synchronize();
   EXPECT_EQ(wa->getCost(4,6), costmap_2d::LETHAL_OBSTACLE);
-  Trajectory traj(0, 0, 0, 30);
+  Trajectory traj(0, 0, 0, 0.1, 30);
   //tc->generateTrajectory(4.5, 4.5, M_PI_2, 0, 0, 0, 4, 0, 0, 4, 0, 0, DBL_MAX, traj, 2, 30);
   tc.generateTrajectory(4.5, 4.5, M_PI_2, 0, 0, 0, 4, 0, 0, 4, 0, 0, DBL_MAX, traj);
   //we expect this path to hit the obstacle
