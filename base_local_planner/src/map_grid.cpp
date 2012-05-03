@@ -135,6 +135,9 @@ namespace base_local_planner{
 
   void MapGrid::adjustPlanResolution(const std::vector<geometry_msgs::PoseStamped>& global_plan_in,
       std::vector<geometry_msgs::PoseStamped>& global_plan_out, double resolution) {
+    if (global_plan_in.size() == 0) {
+      return;
+    }
     double last_x = global_plan_in[0].pose.position.x;
     double last_y = global_plan_in[0].pose.position.y;
     global_plan_out.push_back(global_plan_in[0]);
@@ -147,15 +150,15 @@ namespace base_local_planner{
       double loop_y = global_plan_in[i].pose.position.y;
       double sqdist = (loop_x - last_x) * (loop_x - last_x) + (loop_y - last_y) * (loop_y - last_y);
       if (sqdist > min_sq_resolution) {
-        int steps = (sqrt(sqdist) - sqrt(min_sq_resolution)) / resolution;
+        int steps = ((sqrt(sqdist) - sqrt(min_sq_resolution)) / resolution) - 1;
         // add a points in-between
         double deltax = (loop_x - last_x) / steps;
         double deltay = (loop_y - last_y) / steps;
         // TODO: Interpolate orientation
         for (int j = 1; j < steps; ++j) {
           geometry_msgs::PoseStamped pose;
-          pose.pose.position.x = loop_x + j * deltax;
-          pose.pose.position.y = loop_y + j * deltay;
+          pose.pose.position.x = last_x + j * deltax;
+          pose.pose.position.y = last_y + j * deltay;
           pose.pose.position.z = global_plan_in[i].pose.position.z;
           pose.pose.orientation = global_plan_in[i].pose.orientation;
           pose.header = global_plan_in[i].header;
