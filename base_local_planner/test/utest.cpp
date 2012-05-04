@@ -166,27 +166,6 @@ void TrajectoryPlannerTest::checkPathDistance(){
 }
 
 
-//sanity check to make sure the grid functions correctly
-TEST(MapGrid, properGridConstruction){
-  MapGrid mg(10, 10);
-  MapCell mc;
-
-  for(int i = 0; i < 10; ++i){
-    for(int j = 0; j < 10; ++j){
-      mc.cx = i;
-      mc.cy = j;
-      mg(i, j) = mc;
-    }
-  }
-
-  for(int i = 0; i < 10; ++i){
-    for(int j = 0; j < 10; ++j){
-      EXPECT_FLOAT_EQ(mg(i, j).cx, i);
-      EXPECT_FLOAT_EQ(mg(i, j).cy, j);
-    }
-  }
-}
-
 TrajectoryPlannerTest* tct = NULL;
 
 TrajectoryPlannerTest* setup_testclass_singleton() {
