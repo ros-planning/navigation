@@ -150,8 +150,8 @@ namespace base_local_planner{
        * @param  current_cell The cell we're currently in 
        * @param  check_cell The cell to be updated
        */
-      inline void updatePathCell(MapCell* current_cell, MapCell* check_cell, 
-          std::queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap);
+      inline bool updatePathCell(MapCell* current_cell, MapCell* check_cell,
+          const costmap_2d::Costmap2D& costmap);
 
       /**
        * increase global plan resolution to match that of the costmap by adding points linearly between global plan points

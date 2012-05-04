@@ -4,11 +4,14 @@
  *  Created on: May 2, 2012
  *      Author: tkruse
  */
+#include <queue>
 
 #include <gtest/gtest.h>
 
 #include <base_local_planner/map_grid.h>
+#include <base_local_planner/map_cell.h>
 
+#include "wavefront_map_accessor.h"
 
 namespace base_local_planner {
 
@@ -129,6 +132,31 @@ TEST(MapGridTest, adjustPlan){
   EXPECT_EQ(3, global_plan_out[1].pose.position.x);
   EXPECT_EQ(5, global_plan_out[2].pose.position.x);
   EXPECT_EQ(5, global_plan_out[2].pose.position.x);
+}
+
+TEST(MapGridTest, distancePropagation){
+  MapGrid mg(10, 10);
+
+  WavefrontMapAccessor* wa = new WavefrontMapAccessor(&mg, .25);
+  std::queue<MapCell*> dist_queue;
+  mg.computeTargetDistance(dist_queue, *wa);
+  EXPECT_EQ(false, mg(0, 0).target_mark);
+
+  MapCell& mc = mg.getCell(0, 0);
+  mc.target_dist = 0.0;
+  mc.target_mark = true;
+  dist_queue.push(&mc);
+  mg.computeTargetDistance(dist_queue, *wa);
+  EXPECT_EQ(true, mg(0, 0).target_mark);
+  EXPECT_EQ(0.0,  mg(0, 0).target_dist);
+  EXPECT_EQ(true, mg(1, 1).target_mark);
+  EXPECT_EQ(2.0,  mg(1, 1).target_dist);
+  EXPECT_EQ(true, mg(0, 4).target_mark);
+  EXPECT_EQ(4.0,  mg(0, 4).target_dist);
+  EXPECT_EQ(true, mg(4, 0).target_mark);
+  EXPECT_EQ(4.0,  mg(4, 0).target_dist);
+  EXPECT_EQ(true, mg(9, 9).target_mark);
+  EXPECT_EQ(18.0, mg(9, 9).target_dist);
 }
 
 }

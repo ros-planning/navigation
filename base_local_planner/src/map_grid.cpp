@@ -100,10 +100,8 @@ namespace base_local_planner{
   }
 
 
-  inline void MapGrid::updatePathCell(MapCell* current_cell, MapCell* check_cell,
-      std::queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap){
-    //mark the cell as visisted
-    check_cell->target_mark = true;
+  inline bool MapGrid::updatePathCell(MapCell* current_cell, MapCell* check_cell,
+      const costmap_2d::Costmap2D& costmap){
 
     //if the cell is an obstacle set the max path distance
     unsigned char cost = costmap.getCost(check_cell->cx, check_cell->cy);
@@ -112,15 +110,14 @@ namespace base_local_planner{
          cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
          cost == costmap_2d::NO_INFORMATION)){
       check_cell->target_dist = obstacleCosts();
-      return;
+      return false;
     }
 
     double new_target_dist = current_cell->target_dist + 1;
     if (new_target_dist < check_cell->target_dist) {
       check_cell->target_dist = new_target_dist;
     }
-
-    dist_queue.push(check_cell);
+    return true;
   }
 
 
@@ -263,34 +260,48 @@ namespace base_local_planner{
     unsigned int last_row = size_y_ - 1;
     while(!dist_queue.empty()){
       current_cell = dist_queue.front();
-      check_cell = current_cell;
+
+
       dist_queue.pop();
 
       if(current_cell->cx > 0){
         check_cell = current_cell - 1;
         if(!check_cell->target_mark){
-          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+          //mark the cell as visisted
+          check_cell->target_mark = true;
+          if(updatePathCell(current_cell, check_cell, costmap)) {
+            dist_queue.push(check_cell);
+          }
         }
       }
 
       if(current_cell->cx < last_col){
         check_cell = current_cell + 1;
         if(!check_cell->target_mark){
-          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+          check_cell->target_mark = true;
+          if(updatePathCell(current_cell, check_cell, costmap)) {
+            dist_queue.push(check_cell);
+          }
         }
       }
 
       if(current_cell->cy > 0){
         check_cell = current_cell - size_x_;
         if(!check_cell->target_mark){
-          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+          check_cell->target_mark = true;
+          if(updatePathCell(current_cell, check_cell, costmap)) {
+            dist_queue.push(check_cell);
+          }
         }
       }
 
       if(current_cell->cy < last_row){
         check_cell = current_cell + size_x_;
         if(!check_cell->target_mark){
-          updatePathCell(current_cell, check_cell, dist_queue, costmap);
+          check_cell->target_mark = true;
+          if(updatePathCell(current_cell, check_cell, costmap)) {
+            dist_queue.push(check_cell);
+          }
         }
       }
     }
