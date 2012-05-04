@@ -126,7 +126,8 @@ public:
   static Eigen::Vector3f computeNewPositions(const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel, double dt);
 
-  Eigen::Vector3f computeNewVelocities(const Eigen::Vector3f& sample_target_vel, const Eigen::Vector3f& vel, double dt);
+  static Eigen::Vector3f computeNewVelocities(const Eigen::Vector3f& sample_target_vel,
+      const Eigen::Vector3f& vel, Eigen::Vector3f acclimits, double dt);
 
   bool generateTrajectory(
         Eigen::Vector3f pos,

@@ -222,7 +222,7 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
   Eigen::Vector3f loop_vel;
   if (continued_acceleration_) {
     // assuming the velocity of the first cycle is the one we want to store in the trajectory object
-    loop_vel = computeNewVelocities(sample_target_vel, vel, dt);
+    loop_vel = computeNewVelocities(sample_target_vel, vel, limits_->getAccLimits(), dt);
     traj.xv_     = loop_vel[0];
     traj.yv_     = loop_vel[1];
     traj.thetav_ = loop_vel[2];
@@ -242,7 +242,7 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
 
     if (continued_acceleration_) {
       //calculate velocities
-      loop_vel = computeNewVelocities(sample_target_vel, loop_vel, dt);
+      loop_vel = computeNewVelocities(sample_target_vel, loop_vel, limits_->getAccLimits(), dt);
       //ROS_WARN_NAMED("Generator", "Flag: %d, Loop_Vel %f, %f, %f", continued_acceleration_, loop_vel[0], loop_vel[1], loop_vel[2]);
     }
 
@@ -267,13 +267,13 @@ Eigen::Vector3f SimpleTrajectoryGenerator::computeNewPositions(const Eigen::Vect
  * cheange vel using acceleration limits to converge towards sample_target-vel
  */
 Eigen::Vector3f SimpleTrajectoryGenerator::computeNewVelocities(const Eigen::Vector3f& sample_target_vel,
-    const Eigen::Vector3f& vel, double dt) {
+    const Eigen::Vector3f& vel, Eigen::Vector3f acclimits, double dt) {
   Eigen::Vector3f new_vel = Eigen::Vector3f::Zero();
   for (int i = 0; i < 3; ++i) {
     if (vel[i] < sample_target_vel[i]) {
-      new_vel[i] = std::min(double(sample_target_vel[i]), vel[i] + limits_->getAccLimits()[i] * dt);
+      new_vel[i] = std::min(double(sample_target_vel[i]), vel[i] + acclimits[i] * dt);
     } else {
-      new_vel[i] = std::max(double(sample_target_vel[i]), vel[i] - limits_->getAccLimits()[i] * dt);
+      new_vel[i] = std::max(double(sample_target_vel[i]), vel[i] - acclimits[i] * dt);
     }
   }
   return new_vel;

@@ -51,5 +51,6 @@ rosbuild_add_gtest(test/utest
 	test/utest.cpp
 	test/velocity_iterator_test.cpp
 	test/footprint_helper_test.cpp
+	test/trajectory_generator_test.cpp
 	test/map_grid_test.cpp)
 target_link_libraries(test/utest base_local_planner)
