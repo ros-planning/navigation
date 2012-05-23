@@ -169,7 +169,10 @@ TEST(VelocityIteratorTest, test_cranky) {
     i++;
   }
   EXPECT_EQ(4, i);
-
+  for (int j = 0; j < 5; ++j) {
+	double expected [5]= {-10.00001, -0.000005, 0.0, 10.0};
+    EXPECT_FLOAT_EQ(expected[j], result[j]);
+  }
 }
 
 } // namespace
