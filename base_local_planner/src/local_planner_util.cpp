@@ -43,13 +43,12 @@ namespace base_local_planner {
 
 void LocalPlannerUtil::initialize(
     tf::TransformListener* tf,
-    costmap_2d::Costmap2DROS* costmap_ros) {
+    costmap_2d::Costmap2D* costmap,
+    std::string global_frame) {
   if(!initialized_) {
     tf_ = tf;
-    costmap_ros_ = costmap_ros;
-
-
-
+    costmap_ = costmap;
+    global_frame_ = global_frame;
     initialized_ = true;
   }
   else{
@@ -71,30 +70,12 @@ void LocalPlannerUtil::reconfigureCB(LocalPlannerLimits &config, bool restore_de
   limits_ = LocalPlannerLimits(config);
 }
 
-costmap_2d::Costmap2DROS* LocalPlannerUtil::getCostmapRos() {
-  return costmap_ros_;
+costmap_2d::Costmap2D* LocalPlannerUtil::getCostmap() {
+  return costmap_;
 }
-
-tf::TransformListener* LocalPlannerUtil::getTfListener() {
-  return tf_;
-}
-
-std::string LocalPlannerUtil::getName() {
-  return name_;
-}
-
 
 LocalPlannerLimits LocalPlannerUtil::getCurrentLimits() {
   return limits_;
-}
-
-
-
-bool LocalPlannerUtil::getRobotPose(tf::Stamped<tf::Pose>& global_pose) {
-  if(!costmap_ros_->getRobotPose(global_pose)) {
-    return false;
-  }
-  return true;
 }
 
 
@@ -102,7 +83,7 @@ bool LocalPlannerUtil::getGoal(tf::Stamped<tf::Pose>& goal_pose) {
   //we assume the global goal is the last point in the global plan
   return base_local_planner::getGoalPose(*tf_,
         global_plan_,
-        costmap_ros_->getGlobalFrameID(),
+        global_frame_,
         goal_pose);
 }
 
@@ -124,10 +105,10 @@ bool LocalPlannerUtil::setPlan(const std::vector<geometry_msgs::PoseStamped>& or
 bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan) {
   //get the global plan in our frame
   if(!base_local_planner::transformGlobalPlan(
-      *getTfListener(),
+      *tf_,
       global_plan_,
-      *getCostmapRos(),
-      getCostmapRos()->getGlobalFrameID(),
+      *costmap_,
+      global_frame_,
       transformed_plan)) {
     ROS_WARN("Could not transform the global plan to the frame of the controller");
     return false;

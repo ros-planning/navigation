@@ -39,13 +39,13 @@
 
 namespace base_local_planner {
 
-MapGridCostFunction::MapGridCostFunction(const costmap_2d::Costmap2DROS* costmap_ros,
+MapGridCostFunction::MapGridCostFunction(costmap_2d::Costmap2D* costmap,
     double xshift,
     double yshift,
     bool is_local_goal_function,
     CostAggregationType aggregationType) :
-    costmap_ros_(costmap_ros),
-    map_(costmap_ros->getSizeInCellsX(), costmap_ros->getSizeInCellsY()),
+    costmap_(costmap),
+    map_(costmap->getSizeInCellsX(), costmap->getSizeInCellsY()),
     aggregationType_(aggregationType),
     xshift_(xshift),
     yshift_(yshift),
@@ -56,14 +56,12 @@ void MapGridCostFunction::setTargetPoses(std::vector<geometry_msgs::PoseStamped>
 }
 
 bool MapGridCostFunction::prepare() {
-
-  costmap_ros_->getCostmapCopy(costmap_);
   map_.resetPathDist();
 
   if (is_local_goal_function_) {
-    map_.setLocalGoal(costmap_, target_poses_);
+    map_.setLocalGoal(*costmap_, target_poses_);
   } else {
-    map_.setTargetCells(costmap_, target_poses_);
+    map_.setTargetCells(*costmap_, target_poses_);
   }
   return true;
 }
@@ -97,7 +95,7 @@ double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
     }
 
     //we won't allow trajectories that go off the map... shouldn't happen that often anyways
-    if ( ! costmap_.worldToMap(px, py, cell_x, cell_y)) {
+    if ( ! costmap_->worldToMap(px, py, cell_x, cell_y)) {
       //we're off the map
       ROS_WARN("Off Map %f, %f", px, py);
       return -4.0;

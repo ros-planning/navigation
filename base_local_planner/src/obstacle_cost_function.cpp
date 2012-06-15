@@ -38,14 +38,13 @@
 #include <base_local_planner/obstacle_cost_function.h>
 #include <cmath>
 #include <Eigen/Core>
+#include <ros/console.h>
 
 namespace base_local_planner {
 
-ObstacleCostFunction::ObstacleCostFunction(const costmap_2d::Costmap2DROS* costmap_ros) : costmap_ros_(costmap_ros) {
-  if (costmap_ros != NULL) {
-    footprint_spec_ = costmap_ros_->getRobotFootprint();
-    costmap_ros_->getCostmapCopy(costmap_);
-    world_model_ = new base_local_planner::CostmapModel(costmap_);
+ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap) : costmap_(costmap) {
+  if (costmap != NULL) {
+    world_model_ = new base_local_planner::CostmapModel(*costmap_);
   }
 }
 
@@ -58,24 +57,28 @@ ObstacleCostFunction::~ObstacleCostFunction() {
 
 void ObstacleCostFunction::setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed) {
   // TODO: move this to prepare if possible
-   max_trans_vel_ = max_trans_vel;
-   max_scaling_factor_ = max_scaling_factor;
-   scaling_speed_ = scaling_speed;
- }
+  max_trans_vel_ = max_trans_vel;
+  max_scaling_factor_ = max_scaling_factor;
+  scaling_speed_ = scaling_speed;
+}
+
+void ObstacleCostFunction::setFootprint(std::vector<geometry_msgs::Point> footprint_spec) {
+  footprint_spec_ = footprint_spec;
+}
 
 bool ObstacleCostFunction::prepare() {
-  //make sure to get an updated copy of the costmap before computing trajectories
-  costmap_ros_->getCostmapCopy(costmap_);
-  // updated footprint?
-  footprint_spec_ = costmap_ros_->getRobotFootprint();
   return true;
-
 }
 
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0;
   double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
   double px, py, pth;
+  if (footprint_spec_.size() == 0) {
+    // Bug, should never happen
+    ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
+    return -9;
+  }
 
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     traj.getPoint(i, px, py, pth);
@@ -108,7 +111,7 @@ double ObstacleCostFunction::footprintCost (
     const double& th,
     double scale,
     std::vector<geometry_msgs::Point>& footprint_spec,
-    costmap_2d::Costmap2D& costmap,
+    costmap_2d::Costmap2D* costmap,
     base_local_planner::WorldModel* world_model) {
   double cos_th = cos(th);
   double sin_th = sin(th);
@@ -126,7 +129,10 @@ double ObstacleCostFunction::footprintCost (
     robot_position.y = y;
 
     //check if the footprint is legal
-    double footprint_cost = world_model->footprintCost(robot_position, scaled_oriented_footprint, costmap.getInscribedRadius(), costmap.getCircumscribedRadius());
+    double footprint_cost = world_model->footprintCost(robot_position,
+    		scaled_oriented_footprint,
+    		costmap->getInscribedRadius(),
+    		costmap->getCircumscribedRadius());
 
     if (footprint_cost < 0) {
       return -6.0;
@@ -134,11 +140,11 @@ double ObstacleCostFunction::footprintCost (
     unsigned int cell_x, cell_y;
 
     //we won't allow trajectories that go off the map... shouldn't happen that often anyways
-    if ( ! costmap.worldToMap(x, y, cell_x, cell_y)) {
+    if ( ! costmap->worldToMap(x, y, cell_x, cell_y)) {
       return -7.0;
     }
 
-    occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap.getCost(cell_x, cell_y)));
+    occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
 
   }
 

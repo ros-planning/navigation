@@ -23,10 +23,11 @@ public:
   virtual ~LatchedStopRotateController();
 
   bool isPositionReached(LocalPlannerUtil* planner_util,
-      OdometryHelperRos& odom_helper);
+      tf::Stamped<tf::Pose> global_pose);
 
   bool isGoalReached(LocalPlannerUtil* planner_util,
-      OdometryHelperRos& odom_helper);
+      OdometryHelperRos& odom_helper,
+      tf::Stamped<tf::Pose> global_pose);
 
   void resetLatching() {
     xy_tolerance_latch_ = false;
@@ -72,6 +73,7 @@ public:
       double sim_period,
       LocalPlannerUtil* planner_util,
       OdometryHelperRos& odom_helper,
+      tf::Stamped<tf::Pose> global_pose,
       boost::function<bool (Eigen::Vector3f pos,
                             Eigen::Vector3f vel,
                             Eigen::Vector3f vel_samples)> obstacle_check);

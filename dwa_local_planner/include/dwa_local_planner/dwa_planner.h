@@ -49,7 +49,6 @@
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
-#include <costmap_2d/costmap_2d_ros.h>
 
 #include <base_local_planner/trajectory.h>
 #include <base_local_planner/local_planner_limits.h>
@@ -73,8 +72,9 @@ namespace dwa_local_planner {
        * @brief  Constructor for the planner
        * @param name The name of the planner 
        * @param costmap_ros A pointer to the costmap instance the planner should use
+       * @param global_frame the frame id of the tf frame to use
        */
-      DWAPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros);
+      DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util);
 
       /**
        * @brief  Destructor for the planner
@@ -108,7 +108,8 @@ namespace dwa_local_planner {
       base_local_planner::Trajectory findBestPath(
           tf::Stamped<tf::Pose> global_pose,
           tf::Stamped<tf::Pose> global_vel,
-          tf::Stamped<tf::Pose>& drive_velocities);
+          tf::Stamped<tf::Pose>& drive_velocities,
+          std::vector<geometry_msgs::Point> footprint_spec);
 
       /**
        * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
@@ -135,8 +136,6 @@ namespace dwa_local_planner {
        */
       bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
 
-      base_local_planner::LocalPlannerUtil* getPlannerUtil();
-
       /**
        * sets new plan and resets state
        */
@@ -144,10 +143,8 @@ namespace dwa_local_planner {
 
     private:
 
-      base_local_planner::LocalPlannerUtil planner_util_;
+      base_local_planner::LocalPlannerUtil *planner_util_;
 
-      const costmap_2d::Costmap2DROS* costmap_ros_;
-      costmap_2d::Costmap2D costmap_;
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
       double pdist_scale_, gdist_scale_, occdist_scale_;
       Eigen::Vector3f vsamples_;

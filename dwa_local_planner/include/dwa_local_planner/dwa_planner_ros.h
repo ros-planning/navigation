@@ -131,14 +131,22 @@ namespace dwa_local_planner {
 
       void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
+      tf::TransformListener* tf_; ///< @brief Used for transforming point clouds
+
       // for visualisation, publishers of global and local plan
       ros::Publisher g_plan_pub_, l_plan_pub_;
 
+      base_local_planner::LocalPlannerUtil planner_util_;
+
       boost::shared_ptr<DWAPlanner> dp_; ///< @brief The trajectory controller
+
+      costmap_2d::Costmap2DROS* costmap_ros_;
+      costmap_2d::Costmap2D costmap_;
 
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
+      tf::Stamped<tf::Pose> current_pose_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 

@@ -91,7 +91,7 @@ namespace base_local_planner {
   bool transformGlobalPlan(
       const tf::TransformListener& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const costmap_2d::Costmap2DROS& costmap,
+      const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan){
     const geometry_msgs::PoseStamped& plan_pose = global_plan[0];
@@ -113,7 +113,7 @@ namespace base_local_planner {
       //let's get the pose of the robot in the frame of the plan
       tf::Stamped<tf::Pose> robot_pose;
       robot_pose.setIdentity();
-      robot_pose.frame_id_ = costmap.getBaseFrameID();
+      robot_pose.frame_id_ = global_frame;
       robot_pose.stamp_ = ros::Time();
       tf.transformPose(plan_pose.header.frame_id, robot_pose, robot_pose);
 
@@ -216,9 +216,13 @@ namespace base_local_planner {
     return true;
   }
 
-  bool isGoalReached(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2DROS& costmap_ros, const std::string& global_frame, 
-      const nav_msgs::Odometry& base_odom, double rot_stopped_vel, double trans_stopped_vel,
+  bool isGoalReached(const tf::TransformListener& tf,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const costmap_2d::Costmap2D& costmap,
+      const std::string& global_frame,
+      tf::Stamped<tf::Pose>& global_pose,
+      const nav_msgs::Odometry& base_odom,
+      double rot_stopped_vel, double trans_stopped_vel,
       double xy_goal_tolerance, double yaw_goal_tolerance){
 
 	//we assume the global goal is the last point in the global plan
@@ -228,10 +232,6 @@ namespace base_local_planner {
     double goal_x = goal_pose.getOrigin().getX();
     double goal_y = goal_pose.getOrigin().getY();
     double goal_th = tf::getYaw(goal_pose.getRotation());
-
-    tf::Stamped<tf::Pose> global_pose;
-    if(!costmap_ros.getRobotPose(global_pose))
-      return false;
 
     //check to see if we've reached the goal position
     if(getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance) {

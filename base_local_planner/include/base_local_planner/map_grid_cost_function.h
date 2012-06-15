@@ -40,7 +40,7 @@
 
 #include <base_local_planner/trajectory_cost_function.h>
 
-#include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/costmap_2d.h>
 #include <base_local_planner/map_grid.h>
 
 namespace base_local_planner {
@@ -72,7 +72,7 @@ enum CostAggregationType { Last, Sum, Product};
  */
 class MapGridCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
-  MapGridCostFunction(const costmap_2d::Costmap2DROS* costmap_ros,
+  MapGridCostFunction(costmap_2d::Costmap2D* costmap,
       double xshift = 0.0,
       double yshift = 0.0,
       bool is_local_goal_function = false,
@@ -115,8 +115,7 @@ public:
 
 private:
   std::vector<geometry_msgs::PoseStamped> target_poses_;
-  const costmap_2d::Costmap2DROS* costmap_ros_;
-  costmap_2d::Costmap2D costmap_;
+  costmap_2d::Costmap2D* costmap_;
 
   base_local_planner::MapGrid map_;
   CostAggregationType aggregationType_;

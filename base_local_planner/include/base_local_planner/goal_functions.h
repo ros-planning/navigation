@@ -52,7 +52,6 @@
 
 #include <angles/angles.h>
 #include <costmap_2d/costmap_2d.h>
-#include <costmap_2d/costmap_2d_ros.h>
 
 namespace base_local_planner {
 
@@ -98,8 +97,10 @@ namespace base_local_planner {
    * @param global_frame The frame to transform the plan to
    * @param transformed_plan Populated with the transformed plan
    */
-  bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
+  bool transformGlobalPlan(const tf::TransformListener& tf,
+	  const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const costmap_2d::Costmap2D& costmap,
+      const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan);
 
   /**
@@ -128,9 +129,13 @@ namespace base_local_planner {
    * @param yaw_goal_tolerance The rotational tolerance on reaching the goal
    * @return True if achieved, false otherwise
    */
-  bool isGoalReached(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2DROS& costmap_ros, const std::string& global_frame, 
-      const nav_msgs::Odometry& base_odom, double rot_stopped_vel, double trans_stopped_vel,
+  bool isGoalReached(const tf::TransformListener& tf,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const costmap_2d::Costmap2D& costmap,
+      const std::string& global_frame,
+      tf::Stamped<tf::Pose>& global_pose,
+      const nav_msgs::Odometry& base_odom,
+      double rot_stopped_vel, double trans_stopped_vel,
       double xy_goal_tolerance, double yaw_goal_tolerance);
 
   /**
@@ -141,6 +146,7 @@ namespace base_local_planner {
    * @return True if the robot is stopped, false otherwise
    */
   bool stopped(const nav_msgs::Odometry& base_odom, 
-      const double& rot_stopped_velocity, const double& trans_stopped_velocity);
+      const double& rot_stopped_velocity,
+      const double& trans_stopped_velocity);
 };
 #endif

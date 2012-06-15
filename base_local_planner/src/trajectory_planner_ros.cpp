@@ -379,7 +379,7 @@ namespace base_local_planner {
 
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     //get the global plan in our frame
-    if (!transformGlobalPlan(*tf_, global_plan_, *costmap_ros_, global_frame_, transformed_plan)) {
+    if (!transformGlobalPlan(*tf_, global_plan_, costmap_, global_frame_, transformed_plan)) {
       ROS_WARN("Could not transform the global plan to the frame of the controller");
       return false;
     }
@@ -537,8 +537,15 @@ namespace base_local_planner {
     //copy over the odometry information
     nav_msgs::Odometry base_odom;
     odom_helper_.getOdom(base_odom);
-
-    return base_local_planner::isGoalReached(*tf_, global_plan_, *costmap_ros_, global_frame_, base_odom, 
-        rot_stopped_velocity_, trans_stopped_velocity_, xy_goal_tolerance_, yaw_goal_tolerance_);
+    tf::Stamped<tf::Pose> global_pose;
+    costmap_ros_->getRobotPose(global_pose);
+    return base_local_planner::isGoalReached(*tf_,
+        global_plan_,
+        costmap_,
+        global_frame_,
+        global_pose,
+        base_odom,
+        rot_stopped_velocity_, trans_stopped_velocity_,
+        xy_goal_tolerance_, yaw_goal_tolerance_);
   }
 };

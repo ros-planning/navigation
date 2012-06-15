@@ -45,9 +45,8 @@
 #include <ros/ros.h>
 
 namespace dwa_local_planner {
-  void DWAPlanner::reconfigure(DWAPlannerConfig &cfg)
+  void DWAPlanner::reconfigure(DWAPlannerConfig &config)
   {
-    DWAPlannerConfig config(cfg);
 
     boost::mutex::scoped_lock l(configuration_mutex_);
 
@@ -58,7 +57,7 @@ namespace dwa_local_planner {
         config.use_dwa,
         sim_period_);
 
-    double resolution = costmap_.getResolution();
+    double resolution = planner_util_->getCostmap()->getResolution();
     pdist_scale_ = config.path_distance_bias;
     // pdistscale used for both path and alignment, set  forward_point_distance to zero to discard alignment
     path_costs_.setScale(resolution * pdist_scale_ * 0.5);
@@ -109,44 +108,19 @@ namespace dwa_local_planner {
     vsamples_[1] = vy_samp;
     vsamples_[2] = vth_samp;
  
-    base_local_planner::LocalPlannerLimits limits;
-    limits.max_trans_vel = config.max_trans_vel;
-    limits.min_trans_vel = config.min_trans_vel;
-    limits.max_vel_x = config.max_vel_x;
-    limits.min_vel_x = config.min_vel_x;
-    limits.max_vel_y = config.max_vel_y;
-    limits.min_vel_y = config.min_vel_y;
-    limits.max_rot_vel = config.max_rot_vel;
-    limits.min_rot_vel = config.min_rot_vel;
-    limits.acc_lim_x = config.acc_lim_x;
-    limits.acc_lim_y = config.acc_lim_y;
-    limits.acc_lim_theta = config.acc_lim_theta;
-    limits.acc_limit_trans = config.acc_limit_trans;
-    limits.xy_goal_tolerance = config.xy_goal_tolerance;
-    limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
-    // TODO
-//    limits.jerk_lim_trans = config.jerk_lim_trans;
-//    limits.jerk_lim_rot = config.jerk_lim_rot;
-    limits.prune_plan = config.prune_plan;
-    limits.trans_stopped_vel = config.trans_stopped_vel;
-    limits.rot_stopped_vel = config.rot_stopped_vel;
-    planner_util_.reconfigureCB(limits, config.restore_defaults);
+
   }
 
-  DWAPlanner::DWAPlanner(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) :
-      obstacle_costs_(costmap_ros),
+  DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util) :
+      planner_util_(planner_util),
+      obstacle_costs_(planner_util->getCostmap()),
       prefer_forward_costs_(0.0),
-      path_costs_(costmap_ros),
-      goal_costs_(costmap_ros, 0.0, 0.0, true),
-      goal_front_costs_(costmap_ros, 0.0, 0.0, true),
-      alignment_costs_(costmap_ros)
+      path_costs_(planner_util->getCostmap()),
+      goal_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
+      goal_front_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
+      alignment_costs_(planner_util->getCostmap())
   {
-    costmap_ros_ = costmap_ros;
-    costmap_ros_->getCostmapCopy(costmap_);
-
     ros::NodeHandle private_nh("~/" + name);
-
-    planner_util_.initialize(tf, costmap_ros);
 
     //Assuming this planner is being run within the navigation stack, we can
     //just do an upward search for the frequency at which its being run. This
@@ -165,7 +139,6 @@ namespace dwa_local_planner {
       }
     }
     ROS_INFO("Sim period is set to %.2f", sim_period_);
-
 
     oscillation_costs_.resetOscillationFlags();
 
@@ -201,14 +174,14 @@ namespace dwa_local_planner {
 
     path_cost = path_costs_.getCellCosts(cx, cy);
     goal_cost = goal_costs_.getCellCosts(cx, cy);
-    occ_cost = costmap_.getCost(cx, cy);
+    occ_cost = planner_util_->getCostmap()->getCost(cx, cy);
     if (path_cost == path_costs_.obstacleCosts() ||
         path_cost == path_costs_.unreachableCellCosts() ||
         occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
       return false;
     }
 
-    double resolution = costmap_.getResolution();
+    double resolution = planner_util_->getCostmap()->getResolution();
     total_cost =
         pdist_scale_ * resolution * path_cost +
         gdist_scale_ * resolution * goal_cost +
@@ -216,13 +189,9 @@ namespace dwa_local_planner {
     return true;
   }
 
-  base_local_planner::LocalPlannerUtil* DWAPlanner::getPlannerUtil() {
-    return &planner_util_;
-  }
-
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     oscillation_costs_.resetOscillationFlags();
-    return getPlannerUtil()->setPlan(orig_global_plan);
+    return planner_util_->setPlan(orig_global_plan);
   }
 
   /**
@@ -237,7 +206,7 @@ namespace dwa_local_planner {
     base_local_planner::Trajectory traj;
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
     Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
-    base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+    base_local_planner::LocalPlannerLimits limits = planner_util_->getCurrentLimits();
     generator_.initialise(pos,
         vel,
         goal,
@@ -263,12 +232,6 @@ namespace dwa_local_planner {
     for (unsigned int i = 0; i < new_plan.size(); ++i) {
       global_plan_[i] = new_plan[i];
     }
-
-    // make sure to update the costmap we'll use for this cycle
-    costmap_ros_->getCostmapCopy(costmap_);
-
-    //we want to clear the robot footprint from the costmap we're using
-    planner_util_.getCostmapRos()->clearRobotFootprint();
 
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
@@ -316,9 +279,10 @@ namespace dwa_local_planner {
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       tf::Stamped<tf::Pose> global_pose,
       tf::Stamped<tf::Pose> global_vel,
-      tf::Stamped<tf::Pose>& drive_velocities) {
+      tf::Stamped<tf::Pose>& drive_velocities,
+      std::vector<geometry_msgs::Point> footprint_spec) {
 
-    drive_velocities.frame_id_ = planner_util_.getCostmapRos()->getBaseFrameID();
+    obstacle_costs_.setFootprint(footprint_spec);
 
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
@@ -327,7 +291,7 @@ namespace dwa_local_planner {
     Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
     Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
-    base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+    base_local_planner::LocalPlannerLimits limits = planner_util_->getCurrentLimits();
 
     // prepare cost functions and generators for this run
     generator_.initialise(pos,
@@ -343,11 +307,11 @@ namespace dwa_local_planner {
     // verbose publishing of point clouds
     if (publish_cost_grid_pc_) {
       //we'll publish the visualization of the costs to rviz before returning our best trajectory
-      map_viz_.publishCostCloud(costmap_);
+      map_viz_.publishCostCloud(*(planner_util_->getCostmap()));
     }
 
     // debrief stateful scoring functions
-    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_.getCurrentLimits().min_trans_vel);
+    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_->getCurrentLimits().min_trans_vel);
 
     //if we don't have a legal trajectory, we'll just command zero
     if (result_traj_.cost_ < 0) {

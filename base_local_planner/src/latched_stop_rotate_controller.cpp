@@ -32,17 +32,9 @@ LatchedStopRotateController::~LatchedStopRotateController() {}
  * Also goal orientation might not yet be true
  */
 bool LatchedStopRotateController::isPositionReached(LocalPlannerUtil* planner_util,
-    OdometryHelperRos& odom_helper) {
+    tf::Stamped<tf::Pose> global_pose) {
   double xy_goal_tolerance = planner_util->getCurrentLimits().xy_goal_tolerance;
 
-  //copy over the odometry information
-  nav_msgs::Odometry base_odom;
-  odom_helper.getOdom(base_odom);
-
-  tf::Stamped<tf::Pose> global_pose;
-  if (!planner_util->getRobotPose(global_pose)) {
-    return false;
-  }
   //we assume the global goal is the last point in the global plan
   tf::Stamped<tf::Pose> goal_pose;
   if ( ! planner_util->getGoal(goal_pose)) {
@@ -67,7 +59,8 @@ bool LatchedStopRotateController::isPositionReached(LocalPlannerUtil* planner_ut
  * Meaning we might have overshot on the position beyond tolerance, yet still return true.
  */
 bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
-    OdometryHelperRos& odom_helper) {
+    OdometryHelperRos& odom_helper,
+    tf::Stamped<tf::Pose> global_pose) {
   double xy_goal_tolerance = planner_util->getCurrentLimits().xy_goal_tolerance;
   double rot_stopped_vel = planner_util->getCurrentLimits().rot_stopped_vel;
   double trans_stopped_vel = planner_util->getCurrentLimits().trans_stopped_vel;
@@ -76,10 +69,6 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
   nav_msgs::Odometry base_odom;
   odom_helper.getOdom(base_odom);
 
-  tf::Stamped<tf::Pose> global_pose;
-  if ( ! planner_util->getRobotPose(global_pose)) {
-    return false;
-  }
   //we assume the global goal is the last point in the global plan
   tf::Stamped<tf::Pose> goal_pose;
   if ( ! planner_util->getGoal(goal_pose)) {
@@ -207,14 +196,10 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
     double sim_period,
     LocalPlannerUtil* planner_util,
     OdometryHelperRos& odom_helper_,
+    tf::Stamped<tf::Pose> global_pose,
     boost::function<bool (Eigen::Vector3f pos,
                           Eigen::Vector3f vel,
                           Eigen::Vector3f vel_samples)> obstacle_check) {
-  tf::Stamped<tf::Pose> global_pose;
-  if ( ! planner_util->getRobotPose(global_pose)) {
-    ROS_ERROR("Could not get robot pose");
-    return false;
-  }
   //we assume the global goal is the last point in the global plan
   tf::Stamped<tf::Pose> goal_pose;
   if ( ! planner_util->getGoal(goal_pose)) {

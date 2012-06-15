@@ -40,10 +40,9 @@
 
 #include <nav_core/base_local_planner.h>
 
-#include <ros/ros.h>
 #include <boost/thread.hpp>
 
-#include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/costmap_2d.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 
@@ -53,17 +52,17 @@
 namespace base_local_planner {
 
 /**
- * @class AbstractLocalPlannerUtil
+ * @class LocalPlannerUtil
  * @brief Helper class implementing infrastructure code many local planner implementations may need.
- * Maintains odometry information from /odom topic.
  */
 class LocalPlannerUtil {
 
 private:
   // things we get from move_base
   std::string name_;
+  std::string global_frame_;
 
-  costmap_2d::Costmap2DROS* costmap_ros_;
+  costmap_2d::Costmap2D* costmap_;
   tf::TransformListener* tf_;
 
 
@@ -79,22 +78,18 @@ private:
 public:
 
   /**
-   * @brief  Callback to update the local planner's parameters based on dynamic reconfigure
+   * @brief  Callback to update the local planner's parameters
    */
   void reconfigureCB(LocalPlannerLimits &config, bool restore_defaults);
 
   LocalPlannerUtil() : initialized_(false) {}
 
-  /**
-   * @brief  Destructs a trajectory controller
-   */
   ~LocalPlannerUtil() {
   }
 
   void initialize(tf::TransformListener* tf,
-      costmap_2d::Costmap2DROS* costmap_ros);
-
-  bool getRobotPose(tf::Stamped<tf::Pose>& global_pose);
+      costmap_2d::Costmap2D* costmap,
+      std::string global_frame);
 
   bool getGoal(tf::Stamped<tf::Pose>& goal_pose);
 
@@ -102,12 +97,7 @@ public:
 
   bool getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan);
 
-
-  costmap_2d::Costmap2DROS* getCostmapRos();
-
-  tf::TransformListener* getTfListener();
-
-  std::string getName();
+  costmap_2d::Costmap2D* getCostmap();
 
   LocalPlannerLimits getCurrentLimits();
 };
