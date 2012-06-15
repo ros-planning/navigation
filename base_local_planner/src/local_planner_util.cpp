@@ -75,6 +75,7 @@ costmap_2d::Costmap2D* LocalPlannerUtil::getCostmap() {
 }
 
 LocalPlannerLimits LocalPlannerUtil::getCurrentLimits() {
+  boost::mutex::scoped_lock l(limits_configuration_mutex_);
   return limits_;
 }
 
@@ -93,10 +94,9 @@ bool LocalPlannerUtil::setPlan(const std::vector<geometry_msgs::PoseStamped>& or
     return false;
   }
 
-  boost::mutex odom_mutex_;
-
   //reset the global plan
   global_plan_.clear();
+
   global_plan_ = orig_global_plan;
 
   return true;
