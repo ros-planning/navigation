@@ -54,6 +54,7 @@ namespace base_local_planner{
       max_vel_x_ = config.max_vel_x;
       min_vel_x_ = config.min_vel_x;
       max_vel_th_ = config.max_vel_theta;
+      min_vel_th_ = config.min_vel_theta;
       min_in_place_vel_th_ = config.min_in_place_vel_theta;
 
       sim_time_ = config.sim_time;
