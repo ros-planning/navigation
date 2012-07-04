@@ -107,6 +107,7 @@ bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vec
   if(!base_local_planner::transformGlobalPlan(
       *tf_,
       global_plan_,
+      global_pose,
       *costmap_,
       global_frame_,
       transformed_plan)) {

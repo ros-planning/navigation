@@ -91,6 +91,7 @@ namespace base_local_planner {
   bool transformGlobalPlan(
       const tf::TransformListener& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const tf::Stamped<tf::Pose>& global_pose,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan){
@@ -98,61 +99,58 @@ namespace base_local_planner {
 
     transformed_plan.clear();
 
-    try{
-      if (!global_plan.size() > 0)
-      {
-        ROS_ERROR("Recieved plan with zero length");
+    try {
+      if (!global_plan.size() > 0) {
+        ROS_ERROR("Received plan with zero length");
         return false;
       }
 
-      tf::StampedTransform transform;
+      // get plan_to_global_transform from plan frame to global_frame
+      tf::StampedTransform plan_to_global_transform;
       tf.lookupTransform(global_frame, ros::Time(), 
           plan_pose.header.frame_id, plan_pose.header.stamp, 
-          plan_pose.header.frame_id, transform);
+          plan_pose.header.frame_id, plan_to_global_transform);
 
       //let's get the pose of the robot in the frame of the plan
       tf::Stamped<tf::Pose> robot_pose;
-      robot_pose.setIdentity();
-      robot_pose.frame_id_ = global_frame;
-      robot_pose.stamp_ = ros::Time();
-      tf.transformPose(plan_pose.header.frame_id, robot_pose, robot_pose);
+      tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
 
-      //we'll keep points on the plan that are within the window that we're looking at
-      double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0, costmap.getSizeInCellsY() * costmap.getResolution() / 2.0);
+      //we'll discard points on the plan that are outside the local costmap
+      double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
+                                       costmap.getSizeInCellsY() * costmap.getResolution() / 2.0);
 
       unsigned int i = 0;
       double sq_dist_threshold = dist_threshold * dist_threshold;
-      double sq_dist = DBL_MAX;
+      double sq_dist = 0;
 
       //we need to loop to a point on the plan that is within a certain distance of the robot
-      while(i < (unsigned int)global_plan.size() && sq_dist > sq_dist_threshold){
+      while(i < (unsigned int)global_plan.size()) {
         double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
         double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
         sq_dist = x_diff * x_diff + y_diff * y_diff;
+        if (sq_dist <= sq_dist_threshold) {
+          break;
+        }
         ++i;
       }
-
-      //make sure not to count the first point that is too far away
-      if(i > 0)
-        --i;
 
       tf::Stamped<tf::Pose> tf_pose;
       geometry_msgs::PoseStamped newer_pose;
 
       //now we'll transform until points are outside of our distance threshold
-      while(i < (unsigned int)global_plan.size() && sq_dist < sq_dist_threshold){
-        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
-        sq_dist = x_diff * x_diff + y_diff * y_diff;
-
+      while(i < (unsigned int)global_plan.size() && sq_dist <= sq_dist_threshold) {
         const geometry_msgs::PoseStamped& pose = global_plan[i];
         poseStampedMsgToTF(pose, tf_pose);
-        tf_pose.setData(transform * tf_pose);
-        tf_pose.stamp_ = transform.stamp_;
+        tf_pose.setData(plan_to_global_transform * tf_pose);
+        tf_pose.stamp_ = plan_to_global_transform.stamp_;
         tf_pose.frame_id_ = global_frame;
         poseStampedTFToMsg(tf_pose, newer_pose);
 
         transformed_plan.push_back(newer_pose);
+
+        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
+        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+        sq_dist = x_diff * x_diff + y_diff * y_diff;
 
         ++i;
       }
