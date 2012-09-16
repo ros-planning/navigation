@@ -12,8 +12,11 @@ rosbuild_add_boost_directories()
 #set(ROS_COMPILE_FLAGS "-g" ${ROS_COMPILE_FLAGS})
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
-find_package(Eigen)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(Eigen REQUIRED)
+find_package(PCL REQUIRED)
+include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS}
+                           ${PCL_INCLUDE_DIRS}
+)
 add_definitions(${EIGEN_DEFINITIONS})
 
 rosbuild_add_library(base_local_planner 
