@@ -9,7 +9,8 @@ include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 gencfg()
 
 find_package(Eigen)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(PCL)
+include_directories(${EIGEN_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 rosbuild_add_boost_directories()

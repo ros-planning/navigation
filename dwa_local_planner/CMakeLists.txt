@@ -25,7 +25,8 @@ rosbuild_find_ros_package(dynamic_reconfigure)
 include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 
 find_package(Eigen)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(PCL)
+include_directories(${EIGEN_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 gencfg()
