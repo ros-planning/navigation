@@ -129,6 +129,32 @@ namespace base_local_planner {
        */
       bool isGoalReached();
 
+      /**
+       * @brief  Generate and score a single trajectory
+       * @param vx_samp The x velocity used to seed the trajectory
+       * @param vy_samp The y velocity used to seed the trajectory
+       * @param vtheta_samp The theta velocity used to seed the trajectory
+       * @param update_map Whether or not to update the map for the planner
+       * when computing the legality of the trajectory, this is useful to set
+       * to false if you're going to be doing a lot of trajectory checking over
+       * a short period of time
+       * @return True if the trajectory is legal, false otherwise
+       */
+      bool checkTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map = true);
+
+      /**
+       * @brief  Generate and score a single trajectory
+       * @param vx_samp The x velocity used to seed the trajectory
+       * @param vy_samp The y velocity used to seed the trajectory
+       * @param vtheta_samp The theta velocity used to seed the trajectory
+       * @param update_map Whether or not to update the map for the planner
+       * when computing the legality of the trajectory, this is useful to set
+       * to false if you're going to be doing a lot of trajectory checking over
+       * a short period of time
+       * @return score of trajectory (double)
+       */
+      double scoreTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map = true);
+
       bool isInitialized() {
         return initialized_;
       }
@@ -173,12 +199,14 @@ namespace base_local_planner {
       tf::TransformListener* tf_; ///< @brief Used for transforming point clouds
       std::string global_frame_; ///< @brief The frame in which the controller will run
       double max_sensor_range_; ///< @brief Keep track of the effective maximum range of our sensors
+      nav_msgs::Odometry base_odom_; ///< @brief Used to get the velocity of the robot
       std::string robot_base_frame_; ///< @brief Used as the base frame id of the robot
       double rot_stopped_velocity_, trans_stopped_velocity_;
       double xy_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_;
       double inflation_radius_; 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       bool prune_plan_;
+      boost::recursive_mutex odom_lock_;
 
       double max_vel_th_, min_vel_th_;
       double acc_lim_x_, acc_lim_y_, acc_lim_theta_;
