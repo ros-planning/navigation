@@ -293,6 +293,8 @@ AmclNode::AmclNode() :
     laser_model_type_ = LASER_MODEL_BEAM;
   else if(tmp_model_type == "likelihood_field")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
+  else if(tmp_model_type == "likelihood_field_precise")
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PRECISE;
   else
   {
     ROS_WARN("Unknown laser model type \"%s\"; defaulting to likelihood_field model",
@@ -451,6 +453,8 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_model_type_ = LASER_MODEL_BEAM;
   else if(config.laser_model_type == "likelihood_field")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
+  else if(config.laser_model_type == "likelihood_field_precise")
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PRECISE;
 
   if(config.odom_model_type == "diff")
     odom_model_type_ = ODOM_MODEL_DIFF;

@@ -96,6 +96,8 @@ bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
     pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
   else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD)
     pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModel, data);
+  else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD_PRECISE)
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModelPrecise, data);
   else
     pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
 
@@ -256,3 +258,105 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
 
   return(total_weight);
 }
+
+#define FAST_MAP_GXWX(map, x) ((int)((x - map->origin_x) / map->scale + 0.5) + map->size_x / 2)
+#define FAST_MAP_GYWY(map, y) ((int)((y - map->origin_y) / map->scale + 0.5) + map->size_y / 2)
+
+// same as above but more precise
+double AMCLLaser::LikelihoodFieldModelPrecise(AMCLLaserData *data, pf_sample_set_t* set)
+{
+  AMCLLaser *self;
+  int i, j;
+  double z, pz;
+  double p;
+  double obs_range, obs_bearing;
+  double total_weight;
+  pf_sample_t *sample;
+  pf_vector_t pose;
+  pf_vector_t hit;
+
+  self = (AMCLLaser*) data->sensor;
+
+  total_weight = 0.0;
+
+ // double t0 = (double)cvGetTickCount(), t1, t2;
+
+  // precompute sub-sampled scan
+  float *obs_range_array = new float[data->range_count];
+  float *obs_bearing_array = new float[data->range_count];
+  int numScanPoints = 0;
+  int step = (data->range_count - 1) / (self->max_beams - 1);
+  for (i = 0; i < data->range_count; i+=step)
+  {
+    obs_range = data->ranges[i][0];
+    obs_bearing = data->ranges[i][1];
+    if (data->ranges[i][0] < data->range_max) {
+    	obs_range_array[numScanPoints] = obs_range;
+    	obs_bearing_array[numScanPoints] = obs_bearing;
+    	++numScanPoints;
+    }
+  }
+
+  // Pre-compute a couple of things
+  double z_hit_denom = 2 * self->sigma_hit * self->sigma_hit;
+  //double z_rand_mult = 1.0/data->range_max;
+  double z_rand_value = self->z_rand/data->range_max;
+
+  // Compute the sample weights
+  for (j = 0; j < set->sample_count; j++)
+  {
+    sample = set->samples + j;
+    pose = sample->pose;
+
+    // Take account of the laser pose relative to the robot
+    pose = pf_vector_coord_add(self->laser_pose, pose);
+
+    p = 1.0;
+
+
+    float *pt_obs_range = obs_range_array;
+    float *pt_obs_bearing = obs_bearing_array;
+    float angle;
+    for (i = 0; i < numScanPoints; ++i,++pt_obs_range,++pt_obs_bearing)
+    {
+      // Compute the endpoint of the beam
+    	angle = pose.v[2] + *pt_obs_bearing;
+      hit.v[0] = pose.v[0] + *pt_obs_range * cos(angle);
+      hit.v[1] = pose.v[1] + *pt_obs_range * sin(angle);
+
+      // Convert to map grid coords.
+      int mi, mj;
+      mi = FAST_MAP_GXWX(self->map, hit.v[0]);
+      mj = FAST_MAP_GYWY(self->map, hit.v[1]);
+
+      // Part 1: Get distance from the hit to closest obstacle.
+      // Off-map penalized as max distance
+      if(!MAP_VALID(self->map, mi, mj))
+        z = self->map->max_occ_dist;
+      else
+        z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+      // Gaussian model
+      // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
+      pz = self->z_hit * exp(-(z * z) / z_hit_denom);
+      // Part 2: random measurements
+      // pz += self->z_rand * z_rand_mult;
+      pz += z_rand_value;
+
+      p += pz*pz*pz;
+    }
+
+    //p /= sum_weight;
+    sample->weight *= p;
+    total_weight += sample->weight;
+  }
+
+//  t1 = (double)cvGetTickCount();
+//  printf( "\nLF_SLOW = %g ms ", (t1-t0)/((double)cvGetTickFrequency()*1000.) );
+  delete[] obs_range_array;
+  delete[] obs_bearing_array;
+
+  return(total_weight);
+}
+
+
+
