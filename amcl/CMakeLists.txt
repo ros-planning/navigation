@@ -36,6 +36,9 @@ rosbuild_link_boost(bin/amcl signals)
 
 target_link_libraries(bin/amcl amcl_sensors amcl_map amcl_pf)
 
+# generate services
+rosbuild_gensrv()
+
 ## Tests are failing on OSX for an unknown reason
 #include(CMakeDetermineSystem)
 #if(CMAKE_SYSTEM_NAME MATCHES "Linux")
