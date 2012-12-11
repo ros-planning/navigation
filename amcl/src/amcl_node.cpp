@@ -609,6 +609,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   // map, #5202.
   lasers_.clear();
   lasers_update_.clear();
+  frame_to_laser_.clear();
 
   map_ = convertMap(msg);
 
