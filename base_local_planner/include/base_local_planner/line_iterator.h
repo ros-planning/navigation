@@ -29,6 +29,8 @@
 #ifndef LINE_ITERATOR_H
 #define LINE_ITERATOR_H
 
+#include <stdlib.h>
+
 namespace base_local_planner
 {
 
@@ -127,10 +129,11 @@ private:
   int x_; ///< X coordinate of current point.
   int y_; ///< Y coordinate of current point.
 
-  int curpixel_; ///< index of current point in line loop.
-
   int deltax_; ///< Difference between Xs of endpoints.
   int deltay_; ///< Difference between Ys of endpoints.
+
+  int curpixel_; ///< index of current point in line loop.
+
   int xinc1_, xinc2_, yinc1_, yinc2_;
   int den_, num_, numadd_, numpixels_;
 };
