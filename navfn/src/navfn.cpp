@@ -297,7 +297,7 @@ namespace navfn {
       propNavFnDijkstra(std::max(nx*ny/20,nx+ny),atStart);
 
       // path
-      int len = calcPath(nx*4);
+      int len = calcPath(nx*ny/2);
 
       if (len > 0)			// found plan
       {
