@@ -15,7 +15,7 @@
   <depend package="base_local_planner" />
   <depend package="tf" />
   <depend package="angles" />
-  <depend package="common_rosdeps" />
+
   <rosdep name="eigen" />
 
   <export>

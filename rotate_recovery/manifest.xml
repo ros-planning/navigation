@@ -16,7 +16,7 @@
   <depend package="base_local_planner"/>
   <depend package="pluginlib"/>
   <depend package="angles"/>
-  <depend package="common_rosdeps" />
+
   <rosdep name="eigen" />
 
   <export>

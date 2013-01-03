@@ -18,7 +18,7 @@ navfn provides a fast interpolated navigation function that can be used to creat
  <depend package="tf"/>
  <depend package="visualization_msgs"/>
  <depend package="pcl_ros" />
- <depend package="common_rosdeps" />
+
  <rosdep name="eigen" />
 
  <rosdep name="fltk"/>

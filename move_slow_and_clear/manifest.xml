@@ -14,7 +14,7 @@
   <depend package="geometry_msgs"/>
   <depend package="pluginlib"/>
   <depend package="dynamic_reconfigure"/>
-  <depend package="common_rosdeps" />
+
   <rosdep name="eigen" />
 
   <export>

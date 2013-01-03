@@ -24,7 +24,7 @@ This package provides implementations of the Trajectory Rollout and Dynamic Wind
   <depend package="nav_core"/>
   <rosdep name="pcl"/>
   <depend package="pcl_ros"/>
-  <depend package="common_rosdeps" />
+
   <rosdep name="eigen" />
   <repository>http://pr.willowgarage.com/repos</repository>
   <export>
