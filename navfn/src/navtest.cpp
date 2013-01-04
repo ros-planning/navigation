@@ -75,7 +75,7 @@ int main(int argc, char **argv)
   //  cmap = readPGM("maps/navfn_test1.pgm",&sx,&sy,true);
   //  cmap = readPGM("initial_costmap_1165_945.pgm",&sx,&sy,true);
   //  cmap = readPGM("initial_costmap_2332_1825.pgm",&sx,&sy,true);
-  cmap = readPGM("planning_problems/failure/test.pgm",&sx,&sy,true);
+  cmap = readPGM("navfn_pathlong.pgm",&sx,&sy,true);
   if (cmap)
     {
       nav = new NavFn(sx,sy);
@@ -111,11 +111,11 @@ int main(int argc, char **argv)
       //      start[0] = 1146;
       //      start[1] = 1293;
 
-      start[0] = 625;
-      start[1] = 1117;
+      start[0] = 350;
+      start[1] = 400;
 
-      goal[0] = 891;
-      goal[1] = 1439;
+      goal[0] = 350;
+      goal[1] = 450;
 
     }
   else
