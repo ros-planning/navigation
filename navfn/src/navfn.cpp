@@ -865,6 +865,15 @@ namespace navfn {
         pathy[npath] = stc/nx + dy;
         npath++;
 
+        bool oscillation_detected = false;
+        if( npath > 2 &&
+            pathx[npath-1] == pathx[npath-3] &&
+            pathy[npath-1] == pathy[npath-3] )
+        {
+          ROS_DEBUG("[PathCalc] oscillation detected, attempting fix.");
+          oscillation_detected = true;
+        }
+
         int stcnx = stc+nx;
         int stcpx = stc-nx;
 
@@ -877,8 +886,8 @@ namespace navfn {
             potarr[stcnx-1] >= POT_HIGH ||
             potarr[stcpx] >= POT_HIGH ||
             potarr[stcpx+1] >= POT_HIGH ||
-            potarr[stcpx-1] >= POT_HIGH)
-
+            potarr[stcpx-1] >= POT_HIGH ||
+            oscillation_detected)
         {
           ROS_DEBUG("[Path] Pot fn boundary, following grid (%0.1f/%d)", potarr[stc], npath);
           // check eight neighbors to find the lowest
@@ -926,11 +935,6 @@ namespace navfn {
           gradCell(stcnx+1);
 
 
-          // show gradients
-          ROS_DEBUG("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f\n",
-              gradx[stc], grady[stc], gradx[stc+1], grady[stc+1], 
-              gradx[stcnx], grady[stcnx], gradx[stcnx+1], grady[stcnx+1]);
-
           // get interpolated gradient
           float x1 = (1.0-dx)*gradx[stc] + dx*gradx[stc+1];
           float x2 = (1.0-dx)*gradx[stcnx] + dx*gradx[stcnx+1];
@@ -938,6 +942,12 @@ namespace navfn {
           float y1 = (1.0-dx)*grady[stc] + dx*grady[stc+1];
           float y2 = (1.0-dx)*grady[stcnx] + dx*grady[stcnx+1];
           float y = (1.0-dy)*y1 + dy*y2; // interpolated y
+
+          // show gradients
+          ROS_DEBUG("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n",
+                    gradx[stc], grady[stc], gradx[stc+1], grady[stc+1], 
+                    gradx[stcnx], grady[stcnx], gradx[stcnx+1], grady[stcnx+1],
+                    x, y);
 
           // check for zero gradient, failed
           if (x == 0.0 && y == 0.0)
