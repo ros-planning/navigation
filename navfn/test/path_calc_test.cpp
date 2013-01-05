@@ -54,6 +54,60 @@ navfn::NavFn* make_willow_nav()
   return nav;
 }
 
+void print_neighborhood_of_last_path_entry( navfn::NavFn* nav )  
+{
+  printf("last path entries:\n");
+  for( int i = nav->npath - 4; i < nav->npath; i++ )
+  {
+    printf("%.3f, %.3f\n", nav->pathx[ i ], nav->pathy[ i ]);
+  }
+  printf("potential field neighborhood of last entry:\n");
+  int xf = nav->pathx[ nav->npath-1 ];
+  int yf = nav->pathy[ nav->npath-1 ];
+
+  printf( "   " );
+  for( int x = xf - 2; x <= xf + 2; x++ )
+  {
+    printf( " %6d", x );
+  }
+  printf( "\n" );
+
+  for( int y = yf - 2; y <= yf + 2; y++ )
+  {
+    printf( "%5d:", y );
+    for( int x = xf - 2; x <= xf + 2; x++ )
+    {
+      printf( " %5.1f", nav->potarr[ y * nav->nx + x ] );
+    }
+    printf( "\n" );
+  }
+
+  printf("gradient neighborhood of last entry:\n");
+  printf( "     " );
+  for( int x = xf - 2; x <= xf + 2; x++ )
+  {
+    printf( " %6d", x );
+  }
+  printf( "\n" );
+
+  for( int y = yf - 2; y <= yf + 2; y++ )
+  {
+    printf( "%5d x:", y );
+    for( int x = xf - 2; x <= xf + 2; x++ )
+    {
+      printf( " %5.1f", nav->gradx[ y * nav->nx + x ] );
+    }
+    printf( "\n" );
+
+    printf( "      y:" );
+    for( int x = xf - 2; x <= xf + 2; x++ )
+    {
+      printf( " %5.1f", nav->grady[ y * nav->nx + x ] );
+    }
+    printf( "\n" );
+  }
+}
+
 TEST(PathCalc, oscillate_in_pinch_point)
 {
   navfn::NavFn* nav = make_willow_nav();
@@ -71,7 +125,12 @@ TEST(PathCalc, oscillate_in_pinch_point)
   nav->setGoal( goal );
   nav->setStart( start );
 
-  EXPECT_TRUE( nav->calcNavFnDijkstra( true ));
+  bool plan_success = nav->calcNavFnDijkstra( true );
+  EXPECT_TRUE( plan_success );
+  if( !plan_success )
+  {
+    print_neighborhood_of_last_path_entry( nav );
+  }
 }
 
 TEST(PathCalc, easy_nav_should_always_work)
