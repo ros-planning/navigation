@@ -38,7 +38,8 @@ namespace amcl
 typedef enum
 {
   LASER_MODEL_BEAM,
-  LASER_MODEL_LIKELIHOOD_FIELD
+  LASER_MODEL_LIKELIHOOD_FIELD,
+  LASER_MODEL_LIKELIHOOD_FIELD_PRECISE
 } laser_model_t;
 
 // Laser sensor data
@@ -87,6 +88,8 @@ class AMCLLaser : public AMCLSensor
   // Determine the probability for the given pose
   private: static double LikelihoodFieldModel(AMCLLaserData *data, 
                                               pf_sample_set_t* set);
+  private: static double LikelihoodFieldModelPrecise(AMCLLaserData *data,
+                                              			 pf_sample_set_t* set);
 
   private: laser_model_t model_type;
 
