@@ -121,9 +121,12 @@ class AmclNode
 #if NEW_UNIFORM_SAMPLING
     static std::vector<std::pair<int,int> > free_space_indices;
 #endif
-    // Message callbacks
+    // Callbacks
     bool globalLocalizationCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
+    bool nomotionUpdateCallback(std_srvs::Empty::Request& req,
+                                    std_srvs::Empty::Response& res);
+
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
     void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
@@ -173,6 +176,9 @@ class AmclNode
     double laser_min_range_;
     double laser_max_range_;
 
+    //Nomotion update control
+    bool m_force_update;  // used to temporarily let amcl update samples even when no motion occurs...
+
     AMCLOdom* odom_;
     AMCLLaser* laser_;
 
@@ -195,6 +201,7 @@ class AmclNode
     ros::Publisher pose_pub_;
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
+    ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
 
@@ -373,6 +380,8 @@ AmclNode::AmclNode() :
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
+  nomotion_update_srv_= nh_.advertiseService("request_nomotion", &AmclNode::nomotionUpdateCallback, this);
+
   laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
   laser_scan_filter_ = 
           new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
@@ -389,6 +398,7 @@ AmclNode::AmclNode() :
   } else {
     requestMap();
   }
+  m_force_update = false;
 
   dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
   dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
@@ -787,6 +797,16 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
   return true;
 }
 
+// force nomotion updates (amcl updating without requiring motion)
+bool 
+AmclNode::nomotionUpdateCallback(std_srvs::Empty::Request& req,
+                                     std_srvs::Empty::Response& res)
+{
+	m_force_update = true;
+	//ROS_INFO("Requesting no-motion update");
+	return true;
+}
+
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
@@ -864,6 +884,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     bool update = fabs(delta.v[0]) > d_thresh_ ||
                   fabs(delta.v[1]) > d_thresh_ ||
                   fabs(delta.v[2]) > a_thresh_;
+    update = update || m_force_update;
+    m_force_update=false;
 
     // Set the laser update flags
     if(update)
@@ -991,20 +1013,20 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
     // Publish the resulting cloud
     // TODO: set maximum rate for publishing
-    geometry_msgs::PoseArray cloud_msg;
-    cloud_msg.header.stamp = ros::Time::now();
-    cloud_msg.header.frame_id = global_frame_id_;
-    cloud_msg.poses.resize(set->sample_count);
-    for(int i=0;i<set->sample_count;i++)
-    {
-      tf::poseTFToMsg(tf::Pose(tf::createQuaternionFromYaw(set->samples[i].pose.v[2]),
-                               tf::Vector3(set->samples[i].pose.v[0],
-                                         set->samples[i].pose.v[1], 0)),
-                      cloud_msg.poses[i]);
-
+    if (!m_force_update) {
+      geometry_msgs::PoseArray cloud_msg;
+      cloud_msg.header.stamp = ros::Time::now();
+      cloud_msg.header.frame_id = global_frame_id_;
+      cloud_msg.poses.resize(set->sample_count);
+      for(int i=0;i<set->sample_count;i++)
+      {
+        tf::poseTFToMsg(tf::Pose(tf::createQuaternionFromYaw(set->samples[i].pose.v[2]),
+                                 tf::Vector3(set->samples[i].pose.v[0],
+                                           set->samples[i].pose.v[1], 0)),
+                        cloud_msg.poses[i]);
+      }
+      particlecloud_pub_.publish(cloud_msg);
     }
-
-    particlecloud_pub_.publish(cloud_msg);
   }
 
   if(resampled || force_publication)
