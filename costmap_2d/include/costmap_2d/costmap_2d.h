@@ -39,10 +39,7 @@
 
 #include <vector>
 #include <queue>
-#include <costmap_2d/observation.h>
-#include <costmap_2d/cell_data.h>
-#include <costmap_2d/cost_values.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/Point.h>
 #include <boost/thread.hpp>
 
 namespace costmap_2d {
@@ -68,25 +65,9 @@ namespace costmap_2d {
        * @param  resolution The resolution of the map in meters/cell
        * @param  origin_x The x origin of the map
        * @param  origin_y The y origin of the map
-       * @param  inscribed_radius The inscribed radius of the robot
-       * @param  circumscribed_radius The circumscribed radius of the robot
-       * @param  inflation_radius How far out to inflate obstacles
-       * @param  max_obstacle_range The maximum range at which obstacles will be put into the costmap from any sensor
-       * @param  max_obstacle_height The maximum height of obstacles that will be considered
-       * @param  max_raytrace_range The maximum distance we'll raytrace out to with any sensor
-       * @param  weight The scaling factor for the cost function. 
-       * @param  static_data Data used to initialize the costmap
-       * @param  lethal_threshold The cost threshold at which a point in the static data is considered a lethal obstacle
-       * @param  track_unknown_space Whether or not to keep track of what space is completely unknown, whether or not a sensor reading has seen through a cell
-       * @param  unknown_cost_value The cost value for which a point in the static data is considered unknown when tracking unknown space... 
-                 if not tracking unknown space, costs equal to this value will be considered occupied
        */
       Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
-          double resolution, double origin_x, double origin_y, double inscribed_radius = 0.0,
-          double circumscribed_radius = 0.0, double inflation_radius = 0.0, double max_obstacle_range = 0.0,
-          double max_obstacle_height = 0.0, double max_raytrace_range = 0.0, double weight = 25.0,
-          const std::vector<unsigned char>& static_data = std::vector<unsigned char>(0), unsigned char lethal_threshold = 0,
-          bool track_unknown_space = false, unsigned char unknown_cost_value = 0);
+          double resolution, double origin_x, double origin_y, unsigned char default_value=0);
 
       /**
        * @brief  Copy constructor for a costmap, creates a copy efficiently
@@ -124,43 +105,6 @@ namespace costmap_2d {
       void reconfigure(costmap_2d::Costmap2DConfig &config, const costmap_2d::Costmap2DConfig& last_config);
 
       virtual void finishConfiguration(costmap_2d::Costmap2DConfig &config);
-
-      /**
-       * @brief  Revert to the static map outside of a specified window centered at a world coordinate
-       * @param wx The x coordinate of the center point of the window in world space (meters)
-       * @param wy The y coordinate of the center point of the window in world space (meters)
-       * @param w_size_x The x size of the window in meters
-       * @param w_size_y The y size of the window in meters
-       */
-      virtual void resetMapOutsideWindow(double wx, double wy, double w_size_x, double w_size_y);
-
-      /**
-       * @brief Re-inflate obstacles within a given window
-       * @param wx The x coordinate of the center point of the window in world space (meters)
-       * @param wy The y coordinate of the center point of the window in world space (meters)
-       * @param w_size_x The x size of the window in meters
-       * @param w_size_y The y size of the window in meters
-       * @param clear When set to true, will clear all non-lethal obstacles before inflation
-       */
-      void reinflateWindow(double wx, double wy, double w_size_x, double w_size_y, bool clear = true);
-
-      /**
-       * @brief  Clears non lethal obstacles in a specified window
-       * @param wx The x coordinate of the center point of the window in world space (meters)
-       * @param wy The y coordinate of the center point of the window in world space (meters)
-       * @param w_size_x The x size of the window in meters
-       * @param w_size_y The y size of the window in meters
-       * @param clear_no_info If set to true, NO_INFORMATION will be cleared, if set to false NO_INFORMATION will be treated as a lethal obstacle
-       */
-      virtual void clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info = false);
-
-      /**
-       * @brief  Update the costmap with new observations
-       * @param obstacles The point clouds of obstacles to insert into the map 
-       * @param clearing_observations The set of observations to use for raytracing 
-       */
-      void updateWorld(double robot_x, double robot_y, 
-          const std::vector<Observation>& observations, const std::vector<Observation>& clearing_observations);
 
       /**
        * @brief  Get the cost of a cell in the costmap
@@ -277,24 +221,6 @@ namespace costmap_2d {
       double getResolution() const;
     
       /**
-       * @brief  Accessor for the inscribed radius of the robot
-       * @return The inscribed radius
-       */
-      double getInscribedRadius() const { return inscribed_radius_; }
-    
-      /**
-       * @brief  Accessor for the circumscribed radius of the robot
-       * @return The circumscribed radius
-       */
-      double getCircumscribedRadius() const { return circumscribed_radius_; }
-    
-      /**
-       * @brief  Accessor for the inflation radius of the robot
-       * @return The inflation radius
-       */
-      double getInflationRadius() const { return inflation_radius_; }
-
-      /**
        * @brief  Sets the cost of a convex polygon to a desired value
        * @param polygon The polygon to perform the operation on 
        * @param cost_value The value to set costs to
@@ -325,105 +251,12 @@ namespace costmap_2d {
       virtual void updateOrigin(double new_origin_x, double new_origin_y);
 
       /**
-       * @brief  Check if a cell falls within the circumscribed radius of the
-       * robot but outside the inscribed radius of the robot
-       * @param The x coordinate of the cell
-       * @param The y coordinate of the cell
-       * @return True if the cell is inside the circumscribed radius but outside the inscribed radius, false otherwise
-       */
-      bool isCircumscribedCell(unsigned int x, unsigned int y) const;
-
-      /**
-       * @brief  Given a distance... compute a cost
-       * @param  distance The distance from an obstacle in cells
-       * @return A cost value for the distance
-       */
-      inline unsigned char computeCost(double distance) const {
-        unsigned char cost = 0;
-        if(distance == 0)
-          cost = LETHAL_OBSTACLE;
-        else if(distance <= cell_inscribed_radius_)
-          cost = INSCRIBED_INFLATED_OBSTACLE;
-        else {
-          //make sure cost falls off by Euclidean distance
-          double euclidean_distance = distance * resolution_;
-          double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
-          cost = (unsigned char) ((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
-        }
-        return cost;
-      }
-    
-      /***
-       * @brief Get the lower bound of cost for cells inside the circumscribed radius
-       * @return the circumscribed_cost_lb_ attribute, which gets initialized to computeCost(cell_circumscribed_radius_)
-       */
-      inline unsigned char getCircumscribedCost() const {
-        return circumscribed_cost_lb_;
-      }
-
-      /**
        * @brief  Save the costmap out to a pgm file
        * @param file_name The name of the file to save 
        */
       void saveMap(std::string file_name);
 
-      /**
-       * @brief  Update the costmap's static map with new data
-       * @param win_origin_x The x origin of the map we'll be using to replace the static map in meters
-       * @param win_origin_y The y origin of the map we'll be using to replace the static map in meters
-       * @param data_size_x The x size of the map we'll be using to replace the static map in cells
-       * @param data_size_y The y size of the map we'll be using to replace the static map in cells
-       * @param static_data The data that we'll use for our new costmap
-       */
-      void updateStaticMapWindow(double win_origin_x, double win_origin_y, 
-          unsigned int data_size_x, unsigned int data_size_y, 
-          const std::vector<unsigned char>& static_data);
-
-      /**
-       * @brief  Replace the costmap with a map of a different size
-       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
-       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
-       * @param data_size_x The x size of the map we'll be using to replace the costmap 
-       * @param data_size_y The y size of the map we'll be using to replace the costmap 
-       * @param static_data The data that we'll use for our new costmap
-       */
-      void replaceFullMap(double win_origin_x, double win_origin_y,
-          unsigned int data_size_x, unsigned int data_size_y,
-          const std::vector<unsigned char>& static_data);
-
-
     protected:
-      /**
-       * @brief  Given an index of a cell in the costmap, place it into a priority queue for obstacle inflation
-       * @param  index The index of the cell
-       * @param  mx The x coordinate of the cell (can be computed from the index, but saves time to store it)
-       * @param  my The y coordinate of the cell (can be computed from the index, but saves time to store it)
-       * @param  src_x The x index of the obstacle point inflation started at
-       * @param  src_y The y index of the obstacle point inflation started at
-       * @param  inflation_queue The priority queue to insert into
-       */
-      inline void enqueue(unsigned int index, unsigned int mx, unsigned int my, 
-          unsigned int src_x, unsigned int src_y, std::priority_queue<CellData>& inflation_queue){
-        unsigned char* marked = &markers_[index];
-        //set the cost of the cell being inserted
-        if(*marked == 0){
-          //we compute our distance table one cell further than the inflation radius dictates so we can make the check below
-          double distance = distanceLookup(mx, my, src_x, src_y);
-
-          //we only want to put the cell in the queue if it is within the inflation radius of the obstacle point
-          if(distance > cell_inflation_radius_)
-            return;
-
-          //assign the cost associated with the distance from an obstacle to the cell
-          updateCellCost(index, costLookup(mx, my, src_x, src_y));
-
-          //push the cell data onto the queue and mark
-          CellData data(distance, index, mx, my, src_x, src_y);
-          inflation_queue.push(data);
-          *marked = 1;
-        }
-      }
-
       /**
        * @brief  Copy a region of a source map into a destination map
        * @param  source_map The source map
@@ -472,84 +305,13 @@ namespace costmap_2d {
       virtual void resetMaps();
 
       /**
-       * @brief  Deletes the cached kernels
-       */
-      void deleteKernels();
-
-      /**
        * @brief  Initializes the costmap, static_map, and markers data structures
        * @param size_x The x size to use for map initialization
        * @param size_y The y size to use for map initialization
        */
       virtual void initMaps(unsigned int size_x, unsigned int size_y);
 
-      /**
-       * @brief  Copies kernel information from a costmap
-       * @param map The costmap to copy kernel information from 
-       * @param cell_inflation_radius The radius to use when copying the kernel
-       */
-      void copyKernels(const Costmap2D& map, unsigned int cell_inflation_radius);
-
-      /**
-       * @brief  Reshape a map to take an update that is not fully contained within the costmap
-       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
-       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
-       * @param data_size_x The x size of the map we'll be using to replace the costmap 
-       * @param data_size_y The y size of the map we'll be using to replace the costmap 
-       * @param static_data The data that we'll use for our new costmap
-       */
-      void reshapeStaticMap(double win_origin_x, double win_origin_y,
-          unsigned int data_size_x, unsigned int data_size_y, const std::vector<unsigned char>& static_data);
-
-      /**
-       * @brief  Replace a window of the costmap with static data
-       * @param win_origin_x The x origin of the map we'll be using to replace the costmap
-       * @param win_origin_y The y origin of the map we'll be using to replace the costmap
-       * @param data_size_x The x size of the map we'll be using to replace the costmap 
-       * @param data_size_y The y size of the map we'll be using to replace the costmap 
-       * @param static_data The data that we'll use for our new costmap
-       */
-      void replaceStaticMapWindow(double win_origin_x, double win_origin_y, 
-          unsigned int data_size_x, unsigned int data_size_y, 
-          const std::vector<unsigned char>& static_data);
-
     private:
-      /**
-       * @brief  Insert new obstacles into the cost map
-       * @param obstacles The point clouds of obstacles to insert into the map 
-       * @param inflation_queue The queue to place the obstacles into for inflation
-       */
-      virtual void updateObstacles(const std::vector<Observation>& observations, std::priority_queue<CellData>& inflation_queue);
-
-      /**
-       * @brief  Clear freespace based on any number of observations
-       * @param clearing_observations The observations used to raytrace 
-       */
-      void raytraceFreespace(const std::vector<Observation>& clearing_observations);
-
-      /**
-       * @brief  Clear freespace from an observation
-       * @param clearing_observation The observation used to raytrace 
-       */
-      virtual void raytraceFreespace(const Observation& clearing_observation);
-
-      /**
-       * @brief  Provides support for re-inflating obstacles within a certain window (used after raytracing)
-       * @param wx The x coordinate of the center point of the window in world space (meters)
-       * @param wy The y coordinate of the center point of the window in world space (meters)
-       * @param w_size_x The x size of the window in meters
-       * @param w_size_y The y size of the window in meters
-       * @param inflation_queue The priority queue to push items back onto for propogation
-       * @param clear When set to true, will clear all non-lethal obstacles before inflation
-       */
-      void resetInflationWindow(double wx, double wy, double w_size_x, double w_size_y,
-          std::priority_queue<CellData>& inflation_queue, bool clear = true );
-
-      /**
-       * @brief Based on the inflation radius compute distance and cost caches
-       */
-      void computeCaches();
-
       /**
        * @brief  Raytrace a line and apply some action at each step
        * @param  at The action to take... a functor
@@ -608,53 +370,6 @@ namespace costmap_2d {
           at(offset);
         }
 
-      /**
-       * @brief  Given a priority queue with the actual obstacles, compute the inflated costs for the costmap
-       * @param  inflation_queue A priority queue contatining the cell data for the actual obstacles
-       */
-      void inflateObstacles(std::priority_queue<CellData>& inflation_queue);
-
-      /**
-       * @brief  Takes the max of existing cost and the new cost... keeps static map obstacles from being overridden prematurely
-       * @param index The index od the cell to assign a cost to 
-       * @param cost The cost
-       */
-      inline void updateCellCost(unsigned int index, unsigned char cost){
-        unsigned char* cell_cost = &costmap_[index];
-        if(*cell_cost != NO_INFORMATION)
-          *cell_cost = std::max(cost, *cell_cost);
-        else if(cost == LETHAL_OBSTACLE)
-          *cell_cost = cost;
-      }
-
-      /**
-       * @brief  Lookup pre-computed costs
-       * @param mx The x coordinate of the current cell 
-       * @param my The y coordinate of the current cell 
-       * @param src_x The x coordinate of the source cell 
-       * @param src_y The y coordinate of the source cell 
-       * @return 
-       */
-      inline char costLookup(int mx, int my, int src_x, int src_y){
-        unsigned int dx = abs(mx - src_x);
-        unsigned int dy = abs(my - src_y);
-        return cached_costs_[dx][dy];
-      }
-
-      /**
-       * @brief  Lookup pre-computed distances
-       * @param mx The x coordinate of the current cell 
-       * @param my The y coordinate of the current cell 
-       * @param src_x The x coordinate of the source cell 
-       * @param src_y The y coordinate of the source cell 
-       * @return 
-       */
-      inline double distanceLookup(int mx, int my, int src_x, int src_y){
-        unsigned int dx = abs(mx - src_x);
-        unsigned int dy = abs(my - src_y);
-        return cached_distances_[dx][dy];
-      }
-
       inline int sign(int x){
         return x > 0 ? 1.0 : -1.0;
       }
@@ -666,41 +381,18 @@ namespace costmap_2d {
       double resolution_;
       double origin_x_;
       double origin_y_;
-      unsigned char* static_map_;
       unsigned char* costmap_;
-      unsigned char* markers_;
-      double max_obstacle_range_;
-      double max_obstacle_height_;
-      double max_raytrace_range_;
-      unsigned char** cached_costs_;
-      double** cached_distances_;
-      double inscribed_radius_, circumscribed_radius_, inflation_radius_;
-      unsigned int cell_inscribed_radius_, cell_circumscribed_radius_, cell_inflation_radius_;
-      double weight_;
-      unsigned char circumscribed_cost_lb_, lethal_threshold_;
-      bool track_unknown_space_;
-      unsigned char unknown_cost_value_;
-      std::priority_queue<CellData> inflation_queue_;
-
-      //functors for raytracing actions
-      class ClearCell {
-        public:
-          ClearCell(unsigned char* costmap) : costmap_(costmap) {}
-          inline void operator()(unsigned int offset){
-            costmap_[offset] = 0;
-          }
-        private:
-          unsigned char* costmap_;
-      };
+      unsigned char default_value_;
 
       class MarkCell {
         public:
-          MarkCell(unsigned char* costmap) : costmap_(costmap) {}
+          MarkCell(unsigned char* costmap, unsigned char value) : costmap_(costmap), value_(value) {}
           inline void operator()(unsigned int offset){
-            costmap_[offset] = LETHAL_OBSTACLE;
+            costmap_[offset] = value_;
           }
         private:
           unsigned char* costmap_;
+          unsigned char  value_;
       };
 
       class PolygonOutlineCells {
