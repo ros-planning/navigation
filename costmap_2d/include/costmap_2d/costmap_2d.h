@@ -173,10 +173,10 @@ namespace costmap_2d {
       }
 
       /**
-       * @brief  Will return a immutable pointer to the underlying unsigned char array used as the costmap
+       * @brief  Will return a pointer to the underlying unsigned char array used as the costmap
        * @return A pointer to the underlying unsigned char array storing cost values
        */
-      const unsigned char* getCharMap() const;
+      unsigned char* getCharMap() const;
 
       /**
        * @brief  Accessor for the x size of the costmap in cells
@@ -255,6 +255,9 @@ namespace costmap_2d {
        * @param file_name The name of the file to save 
        */
       void saveMap(std::string file_name);
+      
+      void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
+   
 
     protected:
       /**

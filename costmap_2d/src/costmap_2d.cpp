@@ -71,6 +71,19 @@ namespace costmap_2d{
   void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y){
     costmap_ = new unsigned char[size_x * size_y];
   }
+  
+  void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y) {
+    size_x_ = size_x;
+    size_y_ = size_y;
+    resolution_ = resolution;
+    origin_x_ = origin_x;
+    origin_y_ = origin_y;
+
+    initMaps(size_x, size_y);
+
+    // reset our maps to have no information
+    resetMaps();
+  }
 
   void Costmap2D::resetMaps(){
     memset(costmap_, default_value_, size_x_ * size_y_ * sizeof(unsigned char));
@@ -153,7 +166,7 @@ namespace costmap_2d{
     return (unsigned int) cells_dist;
   }
 
-  const unsigned char* Costmap2D::getCharMap() const {
+  unsigned char* Costmap2D::getCharMap() const {
     return costmap_;
   }
 
