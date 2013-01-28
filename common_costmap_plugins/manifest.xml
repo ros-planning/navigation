@@ -1,0 +1,24 @@
+<package>
+  <description brief="common_costmap_plugins">
+
+     common_costmap_plugins
+
+  </description>
+  <author>David Lu!!</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/common_costmap_plugins</url>
+  <depend package="roscpp"/>
+  <depend package="costmap_2d"/>
+  <depend package="pluginlib"/>
+  <depend package="geometry_msgs"/>
+  <depend package="nav_msgs"/>
+  <depend package="laser_geometry"/>
+  <depend package="pcl_ros"/>
+  <depend package="sensor_msgs"/>
+  <export>
+    <costmap_2d plugin="${prefix}/costmap_plugins.xml" />
+  </export>
+
+</package>
+
