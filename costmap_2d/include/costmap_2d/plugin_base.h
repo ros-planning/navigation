@@ -24,7 +24,7 @@ namespace costmap_2d {
 
     protected:
       CostmapPlugin() {}
-      LayeredCostmap* costmap_;
+      LayeredCostmap* layered_costmap_;
       ros::NodeHandle* nh_;
       bool current_;
   };

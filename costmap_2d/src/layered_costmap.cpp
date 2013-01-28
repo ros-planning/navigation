@@ -85,22 +85,15 @@ namespace costmap_2d {
     private_nh.param("rolling_window", rolling_window_, false);
 
     // find size parameters
-    bool initialize_from_static_map;
-    private_nh.param("static_map", initialize_from_static_map, true);
-    if (initialize_from_static_map) {
-        // assume the static map plugin will set the size
-    } else {
-        double map_width_meters, map_height_meters, resolution, origin_x, origin_y;
-        private_nh.param("width", map_width_meters, 10.0);
-        private_nh.param("height", map_height_meters, 10.0);
-        private_nh.param("resolution", resolution, 0.05);
-        private_nh.param("origin_x", origin_x, 0.0);
-        private_nh.param("origin_y", origin_y, 0.0);
-        costmap_.resizeMap( (unsigned int)(map_width_meters  / resolution),
-                   (unsigned int)(map_height_meters / resolution),
-                   resolution, origin_x, origin_y);
-    }
-
+    double map_width_meters, map_height_meters, resolution, origin_x, origin_y;
+    private_nh.param("width", map_width_meters, 10.0);
+    private_nh.param("height", map_height_meters, 10.0);
+    private_nh.param("resolution", resolution, 0.05);
+    private_nh.param("origin_x", origin_x, 0.0);
+    private_nh.param("origin_y", origin_y, 0.0);
+    costmap_.resizeMap( (unsigned int)(map_width_meters  / resolution),
+               (unsigned int)(map_height_meters / resolution),
+               resolution, origin_x, origin_y);
 
     if (private_nh.hasParam("plugins")) {
         XmlRpc::XmlRpcValue my_list;
@@ -154,8 +147,15 @@ namespace costmap_2d {
       }
   }
 
-  void LayeredCostmap::updateOrigin(double new_origin_x, double new_origin_y) {
+  void LayeredCostmap::updateOrigin() {
     boost::recursive_mutex::scoped_lock lock(lock_);
+    
+    tf::Stamped<tf::Pose> global_pose;
+    if (!getRobotPose(global_pose))
+      return;
+
+    double new_origin_x = global_pose.getOrigin().x() - costmap_.getSizeInMetersX() / 2;
+    double new_origin_y = global_pose.getOrigin().y() - costmap_.getSizeInMetersY() / 2;
 
     costmap_.updateOrigin(new_origin_x, new_origin_y);
       for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
@@ -166,18 +166,11 @@ namespace costmap_2d {
   }
 
   void LayeredCostmap::updateMap() {
-    tf::Stamped<tf::Pose> global_pose;
-    if (!getRobotPose(global_pose))
-      return;
-
-    double wx = global_pose.getOrigin().x();
-    double wy = global_pose.getOrigin().y();
-
     boost::recursive_mutex::scoped_lock uml(configuration_mutex_);
     boost::recursive_mutex::scoped_lock lock(lock_);
     // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
     if (rolling_window_)
-      updateOrigin(wx - costmap_.getSizeInMetersX() / 2, wy - costmap_.getSizeInMetersY() / 2);
+      updateOrigin();
 
     if (plugins_.size() == 0)
         return;
@@ -198,14 +191,7 @@ namespace costmap_2d {
     y0 = std::max(0, y0);
     yn = std::min(int(costmap_.getSizeInCellsY()), yn+1);
     
-    unsigned char* grid = costmap_.getCharMap();
-
-     for (int x = x0; x < xn; x++) {
-        for (int y = y0; y < yn; y++) {
-            int index = costmap_.getIndex(x, y);
-            grid[index] = NO_INFORMATION;
-        }
-    }
+    costmap_.resetMap(x0,y0,xn,yn);
 
     for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
       (*plugin)->update_costs(costmap_, x0, y0, xn, yn);
@@ -266,6 +252,20 @@ namespace costmap_2d {
     }
     initialized_ = false;
     stopped_ = true;
+  }
+  
+  void LayeredCostmap::pause() {
+    stop_updates_ = true;
+    initialized_ = false;
+  }
+
+  void LayeredCostmap::resume() {
+    stop_updates_ = false;
+
+    // block until the costmap is re-initialized.. meaning one update cycle has run
+    ros::Rate r(100.0);
+    while (!initialized_)
+      r.sleep();
   }
 
   bool LayeredCostmap::isCurrent() {

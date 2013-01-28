@@ -40,6 +40,7 @@
 #include <vector>
 #include <queue>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Polygon.h>
 #include <boost/thread.hpp>
 
 namespace costmap_2d {
@@ -226,7 +227,7 @@ namespace costmap_2d {
        * @param cost_value The value to set costs to
        * @return True if the polygon was filled... false if it could not be filled
        */
-      bool setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value);
+      bool setConvexPolygonCost(const geometry_msgs::Polygon& polygon, unsigned char cost_value);
 
       /**
        * @brief  Get the map cells that make up the outline of a polygon
@@ -257,6 +258,15 @@ namespace costmap_2d {
       void saveMap(std::string file_name);
       
       void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
+      
+      void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
+
+      /**
+       * @brief  Given distance in the world... convert it to cells
+       * @param  world_dist The world distance
+       * @return The equivalent cell distance
+       */
+      unsigned int cellDistance(double world_dist);
    
 
     protected:
@@ -291,13 +301,6 @@ namespace costmap_2d {
       }
 
       /**
-       * @brief  Given distance in the world... convert it to cells
-       * @param  world_dist The world distance
-       * @return The equivalent cell distance
-       */
-      unsigned int cellDistance(double world_dist);
-
-      /**
        * @brief  Deletes the costmap, static_map, and markers data structures
        */
       virtual void deleteMaps();
@@ -314,7 +317,6 @@ namespace costmap_2d {
        */
       virtual void initMaps(unsigned int size_x, unsigned int size_y);
 
-    private:
       /**
        * @brief  Raytrace a line and apply some action at each step
        * @param  at The action to take... a functor
@@ -354,6 +356,7 @@ namespace costmap_2d {
 
         }
 
+    private:
       /**
        * @brief  A 2D implementation of Bresenham's raytracing algorithm... applies an action at each step
        */

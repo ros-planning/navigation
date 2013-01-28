@@ -89,6 +89,12 @@ namespace costmap_2d{
     memset(costmap_, default_value_, size_x_ * size_y_ * sizeof(unsigned char));
   }
   
+  void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn){
+    unsigned int len = xn - x0;
+    for(unsigned int y=y0*size_x_ + x0; y<yn*size_x_+x0; y+=size_x_)
+        memset(costmap_ + y, default_value_, len*sizeof(unsigned char));
+  }
+  
   void Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
     boost::recursive_mutex::scoped_lock cpl(configuration_mutex_);
 
@@ -253,12 +259,12 @@ namespace costmap_2d{
     delete[] local_map;
   }
 
-  bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value) {
+  bool Costmap2D::setConvexPolygonCost(const geometry_msgs::Polygon& polygon, unsigned char cost_value) {
     //we assume the polygon is given in the global_frame... we need to transform it to map coordinates
     std::vector<MapLocation> map_polygon;
-    for(unsigned int i = 0; i < polygon.size(); ++i){
+    for(unsigned int i = 0; i < polygon.points.size(); ++i){
       MapLocation loc;
-      if(!worldToMap(polygon[i].x, polygon[i].y, loc.x, loc.y)){
+      if(!worldToMap(polygon.points[i].x, polygon.points[i].y, loc.x, loc.y)){
         ROS_DEBUG("Polygon lies outside map bounds, so we can't fill it");
         return false;
       }

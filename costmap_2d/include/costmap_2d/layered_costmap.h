@@ -64,7 +64,7 @@ namespace costmap_2d {
       /**
        * @brief  Destructor
        */
-      virtual ~LayeredCostmap();
+      ~LayeredCostmap();
 
       /**
        * @brief  Update the underlying costmap with new data.
@@ -93,22 +93,12 @@ namespace costmap_2d {
       /**
        * @brief  Stops the costmap from updating, but sensor data still comes in over the wire
        */
-      void pause() {
-        stop_updates_ = true;
-        initialized_ = false;
-      }
+      void pause();
 
       /**
        * @brief  Resumes costmap updates
        */
-      void resume() {
-        stop_updates_ = false;
-
-        // block until the costmap is re-initialized.. meaning one update cycle has run
-        ros::Rate r(100.0);
-        while (!initialized_)
-          r.sleep();
-      }
+      void resume();
 
       std::string getGlobalFrameID() const {
         return global_frame_;
@@ -119,7 +109,7 @@ namespace costmap_2d {
       }
 
       tf::TransformListener* getTFListener() const {
-          return &tf_;
+        return &tf_;
       }
 
       double getTFTolerance() const { return transform_tolerance_; }
@@ -132,15 +122,16 @@ namespace costmap_2d {
        * @return True if the pose was set successfully, false otherwise
        */
       bool getRobotPose(tf::Stamped<tf::Pose>& global_pose) const;
-      void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
 
-      void updateOrigin(double new_origin_x, double new_origin_y);
+      void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
 
       void getUpdatedBounds(double& minx, double& miny, double& maxx, double& maxy) {
             minx = minx_; miny = miny_; maxx = maxx_; maxy = maxy_;
       }
 
       bool isCurrent();
+      
+      Costmap2D* getCostmap() { return &costmap_; }
 
 
     private:
@@ -150,6 +141,8 @@ namespace costmap_2d {
       boost::recursive_mutex configuration_mutex_;
       std::string name_;
       bool track_unknown_space_;
+      
+      void updateOrigin();
 
       tf::TransformListener& tf_;  /// < @brief Used for transforming point clouds
       std::string tf_prefix_;
