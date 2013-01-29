@@ -12,19 +12,20 @@ namespace common_costmap_plugins
 
 void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
 {
-        nh_ = new ros::NodeHandle("~/" + name);
-        ros::NodeHandle g_nh;
+        ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
+        rolling_window_ = costmap->isRolling();
 
         initMaps();
         current_ = true;
 
         global_frame_ = costmap->getGlobalFrameID();
-        double transform_tolerance = costmap->getTFTolerance();
+        double transform_tolerance;
+        nh.param("transform_tolerance", transform_tolerance, 0.2);
 
         std::string topics_string;
         //get the topics that we'll subscribe to from the parameter server
-        nh_->param("observation_sources", topics_string, std::string(""));
+        nh.param("observation_sources", topics_string, std::string(""));
         ROS_INFO("    Subscribed to Topics: %s", topics_string.c_str());
 
         //now we need to split the topics based on whitespace which we can use a stringstream for
@@ -32,7 +33,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 
         std::string source;
         while(ss >> source){
-            ros::NodeHandle source_node(*nh_, source);
+            ros::NodeHandle source_node(nh, source);
 
             //get the parameters for the specific topic
             double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
@@ -74,7 +75,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
             observation_buffers_.push_back(boost::shared_ptr<ObservationBuffer>(
                 new ObservationBuffer(topic, observation_keep_time, expected_update_rate, 
                                       min_obstacle_height, max_obstacle_height, obstacle_range, raytrace_range, 
-                                      *layered_costmap_->getTFListener(), global_frame_, sensor_frame, transform_tolerance)));
+                                      *tf_, global_frame_, sensor_frame, transform_tolerance)));
 
             //check if we'll add this buffer to our marking observation buffers
             if(marking)
@@ -93,7 +94,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
                       new message_filters::Subscriber<sensor_msgs::LaserScan>(g_nh, topic, 50));
 
                 boost::shared_ptr<tf::MessageFilter<sensor_msgs::LaserScan> > filter(
-                    new tf::MessageFilter<sensor_msgs::LaserScan>(*sub, *layered_costmap_->getTFListener(), global_frame_, 50));
+                    new tf::MessageFilter<sensor_msgs::LaserScan>(*sub, *tf_, global_frame_, 50));
                 filter->registerCallback(boost::bind(&ObstacleCostmapPlugin::laserScanCallback, this, _1, observation_buffers_.back()));
 
                 observation_subscribers_.push_back(sub);
@@ -106,7 +107,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
                       new message_filters::Subscriber<sensor_msgs::PointCloud>(g_nh, topic, 50));
 
                 boost::shared_ptr<tf::MessageFilter<sensor_msgs::PointCloud> > filter(
-                    new tf::MessageFilter<sensor_msgs::PointCloud>(*sub, *layered_costmap_->getTFListener(), global_frame_, 50));
+                    new tf::MessageFilter<sensor_msgs::PointCloud>(*sub, *tf_, global_frame_, 50));
                 filter->registerCallback(boost::bind(&ObstacleCostmapPlugin::pointCloudCallback, this, _1, observation_buffers_.back()));
 
                 observation_subscribers_.push_back(sub);
@@ -117,7 +118,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
                       new message_filters::Subscriber<sensor_msgs::PointCloud2>(g_nh, topic, 50));
 
                 boost::shared_ptr<tf::MessageFilter<sensor_msgs::PointCloud2> > filter(
-                    new tf::MessageFilter<sensor_msgs::PointCloud2>(*sub, *layered_costmap_->getTFListener(), global_frame_, 50));
+                    new tf::MessageFilter<sensor_msgs::PointCloud2>(*sub, *tf_, global_frame_, 50));
                 filter->registerCallback(boost::bind(&ObstacleCostmapPlugin::pointCloud2Callback, this, _1, observation_buffers_.back()));
 
                 observation_subscribers_.push_back(sub);
@@ -133,10 +134,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
         
         }
 
-
-        nh_->param("max_obstacle_height", max_obstacle_height_, 2.0);
-        double cost_scale;
-        nh_->param("cost_scaling_factor", cost_scale, 10.0);
+        nh.param("max_obstacle_height", max_obstacle_height_, 2.0);
     }
 
     void ObstacleCostmapPlugin::initMaps(){
@@ -148,11 +146,6 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
         initMaps();
     }
 
-    void ObstacleCostmapPlugin::changeOrigin(double x, double y) {
-        updateOrigin(x,y);
-    }
-
-
     void ObstacleCostmapPlugin::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer){
         //project the laser into a point cloud
         sensor_msgs::PointCloud2 cloud;
@@ -160,7 +153,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 
         //project the scan into a point cloud
         try {
-          projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *layered_costmap_->getTFListener());
+          projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_);
         } catch (tf::TransformException &ex) {
           ROS_WARN ("High fidelity enabled, but TF returned a transform exception to frame %s: %s", global_frame_.c_str (), ex.what ());
           projector_.projectLaser(*message, cloud);
@@ -194,7 +187,10 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
     }
 
 
-    void ObstacleCostmapPlugin::update_bounds(double* min_x, double* min_y, double* max_x, double* max_y){
+    void ObstacleCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
+        if(rolling_window_)
+            updateOrigin(origin_x, origin_y);
+            
         bool current = true;
         std::vector<Observation> observations, clearing_observations;
 

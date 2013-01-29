@@ -23,14 +23,13 @@ namespace common_costmap_plugins
       ObstacleCostmapPlugin() { costmap_ = NULL; }
 
       void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
-      void update_bounds(double* min_x, double* min_y, double* max_x, double* max_y);
+      void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y);
       void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
       void activate();
       void deactivate();
       bool isDiscretized() { return true; }
       void matchSize(); 
-      void changeOrigin(double x, double y);
 
 
       /**
@@ -80,6 +79,7 @@ namespace common_costmap_plugins
 
       std::string global_frame_; ///< @brief The global frame for the costmap
       double max_obstacle_height_; ///< @brief Max Obstacle Height
+      tf::TransformListener* tf_;
 
       laser_geometry::LaserProjection projector_; ///< @brief Used to project laser scans into point clouds
 
@@ -89,6 +89,7 @@ namespace common_costmap_plugins
       std::vector<boost::shared_ptr<ObservationBuffer> > marking_buffers_; ///< @brief Used to store observation buffers used for marking obstacles
       std::vector<boost::shared_ptr<ObservationBuffer> > clearing_buffers_; ///< @brief Used to store observation buffers used for clearing obstacles
 
+      bool rolling_window_;
 
   };
 };

@@ -13,23 +13,21 @@ namespace common_costmap_plugins
 {
     void StaticCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
     {
-
-    boost::recursive_mutex::scoped_lock lock(lock_);
+        boost::recursive_mutex::scoped_lock lock(lock_);
+        ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
         current_ = true;
-        nh_ = new ros::NodeHandle("~/" + name);
-        ros::NodeHandle g_nh;
 
         global_frame_ = costmap->getGlobalFrameID();
 
         std::string map_topic;
-        nh_->param("map_topic", map_topic, std::string("map"));
-        nh_->param("track_unknown_space", track_unknown_space_, true);
+        nh.param("map_topic", map_topic, std::string("map"));
+        nh.param("track_unknown_space", track_unknown_space_, true);
 
 
         int temp_lethal_threshold, temp_unknown_cost_value;
-        nh_->param("lethal_cost_threshold", temp_lethal_threshold, int(100));
-        nh_->param("unknown_cost_value", temp_unknown_cost_value, int(-1));
+        nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
+        nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
 
         lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
         unknown_cost_value_ = temp_unknown_cost_value;
@@ -77,7 +75,7 @@ namespace common_costmap_plugins
         map_recieved_ = true;
     }
 
-    void StaticCostmapPlugin::update_bounds(double* min_x, double* min_y, double* max_x, double* max_y){
+    void StaticCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y, double* max_x, double* max_y){
         if(!map_recieved_ || map_initialized_) return;
         
         mapToWorld(0,0, *min_x, *min_y);

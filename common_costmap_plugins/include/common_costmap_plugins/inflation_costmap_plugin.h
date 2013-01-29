@@ -46,7 +46,7 @@ namespace common_costmap_plugins
       ~InflationCostmapPlugin() { deleteKernels(); }
 
       void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
-      void update_bounds(double* min_x, double* min_y, double* max_x, double* max_y);
+      void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y);
       void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
       virtual bool isDiscretized() { return true; } 
       virtual void matchSize();

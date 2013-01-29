@@ -6,7 +6,8 @@ rosbuild_genmsg()
 
 #rosbuild_add_boost_directories()
 
-rosbuild_add_library(costmap_2d src/costmap_2d.cpp src/layered_costmap.cpp src/observation_buffer.cpp src/costmap_2d_ros.cpp src/costmap_2d_publisher.cpp src/voxel_costmap_2d.cpp)
+rosbuild_add_library(costmap_2d src/costmap_2d.cpp src/layered_costmap.cpp src/observation_buffer.cpp)
+rosbuild_add_library(costmap_2d_ros src/layered_costmap_ros.cpp src/costmap_2d_ros.cpp src/costmap_2d_publisher.cpp)
 #rosbuild_link_boost(costmap_2d thread)
 
 rosbuild_find_ros_package(dynamic_reconfigure)
@@ -21,7 +22,7 @@ rosbuild_add_executable(bin/costmap_2d_markers src/costmap_2d_markers.cpp)
 rosbuild_add_executable(bin/costmap_2d_cloud src/costmap_2d_cloud.cpp)
 
 rosbuild_add_executable(bin/costmap_2d_node src/costmap_2d_node.cpp)
-target_link_libraries(bin/costmap_2d_node costmap_2d)
+target_link_libraries(bin/costmap_2d_node costmap_2d costmap_2d_ros)
 
 rosbuild_add_executable(test/costmap_tester test/costmap_tester.cpp)
 target_link_libraries(test/costmap_tester costmap_2d gtest)

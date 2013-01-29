@@ -59,7 +59,7 @@ namespace costmap_2d {
       /**
        * @brief  Constructor for a costmap
        */
-      LayeredCostmap(std::string name, tf::TransformListener& tf);
+      LayeredCostmap(std::string global_frame, bool rolling_window);
 
       /**
        * @brief  Destructor
@@ -70,58 +70,11 @@ namespace costmap_2d {
        * @brief  Update the underlying costmap with new data.
        * If you want to update the map outside of the update loop that runs, you can call this.
        */
-      void updateMap();
-
-      /**
-       * @brief  The loop that handles updating the costmap
-       * @param  frequency The rate at which to run the loop
-       */
-      void mapUpdateLoop(double frequency);
-
-      /**
-       * @brief  Starts costmap updates and activates plugins,
-       * can be called to restart the costmap after calls to either
-       * stop() or pause()
-       */
-      void start();
-
-      /**
-       * @brief  Stops costmap updates and inactivates plugins
-       */
-      void stop();
-
-      /**
-       * @brief  Stops the costmap from updating, but sensor data still comes in over the wire
-       */
-      void pause();
-
-      /**
-       * @brief  Resumes costmap updates
-       */
-      void resume();
-
+      void updateMap(double origin_x, double origin_y, double origin_yaw);
+      
       std::string getGlobalFrameID() const {
         return global_frame_;
       }
-
-      std::string getBaseFrameID() const {
-        return robot_base_frame_;
-      }
-
-      tf::TransformListener* getTFListener() const {
-        return &tf_;
-      }
-
-      double getTFTolerance() const { return transform_tolerance_; }
-
-      void movementCB(const ros::TimerEvent &event);
-
-      /**
-       * @brief Get the pose of the robot in the global frame of the costmap
-       * @param global_pose Will be set to the pose of the robot in the global frame of the costmap
-       * @return True if the pose was set successfully, false otherwise
-       */
-      bool getRobotPose(tf::Stamped<tf::Pose>& global_pose) const;
 
       void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
 
@@ -132,39 +85,28 @@ namespace costmap_2d {
       bool isCurrent();
       
       Costmap2D* getCostmap() { return &costmap_; }
+      
+      bool isRolling() { return rolling_window_; }
+      
+      std::vector<boost::shared_ptr<CostmapPlugin> >* getPlugins() { return &plugins_; }
+      
+      void addPlugin(boost::shared_ptr<CostmapPlugin> plugin){
+          plugins_.push_back(plugin);
+      }
 
 
     private:
       void updateUsingPlugins(std::vector<boost::shared_ptr<CostmapPlugin> > &plugins);
 
       Costmap2D costmap_;
-      boost::recursive_mutex configuration_mutex_;
-      std::string name_;
-      bool track_unknown_space_;
-      
-      void updateOrigin();
-
-      tf::TransformListener& tf_;  /// < @brief Used for transforming point clouds
-      std::string tf_prefix_;
-      std::string global_frame_;  /// < @brief The global frame for the costmap
-      std::string robot_base_frame_;  /// < @brief The frame_id of the robot base
-      double transform_tolerance_;  // timeout before transform errors
+      std::string global_frame_;
 
       bool rolling_window_;  /// < @brief Whether or not the costmap should roll with the robot
-
-      boost::thread* map_update_thread_;  /// < @brief A thread for updating the map
-      bool map_update_thread_shutdown_;
-      bool stop_updates_, initialized_, stopped_;
       mutable boost::recursive_mutex lock_;
-
-      ros::Timer timer_;
-      tf::Stamped<tf::Pose> old_pose_;
-      bool robot_stopped_;
 
       bool current_;
       double minx_, miny_, maxx_, maxy_;
 
-      pluginlib::ClassLoader<CostmapPlugin> plugin_loader_;
       std::vector<boost::shared_ptr<CostmapPlugin> > plugins_;
   };
 };  // namespace layered_costmap

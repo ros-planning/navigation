@@ -10,14 +10,15 @@ namespace common_costmap_plugins
 {
     void FootprintCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
     {
-        nh_ = new ros::NodeHandle("~/" + name);
+        ros::NodeHandle nh("~/" + name);
         ros::NodeHandle g_nh;
         layered_costmap_ = costmap;
+        footprint_.header.frame_id = layered_costmap_->getGlobalFrameID();
         current_ = true;
-        footprint_pub_ = nh_->advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);
+        footprint_pub_ = nh.advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);
 
         //load the robot footprint from the parameter server if its available in the global namespace
-        footprint_spec_ = loadRobotFootprint(*nh_);
+        footprint_spec_ = loadRobotFootprint(nh);
 
         if(footprint_spec_.points.size() > 2){
             //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
@@ -39,23 +40,15 @@ namespace common_costmap_plugins
             inscribed_radius_ = std::min(inscribed_radius_, std::min(vertex_dist, edge_dist));
             circumscribed_radius_ = std::max(circumscribed_radius_, std::max(vertex_dist, edge_dist));
         }else{
-            nh_->param("robot_radius", inscribed_radius_, 0.46);
+            nh.param("robot_radius", inscribed_radius_, 0.46);
             circumscribed_radius_ = inscribed_radius_;
             circular_ = true;
         }
     }
 
 
-    void FootprintCostmapPlugin::update_bounds(double* min_x, double* min_y, double* max_x, double* max_y){
-        //get global pose
-        tf::Stamped<tf::Pose> global_pose;
-        if(!layered_costmap_->getRobotPose(global_pose))
-          return;
-        double x = global_pose.getOrigin().x(), y = global_pose.getOrigin().y();
-        double theta = tf::getYaw(global_pose.getRotation());
-
+    void FootprintCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
         //update transformed polygon 
-        footprint_.header.frame_id = layered_costmap_->getGlobalFrameID();
         footprint_.header.stamp = ros::Time::now();
         footprint_.polygon.points.clear();
         if(circular_){
@@ -63,19 +56,19 @@ namespace common_costmap_plugins
           double step = 2 * M_PI / 72;
           while(angle < 2 * M_PI){
             geometry_msgs::Point32 pt;
-            pt.x = inscribed_radius_ * cos(angle) + x;
-            pt.y = inscribed_radius_ * sin(angle) + y;
+            pt.x = inscribed_radius_ * cos(angle) + origin_x;
+            pt.y = inscribed_radius_ * sin(angle) + origin_y;
             pt.z = 0.0;
             footprint_.polygon.points.push_back(pt);
             angle += step;
           }
         }else{
-            double cos_th = cos(theta);
-            double sin_th = sin(theta);
+            double cos_th = cos(origin_yaw);
+            double sin_th = sin(origin_yaw);
             for(unsigned int i = 0; i < footprint_spec_.points.size(); ++i){
               geometry_msgs::Point32 new_pt;
-              new_pt.x = x + (footprint_spec_.points[i].x * cos_th - footprint_spec_.points[i].y * sin_th);
-              new_pt.y = y + (footprint_spec_.points[i].x * sin_th + footprint_spec_.points[i].y * cos_th);
+              new_pt.x = origin_x + (footprint_spec_.points[i].x * cos_th - footprint_spec_.points[i].y * sin_th);
+              new_pt.y = origin_y + (footprint_spec_.points[i].x * sin_th + footprint_spec_.points[i].y * cos_th);
               footprint_.polygon.points.push_back(new_pt);
             }
         }

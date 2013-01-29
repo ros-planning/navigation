@@ -11,17 +11,16 @@ using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 namespace common_costmap_plugins
 {
 
-void InflationCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
-{
-        nh_ = new ros::NodeHandle("~/" + name);
-        ros::NodeHandle g_nh;
+    void InflationCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+    {
+        ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
         current_ = true;
         matchSize();
-        nh_->param("inflation_radius", inflation_radius_, 0.55);
+        nh.param("inflation_radius", inflation_radius_, 0.55);
         inscribed_radius_ = .45;
         cell_inflation_radius_ = cellDistance(inflation_radius_);
-        nh_->param("cost_scaling_factor", weight_, 10.0);
+        nh.param("cost_scaling_factor", weight_, 10.0);
         computeCaches();
         seen_ = NULL;
     }
@@ -38,7 +37,7 @@ void InflationCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std
     }
 
 
-    void InflationCostmapPlugin::update_bounds(double* min_x, double* min_y, double* max_x, double* max_y){
+    void InflationCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
         //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
         ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
         
