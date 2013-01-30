@@ -1,4 +1,4 @@
-#include<common_costmap_plugins/obstacle_costmap_plugin.h>
+#include<costmap_2d/obstacle_costmap_plugin.h>
 #include<costmap_2d/costmap_math.h>
 
 #include <pluginlib/class_list_macros.h>
@@ -6,6 +6,9 @@ PLUGINLIB_DECLARE_CLASS(obstacle_costmap_plugin, obstacle_costmap, common_costma
 
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::FREE_SPACE;
+
+using costmap_2d::ObservationBuffer;
+using costmap_2d::Observation;
 
 namespace common_costmap_plugins
 {

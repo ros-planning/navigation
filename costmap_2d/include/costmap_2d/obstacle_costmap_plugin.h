@@ -3,7 +3,7 @@
 #include <ros/ros.h>
 #include <costmap_2d/plugin_base.h>
 #include <costmap_2d/layered_costmap.h>
-#include <common_costmap_plugins/observation_buffer.h>
+#include <costmap_2d/observation_buffer.h>
 
 #include <nav_msgs/OccupancyGrid.h>
 
@@ -37,21 +37,21 @@ namespace common_costmap_plugins
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
        */
-      void laserScanCallback(const sensor_msgs::LaserScanConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+      void laserScanCallback(const sensor_msgs::LaserScanConstPtr& message, const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
 
       /**
        * @brief  A callback to handle buffering PointCloud messages
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
        */
-      void pointCloudCallback(const sensor_msgs::PointCloudConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+      void pointCloudCallback(const sensor_msgs::PointCloudConstPtr& message, const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
 
       /**
        * @brief  A callback to handle buffering PointCloud2 messages
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update
        */
-      void pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+      void pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
       
 
     private:
@@ -62,20 +62,20 @@ namespace common_costmap_plugins
        * @param marking_observations A reference to a vector that will be populated with the observations 
        * @return True if all the observation buffers are current, false otherwise
        */
-      bool getMarkingObservations(std::vector<Observation>& marking_observations) const;
+      bool getMarkingObservations(std::vector<costmap_2d::Observation>& marking_observations) const;
 
       /**
        * @brief  Get the observations used to clear space
        * @param marking_observations A reference to a vector that will be populated with the observations 
        * @return True if all the observation buffers are current, false otherwise
        */
-      bool getClearingObservations(std::vector<Observation>& clearing_observations) const;
+      bool getClearingObservations(std::vector<costmap_2d::Observation>& clearing_observations) const;
 
       /**
        * @brief  Clear freespace based on one observation
        * @param clearing_observation The observation used to raytrace 
        */
-      void raytraceFreespace(const Observation& clearing_observation, double* min_x, double* min_y, double* max_x, double* max_y);
+      void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y, double* max_x, double* max_y);
 
       std::string global_frame_; ///< @brief The global frame for the costmap
       double max_obstacle_height_; ///< @brief Max Obstacle Height
@@ -85,9 +85,9 @@ namespace common_costmap_plugins
 
       std::vector<boost::shared_ptr<tf::MessageFilterBase> > observation_notifiers_; ///< @brief Used to make sure that transforms are available for each sensor
       std::vector<boost::shared_ptr<message_filters::SubscriberBase> > observation_subscribers_; ///< @brief Used for the observation message filters
-      std::vector<boost::shared_ptr<ObservationBuffer> > observation_buffers_; ///< @brief Used to store observations from various sensors
-      std::vector<boost::shared_ptr<ObservationBuffer> > marking_buffers_; ///< @brief Used to store observation buffers used for marking obstacles
-      std::vector<boost::shared_ptr<ObservationBuffer> > clearing_buffers_; ///< @brief Used to store observation buffers used for clearing obstacles
+      std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > observation_buffers_; ///< @brief Used to store observations from various sensors
+      std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > marking_buffers_; ///< @brief Used to store observation buffers used for marking obstacles
+      std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > clearing_buffers_; ///< @brief Used to store observation buffers used for clearing obstacles
 
       bool rolling_window_;
 

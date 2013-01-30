@@ -1,4 +1,4 @@
-#include<common_costmap_plugins/inflation_costmap_plugin.h>
+#include<costmap_2d/inflation_costmap_plugin.h>
 #include<costmap_2d/costmap_math.h>
 
 #include <pluginlib/class_list_macros.h>
