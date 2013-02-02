@@ -87,7 +87,7 @@ namespace move_base {
        * @param name The name of the action
        * @param tf A reference to a TransformListener
        */
-      MoveBase(std::string name, tf::TransformListener& tf);
+      MoveBase(tf::TransformListener& tf);
 
       /**
        * @brief  Destructor - Cleans up

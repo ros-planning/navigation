@@ -45,7 +45,7 @@
 
 namespace move_base {
 
-  MoveBase::MoveBase(std::string name, tf::TransformListener& tf) :
+  MoveBase::MoveBase(tf::TransformListener& tf) :
     tf_(tf),
     as_(NULL),
     tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
