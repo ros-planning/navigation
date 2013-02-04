@@ -37,21 +37,20 @@
 #include <base_local_planner/goal_functions.h>
 
 namespace base_local_planner {
-  double distance(double x1, double y1, double x2, double y2){
-    return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+  double getGoalPositionDistance(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y) {
+    double dist =
+        (goal_x - global_pose.getOrigin().x()) * (goal_x - global_pose.getOrigin().x()) +
+        (goal_y - global_pose.getOrigin().y()) * (goal_y - global_pose.getOrigin().y());
+    return sqrt(dist);
   }
 
-  bool goalPositionReached(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y, double xy_goal_tolerance){
-    double dist = distance(global_pose.getOrigin().x(), global_pose.getOrigin().y(), goal_x, goal_y);
-    return fabs(dist) <= xy_goal_tolerance;
-  }
-
-  bool goalOrientationReached(const tf::Stamped<tf::Pose>& global_pose, double goal_th, double yaw_goal_tolerance){
+  double getGoalOrientationAngleDifference(const tf::Stamped<tf::Pose>& global_pose, double goal_th) {
     double yaw = tf::getYaw(global_pose.getRotation());
-    return fabs(angles::shortest_angular_distance(yaw, goal_th)) <= yaw_goal_tolerance;
+    return angles::shortest_angular_distance(yaw, goal_th);
   }
 
-  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub, double r, double g, double b, double a){
+  void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, const ros::Publisher& pub) {
     //given an empty path we won't do anything
     if(path.empty())
       return;
@@ -89,68 +88,69 @@ namespace base_local_planner {
     }
   }
 
-  bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
+  bool transformGlobalPlan(
+      const tf::TransformListener& tf,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const tf::Stamped<tf::Pose>& global_pose,
+      const costmap_2d::Costmap2D& costmap,
+      const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan){
     const geometry_msgs::PoseStamped& plan_pose = global_plan[0];
 
     transformed_plan.clear();
 
-    try{
-      if (!global_plan.size() > 0)
-      {
-        ROS_ERROR("Recieved plan with zero length");
+    try {
+      if (!global_plan.size() > 0) {
+        ROS_ERROR("Received plan with zero length");
         return false;
       }
 
-      tf::StampedTransform transform;
+      // get plan_to_global_transform from plan frame to global_frame
+      tf::StampedTransform plan_to_global_transform;
       tf.lookupTransform(global_frame, ros::Time(), 
           plan_pose.header.frame_id, plan_pose.header.stamp, 
-          plan_pose.header.frame_id, transform);
+          plan_pose.header.frame_id, plan_to_global_transform);
 
       //let's get the pose of the robot in the frame of the plan
       tf::Stamped<tf::Pose> robot_pose;
-      robot_pose.setIdentity();
-      robot_pose.frame_id_ = costmap.getBaseFrameID();
-      robot_pose.stamp_ = ros::Time();
-      tf.transformPose(plan_pose.header.frame_id, robot_pose, robot_pose);
+      tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
 
-      //we'll keep points on the plan that are within the window that we're looking at
-      double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0, costmap.getSizeInCellsY() * costmap.getResolution() / 2.0);
+      //we'll discard points on the plan that are outside the local costmap
+      double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
+                                       costmap.getSizeInCellsY() * costmap.getResolution() / 2.0);
 
       unsigned int i = 0;
       double sq_dist_threshold = dist_threshold * dist_threshold;
-      double sq_dist = DBL_MAX;
+      double sq_dist = 0;
 
       //we need to loop to a point on the plan that is within a certain distance of the robot
-      while(i < (unsigned int)global_plan.size() && sq_dist > sq_dist_threshold){
+      while(i < (unsigned int)global_plan.size()) {
         double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
         double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
         sq_dist = x_diff * x_diff + y_diff * y_diff;
+        if (sq_dist <= sq_dist_threshold) {
+          break;
+        }
         ++i;
       }
-
-      //make sure not to count the first point that is too far away
-      if(i > 0)
-        --i;
 
       tf::Stamped<tf::Pose> tf_pose;
       geometry_msgs::PoseStamped newer_pose;
 
       //now we'll transform until points are outside of our distance threshold
-      while(i < (unsigned int)global_plan.size() && sq_dist < sq_dist_threshold){
-        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
-        sq_dist = x_diff * x_diff + y_diff * y_diff;
-
+      while(i < (unsigned int)global_plan.size() && sq_dist <= sq_dist_threshold) {
         const geometry_msgs::PoseStamped& pose = global_plan[i];
         poseStampedMsgToTF(pose, tf_pose);
-        tf_pose.setData(transform * tf_pose);
-        tf_pose.stamp_ = transform.stamp_;
+        tf_pose.setData(plan_to_global_transform * tf_pose);
+        tf_pose.stamp_ = plan_to_global_transform.stamp_;
         tf_pose.frame_id_ = global_frame;
         poseStampedTFToMsg(tf_pose, newer_pose);
 
         transformed_plan.push_back(newer_pose);
+
+        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
+        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+        sq_dist = x_diff * x_diff + y_diff * y_diff;
 
         ++i;
       }
@@ -174,13 +174,10 @@ namespace base_local_planner {
     return true;
   }
 
-  bool isGoalReached(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-      const costmap_2d::Costmap2DROS& costmap_ros, const std::string& global_frame, 
-      const nav_msgs::Odometry& base_odom, double rot_stopped_vel, double trans_stopped_vel,
-      double xy_goal_tolerance, double yaw_goal_tolerance){
+  bool getGoalPose(const tf::TransformListener& tf,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const std::string& global_frame, tf::Stamped<tf::Pose> &goal_pose) {
     const geometry_msgs::PoseStamped& plan_goal_pose = global_plan.back();
-    tf::Stamped<tf::Pose> goal_pose;
-
     try{
       if (!global_plan.size() > 0)
       {
@@ -189,8 +186,8 @@ namespace base_local_planner {
       }
 
       tf::StampedTransform transform;
-      tf.lookupTransform(global_frame, ros::Time(), 
-          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp, 
+      tf.lookupTransform(global_frame, ros::Time(),
+          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
           plan_goal_pose.header.frame_id, transform);
 
       poseStampedMsgToTF(plan_goal_pose, goal_pose);
@@ -214,23 +211,30 @@ namespace base_local_planner {
 
       return false;
     }
+    return true;
+  }
 
-    //we assume the global goal is the last point in the global plan
+  bool isGoalReached(const tf::TransformListener& tf,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const costmap_2d::Costmap2D& costmap,
+      const std::string& global_frame,
+      tf::Stamped<tf::Pose>& global_pose,
+      const nav_msgs::Odometry& base_odom,
+      double rot_stopped_vel, double trans_stopped_vel,
+      double xy_goal_tolerance, double yaw_goal_tolerance){
+
+	//we assume the global goal is the last point in the global plan
+    tf::Stamped<tf::Pose> goal_pose;
+    getGoalPose(tf, global_plan, global_frame, goal_pose);
+
     double goal_x = goal_pose.getOrigin().getX();
     double goal_y = goal_pose.getOrigin().getY();
-
-    double yaw = tf::getYaw(goal_pose.getRotation());
-
-    double goal_th = yaw;
-
-    tf::Stamped<tf::Pose> global_pose;
-    if(!costmap_ros.getRobotPose(global_pose))
-      return false;
+    double goal_th = tf::getYaw(goal_pose.getRotation());
 
     //check to see if we've reached the goal position
-    if(goalPositionReached(global_pose, goal_x, goal_y, xy_goal_tolerance)){
+    if(getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance) {
       //check to see if the goal orientation has been reached
-      if(goalOrientationReached(global_pose, goal_th, yaw_goal_tolerance)){
+      if(fabs(getGoalOrientationAngleDifference(global_pose, goal_th)) <= yaw_goal_tolerance) {
         //make sure that we're actually stopped before returning success
         if(stopped(base_odom, rot_stopped_vel, trans_stopped_vel))
           return true;

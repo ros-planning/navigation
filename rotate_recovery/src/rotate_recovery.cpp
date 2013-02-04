@@ -86,9 +86,10 @@ void RotateRecovery::runBehavior(){
   }
 
   if(global_costmap_ == NULL || local_costmap_ == NULL){
-    ROS_ERROR("The costmaps passed to the ClearCostmapRecovery object cannot be NULL. Doing nothing.");
+    ROS_ERROR("The costmaps passed to the RotateRecovery object cannot be NULL. Doing nothing.");
     return;
   }
+  ROS_WARN("Rotate recovery behavior started.");
 
   ros::Rate r(frequency_);
   ros::NodeHandle n;

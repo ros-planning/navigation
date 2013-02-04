@@ -106,6 +106,7 @@ class FakeOdomNode
       private_nh.param("delta_x", delta_x_, 0.0);
       private_nh.param("delta_y", delta_y_, 0.0);
       private_nh.param("delta_yaw", delta_yaw_, 0.0);      
+      private_nh.param("transform_tolerance", transform_tolerance_, 0.1);      
       m_particleCloud.header.stamp = ros::Time::now();
       m_particleCloud.header.frame_id = global_frame_id_;
       m_particleCloud.poses.resize(1);
@@ -145,6 +146,7 @@ class FakeOdomNode
 
     double                         delta_x_, delta_y_, delta_yaw_;
     bool                           m_base_pos_received;
+    double transform_tolerance_;
 
     nav_msgs::Odometry  m_basePosMsg;
     geometry_msgs::PoseArray      m_particleCloud;
@@ -183,7 +185,9 @@ class FakeOdomNode
         return;
       }
 
-      m_tfServer->sendTransform(tf::StampedTransform(odom_to_map.inverse(), message->header.stamp, global_frame_id_, message->header.frame_id));
+      m_tfServer->sendTransform(tf::StampedTransform(odom_to_map.inverse(),
+                                                     message->header.stamp + ros::Duration(transform_tolerance_),
+                                                     global_frame_id_, message->header.frame_id));
 
       tf::Pose current;
       tf::poseMsgToTF(message->pose.pose, current);

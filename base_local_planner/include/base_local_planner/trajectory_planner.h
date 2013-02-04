@@ -38,35 +38,28 @@
 #define TRAJECTORY_ROLLOUT_TRAJECTORY_PLANNER_H_
 
 #include <vector>
-#include <string>
-#include <sstream>
-#include <math.h>
-#include <ros/console.h>
-#include <angles/angles.h>
-
-//for creating a local cost grid
-#include <base_local_planner/map_cell.h>
-#include <base_local_planner/map_grid.h>
+#include <cmath>
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
-#include <base_local_planner/world_model.h>
 
+#include <base_local_planner/footprint_helper.h>
+
+#include <base_local_planner/world_model.h>
 #include <base_local_planner/trajectory.h>
+#include <base_local_planner/Position2DInt.h>
+#include <base_local_planner/BaseLocalPlannerConfig.h>
 
 //we'll take in a path as a vector of poses
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
-#include <base_local_planner/Position2DInt.h>
-
-//for computing path distance
-#include <queue>
 
 //for some datatypes
 #include <tf/transform_datatypes.h>
 
-#include <base_local_planner/BaseLocalPlannerConfig.h>
-#include <boost/algorithm/string.hpp>
+//for creating a local cost grid
+#include <base_local_planner/map_cell.h>
+#include <base_local_planner/map_grid.h>
 
 namespace base_local_planner {
   /**
@@ -107,6 +100,7 @@ namespace base_local_planner {
        * @param dwa Set this to true to use the Dynamic Window Approach, false to use acceleration limits
        * @param heading_scoring Set this to true to score trajectories based on the robot's heading after 1 timestep
        * @param heading_scoring_timestep How far to look ahead in time when we score heading based trajectories
+       * @param meter_scoring adapt parameters to costmap resolution
        * @param simple_attractor Set this to true to allow simple attraction to a goal point instead of intelligent cost propagation
        * @param y_vels A vector of the y velocities the controller will explore
        * @param angular_sim_granularity The distance between simulation points for angular velocity should be small enough that the robot doesn't hit things
@@ -125,6 +119,7 @@ namespace base_local_planner {
           double max_vel_th = 1.0, double min_vel_th = -1.0, double min_in_place_vel_th = 0.4,
           double backup_vel = -0.1,
           bool dwa = false, bool heading_scoring = false, double heading_scoring_timestep = 0.1,
+          bool meter_scoring = true,
           bool simple_attractor = false,
           std::vector<double> y_vels = std::vector<double>(0),
           double stop_time_buffer = 0.2,
@@ -254,33 +249,10 @@ namespace base_local_planner {
        */
       double footprintCost(double x_i, double y_i, double theta_i);
 
-      /**
-       * @brief  Used to get the cells that make up the footprint of the robot
-       * @param x_i The x position of the robot
-       * @param y_i The y position of the robot
-       * @param theta_i The orientation of the robot
-       * @param  fill If true: returns all cells in the footprint of the robot. If false: returns only the cells that make up the outline of the footprint.
-       * @return The cells that make up either the outline or entire footprint of the robot depending on fill
-       */
-      std::vector<base_local_planner::Position2DInt> getFootprintCells(double x_i, double y_i, double theta_i, bool fill);
-
-      /**
-       * @brief  Use Bresenham's algorithm to trace a line between two points in a grid
-       * @param  x0 The x coordinate of the first point
-       * @param  x1 The x coordinate of the second point
-       * @param  y0 The y coordinate of the first point
-       * @param  y1 The y coordinate of the second point
-       * @param  pts Will be filled with the cells that lie on the line in the grid
-       */
-      void getLineCells(int x0, int x1, int y0, int y1, std::vector<base_local_planner::Position2DInt>& pts);
-
-      /**
-       * @brief Fill the outline of a polygon, in this case the robot footprint, in a grid
-       * @param footprint The list of cells making up the footprint in the grid, will be modified to include all cells inside the footprint
-       */
-      void getFillCells(std::vector<base_local_planner::Position2DInt>& footprint);
-
-      MapGrid map_; ///< @brief The local map grid where we propagate goal and path distance 
+      base_local_planner::FootprintHelper footprint_helper_;
+    
+      MapGrid path_map_; ///< @brief The local map grid where we propagate path distance
+      MapGrid goal_map_; ///< @brief The local map grid where we propagate goal distance
       const costmap_2d::Costmap2D& costmap_; ///< @brief Provides access to cost map information
       WorldModel& world_model_; ///< @brief The world model that the controller uses for collision detection
 
@@ -295,6 +267,7 @@ namespace base_local_planner {
       bool strafe_right, strafe_left; ///< @brief Booleans to keep track of strafe direction for the robot
 
       bool escaping_; ///< @brief Boolean to keep track of whether we're in escape mode
+      bool meter_scoring_;
 
       double goal_x_,goal_y_; ///< @brief Storage for the local goal the robot is pursuing
 
@@ -382,8 +355,9 @@ namespace base_local_planner {
        * @return The new velocity
        */
       inline double computeNewVelocity(double vg, double vi, double a_max, double dt){
-        if((vg - vi) >= 0)
+        if((vg - vi) >= 0) {
           return std::min(vg, vi + a_max * dt);
+        }
         return std::max(vg, vi - a_max * dt);
       }
 

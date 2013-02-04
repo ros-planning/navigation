@@ -10,7 +10,8 @@ This package provides common interfaces for navigation specific robot actions. C
   <url>http://ros.org/wiki/nav_core</url>
   <depend package="std_msgs"/>
   <depend package="geometry_msgs"/>
-
+  <depend package="costmap_2d"/>
+  <depend package="tf" />
   <export>
     <cpp cflags="-I${prefix}/include" />
   </export>

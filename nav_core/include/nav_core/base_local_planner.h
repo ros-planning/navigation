@@ -40,6 +40,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include <tf/transform_listener.h>
 
 namespace nav_core {
   /**

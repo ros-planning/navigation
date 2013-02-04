@@ -16,4 +16,8 @@ set(ROSPACK_MAKEDIST true)
 # variables.
 #list(APPEND CPACK_SOURCE_IGNORE_FILES /core/experimental)
 
+<<<<<<< HEAD
 rosbuild_make_distribution(1.8.3)
+=======
+rosbuild_make_distribution(1.10.1)
+>>>>>>> upstream/hydro-exploration

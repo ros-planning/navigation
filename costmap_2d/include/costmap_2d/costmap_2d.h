@@ -39,8 +39,15 @@
 
 #include <vector>
 #include <queue>
+<<<<<<< HEAD
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Polygon.h>
+=======
+#include <cmath>
+#include <costmap_2d/observation.h>
+#include <costmap_2d/cell_data.h>
+#include <costmap_2d/cost_values.h>
+>>>>>>> upstream/hydro-exploration
 #include <boost/thread.hpp>
 
 namespace costmap_2d {

@@ -36,22 +36,40 @@
 *********************************************************************/
 #ifndef DWA_LOCAL_PLANNER_DWA_PLANNER_ROS_H_
 #define DWA_LOCAL_PLANNER_DWA_PLANNER_ROS_H_
-#include <angles/angles.h>
-#include <dwa_local_planner/dwa_planner.h>
+
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+
+#include <tf/transform_listener.h>
+
+#include <dynamic_reconfigure/server.h>
+#include <dwa_local_planner/DWAPlannerConfig.h>
+
+#include <angles/angles.h>
+
+#include <nav_msgs/Odometry.h>
+
+#include <costmap_2d/costmap_2d_ros.h>
+
 #include <nav_core/base_local_planner.h>
+#include <base_local_planner/latched_stop_rotate_controller.h>
+
+#include <base_local_planner/odometry_helper_ros.h>
+
+#include <dwa_local_planner/dwa_planner.h>
 
 namespace dwa_local_planner {
   /**
    * @class DWAPlannerROS
-   * @brief ROS Wrapper for the DWAPlanner that adheres to the BaseLocalPlanner interface and can be used as a plugin for move_base.
+   * @brief ROS Wrapper for the DWAPlanner that adheres to the
+   * BaseLocalPlanner interface and can be used as a plugin for move_base.
    */
   class DWAPlannerROS : public nav_core::BaseLocalPlanner {
     public:
       /**
        * @brief  Constructor for DWAPlannerROS wrapper
        */
-      DWAPlannerROS() : costmap_ros_(NULL), tf_(NULL), initialized_(false) {}
+      DWAPlannerROS();
 
       /**
        * @brief  Constructs the ros wrapper
@@ -59,13 +77,30 @@ namespace dwa_local_planner {
        * @param tf A pointer to a transform listener
        * @param costmap The cost map to use for assigning costs to trajectories
        */
-      void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros);
+      void initialize(std::string name, tf::TransformListener* tf,
+          costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
-       * @brief  Check if the goal pose has been achieved
-       * @return True if achieved, false otherwise
+       * @brief  Destructor for the wrapper
        */
-      bool isGoalReached();
+      ~DWAPlannerROS();
+
+      /**
+       * @brief  Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @return True if a valid trajectory was found, false otherwise
+       */
+      bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+
+
+      /**
+       * @brief  Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base, using dynamic window approach
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @return True if a valid trajectory was found, false otherwise
+       */
+      bool dwaComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
 
       /**
        * @brief  Set the plan that the controller is following
@@ -75,56 +110,51 @@ namespace dwa_local_planner {
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
       /**
-       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
+       * @brief  Check if the goal pose has been achieved
+       * @return True if achieved, false otherwise
        */
-      bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
+      bool isGoalReached();
 
-    private:
-      inline double sign(double x){
-        return x < 0.0 ? -1.0 : 1.0;
+
+
+      bool isInitialized() {
+        return initialized_;
       }
 
+    private:
       /**
-       * @brief Once a goal position is reached... rotate to the goal orientation
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  robot_vel The velocity of the robot
-       * @param  goal_th The desired th value for the goal
-       * @param  cmd_vel The velocity commands to be filled
-       * @return  True if a valid trajectory was found, false otherwise
+       * @brief Callback to update the local planner's parameters based on dynamic reconfigure
        */
-      bool rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel);
-      /**
-       * @brief Stop the robot taking into account acceleration limits
-       * @param  global_pose The pose of the robot in the global frame
-       * @param  robot_vel The velocity of the robot
-       * @param  cmd_vel The velocity commands to be filled
-       * @return  True if a valid trajectory was found, false otherwise
-       */
-      bool stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel);
+      void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
-      /**
-       * @brief  Callback for receiving odometry data
-       * @param msg An Odometry message 
-       */
-      void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
+      void publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path);
+
+      void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
+
+      tf::TransformListener* tf_; ///< @brief Used for transforming point clouds
+
+      // for visualisation, publishers of global and local plan
+      ros::Publisher g_plan_pub_, l_plan_pub_;
+
+      base_local_planner::LocalPlannerUtil planner_util_;
+
+      boost::shared_ptr<DWAPlanner> dp_; ///< @brief The trajectory controller
 
       costmap_2d::Costmap2DROS* costmap_ros_;
-      tf::TransformListener* tf_;
-      double max_vel_th_, min_vel_th_, min_rot_vel_;
-      double rot_stopped_vel_, trans_stopped_vel_;
-      double yaw_goal_tolerance_, xy_goal_tolerance_;
-      bool prune_plan_;
+      costmap_2d::Costmap2D costmap_;
+
+      dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
+      dwa_local_planner::DWAPlannerConfig default_config_;
+      bool setup_;
+      tf::Stamped<tf::Pose> current_pose_;
+
+      base_local_planner::LatchedStopRotateController latchedStopRotateController_;
+
+
       bool initialized_;
-      ros::Subscriber odom_sub_;
-      ros::Publisher g_plan_pub_, l_plan_pub_;
-      boost::mutex odom_mutex_;
-      nav_msgs::Odometry base_odom_;
-      boost::shared_ptr<DWAPlanner> dp_;
-      std::vector<geometry_msgs::PoseStamped> global_plan_;
-      bool rotating_to_goal_;
-      bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
+
+
+      base_local_planner::OdometryHelperRos odom_helper_;
   };
 };
 #endif

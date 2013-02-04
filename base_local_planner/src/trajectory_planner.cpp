@@ -37,13 +37,28 @@
 
 #include <base_local_planner/trajectory_planner.h>
 
+#include <string>
+#include <sstream>
+#include <math.h>
+#include <angles/angles.h>
+
+
+
+#include <boost/algorithm/string.hpp>
+
+#include <ros/console.h>
+
+//for computing path distance
+#include <queue>
+
 using namespace std;
 using namespace costmap_2d;
 
 namespace base_local_planner{
-  void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg) 
+
+  void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg)
   {
-      base_local_planner::BaseLocalPlannerConfig config(cfg);
+      BaseLocalPlannerConfig config(cfg);
 
       boost::mutex::scoped_lock l(configuration_mutex_);
 
@@ -53,16 +68,26 @@ namespace base_local_planner{
 
       max_vel_x_ = config.max_vel_x;
       min_vel_x_ = config.min_vel_x;
+      
       max_vel_th_ = config.max_vel_theta;
       min_vel_th_ = config.min_vel_theta;
       min_in_place_vel_th_ = config.min_in_place_vel_theta;
 
       sim_time_ = config.sim_time;
       sim_granularity_ = config.sim_granularity;
+      angular_sim_granularity_ = config.angular_sim_granularity;
 
       pdist_scale_ = config.pdist_scale;
       gdist_scale_ = config.gdist_scale;
       occdist_scale_ = config.occdist_scale;
+
+      if (meter_scoring_) {
+        //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
+        double resolution = costmap_.getResolution();
+        gdist_scale_ *= resolution;
+        pdist_scale_ *= resolution;
+        occdist_scale_ *= resolution;
+      }
 
       oscillation_reset_dist_ = config.oscillation_reset_dist;
       escape_reset_dist_ = config.escape_reset_dist;
@@ -95,8 +120,6 @@ namespace base_local_planner{
 
       simple_attractor_ = config.simple_attractor;
 
-      angular_sim_granularity_ = config.angular_sim_granularity;
-
       //y-vels
       string y_string = config.y_vels;
       vector<string> y_strs;
@@ -128,9 +151,11 @@ namespace base_local_planner{
       double max_vel_x, double min_vel_x,
       double max_vel_th, double min_vel_th, double min_in_place_vel_th,
       double backup_vel,
-      bool dwa, bool heading_scoring, double heading_scoring_timestep, bool simple_attractor,
+      bool dwa, bool heading_scoring, double heading_scoring_timestep, bool meter_scoring, bool simple_attractor,
       vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
-    : map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()), costmap_(costmap), 
+    : path_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
+      goal_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
+      costmap_(costmap),
     world_model_(world_model), footprint_spec_(footprint_spec),
     sim_time_(sim_time), sim_granularity_(sim_granularity), angular_sim_granularity_(angular_sim_granularity),
     vx_samples_(vx_samples), vtheta_samples_(vtheta_samples),
@@ -161,25 +186,33 @@ namespace base_local_planner{
   TrajectoryPlanner::~TrajectoryPlanner(){}
 
   bool TrajectoryPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
-    MapCell cell = map_(cx, cy);
+    MapCell cell = path_map_(cx, cy);
+    MapCell goal_cell = goal_map_(cx, cy);
     if (cell.within_robot) {
         return false;
     }
     occ_cost = costmap_.getCost(cx, cy);
-    if (cell.path_dist >= map_.map_.size() || cell.goal_dist >= map_.map_.size() || occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+    if (cell.target_dist == path_map_.obstacleCosts() ||
+        cell.target_dist == path_map_.unreachableCellCosts() ||
+        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         return false;
     }
-    path_cost = cell.path_dist;
-    goal_cost = cell.goal_dist;
+    path_cost = cell.target_dist;
+    goal_cost = goal_cell.target_dist;
     total_cost = pdist_scale_ * path_cost + gdist_scale_ * goal_cost + occdist_scale_ * occ_cost;
     return true;
   }
 
-  //create and score a trajectory given the current pose of the robot and selected velocities
-  void TrajectoryPlanner::generateTrajectory(double x, double y, double theta, double vx, double vy, 
-      double vtheta, double vx_samp, double vy_samp, double vtheta_samp, 
-      double acc_x, double acc_y, double acc_theta, double impossible_cost,
-      Trajectory& traj){
+  /**
+   * create and score a trajectory given the current pose of the robot and selected velocities
+   */
+  void TrajectoryPlanner::generateTrajectory(
+      double x, double y, double theta,
+      double vx, double vy, double vtheta,
+      double vx_samp, double vy_samp, double vtheta_samp,
+      double acc_x, double acc_y, double acc_theta,
+      double impossible_cost,
+      Trajectory& traj) {
 
     // make sure the configuration doesn't change mid run
     boost::mutex::scoped_lock l(configuration_mutex_);
@@ -199,14 +232,16 @@ namespace base_local_planner{
 
     //compute the number of steps we must take along this trajectory to be "safe"
     int num_steps;
-    if(!heading_scoring_)
+    if(!heading_scoring_) {
       num_steps = int(max((vmag * sim_time_) / sim_granularity_, fabs(vtheta_samp) / angular_sim_granularity_) + 0.5);
-    else
+    } else {
       num_steps = int(sim_time_ / sim_granularity_ + 0.5);
+    }
 
     //we at least want to take one step... even if we won't move, we want to score our current position
-    if(num_steps == 0)
+    if(num_steps == 0) {
       num_steps = 1;
+    }
 
     double dt = sim_time_ / num_steps;
     double time = 0.0;
@@ -266,36 +301,38 @@ namespace base_local_planner{
 
       occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
 
-      double cell_pdist = map_(cell_x, cell_y).path_dist;
-      double cell_gdist = map_(cell_x, cell_y).goal_dist;
-
-      //update path and goal distances
-      if(!heading_scoring_){
-        path_dist = cell_pdist;
-        goal_dist = cell_gdist;
-      }
-      else if(time >= heading_scoring_timestep_ && time < heading_scoring_timestep_ + dt){
-        heading_diff = headingDiff(cell_x, cell_y, x_i, y_i, theta_i);
-        //update path and goal distances
-        path_dist = cell_pdist;
-        goal_dist = cell_gdist;
-      }
-
       //do we want to follow blindly
-      if(simple_attractor_){
+      if (simple_attractor_) {
         goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
           (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y);
-        path_dist = 0.0;
-      }
-      else{
-        //if a point on this trajectory has no clear path to goal it is invalid
-        if(impossible_cost <= goal_dist || impossible_cost <= path_dist){
-          ROS_DEBUG("No path to goal with goal distance = %f, path_distance = %f and max cost = %f", 
-              goal_dist, path_dist, impossible_cost);
-          traj.cost_ = -2.0;
-          return;
+      } else {
+
+        bool update_path_and_goal_distances = true;
+
+        // with heading scoring, we take into account heading diff, and also only score
+        // path and goal distance for one point of the trajectory
+        if (heading_scoring_) {
+          if (time >= heading_scoring_timestep_ && time < heading_scoring_timestep_ + dt) {
+            heading_diff = headingDiff(cell_x, cell_y, x_i, y_i, theta_i);
+          } else {
+            update_path_and_goal_distances = false;
+          }
+        }
+
+        if (update_path_and_goal_distances) {
+          //update path and goal distances
+          path_dist = path_map_(cell_x, cell_y).target_dist;
+          goal_dist = goal_map_(cell_x, cell_y).target_dist;
+
+          //if a point on this trajectory has no clear path to goal it is invalid
+          if(impossible_cost <= goal_dist || impossible_cost <= path_dist){
+//            ROS_DEBUG("No path to goal with goal distance = %f, path_distance = %f and max cost = %f",
+//                goal_dist, path_dist, impossible_cost);
+            traj.cost_ = -2.0;
+            return;
+          }
         }
       }
 
@@ -315,15 +352,15 @@ namespace base_local_planner{
 
       //increment time
       time += dt;
-    }
+    } // end for i < numsteps
 
     //ROS_INFO("OccCost: %f, vx: %.2f, vy: %.2f, vtheta: %.2f", occ_cost, vx_samp, vy_samp, vtheta_samp);
     double cost = -1.0;
-    if(!heading_scoring_)
+    if (!heading_scoring_) {
       cost = pdist_scale_ * path_dist + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
-    else
+    } else {
       cost = occdist_scale_ * occ_cost + pdist_scale_ * path_dist + 0.3 * heading_diff + goal_dist * gdist_scale_;
-
+    }
     traj.cost_ = cost;
   }
 
@@ -331,9 +368,9 @@ namespace base_local_planner{
     double heading_diff = DBL_MAX;
     unsigned int goal_cell_x, goal_cell_y;
     //find a clear line of sight from the robot's cell to a point on the path
-    for(int i = global_plan_.size() - 1; i >=0; --i){
-      if(costmap_.worldToMap(global_plan_[i].pose.position.x, global_plan_[i].pose.position.y, goal_cell_x, goal_cell_y)){
-        if(lineCost(cell_x, goal_cell_x, cell_y, goal_cell_y) >= 0){
+    for (int i = global_plan_.size() - 1; i >=0; --i) {
+      if (costmap_.worldToMap(global_plan_[i].pose.position.x, global_plan_[i].pose.position.y, goal_cell_x, goal_cell_y)) {
+        if (lineCost(cell_x, goal_cell_x, cell_y, goal_cell_y) >= 0) {
           double gx, gy;
           costmap_.mapToWorld(goal_cell_x, goal_cell_y, gx, gy);
           double v1_x = gx - x;
@@ -401,9 +438,7 @@ namespace base_local_planner{
       num = deltax / 2;
       numadd = deltay;
       numpixels = deltax;         // There are more x-values than y-values
-    }
-    else                          // There is at least one y-value for every x-value
-    {
+    } else {                      // There is at least one y-value for every x-value
       xinc2 = 0;                  // Don't change the x for every iteration
       yinc1 = 0;                  // Don't change the y when numerator >= denominator
       den = deltay;
@@ -412,19 +447,19 @@ namespace base_local_planner{
       numpixels = deltay;         // There are more y-values than x-values
     }
 
-    for (int curpixel = 0; curpixel <= numpixels; curpixel++)
-    {
+    for (int curpixel = 0; curpixel <= numpixels; curpixel++) {
       point_cost = pointCost(x, y); //Score the current point
 
-      if(point_cost < 0)
+      if (point_cost < 0) {
         return -1;
+      }
 
-      if(line_cost < point_cost)
+      if (line_cost < point_cost) {
         line_cost = point_cost;
+      }
 
       num += numadd;              // Increase the numerator by the top of the fraction
-      if (num >= den)             // Check if numerator >= denominator
-      {
+      if (num >= den) {           // Check if numerator >= denominator
         num -= den;               // Calculate the new numerator value
         x += xinc1;               // Change the x as appropriate
         y += yinc1;               // Change the y as appropriate
@@ -452,12 +487,14 @@ namespace base_local_planner{
       global_plan_[i] = new_plan[i];
     }
 
-    if(compute_dists){
+    if (compute_dists) {
       //reset the map for new operations
-      map_.resetPathDist();
+      path_map_.resetPathDist();
+      goal_map_.resetPathDist();
 
       //make sure that we update our path based on the global plan and compute costs
-      map_.setPathCells(costmap_, global_plan_);
+      path_map_.setTargetCells(costmap_, global_plan_);
+      goal_map_.setLocalGoal(costmap_, global_plan_);
       ROS_DEBUG("Path/Goal distance computed");
     }
   }
@@ -469,41 +506,47 @@ namespace base_local_planner{
     double cost = scoreTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp);
 
     //if the trajectory is a legal one... the check passes
-    if(cost >= 0)
+    if(cost >= 0) {
       return true;
+    }
+    ROS_WARN("Invalid Trajectory %f, %f, %f, cost: %f", vx_samp, vy_samp, vtheta_samp, cost);
 
     //otherwise the check fails
     return false;
   }
 
   double TrajectoryPlanner::scoreTrajectory(double x, double y, double theta, double vx, double vy, 
-      double vtheta, double vx_samp, double vy_samp, double vtheta_samp){
+      double vtheta, double vx_samp, double vy_samp, double vtheta_samp) {
     Trajectory t; 
-    double impossible_cost = map_.map_.size();
-    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-        acc_lim_x_, acc_lim_y_, acc_lim_theta_, impossible_cost, t);
+    double impossible_cost = path_map_.obstacleCosts();
+    generateTrajectory(x, y, theta,
+                       vx, vy, vtheta,
+                       vx_samp, vy_samp, vtheta_samp,
+                       acc_lim_x_, acc_lim_y_, acc_lim_theta_,
+                       impossible_cost, t);
 
     // return the cost.
     return double( t.cost_ );
   }
 
-  //create the trajectories we wish to score
+  /*
+   * create the trajectories we wish to score
+   */
   Trajectory TrajectoryPlanner::createTrajectories(double x, double y, double theta, 
       double vx, double vy, double vtheta,
-      double acc_x, double acc_y, double acc_theta){
+      double acc_x, double acc_y, double acc_theta) {
     //compute feasible velocity limits in robot space
     double max_vel_x, max_vel_theta;
     double min_vel_x, min_vel_theta;
 
     //should we use the dynamic window approach?
-    if(dwa_){
+    if (dwa_) {
       max_vel_x = max(min(max_vel_x_, vx + acc_x * sim_period_), min_vel_x_);
       min_vel_x = max(min_vel_x_, vx - acc_x * sim_period_);
 
       max_vel_theta = min(max_vel_th_, vtheta + acc_theta * sim_period_);
       min_vel_theta = max(min_vel_th_, vtheta - acc_theta * sim_period_);
-    }
-    else{
+    } else {
       max_vel_x = max(min(max_vel_x_, vx + acc_x * sim_time_), min_vel_x_);
       min_vel_x = max(min_vel_x_, vx - acc_x * sim_time_);
 
@@ -530,12 +573,12 @@ namespace base_local_planner{
     Trajectory* swap = NULL;
 
     //any cell with a cost greater than the size of the map is impossible
-    double impossible_cost = map_.map_.size();
+    double impossible_cost = path_map_.obstacleCosts();
 
     //if we're performing an escape we won't allow moving forward
-    if(!escaping_){
+    if (!escaping_) {
       //loop through all x velocities
-      for(int i = 0; i < vx_samples_; ++i){
+      for(int i = 0; i < vx_samples_; ++i) {
         vtheta_samp = 0;
         //first sample the straight trajectory
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
@@ -566,7 +609,7 @@ namespace base_local_planner{
       }
 
       //only explore y velocities with holonomic robots
-      if(holonomic_robot_){
+      if (holonomic_robot_) {
         //explore trajectories that move forward but also strafe slightly
         vx_samp = 0.1;
         vy_samp = 0.1;
@@ -594,7 +637,7 @@ namespace base_local_planner{
           comp_traj = swap;
         }
       }
-    }
+    } // end if not escaping
 
     //next we want to generate trajectories for rotating in place
     vtheta_samp = min_vel_theta;
@@ -604,7 +647,7 @@ namespace base_local_planner{
     //let's try to rotate toward open space
     double heading_dist = DBL_MAX;
 
-    for(int i = 0; i < vtheta_samples_; ++i){
+    for(int i = 0; i < vtheta_samples_; ++i) {
       //enforce a minimum rotational velocity because the base can't handle small in-place rotations
       double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_) 
         : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
@@ -624,18 +667,18 @@ namespace base_local_planner{
         unsigned int cell_x, cell_y;
 
         //make sure that we'll be looking at a legal cell
-        if(costmap_.worldToMap(x_r, y_r, cell_x, cell_y)){
-          double ahead_gdist = map_(cell_x, cell_y).goal_dist;
-          if(ahead_gdist < heading_dist){
+        if (costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
+          double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
+          if (ahead_gdist < heading_dist) {
             //if we haven't already tried rotating left since we've moved forward
-            if(vtheta_samp < 0 && !stuck_left){
+            if (vtheta_samp < 0 && !stuck_left) {
               swap = best_traj;
               best_traj = comp_traj;
               comp_traj = swap;
               heading_dist = ahead_gdist;
             }
             //if we haven't already tried rotating right since we've moved forward
-            else if(vtheta_samp > 0 && !stuck_right){
+            else if(vtheta_samp > 0 && !stuck_right) {
               swap = best_traj;
               best_traj = comp_traj;
               comp_traj = swap;
@@ -649,28 +692,26 @@ namespace base_local_planner{
     }
 
     //do we have a legal trajectory
-    if(best_traj->cost_ >= 0){
-      if(!(best_traj->xv_ > 0)){
-        if(best_traj->thetav_ < 0){
-          if(rotating_right){
+    if (best_traj->cost_ >= 0) {
+      // avoid oscillations of in place rotation and in place strafing
+      if ( ! (best_traj->xv_ > 0)) {
+        if (best_traj->thetav_ < 0) {
+          if (rotating_right) {
             stuck_right = true;
           }
           rotating_left = true;
-        }
-        else if(best_traj->thetav_ > 0){
-          if(rotating_left){
+        } else if (best_traj->thetav_ > 0) {
+          if (rotating_left){
             stuck_left = true;
           }
           rotating_right = true;
-        }
-        else if(best_traj->yv_ > 0){
-          if(strafe_right){
+        } else if(best_traj->yv_ > 0) {
+          if (strafe_right) {
             stuck_right_strafe = true;
           }
           strafe_left = true;
-        }
-        else if(best_traj->yv_ < 0){
-          if(strafe_left){
+        } else if(best_traj->yv_ < 0){
+          if (strafe_left) {
             stuck_left_strafe = true;
           }
           strafe_right = true;
@@ -682,7 +723,7 @@ namespace base_local_planner{
       }
 
       double dist = sqrt((x - prev_x_) * (x - prev_x_) + (y - prev_y_) * (y - prev_y_));
-      if(dist > oscillation_reset_dist_){
+      if (dist > oscillation_reset_dist_) {
         rotating_left = false;
         rotating_right = false;
         strafe_left = false;
@@ -694,7 +735,8 @@ namespace base_local_planner{
       }
 
       dist = sqrt((x - escape_x_) * (x - escape_x_) + (y - escape_y_) * (y - escape_y_));
-      if(dist > escape_reset_dist_ || fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_){
+      if(dist > escape_reset_dist_ ||
+          fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_){
         escaping_ = false;
       }
 
@@ -704,7 +746,7 @@ namespace base_local_planner{
 
 
     //only explore y velocities with holonomic robots
-    if(holonomic_robot_){
+    if (holonomic_robot_) {
       //if we can't rotate in place or move forward... maybe we can move sideways and rotate
       vtheta_samp = min_vel_theta;
       vx_samp = 0.0;
@@ -726,18 +768,18 @@ namespace base_local_planner{
           unsigned int cell_x, cell_y;
 
           //make sure that we'll be looking at a legal cell
-          if(costmap_.worldToMap(x_r, y_r, cell_x, cell_y)){
-            double ahead_gdist = map_(cell_x, cell_y).goal_dist;
-            if(ahead_gdist < heading_dist){
+          if(costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
+            double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
+            if (ahead_gdist < heading_dist) {
               //if we haven't already tried strafing left since we've moved forward
-              if(vy_samp > 0 && !stuck_left_strafe){
+              if (vy_samp > 0 && !stuck_left_strafe) {
                 swap = best_traj;
                 best_traj = comp_traj;
                 comp_traj = swap;
                 heading_dist = ahead_gdist;
               }
               //if we haven't already tried rotating right since we've moved forward
-              else if(vy_samp < 0 && !stuck_right_strafe){
+              else if(vy_samp < 0 && !stuck_right_strafe) {
                 swap = best_traj;
                 best_traj = comp_traj;
                 comp_traj = swap;
@@ -750,27 +792,24 @@ namespace base_local_planner{
     }
 
     //do we have a legal trajectory
-    if(best_traj->cost_ >= 0){
-      if(!(best_traj->xv_ > 0)){
-        if(best_traj->thetav_ < 0){
-          if(rotating_right){
+    if (best_traj->cost_ >= 0) {
+      if (!(best_traj->xv_ > 0)) {
+        if (best_traj->thetav_ < 0) {
+          if (rotating_right){
             stuck_right = true;
           }
           rotating_left = true;
-        }
-        else if(best_traj->thetav_ > 0){
+        } else if(best_traj->thetav_ > 0) {
           if(rotating_left){
             stuck_left = true;
           }
           rotating_right = true;
-        }
-        else if(best_traj->yv_ > 0){
+        } else if(best_traj->yv_ > 0) {
           if(strafe_right){
             stuck_right_strafe = true;
           }
           strafe_left = true;
-        }
-        else if(best_traj->yv_ < 0){
+        } else if(best_traj->yv_ < 0) {
           if(strafe_left){
             stuck_left_strafe = true;
           }
@@ -784,7 +823,7 @@ namespace base_local_planner{
       }
 
       double dist = sqrt((x - prev_x_) * (x - prev_x_) + (y - prev_y_) * (y - prev_y_));
-      if(dist > oscillation_reset_dist_){
+      if(dist > oscillation_reset_dist_) {
         rotating_left = false;
         rotating_right = false;
         strafe_left = false;
@@ -796,7 +835,7 @@ namespace base_local_planner{
       }
 
       dist = sqrt((x - escape_x_) * (x - escape_x_) + (y - escape_y_) * (y - escape_y_));
-      if(dist > escape_reset_dist_ || fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_){
+      if(dist > escape_reset_dist_ || fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_) {
         escaping_ = false;
       }
 
@@ -825,7 +864,7 @@ namespace base_local_planner{
     comp_traj = swap;
     
     double dist = sqrt((x - prev_x_) * (x - prev_x_) + (y - prev_y_) * (y - prev_y_));
-    if(dist > oscillation_reset_dist_){
+    if (dist > oscillation_reset_dist_) {
       rotating_left = false;
       rotating_right = false;
       strafe_left = false;
@@ -837,7 +876,7 @@ namespace base_local_planner{
     }
 
     //only enter escape mode when the planner has given a valid goal point
-    if(!escaping_ && best_traj->cost_ > -2.0){
+    if (!escaping_ && best_traj->cost_ > -2.0) {
       escape_x_ = x;
       escape_y_ = y;
       escape_theta_ = theta;
@@ -846,7 +885,8 @@ namespace base_local_planner{
 
     dist = sqrt((x - escape_x_) * (x - escape_x_) + (y - escape_y_) * (y - escape_y_));
 
-    if(dist > escape_reset_dist_ || fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_){
+    if (dist > escape_reset_dist_ ||
+        fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_) {
       escaping_ = false;
     }
 
@@ -863,35 +903,34 @@ namespace base_local_planner{
   Trajectory TrajectoryPlanner::findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel, 
       tf::Stamped<tf::Pose>& drive_velocities){
 
-    double yaw = tf::getYaw(global_pose.getRotation());
-    double vel_yaw = tf::getYaw(global_vel.getRotation());
-
-    double x = global_pose.getOrigin().getX();
-    double y = global_pose.getOrigin().getY();
-    double theta = yaw;
-
-    double vx = global_vel.getOrigin().getX();
-    double vy = global_vel.getOrigin().getY();
-    double vtheta = vel_yaw;
+    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
+    Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
 
     //reset the map for new operations
-    map_.resetPathDist();
+    path_map_.resetPathDist();
+    goal_map_.resetPathDist();
 
     //temporarily remove obstacles that are within the footprint of the robot
-    vector<base_local_planner::Position2DInt> footprint_list = getFootprintCells(x, y, theta, true);
+    std::vector<base_local_planner::Position2DInt> footprint_list =
+        footprint_helper_.getFootprintCells(
+            pos,
+            footprint_spec_,
+            costmap_,
+            true);
 
     //mark cells within the initial footprint of the robot
-    for(unsigned int i = 0; i < footprint_list.size(); ++i){
-      map_(footprint_list[i].x, footprint_list[i].y).within_robot = true;
+    for (unsigned int i = 0; i < footprint_list.size(); ++i) {
+      path_map_(footprint_list[i].x, footprint_list[i].y).within_robot = true;
     }
 
     //make sure that we update our path based on the global plan and compute costs
-    map_.setPathCells(costmap_, global_plan_);
+    path_map_.setTargetCells(costmap_, global_plan_);
+    goal_map_.setLocalGoal(costmap_, global_plan_);
     ROS_DEBUG("Path/Goal distance computed");
 
     //rollout trajectories and find the minimum cost one
-    Trajectory best = createTrajectories(x, y, theta, 
-        vx, vy, vtheta, 
+    Trajectory best = createTrajectories(pos[0], pos[1], pos[2],
+        vel[0], vel[1], vel[2],
         acc_lim_x_, acc_lim_y_, acc_lim_theta_);
     ROS_DEBUG("Trajectories created");
 
@@ -957,191 +996,10 @@ namespace base_local_planner{
     return footprint_cost;
   }
 
-  void TrajectoryPlanner::getLineCells(int x0, int x1, int y0, int y1, vector<base_local_planner::Position2DInt>& pts){
-    //Bresenham Ray-Tracing
-    int deltax = abs(x1 - x0);        // The difference between the x's
-    int deltay = abs(y1 - y0);        // The difference between the y's
-    int x = x0;                       // Start x off at the first pixel
-    int y = y0;                       // Start y off at the first pixel
-
-    int xinc1, xinc2, yinc1, yinc2;
-    int den, num, numadd, numpixels;
-
-    base_local_planner::Position2DInt pt;
-
-    if (x1 >= x0)                 // The x-values are increasing
-    {
-      xinc1 = 1;
-      xinc2 = 1;
-    }
-    else                          // The x-values are decreasing
-    {
-      xinc1 = -1;
-      xinc2 = -1;
-    }
-
-    if (y1 >= y0)                 // The y-values are increasing
-    {
-      yinc1 = 1;
-      yinc2 = 1;
-    }
-    else                          // The y-values are decreasing
-    {
-      yinc1 = -1;
-      yinc2 = -1;
-    }
-
-    if (deltax >= deltay)         // There is at least one x-value for every y-value
-    {
-      xinc1 = 0;                  // Don't change the x when numerator >= denominator
-      yinc2 = 0;                  // Don't change the y for every iteration
-      den = deltax;
-      num = deltax / 2;
-      numadd = deltay;
-      numpixels = deltax;         // There are more x-values than y-values
-    }
-    else                          // There is at least one y-value for every x-value
-    {
-      xinc2 = 0;                  // Don't change the x for every iteration
-      yinc1 = 0;                  // Don't change the y when numerator >= denominator
-      den = deltay;
-      num = deltay / 2;
-      numadd = deltax;
-      numpixels = deltay;         // There are more y-values than x-values
-    }
-
-    for (int curpixel = 0; curpixel <= numpixels; curpixel++)
-    {
-      pt.x = x;      //Draw the current pixel
-      pt.y = y;
-      pts.push_back(pt);
-
-      num += numadd;              // Increase the numerator by the top of the fraction
-      if (num >= den)             // Check if numerator >= denominator
-      {
-        num -= den;               // Calculate the new numerator value
-        x += xinc1;               // Change the x as appropriate
-        y += yinc1;               // Change the y as appropriate
-      }
-      x += xinc2;                 // Change the x as appropriate
-      y += yinc2;                 // Change the y as appropriate
-    }
-  }
-
-  //get the cellsof a footprint at a given position
-  vector<base_local_planner::Position2DInt> TrajectoryPlanner::getFootprintCells(double x_i, double y_i, double theta_i, bool fill){
-    vector<base_local_planner::Position2DInt> footprint_cells;
-
-    //if we have no footprint... do nothing
-    if(footprint_spec_.size() <= 1){
-      unsigned int mx, my;
-      if(costmap_.worldToMap(x_i, y_i, mx, my)){
-        Position2DInt center;
-        center.x = mx;
-        center.y = my;
-        footprint_cells.push_back(center);
-      }
-      return footprint_cells;
-    }
-
-    //pre-compute cos and sin values
-    double cos_th = cos(theta_i);
-    double sin_th = sin(theta_i);
-    double new_x, new_y;
-    unsigned int x0, y0, x1, y1;
-    unsigned int last_index = footprint_spec_.size() - 1;
-
-    for(unsigned int i = 0; i < last_index; ++i){
-      //find the cell coordinates of the first segment point
-      new_x = x_i + (footprint_spec_[i].x * cos_th - footprint_spec_[i].y * sin_th);
-      new_y = y_i + (footprint_spec_[i].x * sin_th + footprint_spec_[i].y * cos_th);
-      if(!costmap_.worldToMap(new_x, new_y, x0, y0))
-        return footprint_cells;
-
-      //find the cell coordinates of the second segment point
-      new_x = x_i + (footprint_spec_[i + 1].x * cos_th - footprint_spec_[i + 1].y * sin_th);
-      new_y = y_i + (footprint_spec_[i + 1].x * sin_th + footprint_spec_[i + 1].y * cos_th);
-      if(!costmap_.worldToMap(new_x, new_y, x1, y1))
-        return footprint_cells;
-
-      getLineCells(x0, x1, y0, y1, footprint_cells);
-    }
-
-    //we need to close the loop, so we also have to raytrace from the last pt to first pt
-    new_x = x_i + (footprint_spec_[last_index].x * cos_th - footprint_spec_[last_index].y * sin_th);
-    new_y = y_i + (footprint_spec_[last_index].x * sin_th + footprint_spec_[last_index].y * cos_th);
-    if(!costmap_.worldToMap(new_x, new_y, x0, y0))
-      return footprint_cells;
-
-    new_x = x_i + (footprint_spec_[0].x * cos_th - footprint_spec_[0].y * sin_th);
-    new_y = y_i + (footprint_spec_[0].x * sin_th + footprint_spec_[0].y * cos_th);
-    if(!costmap_.worldToMap(new_x, new_y, x1, y1))
-      return footprint_cells;
-
-    getLineCells(x0, x1, y0, y1, footprint_cells);
-
-    if(fill)
-      getFillCells(footprint_cells);
-
-    return footprint_cells;
-  }
-
-  void TrajectoryPlanner::getFillCells(vector<base_local_planner::Position2DInt>& footprint){
-    //quick bubble sort to sort pts by x
-    base_local_planner::Position2DInt swap, pt;
-    unsigned int i = 0;
-    while(i < footprint.size() - 1){
-      if(footprint[i].x > footprint[i + 1].x){
-        swap = footprint[i];
-        footprint[i] = footprint[i + 1];
-        footprint[i + 1] = swap;
-        if(i > 0)
-          --i;
-      }
-      else
-        ++i;
-    }
-
-    i = 0;
-    base_local_planner::Position2DInt min_pt;
-    base_local_planner::Position2DInt max_pt;
-    unsigned int min_x = footprint[0].x;
-    unsigned int max_x = footprint[footprint.size() -1].x;
-    //walk through each column and mark cells inside the footprint
-    for(unsigned int x = min_x; x <= max_x; ++x){
-      if(i >= footprint.size() - 1)
-        break;
-
-      if(footprint[i].y < footprint[i + 1].y){
-        min_pt = footprint[i];
-        max_pt = footprint[i + 1];
-      }
-      else{
-        min_pt = footprint[i + 1];
-        max_pt = footprint[i];
-      }
-
-      i += 2;
-      while(i < footprint.size() && footprint[i].x == x){
-        if(footprint[i].y < min_pt.y)
-          min_pt = footprint[i];
-        else if(footprint[i].y > max_pt.y)
-          max_pt = footprint[i];
-        ++i;
-      }
-
-      //loop though cells in the column
-      for(unsigned int y = min_pt.y; y < max_pt.y; ++y){
-        pt.x = x;
-        pt.y = y;
-        footprint.push_back(pt);
-      }
-    }
-  }
 
   void TrajectoryPlanner::getLocalGoal(double& x, double& y){
-    x = map_.goal_x_;
-    y = map_.goal_y_;
+    x = path_map_.goal_x_;
+    y = path_map_.goal_y_;
   }
 
 };

@@ -37,11 +37,12 @@
 #ifndef COSTMAP_COSTMAP_2D_PUBLISHER_H_
 #define COSTMAP_COSTMAP_2D_PUBLISHER_H_
 #include <ros/ros.h>
-#include <ros/console.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GridCells.h>
-#include <boost/thread.hpp>
+
 #include <tf/transform_datatypes.h>
+
+#include <boost/thread.hpp>
 
 namespace costmap_2d {
   /**

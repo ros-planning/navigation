@@ -46,10 +46,8 @@
 #include <tf/transform_datatypes.h>
 
 //PCL Stuff
-#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-#include <pcl_ros/transforms.h>
-#include <pcl/ros/conversions.h>
+#include <sensor_msgs/PointCloud2.h>
 
 // Thread suppport
 #include <boost/thread.hpp>

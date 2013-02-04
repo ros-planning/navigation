@@ -16,8 +16,11 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-find_package(Eigen)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(Eigen REQUIRED)
+find_package(PCL REQUIRED)
+include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS}
+                           ${PCL_INCLUDE_DIRS}
+)
 add_definitions(${EIGEN_DEFINITIONS})
 
 #uncomment if you have defined messages

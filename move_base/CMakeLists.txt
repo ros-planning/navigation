@@ -9,11 +9,16 @@ include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 gencfg()
 
 find_package(Eigen)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(PCL)
+include_directories(${EIGEN_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 rosbuild_add_boost_directories()
 
 # move_base
-rosbuild_add_executable(bin/move_base src/move_base.cpp)
-rosbuild_link_boost(bin/move_base system)
+rosbuild_add_library(move_base src/move_base.cpp)
+rosbuild_link_boost(move_base system)
+
+rosbuild_add_executable(move_base_node src/move_base_node.cpp)
+target_link_libraries(move_base_node move_base)
+set_target_properties(move_base_node PROPERTIES OUTPUT_NAME bin/move_base)

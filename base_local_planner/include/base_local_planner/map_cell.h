@@ -56,15 +56,9 @@ namespace base_local_planner {
 
       unsigned int cx, cy; ///< @brief Cell index in the grid map
 
-      double path_dist; ///< @brief Distance to planner's path
+      double target_dist; ///< @brief Distance to planner's path
 
-      double goal_dist; ///< @brief Distance to local goal
-
-      double occ_dist; ///< @brief Distance to obstacles
-
-      int occ_state; ///< @brief Occupancy state (-1 = free, 0 = unknown, 1 = occupied)
-
-      bool path_mark, goal_mark; ///< @brief Marks fir computing path/goal distances
+      bool target_mark; ///< @brief Marks for computing path/goal distances
 
       bool within_robot; ///< @brief Mark for cells within the robot footprint
   };

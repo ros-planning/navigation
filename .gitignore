@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .cproject
 .project
 amcl/cfg/cpp/
@@ -19,3 +20,15 @@ navfn/src/navfn/
 robot_pose_ekf/src/robot_pose_ekf/
 
 
+=======
+*~
+build
+bin
+lib
+*.pyc
+*.cfgc
+msg_gen
+srv_gen
+test/line_iterator
+test/utest
+>>>>>>> upstream/hydro-exploration

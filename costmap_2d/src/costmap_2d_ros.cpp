@@ -35,8 +35,20 @@
  * Author: Eitan Marder-Eppstein
  *********************************************************************/
 #include <costmap_2d/costmap_2d_ros.h>
+
+#include <ros/console.h>
+
 #include <sensor_msgs/point_cloud_conversion.h>
 
+#include <map>
+#include <sstream>
+
+#include <boost/tokenizer.hpp>
+#include <boost/foreach.hpp>
+
+#include <XmlRpc.h>
+#include <costmap_2d/voxel_costmap_2d.h>
+#include <costmap_2d/VoxelGrid.h>
 #include <limits>
 
 using namespace std;

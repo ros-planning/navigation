@@ -36,6 +36,8 @@
 *********************************************************************/
 #include <costmap_2d/voxel_costmap_2d.h>
 
+#include <sensor_msgs/PointCloud.h>
+
 #define VOXEL_BITS 16
 
 using namespace std;

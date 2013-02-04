@@ -36,11 +36,16 @@
 *         Mike Phillips (put the planner in its own thread)
 *********************************************************************/
 #include <move_base/move_base.h>
+#include <cmath>
+
 #include <boost/algorithm/string.hpp>
+#include <boost/thread.hpp>
+
+#include <geometry_msgs/Twist.h>
 
 namespace move_base {
 
-  MoveBase::MoveBase(std::string name, tf::TransformListener& tf) :
+  MoveBase::MoveBase(tf::TransformListener& tf) :
     tf_(tf),
     as_(NULL),
     tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
@@ -1139,16 +1144,3 @@ namespace move_base {
   }
 
 };
-
-int main(int argc, char** argv){
-  ros::init(argc, argv, "move_base_node");
-  tf::TransformListener tf(ros::Duration(10));
-
-  move_base::MoveBase move_base("move_base", tf);
-
-  //ros::MultiThreadedSpinner s;
-  ros::spin();
-
-  return(0);
-
-}

@@ -13,7 +13,7 @@
   <depend package="costmap_2d"/>
   <depend package="nav_core"/>
   <depend package="pluginlib"/>
-  <depend package="common_rosdeps" />
+
   <rosdep name="eigen" />
 
   <export>

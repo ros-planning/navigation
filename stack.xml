@@ -11,7 +11,6 @@
   <depend stack="actionlib" /> <!-- actionlib -->
   <depend stack="bfl" /> <!-- bfl -->
   <depend stack="common_msgs" /> <!-- nav_msgs, sensor_msgs, actionlib_msgs, geometry_msgs, visualization_msgs -->
-  <depend stack="common_rosdeps" /> <!-- common_rosdeps -->
   <depend stack="dynamic_reconfigure" /> <!-- dynamic_reconfigure -->
   <depend stack="geometry" /> <!-- tf, angles -->
   <depend stack="laser_pipeline" /> <!-- laser_geometry -->

@@ -22,9 +22,9 @@ This package provides implementations of the Trajectory Rollout and Dynamic Wind
   <depend package="visualization_msgs"/>
   <depend package="geometry_msgs"/>
   <depend package="nav_core"/>
-  <depend package="pcl"/>
+  <rosdep name="pcl"/>
   <depend package="pcl_ros"/>
-  <depend package="common_rosdeps" />
+
   <rosdep name="eigen" />
   <repository>http://pr.willowgarage.com/repos</repository>
   <export>

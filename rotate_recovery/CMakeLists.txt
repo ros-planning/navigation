@@ -17,7 +17,8 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 find_package(Eigen)
-include_directories(${EIGEN_INCLUDE_DIRS})
+find_package(PCL)
+include_directories(${EIGEN_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 #uncomment if you have defined messages
