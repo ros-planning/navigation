@@ -52,19 +52,18 @@ class LayeredCostmapROS{
 
     protected:
         LayeredCostmap* layered_costmap_;
+        std::string name_;
+        tf::TransformListener& tf_;  /// < @brief Used for transforming point clouds
+        std::string global_frame_;  /// < @brief The global frame for the costmap
+        std::string robot_base_frame_;  /// < @brief The frame_id of the robot base
+        double transform_tolerance_;
 
     private:
         void movementCB(const ros::TimerEvent &event);
         void mapUpdateLoop(double frequency);
-        std::string name_;
-        tf::TransformListener& tf_;  /// < @brief Used for transforming point clouds
-        std::string tf_prefix_;
-        std::string global_frame_;  /// < @brief The global frame for the costmap
-        std::string robot_base_frame_;  /// < @brief The frame_id of the robot base
         bool map_update_thread_shutdown_;
         bool stop_updates_, initialized_, stopped_, robot_stopped_;
         boost::thread* map_update_thread_;  /// < @brief A thread for updating the map
-        double transform_tolerance_;
         ros::Timer timer_;
         pluginlib::ClassLoader<CostmapPlugin> plugin_loader_;
         tf::Stamped<tf::Pose> old_pose_;

@@ -47,23 +47,24 @@ using namespace std;
 namespace costmap_2d {
   LayeredCostmapROS::LayeredCostmapROS(std::string name, tf::TransformListener& tf) :
                     layered_costmap_(NULL),
-                    name_(name), tf_(tf), map_update_thread_(NULL),
+                    name_(name), tf_(tf),  stop_updates_(false), 
+                             initialized_(true), stopped_(false), robot_stopped_(false), map_update_thread_(NULL),
                     plugin_loader_("layered_costmap", "layered_costmap::CostmapPlugin") {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
     // get our tf prefix
     ros::NodeHandle prefix_nh;
-    tf_prefix_ = tf::getPrefixParam(prefix_nh);
+    std::string tf_prefix = tf::getPrefixParam(prefix_nh);
 
     // get two frames
     private_nh.param("global_frame", global_frame_, std::string("/map"));
     // make sure that we set the global frame appropriately based on the tf_prefix
-    global_frame_ = tf::resolve(tf_prefix_, global_frame_);
+    global_frame_ = tf::resolve(tf_prefix, global_frame_);
 
     private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
     // make sure that we set the base frame appropriately based on the tf_prefix
-    robot_base_frame_ = tf::resolve(tf_prefix_, robot_base_frame_);
+    robot_base_frame_ = tf::resolve(tf_prefix, robot_base_frame_);
 
     ros::Time last_error = ros::Time::now();
     std::string tf_error;
