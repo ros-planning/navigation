@@ -13,13 +13,8 @@ add_definitions(${EIGEN_DEFINITIONS})
 
 #rosbuild_add_boost_directories()
 
-<<<<<<< HEAD
-rosbuild_add_library(costmap_2d src/costmap_2d.cpp src/layered_costmap.cpp src/observation_buffer.cpp)
-rosbuild_add_library(costmap_2d_ros src/layered_costmap_ros.cpp src/costmap_2d_ros.cpp src/costmap_2d_publisher.cpp)
-=======
 rosbuild_add_library(costmap_2d src/costmap_2d.cpp src/observation_buffer.cpp src/costmap_2d_ros.cpp src/costmap_2d_publisher.cpp src/voxel_costmap_2d.cpp)
 target_link_libraries(costmap_2d ${PCL_LIBRARIES})
->>>>>>> upstream/hydro-exploration
 #rosbuild_link_boost(costmap_2d thread)
 
 rosbuild_find_ros_package(dynamic_reconfigure)
