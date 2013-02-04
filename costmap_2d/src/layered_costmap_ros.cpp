@@ -49,7 +49,7 @@ namespace costmap_2d {
                     layered_costmap_(NULL),
                     name_(name), tf_(tf),  stop_updates_(false), 
                              initialized_(true), stopped_(false), robot_stopped_(false), map_update_thread_(NULL),
-                    plugin_loader_("layered_costmap", "layered_costmap::CostmapPlugin") {
+                    plugin_loader_("costmap_2d", "layered_costmap::CostmapPlugin") {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 

@@ -64,11 +64,6 @@ namespace costmap_2d {
       ~Costmap2DPublisher();
 
       /**
-       * @brief  Publishes footprint visualization data over ROS
-       */
-      void publishFootprint();
-
-      /**
        * @brief  Publishes the visualization data over ROS
        */
       void publishCostmap();
@@ -97,7 +92,7 @@ namespace costmap_2d {
       boost::recursive_mutex lock_; ///< @brief A lock
       bool active_, new_data_;
       ros::Publisher obs_pub_, inf_obs_pub_, unknown_space_pub_, footprint_pub_;
-      double resolution_, inscribed_radius_;
+      double resolution_;
       std::vector<geometry_msgs::Point> footprint_;
       tf::Stamped<tf::Pose> global_pose_;
       bool visualizer_thread_shutdown_;

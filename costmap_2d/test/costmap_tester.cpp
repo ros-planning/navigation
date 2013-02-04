@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/cost_values.h>
 
 namespace costmap_2d {
 

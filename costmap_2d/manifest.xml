@@ -24,6 +24,7 @@
 <depend package="visualization_msgs" />
 <depend package="rosbag" />
 <depend package="map_server" />
+<depend package="pluginlib" />
 <rosdep name="pcl" />
 <depend package="pcl_ros" />
 <depend package="dynamic_reconfigure" />

@@ -35,6 +35,7 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <costmap_2d/costmap_2d_publisher.h>
+#include <costmap_2d/cost_values.h>
 #include <geometry_msgs/PolygonStamped.h>
 
 namespace costmap_2d {
@@ -91,7 +92,6 @@ namespace costmap_2d {
         costmap.mapToWorld(i, j, wx, wy);
         std::pair<double, double> p(wx, wy);
 
-        //if(costmap.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || costmap.getCost(i, j) == costmap_2d::NO_INFORMATION)
         if(costmap.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE)
           raw_obstacles.push_back(p);
         else if(costmap.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
@@ -105,7 +105,6 @@ namespace costmap_2d {
     raw_obstacles_ = raw_obstacles;
     inflated_obstacles_ = inflated_obstacles;
     unknown_space_ = unknown_space;
-    inscribed_radius_ = costmap.getInscribedRadius();
     footprint_ = footprint;
     global_pose_ = global_pose;
 
@@ -114,48 +113,6 @@ namespace costmap_2d {
     ROS_DEBUG("Set new_data_ to: %d", new_data_);
 
     lock_.unlock();
-
-    //we'll publish the footprint at the rate at which we get data about it since it is so small
-    publishFootprint();
-  }
-
-  void Costmap2DPublisher::publishFootprint(){
-    std::vector<geometry_msgs::Point> footprint;
-
-    lock_.lock();
-    footprint = footprint_;
-    lock_.unlock();
-
-    //create a polygon message for the footprint
-    geometry_msgs::PolygonStamped footprint_poly;
-    footprint_poly.header.frame_id = global_frame_;
-    footprint_poly.header.stamp = ros::Time::now();
-
-    //if the footprint size is less than 3 we'll assume a circular robot
-    if(footprint.size() < 3){
-      double angle = 0;
-      double step = 2 * M_PI / 72;
-      while(angle < 2 * M_PI){
-        geometry_msgs::Point32 pt;
-        pt.x = inscribed_radius_ * cos(angle) + global_pose_.getOrigin().x();
-        pt.y = inscribed_radius_ * sin(angle) + global_pose_.getOrigin().y();
-        pt.z = 0.0;
-        footprint_poly.polygon.points.push_back(pt);
-        angle += step;
-      }
-    } 
-    else{
-      footprint_poly.polygon.points.resize(footprint.size());
-
-      for(unsigned int i = 0; i < footprint.size(); ++i){
-        footprint_poly.polygon.points[i].x = footprint[i].x;
-        footprint_poly.polygon.points[i].y = footprint[i].y;
-        footprint_poly.polygon.points[i].z = footprint[i].z;
-      } 
-    }
-
-    ROS_DEBUG("Publishing footprint");
-    footprint_pub_.publish(footprint_poly);
   }
 
   void Costmap2DPublisher::publishCostmap(){

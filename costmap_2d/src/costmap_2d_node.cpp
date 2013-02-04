@@ -35,27 +35,16 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <ros/ros.h>
-#include <costmap_2d/costmap_2d_ros.h>
-namespace costmap_2d {
-  class Costmap2DNode {
-    public:
-      Costmap2DNode(tf::TransformListener& tf) : costmap_ros_("costmap", tf){}
-    private:
-      Costmap2DROS costmap_ros_;
-  };
-};
+#include <costmap_2d/layered_costmap_ros.h>
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "costmap_node");
 
   tf::TransformListener tf(ros::Duration(10));
 
-  costmap_2d::Costmap2DNode* costmap_node;
-  costmap_node = new costmap_2d::Costmap2DNode(tf);
+  costmap_2d::LayeredCostmapROS lcr("test_costmap", tf);
 
   ros::spin();
-
-  delete costmap_node;
 
   return(0);
 }
