@@ -1,21 +1,21 @@
 <class_libraries>
     <library path="lib/libfootprint_costmap_plugin">
-      <class name="footprint_costmap_plugin/footprint_costmap" type="common_costmap_plugins::FootprintCostmapPlugin" base_class_type="costmap_2d::CostmapPlugin">
+      <class type="common_costmap_plugins::FootprintCostmapPlugin"  base_class_type="costmap_2d::CostmapPluginROS">
         <description></description>
       </class>
     </library>
     <library path="lib/libinflation_costmap_plugin">
-      <class name="inflation_costmap_plugin/inflation_costmap" type="common_costmap_plugins::InflationCostmapPlugin" base_class_type="costmap_2d::CostmapPlugin">
+      <class type="common_costmap_plugins::InflationCostmapPlugin"  base_class_type="costmap_2d::CostmapPluginROS">
         <description></description>
       </class>
     </library>
     <library path="lib/libobstacle_costmap_plugin">
-      <class name="obstacle_costmap_plugin/obstacle_costmap" type="common_costmap_plugins::ObstacleCostmapPlugin" base_class_type="costmap_2d::CostmapPlugin">
+      <class type="common_costmap_plugins::ObstacleCostmapPlugin"   base_class_type="costmap_2d::CostmapPluginROS">
         <description></description>
       </class>
     </library>
     <library path="lib/libstatic_costmap_plugin">
-      <class name="static_costmap_plugin/static_costmap" type="common_costmap_plugins::StaticCostmapPlugin" base_class_type="costmap_2d::CostmapPlugin">
+      <class type="common_costmap_plugins::StaticCostmapPlugin"     base_class_type="costmap_2d::CostmapPluginROS">
         <description></description>
       </class>
     </library>

@@ -49,7 +49,7 @@ namespace costmap_2d {
                     layered_costmap_(NULL),
                     name_(name), tf_(tf),  stop_updates_(false), 
                              initialized_(true), stopped_(false), robot_stopped_(false), map_update_thread_(NULL),
-                    plugin_loader_("costmap_2d", "layered_costmap::CostmapPlugin") {
+                    plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS") {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
@@ -108,9 +108,9 @@ namespace costmap_2d {
             std::string type = static_cast<std::string>(my_list[i]["type"]);
             ROS_INFO("Using plugin \"%s\"", pname.c_str());
 
-            boost::shared_ptr<CostmapPlugin> plugin = plugin_loader_.createInstance(type);
+            boost::shared_ptr<CostmapPluginROS> plugin = plugin_loader_.createInstance(type);
             layered_costmap_->addPlugin(plugin);
-            plugin->initialize(layered_costmap_, name + "/" + pname);
+            plugin->initialize(layered_costmap_, name + "/" + pname, tf_);
         }
     } else {
         ROS_INFO("No plugins");

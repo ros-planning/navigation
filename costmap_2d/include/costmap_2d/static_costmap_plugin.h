@@ -1,15 +1,14 @@
 #ifndef STATIC_COSTMAP_PLUGIN_H_
 #define STATIC_COSTMAP_PLUGIN_H_
 #include <ros/ros.h>
-#include <costmap_2d/plugin_base.h>
+#include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <tf/message_filter.h>
 #include <message_filters/subscriber.h>
 
 namespace common_costmap_plugins
 {
-  class StaticCostmapPlugin : public costmap_2d::CostmapPlugin, public costmap_2d::Costmap2D
+  class StaticCostmapPlugin : public costmap_2d::CostmapPluginROS, public costmap_2d::Costmap2D
   {
     public:
       StaticCostmapPlugin() { layered_costmap_ = NULL; }

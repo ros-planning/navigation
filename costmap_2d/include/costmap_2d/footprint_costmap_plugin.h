@@ -1,7 +1,7 @@
 #ifndef FOOTPRINT_COSTMAP_PLUGIN_H_
 #define FOOTPRINT_COSTMAP_PLUGIN_H_
 #include <ros/ros.h>
-#include <costmap_2d/plugin_base.h>
+#include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/costmap_math.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -10,7 +10,7 @@
 
 namespace common_costmap_plugins
 {
-  class FootprintCostmapPlugin : public costmap_2d::CostmapPlugin
+  class FootprintCostmapPlugin : public costmap_2d::CostmapPluginROS
   {
     public:
       FootprintCostmapPlugin() { layered_costmap_ = NULL; }

@@ -3,7 +3,7 @@
 
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_DECLARE_CLASS(static_costmap_plugin, static_costmap, common_costmap_plugins::StaticCostmapPlugin, costmap_2d::CostmapPlugin)
+PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::StaticCostmapPlugin, costmap_2d::CostmapPluginROS)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;

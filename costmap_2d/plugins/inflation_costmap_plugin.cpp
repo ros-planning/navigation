@@ -3,8 +3,7 @@
 
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_DECLARE_CLASS(inflation_costmap_plugin, inflation_costmap, common_costmap_plugins::InflationCostmapPlugin, costmap_2d::CostmapPlugin)
-
+PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::InflationCostmapPlugin, costmap_2d::CostmapPluginROS)
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 
@@ -16,13 +15,13 @@ namespace common_costmap_plugins
         ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
         current_ = true;
+        seen_ = NULL;
         matchSize();
         nh.param("inflation_radius", inflation_radius_, 0.55);
         inscribed_radius_ = .45;
         cell_inflation_radius_ = cellDistance(inflation_radius_);
         nh.param("cost_scaling_factor", weight_, 10.0);
         computeCaches();
-        seen_ = NULL;
     }
 
     void InflationCostmapPlugin::matchSize(){

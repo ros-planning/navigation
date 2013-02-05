@@ -2,7 +2,7 @@
 #include<costmap_2d/costmap_math.h>
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_DECLARE_CLASS(obstacle_costmap_plugin, obstacle_costmap, common_costmap_plugins::ObstacleCostmapPlugin, costmap_2d::CostmapPlugin)
+PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::ObstacleCostmapPlugin, costmap_2d::CostmapPluginROS)
 
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::FREE_SPACE;

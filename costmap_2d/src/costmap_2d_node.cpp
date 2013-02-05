@@ -42,7 +42,7 @@ int main(int argc, char** argv){
 
   tf::TransformListener tf(ros::Duration(10));
 
-  costmap_2d::LayeredCostmapROS lcr("test_costmap", tf);
+  costmap_2d::LayeredCostmapROS lcr("costmap", tf);
 
   ros::spin();
 

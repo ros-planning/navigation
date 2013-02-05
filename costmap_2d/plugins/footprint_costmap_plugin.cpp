@@ -4,7 +4,7 @@
 #include<costmap_2d/footprint.h>
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_DECLARE_CLASS(footprint_costmap_plugin, footprint_costmap, common_costmap_plugins::FootprintCostmapPlugin, costmap_2d::CostmapPlugin)
+PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::FootprintCostmapPlugin, costmap_2d::CostmapPluginROS)
 
 namespace common_costmap_plugins
 {

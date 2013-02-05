@@ -36,6 +36,7 @@
 *         David V. Lu!!
 *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/plugin_ros.h>
 
 namespace costmap_2d {
 class LayeredCostmapROS{
@@ -65,7 +66,7 @@ class LayeredCostmapROS{
         bool stop_updates_, initialized_, stopped_, robot_stopped_;
         boost::thread* map_update_thread_;  /// < @brief A thread for updating the map
         ros::Timer timer_;
-        pluginlib::ClassLoader<CostmapPlugin> plugin_loader_;
+        pluginlib::ClassLoader<CostmapPluginROS> plugin_loader_;
         tf::Stamped<tf::Pose> old_pose_;
 };  // class LayeredCostmapROS
 };  // namespace costmap_2d

@@ -1,7 +1,7 @@
 #ifndef OBSTACLE_COSTMAP_PLUGIN_H_
 #define OBSTACLE_COSTMAP_PLUGIN_H_
 #include <ros/ros.h>
-#include <costmap_2d/plugin_base.h>
+#include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/observation_buffer.h>
 
@@ -17,7 +17,7 @@
 
 namespace common_costmap_plugins
 {
-  class ObstacleCostmapPlugin : public costmap_2d::CostmapPlugin, public costmap_2d::Costmap2D
+  class ObstacleCostmapPlugin : public costmap_2d::CostmapPluginROS, public costmap_2d::Costmap2D
   {
     public:
       ObstacleCostmapPlugin() { costmap_ = NULL; }
@@ -79,7 +79,6 @@ namespace common_costmap_plugins
 
       std::string global_frame_; ///< @brief The global frame for the costmap
       double max_obstacle_height_; ///< @brief Max Obstacle Height
-      tf::TransformListener* tf_;
 
       laser_geometry::LaserProjection projector_; ///< @brief Used to project laser scans into point clouds
 
