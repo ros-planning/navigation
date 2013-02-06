@@ -13,7 +13,6 @@ namespace common_costmap_plugins
 {
     void StaticCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
     {
-        boost::recursive_mutex::scoped_lock lock(lock_);
         ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
         current_ = true;
@@ -35,18 +34,24 @@ namespace common_costmap_plugins
         ROS_INFO("Requesting the map...");
         map_sub_ = g_nh.subscribe(map_topic, 1, &StaticCostmapPlugin::incomingMap, this);
         map_recieved_ = false;
+        
+        ros::Rate r(10);
+        while(!map_recieved_ && g_nh.ok()){
+        ros::spinOnce();
+            r.sleep();
+        }
+
         map_initialized_ = false;
     }
 
     void StaticCostmapPlugin::matchSize(){
-        resizeMap(getSizeInCellsX(), getSizeInCellsY(),
-                  getResolution(),
-                  getOriginX(), getOriginY());
+        Costmap2D* master = layered_costmap_->getCostmap();
+        resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(),
+                  master->getResolution(),
+                  master->getOriginX(), master->getOriginY());
     }
 
     void StaticCostmapPlugin::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map){
-
-    boost::recursive_mutex::scoped_lock lock(lock_);
         unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
 
         ROS_INFO("Received a %d X %d map at %f m/pix",
