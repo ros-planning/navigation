@@ -89,7 +89,10 @@ namespace costmap_2d {
     xn = std::min(int(costmap_.getSizeInCellsX()), xn+1);
     y0 = std::max(0, y0);
     yn = std::min(int(costmap_.getSizeInCellsY()), yn+1);
-    
+
+    if(xn<0 || yn<0)
+        return;
+        
     costmap_.resetMap(x0,y0,xn,yn);
 
     for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
