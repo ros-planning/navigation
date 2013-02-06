@@ -37,6 +37,7 @@
 *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/plugin_ros.h>
+#include <costmap_2d/costmap_2d_publisher.h>
 
 namespace costmap_2d {
 class LayeredCostmapROS{
@@ -68,5 +69,6 @@ class LayeredCostmapROS{
         ros::Timer timer_;
         pluginlib::ClassLoader<CostmapPluginROS> plugin_loader_;
         tf::Stamped<tf::Pose> old_pose_;
+        Costmap2DPublisher* publisher_;
 };  // class LayeredCostmapROS
 };  // namespace costmap_2d

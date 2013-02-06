@@ -56,7 +56,7 @@ namespace costmap_2d {
        * @param  ros_node The node under which to publish the visualization output
        * @param  global_frame The frame in which to publish the visualization output
        */
-      Costmap2DPublisher(ros::NodeHandle ros_node, double publish_frequency, std::string global_frame);
+      Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, double publish_frequency, std::string global_frame, std::string topic_name);
 
       /**
        * @brief  Destructor
@@ -69,15 +69,6 @@ namespace costmap_2d {
       void publishCostmap();
 
       /**
-       * @brief  Update the visualization data from a Costmap2D
-       * @param costmap The Costmap2D object to create visualization messages from 
-       * @param footprint The footprint of the robot associated with the costmap
-       */
-      void updateCostmapData(const Costmap2D& costmap, 
-          const std::vector<geometry_msgs::Point>& footprint = std::vector<geometry_msgs::Point>(),
-          const tf::Stamped<tf::Pose>& global_pose = tf::Stamped<tf::Pose>());
-
-      /**
        * @brief Check if the publisher is active
        * @return True if the frequency for the publisher is non-zero, false otherwise
        */
@@ -85,16 +76,15 @@ namespace costmap_2d {
 
     private:
       void mapPublishLoop(double frequency);
-
+      ros::NodeHandle* node;
+      Costmap2D* costmap_;
       std::string global_frame_;
       boost::thread* visualizer_thread_; ///< @brief A thread for publising to the visualizer
       std::vector< std::pair<double, double> > raw_obstacles_, inflated_obstacles_, unknown_space_;
       boost::recursive_mutex lock_; ///< @brief A lock
-      bool active_, new_data_;
-      ros::Publisher obs_pub_, inf_obs_pub_, unknown_space_pub_, footprint_pub_;
+      bool active_;
+      ros::Publisher costmap_pub_;
       double resolution_;
-      std::vector<geometry_msgs::Point> footprint_;
-      tf::Stamped<tf::Pose> global_pose_;
       bool visualizer_thread_shutdown_;
   };
 };

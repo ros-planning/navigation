@@ -49,7 +49,7 @@ namespace costmap_2d {
                     layered_costmap_(NULL),
                     name_(name), tf_(tf),  stop_updates_(false), 
                              initialized_(true), stopped_(false), robot_stopped_(false), map_update_thread_(NULL),
-                    plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS") {
+                    plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS"), publisher_(NULL) {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
@@ -118,11 +118,15 @@ namespace costmap_2d {
 
     double map_publish_frequency;
     private_nh.param("publish_frequency", map_publish_frequency, 0.0);
+    if(map_publish_frequency>0){
+        publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), map_publish_frequency, global_frame_, "costmap");
+    }
 
     // create a thread to handle updating the map
     stop_updates_ = false;
     initialized_ = true;
     stopped_ = false;
+   
     map_update_thread_shutdown_ = false;
     double map_update_frequency;
     private_nh.param("update_frequency", map_update_frequency, 5.0);
@@ -139,6 +143,8 @@ namespace costmap_2d {
       map_update_thread_->join();
       delete map_update_thread_;
     }
+    if(publisher_!=NULL)
+        delete publisher_;
   }
   
   void LayeredCostmapROS::movementCB(const ros::TimerEvent &event) {
