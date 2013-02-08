@@ -51,6 +51,7 @@ class LayeredCostmapROS{
         void resume();
         bool isCurrent(){ return layered_costmap_->isCurrent(); }
         bool getRobotPose(tf::Stamped<tf::Pose>& global_pose) const;
+        Costmap2D* getCostmap() { return layered_costmap_->getCostmap(); }
 
     protected:
         LayeredCostmap* layered_costmap_;
