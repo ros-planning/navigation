@@ -46,7 +46,8 @@ namespace common_costmap_plugins
 
     void StaticCostmapPlugin::matchSize(){
         Costmap2D* master = layered_costmap_->getCostmap();
-        resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(),
+        resizeMap(master->getGlobalFrameID(), 
+                  master->getSizeInCellsX(), master->getSizeInCellsY(),
                   master->getResolution(),
                   master->getOriginX(), master->getOriginY());
     }

@@ -44,8 +44,8 @@
 using namespace std;
 
 namespace costmap_2d{
-  Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
-      double resolution, double origin_x, double origin_y, unsigned char default_value) : size_x_(cells_size_x),
+  Costmap2D::Costmap2D(string global_frame, unsigned int cells_size_x, unsigned int cells_size_y, 
+      double resolution, double origin_x, double origin_y, unsigned char default_value) : global_frame_(global_frame), size_x_(cells_size_x),
   size_y_(cells_size_y), resolution_(resolution), origin_x_(origin_x), origin_y_(origin_y), costmap_(NULL), default_value_(default_value) {
     access_ = new boost::shared_mutex();
   
@@ -78,7 +78,8 @@ namespace costmap_2d{
     costmap_ = new unsigned char[size_x * size_y];
   }
   
-  void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y) {
+  void Costmap2D::resizeMap(string global_frame, unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y) {
+    global_frame_ = global_frame;
     size_x_ = size_x;
     size_y_ = size_y;
     resolution_ = resolution;

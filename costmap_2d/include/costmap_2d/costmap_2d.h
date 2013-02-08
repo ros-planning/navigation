@@ -67,7 +67,7 @@ namespace costmap_2d {
        * @param  origin_x The x origin of the map
        * @param  origin_y The y origin of the map
        */
-      Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
+      Costmap2D(std::string global_frame, unsigned int cells_size_x, unsigned int cells_size_y, 
           double resolution, double origin_x, double origin_y, unsigned char default_value=0);
 
       /**
@@ -221,6 +221,8 @@ namespace costmap_2d {
        */
       double getResolution() const;
       
+      std::string getGlobalFrameID() { return global_frame_; }
+      
       void setDefaultValue(unsigned char c){ default_value_ = c; }
     
       /**
@@ -259,7 +261,7 @@ namespace costmap_2d {
        */
       void saveMap(std::string file_name);
       
-      void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
+      void resizeMap(std::string global_frame, unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
       
       void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
 
@@ -387,6 +389,7 @@ namespace costmap_2d {
       boost::recursive_mutex configuration_mutex_;
       boost::shared_mutex* access_;
     protected:
+      std::string global_frame_;
       unsigned int size_x_;
       unsigned int size_y_;
       double resolution_;
@@ -394,6 +397,7 @@ namespace costmap_2d {
       double origin_y_;
       unsigned char* costmap_;
       unsigned char default_value_;
+
 
       class MarkCell {
         public:

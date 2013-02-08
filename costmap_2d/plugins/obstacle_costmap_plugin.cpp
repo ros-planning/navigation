@@ -144,7 +144,8 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 
     void ObstacleCostmapPlugin::initMaps(){
         Costmap2D* master = layered_costmap_->getCostmap();
-        resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(),
+        resizeMap(master->getGlobalFrameID(), 
+                  master->getSizeInCellsX(), master->getSizeInCellsY(),
                   master->getResolution(),
                   master->getOriginX(), master->getOriginY());
     }
