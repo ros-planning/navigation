@@ -36,7 +36,8 @@
 *********************************************************************/
 #include <navfn/navfn_ros.h>
 #include <pluginlib/class_list_macros.h>
-#include <tf/tf.h>
+#include <tf/transform_listener.h>
+#include <costmap_2d/cost_values.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_DECLARE_CLASS(navfn, NavfnROS, navfn::NavfnROS, nav_core::BaseGlobalPlanner)
@@ -141,9 +142,6 @@ namespace navfn {
       return false;
     }
 
-    //make sure that we have the latest copy of the costmap and that we clear the footprint of obstacles
-    getCostmap(costmap_);
-
     //make sure to resize the underlying array that Navfn uses
     planner_->setNavArr(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
     planner_->setCostmap(costmap_->getCharMap(), true, allow_unknown_);
@@ -174,34 +172,6 @@ namespace navfn {
 
     //set the associated costs in the cost map to be free
     costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
-
-    double max_inflation_dist = inflation_radius_ + inscribed_radius_;
-
-    //make sure to re-inflate obstacles in the affected region
-    costmap_->reinflateWindow(global_pose.getOrigin().x(), global_pose.getOrigin().y(), max_inflation_dist, max_inflation_dist);
-
-    //just in case we inflate over the point we just cleared
-    costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
-
-  }
-
-  void NavfnROS::getCostmap(costmap_2d::Costmap2D& costmap)
-  {
-    if(!initialized_){
-      ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
-      return;
-    }
-
-    costmap_->clearRobotFootprint();
-
-    //if the user has requested that the planner use only a window of the costmap, we'll get that window here
-    if(planner_window_x_ > 1e-6 && planner_window_y_ > 1e-6){
-      costmap_->getCostmapWindowCopy(planner_window_x_, planner_window_y_, costmap_);
-    }
-    else{
-      costmap_->getCostmapCopy(costmap);
-    }
-
   }
 
   bool NavfnROS::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp){
@@ -233,9 +203,6 @@ namespace navfn {
 
     //clear the plan, just in case
     plan.clear();
-
-    //make sure that we have the latest copy of the costmap and that we clear the footprint of obstacles
-    getCostmap(costmap_);
 
     ros::NodeHandle n;
 
