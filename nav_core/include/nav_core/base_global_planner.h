@@ -38,7 +38,7 @@
 #define NAV_CORE_BASE_GLOBAL_PLANNER_
 
 #include <geometry_msgs/PoseStamped.h>
-#include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/costmap_2d.h>
 
 namespace nav_core {
   /**
@@ -62,7 +62,7 @@ namespace nav_core {
        * @param  name The name of this planner
        * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
        */
-      virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) = 0;
+      virtual void initialize(std::string name, costmap_2d::Costmap2D* costmap) = 0;
 
       /**
        * @brief  Virtual destructor for the interface

@@ -39,7 +39,7 @@
 
 #include <ros/ros.h>
 #include <navfn/navfn.h>
-#include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/Path.h>
@@ -65,16 +65,16 @@ namespace navfn {
       /**
        * @brief  Constructor for the NavFnROS object
        * @param  name The name of this planner
-       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use
+       * @param  costmap A pointer to the ROS wrapper of the costmap to use
        */
-      NavfnROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+      NavfnROS(std::string name, costmap_2d::Costmap2D* costmap);
 
       /**
        * @brief  Initialization function for the NavFnROS object
        * @param  name The name of this planner
-       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+       * @param  costmap A pointer to the ROS wrapper of the costmap to use for planning
        */
-      void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+      void initialize(std::string name, costmap_2d::Costmap2D* costmap);
 
       /**
        * @brief Given a goal pose in the world, compute a plan
@@ -139,7 +139,7 @@ namespace navfn {
        */
       void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, double r, double g, double b, double a);
 
-      ~NavfnROS(){delete costmap_publisher_;}
+      ~NavfnROS(){}
 
       bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
 
@@ -149,9 +149,8 @@ namespace navfn {
        * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
        */
       virtual void getCostmap(costmap_2d::Costmap2D& costmap); 
-      costmap_2d::Costmap2DROS* costmap_ros_;
+      costmap_2d::Costmap2D* costmap_;
       boost::shared_ptr<NavFn> planner_;
-      double inscribed_radius_, circumscribed_radius_, inflation_radius_;
       ros::Publisher plan_pub_;
       pcl_ros::Publisher<PotarrPoint> potarr_pub_;
       bool initialized_, allow_unknown_, visualize_potential_;
@@ -166,9 +165,7 @@ namespace navfn {
 
       void mapToWorld(double mx, double my, double& wx, double& wy);
       void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
-      costmap_2d::Costmap2D costmap_;
       double planner_window_x_, planner_window_y_, default_tolerance_;
-      costmap_2d::Costmap2DPublisher* costmap_publisher_;
       std::string tf_prefix_;
       boost::mutex mutex_;
       ros::ServiceServer make_plan_srv_;
