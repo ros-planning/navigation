@@ -47,9 +47,12 @@ namespace costmap_2d {
   LayeredCostmap::LayeredCostmap(string global_frame, bool rolling_window) :
                     costmap_(), global_frame_(global_frame), rolling_window_(rolling_window)
                     {
+    costmap_.setDefaultValue(255);
   }
 
   LayeredCostmap::~LayeredCostmap() {
+      plugins_.clear();
+
   }
 
   void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y) {
@@ -76,7 +79,9 @@ namespace costmap_2d {
 
     minx_ = miny_ = 1e30;
     maxx_ = maxy_ = -1e30;
-
+    
+    {
+    boost::unique_lock< boost::shared_mutex > lock(*(costmap_.getLock()));
     for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
         (*plugin)->update_bounds(origin_x, origin_y, origin_yaw, &minx_, &miny_, &maxx_, &maxy_);
     }
@@ -97,6 +102,7 @@ namespace costmap_2d {
 
     for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
       (*plugin)->update_costs(costmap_, x0, y0, xn, yn);
+    }
     }
   }
 

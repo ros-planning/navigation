@@ -75,6 +75,7 @@ namespace costmap_2d {
   }
 
   void Costmap2DPublisher::publishCostmap(){
+    boost::shared_lock< boost::shared_mutex > lock(*(costmap_->getLock()));
     double resolution = costmap_->getResolution();
     
     //create a GridCells message 
@@ -86,12 +87,11 @@ namespace costmap_2d {
     cells.cell_width = resolution;
     cells.cell_height = resolution;
     
-    lock_.lock();
     for(unsigned int i = 0; i < costmap_->getSizeInCellsX(); i++){
       for(unsigned int j = 0; j < costmap_->getSizeInCellsY(); j++){
 
         unsigned char cost = costmap_->getCost(i, j);
-        if(cost==NO_INFORMATION)
+        if(cost==NO_INFORMATION ||cost== 0)
             continue;
             
         geometry_msgs::Point p;
@@ -101,7 +101,6 @@ namespace costmap_2d {
       }
     }
     costmap_pub_.publish(cells);
-    lock_.unlock();
   }
 
 };

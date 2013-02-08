@@ -4,6 +4,7 @@
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::ObstacleCostmapPlugin, costmap_2d::CostmapPluginROS)
 
+using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::FREE_SPACE;
 
@@ -18,6 +19,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
         ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
         rolling_window_ = costmap->isRolling();
+        default_value_ = NO_INFORMATION;
 
         initMaps();
         current_ = true;
@@ -141,8 +143,10 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
     }
 
     void ObstacleCostmapPlugin::initMaps(){
-        resizeMap(getSizeInCellsX(), getSizeInCellsY(), 
-                getResolution(), getOriginX(), getOriginY());
+        Costmap2D* master = layered_costmap_->getCostmap();
+        resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(),
+                  master->getResolution(),
+                  master->getOriginX(), master->getOriginY());
     }
 
     void ObstacleCostmapPlugin::matchSize(){
@@ -244,7 +248,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 
             //now we need to compute the map coordinates for the observation
             unsigned int mx, my;
-            if(!worldToMap(cloud.points[i].x, cloud.points[i].y, mx, my)){
+            if(!worldToMap(px, py, mx, my)){
               ROS_DEBUG("Computing map coords failed");
               continue;
             }
@@ -264,6 +268,8 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
         for(int j=min_j; j<max_j; j++){
             for(int i=min_i; i<max_i; i++){
                 int index = getIndex(i, j);
+                if(costmap_[index]==NO_INFORMATION)
+                    continue;
                 unsigned char old_cost = master_array[index];
                 master_grid.setCost(i,j, std::max(old_cost, costmap_[index]));
             }

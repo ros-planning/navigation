@@ -47,6 +47,8 @@ namespace costmap_2d{
   Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, 
       double resolution, double origin_x, double origin_y, unsigned char default_value) : size_x_(cells_size_x),
   size_y_(cells_size_y), resolution_(resolution), origin_x_(origin_x), origin_y_(origin_y), costmap_(NULL), default_value_(default_value) {
+    access_ = new boost::shared_mutex();
+  
     //create the costmap
     initMaps(size_x_, size_y_);
     resetMaps();
@@ -67,10 +69,12 @@ namespace costmap_2d{
 
   void Costmap2D::deleteMaps(){
     //clean up data
+    boost::unique_lock< boost::shared_mutex > lock(*access_);
     delete[] costmap_;
   }
 
   void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y){
+    boost::unique_lock< boost::shared_mutex > lock(*access_);
     costmap_ = new unsigned char[size_x * size_y];
   }
   
@@ -88,6 +92,7 @@ namespace costmap_2d{
   }
 
   void Costmap2D::resetMaps(){
+    boost::unique_lock< boost::shared_mutex > lock(*access_);
     memset(costmap_, default_value_, size_x_ * size_y_ * sizeof(unsigned char));
   }
   
@@ -163,7 +168,7 @@ namespace costmap_2d{
   }
 
   //just initialize everything to NULL by default
-  Costmap2D::Costmap2D() : size_x_(0), size_y_(0), resolution_(0.0), origin_x_(0.0), origin_y_(0.0), costmap_(NULL) {}
+  Costmap2D::Costmap2D() : size_x_(0), size_y_(0), resolution_(0.0), origin_x_(0.0), origin_y_(0.0), costmap_(NULL) {     access_ = new boost::shared_mutex(); }
 
   Costmap2D::~Costmap2D(){
     deleteMaps();
@@ -179,12 +184,14 @@ namespace costmap_2d{
   }
 
   unsigned char Costmap2D::getCost(unsigned int mx, unsigned int my) const {
+    boost::shared_lock< boost::shared_mutex > lock(*access_);
     ROS_ASSERT_MSG(mx < size_x_ && my < size_y_, "You cannot get the cost of a cell that is outside the bounds of the costmap");
     return costmap_[getIndex(mx, my)];
   }
 
   void Costmap2D::setCost(unsigned int mx, unsigned int my, unsigned char cost) {
     ROS_ASSERT_MSG(mx < size_x_ && my < size_y_, "You cannot set the cost of a cell that is outside the bounds of the costmap");
+    boost::unique_lock< boost::shared_mutex > lock(*access_);
     costmap_[getIndex(mx, my)] = cost;
   }
 
@@ -212,6 +219,7 @@ namespace costmap_2d{
   }
 
   void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y){
+    boost::unique_lock< boost::shared_mutex > lock(*access_);
     //project the new origin into the grid
     int cell_ox, cell_oy;
     cell_ox = int((new_origin_x - origin_x_) / resolution_);
@@ -262,6 +270,7 @@ namespace costmap_2d{
   }
 
   bool Costmap2D::setConvexPolygonCost(const geometry_msgs::Polygon& polygon, unsigned char cost_value) {
+    boost::unique_lock< boost::shared_mutex > lock(*access_);
     //we assume the polygon is given in the global_frame... we need to transform it to map coordinates
     std::vector<MapLocation> map_polygon;
     for(unsigned int i = 0; i < polygon.points.size(); ++i){

@@ -220,6 +220,8 @@ namespace costmap_2d {
        * @return The resolution of the costmap
        */
       double getResolution() const;
+      
+      void setDefaultValue(unsigned char c){ default_value_ = c; }
     
       /**
        * @brief  Sets the cost of a convex polygon to a desired value
@@ -267,6 +269,8 @@ namespace costmap_2d {
        * @return The equivalent cell distance
        */
       unsigned int cellDistance(double world_dist);
+      
+      boost::shared_mutex* getLock(){ return access_; }
    
 
     protected:
@@ -381,6 +385,7 @@ namespace costmap_2d {
       }
 
       boost::recursive_mutex configuration_mutex_;
+      boost::shared_mutex* access_;
     protected:
       unsigned int size_x_;
       unsigned int size_y_;
