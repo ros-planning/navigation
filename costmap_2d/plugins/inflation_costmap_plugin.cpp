@@ -111,6 +111,7 @@ namespace common_costmap_plugins
           unsigned char cost = costLookup(mx, my, src_x, src_y);
           grid[index] = std::max(grid[index], cost);
           //push the cell data onto the queue and mark
+          seen_[index] = true;
           CellData data(distance, index, mx, my, src_x, src_y);
           inflation_queue_.push(data);
         }
