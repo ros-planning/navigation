@@ -39,10 +39,7 @@
 #include <ros/ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GridCells.h>
-
 #include <tf/transform_datatypes.h>
-
-#include <boost/thread.hpp>
 
 namespace costmap_2d {
   /**
@@ -75,15 +72,12 @@ namespace costmap_2d {
       bool active() {return active_;}
 
     private:
-      void mapPublishLoop(double frequency);
       ros::NodeHandle* node;
       Costmap2D* costmap_;
       std::string global_frame_;
-      boost::thread* visualizer_thread_; ///< @brief A thread for publising to the visualizer
       bool active_;
       ros::Publisher costmap_pub_;
       double resolution_;
-      bool visualizer_thread_shutdown_;
   };
 };
 #endif

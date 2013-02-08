@@ -49,7 +49,7 @@ namespace costmap_2d {
                     layered_costmap_(NULL),
                     name_(name), tf_(tf),  stop_updates_(false), 
                              initialized_(true), stopped_(false), robot_stopped_(false), map_update_thread_(NULL),
-                    plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS"), publisher_(NULL) {
+                    last_publish_(0), plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS"), publisher_(NULL) {
     ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle g_nh;
 
@@ -120,6 +120,7 @@ namespace costmap_2d {
     private_nh.param("publish_frequency", map_publish_frequency, 0.0);
     if(map_publish_frequency>0){
         publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), map_publish_frequency, global_frame_, "costmap");
+        publish_cycle = ros::Duration(1/map_publish_frequency);
     }
 
     // create a thread to handle updating the map
@@ -194,7 +195,13 @@ namespace costmap_2d {
       end_t = end.tv_sec + double(end.tv_usec) / 1e6;
       t_diff = end_t - start_t;
       ROS_DEBUG("Map update time: %.9f", t_diff);
-
+      if(publisher_!=NULL){
+        ros::Time now = ros::Time::now();
+        if(last_publish_+ publish_cycle < now ){
+            publisher_->publishCostmap();
+            last_publish_ = now;
+        }
+      }
       r.sleep();
       // make sure to sleep for the remainder of our cycle time
       if (r.cycleTime() > ros::Duration(1 / frequency))

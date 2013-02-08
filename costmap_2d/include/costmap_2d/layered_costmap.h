@@ -102,7 +102,6 @@ namespace costmap_2d {
       std::string global_frame_;
 
       bool rolling_window_;  /// < @brief Whether or not the costmap should roll with the robot
-      mutable boost::recursive_mutex lock_;
 
       bool current_;
       double minx_, miny_, maxx_, maxy_;

@@ -40,39 +40,12 @@
 
 namespace costmap_2d {
   Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, double publish_frequency, std::string global_frame, std::string topic_name) 
-    : node(&ros_node), costmap_(costmap), global_frame_(global_frame), visualizer_thread_(NULL), active_(false), visualizer_thread_shutdown_(false){
+    : node(&ros_node), costmap_(costmap), global_frame_(global_frame), active_(false) {
 
     costmap_pub_ = ros_node.advertise<nav_msgs::GridCells>(topic_name, 1);
-    visualizer_thread_ = new boost::thread(boost::bind(&Costmap2DPublisher::mapPublishLoop, this, publish_frequency));
   }
 
-  Costmap2DPublisher::~Costmap2DPublisher(){
-    visualizer_thread_shutdown_ = true;
-    if(visualizer_thread_ != NULL){
-      visualizer_thread_->join();
-      delete visualizer_thread_;
-    }
-  }
-
-  void Costmap2DPublisher::mapPublishLoop(double frequency){
-    //the user might not want to run the loop every cycle
-    if(frequency == 0.0)
-      return;
-
-    active_ = true;
-    ros::NodeHandle n;
-    ros::Rate r(frequency);
-    while(n.ok() && !visualizer_thread_shutdown_){
-      //we are about to publish the latest data
-      ROS_DEBUG("Publishing costmap");
-      publishCostmap();
-
-      r.sleep();
-      //make sure to sleep for the remainder of our cycle time
-      if(r.cycleTime() > ros::Duration(1 / frequency))
-        ROS_WARN("Map update loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", frequency, r.cycleTime().toSec());
-    }
-  }
+  Costmap2DPublisher::~Costmap2DPublisher(){  }
 
   void Costmap2DPublisher::publishCostmap(){
     boost::shared_lock< boost::shared_mutex > lock(*(costmap_->getLock()));

@@ -56,8 +56,6 @@ namespace costmap_2d {
   }
 
   void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y) {
-    boost::recursive_mutex::scoped_lock lock(lock_);
-
     costmap_.resizeMap(size_x, size_y, resolution, origin_x, origin_y);
       for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
         (*plugin)->matchSize();
@@ -65,7 +63,6 @@ namespace costmap_2d {
   }
 
   void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_yaw) {
-    boost::recursive_mutex::scoped_lock lock(lock_);
     
     // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
     if (rolling_window_) { 
@@ -80,8 +77,8 @@ namespace costmap_2d {
     minx_ = miny_ = 1e30;
     maxx_ = maxy_ = -1e30;
     
-    {
-    boost::unique_lock< boost::shared_mutex > lock(*(costmap_.getLock()));
+    
+    
     for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
         (*plugin)->update_bounds(origin_x, origin_y, origin_yaw, &minx_, &miny_, &maxx_, &maxy_);
     }
@@ -100,10 +97,14 @@ namespace costmap_2d {
         
     costmap_.resetMap(x0,y0,xn,yn);
 
-    for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
-      (*plugin)->update_costs(costmap_, x0, y0, xn, yn);
-    }
-    }
+    {
+
+        boost::unique_lock< boost::shared_mutex > lock(*(costmap_.getLock()));
+        for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
+          (*plugin)->update_costs(costmap_, x0, y0, xn, yn);
+        }
+    }    
+
   }
 
   bool LayeredCostmap::isCurrent() {

@@ -30,8 +30,6 @@ namespace common_costmap_plugins
       bool circular_;
       ros::Publisher footprint_pub_;
       double inscribed_radius_, circumscribed_radius_;
-      double min_x_, min_y_, max_x_, max_y_;
-
   };
 };
 #endif

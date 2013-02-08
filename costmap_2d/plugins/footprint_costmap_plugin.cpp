@@ -74,16 +74,12 @@ namespace common_costmap_plugins
         }
         for(unsigned int i=0; i < footprint_.polygon.points.size(); i++){
             double px = footprint_.polygon.points[i].x, py = footprint_.polygon.points[i].y;
-            min_x_ = std::min(px, min_x_);
-            min_y_ = std::min(py, min_y_);
-            max_x_ = std::max(px, max_x_);
-            max_y_ = std::max(py, max_y_);
+            *min_x = std::min(px, *min_x);
+            *min_y = std::min(py, *min_y);
+            *max_x = std::max(px, *max_x);
+            *max_y = std::max(py, *max_y);
         }
-        
-        *min_x = std::min(min_x_, *min_x);
-        *min_y = std::min(min_y_, *min_y);
-        *max_x = std::max(max_x_, *max_x);
-        *max_y = std::max(max_y_, *max_y);
+
         ROS_DEBUG("Publishing footprint");
         footprint_pub_.publish(footprint_);
     }

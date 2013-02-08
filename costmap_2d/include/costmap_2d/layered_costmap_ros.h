@@ -67,6 +67,8 @@ class LayeredCostmapROS{
         bool stop_updates_, initialized_, stopped_, robot_stopped_;
         boost::thread* map_update_thread_;  /// < @brief A thread for updating the map
         ros::Timer timer_;
+        ros::Time last_publish_;
+        ros::Duration publish_cycle;
         pluginlib::ClassLoader<CostmapPluginROS> plugin_loader_;
         tf::Stamped<tf::Pose> old_pose_;
         Costmap2DPublisher* publisher_;
