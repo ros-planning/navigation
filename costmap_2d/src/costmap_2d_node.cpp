@@ -35,14 +35,14 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <ros/ros.h>
-#include <costmap_2d/layered_costmap_ros.h>
+#include <costmap_2d/costmap_2d_ros.h>
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "costmap_node");
 
   tf::TransformListener tf(ros::Duration(10));
 
-  costmap_2d::LayeredCostmapROS lcr("costmap", tf);
+  costmap_2d::Costmap2DROS lcr("costmap", tf);
 
   ros::spin();
 

@@ -36,7 +36,7 @@
 *         David V. Lu!!
 *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_2d/layered_costmap_ros.h>
+#include <costmap_2d/costmap_2d_ros.h>
 #include <cstdio>
 #include <string>
 #include <algorithm>
@@ -45,7 +45,7 @@
 using namespace std;
 
 namespace costmap_2d {
-  LayeredCostmapROS::LayeredCostmapROS(std::string name, tf::TransformListener& tf) :
+  Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
                     layered_costmap_(NULL),
                     name_(name), tf_(tf),  stop_updates_(false), 
                              initialized_(true), stopped_(false), robot_stopped_(false), map_update_thread_(NULL),
@@ -131,14 +131,14 @@ namespace costmap_2d {
     map_update_thread_shutdown_ = false;
     double map_update_frequency;
     private_nh.param("update_frequency", map_update_frequency, 5.0);
-    map_update_thread_ = new boost::thread(boost::bind(&LayeredCostmapROS::mapUpdateLoop, this, map_update_frequency));
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
     // Create a time r to check if the robot is moving
     robot_stopped_ = false;
-    timer_ = private_nh.createTimer(ros::Duration(.1), &LayeredCostmapROS::movementCB, this);
+    timer_ = private_nh.createTimer(ros::Duration(.1), &Costmap2DROS::movementCB, this);
   }
 
-  LayeredCostmapROS::~LayeredCostmapROS() {
+  Costmap2DROS::~Costmap2DROS() {
     map_update_thread_shutdown_ = true;
     if (map_update_thread_ != NULL) {
       map_update_thread_->join();
@@ -148,7 +148,7 @@ namespace costmap_2d {
         delete publisher_;
   }
   
-  void LayeredCostmapROS::movementCB(const ros::TimerEvent &event) {
+  void Costmap2DROS::movementCB(const ros::TimerEvent &event) {
     //don't allow configuration to happen while this check occurs
     //boost::recursive_mutex::scoped_lock mcl(configuration_mutex_);
 
@@ -171,7 +171,7 @@ namespace costmap_2d {
     }
   }
 
-  void LayeredCostmapROS::mapUpdateLoop(double frequency) {
+  void Costmap2DROS::mapUpdateLoop(double frequency) {
     // the user might not want to run the loop every cycle
     if (frequency == 0.0)
       return;
@@ -210,7 +210,7 @@ namespace costmap_2d {
   }
 
 
-  void LayeredCostmapROS::start() {
+  void Costmap2DROS::start() {
     std::vector<boost::shared_ptr<CostmapPlugin> >* plugins = layered_costmap_->getPlugins();
     // check if we're stopped or just paused
     if (stopped_) {
@@ -228,7 +228,7 @@ namespace costmap_2d {
       r.sleep();
   }
 
-  void LayeredCostmapROS::stop() {
+  void Costmap2DROS::stop() {
     stop_updates_ = true;
     std::vector<boost::shared_ptr<CostmapPlugin> >* plugins = layered_costmap_->getPlugins();
     // unsubscribe from topics
@@ -239,12 +239,12 @@ namespace costmap_2d {
     stopped_ = true;
   }
   
-  void LayeredCostmapROS::pause() {
+  void Costmap2DROS::pause() {
     stop_updates_ = true;
     initialized_ = false;
   }
 
-  void LayeredCostmapROS::resume() {
+  void Costmap2DROS::resume() {
     stop_updates_ = false;
 
     // block until the costmap is re-initialized.. meaning one update cycle has run
@@ -253,7 +253,7 @@ namespace costmap_2d {
       r.sleep();
   }
   
-   bool LayeredCostmapROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const {
+   bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const {
 
     global_pose.setIdentity();
     tf::Stamped<tf::Pose> robot_pose;

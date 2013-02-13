@@ -13,7 +13,7 @@ add_definitions(${EIGEN_DEFINITIONS})
 
 #rosbuild_add_boost_directories()
 
-rosbuild_add_library(costmap_2d src/costmap_2d.cpp src/observation_buffer.cpp src/layered_costmap.cpp src/layered_costmap_ros.cpp src/costmap_2d_publisher.cpp)
+rosbuild_add_library(costmap_2d src/costmap_2d.cpp src/observation_buffer.cpp src/layered_costmap.cpp src/costmap_2d_ros.cpp src/costmap_2d_publisher.cpp)
 target_link_libraries(costmap_2d ${PCL_LIBRARIES})
 #rosbuild_link_boost(costmap_2d thread)
 

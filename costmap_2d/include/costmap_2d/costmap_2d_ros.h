@@ -40,10 +40,10 @@
 #include <costmap_2d/costmap_2d_publisher.h>
 
 namespace costmap_2d {
-class LayeredCostmapROS{
+class Costmap2DROS{
     public: 
-        LayeredCostmapROS(std::string name, tf::TransformListener& tf);
-        ~LayeredCostmapROS();
+        Costmap2DROS(std::string name, tf::TransformListener& tf);
+        ~Costmap2DROS();
         void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
         void start();
         void stop();
@@ -73,5 +73,5 @@ class LayeredCostmapROS{
         pluginlib::ClassLoader<CostmapPluginROS> plugin_loader_;
         tf::Stamped<tf::Pose> old_pose_;
         Costmap2DPublisher* publisher_;
-};  // class LayeredCostmapROS
+};  // class Costmap2DROS
 };  // namespace costmap_2d
