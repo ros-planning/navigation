@@ -35,6 +35,9 @@
 * Author: Eitan Marder-Eppstein
 *         David V. Lu!!
 *********************************************************************/
+#ifndef COSTMAP_COSTMAP_2D_ROS_H_
+#define COSTMAP_COSTMAP_2D_ROS_H_
+
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/costmap_2d_publisher.h>
@@ -75,3 +78,5 @@ class Costmap2DROS{
         Costmap2DPublisher* publisher_;
 };  // class Costmap2DROS
 };  // namespace costmap_2d
+
+#endif
