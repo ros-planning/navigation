@@ -67,14 +67,14 @@ namespace navfn {
        * @param  name The name of this planner
        * @param  costmap A pointer to the ROS wrapper of the costmap to use
        */
-      NavfnROS(std::string name, costmap_2d::Costmap2D* costmap);
+      NavfnROS(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
        * @brief  Initialization function for the NavFnROS object
        * @param  name The name of this planner
        * @param  costmap A pointer to the ROS wrapper of the costmap to use for planning
        */
-      void initialize(std::string name, costmap_2d::Costmap2D* costmap);
+      void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
        * @brief Given a goal pose in the world, compute a plan
@@ -148,7 +148,7 @@ namespace navfn {
       /**
        * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
        */
-      costmap_2d::Costmap2D* costmap_;
+      costmap_2d::Costmap2DROS* costmap_ros_;
       boost::shared_ptr<NavFn> planner_;
       ros::Publisher plan_pub_;
       pcl_ros::Publisher<PotarrPoint> potarr_pub_;

@@ -37,7 +37,7 @@
 #include <navfn/navfn_ros.h>
 #include <navfn/MakeNavPlan.h>
 #include <boost/shared_ptr.hpp>
-#include <costmap_2d/layered_costmap_ros.h>
+#include <costmap_2d/costmap_2d_ros.h>
 
 namespace cm=costmap_2d;
 namespace rm=geometry_msgs;
@@ -46,19 +46,19 @@ using std::vector;
 using rm::PoseStamped;
 using std::string;
 using cm::Costmap2D;
-using cm::LayeredCostmapROS;
+using cm::Costmap2DROS;
 
 namespace navfn {
 
 class NavfnWithCostmap : public NavfnROS
 {
 public:
-  NavfnWithCostmap(string name, LayeredCostmapROS* cmap);
+  NavfnWithCostmap(string name, Costmap2DROS* cmap);
   bool makePlanService(MakeNavPlan::Request& req, MakeNavPlan::Response& resp);
 
 private:
   void poseCallback(const rm::PoseStamped::ConstPtr& goal);
-  LayeredCostmapROS* cmap_;
+  Costmap2DROS* cmap_;
   ros::ServiceServer make_plan_service_;
   ros::Subscriber pose_sub_;
 };
@@ -97,8 +97,8 @@ void NavfnWithCostmap::poseCallback(const rm::PoseStamped::ConstPtr& goal) {
 }
 
 
-NavfnWithCostmap::NavfnWithCostmap(string name, LayeredCostmapROS* cmap) : 
-  NavfnROS(name, cmap->getCostmap())
+NavfnWithCostmap::NavfnWithCostmap(string name, Costmap2DROS* cmap) : 
+  NavfnROS(name, cmap)
 {
   ros::NodeHandle private_nh("~");
   cmap_ = cmap;
@@ -110,11 +110,11 @@ NavfnWithCostmap::NavfnWithCostmap(string name, LayeredCostmapROS* cmap) :
 
 int main (int argc, char** argv)
 {
-  ros::init(argc, argv, "costmap_node");
+  ros::init(argc, argv, "global_planner");
 
   tf::TransformListener tf(ros::Duration(10));
 
-  costmap_2d::LayeredCostmapROS lcr("costmap", tf);
+  costmap_2d::Costmap2DROS lcr("costmap", tf);
 
   navfn::NavfnWithCostmap navfn("navfn_planner", &lcr);
 
