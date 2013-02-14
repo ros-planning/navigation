@@ -51,8 +51,9 @@ namespace costmap_2d {
   }
 
   LayeredCostmap::~LayeredCostmap() {
-      plugins_.clear();
-
+    while(plugins_.size() > 0){
+      plugins_.pop_back();
+    }
   }
 
   void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y) {

@@ -146,6 +146,8 @@ namespace costmap_2d {
     }
     if(publisher_!=NULL)
         delete publisher_;
+
+    delete layered_costmap_;
   }
   
   void Costmap2DROS::movementCB(const ros::TimerEvent &event) {
