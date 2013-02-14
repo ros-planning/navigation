@@ -7,6 +7,12 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
+double sign(double n){
+    if(n>0) return 1.0;
+    else if(n<0) return -1.0;
+    else return 0.0;
+}
+
 /**
 * @brief  Grab the footprint of the robot from the parameter server if available
 */

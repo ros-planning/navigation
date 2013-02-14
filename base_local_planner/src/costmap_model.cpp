@@ -36,6 +36,7 @@
 *********************************************************************/
 #include <base_local_planner/line_iterator.h>
 #include <base_local_planner/costmap_model.h>
+#include <costmap_2d/cost_values.h>
 
 using namespace std;
 using namespace costmap_2d;

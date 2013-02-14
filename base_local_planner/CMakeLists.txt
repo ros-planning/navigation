@@ -20,7 +20,6 @@ include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS}
 add_definitions(${EIGEN_DEFINITIONS})
 
 rosbuild_add_library(base_local_planner 
-	src/footprint_helper.cpp
 	src/goal_functions.cpp
 	src/map_cell.cpp
 	src/map_grid.cpp
@@ -36,9 +35,6 @@ rosbuild_add_library(base_local_planner
 	src/costmap_model.cpp
 	src/simple_scored_sampling_planner.cpp
 	src/simple_trajectory_generator.cpp
-	src/trajectory_planner.cpp
-	src/trajectory.cpp
-	src/trajectory_planner_ros.cpp
 	src/trajectory.cpp
 	src/voxel_grid_model.cpp)
 rosbuild_link_boost(base_local_planner thread)

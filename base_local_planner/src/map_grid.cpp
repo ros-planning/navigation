@@ -32,7 +32,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 #include <base_local_planner/map_grid.h>
-
+#include <costmap_2d/cost_values.h>
 using namespace std;
 
 namespace base_local_planner{

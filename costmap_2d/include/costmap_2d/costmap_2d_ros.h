@@ -55,6 +55,8 @@ class Costmap2DROS{
         bool isCurrent(){ return layered_costmap_->isCurrent(); }
         bool getRobotPose(tf::Stamped<tf::Pose>& global_pose) const;
         Costmap2D* getCostmap() { return layered_costmap_->getCostmap(); }
+        std::string getGlobalFrameID() { return global_frame_; }
+        std::string getBaseFrameID() { return robot_base_frame_; }
 
     protected:
         LayeredCostmap* layered_costmap_;

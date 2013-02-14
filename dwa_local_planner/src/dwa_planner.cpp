@@ -280,7 +280,7 @@ namespace dwa_local_planner {
       tf::Stamped<tf::Pose> global_pose,
       tf::Stamped<tf::Pose> global_vel,
       tf::Stamped<tf::Pose>& drive_velocities,
-      std::vector<geometry_msgs::Point> footprint_spec) {
+      geometry_msgs::Polygon footprint_spec) {
 
     obstacle_costs_.setFootprint(footprint_spec);
 

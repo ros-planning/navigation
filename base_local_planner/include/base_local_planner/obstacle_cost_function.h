@@ -61,7 +61,7 @@ public:
   double scoreTrajectory(Trajectory &traj);
 
   void setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed);
-  void setFootprint(std::vector<geometry_msgs::Point> footprint_spec);
+  void setFootprint(geometry_msgs::Polygon footprint_spec);
 
   // helper functions, made static for easy unit testing
   static double getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor);
@@ -70,13 +70,13 @@ public:
       const double& y,
       const double& th,
       double scale,
-      std::vector<geometry_msgs::Point>& footprint_spec,
+      geometry_msgs::Polygon footprint_spec,
       costmap_2d::Costmap2D* costmap,
       base_local_planner::WorldModel* world_model);
 
 private:
   costmap_2d::Costmap2D* costmap_;
-  std::vector<geometry_msgs::Point> footprint_spec_;
+  geometry_msgs::Polygon footprint_spec_;
   base_local_planner::WorldModel* world_model_;
   double max_trans_vel_;
   //footprint scaling with velocity;
