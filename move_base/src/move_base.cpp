@@ -48,8 +48,8 @@ namespace move_base {
   MoveBase::MoveBase(tf::TransformListener& tf) :
     tf_(tf),
     as_(NULL),
-    tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
-    planner_(NULL), bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
+    planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
+    bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
@@ -127,15 +127,13 @@ namespace move_base {
         }
       }
 
-      planner_ = bgp_loader_.createClassInstance(global_planner);
+      planner_ = bgp_loader_.createInstance(global_planner);
       planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", global_planner.c_str(), ex.what());
       exit(1);
     }
-
-    ROS_INFO("MAP SIZE: %d, %d", planner_costmap_ros_->getSizeInCellsX(), planner_costmap_ros_->getSizeInCellsY());
 
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
@@ -157,7 +155,7 @@ namespace move_base {
         }
       }
 
-      tc_ = blp_loader_.createClassInstance(local_planner);
+      tc_ = blp_loader_.createInstance(local_planner);
       tc_->initialize(blp_loader_.getName(local_planner), &tf_, controller_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
@@ -250,7 +248,7 @@ namespace move_base {
     oscillation_timeout_ = config.oscillation_timeout;
     oscillation_distance_ = config.oscillation_distance;
     if(config.base_global_planner != last_config_.base_global_planner) {
-      nav_core::BaseGlobalPlanner* old_planner = planner_;
+      boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
       //initialize the global planner
       ROS_INFO("Loading global planner %s", config.base_global_planner.c_str());
       try {
@@ -268,12 +266,11 @@ namespace move_base {
           }
         }
  
-        planner_ = bgp_loader_.createClassInstance(config.base_global_planner);
+        planner_ = bgp_loader_.createInstance(config.base_global_planner);
         
         // wait for the current planner to finish planning
         boost::unique_lock<boost::mutex> lock(planner_mutex_);
 
-        delete old_planner;
         // Clean up before initializing the new planner
         planner_plan_->clear();
         latest_plan_->clear();
@@ -291,7 +288,7 @@ namespace move_base {
     }
 
     if(config.base_local_planner != last_config_.base_local_planner){
-      nav_core::BaseLocalPlanner* old_planner = tc_;
+      boost::shared_ptr<nav_core::BaseLocalPlanner> old_planner = tc_;
       //create a local planner
       try {
         //check if a non fully qualified name has potentially been passed in
@@ -308,8 +305,8 @@ namespace move_base {
             }
           }
         }
-        tc_ = blp_loader_.createClassInstance(config.base_local_planner);
-        delete old_planner;
+        tc_ = blp_loader_.createInstance(config.base_local_planner);
+
         // Clean up before initializing the new planner
         planner_plan_->clear();
         latest_plan_->clear();
@@ -342,53 +339,53 @@ namespace move_base {
     //clear the planner's costmap
     planner_costmap_ros_->getRobotPose(global_pose);
 
-    std::vector<geometry_msgs::Point> clear_poly;
+    geometry_msgs::Polygon clear_poly;
     double x = global_pose.getOrigin().x();
     double y = global_pose.getOrigin().y();
-    geometry_msgs::Point pt;
+    geometry_msgs::Point32 pt;
 
     pt.x = x - size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x - size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
-    planner_costmap_ros_->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
+    planner_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
 
     //clear the controller's costmap
     controller_costmap_ros_->getRobotPose(global_pose);
 
-    clear_poly.clear();
+    clear_poly.points.clear();
     x = global_pose.getOrigin().x();
     y = global_pose.getOrigin().y();
 
     pt.x = x - size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x - size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
-    controller_costmap_ros_->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
+    controller_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
   }
 
   bool MoveBase::clearUnknownService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
@@ -435,7 +432,7 @@ namespace move_base {
 
     //if we have a tolerance on the goal point that is greater
     //than the resolution of the map... compute the full potential function
-    double resolution = planner_costmap_ros_->getResolution();
+    double resolution = planner_costmap_ros_->getCostmap()->getResolution();
     std::vector<geometry_msgs::PoseStamped> global_plan;
     geometry_msgs::PoseStamped p;
     p = req.goal;
@@ -475,12 +472,6 @@ namespace move_base {
 
     if(as_ != NULL)
       delete as_;
-
-    if(planner_ != NULL)
-      delete planner_;
-
-    if(tc_ != NULL)
-      delete tc_;
 
     if(planner_costmap_ros_ != NULL)
       delete planner_costmap_ros_;
@@ -1059,7 +1050,7 @@ namespace move_base {
               }
             }
 
-            boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createClassInstance(behavior_list[i]["type"]));
+            boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createInstance(behavior_list[i]["type"]));
 
             //shouldn't be possible, but it won't hurt to check
             if(behavior.get() == NULL){
@@ -1102,19 +1093,19 @@ namespace move_base {
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
       //first, we'll load a recovery behavior to clear the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
 
       //next, we'll load a recovery behavior to rotate in place
-      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createClassInstance("rotate_recovery/RotateRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_roatation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
 
       //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
 
