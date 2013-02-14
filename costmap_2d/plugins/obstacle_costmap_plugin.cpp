@@ -18,6 +18,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 {
         ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
+        name_ = name;
         rolling_window_ = costmap->isRolling();
         default_value_ = NO_INFORMATION;
 

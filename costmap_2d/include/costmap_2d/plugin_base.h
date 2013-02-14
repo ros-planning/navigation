@@ -18,11 +18,13 @@ namespace costmap_2d {
 
       bool isCurrent() { return current_; }
       virtual void matchSize() {}  // matches the size of the parent costmap
+      std::string getName(){ return name_; }
 
     protected:
       CostmapPlugin() {}
       LayeredCostmap* layered_costmap_;
       bool current_;
+      std::string name_;
   };
 };  // namespace layered_costmap
 #endif

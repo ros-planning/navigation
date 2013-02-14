@@ -13,6 +13,7 @@ namespace common_costmap_plugins
         ros::NodeHandle nh("~/" + name);
         ros::NodeHandle g_nh;
         layered_costmap_ = costmap;
+        name_ = name;
         footprint_.header.frame_id = layered_costmap_->getGlobalFrameID();
         current_ = true;
         footprint_pub_ = nh.advertise<geometry_msgs::PolygonStamped>("robot_footprint", 1);

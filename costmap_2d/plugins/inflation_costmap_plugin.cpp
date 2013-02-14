@@ -14,6 +14,7 @@ namespace common_costmap_plugins
     {
         ros::NodeHandle nh("~/" + name), g_nh;
         layered_costmap_ = costmap;
+        name_ = name;
         current_ = true;
         seen_ = NULL;
         matchSize();
