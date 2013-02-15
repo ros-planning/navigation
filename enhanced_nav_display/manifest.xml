@@ -1,0 +1,21 @@
+<package>
+  <description brief="enhanced_nav_display">
+
+     enhanced_nav_display
+
+  </description>
+  <author>David Lu!!</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/enhanced_nav_display</url>
+  <depend package="roscpp"/>
+  <depend package="rviz"/>
+  <depend package="nav_msgs"/>
+  <depend package="tf"/>
+  <depend package="message_filters"/>
+<export>
+    <rviz plugin="${prefix}/plugins.xml"/>
+</export>
+</package>
+
+
