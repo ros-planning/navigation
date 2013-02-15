@@ -2,16 +2,11 @@
 #define _FOOTPRINT_HELPER_H
 #include<geometry_msgs/Polygon.h>
 #include<geometry_msgs/Point32.h>
-
+#include<costmap_2d/costmap_math.h>
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
-double sign(double n){
-    if(n>0) return 1.0;
-    else if(n<0) return -1.0;
-    else return 0.0;
-}
 
 /**
 * @brief  Grab the footprint of the robot from the parameter server if available
