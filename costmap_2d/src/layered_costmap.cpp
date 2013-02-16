@@ -44,10 +44,11 @@
 using namespace std;
 
 namespace costmap_2d {
-  LayeredCostmap::LayeredCostmap(string global_frame, bool rolling_window) :
+  LayeredCostmap::LayeredCostmap(string global_frame, bool rolling_window, bool track_unknown) :
                     costmap_(), global_frame_(global_frame), rolling_window_(rolling_window)
                     {
-    costmap_.setDefaultValue(255);
+    if(track_unknown)
+        costmap_.setDefaultValue(255);
   }
 
   LayeredCostmap::~LayeredCostmap() {
@@ -56,7 +57,8 @@ namespace costmap_2d {
     }
   }
 
-  void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y) {
+  void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y, bool size_locked) {
+    size_locked_ = size_locked;
     costmap_.resizeMap(global_frame_, size_x, size_y, resolution, origin_x, origin_y);
       for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin) {
         (*plugin)->matchSize();

@@ -44,7 +44,6 @@
 #include <boost/thread.hpp>
 
 namespace costmap_2d {
-  class Costmap2DConfig;
 
   //convenient for storing x/y point pairs
   struct MapLocation {
@@ -91,7 +90,7 @@ namespace costmap_2d {
        * @param win_size_x The x size of the window, in meters
        * @param win_size_y The y size of the window, in meters
        */
-      void copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y);
+      bool copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y);
 
       /**
        * @brief  Default constructor
@@ -102,10 +101,6 @@ namespace costmap_2d {
        * @brief  Destructor
        */
       virtual ~Costmap2D();
-
-      void reconfigure(costmap_2d::Costmap2DConfig &config, const costmap_2d::Costmap2DConfig& last_config);
-
-      virtual void finishConfiguration(costmap_2d::Costmap2DConfig &config);
 
       /**
        * @brief  Get the cost of a cell in the costmap
@@ -259,7 +254,7 @@ namespace costmap_2d {
        * @brief  Save the costmap out to a pgm file
        * @param file_name The name of the file to save 
        */
-      void saveMap(std::string file_name);
+      bool saveMap(std::string file_name);
       
       void resizeMap(std::string global_frame, unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
       
@@ -386,7 +381,6 @@ namespace costmap_2d {
         return x > 0 ? 1.0 : -1.0;
       }
 
-      boost::recursive_mutex configuration_mutex_;
       boost::shared_mutex* access_;
     protected:
       std::string global_frame_;

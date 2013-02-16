@@ -61,7 +61,7 @@ namespace common_costmap_plugins
         
         layered_costmap_->resizeMap(size_x, size_y, 
                                     new_map->info.resolution,
-                                    new_map->info.origin.position.x, new_map->info.origin.position.y);
+                                    new_map->info.origin.position.x, new_map->info.origin.position.y, true);
         unsigned int index = 0;
 
         //initialize the costmap with static data

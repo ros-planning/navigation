@@ -58,12 +58,11 @@ namespace costmap_2d {
     std::string tf_prefix = tf::getPrefixParam(prefix_nh);
 
     // get two frames
-    private_nh.param("global_frame", global_frame_, std::string("/map"));
-    // make sure that we set the global frame appropriately based on the tf_prefix
-    global_frame_ = tf::resolve(tf_prefix, global_frame_);
-
+    private_nh.param("global_frame",     global_frame_,     std::string("/map"));
     private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
-    // make sure that we set the base frame appropriately based on the tf_prefix
+    
+    // make sure that we set the frames appropriately based on the tf_prefix
+    global_frame_     = tf::resolve(tf_prefix, global_frame_);
     robot_base_frame_ = tf::resolve(tf_prefix, robot_base_frame_);
 
     ros::Time last_error = ros::Time::now();
@@ -78,27 +77,12 @@ namespace costmap_2d {
       }
     }
 
-    private_nh.param("transform_tolerance", transform_tolerance_, 0.3);
-
-    //private_nh.param("track_unknown_space", track_unknown_space_, false);
-
-
-    bool rolling_window;
     // check if we want a rolling window version of the costmap
-    private_nh.param("rolling_window", rolling_window, false);
+    bool rolling_window, track_unknown_space;
+    private_nh.param("rolling_window",      rolling_window,      false);
+    private_nh.param("track_unknown_space", track_unknown_space, false);
     
-    layered_costmap_ = new LayeredCostmap(global_frame_, rolling_window);
-
-    // find size parameters
-    double map_width_meters, map_height_meters, resolution, origin_x, origin_y;
-    private_nh.param("width", map_width_meters, 10.0);
-    private_nh.param("height", map_height_meters, 10.0);
-    private_nh.param("resolution", resolution, 0.05);
-    private_nh.param("origin_x", origin_x, 0.0);
-    private_nh.param("origin_y", origin_y, 0.0);
-    layered_costmap_->resizeMap( (unsigned int)(map_width_meters  / resolution),
-               (unsigned int)(map_height_meters / resolution),
-               resolution, origin_x, origin_y);
+    layered_costmap_ = new LayeredCostmap(global_frame_, rolling_window, track_unknown_space);
 
     if (private_nh.hasParam("plugins")) {
         XmlRpc::XmlRpcValue my_list;
@@ -116,26 +100,20 @@ namespace costmap_2d {
         ROS_INFO("No plugins");
     }
 
-    double map_publish_frequency;
-    private_nh.param("publish_frequency", map_publish_frequency, 0.0);
-    if(map_publish_frequency>0){
-        publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), map_publish_frequency, global_frame_, "costmap");
-        publish_cycle = ros::Duration(1/map_publish_frequency);
-    }
+    publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
 
     // create a thread to handle updating the map
     stop_updates_ = false;
     initialized_ = true;
     stopped_ = false;
    
-    map_update_thread_shutdown_ = false;
-    double map_update_frequency;
-    private_nh.param("update_frequency", map_update_frequency, 5.0);
-    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
-
     // Create a time r to check if the robot is moving
     robot_stopped_ = false;
     timer_ = private_nh.createTimer(ros::Duration(.1), &Costmap2DROS::movementCB, this);
+    
+    dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/"+name));
+    dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1, _2);
+    dsrv_->setCallback(cb);
   }
 
   Costmap2DROS::~Costmap2DROS() {
@@ -148,6 +126,37 @@ namespace costmap_2d {
         delete publisher_;
 
     delete layered_costmap_;
+  }
+  
+  void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level){
+    transform_tolerance_ = config.transform_tolerance;
+    if(map_update_thread_!=NULL){
+      map_update_thread_shutdown_ = true;
+      map_update_thread_->join();
+      delete map_update_thread_;
+    }
+    map_update_thread_shutdown_ = false;
+    double map_update_frequency = config.update_frequency;
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+
+    double map_publish_frequency = config.publish_frequency;
+    if(map_publish_frequency>0)
+        publish_cycle = ros::Duration(1/map_publish_frequency);
+    else
+        publish_cycle = ros::Duration(-1);
+
+    // find size parameters
+    double map_width_meters = config.width, 
+            map_height_meters = config.height, 
+            resolution = config.resolution, 
+            origin_x = config.origin_x, 
+            origin_y = config.origin_y;
+
+    if(!layered_costmap_->isSizeLocked()){
+        layered_costmap_->resizeMap( (unsigned int)(map_width_meters  / resolution),
+                   (unsigned int)(map_height_meters / resolution),
+                   resolution, origin_x, origin_y);
+    }
   }
   
   void Costmap2DROS::movementCB(const ros::TimerEvent &event) {
@@ -197,7 +206,7 @@ namespace costmap_2d {
       end_t = end.tv_sec + double(end.tv_usec) / 1e6;
       t_diff = end_t - start_t;
       ROS_DEBUG("Map update time: %.9f", t_diff);
-      if(publisher_!=NULL){
+      if(publish_cycle.toSec()>0){
         ros::Time now = ros::Time::now();
         if(last_publish_+ publish_cycle < now ){
             publisher_->publishCostmap();

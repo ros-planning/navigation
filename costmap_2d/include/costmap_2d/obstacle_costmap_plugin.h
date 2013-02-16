@@ -14,6 +14,8 @@
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <tf/message_filter.h>
 #include <message_filters/subscriber.h>
+#include <dynamic_reconfigure/server.h>
+#include <costmap_2d/ObstaclePluginConfig.h>
 
 namespace common_costmap_plugins
 {
@@ -55,6 +57,7 @@ namespace common_costmap_plugins
       
 
     private:
+      void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
       void initMaps();
 
       /**
@@ -89,6 +92,7 @@ namespace common_costmap_plugins
       std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > clearing_buffers_; ///< @brief Used to store observation buffers used for clearing obstacles
 
       bool rolling_window_;
+      dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
 
   };
 };

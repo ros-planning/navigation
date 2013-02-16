@@ -18,11 +18,25 @@ namespace common_costmap_plugins
         current_ = true;
         seen_ = NULL;
         matchSize();
-        nh.param("inflation_radius", inflation_radius_, 0.55);
-        inscribed_radius_ = .45;
-        cell_inflation_radius_ = cellDistance(inflation_radius_);
-        nh.param("cost_scaling_factor", weight_, 10.0);
-        computeCaches();
+        
+        dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/"+name));
+        dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(&InflationCostmapPlugin::reconfigureCB, this, _1, _2);
+        dsrv_->setCallback(cb);
+    }
+    
+    void InflationCostmapPlugin::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level){
+        if(inflation_radius_ != config.inflation_radius ||
+            weight_ != config.cost_scaling_factor)
+        {
+            inflation_radius_ = config.inflation_radius;
+            weight_ = config.cost_scaling_factor;
+            
+            //TODO: Get dynamically
+            inscribed_radius_ = .45;
+            
+            cell_inflation_radius_ = cellDistance(inflation_radius_);
+            computeCaches();
+        }        
     }
 
     void InflationCostmapPlugin::matchSize(){

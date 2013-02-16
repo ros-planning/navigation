@@ -53,7 +53,7 @@ namespace costmap_2d {
        * @param  ros_node The node under which to publish the visualization output
        * @param  global_frame The frame in which to publish the visualization output
        */
-      Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, double publish_frequency, std::string global_frame, std::string topic_name);
+      Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name);
 
       /**
        * @brief  Destructor

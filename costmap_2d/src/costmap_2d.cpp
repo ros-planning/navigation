@@ -36,10 +36,6 @@
 *********************************************************************/
 #include <costmap_2d/costmap_2d.h>
 #include <cstdio>
-#include <sensor_msgs/PointCloud2.h>
-
-
-#include <costmap_2d/Costmap2DConfig.h>
 
 using namespace std;
 
@@ -52,19 +48,6 @@ namespace costmap_2d{
     //create the costmap
     initMaps(size_x_, size_y_);
     resetMaps();
-  }
-
-  void Costmap2D::reconfigure(Costmap2DConfig &config, const Costmap2DConfig &last_config) {
-      boost::recursive_mutex::scoped_lock rel(configuration_mutex_);
-
-      //only update the origin for the map if the
-      if(!config.static_map && (last_config.origin_x != config.origin_x || last_config.origin_y != config.origin_y))
-        updateOrigin(config.origin_x, config.origin_y);
-
-      finishConfiguration(config);
-  }
-
-  void Costmap2D::finishConfiguration(costmap_2d::Costmap2DConfig &config) {
   }
 
   void Costmap2D::deleteMaps(){
@@ -104,13 +87,11 @@ namespace costmap_2d{
         memset(costmap_ + y, default_value_, len*sizeof(unsigned char));
   }
   
-  void Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
-    boost::recursive_mutex::scoped_lock cpl(configuration_mutex_);
-
+  bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x, double win_size_y){
     //check for self windowing
     if(this == &map){
-      ROS_ERROR("Cannot convert this costmap into a window of itself");
-      return;
+      // ROS_ERROR("Cannot convert this costmap into a window of itself");
+      return false;
     }
 
     //clean up old data
@@ -120,8 +101,8 @@ namespace costmap_2d{
     unsigned int lower_left_x, lower_left_y, upper_right_x, upper_right_y;
     if(!map.worldToMap(win_origin_x, win_origin_y, lower_left_x, lower_left_y) 
         || ! map.worldToMap(win_origin_x + win_size_x, win_origin_y + win_size_y, upper_right_x, upper_right_y)){
-      ROS_ERROR("Cannot window a map that the window bounds don't fit inside of");
-      return;
+      // ROS_ERROR("Cannot window a map that the window bounds don't fit inside of");
+      return false;
     }
 
     size_x_ = upper_right_x - lower_left_x;
@@ -130,15 +111,12 @@ namespace costmap_2d{
     origin_x_ = win_origin_x;
     origin_y_ = win_origin_y;
 
-    ROS_DEBUG("ll(%d, %d), ur(%d, %d), size(%d, %d), origin(%.2f, %.2f)", 
-        lower_left_x, lower_left_y, upper_right_x, upper_right_y, size_x_, size_y_, origin_x_, origin_y_);
-
-
     //initialize our various maps and reset markers for inflation
     initMaps(size_x_, size_y_);
 
     //copy the window of the static map and the costmap that we're taking
     copyMapRegion(map.costmap_, lower_left_x, lower_left_y, map.size_x_, costmap_, 0, 0, size_x_, size_x_, size_y_);
+    return true;
   }
 
   Costmap2D& Costmap2D::operator=(const Costmap2D& map) {
@@ -186,12 +164,10 @@ namespace costmap_2d{
   }
 
   unsigned char Costmap2D::getCost(unsigned int mx, unsigned int my) const {
-    ROS_ASSERT_MSG(mx < size_x_ && my < size_y_, "You cannot get the cost of a cell that is outside the bounds of the costmap");
     return costmap_[getIndex(mx, my)];
   }
 
   void Costmap2D::setCost(unsigned int mx, unsigned int my, unsigned char cost) {
-    ROS_ASSERT_MSG(mx < size_x_ && my < size_y_, "You cannot set the cost of a cell that is outside the bounds of the costmap");
     costmap_[getIndex(mx, my)] = cost;
   }
 
@@ -274,7 +250,7 @@ namespace costmap_2d{
     for(unsigned int i = 0; i < polygon.points.size(); ++i){
       MapLocation loc;
       if(!worldToMap(polygon.points[i].x, polygon.points[i].y, loc.x, loc.y)){
-        ROS_DEBUG("Polygon lies outside map bounds, so we can't fill it");
+        // ("Polygon lies outside map bounds, so we can't fill it");
         return false;
       }
       map_polygon.push_back(loc);
@@ -397,12 +373,11 @@ namespace costmap_2d{
     return resolution_;
   }
 
-  void Costmap2D::saveMap(std::string file_name){
+  bool Costmap2D::saveMap(std::string file_name){
     FILE *fp = fopen(file_name.c_str(), "w");
 
     if(!fp){
-      ROS_WARN("Can't open file %s", file_name.c_str());
-      return;
+      return false;
     }
 
     fprintf(fp, "P2\n%d\n%d\n%d\n", size_x_, size_y_, 0xff); 
@@ -414,6 +389,7 @@ namespace costmap_2d{
       fprintf(fp, "\n");
     }
     fclose(fp);
+    return true;
   }
 
 };

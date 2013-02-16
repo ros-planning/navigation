@@ -41,8 +41,12 @@
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/costmap_2d_publisher.h>
+#include <costmap_2d/Costmap2DConfig.h>
+#include <dynamic_reconfigure/server.h>
+
 
 namespace costmap_2d {
+  
 class Costmap2DROS{
     public: 
         Costmap2DROS(std::string name, tf::TransformListener& tf);
@@ -67,6 +71,7 @@ class Costmap2DROS{
         double transform_tolerance_;
 
     private:
+        void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
         void movementCB(const ros::TimerEvent &event);
         void mapUpdateLoop(double frequency);
         bool map_update_thread_shutdown_;
@@ -78,6 +83,9 @@ class Costmap2DROS{
         pluginlib::ClassLoader<CostmapPluginROS> plugin_loader_;
         tf::Stamped<tf::Pose> old_pose_;
         Costmap2DPublisher* publisher_;
+        dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
+        
+        boost::recursive_mutex configuration_mutex_;
 };  // class Costmap2DROS
 };  // namespace costmap_2d
 

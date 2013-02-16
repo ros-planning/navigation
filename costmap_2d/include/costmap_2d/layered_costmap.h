@@ -59,7 +59,7 @@ namespace costmap_2d {
       /**
        * @brief  Constructor for a costmap
        */
-      LayeredCostmap(std::string global_frame, bool rolling_window);
+      LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown);
 
       /**
        * @brief  Destructor
@@ -76,7 +76,7 @@ namespace costmap_2d {
         return global_frame_;
       }
 
-      void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
+      void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y, bool size_locked=false);
 
       void getUpdatedBounds(double& minx, double& miny, double& maxx, double& maxy) {
             minx = minx_; miny = miny_; maxx = maxx_; maxy = maxy_;
@@ -93,6 +93,8 @@ namespace costmap_2d {
       void addPlugin(boost::shared_ptr<CostmapPlugin> plugin){
           plugins_.push_back(plugin);
       }
+      
+      bool isSizeLocked() { return size_locked_; }
 
 
     private:
@@ -107,6 +109,8 @@ namespace costmap_2d {
       double minx_, miny_, maxx_, maxy_;
 
       std::vector<boost::shared_ptr<CostmapPlugin> > plugins_;
+      
+      bool size_locked_;
   };
 };  // namespace layered_costmap
 

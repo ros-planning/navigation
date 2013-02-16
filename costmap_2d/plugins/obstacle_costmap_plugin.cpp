@@ -139,9 +139,17 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
               }
         
         }
-
-        nh.param("max_obstacle_height", max_obstacle_height_, 2.0);
+    
+        dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
+        dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(&ObstacleCostmapPlugin::reconfigureCB, this, _1, _2);
+        dsrv_->setCallback(cb);
     }
+    
+    void ObstacleCostmapPlugin::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level){
+        max_obstacle_height_ = config.max_obstacle_height;
+    }
+    
+    
 
     void ObstacleCostmapPlugin::initMaps(){
         Costmap2D* master = layered_costmap_->getCostmap();

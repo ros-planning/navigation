@@ -39,7 +39,7 @@
 #include <costmap_2d/cost_values.h>
 
 namespace costmap_2d {
-  Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, double publish_frequency, std::string global_frame, std::string topic_name) 
+  Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name) 
     : node(&ros_node), costmap_(costmap), global_frame_(global_frame), active_(false) {
 
     costmap_pub_ = ros_node.advertise<nav_msgs::GridCells>(topic_name, 1);

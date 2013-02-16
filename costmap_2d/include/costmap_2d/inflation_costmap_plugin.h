@@ -3,6 +3,8 @@
 #include <ros/ros.h>
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/InflationPluginConfig.h>
+#include <dynamic_reconfigure/server.h>
 #include <queue>
 
 namespace common_costmap_plugins
@@ -104,6 +106,9 @@ namespace common_costmap_plugins
         unsigned char** cached_costs_;
         double** cached_distances_;
 
+        dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
+        void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
+    
   };
 };
 #endif
