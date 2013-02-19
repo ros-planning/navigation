@@ -104,23 +104,6 @@ namespace move_base {
 
     private:
       /**
-       * @brief  A service call that clears unknown space in the robot's immediate area
-       * @param req The service request 
-       * @param resp The service response
-       * @return True if the service call succeeds, false otherwise
-       */
-      bool clearUnknownService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp);
-
-    private:
-      /**
-       * @brief  A service call that clears the costmaps of obstacles
-       * @param req The service request 
-       * @param resp The service response
-       * @return True if the service call succeeds, false otherwise
-       */
-      bool clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp);
-
-      /**
        * @brief  A service call that can be made when the action is inactive that will return a plan
        * @param  req The goal request
        * @param  resp The plan request
@@ -196,7 +179,7 @@ namespace move_base {
       double conservative_reset_dist_, clearing_radius_;
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
       ros::Subscriber goal_sub_;
-      ros::ServiceServer make_plan_srv_, clear_unknown_srv_, clear_costmaps_srv_;
+      ros::ServiceServer make_plan_srv_;
       bool shutdown_costmaps_, clearing_roatation_allowed_, recovery_behavior_enabled_;
       double oscillation_timeout_, oscillation_distance_;
 

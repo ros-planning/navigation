@@ -170,16 +170,6 @@ namespace move_base {
     //advertise a service for getting a plan
     make_plan_srv_ = private_nh.advertiseService("make_plan", &MoveBase::planService, this);
 
-    //advertise a service for clearing the costmaps
-    clear_unknown_srv_ = private_nh.advertiseService("clear_unknown_space", &MoveBase::clearUnknownService, this);
-
-    //advertise a service for clearing the costmaps
-    clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
-
-    //initially clear any unknown space around the robot
-    planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-    controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-
     //if we shutdown our costmaps when we're deactivated... we'll do that now
     if(shutdown_costmaps_){
       ROS_DEBUG_NAMED("move_base","Stopping costmaps initially");
@@ -386,20 +376,6 @@ namespace move_base {
     clear_poly.points.push_back(pt);
 
     controller_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
-  }
-
-  bool MoveBase::clearUnknownService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
-    //clear any unknown space around the robot the same as we do on initialization
-    planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-    controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-    return true;
-  }
-
-  bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
-    //clear the costmaps
-    planner_costmap_ros_->resetMapOutsideWindow(0,0);
-    controller_costmap_ros_->resetMapOutsideWindow(0,0);
-    return true;
   }
 
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
