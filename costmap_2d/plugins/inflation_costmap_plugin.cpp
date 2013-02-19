@@ -6,6 +6,7 @@
 PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::InflationCostmapPlugin, costmap_2d::CostmapPluginROS)
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
+using costmap_2d::NO_INFORMATION;
 
 namespace common_costmap_plugins
 {
@@ -71,7 +72,8 @@ namespace common_costmap_plugins
         for(int j=min_j; j<max_j; j++){
             for(int i=min_i; i<max_i; i++){
                 int index = master_grid.getIndex(i, j);
-                if(master_array[index] >= 1){
+                unsigned char cost = master_array[index];
+                if(cost == LETHAL_OBSTACLE){
                     enqueue(master_array, index, i, j, i, j); 
                 }
             }
@@ -124,7 +126,12 @@ namespace common_costmap_plugins
 
           //assign the cost associated with the distance from an obstacle to the cell
           unsigned char cost = costLookup(mx, my, src_x, src_y);
-          grid[index] = std::max(grid[index], cost);
+          unsigned char old_cost = grid[index];
+          
+          if(old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
+              grid[index] = cost;
+          else
+              grid[index] = std::max(old_cost, cost);
           //push the cell data onto the queue and mark
           seen_[index] = true;
           CellData data(distance, index, mx, my, src_x, src_y);

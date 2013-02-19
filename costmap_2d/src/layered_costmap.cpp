@@ -49,6 +49,8 @@ namespace costmap_2d {
                     {
     if(track_unknown)
         costmap_.setDefaultValue(255);
+    else
+        costmap_.setDefaultValue(0);
   }
 
   LayeredCostmap::~LayeredCostmap() {
