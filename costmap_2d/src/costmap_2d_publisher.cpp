@@ -64,12 +64,10 @@ namespace costmap_2d {
       for(unsigned int j = 0; j < costmap_->getSizeInCellsY(); j++){
 
         unsigned char cost = costmap_->getCost(i, j);
-        if(cost==NO_INFORMATION ||cost== 0)
-            continue;
             
         geometry_msgs::Point p;
         costmap_->mapToWorld(i, j, p.x, p.y);
-        p.z = cost / 256.0;
+        p.z = cost;
         cells.cells.push_back( p );
       }
     }

@@ -206,7 +206,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 
     void ObstacleCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
         if(rolling_window_)
-            updateOrigin(origin_x, origin_y);
+            updateOrigin(origin_x - getSizeInMetersX() / 2, origin_y - getSizeInMetersY() / 2);
             
         bool current = true;
         std::vector<Observation> observations, clearing_observations;
@@ -281,7 +281,8 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
                 if(costmap_[index]==NO_INFORMATION)
                     continue;
                 unsigned char old_cost = master_array[index];
-                master_grid.setCost(i,j, std::max(old_cost, costmap_[index]));
+                if(old_cost==NO_INFORMATION || old_cost<costmap_[index])
+                    master_grid.setCost(i,j, costmap_[index]);
             }
         }
     }
