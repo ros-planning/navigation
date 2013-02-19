@@ -137,7 +137,6 @@ namespace costmap_2d {
     }
     map_update_thread_shutdown_ = false;
     double map_update_frequency = config.update_frequency;
-    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 
     double map_publish_frequency = config.publish_frequency;
     if(map_publish_frequency>0)
@@ -157,6 +156,8 @@ namespace costmap_2d {
                    (unsigned int)(map_height_meters / resolution),
                    resolution, origin_x, origin_y);
     }
+    
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
   }
   
   void Costmap2DROS::movementCB(const ros::TimerEvent &event) {
