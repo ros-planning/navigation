@@ -1,10 +1,2 @@
 *~
-build
-bin
-lib
-*.pyc
-*.cfgc
-msg_gen
-srv_gen
-test/line_iterator
-test/utest
+*.sw?
