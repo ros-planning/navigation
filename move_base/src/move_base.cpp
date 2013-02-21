@@ -883,7 +883,10 @@ namespace move_base {
           state_ = CLEARING;
           recovery_trigger_ = OSCILLATION_R;
         }
-
+        
+        {
+         boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
+        
         if(tc_->computeVelocityCommands(cmd_vel)){
           ROS_DEBUG_NAMED("move_base", "Got a valid command from the local planner.");
           last_valid_control_ = ros::Time::now();
@@ -915,6 +918,7 @@ namespace move_base {
             planner_cond_.notify_one();
             lock.unlock();
           }
+        }
         }
 
         break;
