@@ -14,10 +14,10 @@
       <param name="kld_err" value="0.05"/>
       <param name="kld_z" value="0.99"/>
       <param name="odom_model_type" value="diff-corrected"/>
-      <param name="odom_alpha1" value="0.002"/>
-      <param name="odom_alpha2" value="0.004"/>
-      <param name="odom_alpha3" value="0.01"/>
-      <param name="odom_alpha4" value="0.002"/>
+      <param name="odom_alpha1" value="0.04"/>
+      <param name="odom_alpha2" value="0.6"/>
+      <param name="odom_alpha3" value="0.3"/>
+      <param name="odom_alpha4" value="0.04"/>
       <param name="laser_z_hit" value="0.5"/>
       <param name="laser_z_rand" value="0.5"/>
       <param name="laser_sigma_hit" value="0.25"/>
@@ -32,6 +32,6 @@
       <param name="initial_pose_y" value="31.557"/>
       <param name="initial_pose_a" value="0.0"/>
     </node>
-    <test time-limit="350" test-name="texas_willow_hallway_loop" pkg="amcl" 
+    <test time-limit="350" test-name="texas_willow_hallway_loop_corrected" pkg="amcl" 
           type="basic_localization.py" args="0 77.993 22.130 -2.603 0.75 0.75 250.0"/>
 </launch>
