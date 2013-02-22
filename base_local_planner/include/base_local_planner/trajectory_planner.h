@@ -202,6 +202,13 @@ namespace base_local_planner {
        * @return True if the cell is traversible and therefore a legal location for the robot to move to
        */
       bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
+
+      /** @brief Set the footprint specification of the robot. */
+      void setFootprint( std::vector<geometry_msgs::Point> footprint ) { footprint_spec_ = footprint; }
+
+      /** @brief Return the footprint specification of the robot. */
+      std::vector<geometry_msgs::Point> getFootprint() const { return footprint_spec_; }
+
     private:
       /**
        * @brief  Create the trajectories we wish to explore, score them, and return the best option
