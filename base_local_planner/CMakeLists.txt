@@ -1,10 +1,64 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-set(ROS_BUILD_TYPE Release)
-rosbuild_init()
-rosbuild_genmsg()
+cmake_minimum_required(VERSION 2.8.3)
+project(base_local_planner)
 
-rosbuild_add_boost_directories()
+find_package(catkin REQUIRED
+        COMPONENTS
+            roslib
+            roscpp
+            tf
+            message_generation
+            dynamic_reconfigure
+            nav_core
+            rostest
+            costmap_2d
+            pluginlib
+        )
+
+find_package(Boost REQUIRED
+    COMPONENTS
+        thread
+        )
+
+find_package(Eigen REQUIRED)
+find_package(PCL REQUIRED)
+include_directories(
+    include
+    ${catkin_INCLUDE_DIRS}
+    SYSTEM
+        ${EIGEN_INCLUDE_DIRS}
+        ${PCL_INCLUDE_DIRS}
+)
+add_definitions(${EIGEN_DEFINITIONS})
+
+
+# messages
+add_message_files(
+    DIRECTORY msg
+    FILES
+    Position2DInt.msg
+)
+
+generate_messages(
+    DEPENDENCIES
+        std_msgs
+)
+
+# dynamic reconfigure
+generate_dynamic_reconfigure_options(
+    cfg/BaseLocalPlanner.cfg
+)
+
+catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES base_local_planner
+    CATKIN_DEPENDS
+        roslib
+        roscpp
+        dynamic_reconfigure
+        message_generation
+        tf
+        pluginlib
+)
 
 #uncomment for profiling
 #set(ROS_COMPILE_FLAGS "-g -pg" ${ROS_COMPILE_FLAGS})
@@ -12,14 +66,7 @@ rosbuild_add_boost_directories()
 #set(ROS_COMPILE_FLAGS "-g" ${ROS_COMPILE_FLAGS})
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
-find_package(Eigen REQUIRED)
-find_package(PCL REQUIRED)
-include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS}
-                           ${PCL_INCLUDE_DIRS}
-)
-add_definitions(${EIGEN_DEFINITIONS})
-
-rosbuild_add_library(base_local_planner 
+add_library(base_local_planner 
 	src/footprint_helper.cpp
 	src/goal_functions.cpp
 	src/map_cell.cpp
@@ -41,21 +88,35 @@ rosbuild_add_library(base_local_planner
 	src/trajectory_planner_ros.cpp
 	src/trajectory.cpp
 	src/voxel_grid_model.cpp)
-rosbuild_link_boost(base_local_planner thread)
+target_link_libraries(base_local_planner
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+    )
+add_dependencies(base_local_planner base_local_planner_gencfg)
 
-rosbuild_find_ros_package(dynamic_reconfigure)
-include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
-gencfg()
+add_executable(point_grid src/point_grid.cpp)
+target_link_libraries(point_grid base_local_planner)
 
-rosbuild_add_executable(point_grid src/point_grid.cpp)
+install(TARGETS base_local_planner
+       LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       )
 
-rosbuild_add_gtest(test/utest
+install(FILES blp_plugin.xml
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install(FILES src/local_planner_limits.py
+    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
+    )
+
+catkin_add_gtest(base_local_planner_utest
 	test/gtest_main.cpp
 	test/utest.cpp
 	test/velocity_iterator_test.cpp
 	test/footprint_helper_test.cpp
 	test/trajectory_generator_test.cpp
 	test/map_grid_test.cpp)
-target_link_libraries(test/utest base_local_planner)
+target_link_libraries(base_local_planner_utest base_local_planner)
 
-rosbuild_add_gtest(test/line_iterator test/line_iterator_test.cpp)
+catkin_add_gtest(line_iterator test/line_iterator_test.cpp)
+target_link_libraries(line_iterator base_local_planner)
