@@ -11,11 +11,9 @@
 
 PACKAGE='base_local_planner'
 import roslib; 
-roslib.load_manifest(PACKAGE)
-roslib.load_manifest('dynamic_reconfigure')
 
  # need this only for dataype declarations
-from dynamic_reconfigure.parameter_generator import *
+from dynamic_reconfigure.parameter_generator_catkin import *
 
 def add_generic_localplanner_params(gen): 
   # velocities
