@@ -127,7 +127,7 @@ namespace move_base {
         }
       }
 
-      planner_ = bgp_loader_.createClassInstance(global_planner);
+      planner_ = bgp_loader_.createUnmanagedInstance(global_planner);
       planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
@@ -157,7 +157,7 @@ namespace move_base {
         }
       }
 
-      tc_ = blp_loader_.createClassInstance(local_planner);
+      tc_ = blp_loader_.createUnmanagedInstance(local_planner);
       tc_->initialize(blp_loader_.getName(local_planner), &tf_, controller_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
@@ -268,7 +268,7 @@ namespace move_base {
           }
         }
  
-        planner_ = bgp_loader_.createClassInstance(config.base_global_planner);
+        planner_ = bgp_loader_.createUnmanagedInstance(config.base_global_planner);
         
         // wait for the current planner to finish planning
         boost::unique_lock<boost::mutex> lock(planner_mutex_);
@@ -308,7 +308,7 @@ namespace move_base {
             }
           }
         }
-        tc_ = blp_loader_.createClassInstance(config.base_local_planner);
+        tc_ = blp_loader_.createUnmanagedInstance(config.base_local_planner);
         delete old_planner;
         // Clean up before initializing the new planner
         planner_plan_->clear();
@@ -1059,7 +1059,7 @@ namespace move_base {
               }
             }
 
-            boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createClassInstance(behavior_list[i]["type"]));
+            boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createInstance(behavior_list[i]["type"]));
 
             //shouldn't be possible, but it won't hurt to check
             if(behavior.get() == NULL){
@@ -1102,19 +1102,19 @@ namespace move_base {
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
       //first, we'll load a recovery behavior to clear the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
 
       //next, we'll load a recovery behavior to rotate in place
-      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createClassInstance("rotate_recovery/RotateRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_roatation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
 
       //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
 
