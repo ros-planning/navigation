@@ -9,7 +9,7 @@
     <maintainer email="contradict@gmail.com">contradict</maintainer>
     <author>Maintained by Eitan Marder-Eppstein eitan@willowgarage.com</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  
-    <url>http://ros.org/wiki/navigation</url></url>
+    <url>http://ros.org/wiki/navigation</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 

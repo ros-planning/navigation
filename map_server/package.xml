@@ -8,7 +8,7 @@
     </description>
     <author>Brian Gerkey, Tony Pratkanis</author>
     <maintainer email="contradict@gmail.com">contradict</maintainer>
-    <url>http://ros.org/wiki/map_server</url></url>
+    <url>http://ros.org/wiki/map_server</url>
     <license>BSD</license>
 
     <buildtool_depend>catkin</buildtool_depend>
