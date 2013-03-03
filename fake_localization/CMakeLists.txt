@@ -31,3 +31,9 @@ install(
        static_odom_broadcaster.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+install(
+    TARGETS
+        fake_localization
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
