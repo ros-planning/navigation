@@ -59,6 +59,10 @@ target_link_libraries(amcl
     ${catkin_LIBRARIES}
 )
 
+install( TARGETS
+    amcl
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 # Bags
 download_test_data(http://pr.willowgarage.com/data/amcl/basic_localization_stage_indexed.bag test/basic_localization_stage_indexed.bag 41fe43af189ec71e5e48eb9ed661a655)
