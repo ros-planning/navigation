@@ -96,3 +96,17 @@ catkin_add_gtest(module_tests test/module_tests.cpp)
 target_link_libraries(module_tests
     costmap_2d
     )
+
+
+install( TARGETS
+    costmap_2d_markers
+    costmap_2d_cloud
+    costmap_2d_node
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS
+    costmap_2d
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
