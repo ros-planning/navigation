@@ -48,6 +48,12 @@ target_link_libraries(robot_pose_ekf
     )
 add_dependencies(robot_pose_ekf robot_pose_ekf_gencpp)
 
+install(
+    TARGETS
+        robot_pose_ekf
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 ## Tests are failing on OSX for an unknown reason
 include(CMakeDetermineSystem)
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
