@@ -58,3 +58,15 @@ target_link_libraries( map_saver
     )
 
 add_rostest(test/rtest.xml)
+
+install(
+    TARGETS
+        map_saver
+        map_server
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS
+    image_loader
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
