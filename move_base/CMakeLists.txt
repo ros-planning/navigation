@@ -54,3 +54,9 @@ install(
        scripts/warner.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+install(
+    TARGETS
+        move_base
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
