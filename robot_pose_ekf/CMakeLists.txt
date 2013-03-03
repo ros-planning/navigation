@@ -46,6 +46,7 @@ target_link_libraries(robot_pose_ekf
     ${catkin_LIBRARIES}
     ${Boost_LIBRARIES}
     )
+add_dependencies(robot_pose_ekf robot_pose_ekf_gencpp)
 
 ## Tests are failing on OSX for an unknown reason
 include(CMakeDetermineSystem)
