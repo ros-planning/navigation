@@ -100,7 +100,7 @@ namespace costmap_2d {
         ROS_INFO("No plugins");
     }
 
-    publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
+    publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), "costmap");
 
     // create a thread to handle updating the map
     stop_updates_ = false;
@@ -210,7 +210,9 @@ namespace costmap_2d {
       if(publish_cycle.toSec()>0){
         ros::Time now = ros::Time::now();
         if(last_publish_+ publish_cycle < now ){
-            publisher_->publishCostmap();
+            unsigned int x0, y0, xn, yn;
+            layered_costmap_->getBounds(&x0, &xn, &y0, &yn);
+            publisher_->publishCostmap(x0, xn, y0, yn);
             last_publish_ = now;
         }
       }

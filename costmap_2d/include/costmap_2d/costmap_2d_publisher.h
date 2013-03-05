@@ -38,7 +38,8 @@
 #define COSTMAP_COSTMAP_2D_PUBLISHER_H_
 #include <ros/ros.h>
 #include <costmap_2d/costmap_2d.h>
-#include <nav_msgs/GridCells.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <map_msgs/OccupancyGridUpdate.h>
 #include <tf/transform_datatypes.h>
 
 namespace costmap_2d {
@@ -50,10 +51,8 @@ namespace costmap_2d {
     public:
       /**
        * @brief  Constructor for the Costmap2DPublisher
-       * @param  ros_node The node under which to publish the visualization output
-       * @param  global_frame The frame in which to publish the visualization output
        */
-      Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name);
+      Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string topic_name);
 
       /**
        * @brief  Destructor
@@ -63,7 +62,7 @@ namespace costmap_2d {
       /**
        * @brief  Publishes the visualization data over ROS
        */
-      void publishCostmap();
+      void publishCostmap(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn);
 
       /**
        * @brief Check if the publisher is active
@@ -77,7 +76,8 @@ namespace costmap_2d {
       std::string global_frame_;
       bool active_;
       ros::Publisher costmap_pub_;
-      double resolution_;
+      ros::Publisher costmap_update_pub_;
+      nav_msgs::OccupancyGrid grid_;
   };
 };
 #endif

@@ -35,43 +35,67 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <costmap_2d/costmap_2d_publisher.h>
-#include <geometry_msgs/Point.h>
 #include <costmap_2d/cost_values.h>
 
 namespace costmap_2d {
-  Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name) 
-    : node(&ros_node), costmap_(costmap), global_frame_(global_frame), active_(false) {
+  Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string topic_name) 
+    : node(&ros_node), costmap_(costmap), active_(false) {
 
-    costmap_pub_ = ros_node.advertise<nav_msgs::GridCells>(topic_name, 1);
+    costmap_pub_ = ros_node.advertise<nav_msgs::OccupancyGrid>(topic_name, 1, true);
+    costmap_update_pub_ = ros_node.advertise<map_msgs::OccupancyGridUpdate>(topic_name + std::string("_updates"), 1);
   }
 
   Costmap2DPublisher::~Costmap2DPublisher(){  }
 
-  void Costmap2DPublisher::publishCostmap(){
+  void Costmap2DPublisher::publishCostmap(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn){
     boost::shared_lock< boost::shared_mutex > lock(*(costmap_->getLock()));
     double resolution = costmap_->getResolution();
     
-    //create a GridCells message 
-    nav_msgs::GridCells cells;
-    cells.header.frame_id = global_frame_;
-    cells.header.stamp = ros::Time::now();
+    if(grid_.header.frame_id != costmap_->getGlobalFrameID() ||
+        grid_.info.resolution != resolution ||
+        grid_.info.width != costmap_->getSizeInCellsX()){
+        
+        // Publish Whole Grid
+        grid_.header.frame_id = costmap_->getGlobalFrameID();
+        grid_.header.stamp = ros::Time::now();
+        grid_.info.resolution = resolution;
 
-    //set the width and height appropriately
-    cells.cell_width = resolution;
-    cells.cell_height = resolution;
-    
-    for(unsigned int i = 0; i < costmap_->getSizeInCellsX(); i++){
-      for(unsigned int j = 0; j < costmap_->getSizeInCellsY(); j++){
+        grid_.info.width = costmap_->getSizeInCellsX();
+        grid_.info.height = costmap_->getSizeInCellsY();
 
-        unsigned char cost = costmap_->getCost(i, j);
-            
-        geometry_msgs::Point p;
-        costmap_->mapToWorld(i, j, p.x, p.y);
-        p.z = cost;
-        cells.cells.push_back( p );
-      }
+        double wx, wy;
+        costmap_->mapToWorld(0, 0, wx, wy);
+        grid_.info.origin.position.x = wx - resolution / 2;
+        grid_.info.origin.position.y = wy - resolution / 2;
+        grid_.info.origin.position.z = 0.0;
+        
+        grid_.data.resize(grid_.info.width * grid_.info.height);
+        
+        unsigned char* data = costmap_->getCharMap();
+        for(unsigned int i = 0; i < grid_.data.size(); i++){
+            grid_.data[i] = data[i];
+        }
+        costmap_pub_.publish(grid_);
+    }else{
+        // Publish Just an Update
+        map_msgs::OccupancyGridUpdate update;
+        update.header.stamp = ros::Time::now();
+        update.header.frame_id = costmap_->getGlobalFrameID();
+        update.x = x0;
+        update.y = y0;
+        update.width = xn - x0 + 1;
+        update.height = yn - y0 + 1;
+        update.data.resize(update.width * update.height);
+        
+        unsigned int i = 0;
+        for(unsigned int x=x0; x<=xn;x++){
+            for(unsigned int y=y0; y<=yn; y++){
+                unsigned char cost = costmap_->getCost(x, y);
+                update.data[i] = cost;
+            }
+        }
+        costmap_update_pub_.publish(update);
     }
-    costmap_pub_.publish(cells);
   }
 
 };

@@ -95,6 +95,13 @@ namespace costmap_2d {
       }
       
       bool isSizeLocked() { return size_locked_; }
+      
+      void getBounds(unsigned int* x0, unsigned int* xn, unsigned int* y0, unsigned int* yn){
+        *x0 = bx0_;
+        *xn = bxn_;
+        *y0 = by0_;
+        *yn = byn_;
+      }
 
 
     private:
@@ -107,6 +114,7 @@ namespace costmap_2d {
 
       bool current_;
       double minx_, miny_, maxx_, maxy_;
+      unsigned int bx0_, bxn_, by0_, byn_;
 
       std::vector<boost::shared_ptr<CostmapPlugin> > plugins_;
       

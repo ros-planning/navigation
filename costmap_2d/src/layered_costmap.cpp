@@ -109,6 +109,11 @@ namespace costmap_2d {
           (*plugin)->update_costs(costmap_, x0, y0, xn, yn);
         }
     }    
+    
+    bx0_ = x0;
+    bxn_ = xn;
+    by0_ = y0;
+    byn_ = yn;
 
   }
 
