@@ -14,13 +14,13 @@ add_definitions(-DQT_NO_KEYWORDS)
 ## Here we specify which header files need to be run through "moc",
 ## Qt's meta-object compiler.
 qt4_wrap_cpp(MOC_FILES
-  src/grid_cells_display.h
+  src/costmap_display.h
 )
 
 ## Here we specify the list of source files, including the output of
 ## the previous command which is stored in ``${MOC_FILES}``.
 set(SOURCE_FILES
-  src/grid_cells_display.cpp
+  src/costmap_display.cpp
   ${MOC_FILES}
 )
 

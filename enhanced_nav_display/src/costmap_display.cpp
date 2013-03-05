@@ -43,22 +43,21 @@
 #include "rviz/properties/float_property.h"
 #include "rviz/properties/parse_color.h"
 #include "rviz/properties/ros_topic_property.h"
-#include "rviz/validate_floats.h"
 #include "rviz/display_context.h"
 
-#include "grid_cells_display.h"
+#include "costmap_display.h"
 
 namespace enhanced_nav_display
 {
 
-EnhancedGridCells::EnhancedGridCells()
+Costmap::Costmap()
   : rviz::Display()
   , messages_received_(0)
   , last_frame_count_( uint64_t( -1 ))
 {
   topic_property_ = new rviz::RosTopicProperty( "Topic", "",
-                                          QString::fromStdString( ros::message_traits::datatype<nav_msgs::GridCells>() ),
-                                          "nav_msgs::GridCells topic to subscribe to.",
+                                          QString::fromStdString( ros::message_traits::datatype<nav_msgs::OccupancyGrid>() ),
+                                          "nav_msgs::Occupancy topic to subscribe to. (also subscribed to <topic>_updates.",
                                           this, SLOT( updateTopic() ));
 
   hi_color_property_ = new rviz::ColorProperty( "High Color", QColor( 255, 0, 0 ),
@@ -66,7 +65,7 @@ EnhancedGridCells::EnhancedGridCells()
   lo_color_property_ = new rviz::ColorProperty( "Low Color", QColor( 0, 0, 255 ),
                                                "Color of the lowest grid cells.", this );
 
-  max_property_ = new rviz::FloatProperty( "Max Value", 1.0,
+  max_property_ = new rviz::FloatProperty( "Max Value", 255.0,
                                        "Highest Value to Display.",
                                        this, SLOT( updateBounds() ));
   min_property_ = new rviz::FloatProperty( "Min Value", 0,
@@ -84,10 +83,11 @@ EnhancedGridCells::EnhancedGridCells()
 
 }
 
-void EnhancedGridCells::onInitialize()
+void Costmap::onInitialize()
 {
-  tf_filter_ = new tf::MessageFilter<nav_msgs::GridCells>( *context_->getTFClient(), fixed_frame_.toStdString(),
+  grid_filter_ = new tf::MessageFilter<nav_msgs::OccupancyGrid>( *context_->getTFClient(), fixed_frame_.toStdString(),
                                                            10, update_nh_ );
+
   static int count = 0;
   std::stringstream ss;
   ss << "PolyLine" << count++;
@@ -99,21 +99,21 @@ void EnhancedGridCells::onInitialize()
   scene_node_->attachObject( cloud_ );
   updateBounds();
 
-  tf_filter_->connectInput( sub_ );
-  tf_filter_->registerCallback( boost::bind( &EnhancedGridCells::incomingMessage, this, _1 ));
-  context_->getFrameManager()->registerFilterForTransformStatusCheck( tf_filter_, this );
+  grid_filter_->connectInput( grid_sub_ );
+  grid_filter_->registerCallback( boost::bind( &Costmap::incomingGrid, this, _1 ));
+  context_->getFrameManager()->registerFilterForTransformStatusCheck( grid_filter_, this );
 }
 
-EnhancedGridCells::~EnhancedGridCells()
+Costmap::~Costmap()
 {
   unsubscribe();
   clear();
   scene_node_->detachObject( cloud_ );
   delete cloud_;
-  delete tf_filter_;
+  delete grid_filter_;
 }
 
-void EnhancedGridCells::clear()
+void Costmap::clear()
 {
   cloud_->clear();
 
@@ -121,21 +121,21 @@ void EnhancedGridCells::clear()
   setStatus( rviz::StatusProperty::Warn, "Topic", "No messages received" );
 }
 
-void EnhancedGridCells::updateTopic()
+void Costmap::updateTopic()
 {
   unsubscribe();
   subscribe();
   context_->queueRender();
 }
 
-void EnhancedGridCells::updateBounds()
+void Costmap::updateBounds()
 {
   min_v_ = min_property_->getFloat(); 
   max_v_ = max_property_->getFloat(); 
   context_->queueRender();
 }
 
-void EnhancedGridCells::subscribe()
+void Costmap::subscribe()
 {
   if ( !isEnabled() )
   {
@@ -144,48 +144,43 @@ void EnhancedGridCells::subscribe()
 
   try
   {
-    sub_.subscribe( update_nh_, topic_property_->getTopicStd(), 10 );
+    grid_sub_.subscribe( update_nh_, topic_property_->getTopicStd(), 1 );
     setStatus( rviz::StatusProperty::Ok, "Topic", "OK" );
   }
   catch( ros::Exception& e )
   {
     setStatus( rviz::StatusProperty::Error, "Topic", QString("Error subscribing: ") + e.what() );
   }
+  
+  if(topic_property_->getTopicStd().length()>0)
+  update_sub_ = update_nh_.subscribe(std::string(topic_property_->getTopicStd() + "_updates"), 10, &Costmap::incomingUpdate, this);
 }
 
-void EnhancedGridCells::unsubscribe()
+void Costmap::unsubscribe()
 {
-  sub_.unsubscribe();
+  grid_sub_.unsubscribe();
+  update_sub_.shutdown();
 }
 
-void EnhancedGridCells::onEnable()
+void Costmap::onEnable()
 {
   subscribe();
 }
 
-void EnhancedGridCells::onDisable()
+void Costmap::onDisable()
 {
   unsubscribe();
   clear();
 }
 
-void EnhancedGridCells::fixedFrameChanged()
+void Costmap::fixedFrameChanged()
 {
   clear();
 
-  tf_filter_->setTargetFrame( fixed_frame_.toStdString() );
+  grid_filter_->setTargetFrame( fixed_frame_.toStdString() );
 }
 
-bool validateFloats(const nav_msgs::GridCells& msg)
-{
-  bool valid = true;
-  //valid = valid && validateFloats( msg.cell_width );
-  //valid = valid && validateFloats( msg.cell_height );
-  //valid = valid && validateFloats( msg.cells );
-  return valid;
-}
-
-void EnhancedGridCells::incomingMessage( const nav_msgs::GridCells::ConstPtr& msg )
+void Costmap::incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg )
 {
   if( !msg )
   {
@@ -202,12 +197,6 @@ void EnhancedGridCells::incomingMessage( const nav_msgs::GridCells::ConstPtr& ms
 
   cloud_->clear();
 
-  if( !validateFloats( *msg ))
-  {
-    setStatus( rviz::StatusProperty::Error, "Topic", "Message contained invalid floating point values (nans or infs)" );
-    return;
-  }
-
   setStatus( rviz::StatusProperty::Ok, "Topic", QString::number( messages_received_ ) + " messages received" );
 
   Ogre::Vector3 position;
@@ -221,22 +210,18 @@ void EnhancedGridCells::incomingMessage( const nav_msgs::GridCells::ConstPtr& ms
   scene_node_->setPosition( position );
   scene_node_->setOrientation( orientation );
 
-  if( msg->cell_width == 0 )
+  /*if( msg->cell_width == 0 )
   {
     setStatus(rviz::StatusProperty::Error, "Topic", "Cell width is zero, cells will be invisible.");
-  }
-  else if( msg->cell_height == 0 )
-  {
-    setStatus(rviz::StatusProperty::Error, "Topic", "Cell height is zero, cells will be invisible.");
-  }
+  }*/
 
-  cloud_->setDimensions(msg->cell_width, msg->cell_height, 0.0);
+  cloud_->setDimensions(msg->info.resolution, msg->info.resolution, 0.0);
 
   Ogre::ColourValue hi_color = rviz::qtToOgre( hi_color_property_->getColor() );
   Ogre::ColourValue lo_color = rviz::qtToOgre( lo_color_property_->getColor() );
   Ogre::ColourValue color;
   color.a = 1.0;
-  uint32_t num_points = msg->cells.size();
+  uint32_t num_points = msg->data.size();
 
   typedef std::vector< rviz::PointCloud::Point > V_Point;
   V_Point points;
@@ -249,15 +234,34 @@ void EnhancedGridCells::incomingMessage( const nav_msgs::GridCells::ConstPtr& ms
     sp_color = rviz::qtToOgre( special_color_property_->getColor() );
     sp_value = special_value_property_->getFloat(); 
   }
+  
+  tf::Transformer t;
+  tf::Transform transform;
+  transform.setOrigin( tf::Vector3(msg->info.origin.position.x, msg->info.origin.position.y, msg->info.origin.position.z) );
+  transform.setRotation( tf::Quaternion(msg->info.origin.orientation.x, msg->info.origin.orientation.y, msg->info.origin.orientation.z, msg->info.origin.orientation.w) );
+  ros::Time now = ros::Time::now();
+  t.setTransform(tf::StampedTransform(transform, now, "world", "grid"));
+
+
+  transform.setRotation( tf::Quaternion(0, 0, 0, 1) );
+  double resolution = msg->info.resolution;
 
   for(uint32_t i = 0; i < num_points; i++)
   {
-    rviz::PointCloud::Point& current_point = points[ i ];
-    current_point.position.x = msg->cells[i].x;
-    current_point.position.y = msg->cells[i].y;
-    current_point.position.z = 0; //*msg->cells[i].z;
+    int x = i % msg->info.width;
+    int y = i / msg->info.width;
     
-    float value = msg->cells[i].z;
+    transform.setOrigin( tf::Vector3(x*resolution, y*resolution, 0) );
+    t.setTransform(tf::StampedTransform(transform, now, "grid", "pt"));
+    tf::StampedTransform result;
+    t.lookupTransform("world", "pt", ros::Time(0), result);
+        
+    rviz::PointCloud::Point& current_point = points[ i ];
+    current_point.position.x = result.getOrigin().x();
+    current_point.position.y = result.getOrigin().y();
+    current_point.position.z = result.getOrigin().z();
+   
+    float value = (unsigned char) msg->data[i];
 
     if(use_special && fabs(value-sp_value)<.01){
         current_point.color = sp_color;
@@ -282,7 +286,11 @@ void EnhancedGridCells::incomingMessage( const nav_msgs::GridCells::ConstPtr& ms
   }
 }
 
-void EnhancedGridCells::reset()
+void Costmap::incomingUpdate(const map_msgs::OccupancyGridUpdate::ConstPtr& msg){
+
+}
+
+void Costmap::reset()
 {
   rviz::Display::reset();
   clear();
@@ -291,4 +299,4 @@ void EnhancedGridCells::reset()
 } // namespace enhanced_nav_display
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS( enhanced_nav_display::EnhancedGridCells, rviz::Display )
+PLUGINLIB_EXPORT_CLASS( enhanced_nav_display::Costmap, rviz::Display )

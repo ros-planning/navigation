@@ -28,11 +28,12 @@
  */
 
 
-#ifndef ENHANCED_GRID_CELLS_DISPLAY_H
-#define ENHANCED_GRID_CELLS_DISPLAY_H
+#ifndef COSTMAP_DISPLAY_H
+#define COSTMAP_DISPLAY_H
 
 #include <rviz/display.h>
-#include <nav_msgs/GridCells.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <map_msgs/OccupancyGridUpdate.h>
 #include <nav_msgs/MapMetaData.h>
 
 #ifndef Q_MOC_RUN
@@ -55,15 +56,15 @@ class ManualObject;
 namespace enhanced_nav_display
 {
 /**
- * \class EnhancedGridCells
+ * \class Costmap
  * \brief Displays a nav_msgs::GridCells message
  */
-class EnhancedGridCells : public rviz::Display
+class Costmap : public rviz::Display
 {
 Q_OBJECT
 public:
-  EnhancedGridCells();
-  virtual ~EnhancedGridCells();
+  Costmap();
+  virtual ~Costmap();
 
   virtual void onInitialize();
 
@@ -84,12 +85,15 @@ private:
   void subscribe();
   void unsubscribe();
   void clear();
-  void incomingMessage( const nav_msgs::GridCells::ConstPtr& msg );
+  void incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg );
+  void incomingUpdate( const map_msgs::OccupancyGridUpdate::ConstPtr& msg );
 
   rviz::PointCloud* cloud_;
 
-  message_filters::Subscriber<nav_msgs::GridCells> sub_;
-  tf::MessageFilter<nav_msgs::GridCells>* tf_filter_;
+  message_filters::Subscriber<nav_msgs::OccupancyGrid> grid_sub_;
+  tf::MessageFilter<nav_msgs::OccupancyGrid>* grid_filter_;
+  
+  ros::Subscriber update_sub_;
 
   rviz::ColorProperty* hi_color_property_;
   rviz::ColorProperty* lo_color_property_;
@@ -108,5 +112,5 @@ private:
 
 } // namespace enhanced_nav_display
 
-#endif /* ENHANCED_GRID_CELLS_DISPLAY_H */
+#endif /* COSTMAP_DISPLAY_H */
 

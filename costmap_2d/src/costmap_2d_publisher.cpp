@@ -68,6 +68,7 @@ namespace costmap_2d {
         grid_.info.origin.position.x = wx - resolution / 2;
         grid_.info.origin.position.y = wy - resolution / 2;
         grid_.info.origin.position.z = 0.0;
+        grid_.info.origin.orientation.w = 1.0;
         
         grid_.data.resize(grid_.info.width * grid_.info.height);
         
