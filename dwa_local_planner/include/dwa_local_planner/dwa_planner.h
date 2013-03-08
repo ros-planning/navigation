@@ -58,7 +58,6 @@
 #include <base_local_planner/oscillation_cost_function.h>
 #include <base_local_planner/map_grid_cost_function.h>
 #include <base_local_planner/obstacle_cost_function.h>
-#include <base_local_planner/prefer_forward_cost_function.h>
 #include <base_local_planner/simple_scored_sampling_planner.h>
 
 #include <nav_msgs/Path.h>
@@ -170,7 +169,6 @@ namespace dwa_local_planner {
       base_local_planner::SimpleTrajectoryGenerator generator_;
       base_local_planner::OscillationCostFunction oscillation_costs_;
       base_local_planner::ObstacleCostFunction obstacle_costs_;
-      base_local_planner::PreferForwardCostFunction prefer_forward_costs_;
       base_local_planner::MapGridCostFunction path_costs_;
       base_local_planner::MapGridCostFunction goal_costs_;
       base_local_planner::MapGridCostFunction goal_front_costs_;
