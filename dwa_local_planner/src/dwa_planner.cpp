@@ -124,6 +124,9 @@ namespace dwa_local_planner {
   {
     ros::NodeHandle private_nh("~/" + name);
 
+    goal_front_costs_.setStopOnFailure( false );
+    alignment_costs_.setStopOnFailure( false );
+
     //Assuming this planner is being run within the navigation stack, we can
     //just do an upward search for the frequency at which its being run. This
     //also allows the frequency to be overwritten locally.
