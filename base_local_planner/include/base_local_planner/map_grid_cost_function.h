@@ -88,6 +88,11 @@ public:
   void setXShift(double xshift) {xshift_ = xshift;}
   void setYShift(double yshift) {yshift_ = yshift;}
 
+  /** @brief If true, failures along the path cause the entire path to be rejected.
+   *
+   * Default is true. */
+  void setStopOnFailure(bool stop_on_failure) {stop_on_failure_ = stop_on_failure;}
+
   /**
    * propagate distances
    */
@@ -127,6 +132,7 @@ private:
   double yshift_;
   // if true, we look for a suitable local goal on path, else we use the full path for costs
   bool is_local_goal_function_;
+  bool stop_on_failure_;
 };
 
 } /* namespace base_local_planner */
