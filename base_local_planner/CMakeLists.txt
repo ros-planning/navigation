@@ -83,21 +83,28 @@ add_library(base_local_planner
 	src/costmap_model.cpp
 	src/simple_scored_sampling_planner.cpp
 	src/simple_trajectory_generator.cpp
-	src/trajectory_planner.cpp
-	src/trajectory.cpp
-	src/trajectory_planner_ros.cpp
 	src/trajectory.cpp
 	src/voxel_grid_model.cpp)
-target_link_libraries(base_local_planner
-    ${Boost_LIBRARIES}
-    ${catkin_LIBRARIES}
-    )
 add_dependencies(base_local_planner base_local_planner_gencfg)
+target_link_libraries(base_local_planner
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${Eigen_LIBRARIES}
+    )
+
+add_library(trajectory_planner_ros
+	src/trajectory_planner.cpp
+	src/trajectory_planner_ros.cpp)
+target_link_libraries(trajectory_planner_ros
+    base_local_planner)
 
 add_executable(point_grid src/point_grid.cpp)
 target_link_libraries(point_grid base_local_planner)
 
-install(TARGETS base_local_planner
+install(TARGETS
+            base_local_planner
+            trajectory_planner_ros
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
