@@ -12,12 +12,8 @@ find_package(catkin REQUIRED
             pluginlib
         )
 
-find_package(Eigen)
-find_package(PCL)
 include_directories(
     include 
-    ${EIGEN_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS}
     )
 add_definitions(${EIGEN_DEFINITIONS})
@@ -36,8 +32,6 @@ catkin_package(
 
 add_library(carrot_planner src/carrot_planner.cpp)
 target_link_libraries(carrot_planner
-    ${Eigen_LIBRARIES}
-    ${PCL_LIBRARIES}
     ${catkin_LIBRARIES}
     )
 
