@@ -58,6 +58,7 @@ catkin_package(
         message_generation
         tf
         pluginlib
+        costmap_2d
 )
 
 #uncomment for profiling
@@ -100,7 +101,7 @@ target_link_libraries(trajectory_planner_ros
     base_local_planner)
 
 add_executable(point_grid src/point_grid.cpp)
-target_link_libraries(point_grid base_local_planner)
+target_link_libraries(point_grid ${catkin_LIBRARIES})
 
 install(TARGETS
             base_local_planner
@@ -123,7 +124,10 @@ catkin_add_gtest(base_local_planner_utest
 	test/footprint_helper_test.cpp
 	test/trajectory_generator_test.cpp
 	test/map_grid_test.cpp)
-target_link_libraries(base_local_planner_utest base_local_planner)
+target_link_libraries(base_local_planner_utest
+    base_local_planner
+    )
 
-catkin_add_gtest(line_iterator test/line_iterator_test.cpp)
-target_link_libraries(line_iterator base_local_planner)
+
+catkin_add_gtest(line_iterator
+    test/line_iterator_test.cpp)
