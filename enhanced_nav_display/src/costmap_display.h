@@ -48,6 +48,8 @@
 #include "rviz/properties/ros_topic_property.h"
 #include <boost/shared_ptr.hpp>
 
+typedef std::vector< rviz::PointCloud::Point > V_Point;
+
 namespace Ogre
 {
 class ManualObject;
@@ -87,8 +89,18 @@ private:
   void clear();
   void incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg );
   void incomingUpdate( const map_msgs::OccupancyGridUpdate::ConstPtr& msg );
+  
+  bool updateBaseColors();
+  void colorAll();
+  void getColor(Ogre::ColourValue& color, unsigned char value);
 
+  std::vector< unsigned char > values_;
+  V_Point points_;
   rviz::PointCloud* cloud_;
+  
+  Ogre::ColourValue hi_color_, lo_color_, sp_color_;
+  bool use_special_;
+  float sp_value_;
 
   message_filters::Subscriber<nav_msgs::OccupancyGrid> grid_sub_;
   tf::MessageFilter<nav_msgs::OccupancyGrid>* grid_filter_;
@@ -104,6 +116,7 @@ private:
   rviz::FloatProperty* special_value_property_;
   rviz::ColorProperty* special_color_property_;
   
+  int width_;
   double min_v_, max_v_;
 
   uint32_t messages_received_;

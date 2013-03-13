@@ -210,23 +210,57 @@ void Costmap::incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg )
   scene_node_->setPosition( position );
   scene_node_->setOrientation( orientation );
 
-  /*if( msg->cell_width == 0 )
+  uint32_t num_points = msg->data.size();
+  values_.resize( num_points );
+  points_.clear();
+  points_.resize( num_points );
+    
+  tf::Transformer t;
+  tf::Transform transform;
+  transform.setOrigin( tf::Vector3(msg->info.origin.position.x, msg->info.origin.position.y, msg->info.origin.position.z) );
+  transform.setRotation( tf::Quaternion(msg->info.origin.orientation.x, msg->info.origin.orientation.y, msg->info.origin.orientation.z, msg->info.origin.orientation.w) );
+  ros::Time now = ros::Time::now();
+  t.setTransform(tf::StampedTransform(transform, now, "world", "grid"));
+  transform.setRotation( tf::Quaternion(0, 0, 0, 1) );
+  
+  updateBaseColors();
+  
+  double resolution = msg->info.resolution;
+  width_ = msg->info.width;
+
+  for(uint32_t i = 0; i < num_points; i++)
   {
-    setStatus(rviz::StatusProperty::Error, "Topic", "Cell width is zero, cells will be invisible.");
-  }*/
+    int x = i % width_;
+    int y = i / width_;
+    
+    transform.setOrigin( tf::Vector3(x*resolution, y*resolution, 0) );
+    t.setTransform(tf::StampedTransform(transform, now, "grid", "pt"));
+    tf::StampedTransform result;
+    t.lookupTransform("world", "pt", ros::Time(0), result);
+        
+    rviz::PointCloud::Point& current_point = points_[ i ];
+    current_point.position.x = result.getOrigin().x();
+    current_point.position.y = result.getOrigin().y();
+    current_point.position.z = result.getOrigin().z();
+   
+    values_[i] = (unsigned char) msg->data[i];
+  }
+  colorAll();
+  cloud_->clear();
+  cloud_->setDimensions(resolution, resolution, 0.0);
+  cloud_->addPoints( &points_.front(), points_.size() );
+}
 
-  cloud_->setDimensions(msg->info.resolution, msg->info.resolution, 0.0);
+void Costmap::colorAll(){
+    for(uint32_t i = 0; i < values_.size(); i++)
+    {
+        getColor( points_[i].color, values_[i]);
+    }
+}
 
+bool Costmap::updateBaseColors(){
   Ogre::ColourValue hi_color = rviz::qtToOgre( hi_color_property_->getColor() );
   Ogre::ColourValue lo_color = rviz::qtToOgre( lo_color_property_->getColor() );
-  Ogre::ColourValue color;
-  color.a = 1.0;
-  uint32_t num_points = msg->data.size();
-
-  typedef std::vector< rviz::PointCloud::Point > V_Point;
-  V_Point points;
-  points.resize( num_points );
-  
   bool use_special = use_special_property_->getBool();
   Ogre::ColourValue sp_color;
   float sp_value = 0;
@@ -235,59 +269,60 @@ void Costmap::incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg )
     sp_value = special_value_property_->getFloat(); 
   }
   
-  tf::Transformer t;
-  tf::Transform transform;
-  transform.setOrigin( tf::Vector3(msg->info.origin.position.x, msg->info.origin.position.y, msg->info.origin.position.z) );
-  transform.setRotation( tf::Quaternion(msg->info.origin.orientation.x, msg->info.origin.orientation.y, msg->info.origin.orientation.z, msg->info.origin.orientation.w) );
-  ros::Time now = ros::Time::now();
-  t.setTransform(tf::StampedTransform(transform, now, "world", "grid"));
-
-
-  transform.setRotation( tf::Quaternion(0, 0, 0, 1) );
-  double resolution = msg->info.resolution;
-
-  for(uint32_t i = 0; i < num_points; i++)
-  {
-    int x = i % msg->info.width;
-    int y = i / msg->info.width;
-    
-    transform.setOrigin( tf::Vector3(x*resolution, y*resolution, 0) );
-    t.setTransform(tf::StampedTransform(transform, now, "grid", "pt"));
-    tf::StampedTransform result;
-    t.lookupTransform("world", "pt", ros::Time(0), result);
+  bool rv;
+  if(hi_color==hi_color_ && lo_color==lo_color_ &&
+        sp_value==sp_value_ && use_special==use_special_ &&
+        (!use_special || sp_color==sp_color_)){
         
-    rviz::PointCloud::Point& current_point = points[ i ];
-    current_point.position.x = result.getOrigin().x();
-    current_point.position.y = result.getOrigin().y();
-    current_point.position.z = result.getOrigin().z();
-   
-    float value = (unsigned char) msg->data[i];
-
-    if(use_special && fabs(value-sp_value)<.01){
-        current_point.color = sp_color;
-    }else if(value <= max_v_ and value >= min_v_){
-
-        float pct = (value - min_v_) / (max_v_ - min_v_);
-        color.r = lo_color.r - pct * (lo_color.r - hi_color.r);
-        color.g = lo_color.g - pct * (lo_color.g - hi_color.g);
-        color.b = lo_color.b - pct * (lo_color.b - hi_color.b);
-        current_point.color = color;
-    }else{
-        current_point.color.a = 0.0;
+        rv= true;
     }
-    
-  }
+    else
+        rv= false;
+        
+    hi_color_ = hi_color;
+    lo_color_ = lo_color;
+    sp_color_ = sp_color;
+    use_special_ = use_special;
+    sp_value_ = sp_value;
+        
+    return !rv;
+        
+}
 
-  cloud_->clear();
+void Costmap::getColor(Ogre::ColourValue& color, unsigned char value){
 
-  if ( !points.empty() )
-  {
-    cloud_->addPoints( &points.front(), points.size() );
-  }
+  
+    if(use_special_ && fabs(value-sp_value_)<.01){
+        color = sp_color_;
+    }else if(value <= max_v_ and value >= min_v_){
+        float pct = (value - min_v_) / (max_v_ - min_v_);
+        color.r = lo_color_.r - pct * (lo_color_.r - hi_color_.r);
+        color.g = lo_color_.g - pct * (lo_color_.g - hi_color_.g);
+        color.b = lo_color_.b - pct * (lo_color_.b - hi_color_.b);
+        color.a = 1.0;
+    }else{
+        color.a = 0.0;
+    }
 }
 
 void Costmap::incomingUpdate(const map_msgs::OccupancyGridUpdate::ConstPtr& msg){
-
+    if(!updateBaseColors()){
+      uint32_t num_points = msg->data.size();
+      for(uint32_t i=0;i<num_points;i++){
+        int lx = msg->x + i % msg->width;
+        int ly = msg->y + i / msg->width;
+        int gi = ly * width_ + lx;
+        rviz::PointCloud::Point& current_point = points_[gi];
+        float value = (unsigned char) msg->data[i];
+        values_[gi] = value;
+        getColor(current_point.color, value);
+      }
+      
+   }else{
+      colorAll();
+   }
+      cloud_->clear();
+      cloud_->addPoints( &points_.front(), points_.size() );
 }
 
 void Costmap::reset()
