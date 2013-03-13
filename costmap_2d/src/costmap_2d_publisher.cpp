@@ -89,10 +89,10 @@ namespace costmap_2d {
         update.data.resize(update.width * update.height);
         
         unsigned int i = 0;
-        for(unsigned int x=x0; x<=xn;x++){
-            for(unsigned int y=y0; y<=yn; y++){
+        for(unsigned int y=y0; y<=yn; y++){
+            for(unsigned int x=x0; x<=xn;x++){
                 unsigned char cost = costmap_->getCost(x, y);
-                update.data[i] = cost;
+                update.data[i++] = cost;
             }
         }
         costmap_update_pub_.publish(update);
