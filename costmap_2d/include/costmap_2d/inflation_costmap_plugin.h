@@ -95,7 +95,7 @@ namespace common_costmap_plugins
 
         inline void enqueue(unsigned char* grid, unsigned int index, unsigned int mx, unsigned int my,  unsigned int src_x, unsigned int src_y);
 
-        double inflation_radius_, inscribed_radius_, weight_;
+        double inflation_radius_, inscribed_radius_, circumscribed_radius_, weight_;
         unsigned int cell_inflation_radius_;
         std::priority_queue<CellData> inflation_queue_;
         
@@ -108,6 +108,10 @@ namespace common_costmap_plugins
 
         dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
         void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
+        
+        void footprint_cb(const geometry_msgs::Polygon& footprint);
+          ros::Subscriber footprint_sub_;
+          bool got_footprint_;
     
   };
 };
