@@ -23,13 +23,11 @@ namespace common_costmap_plugins
       void deactivate() {}
 
     private:
-      void publishFootprint();
-
+      void footprint_cb(const geometry_msgs::Polygon& footprint);
+      ros::Subscriber footprint_sub_;
+      bool got_footprint_;
       geometry_msgs::Polygon footprint_spec_;
       geometry_msgs::PolygonStamped footprint_;
-      bool circular_;
-      ros::Publisher footprint_pub_;
-      double inscribed_radius_, circumscribed_radius_;
   };
 };
 #endif
