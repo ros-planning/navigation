@@ -50,8 +50,6 @@
 #include <nav_msgs/Odometry.h>
 
 #include <costmap_2d/costmap_2d_ros.h>
-#include <costmap_2d/footprint.h>
-
 #include <nav_core/base_local_planner.h>
 #include <base_local_planner/latched_stop_rotate_controller.h>
 
@@ -156,6 +154,10 @@ namespace dwa_local_planner {
 
 
       base_local_planner::OdometryHelperRos odom_helper_;
+      
+      void footprint_cb(const geometry_msgs::Polygon& footprint);
+      ros::Subscriber footprint_sub_;
+      bool got_footprint_;
   };
 };
 #endif

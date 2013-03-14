@@ -36,7 +36,6 @@
 *********************************************************************/
 
 #include <dwa_local_planner/dwa_planner_ros.h>
-#include <costmap_2d/footprint.h>
 #include <Eigen/Core>
 #include <cmath>
 
@@ -112,19 +111,31 @@ namespace dwa_local_planner {
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
+      
+      
+      got_footprint_ = false;
+      footprint_sub_ = private_nh.subscribe("footprint", 1, &DWAPlannerROS::footprint_cb, this);
+    
+      ros::Rate r(10);
+      while(!got_footprint_ && private_nh.ok()){
+          ros::spinOnce();
+          r.sleep();
+      }
 
       initialized_ = true;
 
       dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
       dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = boost::bind(&DWAPlannerROS::reconfigureCB, this, _1, _2);
       dsrv_->setCallback(cb);
-      
-      footprint_spec_ = loadRobotFootprint(private_nh);
     }
     else{
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
   }
+  
+      void DWAPlannerROS::footprint_cb(const geometry_msgs::Polygon& footprint) {
+        footprint_spec_ = footprint;
+      }
 
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
