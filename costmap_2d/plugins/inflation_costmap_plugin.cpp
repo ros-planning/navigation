@@ -21,6 +21,11 @@ namespace common_costmap_plugins
         matchSize();
         
         got_footprint_ = false;
+        
+        dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/"+name));
+        dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(&InflationCostmapPlugin::reconfigureCB, this, _1, _2);
+        dsrv_->setCallback(cb);
+        
         footprint_sub_ = g_nh.subscribe("footprint", 1, &InflationCostmapPlugin::footprint_cb, this);
         
         ros::Rate r(10);
@@ -28,10 +33,6 @@ namespace common_costmap_plugins
             ros::spinOnce();
             r.sleep();
         }
-        
-        dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/"+name));
-        dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(&InflationCostmapPlugin::reconfigureCB, this, _1, _2);
-        dsrv_->setCallback(cb);
     }
     
     void InflationCostmapPlugin::footprint_cb(const geometry_msgs::Polygon& footprint) {
@@ -58,14 +59,15 @@ namespace common_costmap_plugins
           circumscribed_radius_ = max_dist;
           // TODO: Set circumscribed_cost
         }
-        
+        cell_inflation_radius_ = cellDistance(inflation_radius_);
         computeCaches();
         got_footprint_ = true;
     }
     
     void InflationCostmapPlugin::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level){
-        if(weight_ != config.cost_scaling_factor)
+        if(weight_ != config.cost_scaling_factor || inflation_radius_ != config.inflation_radius)
         {
+            inflation_radius_ = config.inflation_radius;
             weight_ = config.cost_scaling_factor;
             computeCaches();
         }
