@@ -24,6 +24,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 
         initMaps();
         current_ = true;
+        has_been_reset_ = false;
 
         global_frame_ = costmap->getGlobalFrameID();
         double transform_tolerance;
@@ -139,6 +140,8 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
               }
         
         }
+        
+        ros::ServiceServer service = nh.advertiseService("clearmap", &ObstacleCostmapPlugin::clearMap, this);
     
         dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
         dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(&ObstacleCostmapPlugin::reconfigureCB, this, _1, _2);
@@ -157,6 +160,47 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
                   master->getSizeInCellsX(), master->getSizeInCellsY(),
                   master->getResolution(),
                   master->getOriginX(), master->getOriginY());
+    }
+    
+    bool ObstacleCostmapPlugin::clearMap(costmap_2d::ResetMapOutsideWindow::Request  &req, costmap_2d::ResetMapOutsideWindow::Response &res){
+         boost::unique_lock< boost::shared_mutex > lock(*(getLock()));
+         double size = req.distance;
+         
+         reset_min_x_ = reset_max_x_ = origin_x_;
+         reset_min_y_ = reset_max_y_ = origin_y_; 
+         
+         double start_point_x = origin_x_ - size / 2;
+         double start_point_y = origin_y_ - size / 2;
+         double end_point_x = start_point_x + size;
+         double end_point_y = start_point_y + size;
+
+         unsigned int start_x, start_y, end_x, end_y;
+
+        //check for legality just in case
+        if(!worldToMap(start_point_x, start_point_y, start_x, start_y) || !worldToMap(end_point_x, end_point_y, end_x, end_y))
+          return false;
+
+        for(unsigned int x=0; x<size_x_; x++){
+            if(x>start_x && x<end_x)
+                continue;
+                
+            for(unsigned int y=0; y<size_y_; y++){
+                if(y>start_y && y<end_y)
+                    continue;
+                unsigned int index = getIndex(x,y);
+                if(costmap_[index]!=default_value_){
+                    costmap_[index] = default_value_;
+                    double px, py;
+                    mapToWorld(x,y,px,py);
+                    reset_min_x_ = std::min(reset_min_x_, px);
+                    reset_max_x_ = std::max(reset_max_x_, px);
+                    reset_min_y_ = std::min(reset_min_y_, py);
+                    reset_max_y_ = std::max(reset_max_y_, py);
+                }
+            }
+        }
+        has_been_reset_ = true;        
+        return true;
     }
 
     void ObstacleCostmapPlugin::matchSize(){
@@ -207,6 +251,14 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
     void ObstacleCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
         if(rolling_window_)
             updateOrigin(origin_x - getSizeInMetersX() / 2, origin_y - getSizeInMetersY() / 2);
+
+        if(has_been_reset_){
+            *min_x = std::min(reset_min_x_, *min_x);
+            *min_y = std::min(reset_min_y_, *min_y);
+            *max_x = std::max(reset_max_x_, *max_x);
+            *max_y = std::max(reset_max_y_, *max_y);
+            has_been_reset = false;
+        }
             
         bool current = true;
         std::vector<Observation> observations, clearing_observations;

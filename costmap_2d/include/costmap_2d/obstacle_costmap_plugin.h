@@ -16,6 +16,7 @@
 #include <message_filters/subscriber.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
+#include <costmap_2d/ResetMapOutsideWindow.h>
 
 namespace common_costmap_plugins
 {
@@ -59,6 +60,8 @@ namespace common_costmap_plugins
     private:
       void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
       void initMaps();
+      
+      bool clearMap(costmap_2d::ResetMapOutsideWindow::Request  &req, costmap_2d::ResetMapOutsideWindow::Response &res);
 
       /**
        * @brief  Get the observations used to mark space
@@ -93,7 +96,9 @@ namespace common_costmap_plugins
 
       bool rolling_window_;
       dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
-
+      
+      bool has_been_reset_;
+      double reset_min_x_, reset_max_x_, reset_min_y_, reset_max_y_;
   };
 };
 #endif
