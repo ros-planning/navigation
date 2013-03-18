@@ -40,6 +40,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_listener.h>
 #include <ros/ros.h>
+#include <costmap_2d/ResetMapOutsideWindow.h>
 
 namespace clear_costmap_recovery{
   /**
@@ -75,6 +76,7 @@ namespace clear_costmap_recovery{
       costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
       std::string name_;
       tf::TransformListener* tf_;
+      ros::ServiceClient client_;
       bool initialized_;
       double reset_distance_;
   };

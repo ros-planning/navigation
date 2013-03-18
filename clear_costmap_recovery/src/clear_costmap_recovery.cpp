@@ -52,6 +52,10 @@ void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* t
     global_costmap_ = global_costmap;
     local_costmap_ = local_costmap;
 
+    //connect to service
+    ros::NodeHandle nh;    
+    nh.serviceClient<costmap_2d::ResetMapOutsideWindow>("clearmap");
+
     //get some parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name_);
 
@@ -75,14 +79,13 @@ void ClearCostmapRecovery::runBehavior(){
     return;
   }
   ROS_WARN("Clearing costmap to unstuck robot.");
-
-  double gc_radius = global_costmap_->getCircumscribedRadius();
-  double lc_radius = local_costmap_->getCircumscribedRadius();
-
-  global_costmap_->resetMapOutsideWindow(reset_distance_, reset_distance_);
-  local_costmap_->resetMapOutsideWindow(reset_distance_, reset_distance_);
-
-  global_costmap_->clearNonLethalWindow(4 * gc_radius, 4 * gc_radius);
-  local_costmap_->clearNonLethalWindow(4 * lc_radius, 4 * lc_radius);
+  
+  costmap_2d::ResetMapOutsideWindow srv;
+  srv.request.distance = reset_distance_; 
+  if (!client_.call(srv))
+  {
+    ROS_ERROR("Unable to clear");
+  }
+  //TODO: Global and Local
 }
 };
