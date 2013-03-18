@@ -92,6 +92,21 @@ AMCLOdom::SetModelOmni(double alpha1,
   this->alpha5 = alpha5;
 }
 
+void
+AMCLOdom::SetModel( odom_model_t type,
+                    double alpha1,
+                    double alpha2,
+                    double alpha3,
+                    double alpha4,
+                    double alpha5 )
+{
+  this->model_type = type;
+  this->alpha1 = alpha1;
+  this->alpha2 = alpha2;
+  this->alpha3 = alpha3;
+  this->alpha4 = alpha4;
+  this->alpha5 = alpha5;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the action model

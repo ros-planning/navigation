@@ -512,10 +512,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   delete odom_;
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
-  if(odom_model_type_ == ODOM_MODEL_OMNI)
-    odom_->SetModelOmni(alpha1_, alpha2_, alpha3_, alpha4_, alpha5_);
-  else
-    odom_->SetModelDiff(alpha1_, alpha2_, alpha3_, alpha4_);
+  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
@@ -641,10 +638,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   delete odom_;
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
-  if(odom_model_type_ == ODOM_MODEL_OMNI)
-    odom_->SetModelOmni(alpha1_, alpha2_, alpha3_, alpha4_, alpha5_);
-  else
-    odom_->SetModelDiff(alpha1_, alpha2_, alpha3_, alpha4_);
+  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
