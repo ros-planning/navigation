@@ -106,8 +106,8 @@ namespace move_slow_and_clear
     }
 
     //clear the desired space in both costmaps
-    global_costmap_->setConvexPolygonCost(global_poly, costmap_2d::FREE_SPACE);
-    local_costmap_->setConvexPolygonCost(local_poly, costmap_2d::FREE_SPACE);
+    //global_costmap_->setConvexPolygonCost(global_poly, costmap_2d::FREE_SPACE);
+    //local_costmap_->setConvexPolygonCost(local_poly, costmap_2d::FREE_SPACE);
 
     //lock... just in case we're already speed limited
     boost::mutex::scoped_lock l(mutex_);
