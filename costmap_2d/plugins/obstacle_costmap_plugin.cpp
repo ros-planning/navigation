@@ -174,20 +174,18 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
          double end_point_x = start_point_x + size;
          double end_point_y = start_point_y + size;
 
-         unsigned int start_x, start_y, end_x, end_y;
+         int start_x, start_y, end_x, end_y;
+         worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
+         worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
 
-        //check for legality just in case
-        if(!worldToMap(start_point_x, start_point_y, start_x, start_y) || !worldToMap(end_point_x, end_point_y, end_x, end_y))
-          return false;
-
-        for(unsigned int x=0; x<size_x_; x++){
+        for(int x=0; x<(int)size_x_; x++){
             if(x>start_x && x<end_x)
                 continue;
                 
-            for(unsigned int y=0; y<size_y_; y++){
+            for(int y=0; y<(int)size_y_; y++){
                 if(y>start_y && y<end_y)
                     continue;
-                unsigned int index = getIndex(x,y);
+                int index = getIndex(x,y);
                 if(costmap_[index]!=default_value_){
                     costmap_[index] = default_value_;
                     double px, py;
