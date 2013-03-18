@@ -97,6 +97,7 @@ namespace common_costmap_plugins
       bool rolling_window_;
       dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
       
+      ros::ServiceServer service_;
       bool has_been_reset_;
       double reset_min_x_, reset_max_x_, reset_min_y_, reset_max_y_;
   };

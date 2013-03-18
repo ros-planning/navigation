@@ -141,8 +141,8 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
         
         }
         
-        ros::ServiceServer service = nh.advertiseService("clearmap", &ObstacleCostmapPlugin::clearMap, this);
-    
+        service_ = nh.advertiseService("clearmap", &ObstacleCostmapPlugin::clearMap, this);
+
         dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
         dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(&ObstacleCostmapPlugin::reconfigureCB, this, _1, _2);
         dsrv_->setCallback(cb);
@@ -257,7 +257,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
             *min_y = std::min(reset_min_y_, *min_y);
             *max_x = std::max(reset_max_x_, *max_x);
             *max_y = std::max(reset_max_y_, *max_y);
-            has_been_reset = false;
+            has_been_reset_ = false;
         }
             
         bool current = true;
