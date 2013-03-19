@@ -16,7 +16,6 @@
 #include <message_filters/subscriber.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
-#include <costmap_2d/ResetMapOutsideWindow.h>
 
 namespace common_costmap_plugins
 {
@@ -56,13 +55,19 @@ namespace common_costmap_plugins
        */
       void pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
       
+      void setResetBounds(double mx0, double mx1, double my0, double my1){
+        reset_min_x_=mx0;
+        reset_max_x_=mx1;
+        reset_min_y_=my0;
+        reset_max_y_=my1;
+        has_been_reset_ = true;
+      }
+      
 
     private:
       void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
       void initMaps();
       
-      bool clearMap(costmap_2d::ResetMapOutsideWindow::Request  &req, costmap_2d::ResetMapOutsideWindow::Response &res);
-
       /**
        * @brief  Get the observations used to mark space
        * @param marking_observations A reference to a vector that will be populated with the observations 
@@ -97,7 +102,6 @@ namespace common_costmap_plugins
       bool rolling_window_;
       dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
       
-      ros::ServiceServer service_;
       bool has_been_reset_;
       double reset_min_x_, reset_max_x_, reset_min_y_, reset_max_y_;
   };

@@ -40,7 +40,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_listener.h>
 #include <ros/ros.h>
-#include <costmap_2d/ResetMapOutsideWindow.h>
+#include <costmap_2d/obstacle_costmap_plugin.h>
 
 namespace clear_costmap_recovery{
   /**
@@ -73,10 +73,11 @@ namespace clear_costmap_recovery{
       void runBehavior();
 
     private:
+      void clear(costmap_2d::Costmap2DROS* costmap);      
+      void clearMap(boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap);
       costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
       std::string name_;
       tf::TransformListener* tf_;
-      ros::ServiceClient client_;
       bool initialized_;
       double reset_distance_;
   };

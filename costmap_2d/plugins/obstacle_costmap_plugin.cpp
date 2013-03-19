@@ -140,8 +140,6 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
               }
         
         }
-        
-        service_ = nh.advertiseService("clearmap", &ObstacleCostmapPlugin::clearMap, this);
 
         dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
         dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(&ObstacleCostmapPlugin::reconfigureCB, this, _1, _2);
@@ -162,45 +160,6 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
                   master->getOriginX(), master->getOriginY());
     }
     
-    bool ObstacleCostmapPlugin::clearMap(costmap_2d::ResetMapOutsideWindow::Request  &req, costmap_2d::ResetMapOutsideWindow::Response &res){
-         boost::unique_lock< boost::shared_mutex > lock(*(getLock()));
-         double size = req.distance;
-         
-         reset_min_x_ = reset_max_x_ = origin_x_;
-         reset_min_y_ = reset_max_y_ = origin_y_; 
-         
-         double start_point_x = origin_x_ - size / 2;
-         double start_point_y = origin_y_ - size / 2;
-         double end_point_x = start_point_x + size;
-         double end_point_y = start_point_y + size;
-
-         int start_x, start_y, end_x, end_y;
-         worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
-         worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
-
-        for(int x=0; x<(int)size_x_; x++){
-            if(x>start_x && x<end_x)
-                continue;
-                
-            for(int y=0; y<(int)size_y_; y++){
-                if(y>start_y && y<end_y)
-                    continue;
-                int index = getIndex(x,y);
-                if(costmap_[index]!=default_value_){
-                    costmap_[index] = default_value_;
-                    double px, py;
-                    mapToWorld(x,y,px,py);
-                    reset_min_x_ = std::min(reset_min_x_, px);
-                    reset_max_x_ = std::max(reset_max_x_, px);
-                    reset_min_y_ = std::min(reset_min_y_, py);
-                    reset_max_y_ = std::max(reset_max_y_, py);
-                }
-            }
-        }
-        has_been_reset_ = true;        
-        return true;
-    }
-
     void ObstacleCostmapPlugin::matchSize(){
         initMaps();
     }
