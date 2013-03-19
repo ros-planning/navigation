@@ -110,7 +110,7 @@ namespace navfn {
   NavFn::NavFn(int xs, int ys)
   {  
     // create cell arrays
-    obsarr = costarr = NULL;
+    costarr = NULL;
     potarr = NULL;
     pending = NULL;
     gradx = grady = NULL;
@@ -142,8 +142,6 @@ namespace navfn {
 
   NavFn::~NavFn()
   {
-    if(obsarr)
-      delete[] obsarr;
     if(costarr)
       delete[] costarr;
     if(potarr)
@@ -200,8 +198,6 @@ namespace navfn {
       ny = ys;
       ns = nx*ny;
 
-      if(obsarr)
-        delete[] obsarr;
       if(costarr)
         delete[] costarr;
       if(potarr)
@@ -214,8 +210,6 @@ namespace navfn {
       if(grady)
         delete[] grady;
 
-      obsarr = new COSTTYPE[ns];	// obstacles, 255 is obstacle
-      memset(obsarr, 0, ns*sizeof(COSTTYPE));
       costarr = new COSTTYPE[ns]; // cost array, 2d config space
       memset(costarr, 0, ns*sizeof(COSTTYPE));
       potarr = new float[ns];	// navigation potential array
