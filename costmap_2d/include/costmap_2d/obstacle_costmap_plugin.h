@@ -56,10 +56,10 @@ namespace common_costmap_plugins
       void pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message, const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
       
       void setResetBounds(double mx0, double mx1, double my0, double my1){
-        reset_min_x_=mx0;
-        reset_max_x_=mx1;
-        reset_min_y_=my0;
-        reset_max_y_=my1;
+        reset_min_x_=std::min(mx0, reset_min_x_);
+        reset_max_x_=std::max(mx1, reset_max_x_);
+        reset_min_y_=std::min(my0, reset_min_y_);
+        reset_max_y_=std::max(my1, reset_max_y_);
         has_been_reset_ = true;
       }
       

@@ -214,6 +214,10 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
             *min_y = std::min(reset_min_y_, *min_y);
             *max_x = std::max(reset_max_x_, *max_x);
             *max_y = std::max(reset_max_y_, *max_y);
+	    reset_min_x_ = 1e6;
+	    reset_min_y_ = 1e6;
+	    reset_max_x_ = -1e6;
+	    reset_max_y_ = -1e6;
             has_been_reset_ = false;
         }
             

@@ -74,7 +74,7 @@ namespace clear_costmap_recovery{
 
     private:
       void clear(costmap_2d::Costmap2DROS* costmap);      
-      void clearMap(boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap);
+      void clearMap(boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap, double pose_x, double pose_y);
       costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
       std::string name_;
       tf::TransformListener* tf_;

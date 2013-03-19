@@ -83,24 +83,34 @@ void ClearCostmapRecovery::runBehavior(){
 }
 
 void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
-        std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >* plugins = costmap->getLayeredCostmap()->getPlugins();
+  std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >* plugins = costmap->getLayeredCostmap()->getPlugins();
+
+  tf::Stamped<tf::Pose> pose;
+
+  if(!costmap->getRobotPose(pose)){
+    ROS_ERROR("Cannot clear map because pose cannot be retrieved");
+    return;
+  }
+
+  double x = pose.getOrigin().x();
+  double y = pose.getOrigin().y();
 
       for (std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
             boost::shared_ptr<costmap_2d::CostmapPlugin> plugin = *pluginp;
           if(plugin->getName().find("obstacles")!=std::string::npos){
             boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap;
             costmap = boost::static_pointer_cast<common_costmap_plugins::ObstacleCostmapPlugin>(plugin);
-            clearMap(costmap);
+            clearMap(costmap, x, y);
           }
       }
 }
 
 
-    void ClearCostmapRecovery::clearMap(boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap){
+  void ClearCostmapRecovery::clearMap(boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap, double pose_x, double pose_y){
          boost::unique_lock< boost::shared_mutex > lock(*(costmap->getLock()));
          
-         double start_point_x = costmap->getOriginX() - reset_distance_ / 2;
-         double start_point_y = costmap->getOriginY() - reset_distance_ / 2;
+         double start_point_x = pose_x - reset_distance_ / 2;
+         double start_point_y = pose_y - reset_distance_ / 2;
          double end_point_x = start_point_x + reset_distance_;
          double end_point_y = start_point_y + reset_distance_;
 
@@ -110,22 +120,19 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
          unsigned char* grid = costmap->getCharMap();
          for(int x=0; x<(int)costmap->getSizeInCellsX(); x++){
-            if(x>start_x && x<end_x)
-                continue;
-                
+	   bool xrange = x>start_x && x<end_x;
+	                   
             for(int y=0; y<(int)costmap->getSizeInCellsY(); y++){
-                if(y>start_y && y<end_y)
-                    continue;
+	      if(xrange && y>start_y && y<end_y)
+	          continue;
                 int index = costmap->getIndex(x,y);
                 if(grid[index]!=NO_INFORMATION){
-                    grid[index] = NO_INFORMATION;
-                    double px, py;
-                    costmap->mapToWorld(x,y,px,py);
-                }
-            }
-        }
-        costmap->setResetBounds(start_point_x, end_point_x, start_point_y, end_point_y);
-        return;
+		  grid[index] = NO_INFORMATION;
+		}
+	    }
+	 }
+	 costmap->setResetBounds(0,0, costmap->getSizeInMetersX(), costmap->getSizeInMetersY());
+	 return;
     }
 
 };
