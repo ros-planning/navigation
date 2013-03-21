@@ -1,0 +1,21 @@
+<package>
+  <description brief="global_planner">
+
+     global_planner
+
+  </description>
+  <author>David Lu!!</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/global_planner</url>
+  <depend package="roscpp"/>
+  <depend package="geometry_msgs"/>
+  <depend package="costmap_2d"/>
+  <depend package="nav_core"/>
+  <depend package="pluginlib"/>
+  <depend package="nav_msgs"/>
+  <depend package="tf"/>
+  <depend package="navfn"/>
+</package>
+
+
