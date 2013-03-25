@@ -22,7 +22,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
-rosbuild_add_library(${PROJECT_NAME} src/dijkstra.cpp src/astar.cpp src/grid_path.cpp src/planner_core.cpp)
+rosbuild_add_library(${PROJECT_NAME} src/dijkstra.cpp src/astar.cpp src/grid_path.cpp src/gradient_path.cpp src/planner_core.cpp)
 rosbuild_add_executable(planner src/plan_node.cpp)
 target_link_libraries(planner ${PROJECT_NAME})
 #target_link_libraries(${PROJECT_NAME} another_library)

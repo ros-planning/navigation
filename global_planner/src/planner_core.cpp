@@ -42,6 +42,8 @@
 
 #include <global_planner/dijkstra.h>
 #include <global_planner/astar.h>
+#include <global_planner/grid_path.h>
+#include <global_planner/gradient_path.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_DECLARE_CLASS(global_planner, PlannerCore, global_planner::PlannerCore, nav_core::BaseGlobalPlanner)
@@ -83,13 +85,18 @@ namespace global_planner {
       costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
       
       bool use_dijkstra;
-      private_nh.param("use_dijkstra", use_dijkstra, false);
+      private_nh.param("use_dijkstra", use_dijkstra, true);
       if(use_dijkstra)
             planner_ = new DijkstraExpansion(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
       else
             planner_ = new AStarExpansion(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
             
-      path_maker_ = new GridPath();
+      bool use_grid_path;
+      private_nh.param("use_grid_path", use_grid_path, false);
+      if(use_grid_path)
+          path_maker_ = new GridPath();
+      else
+          path_maker_ = new GradientPath();
 
 
       plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);

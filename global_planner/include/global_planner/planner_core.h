@@ -46,8 +46,8 @@
 #include <vector>
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
-#include <global_planner/dijkstra.h>
-#include <global_planner/grid_path.h>
+#include <global_planner/expander.h>
+#include <global_planner/traceback.h>
 #define POT_HIGH 1.0e10		// unassigned cell potential
 namespace global_planner {
 
@@ -165,7 +165,7 @@ namespace global_planner {
       ros::ServiceServer make_plan_srv_;
       
       Expander* planner_;
-      GridPath* path_maker_;
+      Traceback* path_maker_;
       
       ros::Publisher potential_pub_;
         
