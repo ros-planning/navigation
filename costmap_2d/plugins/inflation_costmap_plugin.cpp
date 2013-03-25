@@ -26,7 +26,13 @@ namespace common_costmap_plugins
         dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(&InflationCostmapPlugin::reconfigureCB, this, _1, _2);
         dsrv_->setCallback(cb);
         
-        footprint_sub_ = g_nh.subscribe("footprint", 1, &InflationCostmapPlugin::footprint_cb, this);
+        std::string topic_param, topic;
+        if(!nh.searchParam("footprint_topic", topic_param)){
+            topic_param = "footprint_topic";
+        }        
+        nh.param(topic_param, topic, std::string("footprint"));
+        
+        footprint_sub_ = g_nh.subscribe(topic, 1, &InflationCostmapPlugin::footprint_cb, this);
         
         ros::Rate r(10);
         while(!got_footprint_ && g_nh.ok()){

@@ -17,14 +17,19 @@ namespace common_costmap_plugins
         current_ = false;
         got_footprint_ = false;
         
-        std::string topic;
-        nh.param("footprint_topic", topic, std::string("footprint"));
-        footprint_sub_ = g_nh.subscribe(topic, 1, &FootprintCostmapPlugin::footprint_cb, this);
+        std::string topic_param, topic;
+        if(!nh.searchParam("footprint_topic", topic_param)){
+            topic_param = "footprint_topic";
+        }
+        
+        nh.param(topic_param, topic, std::string("footprint"));
+        footprint_sub_ = nh.subscribe(topic, 1, &FootprintCostmapPlugin::footprint_cb, this);
         
         ros::Rate r(10);
         while(!got_footprint_ && g_nh.ok()){
             ros::spinOnce();
             r.sleep();
+            ROS_INFO_THROTTLE(5.0, "Waiting for footprint.");
         }
         
         current_ = true;
