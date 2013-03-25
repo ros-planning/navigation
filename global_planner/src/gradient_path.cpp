@@ -62,6 +62,15 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
         
         path.push_back(current);
         
+        bool oscillation_detected = false;
+        int npath = path.size();
+        if( npath > 2 &&
+            path[npath-1].first  == path[npath-3].first &&
+            path[npath-1].second == path[npath-3].second )
+        {
+          ROS_DEBUG("[PathCalc] oscillation detected, attempting fix.");
+          oscillation_detected = true;
+        }
         
         int stcnx = stc+xs_;
         int stcpx = stc-xs_;
@@ -75,7 +84,7 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
             potential[stcnx-1] >= POT_HIGH ||
             potential[stcpx] >= POT_HIGH ||
             potential[stcpx+1] >= POT_HIGH ||
-            potential[stcpx-1] >= POT_HIGH)
+            potential[stcpx-1] >= POT_HIGH || oscillation_detected)
         {
           ROS_DEBUG("[Path] Pot fn boundary, following grid (%0.1f/%d)", potential[stc], (int) path.size());
           // check eight neighbors to find the lowest
@@ -178,14 +187,7 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
       // go for <n> cycles at most
       for (int i=0; i<n; i++)
       {
-        bool oscillation_detected = false;
-        if( npath > 2 &&
-            pathx[npath-1] == pathx[npath-3] &&
-            pathy[npath-1] == pathy[npath-3] )
-        {
-          ROS_DEBUG("[PathCalc] oscillation detected, attempting fix.");
-          oscillation_detected = true;
-        }
+        
 
 
         //      ROS_INFO("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
