@@ -2,17 +2,12 @@
 #include <algorithm>
 namespace global_planner {
 
-DijkstraExpansion::DijkstraExpansion(int nx, int ny)
+DijkstraExpansion::DijkstraExpansion(int nx, int ny) : Expander(nx, ny), pending(NULL)
 {
-    // create cell arrays
-    pending = NULL;
-    setSize(nx,ny);
-
     // priority buffers
     pb1 = new int[PRIORITYBUFSIZE];
     pb2 = new int[PRIORITYBUFSIZE];
     pb3 = new int[PRIORITYBUFSIZE];
-    COST_OBS = 254;
     COST_NEUTRAL = 50;
 
     // for Dijkstra (breadth-first), set to COST_NEUTRAL
@@ -26,15 +21,12 @@ DijkstraExpansion::DijkstraExpansion(int nx, int ny)
 //
 void DijkstraExpansion::setSize(int xs, int ys)
 {
-      nx = xs;
-      ny = ys;
-      ns = nx*ny;
-
+    Expander::setSize(xs, ys); 
       if(pending)
         delete[] pending;
 
-      pending = new bool[ns];
-      memset(pending,   0,        ns*sizeof(bool));
+      pending = new bool[ns_];
+      memset(pending,   0,        ns_*sizeof(bool));
 }
 
 
@@ -48,24 +40,25 @@ void DijkstraExpansion::setSize(int xs, int ys)
 
 bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles, float* potential)
 {
+    cells_visited_ = 0;
           // priority buffers
-      curT = COST_OBS;
+      curT = lethal_cost_;
       curP = pb1; 
       curPe = 0;
       nextP = pb2;
       nextPe = 0;
       overP = pb3;
       overPe = 0;
-      memset(pending,   0,        ns*sizeof(bool));
-      std::fill(potential,  potential+ns,  POT_HIGH);
+      memset(pending,   0,        ns_*sizeof(bool));
+      std::fill(potential,  potential+ns_,  POT_HIGH);
 
       // set goal
       int k = toIndex(start_x, start_y);
       potential[k] = 0;
       push_cur(k+1);
       push_cur(k-1);
-      push_cur(k-nx);
-      push_cur(k+nx);      
+      push_cur(k-nx_);
+      push_cur(k+nx_);      
 
       int nwv = 0;			// max priority block size
       int nc = 0;			// number of cells put into priority blocks
@@ -139,12 +132,13 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
   inline void
     DijkstraExpansion::updateCell(unsigned char* costs, float* potential, int n)
     {
+        cells_visited_++;
       // get neighbors
       float u,d,l,r;
       l = potential[n-1];
       r = potential[n+1];		
-      u = potential[n-nx];
-      d = potential[n+nx];
+      u = potential[n-nx_];
+      d = potential[n+nx_];
       //  ROS_INFO("[Update] c: %f  l: %f  r: %f  u: %f  d: %f\n", 
       //	 potential[n], l, r, u, d);
       //  ROS_INFO("[Update] cost: %d\n", costs[n]);
@@ -156,7 +150,7 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
       if (u<d) ta=u; else ta=d;
 
       // do planar wave update
-      if (costs[n] < COST_OBS)	// don't propagate into obstacles
+      if (costs[n] < lethal_cost_)	// don't propagate into obstacles
       {
         float hf = (float)costs[n]+ COST_NEUTRAL; // traversability factor
         float dc = tc-ta;		// relative cost between ta,tc
@@ -187,23 +181,23 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
         {
           float le = INVSQRT2*(float)costs[n-1];
           float re = INVSQRT2*(float)costs[n+1];
-          float ue = INVSQRT2*(float)costs[n-nx];
-          float de = INVSQRT2*(float)costs[n+nx];
+          float ue = INVSQRT2*(float)costs[n-nx_];
+          float de = INVSQRT2*(float)costs[n+nx_];
           potential[n] = pot;
           //ROS_INFO("UPDATE %d %d %d %f", n, n%nx, n/nx, potential[n]);
           if (pot < curT)	// low-cost buffer block 
           {
             if (l > pot+le) push_next(n-1);
             if (r > pot+re) push_next(n+1);
-            if (u > pot+ue) push_next(n-nx);
-            if (d > pot+de) push_next(n+nx);
+            if (u > pot+ue) push_next(n-nx_);
+            if (d > pot+de) push_next(n+nx_);
           }
           else			// overflow block
           {
             if (l > pot+le) push_over(n-1);
             if (r > pot+re) push_over(n+1);
-            if (u > pot+ue) push_over(n-nx);
-            if (d > pot+de) push_over(n+nx);
+            if (u > pot+ue) push_over(n-nx_);
+            if (d > pot+de) push_over(n+nx_);
           }
         }
 

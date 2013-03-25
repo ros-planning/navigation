@@ -46,13 +46,12 @@
 #include <vector>
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
-
 #include <global_planner/dijkstra.h>
 #include <global_planner/grid_path.h>
-
+#define POT_HIGH 1.0e10		// unassigned cell potential
 namespace global_planner {
 
-    class DijkstraExpansion;
+    class Expander;
     class GridPath;
 
   /**
@@ -165,7 +164,7 @@ namespace global_planner {
       boost::mutex mutex_;
       ros::ServiceServer make_plan_srv_;
       
-      DijkstraExpansion* planner_;
+      Expander* planner_;
       GridPath* path_maker_;
       
       ros::Publisher potential_pub_;

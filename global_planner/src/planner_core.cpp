@@ -40,6 +40,9 @@
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
 
+#include <global_planner/dijkstra.h>
+#include <global_planner/astar.h>
+
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_DECLARE_CLASS(global_planner, PlannerCore, global_planner::PlannerCore, nav_core::BaseGlobalPlanner)
 
@@ -74,12 +77,20 @@ namespace global_planner {
 
   void PlannerCore::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
     if(!initialized_){
+      ros::NodeHandle private_nh("~/" + name);
       costmap_ros_ = costmap_ros;
+      
       costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
-      planner_ = new DijkstraExpansion(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
+      
+      bool use_dijkstra;
+      private_nh.param("use_dijkstra", use_dijkstra, false);
+      if(use_dijkstra)
+            planner_ = new DijkstraExpansion(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
+      else
+            planner_ = new AStarExpansion(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
+            
       path_maker_ = new GridPath();
 
-      ros::NodeHandle private_nh("~/" + name);
 
       plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
       potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
@@ -214,21 +225,22 @@ namespace global_planner {
         
         float max = 0.0;
         for(unsigned int i = 0; i < grid.data.size(); i++){
-            if(potential_array_[i] > max && potential_array_[i] < 1.0e10){
-                max = potential_array_[i];
+            float potential = potential_array_[i];
+            if(potential < POT_HIGH){
+                if(potential > max){
+                    max = potential;
+                }
             }
         }
         
         for(unsigned int i=0;i<grid.data.size(); i++){
-            if(potential_array_[i]==1.0e10){
+            if(potential_array_[i]>=POT_HIGH){
                 grid.data[i] = 255;
             }else
                 grid.data[i] = potential_array_[i] * 254 / max;
         }
         potential_pub_.publish(grid);
 
-    
-    
     //************************8888888
 
 

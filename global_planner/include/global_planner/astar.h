@@ -1,24 +1,42 @@
 #ifndef _ASTAR_H
 #define _ASTAR_H
+
+#include <global_planner/planner_core.h>
+#include <global_planner/expander.h>
+#include <vector>
+#include <algorithm>
+
 namespace global_planner {
-  int create_nav_plan_astar(const COSTTYPE *costmap, int nx, int ny,
-      int* goal, int* start,
-      float *plan, int nplan);
-      /**
-       * @brief  Calculates a plan using the A* heuristic, returns true if one is found
-       * @return True if a plan is found, false otherwise
-       */
-      bool calcNavFnAstar();	/**< calculates a plan, returns true if found */
-      /**
-       * @brief  Updates the cell at index n using the A* heuristic
-       * @param n The index to update
-       */
-      void updateCellAstar(int n);	/**< updates the cell at index <n>, uses A* heuristic */
-            /**
-       * @brief  Run propagation for <cycles> iterations, or until start is reached using the best-first A* method with Euclidean distance heuristic
-       * @param cycles The maximum number of iterations to run for
-       * @return true if the start point is reached
-       */
-      bool propNavFnAstar(int cycles); /**< returns true if start point found */
+    class Index {
+        public:
+            Index(int a, float b){ i = a; cost = b; }
+            int i;
+            float cost;
+    };
+    
+    struct greater1{
+      bool operator()(const Index& a,const Index& b) const{
+        return a.cost>b.cost;
+      }
+    };
+
+
+    class AStarExpansion : public Expander {
+        public:
+            AStarExpansion(int nx, int ny);
+            bool calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles, float* potential);
+        private:
+            void add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x, int end_y);
+            std::vector<Index> queue_; 
+    };
+
 }; //end namespace global_planner
 #endif
+
+
+      /**
+       * @brief  Updates the cell at index n  
+       * @param n The index to update
+       */
+      //void updateCell(unsigned char* costs, float* potential, int n);	/**< updates the cell at index <n> */
+
