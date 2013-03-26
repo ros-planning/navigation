@@ -50,7 +50,10 @@ namespace common_costmap_plugins
     }
     
     void StaticCostmapPlugin::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level){
-        enabled_ = config.enabled;
+        if(config.enabled != enabled_){
+            enabled_ = config.enabled;
+            map_initialized_ = false;
+        }
     }
 
     void StaticCostmapPlugin::matchSize(){
@@ -92,7 +95,6 @@ namespace common_costmap_plugins
 
     void StaticCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y, double* max_x, double* max_y){
         if(!map_recieved_ || map_initialized_) return;
-        if(!enabled_) return; 
         
         mapToWorld(0,0, *min_x, *min_y);
         mapToWorld(size_x_, size_y_, *max_x, *max_y);
@@ -103,7 +105,6 @@ namespace common_costmap_plugins
     void StaticCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
         if(!map_initialized_) return;
         if(!enabled_) return; 
-        
         for(int j=min_j; j<max_j; j++){
             for(int i=min_i; i<max_i; i++){
                 int index = getIndex(i, j);

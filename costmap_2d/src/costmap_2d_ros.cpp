@@ -208,11 +208,13 @@ namespace costmap_2d {
       t_diff = end_t - start_t;
       ROS_DEBUG("Map update time: %.9f", t_diff);
       if(publish_cycle.toSec()>0){
+        unsigned int x0, y0, xn, yn;
+        layered_costmap_->getBounds(&x0, &xn, &y0, &yn);
+        publisher_->updateBounds(x0, xn, y0, yn);
+      
         ros::Time now = ros::Time::now();
         if(last_publish_+ publish_cycle < now ){
-            unsigned int x0, y0, xn, yn;
-            layered_costmap_->getBounds(&x0, &xn, &y0, &yn);
-            publisher_->publishCostmap(x0, xn, y0, yn);
+            publisher_->publishCostmap();
             last_publish_ = now;
         }
       }

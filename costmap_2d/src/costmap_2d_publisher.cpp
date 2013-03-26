@@ -47,7 +47,7 @@ namespace costmap_2d {
 
   Costmap2DPublisher::~Costmap2DPublisher(){  }
 
-  void Costmap2DPublisher::publishCostmap(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn){
+  void Costmap2DPublisher::publishCostmap(){
     boost::shared_lock< boost::shared_mutex > lock(*(costmap_->getLock()));
     double resolution = costmap_->getResolution();
     
@@ -82,21 +82,25 @@ namespace costmap_2d {
         map_msgs::OccupancyGridUpdate update;
         update.header.stamp = ros::Time::now();
         update.header.frame_id = costmap_->getGlobalFrameID();
-        update.x = x0;
-        update.y = y0;
-        update.width = xn - x0 + 1;
-        update.height = yn - y0 + 1;
+        update.x = x0_;
+        update.y = y0_;
+        update.width = xn_ - x0_;
+        update.height = yn_ - y0_;
         update.data.resize(update.width * update.height);
         
         unsigned int i = 0;
-        for(unsigned int y=y0; y<=yn; y++){
-            for(unsigned int x=x0; x<=xn;x++){
+        for(unsigned int y=y0_; y<yn_; y++){
+            for(unsigned int x=x0_; x<xn_;x++){
                 unsigned char cost = costmap_->getCost(x, y);
                 update.data[i++] = cost;
             }
         }
         costmap_update_pub_.publish(update);
     }
+    
+    xn_ = yn_ = 0;
+    x0_ = costmap_->getSizeInCellsX();
+    y0_ = costmap_->getSizeInCellsY();
   }
 
 };
