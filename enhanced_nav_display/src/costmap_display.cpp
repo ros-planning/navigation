@@ -233,7 +233,8 @@ void Costmap::incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg )
     int x = i % width_;
     int y = i / width_;
     
-    transform.setOrigin( tf::Vector3(x*resolution, y*resolution, 0) );
+    // 0.5 Offset for defining the CENTER of the square
+    transform.setOrigin( tf::Vector3((x+.5)*resolution, (y+.5)*resolution, 0) );
     t.setTransform(tf::StampedTransform(transform, now, "grid", "pt"));
     tf::StampedTransform result;
     t.lookupTransform("world", "pt", ros::Time(0), result);
