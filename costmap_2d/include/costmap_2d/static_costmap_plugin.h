@@ -3,6 +3,8 @@
 #include <ros/ros.h>
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/GenericPluginConfig.h>
+#include <dynamic_reconfigure/server.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <message_filters/subscriber.h>
 
@@ -30,6 +32,7 @@ namespace common_costmap_plugins
        * static map are overwritten.
        */
       void incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map);
+      void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 
       std::string global_frame_; ///< @brief The global frame for the costmap
       bool map_recieved_, map_initialized_;
@@ -39,6 +42,7 @@ namespace common_costmap_plugins
       unsigned char lethal_threshold_, unknown_cost_value_;
 
       mutable boost::recursive_mutex lock_;
+      dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
   };
 };
 #endif

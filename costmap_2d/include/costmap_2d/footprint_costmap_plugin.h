@@ -4,6 +4,8 @@
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/costmap_math.h>
+#include <costmap_2d/GenericPluginConfig.h>
+#include <dynamic_reconfigure/server.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PolygonStamped.h>
@@ -24,12 +26,14 @@ namespace common_costmap_plugins
 
     private:
       void publishFootprint();
+      void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 
       geometry_msgs::Polygon footprint_spec_;
       geometry_msgs::PolygonStamped footprint_;
       bool circular_;
       ros::Publisher footprint_pub_;
       double inscribed_radius_, circumscribed_radius_;
+      dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
   };
 };
 #endif

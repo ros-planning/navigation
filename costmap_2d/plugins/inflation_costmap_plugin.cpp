@@ -38,6 +38,7 @@ namespace common_costmap_plugins
             cell_inflation_radius_ = cellDistance(inflation_radius_);
             computeCaches();
         }        
+        enabled_ = config.enabled;
     }
 
     void InflationCostmapPlugin::matchSize(){
@@ -53,6 +54,7 @@ namespace common_costmap_plugins
 
 
     void InflationCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
+        if(!enabled_) return; 
         //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
         ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
         
@@ -64,6 +66,7 @@ namespace common_costmap_plugins
     }
     
     void InflationCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
+        if(!enabled_) return; 
         unsigned char* master_array = master_grid.getCharMap();
         unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 

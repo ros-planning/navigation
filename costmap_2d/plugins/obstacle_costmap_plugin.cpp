@@ -147,6 +147,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
     }
     
     void ObstacleCostmapPlugin::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level){
+        enabled_ = config.enabled;
         max_obstacle_height_ = config.max_obstacle_height;
     }
     
@@ -208,7 +209,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
     void ObstacleCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
         if(rolling_window_)
             updateOrigin(origin_x - getSizeInMetersX() / 2, origin_y - getSizeInMetersY() / 2);
-
+        if(!enabled_) return; 
         if(has_been_reset_){
             *min_x = std::min(reset_min_x_, *min_x);
             *min_y = std::min(reset_min_y_, *min_y);
@@ -287,6 +288,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
     }
 
     void ObstacleCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
+        if(!enabled_) return; 
         const unsigned char* master_array = master_grid.getCharMap();
         for(int j=min_j; j<max_j; j++){
             for(int i=min_i; i<max_i; i++){
