@@ -44,9 +44,22 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
+double sign(double x) {
+  return x < 0.0 ? -1.0 : (x > 0.0 ? 1.0 : 0.0);
+}
+
 class RobotFootprintManager {
     public:
         RobotFootprintManager(ros::NodeHandle node, std::string param_name = "footprint") {
+
+            double padding;
+            std::string padding_param;
+            if(!node.searchParam("footprint_padding", padding_param)) {
+              padding = 0;
+            }
+            else {
+              node.param(padding_param, padding, 0);
+            }
 
             //grab the footprint from the parameter server if possible
             XmlRpc::XmlRpcValue footprint_value;
@@ -108,6 +121,9 @@ class RobotFootprintManager {
                     pt.x = tmp_pt[0];
                     pt.y = tmp_pt[1];
 
+                    pt.x += sign(pt.x) * padding;
+                    pt.y += sign(pt.y) * padding;
+
                     footprint.points.push_back(pt);
                 }
 
@@ -154,6 +170,9 @@ class RobotFootprintManager {
                     pt.x = point[0].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[0]) : (double)(point[0]);
                     pt.y = point[1].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[1]) : (double)(point[1]);
 
+                    pt.x += sign(pt.x) * padding;
+                    pt.y += sign(pt.y) * padding;
+
                     footprint.points.push_back(pt);
                 }
 
@@ -185,17 +204,5 @@ class RobotFootprintManager {
         ros::Publisher publisher;
         geometry_msgs::Polygon footprint;
 };
-
-/*
- double padding;
-
- std::string padding_param, footprint_param;
- if(!node.searchParam("footprint_padding", padding_param))
- padding = 0.01;
- else
- node.param(padding_param, padding, 0.01);
-
-
- }*/
 
 #endif
