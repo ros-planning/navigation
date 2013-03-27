@@ -56,7 +56,7 @@ using namespace std;
 namespace costmap_2d {
 
   double sign(double x){
-    return x < 0.0 ? -1.0 : 1.0;
+    return x < 0.0 ? -1.0 : (x > 0.0 ? 1.0 : 0.0);
   }
 
   Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) : name_(name), tf_(tf), costmap_(NULL), 
@@ -940,6 +940,8 @@ namespace costmap_2d {
             geometry_msgs::Point pt;
             pt.x = tmp_pt[0];
             pt.y = tmp_pt[1];
+            pt.x += sign(pt.x) * padding;
+            pt.y += sign(pt.y) * padding;
 
             footprint_spec.push_back(pt);
           }
