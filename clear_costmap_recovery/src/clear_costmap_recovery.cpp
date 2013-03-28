@@ -36,9 +36,12 @@
 *********************************************************************/
 #include <clear_costmap_recovery/clear_costmap_recovery.h>
 #include <pluginlib/class_list_macros.h>
+#include <vector>
 
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_DECLARE_CLASS(clear_costmap_recovery, ClearCostmapRecovery, clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
+
+using costmap_2d::NO_INFORMATION;
 
 namespace clear_costmap_recovery {
 ClearCostmapRecovery::ClearCostmapRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
@@ -75,14 +78,61 @@ void ClearCostmapRecovery::runBehavior(){
     return;
   }
   ROS_WARN("Clearing costmap to unstuck robot.");
-
-  double gc_radius = global_costmap_->getCircumscribedRadius();
-  double lc_radius = local_costmap_->getCircumscribedRadius();
-
-  global_costmap_->resetMapOutsideWindow(reset_distance_, reset_distance_);
-  local_costmap_->resetMapOutsideWindow(reset_distance_, reset_distance_);
-
-  global_costmap_->clearNonLethalWindow(4 * gc_radius, 4 * gc_radius);
-  local_costmap_->clearNonLethalWindow(4 * lc_radius, 4 * lc_radius);
+  clear(global_costmap_);
+  clear(local_costmap_);
 }
+
+void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
+  std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >* plugins = costmap->getLayeredCostmap()->getPlugins();
+
+  tf::Stamped<tf::Pose> pose;
+
+  if(!costmap->getRobotPose(pose)){
+    ROS_ERROR("Cannot clear map because pose cannot be retrieved");
+    return;
+  }
+
+  double x = pose.getOrigin().x();
+  double y = pose.getOrigin().y();
+
+      for (std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+            boost::shared_ptr<costmap_2d::CostmapPlugin> plugin = *pluginp;
+          if(plugin->getName().find("obstacles")!=std::string::npos){
+            boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap;
+            costmap = boost::static_pointer_cast<common_costmap_plugins::ObstacleCostmapPlugin>(plugin);
+            clearMap(costmap, x, y);
+          }
+      }
+}
+
+
+  void ClearCostmapRecovery::clearMap(boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap, double pose_x, double pose_y){
+         boost::unique_lock< boost::shared_mutex > lock(*(costmap->getLock()));
+         
+         double start_point_x = pose_x - reset_distance_ / 2;
+         double start_point_y = pose_y - reset_distance_ / 2;
+         double end_point_x = start_point_x + reset_distance_;
+         double end_point_y = start_point_y + reset_distance_;
+
+         int start_x, start_y, end_x, end_y;
+         costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
+         costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
+
+         unsigned char* grid = costmap->getCharMap();
+         for(int x=0; x<(int)costmap->getSizeInCellsX(); x++){
+	   bool xrange = x>start_x && x<end_x;
+	                   
+            for(int y=0; y<(int)costmap->getSizeInCellsY(); y++){
+	      if(xrange && y>start_y && y<end_y)
+	          continue;
+                int index = costmap->getIndex(x,y);
+                if(grid[index]!=NO_INFORMATION){
+		  grid[index] = NO_INFORMATION;
+		}
+	    }
+	 }
+	 costmap->setResetBounds(0,0, costmap->getSizeInMetersX(), costmap->getSizeInMetersY());
+	 return;
+    }
+
 };

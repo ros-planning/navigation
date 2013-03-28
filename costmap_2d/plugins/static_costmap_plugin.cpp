@@ -43,6 +43,17 @@ namespace common_costmap_plugins
         }
 
         map_initialized_ = false;
+        
+        dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
+        dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(&StaticCostmapPlugin::reconfigureCB, this, _1, _2);
+        dsrv_->setCallback(cb);
+    }
+    
+    void StaticCostmapPlugin::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level){
+        if(config.enabled != enabled_){
+            enabled_ = config.enabled;
+            map_initialized_ = false;
+        }
     }
 
     void StaticCostmapPlugin::matchSize(){
@@ -93,6 +104,7 @@ namespace common_costmap_plugins
     
     void StaticCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
         if(!map_initialized_) return;
+        if(!enabled_) return; 
         for(int j=min_j; j<max_j; j++){
             for(int i=min_i; i<max_i; i++){
                 int index = getIndex(i, j);

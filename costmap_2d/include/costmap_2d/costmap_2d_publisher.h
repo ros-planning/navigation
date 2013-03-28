@@ -58,11 +58,18 @@ namespace costmap_2d {
        * @brief  Destructor
        */
       ~Costmap2DPublisher();
+      
+      void updateBounds(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn){
+        x0_ = std::min(x0, x0_);
+        xn_ = std::max(xn, xn_);
+        y0_ = std::min(y0, y0_);
+        yn_ = std::max(yn, yn_);
+      }
 
       /**
        * @brief  Publishes the visualization data over ROS
        */
-      void publishCostmap(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn);
+      void publishCostmap();
 
       /**
        * @brief Check if the publisher is active
@@ -74,6 +81,7 @@ namespace costmap_2d {
       ros::NodeHandle* node;
       Costmap2D* costmap_;
       std::string global_frame_;
+      unsigned int x0_, xn_, y0_, yn_;
       bool active_;
       ros::Publisher costmap_pub_;
       ros::Publisher costmap_update_pub_;

@@ -61,6 +61,7 @@ class Costmap2DROS{
         Costmap2D* getCostmap() { return layered_costmap_->getCostmap(); }
         std::string getGlobalFrameID() { return global_frame_; }
         std::string getBaseFrameID() { return robot_base_frame_; }
+        LayeredCostmap* getLayeredCostmap() { return layered_costmap_; } 
 
     protected:
         LayeredCostmap* layered_costmap_;

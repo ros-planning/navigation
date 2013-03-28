@@ -24,6 +24,7 @@ namespace costmap_2d {
       CostmapPlugin() {}
       LayeredCostmap* layered_costmap_;
       bool current_;
+      bool enabled_;
       std::string name_;
   };
 };  // namespace layered_costmap

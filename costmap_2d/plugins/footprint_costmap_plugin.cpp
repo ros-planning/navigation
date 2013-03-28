@@ -32,6 +32,10 @@ namespace common_costmap_plugins
             ROS_INFO_THROTTLE(5.0, "Waiting for footprint.");
         }
         
+        dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
+	dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(&FootprintCostmapPlugin::reconfigureCB, this, _1, _2);
+        dsrv_->setCallback(cb);
+
         current_ = true;
     }
     
@@ -39,8 +43,13 @@ namespace common_costmap_plugins
         footprint_spec_ = footprint;
         got_footprint_ = true;
     }
+    
+    void FootprintCostmapPlugin::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level){
+        enabled_ = config.enabled;
+    }
 
     void FootprintCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
+        if(!enabled_) return;
         //update transformed polygon 
         footprint_.header.stamp = ros::Time::now();
         footprint_.polygon.points.clear();
@@ -63,6 +72,7 @@ namespace common_costmap_plugins
     }
     
     void FootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
+        if(!enabled_) return;
         master_grid.setConvexPolygonCost(footprint_.polygon, costmap_2d::FREE_SPACE);
     }
 }

@@ -65,8 +65,7 @@ void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
     blp_nh.param("min_in_place_rotational_vel", min_rotational_vel_, 0.4);
     blp_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
 
-    local_costmap_->getCostmapCopy(costmap_);
-    world_model_ = new base_local_planner::CostmapModel(costmap_);
+    world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
 
     initialized_ = true;
   }
@@ -111,9 +110,6 @@ void RotateRecovery::runBehavior(){
 
     //compute the distance left to rotate
     double dist_left = M_PI - current_angle;
-
-    //update the costmap copy that the world model holds
-    local_costmap_->getCostmapCopy(costmap_);
 
     //check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
