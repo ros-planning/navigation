@@ -1,10 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(robot_pose_ekf)
 
+# bfl (Bayesian Filtering Library) is a third party package that uses pkg-config
+find_package(PkgConfig)
+pkg_check_modules(BFL REQUIRED bfl)
+include_directories(${BFL_INCLUDE_DIRS})
+message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
+message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
+link_directories(${BFL_LIBRARY_DIRS})
+
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            bfl
             tf
             nav_msgs
             std_msgs
@@ -45,6 +52,7 @@ add_executable(robot_pose_ekf
 target_link_libraries(robot_pose_ekf
     ${catkin_LIBRARIES}
     ${Boost_LIBRARIES}
+    ${BFL_LIBRARIES}
     )
 add_dependencies(robot_pose_ekf robot_pose_ekf_gencpp)
 
@@ -63,6 +71,7 @@ add_executable(test_robot_pose_ekf test/test_robot_pose_ekf.cpp)
 target_link_libraries(test_robot_pose_ekf
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
+    ${BFL_LIBRARIES}
     gtest
     )
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf.launch)
@@ -72,6 +81,7 @@ add_executable(test_robot_pose_ekf_zero_covariance test/test_robot_pose_ekf_zero
 target_link_libraries(test_robot_pose_ekf_zero_covariance
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
+    ${BFL_LIBRARIES}
     gtest
     )
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
