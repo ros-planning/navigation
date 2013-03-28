@@ -109,7 +109,7 @@ class RobotFootprintManager {
                         throw std::runtime_error("Values in the footprint specification must be numbers");
                     }
                     
-                    pt.x = point[0].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[0]) : (double)(point[0])  + 3;
+                    pt.x = point[0].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[0]) : (double)(point[0]);
                     pt.y = point[1].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[1]) : (double)(point[1]);
                
                     footprint.points.push_back(pt);
