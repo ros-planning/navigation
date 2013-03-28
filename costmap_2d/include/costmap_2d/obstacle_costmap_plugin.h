@@ -64,8 +64,7 @@ namespace common_costmap_plugins
       }
       
 
-    private:
-      void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
+    protected:
       void initMaps();
       
       /**
@@ -86,7 +85,7 @@ namespace common_costmap_plugins
        * @brief  Clear freespace based on one observation
        * @param clearing_observation The observation used to raytrace 
        */
-      void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y, double* max_x, double* max_y);
+      virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y, double* max_x, double* max_y);
 
       std::string global_frame_; ///< @brief The global frame for the costmap
       double max_obstacle_height_; ///< @brief Max Obstacle Height
@@ -104,6 +103,11 @@ namespace common_costmap_plugins
       
       bool has_been_reset_;
       double reset_min_x_, reset_max_x_, reset_min_y_, reset_max_y_;
+      
+      
+        private:
+              void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
+
   };
 };
 #endif

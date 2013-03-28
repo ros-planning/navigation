@@ -1,0 +1,350 @@
+#include<costmap_2d/voxel_costmap_plugin.h>
+#include<costmap_2d/costmap_math.h>
+#include <pluginlib/class_list_macros.h>
+#define VOXEL_BITS 16
+PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::VoxelCostmapPlugin, costmap_2d::CostmapPluginROS)
+
+using costmap_2d::NO_INFORMATION;
+using costmap_2d::LETHAL_OBSTACLE;
+using costmap_2d::FREE_SPACE;
+
+using costmap_2d::ObservationBuffer;
+using costmap_2d::Observation;
+
+namespace common_costmap_plugins
+{
+
+void VoxelCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+{
+    ros::NodeHandle private_nh("~/" + name);
+
+    dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(private_nh);
+    dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>::CallbackType cb = 
+                    boost::bind(&VoxelCostmapPlugin::reconfigureCB, this, _1, _2);
+    dsrv_->setCallback(cb);
+            
+    private_nh.param("publish_voxel_map", publish_voxel_, false);
+    //if(publish_voxel_)
+    //  voxel_pub_ = private_nh.advertise<voxel_grid::VoxelGrid>("voxel_grid", 1);
+
+}
+
+  void VoxelCostmapPlugin::initMaps(){
+    ObstacleCostmapPlugin::initMaps();
+    voxel_grid_.resize(size_x_, size_y_, size_z_);
+    ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
+  }
+      
+void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level){
+        enabled_ = config.enabled;
+        max_obstacle_height_ = config.max_obstacle_height;
+        size_z_ = config.z_voxels;
+        z_resolution_ = config.z_resolution;
+        unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
+        mark_threshold_ = config.mark_threshold;
+    }
+    
+    
+
+
+
+
+    void VoxelCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y){
+        if(rolling_window_)
+            updateOrigin(origin_x - getSizeInMetersX() / 2, origin_y - getSizeInMetersY() / 2);
+        if(!enabled_) return; 
+        if(has_been_reset_){
+            *min_x = std::min(reset_min_x_, *min_x);
+            *min_y = std::min(reset_min_y_, *min_y);
+            *max_x = std::max(reset_max_x_, *max_x);
+            *max_y = std::max(reset_max_y_, *max_y);
+	    reset_min_x_ = 1e6;
+	    reset_min_y_ = 1e6;
+	    reset_max_x_ = -1e6;
+	    reset_max_y_ = -1e6;
+            has_been_reset_ = false;
+        }
+            
+        bool current = true;
+        std::vector<Observation> observations, clearing_observations;
+
+        //get the marking observations
+        current = current && getMarkingObservations(observations);
+
+        //get the clearing observations
+        current = current && getClearingObservations(clearing_observations);
+
+        //update the global current status
+        current_ = current;
+
+        //raytrace freespace
+        for(unsigned int i = 0; i < clearing_observations.size(); ++i){
+            raytraceFreespace(clearing_observations[i], min_x, min_y, max_x, max_y);
+        }
+
+        //place the new obstacles into a priority queue... each with a priority of zero to begin with
+        for(std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
+          const Observation& obs = *it;
+
+          const pcl::PointCloud<pcl::PointXYZ>& cloud =obs.cloud_;
+
+          double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
+
+
+          for(unsigned int i = 0; i < cloud.points.size(); ++i){
+            //if the obstacle is too high or too far away from the robot we won't add it
+            if(cloud.points[i].z > max_obstacle_height_)
+              continue;
+
+            //compute the squared distance from the hitpoint to the pointcloud's origin
+            double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
+              + (cloud.points[i].y - obs.origin_.y) * (cloud.points[i].y - obs.origin_.y)
+              + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
+
+            //if the point is far enough away... we won't consider it
+            if(sq_dist >= sq_obstacle_range)
+              continue;
+
+            //now we need to compute the map coordinates for the observation
+            unsigned int mx, my, mz;
+            if(cloud.points[i].z < origin_z_){
+              if(!worldToMap3D(cloud.points[i].x, cloud.points[i].y, origin_z_, mx, my, mz))
+                continue;
+            }
+            else if(!worldToMap3D(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z, mx, my, mz)){
+              continue;
+            }
+
+            //mark the cell in the voxel grid and check if we should also mark it in the costmap
+            if(voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_)){
+              unsigned int index = getIndex(mx, my);
+
+            costmap_[index] = LETHAL_OBSTACLE;
+            *min_x = std::min((double)cloud.points[i].x, *min_x);
+            *min_y = std::min((double)cloud.points[i].y, *min_y);
+            *max_x = std::max((double)cloud.points[i].x, *max_x);
+            *max_y = std::max((double)cloud.points[i].y, *max_y);
+            }
+          }
+      }
+
+
+
+        
+        /*
+            if(publish_voxel_){
+      voxel_grid_.header.frame_id = global_frame_;
+      voxel_grid_.header.stamp = ros::Time::now();
+      voxel_pub_.publish(voxel_grid_);
+    }*/
+    }
+
+    void VoxelCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
+        if(!enabled_) return; 
+        const unsigned char* master_array = master_grid.getCharMap();
+        for(int j=min_j; j<max_j; j++){
+            for(int i=min_i; i<max_i; i++){
+                int index = getIndex(i, j);
+                if(costmap_[index]==NO_INFORMATION)
+                    continue;
+                unsigned char old_cost = master_array[index];
+                if(old_cost==NO_INFORMATION || old_cost<costmap_[index])
+                    master_grid.setCost(i,j, costmap_[index]);
+            }
+        }
+    }
+    
+    
+      void VoxelCostmapPlugin::clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info){
+    //get the cell coordinates of the center point of the window
+    unsigned int mx, my;
+    if(!worldToMap(wx, wy, mx, my))
+      return;
+
+    //compute the bounds of the window
+    double start_x = wx - w_size_x / 2;
+    double start_y = wy - w_size_y / 2;
+    double end_x = start_x + w_size_x;
+    double end_y = start_y + w_size_y;
+
+    //scale the window based on the bounds of the costmap
+    start_x = std::max(origin_x_, start_x);
+    start_y = std::max(origin_y_, start_y);
+
+    end_x = std::min(origin_x_ + getSizeInMetersX(), end_x);
+    end_y = std::min(origin_y_ + getSizeInMetersY(), end_y);
+
+    //get the map coordinates of the bounds of the window
+    unsigned int map_sx, map_sy, map_ex, map_ey;
+
+    //check for legality just in case
+    if(!worldToMap(start_x, start_y, map_sx, map_sy) || !worldToMap(end_x, end_y, map_ex, map_ey))
+      return;
+
+    //we know that we want to clear all non-lethal obstacles in this window to get it ready for inflation
+    unsigned int index = getIndex(map_sx, map_sy);
+    unsigned char* current = &costmap_[index];
+    for(unsigned int j = map_sy; j <= map_ey; ++j){
+      for(unsigned int i = map_sx; i <= map_ex; ++i){
+        //if the cell is a lethal obstacle... we'll keep it and queue it, otherwise... we'll clear it
+        if(*current != LETHAL_OBSTACLE){
+          if(clear_no_info || *current != NO_INFORMATION){
+            *current = FREE_SPACE;
+            voxel_grid_.clearVoxelColumn(index);
+          }
+        }
+        current++;
+        index++;
+      }
+      current += size_x_ - (map_ex - map_sx) - 1;
+      index += size_x_ - (map_ex - map_sx) - 1;
+    }
+  }
+  
+    void VoxelCostmapPlugin::raytraceFreespace(const Observation& clearing_observation, double* min_x, double* min_y, double* max_x, double* max_y){
+    if(clearing_observation.cloud_.points.size() == 0)
+      return;
+
+
+    double sensor_x, sensor_y, sensor_z;
+    double ox = clearing_observation.origin_.x;
+    double oy = clearing_observation.origin_.y;
+    double oz = clearing_observation.origin_.z;
+
+    if(!worldToMap3DFloat(ox, oy, oz, sensor_x, sensor_y, sensor_z)){
+      ROS_WARN_THROTTLE(1.0, "The origin for the sensor at (%.2f, %.2f, %.2f) is out of map bounds. So, the costmap cannot raytrace for it.", ox, oy, oz);
+      return;
+    }
+
+    //we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
+    double map_end_x = origin_x_ + getSizeInMetersX();
+    double map_end_y = origin_y_ + getSizeInMetersY();
+
+    for(unsigned int i = 0; i < clearing_observation.cloud_.points.size(); ++i){
+      double wpx = clearing_observation.cloud_.points[i].x;
+      double wpy = clearing_observation.cloud_.points[i].y;
+      double wpz = clearing_observation.cloud_.points[i].z;
+
+      double distance = dist(ox, oy, oz, wpx, wpy, wpz);
+      double scaling_fact = 1.0;
+      scaling_fact = std::max(std::min(scaling_fact, (distance -  2 * xy_resolution_) / distance), 0.0);
+      wpx = scaling_fact * (wpx - ox) + ox;
+      wpy = scaling_fact * (wpy - oy) + oy;
+      wpz = scaling_fact * (wpz - oz) + oz;
+
+      double a = wpx - ox;
+      double b = wpy - oy;
+      double c = wpz - oz;
+      double t = 1.0;
+
+      //we can only raytrace to a maximum z height
+      if(wpz > max_obstacle_height_){
+        //we know we want the vector's z value to be max_z
+        t = std::min(t, (max_obstacle_height_ - 0.01 - oz) / c);
+      }
+      //and we can only raytrace down to the floor
+      else if(wpz < origin_z_){
+        //we know we want the vector's z value to be 0.0
+        t = std::min(t, (origin_z_ - oz) / c);
+      }
+
+      //the minimum value to raytrace from is the origin
+      if(wpx < origin_x_){
+        t = std::min(t, (origin_x_ - ox) / a);
+      }
+      if(wpy < origin_y_){
+        t = std::min(t, (origin_y_ - oy) / b);
+      }
+
+      //the maximum value to raytrace to is the end of the map
+      if(wpx > map_end_x){
+        t = std::min(t, (map_end_x - ox) / a);
+      }
+      if(wpy > map_end_y){
+        t = std::min(t, (map_end_y - oy) / b);
+      }
+
+      wpx = ox + a * t;
+      wpy = oy + b * t;
+      wpz = oz + c * t;
+
+      double point_x, point_y, point_z;
+      if(worldToMap3DFloat(wpx, wpy, wpz, point_x, point_y, point_z)){
+        unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
+        
+        //voxel_grid_.markVoxelLine(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z);
+        voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z, costmap_, 
+            unknown_threshold_, mark_threshold_, FREE_SPACE, NO_INFORMATION, cell_raytrace_range);
+            
+            
+    
+        *min_x = std::min(point_x, *min_x);
+        *min_y = std::min(point_y, *min_y);
+        *max_x = std::max(point_x, *max_x);
+        *max_y = std::max(point_y, *max_y);
+      }
+      
+      
+      
+    }
+  }
+
+
+  void VoxelCostmapPlugin::updateOrigin(double new_origin_x, double new_origin_y){
+    //project the new origin into the grid
+    int cell_ox, cell_oy;
+    cell_ox = int((new_origin_x - origin_x_) / resolution_);
+    cell_oy = int((new_origin_y - origin_y_) / resolution_);
+
+    //compute the associated world coordinates for the origin cell
+    //beacuase we want to keep things grid-aligned
+    double new_grid_ox, new_grid_oy;
+    new_grid_ox = origin_x_ + cell_ox * resolution_;
+    new_grid_oy = origin_y_ + cell_oy * resolution_;
+
+    //To save casting from unsigned int to int a bunch of times
+    int size_x = size_x_;
+    int size_y = size_y_;
+
+    //we need to compute the overlap of the new and existing windows
+    int lower_left_x, lower_left_y, upper_right_x, upper_right_y;
+    lower_left_x = std::min(std::max(cell_ox, 0), size_x);
+    lower_left_y = std::min(std::max(cell_oy, 0), size_y);
+    upper_right_x = std::min(std::max(cell_ox + size_x, 0), size_x);
+    upper_right_y = std::min(std::max(cell_oy + size_y, 0), size_y);
+
+    unsigned int cell_size_x = upper_right_x - lower_left_x;
+    unsigned int cell_size_y = upper_right_y - lower_left_y;
+
+    //we need a map to store the obstacles in the window temporarily
+    unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
+    unsigned int* local_voxel_map = new unsigned int[cell_size_x * cell_size_y];
+    unsigned int* voxel_map = voxel_grid_.getData(); 
+
+    //copy the local window in the costmap to the local map
+    copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
+    copyMapRegion(voxel_map, lower_left_x, lower_left_y, size_x_, local_voxel_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
+
+    //we'll reset our maps to unknown space if appropriate
+    resetMaps();
+
+    //update the origin with the appropriate world coordinates
+    origin_x_ = new_grid_ox;
+    origin_y_ = new_grid_oy;
+
+    //compute the starting cell location for copying data back in
+    int start_x = lower_left_x - cell_ox;
+    int start_y = lower_left_y - cell_oy;
+
+    //now we want to copy the overlapping information back into the map, but in its new location
+    copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+    copyMapRegion(local_voxel_map, 0, 0, cell_size_x, voxel_map, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+
+    //make sure to clean up
+    delete[] local_map;
+    delete[] local_voxel_map;
+
+  }
+  
+    
+}
