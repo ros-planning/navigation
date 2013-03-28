@@ -68,7 +68,7 @@ class RobotFootprintManager {
                         break;
 
                     geometry_msgs::Point32 pt;
-                    pt.x = tmp_pt[0]+4;
+                    pt.x = tmp_pt[0];
                     pt.y = tmp_pt[1];
 
                     footprint.points.push_back(pt);
