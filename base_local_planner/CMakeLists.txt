@@ -30,6 +30,7 @@ include_directories(
 )
 add_definitions(${EIGEN_DEFINITIONS})
 
+catkin_python_setup()
 
 # messages
 add_message_files(
@@ -112,10 +113,6 @@ install(TARGETS
 install(FILES blp_plugin.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
-
-install(FILES src/local_planner_limits.py
-    DESTINATION ${CATKIN_PACKAGE_PYTHON_DESTINATION}
-    )
 
 catkin_add_gtest(base_local_planner_utest
 	test/gtest_main.cpp
