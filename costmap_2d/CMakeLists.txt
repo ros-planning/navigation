@@ -67,6 +67,7 @@ target_link_libraries(costmap_2d
     ${catkin_LIBRARIES}
     )
 add_dependencies(costmap_2d costmap_2d_gencfg)
+add_dependencies(costmap_2d costmap_2d_gencpp)
 
 add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
 target_link_libraries(costmap_2d_markers
