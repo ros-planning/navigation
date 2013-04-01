@@ -11,9 +11,9 @@
 #include <global_planner/expander.h>
 
   // inserting onto the priority blocks
-#define push_cur(n)  { if (n>=0 && n<ns_ && !pending[n] && costs[n]<lethal_cost_ && curPe<PRIORITYBUFSIZE) { curP[curPe++]=n; pending[n]=true; }}
-#define push_next(n) { if (n>=0 && n<ns_ && !pending[n] && costs[n]<lethal_cost_ && nextPe<PRIORITYBUFSIZE){ nextP[nextPe++]=n; pending[n]=true; }}
-#define push_over(n) { if (n>=0 && n<ns_ && !pending[n] && costs[n]<lethal_cost_ && overPe<PRIORITYBUFSIZE){ overP[overPe++]=n; pending[n]=true; }}
+#define push_cur(n)  { if (n>=0 && n<ns_ && !pending[n] && getCost(costs, n)<lethal_cost_ && curPe<PRIORITYBUFSIZE) { curP[curPe++]=n; pending[n]=true; }}
+#define push_next(n) { if (n>=0 && n<ns_ && !pending[n] && getCost(costs, n)<lethal_cost_ && nextPe<PRIORITYBUFSIZE){ nextP[nextPe++]=n; pending[n]=true; }}
+#define push_over(n) { if (n>=0 && n<ns_ && !pending[n] && getCost(costs, n)<lethal_cost_ && overPe<PRIORITYBUFSIZE){ overP[overPe++]=n; pending[n]=true; }}
 // potential defs
 #define POT_HIGH 1.0e10		// unassigned cell potential
 
@@ -37,6 +37,17 @@ namespace global_planner {
        * @param n The index to update
        */
       void updateCell(unsigned char* costs, float* potential, int n);	/**< updates the cell at index <n> */
+      
+      float getCost(unsigned char* costs, int n){
+       float c = costs[n];
+        if(c < lethal_cost_-1){
+            c = c * 3.0 + COST_NEUTRAL;
+            if(c>=lethal_cost_)
+                c = lethal_cost_-1;
+            return c;
+        }
+        return lethal_cost_;
+      }
         
         
       /** block priority buffers */

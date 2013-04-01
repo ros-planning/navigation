@@ -150,9 +150,11 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
       if (u<d) ta=u; else ta=d;
 
       // do planar wave update
-      if (costs[n] < lethal_cost_)	// don't propagate into obstacles
+       float c = getCost(costs,n );
+      if (c < lethal_cost_ )	// don't propagate into obstacles
       {
-        float hf = (float)costs[n]+ COST_NEUTRAL; // traversability factor
+      
+        float hf = c; // traversability factor
         float dc = tc-ta;		// relative cost between ta,tc
         if (dc < 0) 		// ta is lowest
         {
@@ -179,10 +181,10 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
         // now add affected neighbors to priority blocks
         if (pot < potential[n])
         {
-          float le = INVSQRT2*(float)costs[n-1];
-          float re = INVSQRT2*(float)costs[n+1];
-          float ue = INVSQRT2*(float)costs[n-nx_];
-          float de = INVSQRT2*(float)costs[n+nx_];
+          float le = INVSQRT2*(float)getCost(costs, n-1);
+          float re = INVSQRT2*(float)getCost(costs, n+1);
+          float ue = INVSQRT2*(float)getCost(costs, n-nx_);
+          float de = INVSQRT2*(float)getCost(costs, n+nx_);
           potential[n] = pot;
           //ROS_INFO("UPDATE %d %d %d %f", n, n%nx, n/nx, potential[n]);
           if (pot < curT)	// low-cost buffer block 

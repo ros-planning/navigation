@@ -37,7 +37,9 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
     // set up offset
       float dx=0;
       float dy=0;
-    path.push_back(current);
+      int ns = xs_ * ys_;
+      memset(gradx, 0, ns*sizeof(float));
+      memset(grady, 0, ns*sizeof(float));
     
     while(1){
         // check if near goal
@@ -111,7 +113,7 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
           dy = 0;
 
           //ROS_DEBUG("[Path] Pot: %0.1f  pos: %0.1f,%0.1f",
-          //    potential[stc], pathx[npath-1], pathy[npath-1]);
+          //    potential[stc], path[npath-1].first, path[npath-1].second);
 
           if (potential[stc] >= POT_HIGH)
           {
@@ -166,6 +168,8 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
 
         }
 
+        //printf("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
+        //	     potential[stc], dx, dy, path[npath-1].first, path[npath-1].second);
     }
     
     
@@ -190,8 +194,6 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
         
 
 
-        //      ROS_INFO("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
-        //	     potential[stc], x, y, pathx[npath-1], pathy[npath-1]);
       }
 
       //  return npath;			// out of cycles, return failure
@@ -217,7 +219,6 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
 
       if (n < xs_ || n > xs_*ys_-xs_)	// would be out of bounds
         return 0.0;
-
       float cv = potential[n];
       float dx = 0.0;
       float dy = 0.0;
