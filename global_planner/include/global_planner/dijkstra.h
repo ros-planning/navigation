@@ -11,9 +11,9 @@
 #include <global_planner/expander.h>
 
   // inserting onto the priority blocks
-#define push_cur(n)  { if (n>=0 && n<ns_ && !pending[n] && getCost(costs, n)<lethal_cost_ && curPe<PRIORITYBUFSIZE) { curP[curPe++]=n; pending[n]=true; }}
-#define push_next(n) { if (n>=0 && n<ns_ && !pending[n] && getCost(costs, n)<lethal_cost_ && nextPe<PRIORITYBUFSIZE){ nextP[nextPe++]=n; pending[n]=true; }}
-#define push_over(n) { if (n>=0 && n<ns_ && !pending[n] && getCost(costs, n)<lethal_cost_ && overPe<PRIORITYBUFSIZE){ overP[overPe++]=n; pending[n]=true; }}
+#define push_cur(n)  { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ && currentEnd_<PRIORITYBUFSIZE){ currentBuffer_[currentEnd_++]=n; pending_[n]=true; }}
+#define push_next(n) { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ &&    nextEnd_<PRIORITYBUFSIZE){    nextBuffer_[   nextEnd_++]=n; pending_[n]=true; }}
+#define push_over(n) { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ &&    overEnd_<PRIORITYBUFSIZE){    overBuffer_[   overEnd_++]=n; pending_[n]=true; }}
 // potential defs
 #define POT_HIGH 1.0e10		// unassigned cell potential
 
@@ -41,7 +41,7 @@ namespace global_planner {
       float getCost(unsigned char* costs, int n){
        float c = costs[n];
         if(c < lethal_cost_-1){
-            c = c * 3.0 + COST_NEUTRAL;
+            c = c * 3.0 + neutral_cost_;
             if(c>=lethal_cost_)
                 c = lethal_cost_-1;
             return c;
@@ -51,14 +51,14 @@ namespace global_planner {
         
         
       /** block priority buffers */
-      int *pb1, *pb2, *pb3;		/**< storage buffers for priority blocks */
-      int *curP, *nextP, *overP;	/**< priority buffer block ptrs */
-      int curPe, nextPe, overPe; /**< end points of arrays */
-      bool    *pending;		/**< pending cells during propagation */
+      int *buffer1_, *buffer2_, *buffer3_;		/**< storage buffers for priority blocks */
+      int *currentBuffer_, *nextBuffer_, *overBuffer_;	/**< priority buffer block ptrs */
+      int currentEnd_, nextEnd_, overEnd_; /**< end points of arrays */
+      bool    *pending_;		/**< pending_ cells during propagation */
       
       /** block priority thresholds */
-      float curT;			/**< current threshold */
-      float priInc;			/**< priority threshold increment */
+      float threshold_;			/**< current threshold */
+      float priorityIncrement_;			/**< priority threshold increment */
       
     };
 }; //end namespace global_planner

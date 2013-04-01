@@ -73,13 +73,13 @@ bool AStarExpansion::calculatePotential(unsigned char* costs, int start_x, int s
 void AStarExpansion::add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x, int end_y){
     if(potential[next_i] < POT_HIGH) return;
     
-    potential[ next_i ] = prev_potential + costs[next_i] + COST_NEUTRAL;
+    potential[ next_i ] = prev_potential + costs[next_i] + neutral_cost_;
     int x = next_i % nx_, y = next_i / nx_;
     float distance = abs(end_x - x) + abs(end_y - y);
         
     //ROS_INFO("%d %d | %d %d %f", x,y, end_x, end_y, distance);
     
-    queue_.push_back( Index(next_i, potential[ next_i ] + distance * COST_NEUTRAL) );
+    queue_.push_back( Index(next_i, potential[ next_i ] + distance * neutral_cost_) );
     //ROS_INFO("%d", queue_.size());
         std::push_heap (queue_.begin(),queue_.end(),greater1());
 }

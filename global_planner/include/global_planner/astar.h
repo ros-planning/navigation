@@ -33,10 +33,3 @@ namespace global_planner {
 }; //end namespace global_planner
 #endif
 
-
-      /**
-       * @brief  Updates the cell at index n  
-       * @param n The index to update
-       */
-      //void updateCell(unsigned char* costs, float* potential, int n);	/**< updates the cell at index <n> */
-

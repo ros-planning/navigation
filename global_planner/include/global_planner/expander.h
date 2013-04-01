@@ -4,7 +4,7 @@ namespace global_planner {
 
     class Expander {
         public:
-            Expander(int nx, int ny) : unknown_(true), lethal_cost_(254), COST_NEUTRAL(50) { setSize(nx, ny); }
+            Expander(int nx, int ny) : unknown_(true), lethal_cost_(254), neutral_cost_(50) { setSize(nx, ny); }
             virtual bool calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles, float* potential) = 0; 
             
             /**
@@ -21,7 +21,7 @@ namespace global_planner {
       
             int nx_, ny_, ns_;		/**< size of grid, in pixels */
             bool unknown_;
-            unsigned char lethal_cost_, COST_NEUTRAL;
+            unsigned char lethal_cost_, neutral_cost_;
             int cells_visited_;
     };
     

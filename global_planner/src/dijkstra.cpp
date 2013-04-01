@@ -2,17 +2,17 @@
 #include <algorithm>
 namespace global_planner {
 
-DijkstraExpansion::DijkstraExpansion(int nx, int ny) : Expander(nx, ny), pending(NULL)
+DijkstraExpansion::DijkstraExpansion(int nx, int ny) : Expander(nx, ny), pending_(NULL)
 {
     // priority buffers
-    pb1 = new int[PRIORITYBUFSIZE];
-    pb2 = new int[PRIORITYBUFSIZE];
-    pb3 = new int[PRIORITYBUFSIZE];
-    COST_NEUTRAL = 50;
+    buffer1_ = new int[PRIORITYBUFSIZE];
+    buffer2_ = new int[PRIORITYBUFSIZE];
+    buffer3_ = new int[PRIORITYBUFSIZE];
+    neutral_cost_ = 50;
 
-    // for Dijkstra (breadth-first), set to COST_NEUTRAL
-    // for A* (best-first), set to COST_NEUTRAL
-    priInc = 2*COST_NEUTRAL;	
+    // for Dijkstra (breadth-first), set to neutral_cost_
+    // for A* (best-first), set to neutral_cost_
+    priorityIncrement_ = 2*neutral_cost_;	
     
 }
 
@@ -22,11 +22,11 @@ DijkstraExpansion::DijkstraExpansion(int nx, int ny) : Expander(nx, ny), pending
 void DijkstraExpansion::setSize(int xs, int ys)
 {
     Expander::setSize(xs, ys); 
-      if(pending)
-        delete[] pending;
+      if(pending_)
+        delete[] pending_;
 
-      pending = new bool[ns_];
-      memset(pending,   0,        ns_*sizeof(bool));
+      pending_ = new bool[ns_];
+      memset(pending_,   0,        ns_*sizeof(bool));
 }
 
 
@@ -42,14 +42,14 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
 {
     cells_visited_ = 0;
           // priority buffers
-      curT = lethal_cost_;
-      curP = pb1; 
-      curPe = 0;
-      nextP = pb2;
-      nextPe = 0;
-      overP = pb3;
-      overPe = 0;
-      memset(pending,   0,        ns_*sizeof(bool));
+      threshold_ = lethal_cost_;
+      currentBuffer_ = buffer1_; 
+      currentEnd_ = 0;
+      nextBuffer_ = buffer2_;
+      nextEnd_ = 0;
+      overBuffer_ = buffer3_;
+      overEnd_ = 0;
+      memset(pending_,   0,        ns_*sizeof(bool));
       std::fill(potential,  potential+ns_,  POT_HIGH);
 
       // set goal
@@ -70,42 +70,42 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
       for (; cycle < cycles; cycle++) // go for this many cycles, unless interrupted
       {
         // 
-        if (curPe == 0 && nextPe == 0) // priority blocks empty
+        if (currentEnd_ == 0 && nextEnd_ == 0) // priority blocks empty
           break;
 
         // stats
-        nc += curPe;
-        if (curPe > nwv)
-          nwv = curPe;
+        nc += currentEnd_;
+        if (currentEnd_ > nwv)
+          nwv = currentEnd_;
 
-        // reset pending flags on current priority buffer
-        int *pb = curP;
-        int i = curPe;			
+        // reset pending_ flags on current priority buffer
+        int *pb = currentBuffer_;
+        int i = currentEnd_;			
         while (i-- > 0)		
-          pending[*(pb++)] = false;
+          pending_[*(pb++)] = false;
 
         // process current priority buffer
-        pb = curP; 
-        i = curPe;
+        pb = currentBuffer_; 
+        i = currentEnd_;
         while (i-- > 0)		
           updateCell(costs, potential, *pb++);
 
-        // swap priority blocks curP <=> nextP
-        curPe = nextPe;
-        nextPe = 0;
-        pb = curP;		// swap buffers
-        curP = nextP;
-        nextP = pb;
+        // swap priority blocks currentBuffer_ <=> nextBuffer_
+        currentEnd_ = nextEnd_;
+        nextEnd_ = 0;
+        pb = currentBuffer_;		// swap buffers
+        currentBuffer_ = nextBuffer_;
+        nextBuffer_ = pb;
 
         // see if we're done with this priority level
-        if (curPe == 0)
+        if (currentEnd_ == 0)
         {
-          curT += priInc;	// increment priority threshold
-          curPe = overPe;	// set current to overflow block
-          overPe = 0;
-          pb = curP;		// swap buffers
-          curP = overP;
-          overP = pb;
+          threshold_ += priorityIncrement_;	// increment priority threshold
+          currentEnd_ = overEnd_;	// set current to overflow block
+          overEnd_ = 0;
+          pb = currentBuffer_;		// swap buffers
+          currentBuffer_ = overBuffer_;
+          overBuffer_ = pb;
         }
 
         // check if we've hit the Start cell
@@ -187,7 +187,7 @@ bool DijkstraExpansion::calculatePotential(unsigned char* costs, int start_x, in
           float de = INVSQRT2*(float)getCost(costs, n+nx_);
           potential[n] = pot;
           //ROS_INFO("UPDATE %d %d %d %f", n, n%nx, n/nx, potential[n]);
-          if (pot < curT)	// low-cost buffer block 
+          if (pot < threshold_)	// low-cost buffer block 
           {
             if (l > pot+le) push_next(n-1);
             if (r > pot+re) push_next(n+1);

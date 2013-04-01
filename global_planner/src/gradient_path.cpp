@@ -6,26 +6,26 @@
 
 namespace global_planner {
 
-GradientPath::GradientPath() : pathStep(0.5), COST_OBS(253) {
-    gradx = grady = NULL;
+GradientPath::GradientPath() : pathStep_(0.5), lethal_cost_(253) {
+    gradx_ = grady_ = NULL;
 }
 
 GradientPath::~GradientPath(){
 
-    if(gradx)
-      delete[] gradx;
-    if(grady)
-      delete[] grady;
+    if(gradx_)
+      delete[] gradx_;
+    if(grady_)
+      delete[] grady_;
 }
 
 void GradientPath::setSize(int xs, int ys){
     Traceback::setSize(xs, ys);
-     if(gradx)
-        delete[] gradx;
-      if(grady)
-        delete[] grady;
-      gradx = new float[xs*ys];
-      grady = new float[xs*ys];
+     if(gradx_)
+        delete[] gradx_;
+      if(grady_)
+        delete[] grady_;
+      gradx_ = new float[xs*ys];
+      grady_ = new float[xs*ys];
 }
 
 bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<std::pair<float, float> >& path){
@@ -38,8 +38,8 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
       float dx=0;
       float dy=0;
       int ns = xs_ * ys_;
-      memset(gradx, 0, ns*sizeof(float));
-      memset(grady, 0, ns*sizeof(float));
+      memset(gradx_, 0, ns*sizeof(float));
+      memset(grady_, 0, ns*sizeof(float));
     
     while(1){
         // check if near goal
@@ -135,17 +135,17 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
 
 
           // get interpolated gradient
-          float x1 = (1.0-dx)*gradx[stc] + dx*gradx[stc+1];
-          float x2 = (1.0-dx)*gradx[stcnx] + dx*gradx[stcnx+1];
+          float x1 = (1.0-dx)*gradx_[stc] + dx*gradx_[stc+1];
+          float x2 = (1.0-dx)*gradx_[stcnx] + dx*gradx_[stcnx+1];
           float x = (1.0-dy)*x1 + dy*x2; // interpolated x
-          float y1 = (1.0-dx)*grady[stc] + dx*grady[stc+1];
-          float y2 = (1.0-dx)*grady[stcnx] + dx*grady[stcnx+1];
+          float y1 = (1.0-dx)*grady_[stc] + dx*grady_[stc+1];
+          float y2 = (1.0-dx)*grady_[stcnx] + dx*grady_[stcnx+1];
           float y = (1.0-dy)*y1 + dy*y2; // interpolated y
 
           // show gradients
           ROS_DEBUG("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n",
-                    gradx[stc], grady[stc], gradx[stc+1], grady[stc+1], 
-                    gradx[stcnx], grady[stcnx], gradx[stcnx+1], grady[stcnx+1],
+                    gradx_[stc], grady_[stc], gradx_[stc+1], grady_[stc+1], 
+                    gradx_[stcnx], grady_[stcnx], gradx_[stcnx+1], grady_[stcnx+1],
                     x, y);
 
           // check for zero gradient, failed
@@ -156,7 +156,7 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
           }
 
           // move in the right direction
-          float ss = pathStep/sqrt(x*x+y*y);
+          float ss = pathStep_/sqrt(x*x+y*y);
           dx += x*ss;
           dy += y*ss;
 
@@ -214,7 +214,7 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
   float				
     GradientPath::gradCell(float* potential, int n)
     {
-      if (gradx[n]+grady[n] > 0.0)	// check this cell
+      if (gradx_[n]+grady_[n] > 0.0)	// check this cell
         return 1.0;			
 
       if (n < xs_ || n > xs_*ys_-xs_)	// would be out of bounds
@@ -227,14 +227,14 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
       if (cv >= POT_HIGH) 
       {
         if (potential[n-1] < POT_HIGH)
-          dx = -COST_OBS;
+          dx = -lethal_cost_;
         else if (potential[n+1] < POT_HIGH)
-          dx = COST_OBS;
+          dx = lethal_cost_;
 
         if (potential[n-xs_] < POT_HIGH)
-          dy = -COST_OBS;
+          dy = -lethal_cost_;
         else if (potential[xs_+1] < POT_HIGH)
-          dy = COST_OBS;
+          dy = lethal_cost_;
       }
 
       else				// not in an obstacle
@@ -257,8 +257,8 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
       if (norm > 0)
       {
         norm = 1.0/norm;
-        gradx[n] = norm*dx;
-        grady[n] = norm*dy;
+        gradx_[n] = norm*dx;
+        grady_[n] = norm*dy;
       }
       return norm;
     }

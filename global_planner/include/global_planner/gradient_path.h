@@ -32,10 +32,10 @@ class GradientPath: public Traceback {
       float	 gradCell(float* potential, int n);
     
     
-      float *gradx, *grady;		/**< gradient arrays, size of potential array */
+      float *gradx_, *grady_;		/**< gradient arrays, size of potential array */
 
-      float pathStep;		/**< step size for following gradient */
-      unsigned char COST_OBS;
+      float pathStep_;		/**< step size for following gradient */
+      unsigned char lethal_cost_;
 };
 
 }; //end namespace global_planner
