@@ -21,6 +21,11 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
+rosbuild_find_ros_package(dynamic_reconfigure)
+include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+gencfg()
+
+
 #common commands for building c++ executables and libraries
 rosbuild_add_library(${PROJECT_NAME} src/dijkstra.cpp src/astar.cpp src/grid_path.cpp src/gradient_path.cpp src/planner_core.cpp)
 rosbuild_add_executable(planner src/plan_node.cpp)

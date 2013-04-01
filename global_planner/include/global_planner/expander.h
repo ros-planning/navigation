@@ -4,7 +4,7 @@ namespace global_planner {
 
     class Expander {
         public:
-            Expander(int nx, int ny) : unknown_(true), lethal_cost_(254), neutral_cost_(50) { setSize(nx, ny); }
+            Expander(int nx, int ny) : unknown_(true), lethal_cost_(254), neutral_cost_(50), factor_(3.0) { setSize(nx, ny); }
             virtual bool calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles, float* potential) = 0; 
             
             /**
@@ -14,8 +14,10 @@ namespace global_planner {
              */
             virtual void setSize(int nx, int ny){ nx_ = nx; ny_ = ny; ns_ = nx * ny; } /**< sets or resets the size of the map */
             void setLethalCost(unsigned char lethal_cost){ lethal_cost_ = lethal_cost; }
+            void setNeutralCost(unsigned char neutral_cost){ neutral_cost_ = neutral_cost; }
+            void setFactor(float factor){ factor_ = factor; }
             void setHasUnknown(bool unknown){ unknown_ = unknown; }
-      
+            
         protected:
             inline int toIndex(int x, int y) { return x + nx_*y; }
       
@@ -23,6 +25,9 @@ namespace global_planner {
             bool unknown_;
             unsigned char lethal_cost_, neutral_cost_;
             int cells_visited_;
+            float factor_;
+            
+            
     };
     
 }; //end namespace global_planner

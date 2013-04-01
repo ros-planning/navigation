@@ -15,7 +15,8 @@
   <depend package="pluginlib"/>
   <depend package="nav_msgs"/>
   <depend package="tf"/>
-  <depend package="navfn"/>
+  <depend package="dynamic_reconfigure"/>
+  <depend package="navfn"/> <!-- For testing in node purposes only -->
 </package>
 
 

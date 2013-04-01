@@ -8,12 +8,8 @@ DijkstraExpansion::DijkstraExpansion(int nx, int ny) : Expander(nx, ny), pending
     buffer1_ = new int[PRIORITYBUFSIZE];
     buffer2_ = new int[PRIORITYBUFSIZE];
     buffer3_ = new int[PRIORITYBUFSIZE];
-    neutral_cost_ = 50;
 
-    // for Dijkstra (breadth-first), set to neutral_cost_
-    // for A* (best-first), set to neutral_cost_
     priorityIncrement_ = 2*neutral_cost_;	
-    
 }
 
 //

@@ -29,7 +29,9 @@ namespace global_planner {
        * @param ny The y size of the map 
        */
       void setSize(int nx, int ny); /**< sets or resets the size of the map */
-            
+      
+      
+      void setNeutralCost(unsigned char neutral_cost){ neutral_cost_ = neutral_cost;        priorityIncrement_ = 2*neutral_cost_;	     }
         private:
             
                   /**
@@ -41,7 +43,7 @@ namespace global_planner {
       float getCost(unsigned char* costs, int n){
        float c = costs[n];
         if(c < lethal_cost_-1){
-            c = c * 3.0 + neutral_cost_;
+            c = c * factor_ + neutral_cost_;
             if(c>=lethal_cost_)
                 c = lethal_cost_-1;
             return c;

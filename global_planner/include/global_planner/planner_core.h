@@ -46,8 +46,11 @@
 #include <vector>
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
+#include <dynamic_reconfigure/server.h>
 #include <global_planner/expander.h>
 #include <global_planner/traceback.h>
+#include <global_planner/GlobalPlannerConfig.h>
+
 #define POT_HIGH 1.0e10		// unassigned cell potential
 namespace global_planner {
 
@@ -174,6 +177,10 @@ namespace global_planner {
             unsigned char* cost_array_;
             float* potential_array_; 
             unsigned int start_x_, start_y_, end_x_, end_y_;
+
+        dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
+        void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
+
 
     };
 

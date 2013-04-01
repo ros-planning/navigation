@@ -116,11 +116,25 @@ namespace global_planner {
 
       make_plan_srv_ =  private_nh.advertiseService("make_plan", &PlannerCore::makePlanService, this);
 
+      dsrv_ = new dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>(ros::NodeHandle("~/"+name));
+      dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>::CallbackType cb = boost::bind(&PlannerCore::reconfigureCB, this, _1, _2);
+      dsrv_->setCallback(cb);
+      
       initialized_ = true;
     }
     else
       ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");
-  }
+      
+      
+          
+    }
+    
+    void PlannerCore::reconfigureCB(global_planner::GlobalPlannerConfig& config, uint32_t level){
+        planner_->setLethalCost(config.lethal_cost);
+        path_maker_->setLethalCost(config.lethal_cost);
+        planner_->setNeutralCost(config.neutral_cost);
+        planner_->setFactor(config.cost_factor);
+    }
 
   void PlannerCore::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my){
     if(!initialized_){

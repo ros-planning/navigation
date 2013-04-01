@@ -6,7 +6,7 @@
 
 namespace global_planner {
 
-GradientPath::GradientPath() : pathStep_(0.5), lethal_cost_(253) {
+GradientPath::GradientPath() : pathStep_(0.5) {
     gradx_ = grady_ = NULL;
 }
 
@@ -60,7 +60,7 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
         current.first =  stc%xs_ + dx;
         current.second = stc/xs_ + dy;
         
-        ROS_INFO("%d %d | %f %f ", stc%xs_, stc/xs_, dx, dy);
+        //ROS_INFO("%d %d | %f %f ", stc%xs_, stc/xs_, dx, dy);
         
         path.push_back(current);
         
