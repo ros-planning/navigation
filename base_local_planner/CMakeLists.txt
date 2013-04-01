@@ -53,7 +53,7 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES base_local_planner
+    LIBRARIES base_local_planner trajectory_planner_ros
     CATKIN_DEPENDS
         roslib
         roscpp
@@ -62,6 +62,7 @@ catkin_package(
         tf
         pluginlib
         costmap_2d
+        nav_core
 )
 
 #uncomment for profiling
