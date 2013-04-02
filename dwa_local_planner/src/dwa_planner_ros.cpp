@@ -112,12 +112,20 @@ namespace dwa_local_planner {
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
       
+
+      std::string topic_param, topic;
+      if(!private_nh.searchParam("footprint_topic", topic_param)){
+	topic_param = "footprint_topic";
+      }
+        
+      private_nh.param(topic_param, topic, std::string("footprint"));
       
       got_footprint_ = false;
-      footprint_sub_ = private_nh.subscribe("footprint", 1, &DWAPlannerROS::footprint_cb, this);
+      footprint_sub_ = private_nh.subscribe(topic, 1, &DWAPlannerROS::footprint_cb, this);
     
       ros::Rate r(10);
       while(!got_footprint_ && private_nh.ok()){
+          ROS_INFO_THROTTLE(5.0, "Waiting for footprint in DWA Planner");
           ros::spinOnce();
           r.sleep();
       }
@@ -135,6 +143,7 @@ namespace dwa_local_planner {
   
       void DWAPlannerROS::footprint_cb(const geometry_msgs::Polygon& footprint) {
         footprint_spec_ = footprint;
+	got_footprint_ = true;
       }
 
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
