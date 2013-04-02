@@ -35,6 +35,7 @@ void VoxelCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::st
   }
       
 void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level){
+        origin_z_ = 0.0; // TODO
         enabled_ = config.enabled;
         max_obstacle_height_ = config.max_obstacle_height;
         size_z_ = config.z_voxels;
@@ -134,8 +135,6 @@ void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, ui
       }
 
 
-
-        
         
             if(publish_voxel_){
                 costmap_2d::VoxelGrid grid_msg;
@@ -150,8 +149,8 @@ void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, ui
                 grid_msg.origin.y = origin_y_;
                 grid_msg.origin.z = origin_z_;
 
-                grid_msg.resolutions.x = xy_resolution_;
-                grid_msg.resolutions.y = xy_resolution_;
+                grid_msg.resolutions.x = resolution_;
+                grid_msg.resolutions.y = resolution_;
                 grid_msg.resolutions.z = z_resolution_;
                 grid_msg.header.frame_id = global_frame_;
                 grid_msg.header.stamp = ros::Time::now();
@@ -247,7 +246,7 @@ void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, ui
 
       double distance = dist(ox, oy, oz, wpx, wpy, wpz);
       double scaling_fact = 1.0;
-      scaling_fact = std::max(std::min(scaling_fact, (distance -  2 * xy_resolution_) / distance), 0.0);
+      scaling_fact = std::max(std::min(scaling_fact, (distance -  2 * resolution_) / distance), 0.0);
       wpx = scaling_fact * (wpx - ox) + ox;
       wpy = scaling_fact * (wpy - oy) + oy;
       wpz = scaling_fact * (wpz - oz) + oz;

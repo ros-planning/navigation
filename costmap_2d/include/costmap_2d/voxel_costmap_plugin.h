@@ -41,17 +41,16 @@ namespace common_costmap_plugins
       bool publish_voxel_;
       ros::Publisher voxel_pub_;
       voxel_grid::VoxelGrid voxel_grid_;
-      double xy_resolution_, z_resolution_, origin_z_;
+      double z_resolution_, origin_z_;
       unsigned int unknown_threshold_, mark_threshold_, size_z_;
 
 
 inline bool worldToMap3DFloat(double wx, double wy, double wz, double& mx, double& my, double& mz){
         if(wx < origin_x_ || wy < origin_y_ || wz < origin_z_)
           return false;
-        mx = ((wx - origin_x_) / xy_resolution_);
-        my = ((wy - origin_y_) / xy_resolution_);
+        mx = ((wx - origin_x_) / resolution_);
+        my = ((wy - origin_y_) / resolution_);
         mz = ((wz - origin_z_) / z_resolution_);
-
         if(mx < size_x_ && my < size_y_ && mz < size_z_)
           return true;
 
@@ -62,8 +61,8 @@ inline bool worldToMap3DFloat(double wx, double wy, double wz, double& mx, doubl
         if(wx < origin_x_ || wy < origin_y_ || wz < origin_z_)
           return false;
 
-        mx = (int) ((wx - origin_x_) / xy_resolution_);
-        my = (int) ((wy - origin_y_) / xy_resolution_);
+        mx = (int) ((wx - origin_x_) / resolution_);
+        my = (int) ((wy - origin_y_) / resolution_);
         mz = (int) ((wz - origin_z_) / z_resolution_);
 
         if(mx < size_x_ && my < size_y_ && mz < size_z_)
@@ -74,8 +73,8 @@ inline bool worldToMap3DFloat(double wx, double wy, double wz, double& mx, doubl
 
       inline void mapToWorld3D(unsigned int mx, unsigned int my, unsigned int mz, double& wx, double& wy, double& wz){
         //returns the center point of the cell
-        wx = origin_x_ + (mx + 0.5) * xy_resolution_;
-        wy = origin_y_ + (my + 0.5) * xy_resolution_;
+        wx = origin_x_ + (mx + 0.5) * resolution_;
+        wy = origin_y_ + (my + 0.5) * resolution_;
         wz = origin_z_ + (mz + 0.5) * z_resolution_;
       }
 

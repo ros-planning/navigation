@@ -30,8 +30,6 @@
 #include <costmap_2d/VoxelGrid.h>
 #include <voxel_grid/voxel_grid.h>
 
-#include "costmap_2d/voxel_costmap_2d.h"
-
 struct Cell
 {
   double x;
@@ -86,8 +84,9 @@ void voxelCallback(const ros::Publisher& pub, const costmap_2d::VoxelGridConstPt
         {
           Cell c;
           c.status = status;
-          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res, z_res, c.x, c.y, c.z);
-
+          c.x = x_origin + (x_grid + 0.5) * x_res;
+          c.x = y_origin + (y_grid + 0.5) * y_res;
+          c.x = z_origin + (z_grid + 0.5) * z_res;
           g_cells.push_back(c);
 
           ++num_markers;
