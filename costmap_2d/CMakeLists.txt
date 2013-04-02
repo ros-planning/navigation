@@ -22,7 +22,7 @@ rosbuild_add_library(footprint_costmap_plugin plugins/footprint_costmap_plugin.c
 rosbuild_add_library(inflation_costmap_plugin plugins/inflation_costmap_plugin.cpp)
 rosbuild_add_library( obstacle_costmap_plugin  plugins/obstacle_costmap_plugin.cpp src/observation_buffer.cpp)
 rosbuild_add_library(   static_costmap_plugin    plugins/static_costmap_plugin.cpp)
-rosbuild_add_library(    voxel_costmap_plugin     plugins/voxel_costmap_plugin.cpp)
+rosbuild_add_library(    voxel_costmap_plugin     plugins/voxel_costmap_plugin.cpp plugins/obstacle_costmap_plugin.cpp)
 
 
 rosbuild_find_ros_package(dynamic_reconfigure)

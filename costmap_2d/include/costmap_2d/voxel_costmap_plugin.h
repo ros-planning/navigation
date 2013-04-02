@@ -21,7 +21,7 @@ namespace common_costmap_plugins
 {
   class VoxelCostmapPlugin : public common_costmap_plugins::ObstacleCostmapPlugin {
     public:
-      VoxelCostmapPlugin() : voxel_grid_(0,0,0) { }
+  VoxelCostmapPlugin() : voxel_grid_(0,0,0) {costmap_ = NULL; }
 
       void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
       void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y);

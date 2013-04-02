@@ -1,5 +1,4 @@
 #include<costmap_2d/voxel_costmap_plugin.h>
-#include<costmap_2d/costmap_math.h>
 #include <pluginlib/class_list_macros.h>
 #define VOXEL_BITS 16
 PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::VoxelCostmapPlugin, costmap_2d::CostmapPluginROS)
@@ -16,6 +15,7 @@ namespace common_costmap_plugins
 
 void VoxelCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
 {
+  ObstacleCostmapPlugin::initialize(costmap, name);
     ros::NodeHandle private_nh("~/" + name);
 
     dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(private_nh);
@@ -41,7 +41,13 @@ void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, ui
         z_resolution_ = config.z_resolution;
         unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
         mark_threshold_ = config.mark_threshold;
+	initMaps();
     }
+
+  void VoxelCostmapPlugin::matchSize(){
+    initMaps();
+    
+  }
     
     
 
