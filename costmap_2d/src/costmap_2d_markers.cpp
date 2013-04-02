@@ -85,8 +85,8 @@ void voxelCallback(const ros::Publisher& pub, const costmap_2d::VoxelGridConstPt
           Cell c;
           c.status = status;
           c.x = x_origin + (x_grid + 0.5) * x_res;
-          c.x = y_origin + (y_grid + 0.5) * y_res;
-          c.x = z_origin + (z_grid + 0.5) * z_res;
+          c.y = y_origin + (y_grid + 0.5) * y_res;
+          c.z = z_origin + (z_grid + 0.5) * z_res;
           g_cells.push_back(c);
 
           ++num_markers;
