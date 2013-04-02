@@ -24,9 +24,8 @@ void VoxelCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::st
     dsrv_->setCallback(cb);
             
     private_nh.param("publish_voxel_map", publish_voxel_, false);
-    //if(publish_voxel_)
-    //  voxel_pub_ = private_nh.advertise<voxel_grid::VoxelGrid>("voxel_grid", 1);
-
+    if(publish_voxel_)
+      voxel_pub_ = private_nh.advertise<costmap_2d::VoxelGrid>("voxel_grid", 1);
 }
 
   void VoxelCostmapPlugin::initMaps(){
@@ -131,12 +130,27 @@ void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, ui
 
 
         
-        /*
+        
             if(publish_voxel_){
-      voxel_grid_.header.frame_id = global_frame_;
-      voxel_grid_.header.stamp = ros::Time::now();
-      voxel_pub_.publish(voxel_grid_);
-    }*/
+                costmap_2d::VoxelGrid grid_msg;
+                unsigned int size = voxel_grid_.sizeX() * voxel_grid_.sizeY();
+                grid_msg.size_x = voxel_grid_.sizeX();
+                grid_msg.size_y = voxel_grid_.sizeY();
+                grid_msg.size_z = voxel_grid_.sizeZ();
+                grid_msg.data.resize(size);
+                memcpy(&grid_msg.data[0], voxel_grid_.getData(), size * sizeof(unsigned int));
+
+                grid_msg.origin.x = origin_x_;
+                grid_msg.origin.y = origin_y_;
+                grid_msg.origin.z = origin_z_;
+
+                grid_msg.resolutions.x = xy_resolution_;
+                grid_msg.resolutions.y = xy_resolution_;
+                grid_msg.resolutions.z = z_resolution_;
+                grid_msg.header.frame_id = global_frame_;
+                grid_msg.header.stamp = ros::Time::now();
+                voxel_pub_.publish(grid_msg);
+            }
     }
 
     void VoxelCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){

@@ -4,7 +4,7 @@
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/observation_buffer.h>
-
+#include <costmap_2d/VoxelGrid.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/LaserScan.h>
 #include <laser_geometry/laser_geometry.h>
