@@ -54,7 +54,7 @@
 
 
 //register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_DECLARE_CLASS(base_local_planner, TrajectoryPlannerROS, base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
+PLUGINLIB_EXPORT_CLASS(base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
 
 namespace base_local_planner {
 
@@ -332,6 +332,11 @@ namespace base_local_planner {
     double max_speed_to_stop = sqrt(2 * acc_lim_theta_ * fabs(ang_diff)); 
 
     v_theta_samp = sign(v_theta_samp) * std::min(max_speed_to_stop, fabs(v_theta_samp));
+
+    // Re-enforce min_in_place_vel_th_.  It is more important than the acceleration limits.
+    v_theta_samp = v_theta_samp > 0.0
+      ? std::min( max_vel_th_, std::max( min_in_place_vel_th_, v_theta_samp ))
+      : std::max( min_vel_th_, std::min( -1.0 * min_in_place_vel_th_, v_theta_samp ));
 
     //we still want to lay down the footprint of the robot and check if the action is legal
     bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw, 

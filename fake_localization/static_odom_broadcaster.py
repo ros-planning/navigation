@@ -10,7 +10,6 @@
 # License: BSD
 
 import roslib
-roslib.load_manifest('fake_localization')
 import rospy
 
 import tf

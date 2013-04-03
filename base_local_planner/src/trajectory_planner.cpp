@@ -181,6 +181,7 @@ namespace base_local_planner{
     strafe_right = false;
 
     escaping_ = false;
+    final_goal_position_valid_ = false;
   }
 
   TrajectoryPlanner::~TrajectoryPlanner(){}
@@ -487,6 +488,15 @@ namespace base_local_planner{
       global_plan_[i] = new_plan[i];
     }
 
+    if( global_plan_.size() > 0 ){
+      geometry_msgs::PoseStamped& final_goal_pose = global_plan_[ global_plan_.size() - 1 ];
+      final_goal_x_ = final_goal_pose.pose.position.x;
+      final_goal_y_ = final_goal_pose.pose.position.y;
+      final_goal_position_valid_ = true;
+    } else {
+      final_goal_position_valid_ = false;
+    }
+
     if (compute_dists) {
       //reset the map for new operations
       path_map_.resetPathDist();
@@ -536,18 +546,23 @@ namespace base_local_planner{
       double vx, double vy, double vtheta,
       double acc_x, double acc_y, double acc_theta) {
     //compute feasible velocity limits in robot space
-    double max_vel_x, max_vel_theta;
+    double max_vel_x = max_vel_x_, max_vel_theta;
     double min_vel_x, min_vel_theta;
+
+    if( final_goal_position_valid_ ){
+      double final_goal_dist = hypot( final_goal_x_ - x, final_goal_y_ - y );
+      max_vel_x = min( max_vel_x, final_goal_dist / sim_time_ );
+    }
 
     //should we use the dynamic window approach?
     if (dwa_) {
-      max_vel_x = max(min(max_vel_x_, vx + acc_x * sim_period_), min_vel_x_);
+      max_vel_x = max(min(max_vel_x, vx + acc_x * sim_period_), min_vel_x_);
       min_vel_x = max(min_vel_x_, vx - acc_x * sim_period_);
 
       max_vel_theta = min(max_vel_th_, vtheta + acc_theta * sim_period_);
       min_vel_theta = max(min_vel_th_, vtheta - acc_theta * sim_period_);
     } else {
-      max_vel_x = max(min(max_vel_x_, vx + acc_x * sim_time_), min_vel_x_);
+      max_vel_x = max(min(max_vel_x, vx + acc_x * sim_time_), min_vel_x_);
       min_vel_x = max(min_vel_x_, vx - acc_x * sim_time_);
 
       max_vel_theta = min(max_vel_th_, vtheta + acc_theta * sim_time_);

@@ -1,0 +1,41 @@
+<package>
+    <name>navfn</name>
+    <version>1.10.3</version>
+    <description>
+
+        navfn provides a fast interpolated navigation function that can be used to create plans for a mobile base. The planner assumes a circular robot and operates on a costmap to find a minimum cost plan from a start point to an end point in a grid. The navigation function is computed with Dijkstra's algorithm, but support for an A* heuristic may also be added in the near future. navfn also provides a ROS wrapper for the navfn planner that adheres to the nav_core::BaseGlobalPlanner interface specified in <a href="http://ros.org/wiki/nav_core">nav_core</a>.
+
+    </description>
+    <author>Kurt Konolige, Eitan Marder-Eppstein</author>
+    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <license>BSD</license>
+    <url>http://ros.org/wiki/navfn</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>rosconsole</build_depend>
+    <build_depend>roscpp</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>costmap_2d</build_depend>
+    <build_depend>nav_core</build_depend>
+    <build_depend>pluginlib</build_depend>
+    <build_depend>nav_msgs</build_depend>
+    <build_depend>tf</build_depend>
+    <build_depend>visualization_msgs</build_depend>
+    <build_depend>pcl_ros</build_depend>
+
+    <run_depend>rosconsole</run_depend>
+    <run_depend>roscpp</run_depend>
+    <run_depend>geometry_msgs</run_depend>
+    <run_depend>costmap_2d</run_depend>
+    <run_depend>nav_core</run_depend>
+    <run_depend>pluginlib</run_depend>
+    <run_depend>nav_msgs</run_depend>
+    <run_depend>tf</run_depend>
+    <run_depend>visualization_msgs</run_depend>
+    <run_depend>pcl_ros</run_depend>
+
+    <export>
+        <nav_core plugin="${prefix}/bgp_plugin.xml" />
+    </export>
+</package>
