@@ -675,7 +675,8 @@ namespace costmap_2d {
       unsigned char** cached_costs_;
       double** cached_distances_;
       double inscribed_radius_, circumscribed_radius_, inflation_radius_;
-      unsigned int cell_inscribed_radius_, cell_circumscribed_radius_, cell_inflation_radius_;
+      double cell_inscribed_radius_;
+      unsigned int cell_circumscribed_radius_, cell_inflation_radius_;
       double weight_;
       unsigned char circumscribed_cost_lb_, lethal_threshold_;
       bool track_unknown_space_;
