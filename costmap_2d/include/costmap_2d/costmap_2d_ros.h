@@ -339,6 +339,13 @@ namespace costmap_2d {
       void laserScanCallback(const sensor_msgs::LaserScanConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
 
       /**
+       * @brief  A callback to handle buffering LaserScan messages which need to be filtered to turn Inf values into range_max.
+       * @param message The message returned from a message notifier 
+       * @param buffer A pointer to the observation buffer to update
+       */
+      void laserScanValidInfCallback(const sensor_msgs::LaserScanConstPtr& message, const boost::shared_ptr<ObservationBuffer>& buffer);
+
+      /**
        * @brief  A callback to handle buffering PointCloud messages
        * @param message The message returned from a message notifier 
        * @param buffer A pointer to the observation buffer to update

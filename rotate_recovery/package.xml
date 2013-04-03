@@ -1,0 +1,36 @@
+<package>
+    <name>rotate_recovery</name>
+    <version>1.10.3</version>
+    <description>
+
+        This package provides a recovery behavior for the navigation stack that attempts to clear space by performing a 360 degree rotation of the robot.
+
+    </description>
+    <author>Eitan Marder-Eppstein</author>
+    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <license>BSD</license>
+    <url>http://ros.org/wiki/rotate_recovery</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>roscpp</build_depend>
+    <build_depend>tf</build_depend>
+    <build_depend>costmap_2d</build_depend>
+    <build_depend>nav_core</build_depend>
+    <build_depend>pluginlib</build_depend>
+    <build_depend>eigen</build_depend>
+    <build_depend>base_local_planner</build_depend>
+
+    <run_depend>roscpp</run_depend>
+    <run_depend>tf</run_depend>
+    <run_depend>costmap_2d</run_depend>
+    <run_depend>nav_core</run_depend>
+    <run_depend>pluginlib</run_depend>
+    <run_depend>eigen</run_depend>
+
+
+    <export>
+        <nav_core plugin="${prefix}/rotate_plugin.xml" />
+    </export>
+
+</package>
