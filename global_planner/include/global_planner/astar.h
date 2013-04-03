@@ -7,29 +7,32 @@
 #include <algorithm>
 
 namespace global_planner {
-    class Index {
-        public:
-            Index(int a, float b){ i = a; cost = b; }
-            int i;
-            float cost;
-    };
-    
-    struct greater1{
-      bool operator()(const Index& a,const Index& b) const{
-        return a.cost>b.cost;
-      }
-    };
+class Index {
+    public:
+        Index(int a, float b) {
+            i = a;
+            cost = b;
+        }
+        int i;
+        float cost;
+};
 
+struct greater1 {
+        bool operator()(const Index& a, const Index& b) const {
+            return a.cost > b.cost;
+        }
+};
 
-    class AStarExpansion : public Expander {
-        public:
-            AStarExpansion(int nx, int ny);
-            bool calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles, float* potential);
-        private:
-            void add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x, int end_y);
-            std::vector<Index> queue_; 
-    };
+class AStarExpansion : public Expander {
+    public:
+        AStarExpansion(int nx, int ny);
+        bool calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles,
+                                float* potential);
+    private:
+        void add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x, int end_y);
+        std::vector<Index> queue_;
+};
 
-}; //end namespace global_planner
+} //end namespace global_planner
 #endif
 
