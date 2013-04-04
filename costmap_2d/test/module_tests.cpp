@@ -250,6 +250,18 @@ TEST(costmap, testCostFunctionCorrectness){
       ASSERT_EQ(map.getCost(i, j), costmap_2d::FREE_SPACE);
 }
 
+char printableCost( unsigned char cost )
+{
+  switch( cost )
+  {
+  case NO_INFORMATION: return '?';
+  case LETHAL_OBSTACLE: return 'L';
+  case INSCRIBED_INFLATED_OBSTACLE: return 'I';
+  case FREE_SPACE: return '.';
+  default: return '0' + (unsigned char) (10 * cost / 255);
+  }
+}
+
 /**
  * Test for wave interference
  */
@@ -285,12 +297,15 @@ TEST(costmap, testWaveInterference){
   int update_count = 0;
 
   // Expect to see a union of obstacles
+  printf("map:\n");
   for(unsigned int i = 0; i < 10; ++i){
     for(unsigned int j = 0; j < 10; ++j){
       if(map.getCost(i, j) != costmap_2d::FREE_SPACE){
         update_count++;
       }
+      printf("%c", printableCost( map.getCost( i, j )));
     }
+    printf("\n");
   }
 
   ASSERT_EQ(update_count, 79);
@@ -446,6 +461,66 @@ TEST(costmap, testRaytracing){
 
   //we expect just one obstacle to be added
   ASSERT_EQ(lethal_count, 21);
+}
+
+TEST(costmap, testAdjacentToObstacleCanStillMove){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, 2.1, 3.1, 4.1, 
+                10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  cloud.points.resize(1);
+  cloud.points[0].x = 0;
+  cloud.points[0].y = 0;
+  cloud.points[0].z = MAX_Z;
+
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, cloud, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
+
+  map.updateWorld(9, 9, obsBuf, obsBuf);
+
+  EXPECT_EQ( LETHAL_OBSTACLE, map.getCost( 0, 0 ));
+  EXPECT_EQ( INSCRIBED_INFLATED_OBSTACLE, map.getCost( 1, 0 ));
+  EXPECT_EQ( INSCRIBED_INFLATED_OBSTACLE, map.getCost( 2, 0 ));
+  EXPECT_TRUE( INSCRIBED_INFLATED_OBSTACLE > map.getCost( 3, 0 ));
+  EXPECT_TRUE( INSCRIBED_INFLATED_OBSTACLE > map.getCost( 2, 1 ));
+  EXPECT_EQ( INSCRIBED_INFLATED_OBSTACLE, map.getCost( 1, 1 ));
+}
+
+TEST(costmap, testInflationShouldNotCreateUnknowns){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, 2.1, 3.1, 4.1, 
+                10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  cloud.points.resize(1);
+  cloud.points[0].x = 0;
+  cloud.points[0].y = 0;
+  cloud.points[0].z = MAX_Z;
+
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, cloud, 100.0, 100.0);
+  std::vector<Observation> obsBuf;
+  obsBuf.push_back(obs);
+
+  map.updateWorld(9, 9, obsBuf, obsBuf);
+
+  int unknown_count = 0;
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::NO_INFORMATION){
+        unknown_count++;
+      }
+    }
+  }
+  EXPECT_EQ( 0, unknown_count );
 }
 
 unsigned int worldToIndex(Costmap2D& map, double wx, double wy){

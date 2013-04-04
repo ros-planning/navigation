@@ -61,7 +61,7 @@ namespace costmap_2d{
     memset(markers_, 0, size_x_ * size_y_ * sizeof(unsigned char));
 
     //convert our inflations from world to cell distance
-    cell_inscribed_radius_ = cellDistance(inscribed_radius);
+    cell_inscribed_radius_ = max( 0.0, inscribed_radius / resolution_ );
     cell_circumscribed_radius_ = cellDistance(circumscribed_radius);
     cell_inflation_radius_ = cellDistance(inflation_radius);
 
