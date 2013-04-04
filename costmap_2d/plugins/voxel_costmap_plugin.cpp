@@ -35,10 +35,10 @@ void VoxelCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::st
   }
       
 void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level){
-        origin_z_ = 0.0; // TODO
         enabled_ = config.enabled;
         max_obstacle_height_ = config.max_obstacle_height;
         size_z_ = config.z_voxels;
+        origin_z_ = config.origin_z;
         z_resolution_ = config.z_resolution;
         unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
         mark_threshold_ = config.mark_threshold;
