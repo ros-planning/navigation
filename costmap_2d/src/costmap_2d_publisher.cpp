@@ -78,7 +78,7 @@ void Costmap2DPublisher::publishCostmap() {
             grid_.data[i] = data[i];
         }
         costmap_pub_.publish(grid_);
-    } else {
+    } else if(x0_ < xn_) {
         // Publish Just an Update
         map_msgs::OccupancyGridUpdate update;
         update.header.stamp = ros::Time::now();
