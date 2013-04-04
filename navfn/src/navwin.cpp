@@ -70,10 +70,7 @@ NavWin::drawPot(NavFn *nav)
 	  for (int j=0; j<width-dec+1; j+=dec, pp+=dec)
 	    {
 	      int v;
-	      if (*pp > maxval)
-		v = 255;
-	      else
-		v = (int)((*pp/maxval) * 255.0);
+              v = (int)((*pp/maxval) * 255.0);
 	      *ii++ = v;
 	      *ii++ = v;
 	      *ii++ = v;

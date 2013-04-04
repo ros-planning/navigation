@@ -368,6 +368,12 @@ namespace costmap_2d {
       void saveMap(std::string file_name);
 
       /**
+       * @brief Save the RAW costmap out to a pgm file using the original byte values.
+       * @param file_name The name of the file to save, including extension.
+       */
+      void saveRawMap(std::string file_name);
+
+      /**
        * @brief  Update the costmap's static map with new data
        * @param win_origin_x The x origin of the map we'll be using to replace the static map in meters
        * @param win_origin_y The y origin of the map we'll be using to replace the static map in meters

@@ -1118,4 +1118,17 @@ namespace costmap_2d{
     fclose(fp);
   }
 
+  void Costmap2D::saveRawMap(std::string file_name){
+    FILE *fp = fopen(file_name.c_str(), "wb");
+
+    if(!fp){
+      ROS_WARN("Can't open file %s", file_name.c_str());
+      return;
+    }
+
+    fprintf( fp, "P5\n%d\n%d\n%d\n", size_x_, size_y_, 0xff );
+    fwrite( costmap_, 1, size_x_ * size_y_, fp );
+    fclose( fp );
+  }
+
 };

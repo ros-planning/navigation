@@ -256,6 +256,16 @@ namespace navfn {
     //make sure that we have the latest copy of the costmap and that we clear the footprint of obstacles
     getCostmap(costmap_);
 
+// Enable to debug costmap inflation.
+#if 0
+    {
+      static int n = 0;
+      static char filename[1000];
+      snprintf( filename, 1000, "navfnros-makeplan-costmapA-%04d.pgm", n++ );
+      costmap_.saveRawMap( std::string( filename ));
+    }
+#endif
+
     ros::NodeHandle n;
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
@@ -285,9 +295,27 @@ namespace navfn {
     tf::poseStampedMsgToTF(start, start_pose);
     clearRobotCell(start_pose, mx, my);
 
+#if 0
+    {
+      static int n = 0;
+      static char filename[1000];
+      snprintf( filename, 1000, "navfnros-makeplan-costmapB-%04d.pgm", n++ );
+      costmap_.saveRawMap( std::string( filename ));
+    }
+#endif
+
     //make sure to resize the underlying array that Navfn uses
     planner_->setNavArr(costmap_.getSizeInCellsX(), costmap_.getSizeInCellsY());
     planner_->setCostmap(costmap_.getCharMap(), true, allow_unknown_);
+
+#if 0
+    {
+      static int n = 0;
+      static char filename[1000];
+      snprintf( filename, 1000, "navfnros-makeplan-costmapC-%04d", n++ );
+      planner_->savemap( filename );
+    }
+#endif
 
     int map_start[2];
     map_start[0] = mx;
