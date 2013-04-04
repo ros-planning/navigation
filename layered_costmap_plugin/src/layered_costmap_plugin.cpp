@@ -1,4 +1,4 @@
-#include</layered_costmap_plugin.h>
+#include<layered_costmap_plugin/layered_costmap_plugin.h>
 #include<costmap_2d/costmap_math.h>
 
 #include <pluginlib/class_list_macros.h>
@@ -6,8 +6,6 @@
 PLUGINLIB_EXPORT_CLASS(layered_costmap_plugin::LayeredCostmapPlugin, costmap_2d::CostmapPluginROS)
 
 using costmap_2d::NO_INFORMATION;
-using costmap_2d::LETHAL_OBSTACLE;
-using costmap_2d::FREE_SPACE;
 
 namespace layered_costmap_plugin
 {
@@ -19,97 +17,95 @@ namespace layered_costmap_plugin
         current_ = true;
 
         global_frame_ = costmap->getGlobalFrameID();
-
-        std::string map_topic;
-        nh.param("map_topic", map_topic, std::string("map"));
-        nh.param("track_unknown_space", track_unknown_space_, true);
-
-
-        int temp_lethal_threshold, temp_unknown_cost_value;
-        nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
-        nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
-
-        lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
-        unknown_cost_value_ = temp_unknown_cost_value;
-        //we'll subscribe to the latched topic that the map server uses
-        ROS_INFO("Requesting the map...");
-        map_sub_ = g_nh.subscribe(map_topic, 1, &LayeredCostmapPlugin::incomingMap, this);
-        map_recieved_ = false;
         
-        ros::Rate r(10);
-        while(!map_recieved_ && g_nh.ok()){
-        ros::spinOnce();
-            r.sleep();
+        sub_layered_costmap_ = new costmap_2d::LayeredCostmap(global_frame_, costmap->isRolling(), costmap->getCostmap()->getDefaultValue());
+        
+        if (nh.hasParam("plugins")) {
+            XmlRpc::XmlRpcValue my_list;
+            nh.getParam("plugins", my_list);
+            for (int32_t i = 0; i < my_list.size(); ++i) {
+                std::string pname = static_cast<std::string>(my_list[i]["name"]);
+                std::string type = static_cast<std::string>(my_list[i]["type"]);
+                ROS_INFO("Using plugin \"%s\"", pname.c_str());
+
+                boost::shared_ptr<CostmapPluginROS> plugin = plugin_loader_.createInstance(type);
+                sub_layered_costmap_->addPlugin(plugin);
+                plugin->initialize(sub_layered_costmap_, std::string(name + "/" + pname), *tf_);
+            }
+        } else {
+            ROS_INFO("No plugins");
         }
-
-        map_initialized_ = false;
         
+        
+        matchSize();
+
         dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
         dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(&LayeredCostmapPlugin::reconfigureCB, this, _1, _2);
         dsrv_->setCallback(cb);
     }
     
+    LayeredCostmapPlugin::~LayeredCostmapPlugin(){
+        delete sub_layered_costmap_;
+    }
+    
     void LayeredCostmapPlugin::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level){
         if(config.enabled != enabled_){
             enabled_ = config.enabled;
-            map_initialized_ = false;
         }
     }
 
     void LayeredCostmapPlugin::matchSize(){
-        Costmap2D* master = layered_costmap_->getCostmap();
-        resizeMap(master->getGlobalFrameID(), 
+        costmap_2d::Costmap2D* master = layered_costmap_->getCostmap();
+        sub_layered_costmap_->resizeMap(
                   master->getSizeInCellsX(), master->getSizeInCellsY(),
                   master->getResolution(),
-                  master->getOriginX(), master->getOriginY());
-    }
-
-    void LayeredCostmapPlugin::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map){
-        unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
-
-        ROS_INFO("Received a %d X %d map at %f m/pix",
-                        size_x, size_y, new_map->info.resolution);
-        
-        layered_costmap_->resizeMap(size_x, size_y, 
-                                    new_map->info.resolution,
-                                    new_map->info.origin.position.x, new_map->info.origin.position.y, true);
-        unsigned int index = 0;
-
-        //initialize the costmap with static data
-        for(unsigned int i = 0; i < size_y; ++i){
-          for(unsigned int j = 0; j < size_x; ++j){
-            unsigned char value = new_map->data[index];
-            //check if the static value is above the unknown or lethal thresholds
-            if(track_unknown_space_ && value == unknown_cost_value_)
-              costmap_[index] = NO_INFORMATION;
-            else if(value >= lethal_threshold_)
-              costmap_[index] = LETHAL_OBSTACLE;
-            else
-              costmap_[index] = FREE_SPACE;
-
-            ++index;
-          }
-        }
-        map_recieved_ = true;
+                  master->getOriginX(), master->getOriginY(), true);
     }
 
     void LayeredCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y, double* max_x, double* max_y){
-        if(!map_recieved_ || map_initialized_) return;
+        if(!enabled_) return;
         
-        mapToWorld(0,0, *min_x, *min_y);
-        mapToWorld(size_x_, size_y_, *max_x, *max_y);
-        map_initialized_ = true;
-
+        sub_layered_costmap_->updateMap(origin_x, origin_y, origin_z);
+        sub_layered_costmap_->getUpdatedBounds(*min_x, *min_y, *max_x, *max_y);
     }
     
     void LayeredCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
-        if(!map_initialized_) return;
         if(!enabled_) return; 
+        costmap_2d::Costmap2D* cmap = sub_layered_costmap_->getCostmap();
+        unsigned char* master = master_grid.getCharMap();
+        unsigned char* composite = cmap->getCharMap();
         for(int j=min_j; j<max_j; j++){
             for(int i=min_i; i<max_i; i++){
-                int index = getIndex(i, j);
-                master_grid.setCost(i,j, costmap_[index]);
+                int index = cmap->getIndex(i, j);
+                unsigned char old_value = master[index];
+                unsigned char new_value = composite[index];
+                
+                if(old_value == NO_INFORMATION)
+                    master[index] = new_value;
+                else if(new_value == NO_INFORMATION)
+                    continue;
+                else if(old_value < new_value)
+                    master[index] = new_value;
             }
+        }
+    }
+    
+    void LayeredCostmapPlugin::activate(){
+        std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >* plugins = sub_layered_costmap_->getPlugins();
+        // unsubscribe from topics
+        for (std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+                ++plugin) {
+            (*plugin)->activate();
+        }
+    
+    }
+    
+    void LayeredCostmapPlugin::deactivate(){
+        std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >* plugins = sub_layered_costmap_->getPlugins();
+        // unsubscribe from topics
+        for (std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+                ++plugin) {
+            (*plugin)->deactivate();
         }
     }
 

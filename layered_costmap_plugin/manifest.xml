@@ -12,6 +12,9 @@
   <depend package="costmap_2d"/>
   <depend package="pluginlib"/>
 
+  <export>
+    <costmap_2d plugin="${prefix}/costmap_plugins.xml" />
+  </export>
 </package>
 
 

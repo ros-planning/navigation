@@ -45,13 +45,16 @@
 
 namespace layered_costmap_plugin
 {
-class LayeredCostmapPlugin : public costmap_2d::CostmapPluginROS, public costmap_2d::Costmap2D
+class LayeredCostmapPlugin : public costmap_2d::CostmapPluginROS
 {
     public:
-        LayeredCostmapPlugin()
+        LayeredCostmapPlugin(): plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS")
         {
             layered_costmap_ = NULL;
+            sub_layered_costmap_ = NULL;
         }
+        
+        ~LayeredCostmapPlugin();
 
         void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
         void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
@@ -76,6 +79,9 @@ class LayeredCostmapPlugin : public costmap_2d::CostmapPluginROS, public costmap
 
         mutable boost::recursive_mutex lock_;
         dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
+        
+        costmap_2d::LayeredCostmap* sub_layered_costmap_;
+        pluginlib::ClassLoader<CostmapPluginROS> plugin_loader_;
 };
 }
 #endif
