@@ -51,7 +51,7 @@
 #define COST_OBS 254		// 254 for forbidden regions
 #define COST_OBS_ROS 253	// ROS values of 253 are obstacles
 #define COST_NEUTRAL 50		// Set this to "open space" value
-#define COST_FACTOR 3		// Used for translating costs in NavFn::setCostmap()
+#define COST_FACTOR 0.8		// Used for translating costs in NavFn::setCostmap()
 
 // Define the cost type in the case that it is not set. However, this allows
 // clients to modify it without changing the file. Arguably, it is better to require it to
