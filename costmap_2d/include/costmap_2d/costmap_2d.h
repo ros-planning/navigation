@@ -225,6 +225,10 @@ class Costmap2D {
         void setDefaultValue(unsigned char c) {
             default_value_ = c;
         }
+        
+        unsigned char getDefaultValue() {
+            return default_value_; 
+        }
 
         /**
          * @brief  Sets the cost of a convex polygon to a desired value
