@@ -1,0 +1,42 @@
+<package>
+    <name>carrot_planner</name>
+    <version>1.10.3</version>
+    <description>
+
+        This planner attempts to find a legal place to put a carrot for the robot to follow. It does this by moving back along the vector between the robot and the goal point.
+
+    </description>
+    <author>Eitan Marder-Eppstein, Sachin Chitta</author>
+    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <license>BSD</license>
+    <url>http://pr.willowgarage.com/wiki/carrot_planner</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>roscpp</build_depend>
+    <build_depend>roslib</build_depend>
+    <build_depend>costmap_2d</build_depend>
+    <build_depend>pluginlib</build_depend>
+    <build_depend>nav_core</build_depend>
+    <build_depend>base_local_planner</build_depend>
+    <build_depend>tf</build_depend>
+    <!--<build_depend>angles</build_depend>-->
+    <build_depend>eigen</build_depend>
+
+    <run_depend>roscpp</run_depend>
+    <run_depend>roslib</run_depend>
+    <run_depend>costmap_2d</run_depend>
+    <run_depend>pluginlib</run_depend>
+    <run_depend>nav_core</run_depend>
+    <run_depend>base_local_planner</run_depend>
+    <run_depend>tf</run_depend>
+    <!--<run_depend>angles</run_depend>-->
+    <run_depend>eigen</run_depend>
+
+    <export>
+        <nav_core plugin="${prefix}/bgp_plugin.xml" />
+    </export>
+
+</package>
+
+

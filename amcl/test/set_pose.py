@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('amcl')
+import roslib
 import rospy
 
 import sys, math

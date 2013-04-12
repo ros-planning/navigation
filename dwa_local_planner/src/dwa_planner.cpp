@@ -35,6 +35,8 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <dwa_local_planner/dwa_planner.h>
+#include <base_local_planner/goal_functions.h>
+#include <base_local_planner/map_grid_cost_point.h>
 #include <cmath>
 
 //for computing path distance
@@ -150,6 +152,7 @@ namespace dwa_local_planner {
 
     traj_cloud_.header.frame_id = frame_id;
     traj_cloud_pub_.advertise(private_nh, "trajectory_cloud", 1);
+    private_nh.param("publish_traj_pc", publish_traj_pc_, false);
 
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
@@ -301,7 +304,34 @@ namespace dwa_local_planner {
 
     result_traj_.cost_ = -7;
     // find best trajectory by sampling and scoring the samples
-    scored_sampling_planner_.findBestTrajectory(result_traj_, NULL);
+    std::vector<base_local_planner::Trajectory> all_explored;
+    scored_sampling_planner_.findBestTrajectory(result_traj_, &all_explored);
+
+    if(publish_traj_pc_)
+    {
+        base_local_planner::MapGridCostPoint pt;
+        traj_cloud_.points.clear();
+        traj_cloud_.width=0;
+        traj_cloud_.height=0;
+        traj_cloud_.header.stamp = ros::Time::now();
+        for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); t++)
+        {
+            if(t->cost_<0)
+                continue;
+            // Fill out the plan
+            for(unsigned int i = 0; i < t->getPointsSize(); ++i) {
+                double p_x, p_y, p_th;
+                t->getPoint(i, p_x, p_y, p_th);
+                pt.x=p_x;
+                pt.y=p_y;
+                pt.z=0;
+                pt.path_cost=p_th;
+                pt.total_cost=t->cost_;
+                traj_cloud_.push_back(pt);
+            }
+        }
+        traj_cloud_pub_.publish(traj_cloud_);
+    }
 
     // verbose publishing of point clouds
     if (publish_cost_grid_pc_) {
