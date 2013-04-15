@@ -48,8 +48,8 @@ namespace move_base {
   MoveBase::MoveBase(std::string name, tf::TransformListener& tf) :
     tf_(tf),
     as_(NULL),
-    tc_(NULL), planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
-    planner_(NULL), bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
+    planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
+    bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
@@ -127,7 +127,7 @@ namespace move_base {
         }
       }
 
-      planner_ = bgp_loader_.createClassInstance(global_planner);
+      planner_ = bgp_loader_.createInstance(global_planner);
       planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
@@ -157,7 +157,9 @@ namespace move_base {
         }
       }
 
-      tc_ = blp_loader_.createClassInstance(local_planner);
+      ROS_INFO("Loading local_planner %s", local_planner.c_str());
+      tc_ = blp_loader_.createInstance(local_planner);
+      ROS_INFO("Created local_planner %s", local_planner.c_str());
       tc_->initialize(blp_loader_.getName(local_planner), &tf_, controller_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
@@ -250,7 +252,7 @@ namespace move_base {
     oscillation_timeout_ = config.oscillation_timeout;
     oscillation_distance_ = config.oscillation_distance;
     if(config.base_global_planner != last_config_.base_global_planner) {
-      nav_core::BaseGlobalPlanner* old_planner = planner_;
+        boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
       //initialize the global planner
       ROS_INFO("Loading global planner %s", config.base_global_planner.c_str());
       try {
@@ -268,12 +270,11 @@ namespace move_base {
           }
         }
  
-        planner_ = bgp_loader_.createClassInstance(config.base_global_planner);
+        planner_ = bgp_loader_.createInstance(config.base_global_planner);
         
         // wait for the current planner to finish planning
         boost::unique_lock<boost::mutex> lock(planner_mutex_);
 
-        delete old_planner;
         // Clean up before initializing the new planner
         planner_plan_->clear();
         latest_plan_->clear();
@@ -291,7 +292,7 @@ namespace move_base {
     }
 
     if(config.base_local_planner != last_config_.base_local_planner){
-      nav_core::BaseLocalPlanner* old_planner = tc_;
+        boost::shared_ptr<nav_core::BaseLocalPlanner> old_planner = tc_;
       //create a local planner
       try {
         //check if a non fully qualified name has potentially been passed in
@@ -308,8 +309,8 @@ namespace move_base {
             }
           }
         }
-        tc_ = blp_loader_.createClassInstance(config.base_local_planner);
-        delete old_planner;
+        tc_ = blp_loader_.createInstance(config.base_local_planner);
+        //delete old_planner;
         // Clean up before initializing the new planner
         planner_plan_->clear();
         latest_plan_->clear();
@@ -475,12 +476,6 @@ namespace move_base {
 
     if(as_ != NULL)
       delete as_;
-
-    if(planner_ != NULL)
-      delete planner_;
-
-    if(tc_ != NULL)
-      delete tc_;
 
     if(planner_costmap_ros_ != NULL)
       delete planner_costmap_ros_;
@@ -1059,7 +1054,7 @@ namespace move_base {
               }
             }
 
-            boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createClassInstance(behavior_list[i]["type"]));
+            boost::shared_ptr<nav_core::RecoveryBehavior> behavior(recovery_loader_.createInstance(behavior_list[i]["type"]));
 
             //shouldn't be possible, but it won't hurt to check
             if(behavior.get() == NULL){
@@ -1102,19 +1097,19 @@ namespace move_base {
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
       //first, we'll load a recovery behavior to clear the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
 
       //next, we'll load a recovery behavior to rotate in place
-      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createClassInstance("rotate_recovery/RotateRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_roatation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
 
       //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createClassInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
 

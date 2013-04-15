@@ -181,10 +181,10 @@ namespace move_base {
 
       MoveBaseActionServer* as_;
 
-      nav_core::BaseLocalPlanner* tc_;
+      boost::shared_ptr<nav_core::BaseLocalPlanner> tc_;
       costmap_2d::Costmap2DROS* planner_costmap_ros_, *controller_costmap_ros_;
 
-      nav_core::BaseGlobalPlanner* planner_;
+      boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_;
       std::string robot_base_frame_, global_frame_;
 
       std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
