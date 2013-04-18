@@ -106,8 +106,14 @@ free_thresh: 0.196
       double yaw, pitch, roll;
       mat.getEulerYPR(yaw, pitch, roll);
 
+      // basename may modify content, so make copy
+      char* mapname_copy = strdup(mapname_.c_str());
+      char* base = basename(mapname_copy);
+      std::string relative_mapdatafile = std::string(base) + ".pgm";
+      free(mapname_copy);
+
       fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n",
-              mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw);
+              relative_mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw);
 
       fclose(yaml);
 
