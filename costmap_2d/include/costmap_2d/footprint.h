@@ -44,7 +44,7 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
-double sign(double x) {
+double sign0(double x) {
   return x < 0.0 ? -1.0 : (x > 0.0 ? 1.0 : 0.0);
 }
 
@@ -58,7 +58,7 @@ class RobotFootprintManager {
               padding = 0;
             }
             else {
-              node.param(padding_param, padding, 0);
+              node.param(padding_param, padding, 0.0);
             }
 
             //grab the footprint from the parameter server if possible
@@ -121,8 +121,8 @@ class RobotFootprintManager {
                     pt.x = tmp_pt[0];
                     pt.y = tmp_pt[1];
 
-                    pt.x += sign(pt.x) * padding;
-                    pt.y += sign(pt.y) * padding;
+                    pt.x += sign0(pt.x) * padding;
+                    pt.y += sign0(pt.y) * padding;
 
                     footprint.points.push_back(pt);
                 }
@@ -170,8 +170,8 @@ class RobotFootprintManager {
                     pt.x = point[0].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[0]) : (double)(point[0]);
                     pt.y = point[1].getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(point[1]) : (double)(point[1]);
 
-                    pt.x += sign(pt.x) * padding;
-                    pt.y += sign(pt.y) * padding;
+                    pt.x += sign0(pt.x) * padding;
+                    pt.y += sign0(pt.y) * padding;
 
                     footprint.points.push_back(pt);
                 }
