@@ -85,6 +85,10 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
     layered_costmap_ = new LayeredCostmap(global_frame_, rolling_window, track_unknown_space);
 
+    if (!private_nh.hasParam("plugins")) {
+        resetOldParameters(private_nh);
+    }
+
     if (private_nh.hasParam("plugins")) {
         XmlRpc::XmlRpcValue my_list;
         private_nh.getParam("plugins", my_list);
@@ -128,6 +132,59 @@ Costmap2DROS::~Costmap2DROS() {
         delete publisher_;
 
     delete layered_costmap_;
+}
+
+void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh){
+    bool flag;
+    std::string s;
+    std::vector<XmlRpc::XmlRpcValue> plugins;
+
+    XmlRpc::XmlRpcValue::ValueStruct map;
+    SuperValue super_map;
+    SuperValue super_array;
+
+    if( nh.getParam("static_map", flag) ){
+        map["name"] = XmlRpc::XmlRpcValue("static_layer");
+        map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::StaticCostmapPlugin");
+        super_map.setStruct(&map);
+        plugins.push_back(super_map);
+
+
+        ros::NodeHandle map_layer(nh, "static_layer");
+        move_parameter(nh, map_layer, "map_topic");
+        move_parameter(nh, map_layer, "unknown_cost_value");
+        move_parameter(nh, map_layer, "lethal_cost_threshold");
+        move_parameter(nh, map_layer, "track_unknown_space");
+    }
+
+    ros::NodeHandle obstacles(nh, "obstacle_layer");
+
+    if( nh.getParam("map_type", s) && s=="voxel" ){
+        move_parameter(nh, obstacles, "origin_z");
+        move_parameter(nh, obstacles, "z_resolution");
+        move_parameter(nh, obstacles, "z_voxels");
+        move_parameter(nh, obstacles, "mark_threshold");
+        move_parameter(nh, obstacles, "unknown_threshold");
+        move_parameter(nh, obstacles, "publish_voxel_map");
+    }
+    move_parameter(nh, obstacles, "max_obstacle_height");
+    move_parameter(nh, obstacles, "raytrace_range");
+    move_parameter(nh, obstacles, "obstacle_range");
+    nh.param("observation_sources", s, std::string(""));
+    std::stringstream ss(s);
+    std::string source;
+    while(ss >> source){
+        move_parameter(nh, obstacles, source);
+    }
+    move_parameter(nh, obstacles, "observation_sources");
+
+    ros::NodeHandle inflation(nh, "inflation_layer");
+    move_parameter(nh, inflation, "cost_scaling_factor");
+    move_parameter(nh, inflation, "inflation_radius");
+
+    super_array.setArray(&plugins);
+    nh.setParam("plugins", super_array);
+
 }
 
 void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level) {
