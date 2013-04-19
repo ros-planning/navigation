@@ -50,8 +50,19 @@
 #define COST_UNKNOWN_ROS 255		// 255 is unknown cost
 #define COST_OBS 254		// 254 for forbidden regions
 #define COST_OBS_ROS 253	// ROS values of 253 are obstacles
+
+// navfn cost values are set to
+// COST_NEUTRAL + COST_FACTOR * costmap_cost_value.
+// Incoming costmap cost values are in the range 0 to 252.
+// With COST_NEUTRAL of 50, the COST_FACTOR needs to be about 0.8 to
+// ensure the input values are spread evenly over the output range, 50
+// to 253.  If COST_FACTOR is higher, cost values will have a plateau
+// around obstacles and the planner will then treat (for example) the
+// whole width of a narrow hallway as equally undesirable and thus
+// will not plan paths down the center.
+
 #define COST_NEUTRAL 50		// Set this to "open space" value
-#define COST_FACTOR 3		// Used for translating costs in NavFn::setCostmap()
+#define COST_FACTOR 0.8		// Used for translating costs in NavFn::setCostmap()
 
 // Define the cost type in the case that it is not set. However, this allows
 // clients to modify it without changing the file. Arguably, it is better to require it to

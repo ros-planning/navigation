@@ -237,9 +237,27 @@ namespace navfn {
     tf::poseStampedMsgToTF(start, start_pose);
     clearRobotCell(start_pose, mx, my);
 
+#if 0
+    {
+      static int n = 0;
+      static char filename[1000];
+      snprintf( filename, 1000, "navfnros-makeplan-costmapB-%04d.pgm", n++ );
+      costmap->saveRawMap( std::string( filename ));
+    }
+#endif
+
     //make sure to resize the underlying array that Navfn uses
     planner_->setNavArr(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
     planner_->setCostmap(costmap->getCharMap(), true, allow_unknown_);
+
+#if 0
+    {
+      static int n = 0;
+      static char filename[1000];
+      snprintf( filename, 1000, "navfnros-makeplan-costmapC-%04d", n++ );
+      planner_->savemap( filename );
+    }
+#endif
 
     int map_start[2];
     map_start[0] = mx;

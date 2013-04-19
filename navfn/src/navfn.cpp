@@ -235,6 +235,10 @@ namespace navfn {
           int k=i*nx;
           for (int j=0; j<nx; j++, k++, cmap++, cm++)
           {
+            // This transforms the incoming cost values:
+            // COST_OBS                 -> COST_OBS (incoming "lethal obstacle")
+            // COST_OBS_ROS             -> COST_OBS (incoming "inscribed inflated obstacle")
+            // values in range 0 to 252 -> values from COST_NEUTRAL to COST_OBS_ROS.
             *cm = COST_OBS;
             int v = *cmap;
             if (v < COST_OBS_ROS)
@@ -285,6 +289,12 @@ namespace navfn {
   bool
     NavFn::calcNavFnDijkstra(bool atStart)
     {
+#if 0
+      static char costmap_filename[1000];
+      static int file_number = 0;
+      snprintf( costmap_filename, 1000, "navfn-dijkstra-costmap-%04d", file_number++ );
+      savemap( costmap_filename );
+#endif
       setupNavFn(true);
 
       // calculate the nav fn and path
