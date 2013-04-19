@@ -58,11 +58,11 @@ class SuperValue : public XmlRpc::XmlRpcValue {
     public:
     void setStruct(XmlRpc::XmlRpcValue::ValueStruct* a){
         _type = TypeStruct;
-        _value.asStruct = a;
+        _value.asStruct = new XmlRpc::XmlRpcValue::ValueStruct(*a);
     }
     void setArray(XmlRpc::XmlRpcValue::ValueArray* a){
         _type = TypeArray;
-        _value.asArray = a;
+        _value.asArray = new std::vector<XmlRpc::XmlRpcValue>(*a);
     }
 };
 
