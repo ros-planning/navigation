@@ -112,10 +112,9 @@ namespace dwa_local_planner {
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
       
-
       std::string topic_param, topic;
       if(!private_nh.searchParam("footprint_topic", topic_param)){
-	topic_param = "footprint_topic";
+          topic_param = "footprint_topic";
       }
         
       private_nh.param(topic_param, topic, std::string("footprint"));
@@ -143,7 +142,7 @@ namespace dwa_local_planner {
   
       void DWAPlannerROS::footprint_cb(const geometry_msgs::Polygon& footprint) {
         footprint_spec_ = footprint;
-	got_footprint_ = true;
+        got_footprint_ = true;
       }
 
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
@@ -245,11 +244,11 @@ namespace dwa_local_planner {
       path.getPoint(i, p_x, p_y, p_th);
 
       tf::Stamped<tf::Pose> p =
-    		  tf::Stamped<tf::Pose>(tf::Pose(
-    				  tf::createQuaternionFromYaw(p_th),
-    				  tf::Point(p_x, p_y, 0.0)),
-    				  ros::Time::now(),
-    				  costmap_ros_->getGlobalFrameID());
+              tf::Stamped<tf::Pose>(tf::Pose(
+                      tf::createQuaternionFromYaw(p_th),
+                      tf::Point(p_x, p_y, 0.0)),
+                      ros::Time::now(),
+                      costmap_ros_->getGlobalFrameID());
       geometry_msgs::PoseStamped pose;
       tf::poseStampedTFToMsg(p, pose);
       local_plan.push_back(pose);
