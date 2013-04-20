@@ -10,6 +10,8 @@ costmap_2d/test/costmap_tester
 dwa_local_planner/cfg/cpp/
 dwa_local_planner/src/dwa_local_planner/
 fake_localization/fake_localization
+global_planner/cfg/cpp
+global_planner/src/global_planner
 move_base/cfg/cpp/
 move_base/src/move_base/
 move_base_msgs/msg/
