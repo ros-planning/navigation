@@ -44,16 +44,6 @@
 #include <costmap_2d/Costmap2DConfig.h>
 #include <dynamic_reconfigure/server.h>
 
-void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string name){
-    if(!old_h.hasParam(name))
-        return;
-
-    XmlRpc::XmlRpcValue value;
-    old_h.getParam(name, value);
-    new_h.setParam(name, value);
-    old_h.deleteParam(name);
-}
-
 class SuperValue : public XmlRpc::XmlRpcValue {
     public:
     void setStruct(XmlRpc::XmlRpcValue::ValueStruct* a){

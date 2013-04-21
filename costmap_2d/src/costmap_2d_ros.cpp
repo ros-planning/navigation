@@ -45,6 +45,17 @@
 using namespace std;
 
 namespace costmap_2d {
+
+void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string name){
+    if(!old_h.hasParam(name))
+        return;
+
+    XmlRpc::XmlRpcValue value;
+    old_h.getParam(name, value);
+    new_h.setParam(name, value);
+    old_h.deleteParam(name);
+}
+
 Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
         layered_costmap_(NULL), name_(name), tf_(tf), stop_updates_(false), initialized_(true), stopped_(false), robot_stopped_(
                 false), map_update_thread_(NULL), last_publish_(0), 
