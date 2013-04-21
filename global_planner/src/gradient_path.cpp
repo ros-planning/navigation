@@ -42,8 +42,8 @@
 
 namespace global_planner {
 
-GradientPath::GradientPath() :
-        pathStep_(0.5) {
+GradientPath::GradientPath(PotentialCalculator* p_calc) :
+        Traceback(p_calc), pathStep_(0.5) {
     gradx_ = grady_ = NULL;
 }
 

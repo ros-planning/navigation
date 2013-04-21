@@ -45,6 +45,7 @@
 #include <global_planner/astar.h>
 #include <global_planner/grid_path.h>
 #include <global_planner/gradient_path.h>
+#include <global_planner/quadratic_calculator.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_DECLARE_CLASS(global_planner, PlannerCore, global_planner::PlannerCore, nav_core::BaseGlobalPlanner)
@@ -83,19 +84,28 @@ void PlannerCore::initialize(std::string name, costmap_2d::Costmap2DROS* costmap
 
         costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
 
+        unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
+
+        bool use_quadratic;
+        private_nh.param("use_quadratic", use_quadratic, true);
+        if (use_quadratic)
+            p_calc_ = new QuadraticCalculator(cx, cy);
+        else
+            p_calc_ = new PotentialCalculator(cx, cy);
+
         bool use_dijkstra;
         private_nh.param("use_dijkstra", use_dijkstra, true);
         if (use_dijkstra)
-            planner_ = new DijkstraExpansion(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
+            planner_ = new DijkstraExpansion(p_calc_, cx, cy);
         else
-            planner_ = new AStarExpansion(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
+            planner_ = new AStarExpansion(p_calc_, cx, cy);
 
         bool use_grid_path;
         private_nh.param("use_grid_path", use_grid_path, false);
         if (use_grid_path)
-            path_maker_ = new GridPath();
+            path_maker_ = new GridPath(p_calc_);
         else
-            path_maker_ = new GradientPath();
+            path_maker_ = new GradientPath(p_calc_);
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
@@ -219,11 +229,12 @@ bool PlannerCore::makePlan(const geometry_msgs::PoseStamped& start, const geomet
 
     int nx = costmap->getSizeInCellsX(), ny = costmap->getSizeInCellsY();
     //make sure to resize the underlying array that Navfn uses
+    p_calc_->setSize(nx, ny);
     planner_->setSize(nx, ny);
     path_maker_->setSize(nx, ny);
     potential_array_ = new float[nx * ny];
 
-    bool found_legal = planner_->calculatePotential(costmap->getCharMap(), start_x, start_y, goal_x, goal_y,
+    bool found_legal = planner_->calculatePotentials(costmap->getCharMap(), start_x, start_y, goal_x, goal_y,
                                                     nx * ny * 2, potential_array_);
 
     //**********************888

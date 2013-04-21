@@ -57,9 +57,10 @@
 namespace global_planner {
 class DijkstraExpansion : public Expander {
     public:
-        DijkstraExpansion(int nx, int ny);
-        bool calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles,
+        DijkstraExpansion(PotentialCalculator* p_calc, int nx, int ny);
+        bool calculatePotentials(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles,
                                 float* potential);
+
         /**
          * @brief  Sets or resets the size of the map
          * @param nx The x size of the map

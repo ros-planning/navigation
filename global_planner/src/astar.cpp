@@ -39,11 +39,11 @@
 
 namespace global_planner {
 
-AStarExpansion::AStarExpansion(int xs, int ys) :
-        Expander(xs, ys) {
+AStarExpansion::AStarExpansion(PotentialCalculator* p_calc, int xs, int ys) :
+        Expander(p_calc, xs, ys) {
 }
 
-bool AStarExpansion::calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y,
+bool AStarExpansion::calculatePotentials(unsigned char* costs, int start_x, int start_y, int end_x, int end_y,
                                         int cycles, float* potential) {
     queue_.clear();
     int start_i = toIndex(start_x, start_y);

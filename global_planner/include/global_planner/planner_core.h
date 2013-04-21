@@ -47,6 +47,7 @@
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
 #include <dynamic_reconfigure/server.h>
+#include <global_planner/potential_calculator.h>
 #include <global_planner/expander.h>
 #include <global_planner/traceback.h>
 #include <global_planner/GlobalPlannerConfig.h>
@@ -169,6 +170,7 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
         boost::mutex mutex_;
         ros::ServiceServer make_plan_srv_;
 
+        PotentialCalculator* p_calc_;
         Expander* planner_;
         Traceback* path_maker_;
 

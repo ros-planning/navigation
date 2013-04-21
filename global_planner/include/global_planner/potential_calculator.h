@@ -35,17 +35,41 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef _GRID_PATH_H
-#define _GRID_PATH_H
-#include<vector>
-#include<global_planner/traceback.h>
-
+#ifndef _POTENTIAL_CALCULATOR_H
+#define _POTENTIAL_CALCULATOR_H
 namespace global_planner {
 
-class GridPath : public Traceback {
+class PotentialCalculator {
     public:
-        GridPath(PotentialCalculator* p_calc): Traceback(p_calc){}
-        bool getPath(float* potential, int end_x, int end_y, std::vector<std::pair<float, float> >& path);
+        PotentialCalculator(int nx, int ny) {
+            setSize(nx, ny);
+        }
+
+        virtual float calculatePotential(float* potential, unsigned char cost, int n){
+            // get min of neighbors
+            float min_h = std::min( potential[n - 1], potential[n + 1] ),
+                  min_v = std::min( potential[n - nx_], potential[n + nx_]);
+
+            return std::min(min_h, min_v) + cost;
+        }
+
+        /**
+         * @brief  Sets or resets the size of the map
+         * @param nx The x size of the map
+         * @param ny The y size of the map
+         */
+        virtual void setSize(int nx, int ny) {
+            nx_ = nx;
+            ny_ = ny;
+            ns_ = nx * ny;
+        } /**< sets or resets the size of the map */
+
+    protected:
+        inline int toIndex(int x, int y) {
+            return x + nx_ * y;
+        }
+
+        int nx_, ny_, ns_; /**< size of grid, in pixels */
 };
 
 } //end namespace global_planner
