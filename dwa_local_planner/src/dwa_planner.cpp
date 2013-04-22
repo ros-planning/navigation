@@ -270,7 +270,8 @@ namespace dwa_local_planner {
     
     // keeping the nose on the path
     if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
-      alignment_costs_.setScale(1.0);
+      double resolution = planner_util_->getCostmap()->getResolution();
+      alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
       // costs for robot being aligned with path (nose on path, not ju
       alignment_costs_.setTargetPoses(global_plan_);
     } else {
