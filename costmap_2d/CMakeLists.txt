@@ -25,16 +25,14 @@ rosbuild_add_library(costmap_2d
 target_link_libraries(costmap_2d ${PCL_LIBRARIES})
 #rosbuild_link_boost(costmap_2d thread)
 
-rosbuild_add_library(footprint_costmap_plugin plugins/footprint_costmap_plugin.cpp)
-rosbuild_add_library(inflation_costmap_plugin plugins/inflation_costmap_plugin.cpp)
-rosbuild_add_library( obstacle_costmap_plugin  plugins/obstacle_costmap_plugin.cpp src/observation_buffer.cpp)
-rosbuild_add_library(   static_costmap_plugin    plugins/static_costmap_plugin.cpp)
-rosbuild_add_library(    voxel_costmap_plugin     plugins/voxel_costmap_plugin.cpp plugins/obstacle_costmap_plugin.cpp)
-rosbuild_add_library( voxel_with_footprint_costmap_plugin
-  plugins/voxel_with_footprint_costmap_plugin.cpp
-  plugins/obstacle_costmap_plugin.cpp
-  plugins/voxel_costmap_plugin.cpp
+rosbuild_add_library(common_costmap_plugins
   plugins/footprint_costmap_plugin.cpp
+  plugins/inflation_costmap_plugin.cpp
+  plugins/obstacle_costmap_plugin.cpp
+  plugins/static_costmap_plugin.cpp
+  plugins/voxel_costmap_plugin.cpp
+  plugins/voxel_with_footprint_costmap_plugin.cpp
+  src/observation_buffer.cpp
 )
 
 rosbuild_find_ros_package(dynamic_reconfigure)
