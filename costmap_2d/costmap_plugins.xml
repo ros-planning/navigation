@@ -24,6 +24,11 @@
         <description></description>
       </class>
     </library>
+    <library path="lib/libvoxel_with_footprint_costmap_plugin">
+      <class type="common_costmap_plugins::VoxelWithFootprintCostmapPlugin" base_class_type="costmap_2d::CostmapPluginROS">
+        <description></description>
+      </class>
+    </library>
 
 
 </class_libraries>

@@ -889,7 +889,8 @@ namespace move_base {
          boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
         
         if(tc_->computeVelocityCommands(cmd_vel)){
-          ROS_DEBUG_NAMED("move_base", "Got a valid command from the local planner.");
+          ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
+                           cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);

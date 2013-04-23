@@ -78,8 +78,10 @@ class RobotFootprintManager {
                 std::string footprint_string = std::string(footprint_value);
 
                 //if there's just an empty footprint up there, return
-                if (footprint_string == "[]" || footprint_string == "")
+                if (footprint_string == "[]" || footprint_string == "") {
+                    ROS_ERROR("Robot footprint found but is empty!");
                     return;
+                }
 
                 boost::erase_all(footprint_string, " ");
                 boost::char_separator<char> sep("[]");
