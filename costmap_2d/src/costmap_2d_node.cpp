@@ -41,7 +41,7 @@
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "costmap_node");
-    RobotFootprintManager r(ros::NodeHandle("/costmap_node/costmap"));
+    costmap_2d::RobotFootprintManager r(ros::NodeHandle("/costmap_node/costmap"));
     tf::TransformListener tf(ros::Duration(10));
     costmap_2d::Costmap2DROS lcr("costmap", tf);
 
