@@ -17,6 +17,8 @@ namespace common_costmap_plugins
         current_ = false;
         got_footprint_ = false;
         
+        footprint_pub_ = nh.advertise<geometry_msgs::PolygonStamped>( "footprint_stamped", 1 );
+
         std::string topic_param, topic;
         if(!nh.searchParam("footprint_topic", topic_param)){
             topic_param = "footprint_topic";
@@ -69,6 +71,7 @@ namespace common_costmap_plugins
             *max_x = std::max(px, *max_x);
             *max_y = std::max(py, *max_y);
         }
+        footprint_pub_.publish( footprint_ );
     }
     
     void FootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
