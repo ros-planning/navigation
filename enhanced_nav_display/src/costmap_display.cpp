@@ -60,6 +60,8 @@ Costmap::Costmap()
                                           "nav_msgs::Occupancy topic to subscribe to. (also subscribed to <topic>_updates.",
                                           this, SLOT( updateTopic() ));
 
+  alpha_property_ = new rviz::FloatProperty( "Alpha", 1.0, "Opacity: 1.0 is fully opaque, 0.0 is fully transparent.",
+                                             this, SLOT( updateAlpha() ));
   hi_color_property_ = new rviz::ColorProperty( "High Color", QColor( 255, 0, 0 ),
                                                "Color of the highest grid cells.", this );
   lo_color_property_ = new rviz::ColorProperty( "Low Color", QColor( 0, 0, 255 ),
@@ -132,6 +134,12 @@ void Costmap::updateBounds()
 {
   min_v_ = min_property_->getFloat(); 
   max_v_ = max_property_->getFloat(); 
+  context_->queueRender();
+}
+
+void Costmap::updateAlpha()
+{
+  cloud_->setAlpha( alpha_property_->getFloat() );
   context_->queueRender();
 }
 
@@ -292,7 +300,6 @@ bool Costmap::updateBaseColors(){
 
 void Costmap::getColor(Ogre::ColourValue& color, unsigned char value){
 
-  
     if(use_special_ && fabs(value-sp_value_)<.01){
         color = sp_color_;
     }else if(value <= max_v_ and value >= min_v_){

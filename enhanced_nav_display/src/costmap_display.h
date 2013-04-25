@@ -82,6 +82,7 @@ protected:
 private Q_SLOTS:
   void updateBounds();
   void updateTopic();
+  void updateAlpha();
 
 private:
   void subscribe();
@@ -107,6 +108,7 @@ private:
   
   ros::Subscriber update_sub_;
 
+  rviz::FloatProperty* alpha_property_;
   rviz::ColorProperty* hi_color_property_;
   rviz::ColorProperty* lo_color_property_;
   rviz::RosTopicProperty* topic_property_;
