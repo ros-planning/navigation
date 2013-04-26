@@ -35,54 +35,45 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#include<global_planner/astar.h>
-
+#ifndef _POTENTIAL_CALCULATOR_H
+#define _POTENTIAL_CALCULATOR_H
 namespace global_planner {
 
-AStarExpansion::AStarExpansion(PotentialCalculator* p_calc, int xs, int ys) :
-        Expander(p_calc, xs, ys) {
-}
+class PotentialCalculator {
+    public:
+        PotentialCalculator(int nx, int ny) {
+            setSize(nx, ny);
+        }
 
-bool AStarExpansion::calculatePotentials(unsigned char* costs, int start_x, int start_y, int end_x, int end_y,
-                                        int cycles, float* potential) {
-    queue_.clear();
-    int start_i = toIndex(start_x, start_y);
-    queue_.push_back(Index(start_i, 0));
+        virtual float calculatePotential(float* potential, unsigned char cost, int n, float prev_potential=-1){
+            if(prev_potential < 0){
+                // get min of neighbors
+                float min_h = std::min( potential[n - 1], potential[n + 1] ),
+                      min_v = std::min( potential[n - nx_], potential[n + nx_]);
+                prev_potential = std::min(min_h, min_v);
+            }
 
-    std::fill(potential, potential + ns_, POT_HIGH);
-    potential[start_i] = 0;
+            return prev_potential + cost;
+        }
 
-    int goal_i = toIndex(end_x, end_y);
+        /**
+         * @brief  Sets or resets the size of the map
+         * @param nx The x size of the map
+         * @param ny The y size of the map
+         */
+        virtual void setSize(int nx, int ny) {
+            nx_ = nx;
+            ny_ = ny;
+            ns_ = nx * ny;
+        } /**< sets or resets the size of the map */
 
-    while (queue_.size() > 0) {
-        Index top = queue_[0];
-        std::pop_heap(queue_.begin(), queue_.end(), greater1());
-        queue_.pop_back();
+    protected:
+        inline int toIndex(int x, int y) {
+            return x + nx_ * y;
+        }
 
-        int i = top.i;
-        if (i == goal_i)
-            return true;
-
-        add(costs, potential, potential[i], i + 1, end_x, end_y);
-        add(costs, potential, potential[i], i - 1, end_x, end_y);
-        add(costs, potential, potential[i], i + nx_, end_x, end_y);
-        add(costs, potential, potential[i], i - nx_, end_x, end_y);
-    }
-
-    return false;
-}
-
-void AStarExpansion::add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x,
-                         int end_y) {
-    if (potential[next_i] < POT_HIGH)
-        return;
-
-    potential[next_i] = p_calc_->calculatePotential(potential, costs[next_i] + neutral_cost_, next_i, prev_potential);
-    int x = next_i % nx_, y = next_i / nx_;
-    float distance = abs(end_x - x) + abs(end_y - y);
-
-    queue_.push_back(Index(next_i, potential[next_i] + distance * neutral_cost_));
-    std::push_heap(queue_.begin(), queue_.end(), greater1());
-}
+        int nx_, ny_, ns_; /**< size of grid, in pixels */
+};
 
 } //end namespace global_planner
+#endif

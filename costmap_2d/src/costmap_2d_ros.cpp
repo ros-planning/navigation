@@ -45,6 +45,17 @@
 using namespace std;
 
 namespace costmap_2d {
+
+void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string name){
+    if(!old_h.hasParam(name))
+        return;
+
+    XmlRpc::XmlRpcValue value;
+    old_h.getParam(name, value);
+    new_h.setParam(name, value);
+    old_h.deleteParam(name);
+}
+
 Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
         layered_costmap_(NULL), name_(name), tf_(tf), stop_updates_(false), initialized_(true), stopped_(false), robot_stopped_(
                 false), map_update_thread_(NULL), last_publish_(0), 
@@ -85,6 +96,10 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
     layered_costmap_ = new LayeredCostmap(global_frame_, rolling_window, track_unknown_space);
 
+    if (!private_nh.hasParam("plugins")) {
+        resetOldParameters(private_nh);
+    }
+
     if (private_nh.hasParam("plugins")) {
         XmlRpc::XmlRpcValue my_list;
         private_nh.getParam("plugins", my_list);
@@ -97,9 +112,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
             layered_costmap_->addPlugin(plugin);
             plugin->initialize(layered_costmap_, name + "/" + pname, tf_);
         }
-    } else {
-        ROS_INFO("No plugins");
-    }
+    } 
 
     publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), "costmap");
 
@@ -128,6 +141,84 @@ Costmap2DROS::~Costmap2DROS() {
         delete publisher_;
 
     delete layered_costmap_;
+}
+
+void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh){
+    ROS_INFO("Loading from pre-hydro parameter style");
+    bool flag;
+    std::string s;
+    std::vector<XmlRpc::XmlRpcValue> plugins;
+
+    XmlRpc::XmlRpcValue::ValueStruct map;
+    SuperValue super_map;
+    SuperValue super_array;
+
+    if( nh.getParam("static_map", flag) ){
+        map["name"] = XmlRpc::XmlRpcValue("static_layer");
+        map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::StaticCostmapPlugin");
+        super_map.setStruct(&map);
+        plugins.push_back(super_map);
+
+
+        ros::NodeHandle map_layer(nh, "static_layer");
+        move_parameter(nh, map_layer, "map_topic");
+        move_parameter(nh, map_layer, "unknown_cost_value");
+        move_parameter(nh, map_layer, "lethal_cost_threshold");
+        move_parameter(nh, map_layer, "track_unknown_space");
+    }
+
+    ros::NodeHandle obstacles(nh, "obstacle_layer");
+    if( nh.getParam("map_type", s) && s=="voxel" ){
+
+        map["name"] = XmlRpc::XmlRpcValue("obstacle_layer");
+        map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::VoxelCostmapPlugin");
+        super_map.setStruct(&map);
+        plugins.push_back(super_map);
+
+
+        move_parameter(nh, obstacles, "origin_z");
+        move_parameter(nh, obstacles, "z_resolution");
+        move_parameter(nh, obstacles, "z_voxels");
+        move_parameter(nh, obstacles, "mark_threshold");
+        move_parameter(nh, obstacles, "unknown_threshold");
+        move_parameter(nh, obstacles, "publish_voxel_map");
+    }else{
+        map["name"] = XmlRpc::XmlRpcValue("obstacle_layer");
+        map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::ObstacleCostmapPlugin");
+        super_map.setStruct(&map);
+        plugins.push_back(super_map);
+    }
+
+
+    move_parameter(nh, obstacles, "max_obstacle_height");
+    move_parameter(nh, obstacles, "raytrace_range");
+    move_parameter(nh, obstacles, "obstacle_range");
+    nh.param("observation_sources", s, std::string(""));
+    std::stringstream ss(s);
+    std::string source;
+    while(ss >> source){
+        move_parameter(nh, obstacles, source);
+    }
+    move_parameter(nh, obstacles, "observation_sources");
+
+
+    map["name"] = XmlRpc::XmlRpcValue("footprint_layer");
+    map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::FootprintCostmapPlugin");
+    super_map.setStruct(&map);
+    plugins.push_back(super_map);
+
+
+    ros::NodeHandle inflation(nh, "inflation_layer");
+    move_parameter(nh, inflation, "cost_scaling_factor");
+    move_parameter(nh, inflation, "inflation_radius");
+    map["name"] = XmlRpc::XmlRpcValue("inflation_layer");
+    map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::InflationCostmapPlugin");
+    super_map.setStruct(&map);
+    plugins.push_back(super_map);
+
+    super_array.setArray(&plugins);
+    nh.setParam("plugins", super_array);
+
 }
 
 void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level) {

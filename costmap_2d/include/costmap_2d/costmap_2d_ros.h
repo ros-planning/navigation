@@ -44,6 +44,18 @@
 #include <costmap_2d/Costmap2DConfig.h>
 #include <dynamic_reconfigure/server.h>
 
+class SuperValue : public XmlRpc::XmlRpcValue {
+    public:
+    void setStruct(XmlRpc::XmlRpcValue::ValueStruct* a){
+        _type = TypeStruct;
+        _value.asStruct = new XmlRpc::XmlRpcValue::ValueStruct(*a);
+    }
+    void setArray(XmlRpc::XmlRpcValue::ValueArray* a){
+        _type = TypeArray;
+        _value.asArray = new std::vector<XmlRpc::XmlRpcValue>(*a);
+    }
+};
+
 namespace costmap_2d {
 
 class Costmap2DROS {
@@ -81,6 +93,7 @@ class Costmap2DROS {
         double transform_tolerance_;
 
     private:
+        void resetOldParameters(ros::NodeHandle& nh);
         void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
         void movementCB(const ros::TimerEvent &event);
         void mapUpdateLoop(double frequency);

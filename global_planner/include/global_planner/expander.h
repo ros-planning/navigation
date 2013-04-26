@@ -37,15 +37,17 @@
  *********************************************************************/
 #ifndef _EXPANDER_H
 #define _EXPANDER_H
+#include <global_planner/potential_calculator.h>
+
 namespace global_planner {
 
 class Expander {
     public:
-        Expander(int nx, int ny) :
-                unknown_(true), lethal_cost_(254), neutral_cost_(50), factor_(3.0) {
+        Expander(PotentialCalculator* p_calc, int nx, int ny) :
+                unknown_(true), lethal_cost_(254), neutral_cost_(50), factor_(3.0), p_calc_(p_calc) {
             setSize(nx, ny);
         }
-        virtual bool calculatePotential(unsigned char* costs, int start_x, int start_y, int end_x, int end_y,
+        virtual bool calculatePotentials(unsigned char* costs, int start_x, int start_y, int end_x, int end_y,
                                         int cycles, float* potential) = 0;
 
         /**
@@ -81,6 +83,7 @@ class Expander {
         unsigned char lethal_cost_, neutral_cost_;
         int cells_visited_;
         float factor_;
+        PotentialCalculator* p_calc_;
 
 };
 

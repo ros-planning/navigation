@@ -54,6 +54,9 @@ public:
   RobotFootprintManager( ros::NodeHandle node, std::string param_name = "footprint" );
 
 private:
+  void loadFromString(std::string footprint_string);
+  std::string loadFromArray( XmlRpc::XmlRpcValue footprint_value);
+
   ros::Publisher publisher;
   geometry_msgs::Polygon footprint;
 };

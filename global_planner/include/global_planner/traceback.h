@@ -38,10 +38,14 @@
 #ifndef _TRACEBACK_H
 #define _TRACEBACK_H
 #include<vector>
+#include<global_planner/potential_calculator.h>
+
 namespace global_planner {
 
 class Traceback {
     public:
+        Traceback(PotentialCalculator* p_calc) : p_calc_(p_calc) {}
+
         virtual bool getPath(float* potential, int end_x, int end_y, std::vector<std::pair<float, float> >& path) = 0;
         virtual void setSize(int xs, int ys) {
             xs_ = xs;
@@ -56,6 +60,7 @@ class Traceback {
     protected:
         int xs_, ys_;
         unsigned char lethal_cost_;
+        PotentialCalculator* p_calc_;
 };
 
 } //end namespace global_planner
