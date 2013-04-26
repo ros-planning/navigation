@@ -1,0 +1,19 @@
+<package>
+  <name>layered_costmap_plugin</name>
+  <version>1.10.3</version>
+  <description>
+    A costmap layer plugin which contains other layers.
+  </description>
+  <maintainer email="davidvlu@gmail.com">David Lu!!</maintainer>
+  <license>BSD</license>
+
+  <author>David Lu!!</author>
+  <url>http://ros.org/wiki/layer_of_layers_plugin</url>
+
+  <build-depend>roscpp</build-depend>
+  <build-depend>costmap_2d</build-depend>
+  <build-depend>pluginlib</build-depend>
+  <export>
+    <costmap_2d plugin="${prefix}/costmap_plugins.xml" />
+  </export>
+</package>
