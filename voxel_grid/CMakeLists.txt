@@ -1,12 +1,45 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-set(ROS_BUILD_TYPE Release)
-rosbuild_init()
+cmake_minimum_required(VERSION 2.8.3)
+project(voxel_grid)
 
-rosbuild_add_library(voxel_grid src/voxel_grid.cpp)
+find_package(catkin REQUIRED
+        COMPONENTS
+            roslib
+            roscpp
+        )
 
-rosbuild_add_executable(bin/voxel_grid src/voxel_grid_main.cpp)
-target_link_libraries(bin/voxel_grid voxel_grid)
+catkin_package(
+    INCLUDE_DIRS
+        include
+    LIBRARIES
+        voxel_grid
+    CATKIN_DEPENDS
+        roslib
+        roscpp
+)
 
-rosbuild_add_gtest(test/voxel_grid_tests test/voxel_grid_tests.cpp)
-target_link_libraries(test/voxel_grid_tests voxel_grid)
+include_directories(include)
+
+add_library(voxel_grid src/voxel_grid.cpp)
+
+add_executable(voxel_grid_sample src/voxel_grid_main.cpp)
+target_link_libraries(voxel_grid_sample
+    voxel_grid
+    ${catkin_LIBRARIES}
+    )
+
+install(TARGETS voxel_grid
+       LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       )
+
+
+install(
+    TARGETS
+        voxel_grid
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+catkin_add_gtest(voxel_grid_tests test/voxel_grid_tests.cpp)
+target_link_libraries(voxel_grid_tests
+    libvoxel_grid
+    ${catkin_LIBRARIES}
+    )

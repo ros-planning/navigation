@@ -313,7 +313,7 @@ void Costmap::getColor(Ogre::ColourValue& color, unsigned char value){
     }
 }
 
-void Costmap::incomingUpdate(const map_msgs::OccupancyGridUpdate::ConstPtr& msg){
+void Costmap::incomingUpdate(const costmap_2d::OccupancyGridUpdate::ConstPtr& msg){
     if(!updateBaseColors()){
       uint32_t num_points = msg->data.size();
       for(uint32_t i=0;i<num_points;i++){

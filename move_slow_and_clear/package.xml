@@ -1,0 +1,36 @@
+<package>
+    <name>move_slow_and_clear</name>
+    <version>1.10.3</version>
+    <description>
+
+        move_slow_and_clear
+
+    </description>
+    <author>Eitan Marder-Eppstein</author>
+    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <license>BSD</license>
+    <url>http://ros.org/wiki/move_slow_and_clear</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>roscpp</build_depend>
+    <build_depend>nav_core</build_depend>
+    <build_depend>costmap_2d</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>pluginlib</build_depend>
+    <build_depend>pluginlib</build_depend>
+
+    <run_depend>roscpp</run_depend>
+    <run_depend>nav_core</run_depend>
+    <run_depend>costmap_2d</run_depend>
+    <run_depend>geometry_msgs</run_depend>
+    <run_depend>pluginlib</run_depend>
+    <run_depend>pluginlib</run_depend>
+
+    <export>
+        <nav_core plugin="${prefix}/recovery_plugin.xml" />
+    </export>
+
+</package>
+
+

@@ -1,20 +1,56 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-set(ROS_BUILD_TYPE Release)
-rosbuild_init()
-rosbuild_genmsg()
-rosbuild_gensrv()
+cmake_minimum_required(VERSION 2.8.3)
+project(costmap_2d)
+
+find_package(catkin REQUIRED
+        COMPONENTS
+            roslib
+            roscpp
+            std_msgs
+            geometry_msgs
+            tf
+            laser_geometry
+            dynamic_reconfigure
+            message_generation
+            voxel_grid
+            pcl_ros
+        )
 
 find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
-include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS}
-                           ${PCL_INCLUDE_DIRS}
+include_directories(
+    include
+    ${catkin_INCLUDE_DIRS}
+    SYSTEM
+        ${EIGEN_INCLUDE_DIRS}
+        ${PCL_INCLUDE_DIRS}
 )
+
 add_definitions(${EIGEN_DEFINITIONS})
 
-#rosbuild_add_boost_directories()
+# messages
+add_message_files(
+    DIRECTORY msg
+    FILES
+    OccupancyGridUpdate.msg
+    VoxelGrid.msg
+)
 
-rosbuild_add_library(costmap_2d
+generate_messages(
+    DEPENDENCIES
+        std_msgs
+        geometry_msgs
+)
+
+# dynamic reconfigure
+generate_dynamic_reconfigure_options(
+  cfg/Costmap2D.cfg
+  cfg/GenericPlugin.cfg
+  cfg/InflationPlugin.cfg
+  cfg/ObstaclePlugin.cfg
+  cfg/VoxelPlugin.cfg
+)
+
+add_library(costmap_2d
   src/costmap_2d.cpp
   src/observation_buffer.cpp
   src/layered_costmap.cpp
@@ -23,10 +59,12 @@ rosbuild_add_library(costmap_2d
   src/costmap_math.cpp
   src/footprint.cpp
 )
-target_link_libraries(costmap_2d ${PCL_LIBRARIES})
-#rosbuild_link_boost(costmap_2d thread)
+target_link_libraries(costmap_2d
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
 
-rosbuild_add_library(common_costmap_plugins
+add_library(common_costmap_plugins
   plugins/footprint_costmap_plugin.cpp
   plugins/inflation_costmap_plugin.cpp
   plugins/obstacle_costmap_plugin.cpp
@@ -35,24 +73,71 @@ rosbuild_add_library(common_costmap_plugins
   plugins/voxel_with_footprint_costmap_plugin.cpp
   src/observation_buffer.cpp
 )
+target_link_libraries(common_costmap_plugins
+  costmap_2d
+)
 
-rosbuild_find_ros_package(dynamic_reconfigure)
-include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
-gencfg()
+catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES costmap_2d
+    CATKIN_DEPENDS
+        roslib
+        roscpp
+        message_generation
+        pcl_ros
+        voxel_grid
+    DEPENDS
+        PCL
+        Eigen
 
-rosbuild_add_executable(bin/costmap_2d_markers src/costmap_2d_markers.cpp)
-#rosbuild_add_executable(bin/costmap_2d_cloud src/costmap_2d_cloud.cpp)
+)
 
-rosbuild_add_executable(bin/costmap_2d_node src/costmap_2d_node.cpp)
-target_link_libraries(bin/costmap_2d_node costmap_2d)
+add_dependencies(costmap_2d costmap_2d_gencfg)
+add_dependencies(costmap_2d costmap_2d_gencpp)
 
-#rosbuild_add_executable(test/costmap_tester test/costmap_tester.cpp)
-#target_link_libraries(test/costmap_tester costmap_2d gtest ${PCL_LIBRARIES})
+add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
+target_link_libraries(costmap_2d_markers
+    costmap_2d
+    )
+add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
+target_link_libraries(costmap_2d_cloud
+    costmap_2d
+    )
 
-#rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag test/simple_driving_test_indexed.bag 61168cff9425b11e093ea3a627c81c8d)
-#rosbuild_download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
+add_executable(costmap_2d_node src/costmap_2d_node.cpp)
+target_link_libraries(costmap_2d_node
+    costmap_2d
+    )
 
-#rosbuild_add_rostest(test/simple_driving_test.xml)
+add_executable(costmap_tester test/costmap_tester.cpp)
+target_link_libraries(costmap_tester
+    gtest
+    costmap_2d
+    )
+download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag test/simple_driving_test_indexed.bag 61168cff9425b11e093ea3a627c81c8d)
+download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
 
-#rosbuild_add_gtest(test/module_tests test/module_tests.cpp)
-#target_link_libraries(test/module_tests costmap_2d)
+add_rostest(test/simple_driving_test.xml)
+
+catkin_add_gtest(module_tests test/module_tests.cpp)
+target_link_libraries(module_tests
+    costmap_2d
+    )
+
+
+install( TARGETS
+    costmap_2d_markers
+    costmap_2d_cloud
+    costmap_2d_node
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS
+    costmap_2d
+    common_costmap_plugins
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
+install(FILES costmap_plugins.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)

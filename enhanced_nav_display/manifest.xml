@@ -11,12 +11,10 @@
   <depend package="roscpp"/>
   <depend package="rviz"/>
   <depend package="nav_msgs"/>
-  <depend package="map_msgs"/>
+  <depend package="costmap_2d"/> <!-- map_msgs/OccupancyGridUpdate.msg copied to costmap_2d during catkinization. -->
   <depend package="tf"/>
   <depend package="message_filters"/>
 <export>
     <rviz plugin="${prefix}/plugins.xml"/>
 </export>
 </package>
-
-

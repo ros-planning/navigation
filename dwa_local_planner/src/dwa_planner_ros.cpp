@@ -47,7 +47,7 @@
 #include <nav_msgs/Path.h>
 
 //register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_DECLARE_CLASS(dwa_local_planner, DWAPlannerROS, dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
+PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
 
 namespace dwa_local_planner {
 

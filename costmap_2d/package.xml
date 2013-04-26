@@ -1,0 +1,58 @@
+<package>
+    <name>costmap_2d</name>
+    <version>1.10.3</version>
+    <description>
+        This package provides an implementation of a 2D costmap that takes in sensor
+        data from the world, builds a 2D or 3D occupancy grid of the data (depending
+        on whether a voxel based implementation is used), and inflates costs in a
+        2D costmap based on the occupancy grid and a user specified inflation radius.
+        This package also provides support for map_server based initialization of a
+        costmap, rolling window based costmaps, and parameter based subscription to
+        and configuration of sensor topics.
+    </description>
+    <author>Eitan Marder-Eppstein</author>
+    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <license>BSD</license>
+    <url>http://pr.willowgarage.com/wiki/costmap_2d</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>roscpp</build_depend>
+    <build_depend>roslib</build_depend>
+    <build_depend>std_msgs</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>sensor_msgs</build_depend>
+    <build_depend>laser_geometry</build_depend>
+    <build_depend>tf</build_depend>
+    <build_depend>voxel_grid</build_depend>
+    <build_depend>nav_msgs</build_depend>
+    <build_depend>visualization_msgs</build_depend>
+    <build_depend>pcl_ros</build_depend>
+    <build_depend>pluginlib</build_depend>
+    <build_depend>dynamic_reconfigure</build_depend>
+    <build_depend>message_generation</build_depend>
+
+    <run_depend>rosconsole</run_depend>
+    <run_depend>roscpp</run_depend>
+    <run_depend>roslib</run_depend>
+    <run_depend>std_msgs</run_depend>
+    <run_depend>geometry_msgs</run_depend>
+    <run_depend>sensor_msgs</run_depend>
+    <run_depend>laser_geometry</run_depend>
+    <run_depend>tf</run_depend>
+    <run_depend>voxel_grid</run_depend>
+    <run_depend>nav_msgs</run_depend>
+    <run_depend>visualization_msgs</run_depend>
+    <run_depend>pcl_ros</run_depend>
+    <run_depend>pluginlib</run_depend>
+    <run_depend>dynamic_reconfigure</run_depend>
+    <run_depend>message_generation</run_depend>
+
+
+    <test_depend>map_server</test_depend>
+    <test_depend>rosbag</test_depend>
+
+    <export>
+      <rviz plugin="${prefix}/costmap_plugins.xml"/>
+    </export>
+</package>
