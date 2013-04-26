@@ -1,7 +1,14 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-set(ROS_BUILD_TYPE RelWithDebInfo)
-rosbuild_init()
+cmake_minimum_required(VERSION 2.8.3)
+project(enhanced_nav_display)
+
+find_package(catkin REQUIRED
+  COMPONENTS
+  roscpp
+  rviz
+  tf
+  costmap_2d
+  message_filters
+)
 
 ## This plugin includes Qt widgets, so we must include Qt like so:
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
@@ -24,10 +31,14 @@ set(SOURCE_FILES
   ${MOC_FILES}
 )
 
-## Set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+add_library(${PROJECT_NAME} ${SOURCE_FILES})
 
-rosbuild_add_library(${PROJECT_NAME} ${SOURCE_FILES})
+target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES} ${catkin_LIBRARIES})
 
-target_link_libraries(${PROJECT_NAME} ${QT_LIBRARIES})
-
+install(TARGETS ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+install(FILES plugins.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
