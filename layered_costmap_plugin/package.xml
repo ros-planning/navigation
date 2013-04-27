@@ -10,9 +10,9 @@
   <author>David Lu!!</author>
   <url>http://ros.org/wiki/layer_of_layers_plugin</url>
 
-  <build-depend>roscpp</build-depend>
-  <build-depend>costmap_2d</build-depend>
-  <build-depend>pluginlib</build-depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>costmap_2d</build_depend>
+  <build_depend>pluginlib</build_depend>
   <export>
     <costmap_2d plugin="${prefix}/costmap_plugins.xml" />
   </export>

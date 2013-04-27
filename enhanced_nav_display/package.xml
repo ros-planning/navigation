@@ -12,12 +12,12 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build-depend>roscpp</build-depend>
-  <build-depend>rviz</build-depend>
-  <build-depend>nav_msgs</build-depend>
-  <build-depend>costmap_2d</build-depend> <!-- map_msgs/OccupancyGridUpdate.msg copied to costmap_2d during catkinization. -->
-  <build-depend>tf</build-depend>
-  <build-depend>message_filters</build-depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rviz</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>costmap_2d</build_depend> <!-- map_msgs/OccupancyGridUpdate.msg copied to costmap_2d during catkinization. -->
+  <build_depend>tf</build_depend>
+  <build_depend>message_filters</build_depend>
 
   <export>
     <rviz plugin="${prefix}/plugins.xml"/>
