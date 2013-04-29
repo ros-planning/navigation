@@ -53,6 +53,6 @@
     <test_depend>rosbag</test_depend>
 
     <export>
-      <rviz plugin="${prefix}/costmap_plugins.xml"/>
+      <costmap_2d plugin="${prefix}/costmap_plugins.xml"/>
     </export>
 </package>

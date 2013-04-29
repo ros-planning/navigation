@@ -1,5 +1,5 @@
 <class_libraries>
-  <library path="lib/libcommon_costmap_plugins">
+  <library path="libcommon_costmap_plugins">
     <class type="common_costmap_plugins::FootprintCostmapPlugin"  base_class_type="costmap_2d::CostmapPluginROS">
       <description>Clears the area in the costmap under the footprint of the robot.</description>
     </class>
