@@ -13,6 +13,11 @@ catkin_package(
   layered_costmap_plugin
 )
 
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
 add_library(layered_costmap_plugin
   src/layered_costmap_plugin.cpp
 )

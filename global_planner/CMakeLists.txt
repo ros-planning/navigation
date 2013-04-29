@@ -52,7 +52,10 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 add_executable(planner
   src/plan_node.cpp
 )
-target_link_libraries(planner ${PROJECT_NAME})
+target_link_libraries(planner
+  ${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+)
 
 install( TARGETS
   planner

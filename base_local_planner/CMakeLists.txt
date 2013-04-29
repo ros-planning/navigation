@@ -53,7 +53,9 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES base_local_planner trajectory_planner_ros
+    LIBRARIES
+        base_local_planner
+#       trajectory_planner_ros
     CATKIN_DEPENDS
         roslib
         roscpp
@@ -98,18 +100,20 @@ target_link_libraries(base_local_planner
     ${Eigen_LIBRARIES}
     )
 
-add_library(trajectory_planner_ros
-	src/trajectory_planner.cpp
-	src/trajectory_planner_ros.cpp)
-target_link_libraries(trajectory_planner_ros
-    base_local_planner)
+# Not supported (yet?) in layered costmap merge.
+#
+# add_library(trajectory_planner_ros
+# 	src/trajectory_planner.cpp
+# 	src/trajectory_planner_ros.cpp)
+# target_link_libraries(trajectory_planner_ros
+#     base_local_planner)
 
 add_executable(point_grid src/point_grid.cpp)
 target_link_libraries(point_grid ${catkin_LIBRARIES})
 
 install(TARGETS
             base_local_planner
-            trajectory_planner_ros
+#           trajectory_planner_ros
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
