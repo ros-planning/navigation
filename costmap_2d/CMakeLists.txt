@@ -43,10 +43,10 @@ generate_messages(
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
+  cfg/ObstaclePlugin.cfg
   cfg/Costmap2D.cfg
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
-  cfg/ObstaclePlugin.cfg
   cfg/VoxelPlugin.cfg
 )
 
@@ -93,6 +93,7 @@ catkin_package(
 )
 
 add_dependencies(costmap_2d costmap_2d_gencfg)
+add_dependencies(common_costmap_plugins costmap_2d_gencfg)
 add_dependencies(costmap_2d costmap_2d_gencpp)
 
 add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)

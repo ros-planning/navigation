@@ -10,6 +10,8 @@
   <author>David Lu!!</author>
   <url>http://ros.org/wiki/layer_of_layers_plugin</url>
 
+  <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>roscpp</build_depend>
   <build_depend>costmap_2d</build_depend>
   <build_depend>pluginlib</build_depend>

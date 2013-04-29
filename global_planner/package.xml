@@ -10,14 +10,26 @@
   <author>David Lu!!</author>
   <url>http://ros.org/wiki/global_planner</url>
 
-  <build_depend>roscpp</build_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>costmap_2d</build_depend>
-  <build_depend>nav_core</build_depend>
-  <build_depend>pluginlib</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>dynamic_reconfigure</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
 
-  <test_depend>navfn</test_depend>
+  <build_depend>costmap_2d</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_core</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>navfn</build_depend>
+  <build_depend>pluginlib</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>tf</build_depend>
+
+  <run_depend>costmap_2d</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>nav_core</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>navfn</run_depend>
+  <run_depend>pluginlib</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>tf</run_depend>
+
 </package>

@@ -8,6 +8,11 @@ find_package(catkin REQUIRED
   pluginlib
 )
 
+catkin_package(
+  LIBRARIES
+  layered_costmap_plugin
+)
+
 add_library(layered_costmap_plugin
   src/layered_costmap_plugin.cpp
 )
