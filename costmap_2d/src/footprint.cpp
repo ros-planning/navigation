@@ -37,44 +37,54 @@
 namespace costmap_2d
 {
 
-RobotFootprintManager::RobotFootprintManager( ros::NodeHandle node, std::string param_name )
+RobotFootprintManager::RobotFootprintManager(ros::NodeHandle node, std::string param_name)
 {
   //grab the footprint from the parameter server if possible
   XmlRpc::XmlRpcValue footprint_value;
   std::string footprint_param;
 
-  if (node.searchParam(param_name, footprint_param)) {
-            
+  if (node.searchParam(param_name, footprint_param))
+  {
+
     node.getParam(footprint_param, footprint_value);
 
     // string specification
-    if (footprint_value.getType() == XmlRpc::XmlRpcValue::TypeString) {
+    if (footprint_value.getType() == XmlRpc::XmlRpcValue::TypeString)
+    {
       std::string footprint_string = std::string(footprint_value);
 
       //if there's just an empty footprint up there, return
-      if (footprint_string == "[]" || footprint_string == "") {
-      }else{                       
+      if (footprint_string == "[]" || footprint_string == "")
+      {
+      }
+      else
+      {
         loadFromString(footprint_string);
         node.setParam("footprint", footprint_string);
       }
 
       // array specification
-    } else if (footprint_value.getType() == XmlRpc::XmlRpcValue::TypeArray) {
+    }
+    else if (footprint_value.getType() == XmlRpc::XmlRpcValue::TypeArray)
+    {
       std::string s_value = loadFromArray(footprint_value);
       node.deleteParam(footprint_param);
       node.setParam(footprint_param, s_value.c_str());
       node.setParam("footprint", s_value.c_str());
     }
-  }else{
+  }
+  else
+  {
     double robot_radius;
     node.param("robot_radius", robot_radius, 0.46);
-    int N = 16; 
+    int N = 16;
     geometry_msgs::Point32 pt;
-    for (int i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i)
+    {
       double angle = i * 2 * M_PI / N;
       pt.x = cos(angle) * robot_radius;
       pt.y = sin(angle) * robot_radius;
-        
+
       footprint.points.push_back(pt);
     }
   }
@@ -82,18 +92,20 @@ RobotFootprintManager::RobotFootprintManager( ros::NodeHandle node, std::string 
   // Read padding parameter, if any.
   double padding;
   std::string padding_param;
-  if(!node.searchParam("footprint_padding", padding_param)) {
+  if (!node.searchParam("footprint_padding", padding_param))
+  {
     padding = 0;
   }
-  else {
+  else
+  {
     node.param(padding_param, padding, 0.0);
   }
 
   // Apply padding.
-  for( unsigned int i = 0; i < footprint.points.size(); i++ )
+  for (unsigned int i = 0; i < footprint.points.size(); i++)
   {
-    geometry_msgs::Point32& pt = footprint.points[ i ];
-    
+    geometry_msgs::Point32& pt = footprint.points[i];
+
     pt.x += sign0(pt.x) * padding;
     pt.y += sign0(pt.y) * padding;
   }
@@ -101,50 +113,56 @@ RobotFootprintManager::RobotFootprintManager( ros::NodeHandle node, std::string 
   std::string full_topic = node.resolveName("footprint");
 
   // Publish footprint (latched)
-  publisher = node.advertise<geometry_msgs::Polygon>(full_topic, 1, true);
+  publisher = node.advertise < geometry_msgs::Polygon > (full_topic, 1, true);
   publisher.publish(footprint);
   node.setParam("footprint_topic", full_topic);
 }
 
 void RobotFootprintManager::loadFromString(std::string footprint_string)
 {
-  std::vector<std::string> footstring_list;
+  std::vector < std::string > footstring_list;
 
   boost::erase_all(footprint_string, " ");
   boost::char_separator<char> sep("[]");
-  boost::tokenizer<boost::char_separator<char> > tokens(footprint_string, sep);
-  footstring_list = std::vector<std::string>(tokens.begin(), tokens.end());
+  boost::tokenizer < boost::char_separator<char> > tokens(footprint_string, sep);
+  footstring_list = std::vector < std::string > (tokens.begin(), tokens.end());
 
   bool valid_foot = true;
-  BOOST_FOREACH(std::string t, footstring_list) {
+  BOOST_FOREACH(std::string t, footstring_list)
+  {
     if (t == ",")
-      continue;
+    continue;
 
     boost::erase_all(t, " ");
     boost::char_separator<char> pt_sep(",");
     boost::tokenizer<boost::char_separator<char> > pt_tokens(t, pt_sep);
     std::vector<std::string> point(pt_tokens.begin(), pt_tokens.end());
 
-    if (point.size() != 2) {
+    if (point.size() != 2)
+    {
       ROS_WARN("Each point must have exactly 2 coordinates");
       valid_foot = false;
       break;
     }
 
     std::vector<double> tmp_pt;
-    BOOST_FOREACH(std::string p, point) {
+    BOOST_FOREACH(std::string p, point)
+    {
       std::istringstream iss(p);
       double temp;
-      if (iss >> temp) {
+      if (iss >> temp)
+      {
         tmp_pt.push_back(temp);
-      } else {
+      }
+      else
+      {
         ROS_WARN("Each coordinate must convert to a double.");
         valid_foot = false;
         break;
       }
     }
     if (!valid_foot)
-      break;
+    break;
 
     geometry_msgs::Point32 pt;
     pt.x = tmp_pt[0];
@@ -153,42 +171,44 @@ void RobotFootprintManager::loadFromString(std::string footprint_string)
     footprint.points.push_back(pt);
   }
 
-  if (!valid_foot || footprint.points.size() < 3) {
+  if (!valid_foot || footprint.points.size() < 3)
+  {
     ROS_FATAL(
-      "This footprint is not valid it must be specified as a list of lists with at least 3 points, you specified %s",
-      footprint_string.c_str());
+        "This footprint is not valid it must be specified as a list of lists with at least 3 points, you specified %s",
+        footprint_string.c_str());
     throw std::runtime_error(
-      "The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
+        "The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
   }
 }
 
-std::string RobotFootprintManager::loadFromArray( XmlRpc::XmlRpcValue footprint_value)
+std::string RobotFootprintManager::loadFromArray(XmlRpc::XmlRpcValue footprint_value)
 {
-  if (footprint_value.size() < 3) {
-    ROS_FATAL(
-      "The footprint must be specified as list of lists on the parameter server; parameter was specified as %s",
-      std::string(footprint_value).c_str());
+  if (footprint_value.size() < 3)
+  {
+    ROS_FATAL("The footprint must be specified as list of lists on the parameter server; parameter was specified as %s",
+              std::string(footprint_value).c_str());
     throw std::runtime_error(
-      "The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
+        "The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
   }
 
   geometry_msgs::Point32 pt;
-  for (int i = 0; i < footprint_value.size(); ++i) {
+  for (int i = 0; i < footprint_value.size(); ++i)
+  {
     //make sure we have a list of lists of size 2
     XmlRpc::XmlRpcValue point = footprint_value[i];
 
-    if (!(point.getType() == XmlRpc::XmlRpcValue::TypeArray && point.size() == 2)) {
+    if (!(point.getType() == XmlRpc::XmlRpcValue::TypeArray && point.size() == 2))
+    {
       ROS_FATAL(
-        "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
+          "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
       throw std::runtime_error(
-        "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
+          "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form");
     }
 
     //make sure that the value we're looking at is either a double or an int
-    if (!(point[0].getType() == XmlRpc::XmlRpcValue::TypeInt
-          || point[0].getType() == XmlRpc::XmlRpcValue::TypeDouble)
-        || !(point[1].getType() == XmlRpc::XmlRpcValue::TypeInt
-             || point[1].getType() == XmlRpc::XmlRpcValue::TypeDouble)) {
+    if (!(point[0].getType() == XmlRpc::XmlRpcValue::TypeInt || point[0].getType() == XmlRpc::XmlRpcValue::TypeDouble)
+        || !(point[1].getType() == XmlRpc::XmlRpcValue::TypeInt || point[1].getType() == XmlRpc::XmlRpcValue::TypeDouble))
+    {
       ROS_FATAL("Values in the footprint specification must be numbers");
       throw std::runtime_error("Values in the footprint specification must be numbers");
     }
@@ -201,11 +221,15 @@ std::string RobotFootprintManager::loadFromArray( XmlRpc::XmlRpcValue footprint_
 
   std::ostringstream oss;
   bool first = true;
-  BOOST_FOREACH(geometry_msgs::Point32 p, footprint.points) {
-    if (first) {
+  BOOST_FOREACH(geometry_msgs::Point32 p, footprint.points)
+  {
+    if (first)
+    {
       oss << "[[" << p.x << "," << p.y << "]";
       first = false;
-    } else {
+    }
+    else
+    {
       oss << ",[" << p.x << "," << p.y << "]";
     }
   }

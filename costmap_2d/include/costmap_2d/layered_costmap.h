@@ -47,89 +47,99 @@
 #include <vector>
 #include <string>
 
-namespace costmap_2d {
+namespace costmap_2d
+{
 class CostmapPlugin;
 
 /**
  * @class LayeredCostmap
  * @brief Instantiates different layer plugins and aggregates them into one score
  */
-class LayeredCostmap {
-    public:
-        /**
-         * @brief  Constructor for a costmap
-         */
-        LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown);
+class LayeredCostmap
+{
+public:
+  /**
+   * @brief  Constructor for a costmap
+   */
+  LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown);
 
-        /**
-         * @brief  Destructor
-         */
-        ~LayeredCostmap();
+  /**
+   * @brief  Destructor
+   */
+  ~LayeredCostmap();
 
-        /**
-         * @brief  Update the underlying costmap with new data.
-         * If you want to update the map outside of the update loop that runs, you can call this.
-         */
-        void updateMap(double origin_x, double origin_y, double origin_yaw);
+  /**
+   * @brief  Update the underlying costmap with new data.
+   * If you want to update the map outside of the update loop that runs, you can call this.
+   */
+  void updateMap(double origin_x, double origin_y, double origin_yaw);
 
-        std::string getGlobalFrameID() const {
-            return global_frame_;
-        }
+  std::string getGlobalFrameID() const
+  {
+    return global_frame_;
+  }
 
-        void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y,
-                       bool size_locked = false);
+  void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y,
+                 bool size_locked = false);
 
-        void getUpdatedBounds(double& minx, double& miny, double& maxx, double& maxy) {
-            minx = minx_;
-            miny = miny_;
-            maxx = maxx_;
-            maxy = maxy_;
-        }
+  void getUpdatedBounds(double& minx, double& miny, double& maxx, double& maxy)
+  {
+    minx = minx_;
+    miny = miny_;
+    maxx = maxx_;
+    maxy = maxy_;
+  }
 
-        bool isCurrent();
+  bool isCurrent();
 
-        Costmap2D* getCostmap() {
-            return &costmap_;
-        }
+  Costmap2D* getCostmap()
+  {
+    return &costmap_;
+  }
 
-        bool isRolling() {
-            return rolling_window_;
-        }
+  bool isRolling()
+  {
+    return rolling_window_;
+  }
 
-        std::vector<boost::shared_ptr<CostmapPlugin> >* getPlugins() {
-            return &plugins_;
-        }
+  std::vector<boost::shared_ptr<CostmapPlugin> >* getPlugins()
+  {
+    return &plugins_;
+  }
 
-        void addPlugin(boost::shared_ptr<CostmapPlugin> plugin) {
-            plugins_.push_back(plugin);
-        }
+  void addPlugin(boost::shared_ptr<CostmapPlugin> plugin)
+  {
+    plugins_.push_back(plugin);
+  }
 
-        bool isSizeLocked() {
-            return size_locked_;
-        }
+  bool isSizeLocked()
+  {
+    return size_locked_;
+  }
 
-        void getBounds(unsigned int* x0, unsigned int* xn, unsigned int* y0, unsigned int* yn) {
-            *x0 = bx0_;
-            *xn = bxn_;
-            *y0 = by0_;
-            *yn = byn_;
-        }
+  void getBounds(unsigned int* x0, unsigned int* xn, unsigned int* y0, unsigned int* yn)
+  {
+    *x0 = bx0_;
+    *xn = bxn_;
+    *y0 = by0_;
+    *yn = byn_;
+  }
 
-    private:
-        void updateUsingPlugins(std::vector<boost::shared_ptr<CostmapPlugin> > &plugins);
+private:
+  void updateUsingPlugins(std::vector<boost::shared_ptr<CostmapPlugin> > &plugins);
 
-        Costmap2D costmap_;
-        std::string global_frame_;
+  Costmap2D costmap_;
+  std::string global_frame_;
 
-        bool rolling_window_;  /// < @brief Whether or not the costmap should roll with the robot
+  bool rolling_window_;  /// < @brief Whether or not the costmap should roll with the robot
 
-        bool current_;
-        double minx_, miny_, maxx_, maxy_;
-        unsigned int bx0_, bxn_, by0_, byn_;
+  bool current_;
+  double minx_, miny_, maxx_, maxy_;
+  unsigned int bx0_, bxn_, by0_, byn_;
 
-        std::vector<boost::shared_ptr<CostmapPlugin> > plugins_;
+  std::vector<boost::shared_ptr<CostmapPlugin> > plugins_;
 
-        bool size_locked_;
+  bool size_locked_;
 };
 }
 ;

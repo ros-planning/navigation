@@ -39,13 +39,14 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/footprint.h>
 
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "costmap_node");
-    costmap_2d::RobotFootprintManager r(ros::NodeHandle("/costmap_node/costmap"));
-    tf::TransformListener tf(ros::Duration(10));
-    costmap_2d::Costmap2DROS lcr("costmap", tf);
+int main(int argc, char** argv)
+{
+  ros::init(argc, argv, "costmap_node");
+  costmap_2d::RobotFootprintManager r(ros::NodeHandle("/costmap_node/costmap"));
+  tf::TransformListener tf(ros::Duration(10));
+  costmap_2d::Costmap2DROS lcr("costmap", tf);
 
-    ros::spin();
+  ros::spin();
 
-    return (0);
+  return (0);
 }
