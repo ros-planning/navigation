@@ -43,52 +43,56 @@
 #include <costmap_2d/OccupancyGridUpdate.h>
 #include <tf/transform_datatypes.h>
 
-namespace costmap_2d {
+namespace costmap_2d
+{
 /**
  * @class Costmap2DPublisher
  * @brief A tool to periodically publish visualization data from a Costmap2D
  */
-class Costmap2DPublisher {
-    public:
-        /**
-         * @brief  Constructor for the Costmap2DPublisher
-         */
-        Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string topic_name);
+class Costmap2DPublisher
+{
+public:
+  /**
+   * @brief  Constructor for the Costmap2DPublisher
+   */
+  Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string topic_name);
 
-        /**
-         * @brief  Destructor
-         */
-        ~Costmap2DPublisher();
+  /**
+   * @brief  Destructor
+   */
+  ~Costmap2DPublisher();
 
-        void updateBounds(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn) {
-            x0_ = std::min(x0, x0_);
-            xn_ = std::max(xn, xn_);
-            y0_ = std::min(y0, y0_);
-            yn_ = std::max(yn, yn_);
-        }
+  void updateBounds(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn)
+  {
+    x0_ = std::min(x0, x0_);
+    xn_ = std::max(xn, xn_);
+    y0_ = std::min(y0, y0_);
+    yn_ = std::max(yn, yn_);
+  }
 
-        /**
-         * @brief  Publishes the visualization data over ROS
-         */
-        void publishCostmap();
+  /**
+   * @brief  Publishes the visualization data over ROS
+   */
+  void publishCostmap();
 
-        /**
-         * @brief Check if the publisher is active
-         * @return True if the frequency for the publisher is non-zero, false otherwise
-         */
-        bool active() {
-            return active_;
-        }
+  /**
+   * @brief Check if the publisher is active
+   * @return True if the frequency for the publisher is non-zero, false otherwise
+   */
+  bool active()
+  {
+    return active_;
+  }
 
-    private:
-        ros::NodeHandle* node;
-        Costmap2D* costmap_;
-        std::string global_frame_;
-        unsigned int x0_, xn_, y0_, yn_;
-        bool active_;
-        ros::Publisher costmap_pub_;
-        ros::Publisher costmap_update_pub_;
-        nav_msgs::OccupancyGrid grid_;
+private:
+  ros::NodeHandle* node;
+  Costmap2D* costmap_;
+  std::string global_frame_;
+  unsigned int x0_, xn_, y0_, yn_;
+  bool active_;
+  ros::Publisher costmap_pub_;
+  ros::Publisher costmap_update_pub_;
+  nav_msgs::OccupancyGrid grid_;
 };
 }
 #endif

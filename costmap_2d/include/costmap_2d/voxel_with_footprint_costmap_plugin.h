@@ -36,7 +36,7 @@
 namespace common_costmap_plugins
 {
 
-class VoxelWithFootprintCostmapPlugin: public common_costmap_plugins::VoxelCostmapPlugin
+class VoxelWithFootprintCostmapPlugin : public common_costmap_plugins::VoxelCostmapPlugin
 {
 public:
   virtual void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);

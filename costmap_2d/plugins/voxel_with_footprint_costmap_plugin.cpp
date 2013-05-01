@@ -34,21 +34,22 @@ namespace common_costmap_plugins
 
 void VoxelWithFootprintCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
 {
-  VoxelCostmapPlugin::initialize( costmap, name );
-  ((CostmapPluginROS*)&footprint_layer_)->initialize( costmap, name + "_footprint", *tf_ );
+  VoxelCostmapPlugin::initialize(costmap, name);
+  ((CostmapPluginROS*)&footprint_layer_)->initialize(costmap, name + "_footprint", *tf_);
 }
 
-void VoxelWithFootprintCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
-                                                    double* max_x, double* max_y)
+void VoxelWithFootprintCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+                                                    double* min_y, double* max_x, double* max_y)
 {
-  VoxelCostmapPlugin::update_bounds( origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y );
-  footprint_layer_.update_bounds( origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y );
+  VoxelCostmapPlugin::update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
+  footprint_layer_.update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
 }
 
-void VoxelWithFootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void VoxelWithFootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
+                                                   int max_j)
 {
-  footprint_layer_.update_costs( *this, min_i, min_j, max_i, max_j );
-  VoxelCostmapPlugin::update_costs( master_grid, min_i, min_j, max_i, max_j );
+  footprint_layer_.update_costs(*this, min_i, min_j, max_i, max_j);
+  VoxelCostmapPlugin::update_costs(master_grid, min_i, min_j, max_i, max_j);
 }
 
 } // end namespace common_costmap_plugins
