@@ -69,7 +69,7 @@ namespace base_local_planner {
        * @param  circumscribed_radius The radius of the circumscribed circle of the robot
        * @return Positive if all the points lie outside the footprint, negative otherwise
        */
-      virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
+      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::PolygonStamped& footprint,
           double inscribed_radius, double circumscribed_radius);
 
     private:
