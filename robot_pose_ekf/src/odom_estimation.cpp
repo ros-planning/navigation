@@ -225,7 +225,13 @@ namespace estimation
       transformer_.lookupTransform("imu", "base_footprint", filter_time, imu_meas_);
       if (imu_initialized_){
 	// convert absolute imu yaw measurement to relative imu yaw measurement 
-	Transform imu_rel_frame =  filter_estimate_old_ * imu_meas_old_.inverse() * imu_meas_;
+	Transform imu_rel_frame;
+	if (gps_active)
+		imu_rel_frame = imu_meas_;
+	else
+		imu_rel_frame =  filter_estimate_old_ * imu_meas_old_.inverse() * imu_meas_;
+
+
 	ColumnVector imu_rel(3); double tmp;
 	decomposeTransform(imu_rel_frame, tmp, tmp, tmp, tmp, tmp, imu_rel(3));
 	decomposeTransform(imu_meas_,     tmp, tmp, tmp, imu_rel(1), imu_rel(2), tmp);
