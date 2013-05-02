@@ -104,18 +104,18 @@ add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
 target_link_libraries(costmap_2d_markers
     costmap_2d
     )
-# Not supported (yet?) after layered-costmap merge
-# add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
-# target_link_libraries(costmap_2d_cloud
-#     costmap_2d
-#     )
+
+add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
+target_link_libraries(costmap_2d_cloud
+    costmap_2d
+    )
 
 add_executable(costmap_2d_node src/costmap_2d_node.cpp)
 target_link_libraries(costmap_2d_node
     costmap_2d
     )
 
-# Not supported (yet?) after layered-costmap merge.  New layered API makes porting non-trivial.
+# Not supported (yet?) after layered-costmap merge.  New layered API makes porting non-trivial. X
 #
 # add_executable(costmap_tester test/costmap_tester.cpp)
 # target_link_libraries(costmap_tester
