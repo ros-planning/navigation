@@ -42,7 +42,7 @@
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
-
+#include <costmap_2d/cost_values.h>
 #include <base_local_planner/footprint_helper.h>
 
 #include <base_local_planner/world_model.h>

@@ -102,11 +102,11 @@ target_link_libraries(base_local_planner
 
 # Not supported (yet?) in layered costmap merge.
 #
-# add_library(trajectory_planner_ros
-# 	src/trajectory_planner.cpp
-# 	src/trajectory_planner_ros.cpp)
-# target_link_libraries(trajectory_planner_ros
-#     base_local_planner)
+add_library(trajectory_planner_ros
+	src/trajectory_planner.cpp
+	src/trajectory_planner_ros.cpp)
+target_link_libraries(trajectory_planner_ros
+     base_local_planner)
 
 add_executable(point_grid src/point_grid.cpp)
 target_link_libraries(point_grid ${catkin_LIBRARIES})
