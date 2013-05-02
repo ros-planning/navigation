@@ -1,6 +1,6 @@
 #include<costmap_2d/inflation_costmap_plugin.h>
 #include<costmap_2d/costmap_math.h>
-
+#include<costmap_2d/footprint.h>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::InflationCostmapPlugin, costmap_2d::CostmapPluginROS)
@@ -46,33 +46,9 @@ void InflationCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std
 
 void InflationCostmapPlugin::footprint_cb(const geometry_msgs::Polygon& footprint)
 {
-  if (footprint.points.size() > 2)
-  {
-    //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
-    double min_dist = std::numeric_limits<double>::max();
-    double max_dist = 0.0;
-
-    for (unsigned int i = 0; i < footprint.points.size() - 1; ++i)
-    {
-      //check the distance from the robot center point to the first vertex
-      double vertex_dist = distance(0.0, 0.0, footprint.points[i].x, footprint.points[i].y);
-      double edge_dist = distanceToLine(0.0, 0.0, footprint.points[i].x, footprint.points[i].y,
-                                        footprint.points[i + 1].x, footprint.points[i + 1].y);
-      min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
-      max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-    }
-
-    //we also need to do the last vertex and the first vertex
-    double vertex_dist = distance(0.0, 0.0, footprint.points.back().x, footprint.points.back().y);
-    double edge_dist = distanceToLine(0.0, 0.0, footprint.points.back().x, footprint.points.back().y,
-                                      footprint.points.front().x, footprint.points.front().y);
-    min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
-    max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-
-    inscribed_radius_ = min_dist;
-    circumscribed_radius_ = max_dist;
-    // TODO: Set circumscribed_cost
-  }
+  //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
+  costmap_2d::calculateMinAndMaxDistances(footprint, inscribed_radius_, circumscribed_radius_);
+  // TODO: Set circumscribed_cost
   cell_inflation_radius_ = cellDistance(inflation_radius_);
   computeCaches();
   got_footprint_ = true;

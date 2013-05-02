@@ -44,6 +44,8 @@
 namespace costmap_2d
 {
 
+void calculateMinAndMaxDistances(const geometry_msgs::Polygon& footprint, double& min_dist, double& max_dist);
+
 /** @brief Footprint publisher.
  *
  * When instantiated, this class reads the "footprint" parameter and
