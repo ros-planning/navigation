@@ -225,23 +225,7 @@ namespace base_local_planner {
       world_model_ = new CostmapModel(*costmap_);
       std::vector<double> y_vels = loadYVels(private_nh);
 
-      std::string topic_param, topic;
-
-      if(!private_nh.searchParam("footprint_topic", topic_param)){
-          topic_param = "footprint_topic";
-      }
-        
-      private_nh.param(topic_param, topic, std::string("footprint"));
-
-      got_footprint_ = false;
-      footprint_sub_ = private_nh.subscribe(topic, 1, &TrajectoryPlannerROS::footprint_cb, this);
-    
-      ros::Rate r(10);
-      while(!got_footprint_ && private_nh.ok()){
-          ROS_INFO_THROTTLE(5.0, "Waiting for footprint in Trajectory Planner");
-          ros::spinOnce();
-          r.sleep();
-      }
+      footprint_spec_ = costmap_ros_->getRobotFootprint();
 
       tc_ = new TrajectoryPlanner(*world_model_, *costmap_, footprint_spec_,
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
@@ -259,11 +243,6 @@ namespace base_local_planner {
     } else {
       ROS_WARN("This planner has already been initialized, doing nothing");
     }
-  }
-
-  void TrajectoryPlannerROS::footprint_cb(const geometry_msgs::Polygon& footprint) {
-    footprint_spec_ = footprint;
-    got_footprint_ = true;
   }
 
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){

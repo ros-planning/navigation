@@ -113,10 +113,6 @@ double ObstacleCostFunction::footprintCost (
     geometry_msgs::Polygon footprint_spec,
     costmap_2d::Costmap2D* costmap,
     base_local_planner::WorldModel* world_model) {
-  double cos_th = cos(th);
-  double sin_th = sin(th);
-
-  double occ_cost = 0.0;
 
   //check if the footprint is legal
   // TODO: Cache inscribed radius
@@ -132,7 +128,7 @@ double ObstacleCostFunction::footprintCost (
     return -7.0;
   }
 
-  occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
+  double occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
 
   return occ_cost;
 }

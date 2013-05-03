@@ -223,11 +223,7 @@ namespace base_local_planner {
       bool initialized_;
       base_local_planner::OdometryHelperRos odom_helper_;
 
-
       geometry_msgs::Polygon footprint_spec_;
-      void footprint_cb(const geometry_msgs::Polygon& footprint);
-      ros::Subscriber footprint_sub_;
-      bool got_footprint_;
   };
 };
 #endif
