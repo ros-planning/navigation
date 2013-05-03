@@ -94,6 +94,27 @@ public:
     return layered_costmap_;
   }
 
+  geometry_msgs::Polygon getRobotFootprint()
+  {
+    return footprint_spec_; 
+  }
+
+  /**
+   * @brief  Given a pose, build the oriented footprint of the robot
+   * @param  x The x position of the robot
+   * @param  y The y position of the robot
+   * @param  theta The orientation of the robot
+   * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
+   */
+  void getOrientedFootprint(double x, double y, double theta, geometry_msgs::Polygon& oriented_footprint) const;
+
+  /**
+   * @brief  Build the oriented footprint of the robot at the robot's current pose
+   * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
+   */
+  void getOrientedFootprint(geometry_msgs::Polygon& oriented_footprint) const;
+
+
 protected:
   LayeredCostmap* layered_costmap_;
   std::string name_;
@@ -119,6 +140,11 @@ private:
   dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;
 
   boost::recursive_mutex configuration_mutex_;
+
+  void footprint_cb(const geometry_msgs::Polygon& footprint);
+  ros::Subscriber footprint_sub_;
+  bool got_footprint_;
+  geometry_msgs::Polygon footprint_spec_; 
 };
 // class Costmap2DROS
 }// namespace costmap_2d
