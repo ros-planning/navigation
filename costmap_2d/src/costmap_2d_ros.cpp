@@ -97,13 +97,13 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
   // load the footprint from a topic
   std::string topic_param, topic;
-  if(!nh.searchParam("footprint_topic", topic_param))
+  if(!private_nh.searchParam("footprint_topic", topic_param))
   {
     topic_param = "footprint_topic";
   }
 
-  nh.param(topic_param, topic, std::string("footprint"));
-  footprint_sub_ = nh.subscribe(topic, 1, &FootprintCostmapPlugin::footprint_cb, this);
+  private_nh.param(topic_param, topic, std::string("footprint"));
+  footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
 
   ros::Rate r(10);
   while(!got_footprint_ && g_nh.ok())
@@ -458,24 +458,25 @@ bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const
   return true;
 }
 
-void Costmap2DROS::getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const {
+void Costmap2DROS::getOrientedFootprint(geometry_msgs::PolygonStamped& oriented_footprint) const {
   tf::Stamped<tf::Pose> global_pose;
   if(!getRobotPose(global_pose))
     return;
 
   double yaw = tf::getYaw(global_pose.getRotation());
-  getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint);
+  getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint, global_frame_);
 }
 
-void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint) const {
+void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, geometry_msgs::PolygonStamped& oriented_footprint, std::string frame) const {
   //build the oriented footprint at the robot's current location
+  oriented_footprint.header.frame_id = frame;
   double cos_th = cos(theta);
   double sin_th = sin(theta);
-  for(unsigned int i = 0; i < footprint_spec_.size(); ++i){
-    geometry_msgs::Point new_pt;
-    new_pt.x = x + (footprint_spec_[i].x * cos_th - footprint_spec_[i].y * sin_th);
-    new_pt.y = y + (footprint_spec_[i].x * sin_th + footprint_spec_[i].y * cos_th);
-    oriented_footprint.push_back(new_pt);
+  for(unsigned int i = 0; i < footprint_spec_.points.size(); ++i){
+    geometry_msgs::Point32 new_pt;
+    new_pt.x = x + (footprint_spec_.points[i].x * cos_th - footprint_spec_.points[i].y * sin_th);
+    new_pt.y = y + (footprint_spec_.points[i].x * sin_th + footprint_spec_.points[i].y * cos_th);
+    oriented_footprint.polygon.points.push_back(new_pt);
   }
 }
 

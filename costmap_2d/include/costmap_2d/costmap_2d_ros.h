@@ -42,6 +42,7 @@
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <costmap_2d/Costmap2DConfig.h>
+#include <geometry_msgs/PolygonStamped.h>
 #include <dynamic_reconfigure/server.h>
 
 class SuperValue : public XmlRpc::XmlRpcValue
@@ -106,13 +107,13 @@ public:
    * @param  theta The orientation of the robot
    * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
    */
-  void getOrientedFootprint(double x, double y, double theta, geometry_msgs::Polygon& oriented_footprint) const;
+  void getOrientedFootprint(double x, double y, double theta, geometry_msgs::PolygonStamped& oriented_footprint, std::string frame="none") const;
 
   /**
    * @brief  Build the oriented footprint of the robot at the robot's current pose
    * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
    */
-  void getOrientedFootprint(geometry_msgs::Polygon& oriented_footprint) const;
+  void getOrientedFootprint(geometry_msgs::PolygonStamped& oriented_footprint) const;
 
 
 protected:
