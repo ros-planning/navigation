@@ -42,7 +42,7 @@
 #include <nav_core/base_global_planner.h>
 
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Polygon.h>
 
 #include <angles/angles.h>
 
@@ -90,9 +90,8 @@ namespace carrot_planner{
     private:
       costmap_2d::Costmap2DROS* costmap_ros_;
       double step_size_, min_dist_from_robot_;
-      costmap_2d::Costmap2D costmap_;
+      costmap_2d::Costmap2D* costmap_;
       base_local_planner::WorldModel* world_model_; ///< @brief The world model that the controller will use
-      double inscribed_radius_, circumscribed_radius_, inflation_radius_; 
 
       /**
        * @brief  Checks the legality of the robot footprint at a position and orientation using the world model
@@ -103,8 +102,12 @@ namespace carrot_planner{
        */
       double footprintCost(double x_i, double y_i, double theta_i);
 
-      std::vector<geometry_msgs::Point> footprint_spec_; ///< @brief The footprint specification of the robot
+      geometry_msgs::Polygon footprint_spec_; ///< @brief The footprint specification of the robot
       bool initialized_;
+
+      void footprint_cb(const geometry_msgs::Polygon& footprint);
+      ros::Subscriber footprint_sub_;
+      bool got_footprint_;
   };
 };  
 #endif

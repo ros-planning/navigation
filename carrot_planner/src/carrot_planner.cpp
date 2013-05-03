@@ -53,25 +53,35 @@ namespace carrot_planner {
   void CarrotPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
     if(!initialized_){
       costmap_ros_ = costmap_ros;
+      costmap_ = costmap_ros_->getCostmap();
+
       ros::NodeHandle private_nh("~/" + name);
-      private_nh.param("step_size", step_size_, costmap_ros_->getResolution());
+      private_nh.param("step_size", step_size_, costmap_->getResolution());
       private_nh.param("min_dist_from_robot", min_dist_from_robot_, 0.10);
-      costmap_ros_->getCostmapCopy(costmap_);
-      world_model_ = new base_local_planner::CostmapModel(costmap_); 
-      //we'll get the parameters for the robot radius from the costmap we're associated with
-      inscribed_radius_ = costmap_ros_->getInscribedRadius();
-      circumscribed_radius_ = costmap_ros_->getCircumscribedRadius();
-      footprint_spec_ = costmap_ros_->getRobotFootprint();
+      world_model_ = new base_local_planner::CostmapModel(*costmap_); 
+
+      std::string topic_param, topic;
+      if(!private_nh.searchParam("footprint_topic", topic_param)){
+          topic_param = "footprint_topic";
+      }
+        
+      private_nh.param(topic_param, topic, std::string("footprint"));
+      
+      got_footprint_ = false;
+      footprint_sub_ = private_nh.subscribe(topic, 1, &CarrotPlanner::footprint_cb, this);
+    
+      ros::Rate r(10);
+      while(!got_footprint_ && private_nh.ok()){
+          ROS_INFO_THROTTLE(5.0, "Waiting for footprint in Carrot Planner");
+          ros::spinOnce();
+          r.sleep();
+      }
 
       initialized_ = true;
     }
     else
       ROS_WARN("This planner has already been initialized... doing nothing");
   }
-
-
-
-
 
   //we need to take the footprint of the robot into account when we calculate cost to obstacles
   double CarrotPlanner::footprintCost(double x_i, double y_i, double theta_i){
@@ -80,26 +90,11 @@ namespace carrot_planner {
       return -1.0;
     }
     //if we have no footprint... do nothing
-    if(footprint_spec_.size() < 3)
+    if(footprint_spec_.points.size() < 3)
       return -1.0;
 
-    //build the oriented footprint
-    double cos_th = cos(theta_i);
-    double sin_th = sin(theta_i);
-    std::vector<geometry_msgs::Point> oriented_footprint;
-    for(unsigned int i = 0; i < footprint_spec_.size(); ++i){
-      geometry_msgs::Point new_pt;
-      new_pt.x = x_i + (footprint_spec_[i].x * cos_th - footprint_spec_[i].y * sin_th);
-      new_pt.y = y_i + (footprint_spec_[i].x * sin_th + footprint_spec_[i].y * cos_th);
-      oriented_footprint.push_back(new_pt);
-    }
-
-    geometry_msgs::Point robot_position;
-    robot_position.x = x_i;
-    robot_position.y = y_i;
-
     //check if the footprint is legal
-    double footprint_cost = world_model_->footprintCost(robot_position, oriented_footprint, inscribed_radius_, circumscribed_radius_);
+    double footprint_cost = world_model_->footprintCost(x_i, y_i, theta_i, footprint_spec_);
     return footprint_cost;
   }
 
@@ -115,7 +110,7 @@ namespace carrot_planner {
     ROS_DEBUG("Got a start: %.2f, %.2f, and a goal: %.2f, %.2f", start.pose.position.x, start.pose.position.y, goal.pose.position.x, goal.pose.position.y);
 
     plan.clear();
-    costmap_ros_->getCostmapCopy(costmap_);
+    costmap_ = costmap_ros_->getCostmap();
 
     if(goal.header.frame_id != costmap_ros_->getGlobalFrameID()){
       ROS_ERROR("This planner as configured will only accept goals in the %s frame, but a goal was sent in the %s frame.", 
