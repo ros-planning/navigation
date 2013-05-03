@@ -145,7 +145,6 @@ namespace dwa_local_planner {
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
       tf::Stamped<tf::Pose> current_pose_;
-      geometry_msgs::Polygon footprint_spec_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
@@ -154,10 +153,6 @@ namespace dwa_local_planner {
 
 
       base_local_planner::OdometryHelperRos odom_helper_;
-      
-      void footprint_cb(const geometry_msgs::Polygon& footprint);
-      ros::Subscriber footprint_sub_;
-      bool got_footprint_;
   };
 };
 #endif
