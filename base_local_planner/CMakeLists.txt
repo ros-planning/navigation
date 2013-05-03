@@ -100,8 +100,6 @@ target_link_libraries(base_local_planner
     ${Eigen_LIBRARIES}
     )
 
-# Not supported (yet?) in layered costmap merge.
-#
 add_library(trajectory_planner_ros
 	src/trajectory_planner.cpp
 	src/trajectory_planner_ros.cpp)
@@ -113,7 +111,7 @@ target_link_libraries(point_grid ${catkin_LIBRARIES})
 
 install(TARGETS
             base_local_planner
-#           trajectory_planner_ros
+            trajectory_planner_ros
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
