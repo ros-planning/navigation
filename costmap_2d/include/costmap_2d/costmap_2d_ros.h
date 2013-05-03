@@ -44,6 +44,7 @@
 #include <costmap_2d/Costmap2DConfig.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <dynamic_reconfigure/server.h>
+#include <pluginlib/class_loader.h>
 
 class SuperValue : public XmlRpc::XmlRpcValue
 {
