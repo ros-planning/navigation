@@ -108,7 +108,7 @@ namespace base_local_planner {
       rotating_to_goal_ = false;
 
       //initialize the copy of the costmap the controller will use
-      costmap_ros_->getCostmapCopy(costmap_);
+      costmap_ = costmap_ros_->getCostmap();
 
 
       global_frame_ = costmap_ros_->getGlobalFrameID();
@@ -117,10 +117,6 @@ namespace base_local_planner {
 
       private_nh.param("yaw_goal_tolerance", yaw_goal_tolerance_, 0.05);
       private_nh.param("xy_goal_tolerance", xy_goal_tolerance_, 0.10);
-
-      //we'll get the parameters for the robot radius from the costmap we're associated with
-      inflation_radius_ = costmap_ros_->getInflationRadius();
-
       private_nh.param("acc_lim_x", acc_lim_x_, 2.5);
       private_nh.param("acc_lim_y", acc_lim_y_, 2.5);
       private_nh.param("acc_lim_th", acc_lim_theta_, 3.2);
@@ -178,7 +174,7 @@ namespace base_local_planner {
 
         if(meter_scoring) {
           //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
-          double resolution = costmap_ros_->getResolution();
+          double resolution = costmap_->getResolution();
           gdist_scale *= resolution;
           pdist_scale *= resolution;
           occdist_scale *= resolution;
@@ -226,10 +222,28 @@ namespace base_local_planner {
       private_nh.param("point_grid/grid_resolution", grid_resolution, 0.2);
 
       ROS_ASSERT_MSG(world_model_type == "costmap", "At this time, only costmap world models are supported by this controller");
-      world_model_ = new CostmapModel(costmap_);
+      world_model_ = new CostmapModel(*costmap_);
       std::vector<double> y_vels = loadYVels(private_nh);
 
-      tc_ = new TrajectoryPlanner(*world_model_, costmap_, costmap_ros_->getRobotFootprint(),
+      std::string topic_param, topic;
+
+      if(!private_nh.searchParam("footprint_topic", topic_param)){
+          topic_param = "footprint_topic";
+      }
+        
+      private_nh.param(topic_param, topic, std::string("footprint"));
+
+      got_footprint_ = false;
+      footprint_sub_ = private_nh.subscribe(topic, 1, &TrajectoryPlannerROS::footprint_cb, this);
+    
+      ros::Rate r(10);
+      while(!got_footprint_ && private_nh.ok()){
+          ROS_INFO_THROTTLE(5.0, "Waiting for footprint in Trajectory Planner");
+          ros::spinOnce();
+          r.sleep();
+      }
+
+      tc_ = new TrajectoryPlanner(*world_model_, *costmap_, footprint_spec_,
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
@@ -245,6 +259,11 @@ namespace base_local_planner {
     } else {
       ROS_WARN("This planner has already been initialized, doing nothing");
     }
+  }
+
+  void TrajectoryPlannerROS::footprint_cb(const geometry_msgs::Polygon& footprint) {
+    footprint_spec_ = footprint;
+    got_footprint_ = true;
   }
 
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
@@ -384,7 +403,7 @@ namespace base_local_planner {
 
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     //get the global plan in our frame
-    if (!transformGlobalPlan(*tf_, global_plan_, global_pose, costmap_, global_frame_, transformed_plan)) {
+    if (!transformGlobalPlan(*tf_, global_plan_, global_pose, *costmap_, global_frame_, transformed_plan)) {
       ROS_WARN("Could not transform the global plan to the frame of the controller");
       return false;
     }
@@ -392,13 +411,6 @@ namespace base_local_planner {
     //now we'll prune the plan based on the position of the robot
     if(prune_plan_)
       prunePlan(global_pose, transformed_plan, global_plan_);
-
-
-    //we also want to clear the robot footprint from the costmap we're using
-    costmap_ros_->clearRobotFootprint();
-
-    //make sure to update the costmap we'll use for this cycle
-    costmap_ros_->getCostmapCopy(costmap_);
 
     tf::Stamped<tf::Pose> drive_cmds;
     drive_cmds.frame_id_ = robot_base_frame_;
@@ -536,12 +548,6 @@ namespace base_local_planner {
     tf::Stamped<tf::Pose> global_pose;
     if(costmap_ros_->getRobotPose(global_pose)){
       if(update_map){
-        //we also want to clear the robot footprint from the costmap we're using
-        costmap_ros_->clearRobotFootprint();
-
-        //make sure to update the costmap we'll use for this cycle
-        costmap_ros_->getCostmapCopy(costmap_);
-
         //we need to give the planne some sort of global plan, since we're only checking for legality
         //we'll just give the robots current position
         std::vector<geometry_msgs::PoseStamped> plan;
@@ -574,12 +580,6 @@ namespace base_local_planner {
     tf::Stamped<tf::Pose> global_pose;
     if(costmap_ros_->getRobotPose(global_pose)){
       if(update_map){
-        //we also want to clear the robot footprint from the costmap we're using
-        costmap_ros_->clearRobotFootprint();
-
-        //make sure to update the costmap we'll use for this cycle
-        costmap_ros_->getCostmapCopy(costmap_);
-
         //we need to give the planne some sort of global plan, since we're only checking for legality
         //we'll just give the robots current position
         std::vector<geometry_msgs::PoseStamped> plan;
@@ -619,7 +619,7 @@ namespace base_local_planner {
     costmap_ros_->getRobotPose(global_pose);
     return base_local_planner::isGoalReached(*tf_,
         global_plan_,
-        costmap_,
+        *costmap_,
         global_frame_,
         global_pose,
         base_odom,
