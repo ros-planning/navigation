@@ -20,38 +20,10 @@ void InflationCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std
   seen_ = NULL;
   matchSize();
 
-  got_footprint_ = false;
-
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name));
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
       &InflationCostmapPlugin::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
-
-  std::string topic_param, topic;
-  if (!nh.searchParam("footprint_topic", topic_param))
-  {
-    topic_param = "footprint_topic";
-  }
-  nh.param(topic_param, topic, std::string("footprint"));
-
-  footprint_sub_ = g_nh.subscribe(topic, 1, &InflationCostmapPlugin::footprint_cb, this);
-
-  ros::Rate r(10);
-  while (!got_footprint_ && g_nh.ok())
-  {
-    ros::spinOnce();
-    r.sleep();
-  }
-}
-
-void InflationCostmapPlugin::footprint_cb(const geometry_msgs::Polygon& footprint)
-{
-  //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
-  costmap_2d::calculateMinAndMaxDistances(footprint, inscribed_radius_, circumscribed_radius_);
-  // TODO: Set circumscribed_cost
-  cell_inflation_radius_ = cellDistance(inflation_radius_);
-  computeCaches();
-  got_footprint_ = true;
 }
 
 void InflationCostmapPlugin::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
@@ -91,6 +63,17 @@ void InflationCostmapPlugin::update_bounds(double origin_x, double origin_y, dou
   *min_y -= margin;
   *max_x += margin;
   *max_y += margin;
+
+  if(footprint_updated_)
+  {
+    ROS_INFO("Computing Radii");
+    //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
+    costmap_2d::calculateMinAndMaxDistances(*footprint_spec_, inscribed_radius_, circumscribed_radius_);
+    // TODO: Set circumscribed_cost
+    cell_inflation_radius_ = cellDistance(inflation_radius_);
+    computeCaches();
+  }
+
 }
 
 void InflationCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
