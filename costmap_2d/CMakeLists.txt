@@ -44,8 +44,8 @@ generate_messages(
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
-  cfg/ObstaclePlugin.cfg
   cfg/Costmap2D.cfg
+  cfg/ObstaclePlugin.cfg
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
   cfg/VoxelPlugin.cfg
@@ -132,7 +132,6 @@ target_link_libraries(costmap_2d_node
 # target_link_libraries(module_tests
 #     costmap_2d
 #     )
-
 
 install( TARGETS
     costmap_2d_markers

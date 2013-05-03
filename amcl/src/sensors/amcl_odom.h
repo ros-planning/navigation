@@ -38,7 +38,9 @@ namespace amcl
 typedef enum
 {
   ODOM_MODEL_DIFF,
-  ODOM_MODEL_OMNI
+  ODOM_MODEL_OMNI,
+  ODOM_MODEL_DIFF_CORRECTED,
+  ODOM_MODEL_OMNI_CORRECTED
 } odom_model_t;
 
 // Odometric sensor data
@@ -68,6 +70,13 @@ class AMCLOdom : public AMCLSensor
                             double alpha3, 
                             double alpha4,
                             double alpha5);
+
+  public: void SetModel( odom_model_t type,
+                         double alpha1,
+                         double alpha2,
+                         double alpha3,
+                         double alpha4,
+                         double alpha5 = 0 );
 
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.

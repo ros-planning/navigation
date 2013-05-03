@@ -159,6 +159,9 @@ namespace base_local_planner {
         return initialized_;
       }
 
+      /** @brief Return the inner TrajectoryPlanner object.  Only valid after initialize(). */
+      TrajectoryPlanner* getPlanner() const { return tc_; }
+
     private:
       /**
        * @brief Callback to update the local planner's parameters based on dynamic reconfigure

@@ -62,45 +62,89 @@ public:
 namespace costmap_2d
 {
 
+/** @brief A ROS wrapper for a 2D Costmap. Handles subscribing to
+ * topics that provide observations about obstacles in either the form
+ * of PointCloud or LaserScan messages. */
 class Costmap2DROS
 {
 public:
+  /**
+   * @brief  Constructor for the wrapper
+   * @param name The name for this costmap
+   * @param tf A reference to a TransformListener
+   */
   Costmap2DROS(std::string name, tf::TransformListener& tf);
   ~Costmap2DROS();
   void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
+
+  /**
+   * @brief  Subscribes to sensor topics if necessary and starts costmap
+   * updates, can be called to restart the costmap after calls to either
+   * stop() or pause()
+   */
   void start();
+
+  /**
+   * @brief  Stops costmap updates and unsubscribes from sensor topics
+   */
   void stop();
+
+  /**
+   * @brief  Stops the costmap from updating, but sensor data still comes in over the wire
+   */
   void pause();
+
+  /**
+   * @brief  Resumes costmap updates
+   */
   void resume();
+
   bool isCurrent()
-  {
-    return layered_costmap_->isCurrent();
-  }
+    {
+      return layered_costmap_->isCurrent();
+    }
+
+  /**
+   * @brief Get the pose of the robot in the global frame of the costmap
+   * @param global_pose Will be set to the pose of the robot in the global frame of the costmap
+   * @return True if the pose was set successfully, false otherwise
+   */
   bool getRobotPose(tf::Stamped<tf::Pose>& global_pose) const;
+
   Costmap2D* getCostmap()
-  {
-    return layered_costmap_->getCostmap();
-  }
+    {
+      return layered_costmap_->getCostmap();
+    }
+
+  /**
+   * @brief  Returns the global frame of the costmap
+   * @return The global frame of the costmap
+   */
   std::string getGlobalFrameID()
-  {
-    return global_frame_;
-  }
+    {
+      return global_frame_;
+    }
+
+  /**
+   * @brief  Returns the local frame of the costmap
+   * @return The local frame of the costmap
+   */
   std::string getBaseFrameID()
-  {
-    return robot_base_frame_;
-  }
+    {
+      return robot_base_frame_;
+    }
   LayeredCostmap* getLayeredCostmap()
-  {
-    return layered_costmap_;
-  }
+    {
+      return layered_costmap_;
+    }
 
 protected:
   LayeredCostmap* layered_costmap_;
   std::string name_;
-  tf::TransformListener& tf_;  /// < @brief Used for transforming point clouds
-  std::string global_frame_;  /// < @brief The global frame for the costmap
-  std::string robot_base_frame_;  /// < @brief The frame_id of the robot base
-  double transform_tolerance_;
+  tf::TransformListener& tf_;  ///< @brief Used for transforming point clouds
+  std::string global_frame_;  ///< @brief The global frame for the costmap
+  std::string robot_base_frame_;  ///< @brief The frame_id of the robot base
+  double transform_tolerance_; ///< timeout before transform errors
 
 private:
   void resetOldParameters(ros::NodeHandle& nh);
@@ -109,7 +153,7 @@ private:
   void mapUpdateLoop(double frequency);
   bool map_update_thread_shutdown_;
   bool stop_updates_, initialized_, stopped_, robot_stopped_;
-  boost::thread* map_update_thread_;  /// < @brief A thread for updating the map
+  boost::thread* map_update_thread_;  ///< @brief A thread for updating the map
   ros::Timer timer_;
   ros::Time last_publish_;
   ros::Duration publish_cycle;
