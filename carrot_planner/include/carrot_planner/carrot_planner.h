@@ -102,12 +102,7 @@ namespace carrot_planner{
        */
       double footprintCost(double x_i, double y_i, double theta_i);
 
-      geometry_msgs::Polygon footprint_spec_; ///< @brief The footprint specification of the robot
       bool initialized_;
-
-      void footprint_cb(const geometry_msgs::Polygon& footprint);
-      ros::Subscriber footprint_sub_;
-      bool got_footprint_;
   };
 };  
 #endif

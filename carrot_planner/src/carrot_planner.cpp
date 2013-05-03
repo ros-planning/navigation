@@ -60,23 +60,6 @@ namespace carrot_planner {
       private_nh.param("min_dist_from_robot", min_dist_from_robot_, 0.10);
       world_model_ = new base_local_planner::CostmapModel(*costmap_); 
 
-      std::string topic_param, topic;
-      if(!private_nh.searchParam("footprint_topic", topic_param)){
-          topic_param = "footprint_topic";
-      }
-        
-      private_nh.param(topic_param, topic, std::string("footprint"));
-      
-      got_footprint_ = false;
-      footprint_sub_ = private_nh.subscribe(topic, 1, &CarrotPlanner::footprint_cb, this);
-    
-      ros::Rate r(10);
-      while(!got_footprint_ && private_nh.ok()){
-          ROS_INFO_THROTTLE(5.0, "Waiting for footprint in Carrot Planner");
-          ros::spinOnce();
-          r.sleep();
-      }
-
       initialized_ = true;
     }
     else
@@ -89,12 +72,14 @@ namespace carrot_planner {
       ROS_ERROR("The planner has not been initialized, please call initialize() to use the planner");
       return -1.0;
     }
+
+    geometry_msgs::Polygon footprint = costmap_ros_->getRobotFootprint();
     //if we have no footprint... do nothing
-    if(footprint_spec_.points.size() < 3)
+    if(footprint.points.size() < 3)
       return -1.0;
 
     //check if the footprint is legal
-    double footprint_cost = world_model_->footprintCost(x_i, y_i, theta_i, footprint_spec_);
+    double footprint_cost = world_model_->footprintCost(x_i, y_i, theta_i, footprint);
     return footprint_cost;
   }
 
