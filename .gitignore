@@ -25,6 +25,7 @@ navfn/test/CMakeFiles
 navfn/test/Makefile
 
 *~
+*.sw?
 *.cfgc
 msg_gen
 srv_gen
@@ -126,5 +127,4 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
-*.sw?
 

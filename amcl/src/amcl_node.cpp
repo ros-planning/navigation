@@ -312,6 +312,10 @@ AmclNode::AmclNode() :
     odom_model_type_ = ODOM_MODEL_DIFF;
   else if(tmp_model_type == "omni")
     odom_model_type_ = ODOM_MODEL_OMNI;
+  else if(tmp_model_type == "diff-corrected")
+    odom_model_type_ = ODOM_MODEL_DIFF_CORRECTED;
+  else if(tmp_model_type == "omni-corrected")
+    odom_model_type_ = ODOM_MODEL_OMNI_CORRECTED;
   else
   {
     ROS_WARN("Unknown odom model type \"%s\"; defaulting to diff model",
@@ -466,6 +470,10 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     odom_model_type_ = ODOM_MODEL_DIFF;
   else if(config.odom_model_type == "omni")
     odom_model_type_ = ODOM_MODEL_OMNI;
+  else if(config.odom_model_type == "diff-corrected")
+    odom_model_type_ = ODOM_MODEL_DIFF_CORRECTED;
+  else if(config.odom_model_type == "omni-corrected")
+    odom_model_type_ = ODOM_MODEL_OMNI_CORRECTED;
 
   if(config.min_particles > config.max_particles)
   {
@@ -504,10 +512,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   delete odom_;
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
-  if(odom_model_type_ == ODOM_MODEL_OMNI)
-    odom_->SetModelOmni(alpha1_, alpha2_, alpha3_, alpha4_, alpha5_);
-  else
-    odom_->SetModelDiff(alpha1_, alpha2_, alpha3_, alpha4_);
+  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
@@ -633,10 +638,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   delete odom_;
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
-  if(odom_model_type_ == ODOM_MODEL_OMNI)
-    odom_->SetModelOmni(alpha1_, alpha2_, alpha3_, alpha4_, alpha5_);
-  else
-    odom_->SetModelDiff(alpha1_, alpha2_, alpha3_, alpha4_);
+  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);

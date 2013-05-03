@@ -1,0 +1,37 @@
+<launch>
+    <param name="/use_sim_time" value="true"/>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find amcl)/test/willow-full-0.05.pgm 0.05"/>
+    <node name="rosbag" pkg="rosbag" type="play"
+          args="-s 15.0 -d 1 -r 1 --clock --hz 10 $(find amcl)/test/texas_greenroom_loop_indexed.bag"/>
+    <node pkg="amcl" type="amcl" name="amcl" respawn="false" output="screen">
+      <remap from="scan" to="base_scan" />
+      <param name="transform_tolerance" value="0.2"/>
+      <param name="gui_publish_rate" value="10.0"/>
+      <param name="save_pose_rate" value="0.5"/>
+      <param name="laser_max_beams" value="30"/>
+      <param name="min_particles" value="500"/>
+      <param name="max_particles" value="5000"/>
+      <param name="kld_err" value="0.05"/>
+      <param name="kld_z" value="0.99"/>
+      <param name="odom_model_type" value="diff"/>
+      <param name="odom_alpha1" value="0.04"/>
+      <param name="odom_alpha2" value="0.6"/>
+      <param name="odom_alpha3" value="0.3"/>
+      <param name="odom_alpha4" value="0.04"/>
+      <param name="laser_z_hit" value="0.5"/>
+      <param name="laser_z_rand" value="0.5"/>
+      <param name="laser_sigma_hit" value="0.25"/>
+      <param name="laser_max_range" value="5.0"/>
+      <param name="laser_model_type" value="likelihood_field"/>
+      <param name="laser_likelihood_max_dist" value="2.0"/>
+      <param name="update_min_d" value="0.2"/>
+      <param name="update_min_a" value="0.5"/>
+      <param name="odom_frame_id" value="odom_combined"/>
+      <param name="resample_interval" value="1"/>
+      <param name="initial_pose_x" value="14.049"/>
+      <param name="initial_pose_y" value="24.234"/>
+      <param name="initial_pose_a" value="-1.517"/>
+    </node>
+    <test time-limit="180" test-name="texas_greenroom_loop_corrected" pkg="amcl" 
+          type="basic_localization.py" args="0 8.052 25.196 0.471 0.75 0.75 89.0"/>
+</launch>

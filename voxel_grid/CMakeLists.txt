@@ -31,13 +31,6 @@ install(TARGETS voxel_grid
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
-
-install(
-    TARGETS
-        voxel_grid
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
 catkin_add_gtest(voxel_grid_tests test/voxel_grid_tests.cpp)
 target_link_libraries(voxel_grid_tests
     libvoxel_grid
