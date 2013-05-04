@@ -113,38 +113,22 @@ double ObstacleCostFunction::footprintCost (
     geometry_msgs::Polygon footprint_spec,
     costmap_2d::Costmap2D* costmap,
     base_local_planner::WorldModel* world_model) {
-  double cos_th = cos(th);
-  double sin_th = sin(th);
 
-  double occ_cost = 0.0;
+  //check if the footprint is legal
+  // TODO: Cache inscribed radius
+  double footprint_cost = world_model->footprintCost(x, y, th, footprint_spec);
 
-  std::vector<geometry_msgs::Point> scaled_oriented_footprint;
-  for(unsigned int i  = 0; i < footprint_spec.points.size(); ++i) {
-    geometry_msgs::Point new_pt;
-    new_pt.x = x + (scale * footprint_spec.points[i].x * cos_th - scale * footprint_spec.points[i].y * sin_th);
-    new_pt.y = y + (scale * footprint_spec.points[i].x * sin_th + scale * footprint_spec.points[i].y * cos_th);
-    scaled_oriented_footprint.push_back(new_pt);
-    geometry_msgs::Point robot_position;
-    robot_position.x = x;
-    robot_position.y = y;
-
-    //check if the footprint is legal
-    double footprint_cost = world_model->footprintCost(robot_position,
-    		scaled_oriented_footprint, 0, 0);
-
-    if (footprint_cost < 0) {
-      return -6.0;
-    }
-    unsigned int cell_x, cell_y;
-
-    //we won't allow trajectories that go off the map... shouldn't happen that often anyways
-    if ( ! costmap->worldToMap(x, y, cell_x, cell_y)) {
-      return -7.0;
-    }
-
-    occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
-
+  if (footprint_cost < 0) {
+    return -6.0;
   }
+  unsigned int cell_x, cell_y;
+
+  //we won't allow trajectories that go off the map... shouldn't happen that often anyways
+  if ( ! costmap->worldToMap(x, y, cell_x, cell_y)) {
+    return -7.0;
+  }
+
+  double occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
 
   return occ_cost;
 }

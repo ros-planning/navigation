@@ -41,9 +41,6 @@
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/plugin_base.h>
 #include <costmap_2d/costmap_2d.h>
-#include <tf/transform_listener.h>
-#include <pluginlib/class_loader.h>
-#include <boost/thread.hpp>
 #include <vector>
 #include <string>
 

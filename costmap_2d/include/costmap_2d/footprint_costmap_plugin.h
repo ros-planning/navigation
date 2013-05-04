@@ -70,10 +70,7 @@ public:
   }
 
 private:
-  void footprint_cb(const geometry_msgs::Polygon& footprint);
   ros::Subscriber footprint_sub_;
-  bool got_footprint_;
-  geometry_msgs::Polygon footprint_spec_;
   geometry_msgs::PolygonStamped footprint_;
   void publishFootprint();
   void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);

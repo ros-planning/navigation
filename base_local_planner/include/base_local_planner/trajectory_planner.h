@@ -42,7 +42,7 @@
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
-
+#include <costmap_2d/cost_values.h>
 #include <base_local_planner/footprint_helper.h>
 
 #include <base_local_planner/world_model.h>
@@ -53,6 +53,7 @@
 //we'll take in a path as a vector of poses
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Polygon.h>
 
 //for some datatypes
 #include <tf/transform_datatypes.h>
@@ -107,7 +108,7 @@ namespace base_local_planner {
        */
       TrajectoryPlanner(WorldModel& world_model, 
           const costmap_2d::Costmap2D& costmap, 
-          std::vector<geometry_msgs::Point> footprint_spec,
+          geometry_msgs::Polygon footprint_spec,
           double acc_lim_x = 1.0, double acc_lim_y = 1.0, double acc_lim_theta = 1.0,
           double sim_time = 1.0, double sim_granularity = 0.025, 
           int vx_samples = 20, int vtheta_samples = 20,
@@ -263,7 +264,7 @@ namespace base_local_planner {
       const costmap_2d::Costmap2D& costmap_; ///< @brief Provides access to cost map information
       WorldModel& world_model_; ///< @brief The world model that the controller uses for collision detection
 
-      std::vector<geometry_msgs::Point> footprint_spec_; ///< @brief The footprint specification of the robot
+      geometry_msgs::Polygon footprint_spec_; ///< @brief The footprint specification of the robot
 
       std::vector<geometry_msgs::PoseStamped> global_plan_; ///< @brief The global path for the robot to follow
 
@@ -314,6 +315,8 @@ namespace base_local_planner {
 
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
       double sim_period_; ///< @brief The number of seconds to use to compute max/min vels for dwa
+
+      double inscribed_radius_, circumscribed_radius_;
 
       boost::mutex configuration_mutex_;
 

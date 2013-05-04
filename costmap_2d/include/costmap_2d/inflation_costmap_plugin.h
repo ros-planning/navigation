@@ -168,10 +168,6 @@ private:
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
   void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
 
-  void footprint_cb(const geometry_msgs::Polygon& footprint);
-  ros::Subscriber footprint_sub_;
-  bool got_footprint_;
-
 };
 }
 #endif

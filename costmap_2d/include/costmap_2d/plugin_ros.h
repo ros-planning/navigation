@@ -37,7 +37,9 @@
 #ifndef COSTMAP_PLUGIN_ROS_H_
 #define COSTMAP_PLUGIN_ROS_H_
 #include <costmap_2d/plugin_base.h>
+#include <geometry_msgs/Polygon.h>
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
 
 namespace costmap_2d
 {
@@ -47,13 +49,22 @@ public:
   void initialize(LayeredCostmap* costmap, std::string name, tf::TransformListener &tf)
   {
     tf_ = &tf;
+    footprint_updated_ = false;
     initialize(costmap, name);
   }
   virtual void initialize(LayeredCostmap* costmap, std::string name)= 0;
+
+  void setFootprint(geometry_msgs::Polygon* footprint_spec)
+  {
+    footprint_updated_ = true;
+    footprint_spec_ = footprint_spec;
+  }
 protected:
-  CostmapPluginROS()
+  CostmapPluginROS() : footprint_spec_(NULL)
   {
   }
+  geometry_msgs::Polygon* footprint_spec_;
+  bool footprint_updated_;
   tf::TransformListener* tf_;
 };
 }  // namespace layered_costmap
