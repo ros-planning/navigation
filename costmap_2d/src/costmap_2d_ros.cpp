@@ -459,25 +459,24 @@ bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const
   return true;
 }
 
-void Costmap2DROS::getOrientedFootprint(geometry_msgs::PolygonStamped& oriented_footprint) const {
+void Costmap2DROS::getOrientedFootprint(geometry_msgs::Polygon& oriented_footprint) const {
   tf::Stamped<tf::Pose> global_pose;
   if(!getRobotPose(global_pose))
     return;
 
   double yaw = tf::getYaw(global_pose.getRotation());
-  getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint, global_frame_);
+  getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint);
 }
 
-void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, geometry_msgs::PolygonStamped& oriented_footprint, std::string frame) const {
+void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, geometry_msgs::Polygon& oriented_footprint) const {
   //build the oriented footprint at the robot's current location
-  oriented_footprint.header.frame_id = frame;
   double cos_th = cos(theta);
   double sin_th = sin(theta);
   for(unsigned int i = 0; i < footprint_spec_.points.size(); ++i){
     geometry_msgs::Point32 new_pt;
     new_pt.x = x + (footprint_spec_.points[i].x * cos_th - footprint_spec_.points[i].y * sin_th);
     new_pt.y = y + (footprint_spec_.points[i].x * sin_th + footprint_spec_.points[i].y * cos_th);
-    oriented_footprint.polygon.points.push_back(new_pt);
+    oriented_footprint.points.push_back(new_pt);
   }
 }
 

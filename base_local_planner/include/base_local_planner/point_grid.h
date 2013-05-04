@@ -92,8 +92,10 @@ namespace base_local_planner {
        * @param  circumscribed_radius The radius of the circumscribed circle of the robot
        * @return Positive if all the points lie outside the footprint, negative otherwise
        */
-      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::PolygonStamped& footprint,
+      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint,
           double inscribed_radius, double circumscribed_radius);
+
+      using WorldModel::footprintCost;
 
       /**
        * @brief  Inserts observations from sensors into the point grid
@@ -101,7 +103,7 @@ namespace base_local_planner {
        * @param observations The observations from various sensors 
        * @param laser_scans The laser scans used to clear freespace (the point grid only uses the first scan which is assumed to be the base laser)
        */
-      void updateWorld(const geometry_msgs::PolygonStamped& footprint, 
+      void updateWorld(const geometry_msgs::Polygon& footprint, 
           const std::vector<costmap_2d::Observation>& observations, const std::vector<PlanarLaserScan>& laser_scans);
 
       /**
@@ -291,7 +293,7 @@ namespace base_local_planner {
        * @param poly The polygon to check against
        * @return True if the point is in the polygon, false otherwise
        */
-      bool ptInPolygon(const pcl::PointXYZ& pt, const geometry_msgs::PolygonStamped& poly);
+      bool ptInPolygon(const pcl::PointXYZ& pt, const geometry_msgs::Polygon& poly);
 
       /**
        * @brief  Insert a point into the point grid
@@ -319,7 +321,7 @@ namespace base_local_planner {
        * @brief  Removes points from the grid that lie within the polygon
        * @param poly A specification of the polygon to clear from the grid 
        */
-      void removePointsInPolygon(const geometry_msgs::PolygonStamped poly);
+      void removePointsInPolygon(const geometry_msgs::Polygon poly);
 
       /**
        * @brief  Removes points from the grid that lie within a laser scan

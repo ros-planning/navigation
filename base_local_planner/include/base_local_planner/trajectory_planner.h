@@ -54,7 +54,6 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PolygonStamped.h>
 
 //for some datatypes
 #include <tf/transform_datatypes.h>

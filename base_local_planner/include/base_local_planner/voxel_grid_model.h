@@ -86,8 +86,10 @@ namespace base_local_planner {
        * @param  circumscribed_radius The radius of the circumscribed circle of the robot
        * @return Positive if all the points lie outside the footprint, negative otherwise
        */
-      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::PolygonStamped& footprint,
+      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint,
           double inscribed_radius, double circumscribed_radius);
+
+      using WorldModel::footprintCost;
 
       /**
        * @brief  The costmap already keeps track of world observations, so for this world model this method does nothing
@@ -95,7 +97,7 @@ namespace base_local_planner {
        * @param observations The observations from various sensors 
        * @param laser_scan The scans used to clear freespace
        */
-      void updateWorld(const geometry_msgs::PolygonStamped& footprint,
+      void updateWorld(const geometry_msgs::Polygon& footprint,
           const std::vector<costmap_2d::Observation>& observations, const std::vector<PlanarLaserScan>& laser_scans);
 
       void getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud);

@@ -73,7 +73,7 @@ namespace carrot_planner {
       return -1.0;
     }
 
-    geometry_msgs::Polygon footprint = costmap_ros_->getRobotFootprint();
+    geometry_msgs::Polygon footprint = costmap_ros_->getRobotFootprintPolygon();
     //if we have no footprint... do nothing
     if(footprint.points.size() < 3)
       return -1.0;

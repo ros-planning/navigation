@@ -58,16 +58,16 @@ void printPSFooter(){
   printf("showpage\n%%%%EOF\n");
 }
 
-void printPolygonPS(const geometry_msgs::PolygonStamped& poly, double line_width){
-  if(poly.polygon.points.size() < 2)
+void printPolygonPS(const geometry_msgs::Polygon& poly, double line_width){
+  if(poly.points.size() < 2)
     return;
 
   printf("%.2f setlinewidth\n", line_width);
   printf("newpath\n");
-  printf("%.4f\t%.4f\tmoveto\n", poly.polygon.points[0].x * 10, poly.polygon.points[0].y * 10);
-  for(unsigned int i = 1; i < poly.polygon.points.size(); ++i)
-    printf("%.4f\t%.4f\tlineto\n", poly.polygon.points[i].x * 10, poly.polygon.points[i].y * 10);
-  printf("%.4f\t%.4f\tlineto\n", poly.polygon.points[0].x * 10, poly.polygon.points[0].y * 10);
+  printf("%.4f\t%.4f\tmoveto\n", poly.points[0].x * 10, poly.points[0].y * 10);
+  for(unsigned int i = 1; i < poly.points.size(); ++i)
+    printf("%.4f\t%.4f\tlineto\n", poly.points[i].x * 10, poly.points[i].y * 10);
+  printf("%.4f\t%.4f\tlineto\n", poly.points[0].x * 10, poly.points[0].y * 10);
   printf("closepath stroke\n");
 
 }
@@ -82,7 +82,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     cells_.resize(width_ * height_);
   }
 
-  double PointGrid::footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::PolygonStamped& footprint, 
+  double PointGrid::footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint, 
       double inscribed_radius, double circumscribed_radius){
     //the half-width of the circumscribed sqaure of the robot is equal to the circumscribed radius
     double outer_square_radius = circumscribed_radius;
@@ -139,8 +139,8 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return 1.0;
   }
 
-  bool PointGrid::ptInPolygon(const pcl::PointXYZ& pt, const geometry_msgs::PolygonStamped& poly){
-    if(poly.polygon.points.size() < 3)
+  bool PointGrid::ptInPolygon(const pcl::PointXYZ& pt, const geometry_msgs::Polygon& poly){
+    if(poly.points.size() < 3)
       return false;
 
     //a point is in a polygon iff the orientation of the point
@@ -148,9 +148,9 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     //side of the polygon
     bool all_left = false;
     bool all_right = false;
-    for(unsigned int i = 0; i < poly.polygon.points.size() - 1; ++i){
+    for(unsigned int i = 0; i < poly.points.size() - 1; ++i){
       //if pt left of a->b
-      if(orient(poly.polygon.points[i], poly.polygon.points[i + 1], pt) > 0){
+      if(orient(poly.points[i], poly.points[i + 1], pt) > 0){
         if(all_right)
           return false;
         all_left = true;
@@ -163,7 +163,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
       }
     }
     //also need to check the last point with the first point
-    if(orient(poly.polygon.points[poly.polygon.points.size() - 1], poly.polygon.points[0], pt) > 0){
+    if(orient(poly.points[poly.points.size() - 1], poly.points[0], pt) > 0){
       if(all_right)
         return false;
     }
@@ -355,7 +355,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return neighbor_sq_dist;
   }
 
-  void PointGrid::updateWorld(const geometry_msgs::PolygonStamped& footprint, 
+  void PointGrid::updateWorld(const geometry_msgs::Polygon& footprint, 
       const vector<Observation>& observations, const vector<PlanarLaserScan>& laser_scans){
     //for our 2D point grid we only remove freespace based on the first laser scan
     if(laser_scans.empty())
@@ -484,22 +484,22 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     }
   }
 
-  void PointGrid::removePointsInPolygon(const geometry_msgs::PolygonStamped poly){
-    if(poly.polygon.points.size() == 0)
+  void PointGrid::removePointsInPolygon(const geometry_msgs::Polygon poly){
+    if(poly.points.size() == 0)
       return;
 
     geometry_msgs::Point32 lower_left, upper_right;
-    lower_left.x = poly.polygon.points[0].x;
-    lower_left.y = poly.polygon.points[0].y;
-    upper_right.x = poly.polygon.points[0].x;
-    upper_right.y = poly.polygon.points[0].y;
+    lower_left.x = poly.points[0].x;
+    lower_left.y = poly.points[0].y;
+    upper_right.x = poly.points[0].x;
+    upper_right.y = poly.points[0].y;
 
     //compute the containing square of the polygon
-    for(unsigned int i = 1; i < poly.polygon.points.size(); ++i){
-      lower_left.x = min(lower_left.x, poly.polygon.points[i].x);
-      lower_left.y = min(lower_left.y, poly.polygon.points[i].y);
-      upper_right.x = max(upper_right.x, poly.polygon.points[i].x);
-      upper_right.y = max(upper_right.y, poly.polygon.points[i].y);
+    for(unsigned int i = 1; i < poly.points.size(); ++i){
+      lower_left.x = min(lower_left.x, poly.points[i].x);
+      lower_left.y = min(lower_left.y, poly.points[i].y);
+      upper_right.x = max(upper_right.x, poly.points[i].x);
+      upper_right.y = max(upper_right.y, poly.points[i].y);
     }
 
     ROS_DEBUG("Lower: (%.2f, %.2f), Upper: (%.2f, %.2f)\n", lower_left.x, lower_left.y, upper_right.x, upper_right.y);
@@ -576,64 +576,64 @@ int main(int argc, char** argv){
      x = 10.0;
      }
      */
-  geometry_msgs::PolygonStamped footprint, footprint2, footprint3;
+  geometry_msgs::Polygon footprint, footprint2, footprint3;
   geometry_msgs::Point32 pt;
 
   pt.x = 1.0;
   pt.y = 1.0;
-  footprint.polygon.points.push_back(pt);
+  footprint.points.push_back(pt);
 
   pt.x = 1.0;
   pt.y = 1.65;
-  footprint.polygon.points.push_back(pt);
+  footprint.points.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.75;
-  footprint.polygon.points.push_back(pt);
+  footprint.points.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.65;
-  footprint.polygon.points.push_back(pt);
+  footprint.points.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.0;
-  footprint.polygon.points.push_back(pt);
+  footprint.points.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.00;
-  footprint2.polygon.points.push_back(pt);
+  footprint2.points.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.75;
-  footprint2.polygon.points.push_back(pt);
+  footprint2.points.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.75;
-  footprint2.polygon.points.push_back(pt);
+  footprint2.points.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.00;
-  footprint2.polygon.points.push_back(pt);
+  footprint2.points.push_back(pt);
 
   pt.x = 0.99;
   pt.y = 0.99;
-  footprint3.polygon.points.push_back(pt);
+  footprint3.points.push_back(pt);
 
   pt.x = 0.99;
   pt.y = 1.66;
-  footprint3.polygon.points.push_back(pt);
+  footprint3.points.push_back(pt);
 
   pt.x = 1.3255;
   pt.y = 1.85;
-  footprint3.polygon.points.push_back(pt);
+  footprint3.points.push_back(pt);
 
   pt.x = 1.66;
   pt.y = 1.66;
-  footprint3.polygon.points.push_back(pt);
+  footprint3.points.push_back(pt);
 
   pt.x = 1.66;
   pt.y = 0.99;
-  footprint3.polygon.points.push_back(pt);
+  footprint3.points.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.325;

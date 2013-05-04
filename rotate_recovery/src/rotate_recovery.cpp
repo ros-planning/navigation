@@ -119,7 +119,7 @@ void RotateRecovery::runBehavior(){
       double theta = tf::getYaw(global_pose.getRotation()) + sim_angle;
 
       //make sure that the point is legal, if it isn't... we'll abort
-      double footprint_cost = world_model_->footprintCostA(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
+      double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprintPolygon(), 0.0, 0.0);
       if(footprint_cost < 0.0){
         ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f", footprint_cost);
         return;

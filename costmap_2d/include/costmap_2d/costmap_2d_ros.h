@@ -42,7 +42,8 @@
 #include <costmap_2d/plugin_ros.h>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <costmap_2d/Costmap2DConfig.h>
-#include <geometry_msgs/PolygonStamped.h>
+#include <costmap_2d/footprint.h>
+#include <geometry_msgs/Polygon.h>
 #include <dynamic_reconfigure/server.h>
 #include <pluginlib/class_loader.h>
 
@@ -96,9 +97,15 @@ public:
     return layered_costmap_;
   }
 
-  geometry_msgs::Polygon getRobotFootprint()
+  geometry_msgs::Polygon getRobotFootprintPolygon()
   {
     return footprint_spec_; 
+  }
+
+
+  std::vector<geometry_msgs::Point> getRobotFootprint()
+  {
+    return costmap_2d::toPointVector(footprint_spec_);
   }
 
   /**
@@ -108,13 +115,28 @@ public:
    * @param  theta The orientation of the robot
    * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
    */
-  void getOrientedFootprint(double x, double y, double theta, geometry_msgs::PolygonStamped& oriented_footprint, std::string frame="none") const;
+  void getOrientedFootprint(double x, double y, double theta, geometry_msgs::Polygon& oriented_footprint) const;
 
   /**
    * @brief  Build the oriented footprint of the robot at the robot's current pose
    * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
    */
-  void getOrientedFootprint(geometry_msgs::PolygonStamped& oriented_footprint) const;
+  void getOrientedFootprint(geometry_msgs::Polygon& oriented_footprint) const;
+
+  /**
+   * @brief  Given a pose, build the oriented footprint of the robot
+   * @param  x The x position of the robot
+   * @param  y The y position of the robot
+   * @param  theta The orientation of the robot
+   * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
+   */
+  void getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint) const;
+
+  /**
+   * @brief  Build the oriented footprint of the robot at the robot's current pose
+   * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
+   */
+  void getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const;
 
 
 protected:

@@ -48,7 +48,6 @@
 #include <pluginlib/class_list_macros.h>
 
 #include <base_local_planner/goal_functions.h>
-#include <geometry_msgs/PolygonStamped.h>
 #include <nav_msgs/Path.h>
 
 
@@ -225,7 +224,7 @@ namespace base_local_planner {
       world_model_ = new CostmapModel(*costmap_);
       std::vector<double> y_vels = loadYVels(private_nh);
 
-      footprint_spec_ = costmap_ros_->getRobotFootprint();
+      footprint_spec_ = costmap_ros_->getRobotFootprintPolygon();
 
       tc_ = new TrajectoryPlanner(*world_model_, *costmap_, footprint_spec_,
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,

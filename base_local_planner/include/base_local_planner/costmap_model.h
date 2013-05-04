@@ -60,6 +60,7 @@ namespace base_local_planner {
        * @brief  Destructor for the world model
        */
       virtual ~CostmapModel(){}
+      using WorldModel::footprintCost;
 
       /**
        * @brief  Checks if any obstacles in the costmap lie inside a convex footprint that is rasterized into the grid
@@ -69,7 +70,7 @@ namespace base_local_planner {
        * @param  circumscribed_radius The radius of the circumscribed circle of the robot
        * @return Positive if all the points lie outside the footprint, negative otherwise
        */
-      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::PolygonStamped& footprint,
+      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint,
           double inscribed_radius, double circumscribed_radius);
 
     private:

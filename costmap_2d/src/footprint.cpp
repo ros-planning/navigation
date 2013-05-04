@@ -65,6 +65,42 @@ void calculateMinAndMaxDistances(const geometry_msgs::Polygon& footprint, double
   max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
 }
 
+geometry_msgs::Point32 toPoint32(geometry_msgs::Point pt)
+{
+  geometry_msgs::Point32 point32;
+  point32.x = pt.x;
+  point32.y = pt.y;
+  point32.z = pt.z;
+  return point32;
+}
+
+geometry_msgs::Point toPoint(geometry_msgs::Point32 pt)
+{
+  geometry_msgs::Point point;
+  point.x = pt.x;
+  point.y = pt.y;
+  point.z = pt.z;
+  return point;
+}
+
+geometry_msgs::Polygon toPolygon(std::vector<geometry_msgs::Point> pts)
+{
+  geometry_msgs::Polygon polygon;
+  for(int i=0;i<pts.size();i++){
+    polygon.points.push_back( toPoint32(pts[i]) );
+  }
+  return polygon;
+}
+
+std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon)
+{
+  std::vector<geometry_msgs::Point> pts;
+  for(int i=0;i<polygon.points.size();i++)
+  {
+    pts.push_back( toPoint(polygon.points[i] ) );
+  }
+}
+
 RobotFootprintManager::RobotFootprintManager(ros::NodeHandle node, std::string param_name)
 {
   //grab the footprint from the parameter server if possible
