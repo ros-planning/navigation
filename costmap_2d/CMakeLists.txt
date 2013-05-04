@@ -104,39 +104,39 @@ add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
 target_link_libraries(costmap_2d_markers
     costmap_2d
     )
-# Not supported (yet?) after layered-costmap merge
-# add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
-# target_link_libraries(costmap_2d_cloud
-#     costmap_2d
-#     )
+
+add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
+target_link_libraries(costmap_2d_cloud
+    costmap_2d
+    )
 
 add_executable(costmap_2d_node src/costmap_2d_node.cpp)
 target_link_libraries(costmap_2d_node
     costmap_2d
     )
 
-# Not supported (yet?) after layered-costmap merge.  New layered API makes porting non-trivial.
+# Not supported (yet?) after layered-costmap merge.  New layered API makes porting non-trivial. X
 #
-# add_executable(costmap_tester test/costmap_tester.cpp)
-# target_link_libraries(costmap_tester
-#     gtest
-#     costmap_2d
-#     )
-# 
-# download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag test/simple_driving_test_indexed.bag 61168cff9425b11e093ea3a627c81c8d)
-# download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
-# 
-# add_rostest(test/simple_driving_test.xml)
-# 
-# catkin_add_gtest(module_tests test/module_tests.cpp)
-# target_link_libraries(module_tests
-#     costmap_2d
-#     )
+add_executable(costmap_tester test/costmap_tester.cpp)
+target_link_libraries(costmap_tester
+    gtest
+    costmap_2d
+    )
+
+download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag test/simple_driving_test_indexed.bag 61168cff9425b11e093ea3a627c81c8d)
+download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
+ 
+add_rostest(test/simple_driving_test.xml)
+
+catkin_add_gtest(module_tests test/module_tests.cpp)
+target_link_libraries(module_tests
+    costmap_2d
+    )
 
 
 install( TARGETS
     costmap_2d_markers
-#    costmap_2d_cloud
+    costmap_2d_cloud
     costmap_2d_node
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

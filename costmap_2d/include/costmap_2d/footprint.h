@@ -40,9 +40,17 @@
 
 #include <ros/ros.h>
 #include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Point32.h>
 
 namespace costmap_2d
 {
+
+void calculateMinAndMaxDistances(const geometry_msgs::Polygon& footprint, double& min_dist, double& max_dist);
+geometry_msgs::Point              toPoint      (geometry_msgs::Point32 pt);
+geometry_msgs::Point32            toPoint32    (geometry_msgs::Point   pt);
+geometry_msgs::Polygon            toPolygon    (std::vector<geometry_msgs::Point> pts);
+std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon);
 
 /** @brief Footprint publisher.
  *

@@ -15,38 +15,14 @@ namespace common_costmap_plugins
     name_ = name;
     footprint_.header.frame_id = layered_costmap_->getGlobalFrameID();
     current_ = false;
-    got_footprint_ = false;
 
     footprint_pub_ = nh.advertise<geometry_msgs::PolygonStamped>( "footprint_stamped", 1 );
-
-    std::string topic_param, topic;
-    if(!nh.searchParam("footprint_topic", topic_param))
-    {
-      topic_param = "footprint_topic";
-    }
-
-    nh.param(topic_param, topic, std::string("footprint"));
-    footprint_sub_ = nh.subscribe(topic, 1, &FootprintCostmapPlugin::footprint_cb, this);
-
-    ros::Rate r(10);
-    while(!got_footprint_ && g_nh.ok())
-    {
-      ros::spinOnce();
-      r.sleep();
-      ROS_INFO_THROTTLE(5.0, "Waiting for footprint.");
-    }
 
     dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
     dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(&FootprintCostmapPlugin::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
 
     current_ = true;
-  }
-
-  void FootprintCostmapPlugin::footprint_cb(const geometry_msgs::Polygon& footprint)
-  {
-    footprint_spec_ = footprint;
-    got_footprint_ = true;
   }
 
   void FootprintCostmapPlugin::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
@@ -62,11 +38,11 @@ namespace common_costmap_plugins
     footprint_.polygon.points.clear();
     double cos_th = cos(origin_yaw);
     double sin_th = sin(origin_yaw);
-    for(unsigned int i = 0; i < footprint_spec_.points.size(); ++i)
+    for(unsigned int i = 0; i < footprint_spec_->points.size(); ++i)
     {
       geometry_msgs::Point32 new_pt;
-      new_pt.x = origin_x + (footprint_spec_.points[i].x * cos_th - footprint_spec_.points[i].y * sin_th);
-      new_pt.y = origin_y + (footprint_spec_.points[i].x * sin_th + footprint_spec_.points[i].y * cos_th);
+      new_pt.x = origin_x + (footprint_spec_->points[i].x * cos_th - footprint_spec_->points[i].y * sin_th);
+      new_pt.y = origin_y + (footprint_spec_->points[i].x * sin_th + footprint_spec_->points[i].y * cos_th);
       footprint_.polygon.points.push_back(new_pt);
     }
 

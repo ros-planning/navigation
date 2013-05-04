@@ -112,23 +112,6 @@ namespace dwa_local_planner {
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
       
-      std::string topic_param, topic;
-      if(!private_nh.searchParam("footprint_topic", topic_param)){
-          topic_param = "footprint_topic";
-      }
-        
-      private_nh.param(topic_param, topic, std::string("footprint"));
-      
-      got_footprint_ = false;
-      footprint_sub_ = private_nh.subscribe(topic, 1, &DWAPlannerROS::footprint_cb, this);
-    
-      ros::Rate r(10);
-      while(!got_footprint_ && private_nh.ok()){
-          ROS_INFO_THROTTLE(5.0, "Waiting for footprint in DWA Planner");
-          ros::spinOnce();
-          r.sleep();
-      }
-
       initialized_ = true;
 
       dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
@@ -140,11 +123,6 @@ namespace dwa_local_planner {
     }
   }
   
-      void DWAPlannerROS::footprint_cb(const geometry_msgs::Polygon& footprint) {
-        footprint_spec_ = footprint;
-        got_footprint_ = true;
-      }
-
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
@@ -202,14 +180,12 @@ namespace dwa_local_planner {
     gettimeofday(&start, NULL);
     */
 
-
-
     //compute what trajectory to drive along
     tf::Stamped<tf::Pose> drive_cmds;
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
     
     // call with updated footprint
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, footprint_spec_);
+    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, costmap_ros_->getRobotFootprintPolygon());
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment

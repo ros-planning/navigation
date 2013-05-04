@@ -40,7 +40,6 @@
 
 #include <base_local_planner/trajectory_cost_function.h>
 
-#include <vector>
 #include <base_local_planner/costmap_model.h>
 #include <costmap_2d/costmap_2d.h>
 

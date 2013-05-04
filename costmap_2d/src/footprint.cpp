@@ -37,6 +37,70 @@
 namespace costmap_2d
 {
 
+void calculateMinAndMaxDistances(const geometry_msgs::Polygon& footprint, double& min_dist, double& max_dist)
+{
+  min_dist = std::numeric_limits<double>::max();
+  max_dist = 0.0;
+
+  if (footprint.points.size() <= 2)
+  {
+    return;
+  }
+
+  for (unsigned int i = 0; i < footprint.points.size() - 1; ++i)
+  {
+    //check the distance from the robot center point to the first vertex
+    double vertex_dist = distance(0.0, 0.0, footprint.points[i].x, footprint.points[i].y);
+    double edge_dist = distanceToLine(0.0, 0.0, footprint.points[i].x, footprint.points[i].y,
+                                      footprint.points[i + 1].x, footprint.points[i + 1].y);
+    min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+    max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+  }
+
+  //we also need to do the last vertex and the first vertex
+  double vertex_dist = distance(0.0, 0.0, footprint.points.back().x, footprint.points.back().y);
+  double edge_dist = distanceToLine(0.0, 0.0, footprint.points.back().x, footprint.points.back().y,
+                                      footprint.points.front().x, footprint.points.front().y);
+  min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
+  max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
+}
+
+geometry_msgs::Point32 toPoint32(geometry_msgs::Point pt)
+{
+  geometry_msgs::Point32 point32;
+  point32.x = pt.x;
+  point32.y = pt.y;
+  point32.z = pt.z;
+  return point32;
+}
+
+geometry_msgs::Point toPoint(geometry_msgs::Point32 pt)
+{
+  geometry_msgs::Point point;
+  point.x = pt.x;
+  point.y = pt.y;
+  point.z = pt.z;
+  return point;
+}
+
+geometry_msgs::Polygon toPolygon(std::vector<geometry_msgs::Point> pts)
+{
+  geometry_msgs::Polygon polygon;
+  for(int i=0;i<pts.size();i++){
+    polygon.points.push_back( toPoint32(pts[i]) );
+  }
+  return polygon;
+}
+
+std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon)
+{
+  std::vector<geometry_msgs::Point> pts;
+  for(int i=0;i<polygon.points.size();i++)
+  {
+    pts.push_back( toPoint(polygon.points[i] ) );
+  }
+}
+
 RobotFootprintManager::RobotFootprintManager(ros::NodeHandle node, std::string param_name)
 {
   //grab the footprint from the parameter server if possible

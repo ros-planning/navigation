@@ -36,7 +36,7 @@
 *********************************************************************/
 
 #include <base_local_planner/trajectory_planner.h>
-
+#include <costmap_2d/footprint.h>
 #include <string>
 #include <sstream>
 #include <math.h>
@@ -140,7 +140,7 @@ namespace base_local_planner{
 
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model, 
       const Costmap2D& costmap, 
-      std::vector<geometry_msgs::Point> footprint_spec,
+      geometry_msgs::Polygon footprint_spec,
       double acc_lim_x, double acc_lim_y, double acc_lim_theta,
       double sim_time, double sim_granularity, 
       int vx_samples, int vtheta_samples,
@@ -182,6 +182,9 @@ namespace base_local_planner{
 
     escaping_ = false;
     final_goal_position_valid_ = false;
+
+
+    costmap_2d::calculateMinAndMaxDistances(footprint_spec_, inscribed_radius_, circumscribed_radius_);
   }
 
   TrajectoryPlanner::~TrajectoryPlanner(){}
@@ -990,25 +993,8 @@ namespace base_local_planner{
 
   //we need to take the footprint of the robot into account when we calculate cost to obstacles
   double TrajectoryPlanner::footprintCost(double x_i, double y_i, double theta_i){
-    //build the oriented footprint
-    double cos_th = cos(theta_i);
-    double sin_th = sin(theta_i);
-    vector<geometry_msgs::Point> oriented_footprint;
-    for(unsigned int i = 0; i < footprint_spec_.size(); ++i){
-      geometry_msgs::Point new_pt;
-      new_pt.x = x_i + (footprint_spec_[i].x * cos_th - footprint_spec_[i].y * sin_th);
-      new_pt.y = y_i + (footprint_spec_[i].x * sin_th + footprint_spec_[i].y * cos_th);
-      oriented_footprint.push_back(new_pt);
-    }
-
-    geometry_msgs::Point robot_position;
-    robot_position.x = x_i;
-    robot_position.y = y_i;
-
     //check if the footprint is legal
-    double footprint_cost = world_model_.footprintCost(robot_position, oriented_footprint, costmap_.getInscribedRadius(), costmap_.getCircumscribedRadius());
-
-    return footprint_cost;
+    return world_model_.footprintCost(x_i, y_i, theta_i, footprint_spec_, inscribed_radius_, circumscribed_radius_);
   }
 
 

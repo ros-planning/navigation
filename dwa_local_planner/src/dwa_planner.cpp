@@ -336,7 +336,7 @@ namespace dwa_local_planner {
     // verbose publishing of point clouds
     if (publish_cost_grid_pc_) {
       //we'll publish the visualization of the costs to rviz before returning our best trajectory
-      map_viz_.publishCostCloud(*(planner_util_->getCostmap()));
+      map_viz_.publishCostCloud(planner_util_->getCostmap());
     }
 
     // debrief stateful scoring functions

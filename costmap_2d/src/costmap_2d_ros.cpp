@@ -95,6 +95,24 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     }
   }
 
+  // load the footprint from a topic
+  std::string topic_param, topic;
+  if(!private_nh.searchParam("footprint_topic", topic_param))
+  {
+    topic_param = "footprint_topic";
+  }
+
+  private_nh.param(topic_param, topic, std::string("footprint"));
+  footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
+
+  ros::Rate r(10);
+  while(!got_footprint_ && g_nh.ok())
+  {
+    ros::spinOnce();
+    r.sleep();
+    ROS_INFO_THROTTLE(5.0, "Waiting for footprint.");
+  }
+
   // check if we want a rolling window version of the costmap
   bool rolling_window, track_unknown_space;
   private_nh.param("rolling_window", rolling_window, false);
@@ -119,6 +137,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
       boost::shared_ptr<CostmapPluginROS> plugin = plugin_loader_.createInstance(type);
       layered_costmap_->addPlugin(plugin);
+      plugin->setFootprint(&footprint_spec_);
       plugin->initialize(layered_costmap_, name + "/" + pname, tf_);
     }
   }
@@ -138,6 +157,12 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1,
                                                                               _2);
   dsrv_->setCallback(cb);
+}
+
+void Costmap2DROS::footprint_cb(const geometry_msgs::Polygon& footprint)
+{
+  footprint_spec_ = footprint;
+  got_footprint_ = true;
 }
 
 Costmap2DROS::~Costmap2DROS()
@@ -432,6 +457,27 @@ bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const
   }
 
   return true;
+}
+
+void Costmap2DROS::getOrientedFootprint(geometry_msgs::Polygon& oriented_footprint) const {
+  tf::Stamped<tf::Pose> global_pose;
+  if(!getRobotPose(global_pose))
+    return;
+
+  double yaw = tf::getYaw(global_pose.getRotation());
+  getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint);
+}
+
+void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, geometry_msgs::Polygon& oriented_footprint) const {
+  //build the oriented footprint at the robot's current location
+  double cos_th = cos(theta);
+  double sin_th = sin(theta);
+  for(unsigned int i = 0; i < footprint_spec_.points.size(); ++i){
+    geometry_msgs::Point32 new_pt;
+    new_pt.x = x + (footprint_spec_.points[i].x * cos_th - footprint_spec_.points[i].y * sin_th);
+    new_pt.y = y + (footprint_spec_.points[i].x * sin_th + footprint_spec_.points[i].y * cos_th);
+    oriented_footprint.points.push_back(new_pt);
+  }
 }
 
 } // namespace layered_costmap

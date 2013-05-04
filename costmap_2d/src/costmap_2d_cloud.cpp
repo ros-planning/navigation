@@ -30,7 +30,15 @@
 #include <costmap_2d/VoxelGrid.h>
 #include <voxel_grid/voxel_grid.h>
 
-#include "costmap_2d/voxel_costmap_2d.h"
+static inline void mapToWorld3D(const unsigned int mx, const unsigned int my, const unsigned int mz,
+                                      const double origin_x, const double origin_y, const double origin_z,
+                                      const double x_resolution, const double y_resolution, const double z_resolution,
+                                      double& wx, double& wy, double& wz){
+  //returns the center point of the cell
+  wx = origin_x + (mx + 0.5) * x_resolution;
+  wy = origin_y + (my + 0.5) * y_resolution;
+  wz = origin_z + (mz + 0.5) * z_resolution;
+}
 
 struct Cell
 {
@@ -90,7 +98,7 @@ void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_u
         {
           Cell c;
           c.status = status;
-          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res,
+          mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res,
                                                    z_res, c.x, c.y, c.z);
 
           g_unknown.push_back(c);
@@ -101,7 +109,7 @@ void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_u
         {
           Cell c;
           c.status = status;
-          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res,
+          mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res,
                                                    z_res, c.x, c.y, c.z);
 
           g_marked.push_back(c);

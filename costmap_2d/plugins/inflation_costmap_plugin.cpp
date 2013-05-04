@@ -1,6 +1,6 @@
 #include<costmap_2d/inflation_costmap_plugin.h>
 #include<costmap_2d/costmap_math.h>
-
+#include<costmap_2d/footprint.h>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::InflationCostmapPlugin, costmap_2d::CostmapPluginROS)
@@ -20,62 +20,10 @@ void InflationCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std
   seen_ = NULL;
   matchSize();
 
-  got_footprint_ = false;
-
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name));
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
       &InflationCostmapPlugin::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
-
-  std::string topic_param, topic;
-  if (!nh.searchParam("footprint_topic", topic_param))
-  {
-    topic_param = "footprint_topic";
-  }
-  nh.param(topic_param, topic, std::string("footprint"));
-
-  footprint_sub_ = g_nh.subscribe(topic, 1, &InflationCostmapPlugin::footprint_cb, this);
-
-  ros::Rate r(10);
-  while (!got_footprint_ && g_nh.ok())
-  {
-    ros::spinOnce();
-    r.sleep();
-  }
-}
-
-void InflationCostmapPlugin::footprint_cb(const geometry_msgs::Polygon& footprint)
-{
-  if (footprint.points.size() > 2)
-  {
-    //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
-    double min_dist = std::numeric_limits<double>::max();
-    double max_dist = 0.0;
-
-    for (unsigned int i = 0; i < footprint.points.size() - 1; ++i)
-    {
-      //check the distance from the robot center point to the first vertex
-      double vertex_dist = distance(0.0, 0.0, footprint.points[i].x, footprint.points[i].y);
-      double edge_dist = distanceToLine(0.0, 0.0, footprint.points[i].x, footprint.points[i].y,
-                                        footprint.points[i + 1].x, footprint.points[i + 1].y);
-      min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
-      max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-    }
-
-    //we also need to do the last vertex and the first vertex
-    double vertex_dist = distance(0.0, 0.0, footprint.points.back().x, footprint.points.back().y);
-    double edge_dist = distanceToLine(0.0, 0.0, footprint.points.back().x, footprint.points.back().y,
-                                      footprint.points.front().x, footprint.points.front().y);
-    min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
-    max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
-
-    inscribed_radius_ = min_dist;
-    circumscribed_radius_ = max_dist;
-    // TODO: Set circumscribed_cost
-  }
-  cell_inflation_radius_ = cellDistance(inflation_radius_);
-  computeCaches();
-  got_footprint_ = true;
 }
 
 void InflationCostmapPlugin::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
@@ -115,6 +63,17 @@ void InflationCostmapPlugin::update_bounds(double origin_x, double origin_y, dou
   *min_y -= margin;
   *max_x += margin;
   *max_y += margin;
+
+  if(footprint_updated_)
+  {
+    ROS_INFO("Computing Radii");
+    //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
+    costmap_2d::calculateMinAndMaxDistances(*footprint_spec_, inscribed_radius_, circumscribed_radius_);
+    // TODO: Set circumscribed_cost
+    cell_inflation_radius_ = cellDistance(inflation_radius_);
+    computeCaches();
+  }
+
 }
 
 void InflationCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
