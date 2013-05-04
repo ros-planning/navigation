@@ -205,10 +205,11 @@ namespace base_local_planner {
       bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
 
       /** @brief Set the footprint specification of the robot. */
-      void setFootprint( std::vector<geometry_msgs::Point> footprint ) { footprint_spec_ = footprint; }
+      void setFootprint( std::vector<geometry_msgs::Point> footprint ) { footprint_spec_ = costmap_2d::toPolygon(footprint); }
 
       /** @brief Return the footprint specification of the robot. */
-      std::vector<geometry_msgs::Point> getFootprint() const { return footprint_spec_; }
+      geometry_msgs::Polygon getFootprintPolygon() const { return footprint_spec_; }
+      std::vector<geometry_msgs::Point> getFootprint() const { return costmap_2d::toPointVector(footprint_spec_); }
 
     private:
       /**
