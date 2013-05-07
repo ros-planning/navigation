@@ -49,23 +49,30 @@ public:
   void initialize(LayeredCostmap* costmap, std::string name, tf::TransformListener &tf)
   {
     tf_ = &tf;
-    footprint_updated_ = false;
     initialize(costmap, name);
   }
   virtual void initialize(LayeredCostmap* costmap, std::string name)= 0;
 
-  void setFootprint(geometry_msgs::Polygon* footprint_spec)
+  void setFootprint(const geometry_msgs::Polygon& footprint_spec)
   {
-    footprint_updated_ = true;
+    // TODO: Ideally this would actually check if the footprint had changed or not.
     footprint_spec_ = footprint_spec;
+    onFootprintChanged();
   }
+  const geometry_msgs::Polygon& getFootprint() const { return footprint_spec_; }
+
 protected:
-  CostmapPluginROS() : footprint_spec_(NULL)
+  CostmapPluginROS()
   {
   }
-  geometry_msgs::Polygon* footprint_spec_;
-  bool footprint_updated_;
+
+  /** @brief This is called at the end of setFootprint().  Override to be notified of changes in the robot's footprint. */
+  virtual void onFootprintChanged() {}
+
   tf::TransformListener* tf_;
+
+private:
+  geometry_msgs::Polygon footprint_spec_;
 };
 }  // namespace layered_costmap
 #endif

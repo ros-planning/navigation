@@ -52,6 +52,11 @@ void VoxelWithFootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master
   VoxelCostmapPlugin::update_costs(master_grid, min_i, min_j, max_i, max_j);
 }
 
+void VoxelWithFootprintCostmapPlugin::onFootprintChanged()
+{
+  footprint_layer_.setFootprint( getFootprint() );
+}
+
 } // end namespace common_costmap_plugins
 
 #include <pluginlib/class_list_macros.h>

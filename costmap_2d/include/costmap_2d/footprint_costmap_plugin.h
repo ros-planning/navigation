@@ -71,7 +71,7 @@ public:
 
 private:
   ros::Subscriber footprint_sub_;
-  geometry_msgs::PolygonStamped footprint_;
+  geometry_msgs::PolygonStamped footprint_; ///< Storage for polygon being published.
   void publishFootprint();
   void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
   ros::Publisher footprint_pub_;

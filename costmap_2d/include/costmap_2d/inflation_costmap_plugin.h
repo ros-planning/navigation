@@ -110,6 +110,9 @@ public:
   {
   }
 
+protected:
+  virtual void onFootprintChanged();
+
 private:
   /**
    * @brief  Lookup pre-computed distances
