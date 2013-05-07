@@ -122,6 +122,9 @@ public:
     *yn = byn_;
   }
 
+  /** @brief Call setFootprint() on all plugins. */
+  void setFootprint(const geometry_msgs::Polygon& footprint_spec);
+
 private:
   void updateUsingPlugins(std::vector<boost::shared_ptr<CostmapPlugin> > &plugins);
 

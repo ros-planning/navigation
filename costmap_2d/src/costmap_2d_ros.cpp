@@ -95,24 +95,6 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     }
   }
 
-  // load the footprint from a topic
-  std::string topic_param, topic;
-  if(!private_nh.searchParam("footprint_topic", topic_param))
-  {
-    topic_param = "footprint_topic";
-  }
-
-  private_nh.param(topic_param, topic, std::string("footprint"));
-  footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
-
-  ros::Rate r(10);
-  while(!got_footprint_ && g_nh.ok())
-  {
-    ros::spinOnce();
-    r.sleep();
-    ROS_INFO_THROTTLE(5.0, "Waiting for footprint.");
-  }
-
   // check if we want a rolling window version of the costmap
   bool rolling_window, track_unknown_space;
   private_nh.param("rolling_window", rolling_window, false);
@@ -138,9 +120,18 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
       boost::shared_ptr<CostmapPluginROS> plugin = plugin_loader_.createInstance(type);
       layered_costmap_->addPlugin(plugin);
       plugin->initialize(layered_costmap_, name + "/" + pname, tf_);
-      plugin->setFootprint(footprint_spec_);
     }
   }
+
+  // load the footprint from a topic
+  std::string topic_param, topic;
+  if(!private_nh.searchParam("footprint_topic", topic_param))
+  {
+    topic_param = "footprint_topic";
+  }
+
+  private_nh.param(topic_param, topic, std::string("footprint"));
+  footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
 
   publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), "costmap");
 
@@ -162,7 +153,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 void Costmap2DROS::footprint_cb(const geometry_msgs::Polygon& footprint)
 {
   footprint_spec_ = footprint;
-  got_footprint_ = true;
+  layered_costmap_->setFootprint( footprint );
 }
 
 Costmap2DROS::~Costmap2DROS()
