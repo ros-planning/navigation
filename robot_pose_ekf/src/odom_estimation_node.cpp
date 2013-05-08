@@ -85,6 +85,10 @@ namespace estimation
     double freq;
     nh_private.param("freq", freq, 30.0);
 
+    tf_prefix_ = tf::getPrefixParam(nh_private);
+    output_frame_ = tf::resolve(tf_prefix_, output_frame_);
+    base_footprint_frame_ = tf::resolve(tf_prefix_, "base_footprint");
+
     timer_ = nh_private.createTimer(ros::Duration(1.0/max(freq,1.0)), &OdomEstimationNode::spin, this);
 
     // advertise our estimation
@@ -220,18 +224,18 @@ namespace estimation
         imu_covariance_(i+1, j+1) = imu->orientation_covariance[3*i+j];
 
     // Transforms imu data to base_footprint frame
-    if (!robot_state_.waitForTransform("base_footprint", imu->header.frame_id, imu_stamp_, ros::Duration(0.5))){
+    if (!robot_state_.waitForTransform(base_footprint_frame_, imu->header.frame_id, imu_stamp_, ros::Duration(0.5))){
       // warn when imu was already activated, not when imu is not active yet
       if (imu_active_)
-        ROS_ERROR("Could not transform imu message from %s to base_footprint", imu->header.frame_id.c_str());
+        ROS_ERROR("Could not transform imu message from %s to %s", imu->header.frame_id.c_str(), base_footprint_frame_.c_str());
       else if (my_filter_.isInitialized())
-        ROS_WARN("Could not transform imu message from %s to base_footprint. Imu will not be activated yet.", imu->header.frame_id.c_str());
+        ROS_WARN("Could not transform imu message from %s to %s. Imu will not be activated yet.", imu->header.frame_id.c_str(), base_footprint_frame_.c_str());
       else 
-        ROS_DEBUG("Could not transform imu message from %s to base_footprint. Imu will not be activated yet.", imu->header.frame_id.c_str());
+        ROS_DEBUG("Could not transform imu message from %s to %s. Imu will not be activated yet.", imu->header.frame_id.c_str(), base_footprint_frame_.c_str());
       return;
     }
     StampedTransform base_imu_offset;
-    robot_state_.lookupTransform("base_footprint", imu->header.frame_id, imu_stamp_, base_imu_offset);
+    robot_state_.lookupTransform(base_footprint_frame_, imu->header.frame_id, imu_stamp_, base_imu_offset);
     imu_meas_ = imu_meas_ * base_imu_offset;
 
     imu_time_  = Time::now();
@@ -418,7 +422,7 @@ namespace estimation
           my_filter_.getEstimate(ros::Time(), tmp);
           if(!vo_active_ && !gps_active_)
             tmp.getOrigin().setZ(0.0);
-          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, "base_footprint"));
+          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, base_footprint_frame_));
           
           if (debug_){
             // write to file
