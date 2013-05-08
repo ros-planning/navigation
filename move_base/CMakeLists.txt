@@ -24,6 +24,7 @@ catkin_package(
     CATKIN_DEPENDS
         roscpp
         dynamic_reconfigure
+        actionlib_msgs
 )
 
 include_directories(
