@@ -167,7 +167,6 @@ positions at about 1/2 cell resolution; else returns 0.
       float getLastPathCost();      /**< Return cost of path found the last time A* was called */
 
       /** cell arrays */
-      COSTTYPE *obsarr;		/**< obstacle array, to be expanded to cost array */
       COSTTYPE *costarr;		/**< cost array in 2D configuration space */
       float   *potarr;		/**< potential array, navigation function potential */
       bool    *pending;		/**< pending cells during propagation */

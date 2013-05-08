@@ -1,40 +1,53 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(dwa_local_planner)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-
-rosbuild_init()
-
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
-
-rosbuild_find_ros_package(dynamic_reconfigure)
-include(${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+find_package(catkin REQUIRED
+        COMPONENTS
+            roscpp
+            roslib
+            tf
+            costmap_2d
+            nav_core
+            nav_msgs
+            base_local_planner
+            dynamic_reconfigure
+            pluginlib
+        )
 
 find_package(Eigen)
 find_package(PCL)
-include_directories(${EIGEN_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
+include_directories(
+    include
+    ${EIGEN_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
+    ${catkin_INCLUDE_DIRS}
+    )
 add_definitions(${EIGEN_DEFINITIONS})
 
-gencfg()
+# dynamic reconfigure
+generate_dynamic_reconfigure_options(
+    cfg/DWAPlanner.cfg
+)
 
-#common commands for building c++ executables and libraries
-rosbuild_add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+catkin_package(
+    INCLUDE_DIRS include
+    LIBRARIES dwa_local_planner
+    CATKIN_DEPENDS
+        roslib
+        roscpp
+        dynamic_reconfigure
+        pluginlib
+)
+
+add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)
+target_link_libraries(dwa_local_planner base_local_planner)
+add_dependencies(dwa_local_planner dwa_local_planner_gencfg)
+
+install(TARGETS dwa_local_planner
+       LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       )
+
+install(FILES blp_plugin.xml
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+

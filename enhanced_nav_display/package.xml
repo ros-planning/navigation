@@ -1,0 +1,29 @@
+<package>
+  <name>enhanced_nav_display</name>
+  <version>1.10.3</version>
+  <description>
+    An RViz Display plugin showing an entire costmap with all its info in a configurable colormap.
+  </description>
+  <maintainer email="davidvlu@gmail.com">David Lu!!</maintainer>
+  <license>BSD</license>
+
+  <author>David Lu!!</author>
+  <url>http://ros.org/wiki/enhanced_nav_display</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>rviz</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>costmap_2d</build_depend> <!-- map_msgs/OccupancyGridUpdate.msg copied to costmap_2d during catkinization. -->
+  <build_depend>tf</build_depend>
+  <build_depend>message_filters</build_depend>
+  <build_depend>pluginlib</build_depend>
+
+  <run_depend>pluginlib</run_depend>
+  <run_depend>rviz</run_depend>
+
+  <export>
+    <rviz plugin="${prefix}/plugins.xml"/>
+  </export>
+</package>

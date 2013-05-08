@@ -36,7 +36,6 @@
 *********************************************************************/
 
 #include <dwa_local_planner/dwa_planner_ros.h>
-
 #include <Eigen/Core>
 #include <cmath>
 
@@ -48,7 +47,7 @@
 #include <nav_msgs/Path.h>
 
 //register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_DECLARE_CLASS(dwa_local_planner, DWAPlannerROS, dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
+PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
 
 namespace dwa_local_planner {
 
@@ -106,12 +105,29 @@ namespace dwa_local_planner {
       costmap_ros_->getRobotPose(current_pose_);
 
       // make sure to update the costmap we'll use for this cycle
-      costmap_ros_->getCostmapCopy(costmap_);
+      costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
 
-      planner_util_.initialize(tf, &costmap_, costmap_ros_->getGlobalFrameID());
+      planner_util_.initialize(tf, costmap, costmap->getGlobalFrameID());
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
+      
+      std::string topic_param, topic;
+      if(!private_nh.searchParam("footprint_topic", topic_param)){
+          topic_param = "footprint_topic";
+      }
+        
+      private_nh.param(topic_param, topic, std::string("footprint"));
+      
+      got_footprint_ = false;
+      footprint_sub_ = private_nh.subscribe(topic, 1, &DWAPlannerROS::footprint_cb, this);
+    
+      ros::Rate r(10);
+      while(!got_footprint_ && private_nh.ok()){
+          ROS_INFO_THROTTLE(5.0, "Waiting for footprint in DWA Planner");
+          ros::spinOnce();
+          r.sleep();
+      }
 
       initialized_ = true;
 
@@ -123,6 +139,11 @@ namespace dwa_local_planner {
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
   }
+  
+      void DWAPlannerROS::footprint_cb(const geometry_msgs::Polygon& footprint) {
+        footprint_spec_ = footprint;
+        got_footprint_ = true;
+      }
 
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
@@ -186,8 +207,9 @@ namespace dwa_local_planner {
     //compute what trajectory to drive along
     tf::Stamped<tf::Pose> drive_cmds;
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
+    
     // call with updated footprint
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, costmap_ros_->getRobotFootprint());
+    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, footprint_spec_);
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment
@@ -222,11 +244,11 @@ namespace dwa_local_planner {
       path.getPoint(i, p_x, p_y, p_th);
 
       tf::Stamped<tf::Pose> p =
-    		  tf::Stamped<tf::Pose>(tf::Pose(
-    				  tf::createQuaternionFromYaw(p_th),
-    				  tf::Point(p_x, p_y, 0.0)),
-    				  ros::Time::now(),
-    				  costmap_ros_->getGlobalFrameID());
+              tf::Stamped<tf::Pose>(tf::Pose(
+                      tf::createQuaternionFromYaw(p_th),
+                      tf::Point(p_x, p_y, 0.0)),
+                      ros::Time::now(),
+                      costmap_ros_->getGlobalFrameID());
       geometry_msgs::PoseStamped pose;
       tf::poseStampedTFToMsg(p, pose);
       local_plan.push_back(pose);
@@ -259,12 +281,6 @@ namespace dwa_local_planner {
       return false;
     }
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
-
-    //we want to clear the robot footprint from the costmap we're using
-    costmap_ros_->clearRobotFootprint();
-
-    // make sure to update the costmap we'll use for this cycle
-    costmap_ros_->getCostmapCopy(costmap_);
 
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
     dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan);

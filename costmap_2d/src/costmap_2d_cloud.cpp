@@ -41,14 +41,15 @@ struct Cell
 };
 typedef std::vector<Cell> V_Cell;
 
-float g_colors_r[] = { 0.0f, 0.0f, 1.0f };
-float g_colors_g[] = { 0.0f, 0.0f, 0.0f };
-float g_colors_b[] = { 0.0f, 1.0f, 0.0f };
-float g_colors_a[] = { 0.0f, 0.5f, 1.0f };
+float g_colors_r[] = {0.0f, 0.0f, 1.0f};
+float g_colors_g[] = {0.0f, 0.0f, 0.0f};
+float g_colors_b[] = {0.0f, 1.0f, 0.0f};
+float g_colors_a[] = {0.0f, 0.5f, 1.0f};
 
 V_Cell g_marked;
 V_Cell g_unknown;
-void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_unknown, const costmap_2d::VoxelGridConstPtr& grid)
+void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_unknown,
+                   const costmap_2d::VoxelGridConstPtr& grid)
 {
   if (grid->data.empty())
   {
@@ -82,13 +83,15 @@ void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_u
     {
       for (uint32_t z_grid = 0; z_grid < z_size; ++z_grid)
       {
-        voxel_grid::VoxelStatus status = voxel_grid::VoxelGrid::getVoxel(x_grid, y_grid, z_grid, x_size, y_size, z_size, data);
+        voxel_grid::VoxelStatus status = voxel_grid::VoxelGrid::getVoxel(x_grid, y_grid, z_grid, x_size, y_size, z_size,
+                                                                         data);
 
         if (status == voxel_grid::UNKNOWN)
         {
           Cell c;
           c.status = status;
-          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res, z_res, c.x, c.y, c.z);
+          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res,
+                                                   z_res, c.x, c.y, c.z);
 
           g_unknown.push_back(c);
 
@@ -98,7 +101,8 @@ void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_u
         {
           Cell c;
           c.status = status;
-          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res, z_res, c.x, c.y, c.z);
+          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res,
+                                                   z_res, c.x, c.y, c.z);
 
           g_marked.push_back(c);
 
@@ -184,9 +188,10 @@ int main(int argc, char** argv)
 
   ROS_DEBUG("Startup");
 
-  ros::Publisher pub_marked = n.advertise<sensor_msgs::PointCloud>("voxel_marked_cloud", 2);
-  ros::Publisher pub_unknown = n.advertise<sensor_msgs::PointCloud>("voxel_unknown_cloud", 2);
-  ros::Subscriber sub = n.subscribe<costmap_2d::VoxelGrid>("voxel_grid", 1, boost::bind(voxelCallback, pub_marked, pub_unknown, _1));
+  ros::Publisher pub_marked = n.advertise < sensor_msgs::PointCloud > ("voxel_marked_cloud", 2);
+  ros::Publisher pub_unknown = n.advertise < sensor_msgs::PointCloud > ("voxel_unknown_cloud", 2);
+  ros::Subscriber sub = n.subscribe < costmap_2d::VoxelGrid
+      > ("voxel_grid", 1, boost::bind(voxelCallback, pub_marked, pub_unknown, _1));
 
   ros::spin();
 }

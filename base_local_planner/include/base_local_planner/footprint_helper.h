@@ -42,7 +42,7 @@
 
 #include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/Point.h>
-
+#include <Eigen/Core>
 #include <base_local_planner/Position2DInt.h>
 
 namespace base_local_planner {

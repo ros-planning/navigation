@@ -1,0 +1,36 @@
+<package>
+    <name>navigation</name>
+    <version>1.10.3</version>
+    <description>
+        A 2D navigation stack that takes in information from odometry, sensor
+        streams, and a goal pose and outputs safe velocity commands that are sent
+        to a mobile base.
+    </description>
+    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <author>Maintained by Eitan Marder-Eppstein eitan@willowgarage.com</author>
+    <license>BSD,LGPL,LGPL (amcl)</license>  
+    <url>http://ros.org/wiki/navigation</url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <run_depend>amcl</run_depend>
+    <run_depend>carrot_planner</run_depend>
+    <run_depend>dwa_local_planner</run_depend>
+    <run_depend>move_base</run_depend>
+    <run_depend>nav_core</run_depend>
+    <run_depend>robot_pose_ekf</run_depend>
+    <run_depend>base_local_planner</run_depend>
+    <run_depend>clear_costmap_recovery</run_depend>
+    <run_depend>fake_localization</run_depend>
+    <run_depend>move_base_msgs</run_depend>
+    <run_depend>navfn</run_depend>
+    <run_depend>rotate_recovery</run_depend>
+    <run_depend>costmap_2d</run_depend>
+    <run_depend>map_server</run_depend>
+    <run_depend>move_slow_and_clear</run_depend>
+    <run_depend>voxel_grid</run_depend>
+
+    <export>
+        <metapackage/>
+    </export>
+</package>

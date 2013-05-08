@@ -50,7 +50,6 @@
 #include <nav_msgs/Odometry.h>
 
 #include <costmap_2d/costmap_2d_ros.h>
-
 #include <nav_core/base_local_planner.h>
 #include <base_local_planner/latched_stop_rotate_controller.h>
 
@@ -141,12 +140,12 @@ namespace dwa_local_planner {
       boost::shared_ptr<DWAPlanner> dp_; ///< @brief The trajectory controller
 
       costmap_2d::Costmap2DROS* costmap_ros_;
-      costmap_2d::Costmap2D costmap_;
 
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
       tf::Stamped<tf::Pose> current_pose_;
+      geometry_msgs::Polygon footprint_spec_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
@@ -155,6 +154,10 @@ namespace dwa_local_planner {
 
 
       base_local_planner::OdometryHelperRos odom_helper_;
+      
+      void footprint_cb(const geometry_msgs::Polygon& footprint);
+      ros::Subscriber footprint_sub_;
+      bool got_footprint_;
   };
 };
 #endif

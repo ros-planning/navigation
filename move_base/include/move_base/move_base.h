@@ -51,6 +51,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/footprint.h>
 #include <nav_msgs/GetPlan.h>
 
 #include <pluginlib/class_loader.h>
@@ -87,7 +88,7 @@ namespace move_base {
        * @param name The name of the action
        * @param tf A reference to a TransformListener
        */
-      MoveBase(std::string name, tf::TransformListener& tf);
+      MoveBase(tf::TransformListener& tf);
 
       /**
        * @brief  Destructor - Cleans up
@@ -103,23 +104,6 @@ namespace move_base {
       bool executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
     private:
-      /**
-       * @brief  A service call that clears unknown space in the robot's immediate area
-       * @param req The service request 
-       * @param resp The service response
-       * @return True if the service call succeeds, false otherwise
-       */
-      bool clearUnknownService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp);
-
-    private:
-      /**
-       * @brief  A service call that clears the costmaps of obstacles
-       * @param req The service request 
-       * @param resp The service response
-       * @return True if the service call succeeds, false otherwise
-       */
-      bool clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp);
-
       /**
        * @brief  A service call that can be made when the action is inactive that will return a plan
        * @param  req The goal request
@@ -181,10 +165,10 @@ namespace move_base {
 
       MoveBaseActionServer* as_;
 
-      nav_core::BaseLocalPlanner* tc_;
+      boost::shared_ptr<nav_core::BaseLocalPlanner> tc_;
       costmap_2d::Costmap2DROS* planner_costmap_ros_, *controller_costmap_ros_;
 
-      nav_core::BaseGlobalPlanner* planner_;
+      boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_;
       std::string robot_base_frame_, global_frame_;
 
       std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
@@ -196,7 +180,7 @@ namespace move_base {
       double conservative_reset_dist_, clearing_radius_;
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
       ros::Subscriber goal_sub_;
-      ros::ServiceServer make_plan_srv_, clear_unknown_srv_, clear_costmaps_srv_;
+      ros::ServiceServer make_plan_srv_;
       bool shutdown_costmaps_, clearing_roatation_allowed_, recovery_behavior_enabled_;
       double oscillation_timeout_, oscillation_distance_;
 
@@ -231,6 +215,8 @@ namespace move_base {
       move_base::MoveBaseConfig default_config_;
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
+      
+      costmap_2d::RobotFootprintManager footprint_manager_;
   };
 };
 #endif
