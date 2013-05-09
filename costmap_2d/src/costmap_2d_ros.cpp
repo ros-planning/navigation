@@ -337,7 +337,7 @@ namespace costmap_2d {
     }
 
     if(inscribed_radius > inflation_radius || circumscribed_radius > inflation_radius){
-      ROS_WARN("You have set an inflation radius that is less than the inscribed or circumscribed radius of the robot. This is dangerous and could casue the robot to hit obstacles. Please change your inflation radius setting appropraitely.");
+      ROS_WARN("You have set an inflation radius (%f) that is less than the inscribed (%f) or circumscribed (%f) radius of the robot. This is dangerous and could casue the robot to hit obstacles. Please change your inflation radius setting appropriately.", inflation_radius, inscribed_radius, circumscribed_radius);
     }
 
     double max_obstacle_height;
