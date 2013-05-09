@@ -313,10 +313,6 @@ namespace costmap_2d {
     //load the robot footprint from the parameter server if its available in the global namespace
     footprint_spec_ = loadRobotFootprint(private_nh, inscribed_radius, circumscribed_radius);
 
-    if(inscribed_radius > inflation_radius || circumscribed_radius > inflation_radius){
-      ROS_WARN("You have set an inflation radius that is less than the inscribed and circumscribed radii of the robot. This is dangerous and could casue the robot to hit obstacles. Please change your inflation radius setting appropraitely.");
-    }
-
     if(footprint_spec_.size() > 2){
       //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
       double min_dist = std::numeric_limits<double>::max();
@@ -338,6 +334,10 @@ namespace costmap_2d {
 
       inscribed_radius = min_dist;
       circumscribed_radius = max_dist;
+    }
+
+    if(inscribed_radius > inflation_radius || circumscribed_radius > inflation_radius){
+      ROS_WARN("You have set an inflation radius (%f) that is less than the inscribed (%f) or circumscribed (%f) radius of the robot. This is dangerous and could casue the robot to hit obstacles. Please change your inflation radius setting appropriately.", inflation_radius, inscribed_radius, circumscribed_radius);
     }
 
     double max_obstacle_height;
