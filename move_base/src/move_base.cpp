@@ -104,7 +104,7 @@ namespace move_base {
     private_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
 
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
-    private_nh.param("clearing_roatation_allowed", clearing_roatation_allowed_, true);
+    private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
@@ -246,7 +246,7 @@ namespace move_base {
     conservative_reset_dist_ = config.conservative_reset_dist;
 
     recovery_behavior_enabled_ = config.recovery_behavior_enabled;
-    clearing_roatation_allowed_ = config.clearing_rotation_allowed;
+    clearing_rotation_allowed_ = config.clearing_rotation_allowed;
     shutdown_costmaps_ = config.shutdown_costmaps;
 
     oscillation_timeout_ = config.oscillation_timeout;
@@ -1103,7 +1103,7 @@ namespace move_base {
 
       //next, we'll load a recovery behavior to rotate in place
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
-      if(clearing_roatation_allowed_){
+      if(clearing_rotation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
@@ -1114,7 +1114,7 @@ namespace move_base {
       recovery_behaviors_.push_back(ags_clear);
 
       //we'll rotate in-place one more time
-      if(clearing_roatation_allowed_)
+      if(clearing_rotation_allowed_)
         recovery_behaviors_.push_back(rotate);
     }
     catch(pluginlib::PluginlibException& ex){
