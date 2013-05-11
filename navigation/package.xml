@@ -14,7 +14,7 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <run_depend>amcl</run_depend>
-    <run_depend>carrot_planner</run_depend>
+<!--    <run_depend>carrot_planner</run_depend> -->
     <run_depend>dwa_local_planner</run_depend>
     <run_depend>move_base</run_depend>
     <run_depend>nav_core</run_depend>
@@ -24,7 +24,7 @@
     <run_depend>fake_localization</run_depend>
     <run_depend>move_base_msgs</run_depend>
     <run_depend>navfn</run_depend>
-    <run_depend>rotate_recovery</run_depend>
+<!--    <run_depend>rotate_recovery</run_depend> -->
     <run_depend>costmap_2d</run_depend>
     <run_depend>map_server</run_depend>
     <run_depend>move_slow_and_clear</run_depend>
