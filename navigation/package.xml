@@ -14,7 +14,7 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <run_depend>amcl</run_depend>
-    <run_depend>carrot_planner</run_depend>
+<!--    <run_depend>carrot_planner</run_depend> -->
     <run_depend>dwa_local_planner</run_depend>
     <run_depend>move_base</run_depend>
     <run_depend>nav_core</run_depend>
