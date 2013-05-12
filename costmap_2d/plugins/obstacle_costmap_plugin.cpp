@@ -261,6 +261,11 @@ void ObstacleCostmapPlugin::update_bounds(double origin_x, double origin_y, doub
 
   //update the global current status
   current_ = current;
+  updateWorld(observations, clearing_observations, min_x, min_y, max_x, max_y);
+}
+
+void ObstacleCostmapPlugin::updateWorld(std::vector<Observation> observations, std::vector<Observation> clearing_observations, double* min_x, double* min_y, double* max_x, double* max_y)
+{
 
   //raytrace freespace
   for (unsigned int i = 0; i < clearing_observations.size(); ++i)
