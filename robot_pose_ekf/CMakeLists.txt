@@ -100,4 +100,9 @@ target_link_libraries(test_robot_pose_ekf_zero_covariance
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
 add_dependencies(run_tests_robot_pose_ekf_rostest_test_test_robot_pose_ekf_zero_covariance.launch download_data_zero_covariance.bag)
 
+rosbuild_add_executable(test_robot_pose_ekf_gps test/test_robot_pose_ekf_gps.cpp)
+rosbuild_link_boost(test_robot_pose_ekf_gps thread)
+rosbuild_add_gtest_build_flags(test_robot_pose_ekf_gps)
+rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_gps.launch)
+
 endif(CMAKE_SYSTEM_NAME MATCHES "Linux")
