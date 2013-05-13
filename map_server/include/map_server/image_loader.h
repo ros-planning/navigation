@@ -52,7 +52,7 @@ namespace map_server
  *
  * @throws std::runtime_error If the image file can't be loaded
  * */
-void loadMapFromFile(nav_msgs::GetMap::Response* resp,
+void loadMapFromFile(nav_msgs::OccupancyGrid* map,
                      const char* fname, double res, bool negate,
                      double occ_th, double free_th, double* origin);
 }
