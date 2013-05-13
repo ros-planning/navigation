@@ -60,6 +60,7 @@ add_library(costmap_2d
   src/costmap_math.cpp
   src/footprint.cpp
 )
+add_dependencies(costmap_2d geometry_msgs_gencpp)
 target_link_libraries(costmap_2d
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
@@ -101,11 +102,13 @@ add_dependencies(common_costmap_plugins costmap_2d_gencfg)
 add_dependencies(costmap_2d costmap_2d_gencpp)
 
 add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
+add_dependencies(costmap_2d_markers visualization_msgs_gencpp)
 target_link_libraries(costmap_2d_markers
     costmap_2d
     )
 
 add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
+add_dependencies(costmap_2d_cloud sensor_msgs_gencpp)
 target_link_libraries(costmap_2d_cloud
     costmap_2d
     )
