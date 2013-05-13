@@ -58,6 +58,7 @@ class MapServer
       double occ_th, free_th;
       std::string frame_id;
       ros::NodeHandle private_nh("~");
+      bool crop;
       private_nh.param("frame_id", frame_id, std::string("map"));
       deprecated = (res != 0);
       if (!deprecated) {
@@ -129,16 +130,26 @@ class MapServer
         mapfname = fname;
         origin[0] = origin[1] = origin[2] = 0.0;
       }
-
       ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
-      map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin);
-      map_resp_.map.info.map_load_time = ros::Time::now();
-      map_resp_.map.header.frame_id = frame_id;
-      map_resp_.map.header.stamp = ros::Time::now();
+      nav_msgs::OccupancyGrid map;
+      map_server::loadMapFromFile(&map,mapfname.c_str(),res,negate,occ_th,free_th, origin);
+      map.info.map_load_time = ros::Time::now();
+      map.header.frame_id = frame_id;
+      map.header.stamp = ros::Time::now();
       ROS_INFO("Read a %d X %d map @ %.3lf m/cell",
-               map_resp_.map.info.width,
-               map_resp_.map.info.height,
-               map_resp_.map.info.resolution);
+               map.info.width,
+               map.info.height,
+               map.info.resolution);
+      private_nh.param("crop", crop, true);
+      if (crop) {
+        cropMap(map, &map_resp_.map);
+        ROS_INFO("Cropped to size %d X %d map @ %.3lf m/cell",
+                 map_resp_.map.info.width,
+                 map_resp_.map.info.height,
+                 map_resp_.map.info.resolution);
+      } else {
+        map_resp_.map = map;
+      }
       meta_data_message_ = map_resp_.map.info;
 
       service = n.advertiseService("static_map", &MapServer::mapCallback, this);
@@ -184,7 +195,58 @@ class MapServer
       pub.publish( meta_data_message_ );
     }
     */
+  
+  /**
+   * Crops the map and only transmits the minimal map containing all the information, i.e. discards the unknown space around occupied locations.
+   */
+  void cropMap(const nav_msgs::OccupancyGrid &map, nav_msgs::OccupancyGrid *croppedMap)
+  {
+    uint32_t top_index;
+    uint32_t left_index;
+    uint32_t bottom_index;
+    uint32_t right_index;
 
+    findBoundingBox(map, &top_index, &left_index, &bottom_index, &right_index);
+    croppedMap->info = map.info;
+    croppedMap->info.width = right_index - left_index;
+    croppedMap->info.height = bottom_index - top_index;
+    croppedMap->info.origin.position.x =
+        map.info.origin.position.x + left_index * map.info.resolution;
+    croppedMap->info.origin.position.y =
+        map.info.origin.position.y + top_index * map.info.resolution;
+    croppedMap->data.resize(croppedMap->info.width * croppedMap->info.height);
+
+    uint32_t i = 0;
+    for(uint32_t y = top_index; y < bottom_index; y++ ) {
+      for (uint32_t x = left_index; x < right_index; x++, i++ ) {
+        croppedMap->data[i] = map.data[y * map.info.width + x];
+      }
+    }
+  }
+
+  void findBoundingBox(
+      const nav_msgs::OccupancyGrid &map, uint32_t *top_index, uint32_t *left_index,
+      uint32_t *bottom_index, uint32_t *right_index)
+  {
+    *top_index = map.info.height;
+    *left_index = map.info.width;
+    *right_index = 0;
+    std::vector<int8_t>::const_iterator it = map.data.begin();
+    for (uint32_t y = 0; y <  map.info.height; y++) {
+      for (uint32_t x = 0; x < map.info.width; x++, it++) {
+        if (*it != -1) {
+          if (x < *left_index) {
+            *left_index = x;
+          }
+          if (y < *top_index) {
+            *top_index = y;
+          }
+          *bottom_index = y + 1;
+          *right_index = std::max(*right_index, x + 1);
+        }
+      }
+    }
+  }
 };
 
 int main(int argc, char **argv)
