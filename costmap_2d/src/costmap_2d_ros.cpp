@@ -152,8 +152,8 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
 void Costmap2DROS::footprint_cb(const geometry_msgs::Polygon& footprint)
 {
-  footprint_spec_ = footprint;
-  layered_costmap_->setFootprint( footprint );
+  footprint_spec_ = toPointVector(footprint);
+  layered_costmap_->setFootprint( footprint_spec_ );
 }
 
 Costmap2DROS::~Costmap2DROS()
@@ -450,7 +450,7 @@ bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const
   return true;
 }
 
-void Costmap2DROS::getOrientedFootprint(geometry_msgs::Polygon& oriented_footprint) const {
+void Costmap2DROS::getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const {
   tf::Stamped<tf::Pose> global_pose;
   if(!getRobotPose(global_pose))
     return;
@@ -459,15 +459,15 @@ void Costmap2DROS::getOrientedFootprint(geometry_msgs::Polygon& oriented_footpri
   getOrientedFootprint(global_pose.getOrigin().x(), global_pose.getOrigin().y(), yaw, oriented_footprint);
 }
 
-void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, geometry_msgs::Polygon& oriented_footprint) const {
+void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint) const {
   //build the oriented footprint at the robot's current location
   double cos_th = cos(theta);
   double sin_th = sin(theta);
-  for(unsigned int i = 0; i < footprint_spec_.points.size(); ++i){
-    geometry_msgs::Point32 new_pt;
-    new_pt.x = x + (footprint_spec_.points[i].x * cos_th - footprint_spec_.points[i].y * sin_th);
-    new_pt.y = y + (footprint_spec_.points[i].x * sin_th + footprint_spec_.points[i].y * cos_th);
-    oriented_footprint.points.push_back(new_pt);
+  for(unsigned int i = 0; i < footprint_spec_.size(); ++i){
+    geometry_msgs::Point new_pt;
+    new_pt.x = x + (footprint_spec_[i].x * cos_th - footprint_spec_[i].y * sin_th);
+    new_pt.y = y + (footprint_spec_[i].x * sin_th + footprint_spec_[i].y * cos_th);
+    oriented_footprint.push_back(new_pt);
   }
 }
 

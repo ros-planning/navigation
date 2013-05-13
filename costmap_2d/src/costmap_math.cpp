@@ -61,13 +61,13 @@ double distanceToLine(double pX, double pY, double x0, double y0, double x1, dou
   return distance(pX, pY, xx, yy);
 }
 
-bool intersects(geometry_msgs::Polygon* polygon, float testx, float testy)
+bool intersects(std::vector<geometry_msgs::Point>& polygon, float testx, float testy)
 {
   bool c = false;
-  int i, j, nvert = polygon->points.size();
+  int i, j, nvert = polygon.size();
   for (i = 0, j = nvert - 1; i < nvert; j = i++)
   {
-    float yi = polygon->points[i].y, yj = polygon->points[j].y, xi = polygon->points[i].x, xj = polygon->points[j].x;
+    float yi = polygon[i].y, yj = polygon[j].y, xi = polygon[i].x, xj = polygon[j].x;
 
     if (((yi > testy) != (yj > testy)) && (testx < (xj - xi) * (testy - yi) / (yj - yi) + xi))
       c = !c;
@@ -75,15 +75,15 @@ bool intersects(geometry_msgs::Polygon* polygon, float testx, float testy)
   return c;
 }
 
-bool intersects_helper(geometry_msgs::Polygon* polygon1, geometry_msgs::Polygon* polygon2)
+bool intersects_helper(std::vector<geometry_msgs::Point>& polygon1, std::vector<geometry_msgs::Point>& polygon2)
 {
-  for (unsigned int i = 0; i < polygon1->points.size(); i++)
-    if (intersects(polygon2, polygon1->points[i].x, polygon1->points[i].y))
+  for (unsigned int i = 0; i < polygon1.size(); i++)
+    if (intersects(polygon2, polygon1[i].x, polygon1[i].y))
       return true;
   return false;
 }
 
-bool intersects(geometry_msgs::Polygon* polygon1, geometry_msgs::Polygon* polygon2)
+bool intersects(std::vector<geometry_msgs::Point>& polygon1, std::vector<geometry_msgs::Point>& polygon2)
 {
   return intersects_helper(polygon1, polygon2) || intersects_helper(polygon2, polygon1);
 }

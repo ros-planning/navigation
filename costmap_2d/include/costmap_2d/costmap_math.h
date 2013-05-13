@@ -39,8 +39,10 @@
 #define COSTMAP_MATH_H_
 
 #include<math.h>
-#include<geometry_msgs/Polygon.h>
 #include<algorithm>
+#include<vector>
+#include<geometry_msgs/Polygon.h>
+#include<geometry_msgs/Point.h>
 
 /** @brief Return -1 if x < 0, +1 otherwise. */
 inline double sign(double x)
@@ -61,8 +63,8 @@ inline double distance(double x0, double y0, double x1, double y1)
 
 double distanceToLine(double pX, double pY, double x0, double y0, double x1, double y1);
 
-bool intersects(geometry_msgs::Polygon* polygon, float testx, float testy);
+bool intersects(std::vector<geometry_msgs::Point>& polygon, float testx, float testy);
 
-bool intersects(geometry_msgs::Polygon* polygon1, geometry_msgs::Polygon* polygon2);
+bool intersects(std::vector<geometry_msgs::Point>& polygon1, std::vector<geometry_msgs::Point>& polygon2);
 
 #endif
