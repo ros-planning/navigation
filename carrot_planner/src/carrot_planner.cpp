@@ -73,9 +73,9 @@ namespace carrot_planner {
       return -1.0;
     }
 
-    geometry_msgs::Polygon footprint = costmap_ros_->getRobotFootprintPolygon();
+    std::vector<geometry_msgs::Point> footprint = costmap_ros_->getRobotFootprint();
     //if we have no footprint... do nothing
-    if(footprint.points.size() < 3)
+    if(footprint.size() < 3)
       return -1.0;
 
     //check if the footprint is legal

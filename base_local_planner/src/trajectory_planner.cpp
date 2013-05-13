@@ -140,7 +140,7 @@ namespace base_local_planner{
 
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model, 
       const Costmap2D& costmap, 
-      geometry_msgs::Polygon footprint_spec,
+      std::vector<geometry_msgs::Point> footprint_spec,
       double acc_lim_x, double acc_lim_y, double acc_lim_theta,
       double sim_time, double sim_granularity, 
       int vx_samples, int vtheta_samples,

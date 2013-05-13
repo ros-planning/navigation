@@ -69,13 +69,13 @@ public:
     return name_;
   }
 
-  void setFootprint(const geometry_msgs::Polygon& footprint_spec)
+  void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
   {
     // TODO: Ideally this would actually check if the footprint had changed or not.
     footprint_spec_ = footprint_spec;
     onFootprintChanged();
   }
-  const geometry_msgs::Polygon& getFootprint() const { return footprint_spec_; }
+  const std::vector<geometry_msgs::Point>& getFootprint() const { return footprint_spec_; }
 
 protected:
   CostmapPlugin()
@@ -92,7 +92,7 @@ protected:
   std::string name_;
 
 private:
-  geometry_msgs::Polygon footprint_spec_;
+  std::vector<geometry_msgs::Point> footprint_spec_;
 };
 } // namespace layered_costmap
 #endif

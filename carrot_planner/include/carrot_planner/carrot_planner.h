@@ -42,8 +42,6 @@
 #include <nav_core/base_global_planner.h>
 
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Polygon.h>
-
 #include <angles/angles.h>
 
 #include <tf/tf.h>

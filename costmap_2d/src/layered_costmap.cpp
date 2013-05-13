@@ -140,7 +140,7 @@ bool LayeredCostmap::isCurrent()
 }
 
 /** @brief Call setFootprint() on all plugins. */
-void LayeredCostmap::setFootprint(const geometry_msgs::Polygon& footprint_spec)
+void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
   for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
