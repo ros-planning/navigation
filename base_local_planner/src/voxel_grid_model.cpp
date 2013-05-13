@@ -46,9 +46,9 @@ namespace base_local_planner {
     origin_x_(origin_x), origin_y_(origin_y), origin_z_(origin_z),
     max_z_(max_z), sq_obstacle_range_(obstacle_range * obstacle_range) {}
 
-  double VoxelGridModel::footprintCost(const geometry_msgs::Point& position, const vector<geometry_msgs::Point>& footprint, 
+  double VoxelGridModel::footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint, 
       double inscribed_radius, double circumscribed_radius){
-    if(footprint.size() < 3)
+    if(footprint.points.size() < 3)
       return -1.0;
 
     //now we really have to lay down the footprint in the costmap grid
@@ -56,13 +56,13 @@ namespace base_local_planner {
     double line_cost = 0.0;
 
     //we need to rasterize each line in the footprint
-    for(unsigned int i = 0; i < footprint.size() - 1; ++i){
+    for(unsigned int i = 0; i < footprint.points.size() - 1; ++i){
       //get the cell coord of the first point
-      if(!worldToMap2D(footprint[i].x, footprint[i].y, x0, y0))
+      if(!worldToMap2D(footprint.points[i].x, footprint.points[i].y, x0, y0))
         return -1.0;
 
       //get the cell coord of the second point
-      if(!worldToMap2D(footprint[i + 1].x, footprint[i + 1].y, x1, y1))
+      if(!worldToMap2D(footprint.points[i + 1].x, footprint.points[i + 1].y, x1, y1))
         return -1.0;
 
       line_cost = lineCost(x0, x1, y0, y1);
@@ -74,11 +74,11 @@ namespace base_local_planner {
 
     //we also need to connect the first point in the footprint to the last point
     //get the cell coord of the last point
-    if(!worldToMap2D(footprint.back().x, footprint.back().y, x0, y0))
+    if(!worldToMap2D(footprint.points.back().x, footprint.points.back().y, x0, y0))
       return -1.0;
 
     //get the cell coord of the first point
-    if(!worldToMap2D(footprint.front().x, footprint.front().y, x1, y1))
+    if(!worldToMap2D(footprint.points.front().x, footprint.points.front().y, x1, y1))
       return -1.0;
 
     line_cost = lineCost(x0, x1, y0, y1);
@@ -179,7 +179,7 @@ namespace base_local_planner {
     return 1;
   }
 
-  void VoxelGridModel::updateWorld(const vector<geometry_msgs::Point>& footprint, 
+  void VoxelGridModel::updateWorld(const geometry_msgs::Polygon& footprint, 
       const vector<Observation>& observations, const vector<PlanarLaserScan>& laser_scans){
 
     //remove points in the laser scan boundry

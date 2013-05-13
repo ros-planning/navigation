@@ -91,7 +91,7 @@ add_rostest(test/small_loop_prf.xml)
 add_rostest(test/small_loop_crazy_driving_prg.xml)
 add_rostest(test/texas_greenroom_loop.xml)
 add_rostest(test/rosie_multilaser.xml)
-#add_rostest(test/texas_willow_hallway_loop.xml)
+add_rostest(test/texas_willow_hallway_loop.xml)
 
 # Global localization needs some work.
 add_rostest(test/global_localization_stage.xml)

@@ -36,7 +36,6 @@
 *********************************************************************/
 
 #include <dwa_local_planner/dwa_planner_ros.h>
-
 #include <Eigen/Core>
 #include <cmath>
 
@@ -106,13 +105,13 @@ namespace dwa_local_planner {
       costmap_ros_->getRobotPose(current_pose_);
 
       // make sure to update the costmap we'll use for this cycle
-      costmap_ros_->getCostmapCopy(costmap_);
+      costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
 
-      planner_util_.initialize(tf, &costmap_, costmap_ros_->getGlobalFrameID());
+      planner_util_.initialize(tf, costmap, costmap->getGlobalFrameID());
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
-
+      
       initialized_ = true;
 
       dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
@@ -123,7 +122,7 @@ namespace dwa_local_planner {
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
   }
-
+  
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
@@ -181,13 +180,12 @@ namespace dwa_local_planner {
     gettimeofday(&start, NULL);
     */
 
-
-
     //compute what trajectory to drive along
     tf::Stamped<tf::Pose> drive_cmds;
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
+    
     // call with updated footprint
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, costmap_ros_->getRobotFootprint());
+    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, costmap_ros_->getRobotFootprintPolygon());
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment
@@ -222,11 +220,11 @@ namespace dwa_local_planner {
       path.getPoint(i, p_x, p_y, p_th);
 
       tf::Stamped<tf::Pose> p =
-    		  tf::Stamped<tf::Pose>(tf::Pose(
-    				  tf::createQuaternionFromYaw(p_th),
-    				  tf::Point(p_x, p_y, 0.0)),
-    				  ros::Time::now(),
-    				  costmap_ros_->getGlobalFrameID());
+              tf::Stamped<tf::Pose>(tf::Pose(
+                      tf::createQuaternionFromYaw(p_th),
+                      tf::Point(p_x, p_y, 0.0)),
+                      ros::Time::now(),
+                      costmap_ros_->getGlobalFrameID());
       geometry_msgs::PoseStamped pose;
       tf::poseStampedTFToMsg(p, pose);
       local_plan.push_back(pose);
@@ -259,12 +257,6 @@ namespace dwa_local_planner {
       return false;
     }
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
-
-    //we want to clear the robot footprint from the costmap we're using
-    costmap_ros_->clearRobotFootprint();
-
-    // make sure to update the costmap we'll use for this cycle
-    costmap_ros_->getCostmapCopy(costmap_);
 
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
     dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan);

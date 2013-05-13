@@ -35,12 +35,20 @@ include_directories(
 )
 
 # move_base
-add_executable(move_base src/move_base.cpp)
+add_library(move_base
+  src/move_base.cpp
+)
 target_link_libraries(move_base
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
     )
 add_dependencies(move_base move_base_gencfg)
+
+add_executable(move_base_node
+  src/move_base_node.cpp
+)
+target_link_libraries(move_base_node move_base)
+set_target_properties(move_base_node PROPERTIES OUTPUT_NAME move_base)
 
 install(DIRECTORY launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
@@ -58,5 +66,7 @@ install(
 install(
     TARGETS
         move_base
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        move_base_node
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

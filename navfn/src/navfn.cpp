@@ -110,7 +110,7 @@ namespace navfn {
   NavFn::NavFn(int xs, int ys)
   {  
     // create cell arrays
-    obsarr = costarr = NULL;
+    costarr = NULL;
     potarr = NULL;
     pending = NULL;
     gradx = grady = NULL;
@@ -142,8 +142,6 @@ namespace navfn {
 
   NavFn::~NavFn()
   {
-    if(obsarr)
-      delete[] obsarr;
     if(costarr)
       delete[] costarr;
     if(potarr)
@@ -200,8 +198,6 @@ namespace navfn {
       ny = ys;
       ns = nx*ny;
 
-      if(obsarr)
-        delete[] obsarr;
       if(costarr)
         delete[] costarr;
       if(potarr)
@@ -214,8 +210,6 @@ namespace navfn {
       if(grady)
         delete[] grady;
 
-      obsarr = new COSTTYPE[ns];	// obstacles, 255 is obstacle
-      memset(obsarr, 0, ns*sizeof(COSTTYPE));
       costarr = new COSTTYPE[ns]; // cost array, 2d config space
       memset(costarr, 0, ns*sizeof(COSTTYPE));
       potarr = new float[ns];	// navigation potential array
@@ -241,6 +235,10 @@ namespace navfn {
           int k=i*nx;
           for (int j=0; j<nx; j++, k++, cmap++, cm++)
           {
+            // This transforms the incoming cost values:
+            // COST_OBS                 -> COST_OBS (incoming "lethal obstacle")
+            // COST_OBS_ROS             -> COST_OBS (incoming "inscribed inflated obstacle")
+            // values in range 0 to 252 -> values from COST_NEUTRAL to COST_OBS_ROS.
             *cm = COST_OBS;
             int v = *cmap;
             if (v < COST_OBS_ROS)
@@ -291,6 +289,12 @@ namespace navfn {
   bool
     NavFn::calcNavFnDijkstra(bool atStart)
     {
+#if 0
+      static char costmap_filename[1000];
+      static int file_number = 0;
+      snprintf( costmap_filename, 1000, "navfn-dijkstra-costmap-%04d", file_number++ );
+      savemap( costmap_filename );
+#endif
       setupNavFn(true);
 
       // calculate the nav fn and path

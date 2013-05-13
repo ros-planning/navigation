@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <string>
+#include <fstream>
+
 using namespace navfn;
 
 extern "C" {
@@ -52,20 +55,63 @@ int main(int argc, char **argv)
   int res = 50;			// 50 mm resolution
   double size = 40.0;		// 40 m on a side
   int inc = 2*COST_NEUTRAL;	// thin wavefront
+  bool got_start_goal = false;
+  std::string pgm_file_name;
   
-  // get resolution (mm) and perhaps size (m)
+  start[0] = 420;
+  start[1] = 420;
+
+  goal[0] = 580;
+  goal[1] = 400;
+
   if (argc > 1)
-    res = atoi(argv[1]);
+  {
+    pgm_file_name = std::string( argv[ 1 ]) + ".pgm";
+    std::string txt_file_name = std::string( argv[ 1 ]) + ".txt";
 
-  if (argc > 2)
-    size = atoi(argv[2]);
+    std::ifstream txt_stream( txt_file_name.c_str() );
+    if( txt_stream )
+    {
+      std::string name;
+      int x, y;
+      for( int i = 0; i < 2; i++ )
+      {
+        txt_stream >> name >> x >> y;
+        if( txt_stream && name == "Goal:" )
+        {
+          goal[0] = x;
+          goal[1] = y;
+        }
+        else if( txt_stream && name == "Start:" )
+        {
+          start[0] = x;
+          start[1] = y;
+        }
+      }
+      got_start_goal = true;
+      printf( "start is %d, %d, goal is %d, %d.\n", start[ 0 ], start[ 1 ], goal[ 0 ], goal[ 1 ]);
+    }
+    else
+    {
+      printf( "Failed to open file %s, assuming you didn't want to open a file.\n", txt_file_name.c_str() );
+    }
+  }
 
-  if (argc > 3)
-    inc = atoi(argv[3]);
+  // get resolution (mm) and perhaps size (m)
+  if( !got_start_goal )
+  {
+    if (argc > 1)
+      res = atoi(argv[1]);
 
-  if (argc > 4)
-    dispn = atoi(argv[4]);
+    if (argc > 2)
+      size = atoi(argv[2]);
 
+    if (argc > 3)
+      inc = atoi(argv[3]);
+
+    if (argc > 4)
+      dispn = atoi(argv[4]);
+  }
   NavFn *nav;
 
   // try reading in a file
@@ -75,47 +121,12 @@ int main(int argc, char **argv)
   //  cmap = readPGM("maps/navfn_test1.pgm",&sx,&sy,true);
   //  cmap = readPGM("initial_costmap_1165_945.pgm",&sx,&sy,true);
   //  cmap = readPGM("initial_costmap_2332_1825.pgm",&sx,&sy,true);
-  cmap = readPGM("navfn_pathlong.pgm",&sx,&sy,true);
+  cmap = readPGM( pgm_file_name.c_str(),&sx,&sy,true);
+  //  cmap = readPGM("navfn_pathlong.pgm",&sx,&sy,true);
   if (cmap)
     {
       nav = new NavFn(sx,sy);
 
-      // find goal
-      goal[0] = sx - 20;	// default
-      COSTTYPE *cm = cmap + sy/6 * sx + sx - 10;
-      for (int i=0; i<sx-20; i++, cm--)
-	{
-	  if (*cm == COST_NEUTRAL)
-	    {
-	      goal[0] = sx-10-i;
-	      printf("[NavTest] Found goal at X = %d\n", sx - 10 -i);
-	      break;
-	    }
-	}
-      goal[1] = sy/6;
-
-      // find start
-      start[0] = 20;		// default
-      cm = cmap + 5*sy/6 * sx + 10;
-      for (int i=0; i<sx-20; i++, cm++)
-	{
-	  if (*cm == COST_NEUTRAL)
-	    {
-	      start[0] = 10+i;
-	      printf("[NavTest] Found start at X = %d\n", start[0]);
-	      break;
-	    }
-	}
-      start[1] = 5*sy/6;
-
-      //      start[0] = 1146;
-      //      start[1] = 1293;
-
-      start[0] = 350;
-      start[1] = 400;
-
-      goal[0] = 350;
-      goal[1] = 450;
 
     }
   else
@@ -206,9 +217,14 @@ int main(int argc, char **argv)
 	ntot++;			// number of uncalculated cells
     }
   printf("[NavFn] Cells not touched: %d/%d\n", ntot, nav->nx*nav->ny);
-  nwin->maxval = 4*mmax/3;
+  nwin->maxval = 4*mmax/3/15;
   dispPot(nav);
-  while (Fl::check()) {}
+  while (Fl::check()) {
+    if( Fl::event_key( 'q' ))
+    {
+      break;
+    }
+  }
 
 #if 0
   goal[1] = size-2;

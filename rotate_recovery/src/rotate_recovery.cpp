@@ -65,8 +65,7 @@ void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
     blp_nh.param("min_in_place_rotational_vel", min_rotational_vel_, 0.4);
     blp_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
 
-    local_costmap_->getCostmapCopy(costmap_);
-    world_model_ = new base_local_planner::CostmapModel(costmap_);
+    world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
 
     initialized_ = true;
   }
@@ -112,23 +111,15 @@ void RotateRecovery::runBehavior(){
     //compute the distance left to rotate
     double dist_left = M_PI - current_angle;
 
-    //update the costmap copy that the world model holds
-    local_costmap_->getCostmapCopy(costmap_);
+    double x = global_pose.getOrigin().x(), y = global_pose.getOrigin().y();
 
     //check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
     while(sim_angle < dist_left){
-      std::vector<geometry_msgs::Point> oriented_footprint;
       double theta = tf::getYaw(global_pose.getRotation()) + sim_angle;
 
-      geometry_msgs::Point position;
-      position.x = global_pose.getOrigin().x();
-      position.y = global_pose.getOrigin().y();
-
-      local_costmap_->getOrientedFootprint(position.x, position.y, theta, oriented_footprint);
-
       //make sure that the point is legal, if it isn't... we'll abort
-      double footprint_cost = world_model_->footprintCost(position, oriented_footprint, local_costmap_->getInscribedRadius(), local_costmap_->getCircumscribedRadius());
+      double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprintPolygon(), 0.0, 0.0);
       if(footprint_cost < 0.0){
         ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f", footprint_cost);
         return;

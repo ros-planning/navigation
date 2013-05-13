@@ -179,16 +179,16 @@ void FootprintHelper::getFillCells(std::vector<base_local_planner::Position2DInt
  */
 std::vector<base_local_planner::Position2DInt> FootprintHelper::getFootprintCells(
     Eigen::Vector3f pos,
-    std::vector<geometry_msgs::Point> footprint_spec,
+    geometry_msgs::Polygon footprint_spec,
     const costmap_2d::Costmap2D& costmap,
     bool fill){
   double x_i = pos[0];
   double y_i = pos[1];
   double theta_i = pos[2];
   std::vector<base_local_planner::Position2DInt> footprint_cells;
-  //std::vector<geometry_msgs::Point> footprint_spec_ = costmap_ros_->getRobotFootprint();
+
   //if we have no footprint... do nothing
-  if (footprint_spec.size() <= 1) {
+  if (footprint_spec.points.size() <= 1) {
     unsigned int mx, my;
     if (costmap.worldToMap(x_i, y_i, mx, my)) {
       Position2DInt center;
@@ -204,19 +204,19 @@ std::vector<base_local_planner::Position2DInt> FootprintHelper::getFootprintCell
   double sin_th = sin(theta_i);
   double new_x, new_y;
   unsigned int x0, y0, x1, y1;
-  unsigned int last_index = footprint_spec.size() - 1;
+  unsigned int last_index = footprint_spec.points.size() - 1;
 
   for (unsigned int i = 0; i < last_index; ++i) {
     //find the cell coordinates of the first segment point
-    new_x = x_i + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
-    new_y = y_i + (footprint_spec[i].x * sin_th + footprint_spec[i].y * cos_th);
+    new_x = x_i + (footprint_spec.points[i].x * cos_th - footprint_spec.points[i].y * sin_th);
+    new_y = y_i + (footprint_spec.points[i].x * sin_th + footprint_spec.points[i].y * cos_th);
     if(!costmap.worldToMap(new_x, new_y, x0, y0)) {
       return footprint_cells;
     }
 
     //find the cell coordinates of the second segment point
-    new_x = x_i + (footprint_spec[i + 1].x * cos_th - footprint_spec[i + 1].y * sin_th);
-    new_y = y_i + (footprint_spec[i + 1].x * sin_th + footprint_spec[i + 1].y * cos_th);
+    new_x = x_i + (footprint_spec.points[i + 1].x * cos_th - footprint_spec.points[i + 1].y * sin_th);
+    new_y = y_i + (footprint_spec.points[i + 1].x * sin_th + footprint_spec.points[i + 1].y * cos_th);
     if (!costmap.worldToMap(new_x, new_y, x1, y1)) {
       return footprint_cells;
     }
@@ -225,13 +225,13 @@ std::vector<base_local_planner::Position2DInt> FootprintHelper::getFootprintCell
   }
 
   //we need to close the loop, so we also have to raytrace from the last pt to first pt
-  new_x = x_i + (footprint_spec[last_index].x * cos_th - footprint_spec[last_index].y * sin_th);
-  new_y = y_i + (footprint_spec[last_index].x * sin_th + footprint_spec[last_index].y * cos_th);
+  new_x = x_i + (footprint_spec.points[last_index].x * cos_th - footprint_spec.points[last_index].y * sin_th);
+  new_y = y_i + (footprint_spec.points[last_index].x * sin_th + footprint_spec.points[last_index].y * cos_th);
   if (!costmap.worldToMap(new_x, new_y, x0, y0)) {
     return footprint_cells;
   }
-  new_x = x_i + (footprint_spec[0].x * cos_th - footprint_spec[0].y * sin_th);
-  new_y = y_i + (footprint_spec[0].x * sin_th + footprint_spec[0].y * cos_th);
+  new_x = x_i + (footprint_spec.points[0].x * cos_th - footprint_spec.points[0].y * sin_th);
+  new_y = y_i + (footprint_spec.points[0].x * sin_th + footprint_spec.points[0].y * cos_th);
   if(!costmap.worldToMap(new_x, new_y, x1, y1)) {
     return footprint_cells;
   }

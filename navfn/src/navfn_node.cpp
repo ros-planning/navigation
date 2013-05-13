@@ -35,9 +35,9 @@
 * Author: Bhaskara Marthi
 *********************************************************************/
 #include <navfn/navfn_ros.h>
-#include <navfn/SetCostmap.h>
 #include <navfn/MakeNavPlan.h>
 #include <boost/shared_ptr.hpp>
+#include <costmap_2d/costmap_2d_ros.h>
 
 namespace cm=costmap_2d;
 namespace rm=geometry_msgs;
@@ -48,36 +48,29 @@ using std::string;
 using cm::Costmap2D;
 using cm::Costmap2DROS;
 
-typedef boost::shared_ptr<Costmap2D> CmapPtr;
-
 namespace navfn {
 
-class NavfnWithLocalCostmap : public NavfnROS
+class NavfnWithCostmap : public NavfnROS
 {
 public:
-  NavfnWithLocalCostmap(string name, Costmap2DROS* cmap);
-  bool setCostmap(SetCostmap::Request& req, SetCostmap::Response& resp);
+  NavfnWithCostmap(string name, Costmap2DROS* cmap);
   bool makePlanService(MakeNavPlan::Request& req, MakeNavPlan::Response& resp);
 
-protected:
-  virtual void getCostmap(Costmap2D& cmap);
-
 private:
-  CmapPtr cmap_;
-  ros::ServiceServer set_costmap_service_;
+  void poseCallback(const rm::PoseStamped::ConstPtr& goal);
+  Costmap2DROS* cmap_;
   ros::ServiceServer make_plan_service_;
+  ros::Subscriber pose_sub_;
 };
 
 
-bool NavfnWithLocalCostmap::makePlanService(MakeNavPlan::Request& req, MakeNavPlan::Response& resp)
+bool NavfnWithCostmap::makePlanService(MakeNavPlan::Request& req, MakeNavPlan::Response& resp)
 {
   vector<PoseStamped> path;
 
   req.start.header.frame_id = "/map";
   req.goal.header.frame_id = "/map";
-
   bool success = makePlan(req.start, req.goal, path);
-
   resp.plan_found = success;
   if (success) {
     resp.path = path;
@@ -86,65 +79,44 @@ bool NavfnWithLocalCostmap::makePlanService(MakeNavPlan::Request& req, MakeNavPl
   return true;
 }
 
+void NavfnWithCostmap::poseCallback(const rm::PoseStamped::ConstPtr& goal) {
+    tf::Stamped<tf::Pose> global_pose;
+    cmap_->getRobotPose(global_pose);
+  vector<PoseStamped> path;
+  rm::PoseStamped start;
+  start.header.stamp = global_pose.stamp_;
+    start.header.frame_id = global_pose.frame_id_;
+    start.pose.position.x = global_pose.getOrigin().x();
+    start.pose.position.y = global_pose.getOrigin().y();
+    start.pose.position.z = global_pose.getOrigin().z();
+    start.pose.orientation.x = global_pose.getRotation().x();
+    start.pose.orientation.y = global_pose.getRotation().y();
+    start.pose.orientation.z = global_pose.getRotation().z();
+    start.pose.orientation.w = global_pose.getRotation().w();
+    makePlan(start, *goal, path);
+}
 
-NavfnWithLocalCostmap::NavfnWithLocalCostmap(string name, Costmap2DROS* cmap) : 
+
+NavfnWithCostmap::NavfnWithCostmap(string name, Costmap2DROS* cmap) : 
   NavfnROS(name, cmap)
 {
-  inscribed_radius_ = 0.0;
-  circumscribed_radius_ = 0.0;
-  inflation_radius_ = 0.0;
-
   ros::NodeHandle private_nh("~");
-  set_costmap_service_ = private_nh.advertiseService("set_costmap", &NavfnWithLocalCostmap::setCostmap, this);
-  make_plan_service_ = private_nh.advertiseService("make_plan", &NavfnWithLocalCostmap::makePlanService, this);
+  cmap_ = cmap;
+  make_plan_service_ = private_nh.advertiseService("make_plan", &NavfnWithCostmap::makePlanService, this);
+  pose_sub_ = private_nh.subscribe<rm::PoseStamped>("goal", 1, &NavfnWithCostmap::poseCallback, this);
 }
-
-
-bool NavfnWithLocalCostmap::setCostmap(SetCostmap::Request& req, SetCostmap::Response& resp)
-{
-  cmap_.reset(new Costmap2D(req.width, req.height, 1.0, 0.0, 0.0));
-  unsigned ind=0;
-  for (unsigned y=0; y<req.height; y++) 
-    for (unsigned x=0; x<req.width; x++) 
-      cmap_->setCost(x, y, req.costs[ind++]);
-
-
-  for (unsigned y=0; y<req.height; y++) 
-    for (unsigned x=0; x<req.width; x++) 
-      ROS_DEBUG_NAMED ("node", "Cost of %u, %u is %u", x, y, cmap_->getCost(x,y));
-
-  planner_.reset(new NavFn(cmap_->getSizeInCellsX(), cmap_->getSizeInCellsY()));
-  ROS_DEBUG_STREAM_NAMED ("node", "Resetting planner object to have size " << cmap_->getSizeInCellsX() << ", " << cmap_->getSizeInCellsY());
-
-  return true;
-}
-
-void NavfnWithLocalCostmap::getCostmap(Costmap2D& cmap)
-{
-  cmap = *cmap_;
-}
-
 
 } // namespace
 
 int main (int argc, char** argv)
 {
-  ros::init(argc, argv, "navfn_node");
-  
+  ros::init(argc, argv, "global_planner");
 
-  ros::NodeHandle n("~");
-  tf::TransformListener tf;
+  tf::TransformListener tf(ros::Duration(10));
 
-  // Set params
-  n.setParam("dummy_costmap/global_frame", "/map");
-  n.setParam("dummy_costmap/robot_base_frame", "/map"); // Do this so it doesn't complain about unavailable transform 
-  n.setParam("dummy_costmap/publish_frequency", 0.0);
-  n.setParam("dummy_costmap/observation_sources", string(""));
-  n.setParam("dummy_costmap/static_map", false);
+  costmap_2d::Costmap2DROS lcr("costmap", tf);
 
-  
-  Costmap2DROS dummy_costmap("dummy_costmap", tf);
-  navfn::NavfnWithLocalCostmap navfn("navfn_planner", &dummy_costmap);
+  navfn::NavfnWithCostmap navfn("navfn_planner", &lcr);
 
   ros::spin();
   return 0;

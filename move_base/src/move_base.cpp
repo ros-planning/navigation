@@ -45,7 +45,7 @@
 
 namespace move_base {
 
-  MoveBase::MoveBase(std::string name, tf::TransformListener& tf) :
+  MoveBase::MoveBase(tf::TransformListener& tf) :
     tf_(tf),
     as_(NULL),
     planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
@@ -53,7 +53,8 @@ namespace move_base {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
+    footprint_manager_(ros::NodeHandle("~")) {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -135,8 +136,6 @@ namespace move_base {
       exit(1);
     }
 
-    ROS_INFO("MAP SIZE: %d, %d", planner_costmap_ros_->getSizeInCellsX(), planner_costmap_ros_->getSizeInCellsY());
-
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
     controller_costmap_ros_->pause();
@@ -157,7 +156,6 @@ namespace move_base {
         }
       }
 
-      ROS_INFO("Loading local_planner %s", local_planner.c_str());
       tc_ = blp_loader_.createInstance(local_planner);
       ROS_INFO("Created local_planner %s", local_planner.c_str());
       tc_->initialize(blp_loader_.getName(local_planner), &tf_, controller_costmap_ros_);
@@ -173,16 +171,6 @@ namespace move_base {
 
     //advertise a service for getting a plan
     make_plan_srv_ = private_nh.advertiseService("make_plan", &MoveBase::planService, this);
-
-    //advertise a service for clearing the costmaps
-    clear_unknown_srv_ = private_nh.advertiseService("clear_unknown_space", &MoveBase::clearUnknownService, this);
-
-    //advertise a service for clearing the costmaps
-    clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
-
-    //initially clear any unknown space around the robot
-    planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-    controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
     if(shutdown_costmaps_){
@@ -252,7 +240,7 @@ namespace move_base {
     oscillation_timeout_ = config.oscillation_timeout;
     oscillation_distance_ = config.oscillation_distance;
     if(config.base_global_planner != last_config_.base_global_planner) {
-        boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
+      boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
       //initialize the global planner
       ROS_INFO("Loading global planner %s", config.base_global_planner.c_str());
       try {
@@ -292,7 +280,7 @@ namespace move_base {
     }
 
     if(config.base_local_planner != last_config_.base_local_planner){
-        boost::shared_ptr<nav_core::BaseLocalPlanner> old_planner = tc_;
+      boost::shared_ptr<nav_core::BaseLocalPlanner> old_planner = tc_;
       //create a local planner
       try {
         //check if a non fully qualified name has potentially been passed in
@@ -310,7 +298,6 @@ namespace move_base {
           }
         }
         tc_ = blp_loader_.createInstance(config.base_local_planner);
-        //delete old_planner;
         // Clean up before initializing the new planner
         planner_plan_->clear();
         latest_plan_->clear();
@@ -343,67 +330,53 @@ namespace move_base {
     //clear the planner's costmap
     planner_costmap_ros_->getRobotPose(global_pose);
 
-    std::vector<geometry_msgs::Point> clear_poly;
+    geometry_msgs::Polygon clear_poly;
     double x = global_pose.getOrigin().x();
     double y = global_pose.getOrigin().y();
-    geometry_msgs::Point pt;
+    geometry_msgs::Point32 pt;
 
     pt.x = x - size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x - size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
-    planner_costmap_ros_->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
+    planner_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
 
     //clear the controller's costmap
     controller_costmap_ros_->getRobotPose(global_pose);
 
-    clear_poly.clear();
+    clear_poly.points.clear();
     x = global_pose.getOrigin().x();
     y = global_pose.getOrigin().y();
 
     pt.x = x - size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
     pt.x = x - size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.push_back(pt);
+    clear_poly.points.push_back(pt);
 
-    controller_costmap_ros_->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
-  }
-
-  bool MoveBase::clearUnknownService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
-    //clear any unknown space around the robot the same as we do on initialization
-    planner_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-    controller_costmap_ros_->clearNonLethalWindow(circumscribed_radius_ * 4, circumscribed_radius_ * 4);
-    return true;
-  }
-
-  bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
-    //clear the costmaps
-    planner_costmap_ros_->resetMapOutsideWindow(0,0);
-    controller_costmap_ros_->resetMapOutsideWindow(0,0);
-    return true;
+    controller_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
   }
 
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
@@ -436,7 +409,7 @@ namespace move_base {
 
     //if we have a tolerance on the goal point that is greater
     //than the resolution of the map... compute the full potential function
-    double resolution = planner_costmap_ros_->getResolution();
+    double resolution = planner_costmap_ros_->getCostmap()->getResolution();
     std::vector<geometry_msgs::PoseStamped> global_plan;
     geometry_msgs::PoseStamped p;
     p = req.goal;
@@ -492,6 +465,8 @@ namespace move_base {
   }
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
+    boost::unique_lock< boost::shared_mutex > lock(*(planner_costmap_ros_->getCostmap()->getLock()));
+
     //make sure to set the plan to be empty initially
     plan.clear();
 
@@ -909,9 +884,13 @@ namespace move_base {
           state_ = CLEARING;
           recovery_trigger_ = OSCILLATION_R;
         }
-
+        
+        {
+         boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
+        
         if(tc_->computeVelocityCommands(cmd_vel)){
-          ROS_DEBUG_NAMED("move_base", "Got a valid command from the local planner.");
+          ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
+                           cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
@@ -941,6 +920,7 @@ namespace move_base {
             planner_cond_.notify_one();
             lock.unlock();
           }
+        }
         }
 
         break;
@@ -1089,7 +1069,7 @@ namespace move_base {
 
   //we'll load our default recovery behaviors here
   void MoveBase::loadDefaultRecoveryBehaviors(){
-    recovery_behaviors_.clear();
+    recovery_behaviors_.clear();/*
     try{
       //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
       ros::NodeHandle n("~");
@@ -1119,7 +1099,7 @@ namespace move_base {
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
-    }
+    }*/
 
     return;
   }
@@ -1139,16 +1119,3 @@ namespace move_base {
   }
 
 };
-
-int main(int argc, char** argv){
-  ros::init(argc, argv, "move_base_node");
-  tf::TransformListener tf(ros::Duration(10));
-
-  move_base::MoveBase move_base("move_base", tf);
-
-  //ros::MultiThreadedSpinner s;
-  ros::spin();
-
-  return(0);
-
-}

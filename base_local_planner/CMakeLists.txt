@@ -53,7 +53,9 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES base_local_planner trajectory_planner_ros
+    LIBRARIES
+        base_local_planner
+#       trajectory_planner_ros
     CATKIN_DEPENDS
         roslib
         roscpp
@@ -102,7 +104,7 @@ add_library(trajectory_planner_ros
 	src/trajectory_planner.cpp
 	src/trajectory_planner_ros.cpp)
 target_link_libraries(trajectory_planner_ros
-    base_local_planner)
+     base_local_planner)
 
 add_executable(point_grid src/point_grid.cpp)
 target_link_libraries(point_grid ${catkin_LIBRARIES})

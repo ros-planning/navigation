@@ -11,33 +11,25 @@ catkin_package(
     INCLUDE_DIRS
         include
     LIBRARIES
-        lib${PROJECT_NAME}
+        voxel_grid
     CATKIN_DEPENDS
         roslib
         roscpp
 )
 
-include_directories( include )
+include_directories(include)
 
-add_library(libvoxel_grid src/voxel_grid.cpp)
-set_target_properties(libvoxel_grid PROPERTIES OUTPUT_NAME voxel_grid)
+add_library(voxel_grid src/voxel_grid.cpp)
 
-add_executable(voxel_grid src/voxel_grid_main.cpp)
-target_link_libraries(voxel_grid
-    libvoxel_grid
+add_executable(voxel_grid_sample src/voxel_grid_main.cpp)
+target_link_libraries(voxel_grid_sample
+    voxel_grid
     ${catkin_LIBRARIES}
     )
 
-install(TARGETS libvoxel_grid
+install(TARGETS voxel_grid
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
-
-
-install(
-    TARGETS
-        voxel_grid
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
 
 catkin_add_gtest(voxel_grid_tests test/voxel_grid_tests.cpp)
 target_link_libraries(voxel_grid_tests

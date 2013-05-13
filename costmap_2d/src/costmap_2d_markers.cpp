@@ -1,36 +1,45 @@
-/*
- * Copyright (C) 2009, Willow Garage, Inc.
+/*********************************************************************
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *   * Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the names of Stanford University or Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived from
- *     this software without specific prior written permission.
+ * Software License Agreement (BSD License)
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+ *  Copyright (c) 2008, 2013, Willow Garage, Inc.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Author: Eitan Marder-Eppstein
+ *         David V. Lu!!
+ *********************************************************************/
 
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <costmap_2d/VoxelGrid.h>
 #include <voxel_grid/voxel_grid.h>
-
-#include "costmap_2d/voxel_costmap_2d.h"
 
 struct Cell
 {
@@ -41,10 +50,10 @@ struct Cell
 };
 typedef std::vector<Cell> V_Cell;
 
-float g_colors_r[] = { 0.0f, 0.0f, 1.0f };
-float g_colors_g[] = { 0.0f, 0.0f, 0.0f };
-float g_colors_b[] = { 0.0f, 1.0f, 0.0f };
-float g_colors_a[] = { 0.0f, 0.5f, 1.0f };
+float g_colors_r[] = {0.0f, 0.0f, 1.0f};
+float g_colors_g[] = {0.0f, 0.0f, 0.0f};
+float g_colors_b[] = {0.0f, 1.0f, 0.0f};
+float g_colors_a[] = {0.0f, 0.5f, 1.0f};
 
 std::string g_marker_ns;
 V_Cell g_cells;
@@ -80,14 +89,16 @@ void voxelCallback(const ros::Publisher& pub, const costmap_2d::VoxelGridConstPt
     {
       for (uint32_t z_grid = 0; z_grid < z_size; ++z_grid)
       {
-        voxel_grid::VoxelStatus status = voxel_grid::VoxelGrid::getVoxel(x_grid, y_grid, z_grid, x_size, y_size, z_size, data);
+        voxel_grid::VoxelStatus status = voxel_grid::VoxelGrid::getVoxel(x_grid, y_grid, z_grid, x_size, y_size, z_size,
+                                                                         data);
 
         if (status == voxel_grid::MARKED)
         {
           Cell c;
           c.status = status;
-          costmap_2d::VoxelCostmap2D::mapToWorld3D(x_grid, y_grid, z_grid, x_origin, y_origin, z_origin, x_res, y_res, z_res, c.x, c.y, c.z);
-
+          c.x = x_origin + (x_grid + 0.5) * x_res;
+          c.y = y_origin + (y_grid + 0.5) * y_res;
+          c.z = z_origin + (z_grid + 0.5) * z_res;
           g_cells.push_back(c);
 
           ++num_markers;
@@ -134,8 +145,8 @@ int main(int argc, char** argv)
 
   ROS_DEBUG("Startup");
 
-  ros::Publisher pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
-  ros::Subscriber sub = n.subscribe<costmap_2d::VoxelGrid>("voxel_grid", 1, boost::bind(voxelCallback, pub, _1));
+  ros::Publisher pub = n.advertise < visualization_msgs::Marker > ("visualization_marker", 1);
+  ros::Subscriber sub = n.subscribe < costmap_2d::VoxelGrid > ("voxel_grid", 1, boost::bind(voxelCallback, pub, _1));
   g_marker_ns = n.resolveName("voxel_grid");
 
   ros::spin();
