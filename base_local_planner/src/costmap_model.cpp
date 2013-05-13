@@ -44,7 +44,7 @@ using namespace costmap_2d;
 namespace base_local_planner {
   CostmapModel::CostmapModel(const Costmap2D& ma) : costmap_(ma) {}
 
-  double CostmapModel::footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint, 
+  double CostmapModel::footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint, 
       double inscribed_radius, double circumscribed_radius){
 
     //used to put things into grid coordinates
@@ -55,7 +55,7 @@ namespace base_local_planner {
       return -1.0;
 
     //if number of points in the footprint is less than 3, we'll just assume a circular robot
-    if(footprint.points.size() < 3){
+    if(footprint.size() < 3){
       unsigned char cost = costmap_.getCost(cell_x, cell_y);
       //if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE)
       if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE || cost == NO_INFORMATION)
@@ -69,13 +69,13 @@ namespace base_local_planner {
     double footprint_cost = 0.0;
 
     //we need to rasterize each line in the footprint
-    for(unsigned int i = 0; i < footprint.points.size() - 1; ++i){
+    for(unsigned int i = 0; i < footprint.size() - 1; ++i){
       //get the cell coord of the first point
-      if(!costmap_.worldToMap(footprint.points[i].x, footprint.points[i].y, x0, y0))
+      if(!costmap_.worldToMap(footprint[i].x, footprint[i].y, x0, y0))
         return -1.0;
 
       //get the cell coord of the second point
-      if(!costmap_.worldToMap(footprint.points[i + 1].x, footprint.points[i + 1].y, x1, y1))
+      if(!costmap_.worldToMap(footprint[i + 1].x, footprint[i + 1].y, x1, y1))
         return -1.0;
 
       line_cost = lineCost(x0, x1, y0, y1);
@@ -88,11 +88,11 @@ namespace base_local_planner {
 
     //we also need to connect the first point in the footprint to the last point
     //get the cell coord of the last point
-    if(!costmap_.worldToMap(footprint.points.back().x, footprint.points.back().y, x0, y0))
+    if(!costmap_.worldToMap(footprint.back().x, footprint.back().y, x0, y0))
       return -1.0;
 
     //get the cell coord of the first point
-    if(!costmap_.worldToMap(footprint.points.front().x, footprint.points.front().y, x1, y1))
+    if(!costmap_.worldToMap(footprint.front().x, footprint.front().y, x1, y1))
       return -1.0;
 
     line_cost = lineCost(x0, x1, y0, y1);

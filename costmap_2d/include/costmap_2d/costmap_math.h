@@ -41,7 +41,6 @@
 #include<math.h>
 #include<algorithm>
 #include<vector>
-#include<geometry_msgs/Polygon.h>
 #include<geometry_msgs/Point.h>
 
 /** @brief Return -1 if x < 0, +1 otherwise. */

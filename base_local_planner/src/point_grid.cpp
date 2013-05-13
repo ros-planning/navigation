@@ -58,23 +58,23 @@ void printPSFooter(){
   printf("showpage\n%%%%EOF\n");
 }
 
-void printPolygonPS(const geometry_msgs::Polygon& poly, double line_width){
-  if(poly.points.size() < 2)
+void printPolygonPS(const std::vector<geometry_msgs::Point>& poly, double line_width){
+  if(poly.size() < 2)
     return;
 
   printf("%.2f setlinewidth\n", line_width);
   printf("newpath\n");
-  printf("%.4f\t%.4f\tmoveto\n", poly.points[0].x * 10, poly.points[0].y * 10);
-  for(unsigned int i = 1; i < poly.points.size(); ++i)
-    printf("%.4f\t%.4f\tlineto\n", poly.points[i].x * 10, poly.points[i].y * 10);
-  printf("%.4f\t%.4f\tlineto\n", poly.points[0].x * 10, poly.points[0].y * 10);
+  printf("%.4f\t%.4f\tmoveto\n", poly[0].x * 10, poly[0].y * 10);
+  for(unsigned int i = 1; i < poly.size(); ++i)
+    printf("%.4f\t%.4f\tlineto\n", poly[i].x * 10, poly[i].y * 10);
+  printf("%.4f\t%.4f\tlineto\n", poly[0].x * 10, poly[0].y * 10);
   printf("closepath stroke\n");
 
 }
 
 namespace base_local_planner {
 
-PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_msgs::Point32 origin, double max_z, double obstacle_range, double min_seperation) :
+PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_msgs::Point origin, double max_z, double obstacle_range, double min_seperation) :
   resolution_(resolution), origin_(origin), max_z_(max_z), sq_obstacle_range_(obstacle_range * obstacle_range), sq_min_separation_(min_seperation * min_seperation)
   {
     width_ = (int) (size_x / resolution_);
@@ -82,13 +82,13 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     cells_.resize(width_ * height_);
   }
 
-  double PointGrid::footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint, 
+  double PointGrid::footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint, 
       double inscribed_radius, double circumscribed_radius){
     //the half-width of the circumscribed sqaure of the robot is equal to the circumscribed radius
     double outer_square_radius = circumscribed_radius;
 
     //get all the points inside the circumscribed square of the robot footprint
-    geometry_msgs::Point32 c_lower_left, c_upper_right;
+    geometry_msgs::Point c_lower_left, c_upper_right;
     c_lower_left.x = position.x - outer_square_radius;
     c_lower_left.y = position.y - outer_square_radius;
 
@@ -107,7 +107,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     double inner_square_radius = sqrt((inscribed_radius * inscribed_radius) / 2.0);
 
     //we'll also check against the inscribed square
-    geometry_msgs::Point32 i_lower_left, i_upper_right;
+    geometry_msgs::Point i_lower_left, i_upper_right;
     i_lower_left.x = position.x - inner_square_radius;
     i_lower_left.y = position.y - inner_square_radius;
 
@@ -139,8 +139,8 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return 1.0;
   }
 
-  bool PointGrid::ptInPolygon(const pcl::PointXYZ& pt, const geometry_msgs::Polygon& poly){
-    if(poly.points.size() < 3)
+  bool PointGrid::ptInPolygon(const pcl::PointXYZ& pt, const std::vector<geometry_msgs::Point>& poly){
+    if(poly.size() < 3)
       return false;
 
     //a point is in a polygon iff the orientation of the point
@@ -148,9 +148,9 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     //side of the polygon
     bool all_left = false;
     bool all_right = false;
-    for(unsigned int i = 0; i < poly.points.size() - 1; ++i){
+    for(unsigned int i = 0; i < poly.size() - 1; ++i){
       //if pt left of a->b
-      if(orient(poly.points[i], poly.points[i + 1], pt) > 0){
+      if(orient(poly[i], poly[i + 1], pt) > 0){
         if(all_right)
           return false;
         all_left = true;
@@ -163,7 +163,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
       }
     }
     //also need to check the last point with the first point
-    if(orient(poly.points[poly.points.size() - 1], poly.points[0], pt) > 0){
+    if(orient(poly[poly.size() - 1], poly[0], pt) > 0){
       if(all_right)
         return false;
     }
@@ -175,11 +175,11 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return true;
   }
 
-  void PointGrid::getPointsInRange(const geometry_msgs::Point32& lower_left, const geometry_msgs::Point32& upper_right, vector< list<pcl::PointXYZ>* >& points){
+  void PointGrid::getPointsInRange(const geometry_msgs::Point& lower_left, const geometry_msgs::Point& upper_right, vector< list<pcl::PointXYZ>* >& points){
     points.clear();
 
     //compute the other corners of the box so we can get cells indicies for them
-    geometry_msgs::Point32 upper_left, lower_right;
+    geometry_msgs::Point upper_left, lower_right;
     upper_left.x = lower_left.x;
     upper_left.y = upper_right.y;
     lower_right.x = upper_right.x;
@@ -269,7 +269,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     gridCoords(pt, gx, gy);
 
     //get the bounds of the grid cell in world coords
-    geometry_msgs::Point32 lower_left, upper_right;
+    geometry_msgs::Point lower_left, upper_right;
     getCellBounds(gx, gy, lower_left, upper_right);
 
     //now we need to check what cells could contain the nearest neighbor
@@ -355,7 +355,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return neighbor_sq_dist;
   }
 
-  void PointGrid::updateWorld(const geometry_msgs::Polygon& footprint, 
+  void PointGrid::updateWorld(const std::vector<geometry_msgs::Point>& footprint, 
       const vector<Observation>& observations, const vector<PlanarLaserScan>& laser_scans){
     //for our 2D point grid we only remove freespace based on the first laser scan
     if(laser_scans.empty())
@@ -367,21 +367,21 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
       const pcl::PointCloud<pcl::PointXYZ>& cloud = (obs.cloud_);
-      for(unsigned int i = 0; i < cloud.points.size(); ++i){
+      for(unsigned int i = 0; i < cloud.size(); ++i){
         //filter out points that are too high
-        if(cloud.points[i].z > max_z_)
+        if(cloud[i].z > max_z_)
           continue;
 
         //compute the squared distance from the hitpoint to the pointcloud's origin
-        double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
-          + (cloud.points[i].y - obs.origin_.y) * (cloud.points[i].y - obs.origin_.y) 
-          + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
+        double sq_dist = (cloud[i].x - obs.origin_.x) * (cloud[i].x - obs.origin_.x)
+          + (cloud[i].y - obs.origin_.y) * (cloud[i].y - obs.origin_.y) 
+          + (cloud[i].z - obs.origin_.z) * (cloud[i].z - obs.origin_.z);
 
         if(sq_dist >= sq_obstacle_range_)
           continue;
 
         //insert the point
-        insert(cloud.points[i]);
+        insert(cloud[i]);
       }
     }
 
@@ -394,7 +394,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
       return;
 
     //compute the containing square of the scan
-    geometry_msgs::Point32 lower_left, upper_right;
+    geometry_msgs::Point lower_left, upper_right;
     lower_left.x = laser_scan.origin.x;
     lower_left.y = laser_scan.origin.y;
     upper_right.x = laser_scan.origin.x;
@@ -479,27 +479,27 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
   void PointGrid::getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud){
     for(unsigned int i = 0; i < cells_.size(); ++i){
       for(list<pcl::PointXYZ>::iterator it = cells_[i].begin(); it != cells_[i].end(); ++it){
-        cloud.points.push_back(*it);
+        cloud.push_back(*it);
       }
     }
   }
 
-  void PointGrid::removePointsInPolygon(const geometry_msgs::Polygon poly){
-    if(poly.points.size() == 0)
+  void PointGrid::removePointsInPolygon(const std::vector<geometry_msgs::Point> poly){
+    if(poly.size() == 0)
       return;
 
-    geometry_msgs::Point32 lower_left, upper_right;
-    lower_left.x = poly.points[0].x;
-    lower_left.y = poly.points[0].y;
-    upper_right.x = poly.points[0].x;
-    upper_right.y = poly.points[0].y;
+    geometry_msgs::Point lower_left, upper_right;
+    lower_left.x = poly[0].x;
+    lower_left.y = poly[0].y;
+    upper_right.x = poly[0].x;
+    upper_right.y = poly[0].y;
 
     //compute the containing square of the polygon
-    for(unsigned int i = 1; i < poly.points.size(); ++i){
-      lower_left.x = min(lower_left.x, poly.points[i].x);
-      lower_left.y = min(lower_left.y, poly.points[i].y);
-      upper_right.x = max(upper_right.x, poly.points[i].x);
-      upper_right.y = max(upper_right.y, poly.points[i].y);
+    for(unsigned int i = 1; i < poly.size(); ++i){
+      lower_left.x = min(lower_left.x, poly[i].x);
+      lower_left.y = min(lower_left.y, poly[i].y);
+      upper_right.x = max(upper_right.x, poly[i].x);
+      upper_right.y = max(upper_right.y, poly[i].y);
     }
 
     ROS_DEBUG("Lower: (%.2f, %.2f), Upper: (%.2f, %.2f)\n", lower_left.x, lower_left.y, upper_right.x, upper_right.y);
@@ -528,8 +528,8 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     }
   }
 
-  void PointGrid::intersectionPoint(const geometry_msgs::Point32& v1, const geometry_msgs::Point32& v2, 
-      const geometry_msgs::Point32& u1, const geometry_msgs::Point32& u2, geometry_msgs::Point32& result){
+  void PointGrid::intersectionPoint(const geometry_msgs::Point& v1, const geometry_msgs::Point& v2, 
+      const geometry_msgs::Point& u1, const geometry_msgs::Point& u2, geometry_msgs::Point& result){
     //generate the equation for line 1
     double a1 = v2.y - v1.y;
     double b1 = v1.x - v2.x;
@@ -556,7 +556,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
 using namespace base_local_planner;
 
 int main(int argc, char** argv){
-  geometry_msgs::Point32 origin;
+  geometry_msgs::Point origin;
   origin.x = 0.0;
   origin.y = 0.0;
   PointGrid pg(50.0, 50.0, 0.2, origin, 2.0, 3.0, 0.0);
@@ -576,64 +576,64 @@ int main(int argc, char** argv){
      x = 10.0;
      }
      */
-  geometry_msgs::Polygon footprint, footprint2, footprint3;
-  geometry_msgs::Point32 pt;
+  std::vector<geometry_msgs::Point> footprint, footprint2, footprint3;
+  geometry_msgs::Point pt;
 
   pt.x = 1.0;
   pt.y = 1.0;
-  footprint.points.push_back(pt);
+  footprint.push_back(pt);
 
   pt.x = 1.0;
   pt.y = 1.65;
-  footprint.points.push_back(pt);
+  footprint.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.75;
-  footprint.points.push_back(pt);
+  footprint.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.65;
-  footprint.points.push_back(pt);
+  footprint.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.0;
-  footprint.points.push_back(pt);
+  footprint.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.00;
-  footprint2.points.push_back(pt);
+  footprint2.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.75;
-  footprint2.points.push_back(pt);
+  footprint2.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.75;
-  footprint2.points.push_back(pt);
+  footprint2.push_back(pt);
 
   pt.x = 1.65;
   pt.y = 1.00;
-  footprint2.points.push_back(pt);
+  footprint2.push_back(pt);
 
   pt.x = 0.99;
   pt.y = 0.99;
-  footprint3.points.push_back(pt);
+  footprint3.push_back(pt);
 
   pt.x = 0.99;
   pt.y = 1.66;
-  footprint3.points.push_back(pt);
+  footprint3.push_back(pt);
 
   pt.x = 1.3255;
   pt.y = 1.85;
-  footprint3.points.push_back(pt);
+  footprint3.push_back(pt);
 
   pt.x = 1.66;
   pt.y = 1.66;
-  footprint3.points.push_back(pt);
+  footprint3.push_back(pt);
 
   pt.x = 1.66;
   pt.y = 0.99;
-  footprint3.points.push_back(pt);
+  footprint3.push_back(pt);
 
   pt.x = 1.325;
   pt.y = 1.325;

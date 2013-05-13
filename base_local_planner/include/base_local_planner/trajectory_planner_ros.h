@@ -226,7 +226,7 @@ namespace base_local_planner {
       bool initialized_;
       base_local_planner::OdometryHelperRos odom_helper_;
 
-      geometry_msgs::Polygon footprint_spec_;
+      std::vector<geometry_msgs::Point> footprint_spec_;
   };
 };
 #endif

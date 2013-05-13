@@ -62,7 +62,7 @@ void ObstacleCostFunction::setParams(double max_trans_vel, double max_scaling_fa
   scaling_speed_ = scaling_speed;
 }
 
-void ObstacleCostFunction::setFootprint(geometry_msgs::Polygon footprint_spec) {
+void ObstacleCostFunction::setFootprint(std::vector<geometry_msgs::Point> footprint_spec) {
   footprint_spec_ = footprint_spec;
 }
 
@@ -74,7 +74,7 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0;
   double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
   double px, py, pth;
-  if (footprint_spec_.points.size() == 0) {
+  if (footprint_spec_.size() == 0) {
     // Bug, should never happen
     ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
     return -9;
@@ -110,7 +110,7 @@ double ObstacleCostFunction::footprintCost (
     const double& y,
     const double& th,
     double scale,
-    geometry_msgs::Polygon footprint_spec,
+    std::vector<geometry_msgs::Point> footprint_spec,
     costmap_2d::Costmap2D* costmap,
     base_local_planner::WorldModel* world_model) {
 

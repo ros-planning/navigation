@@ -330,51 +330,51 @@ namespace move_base {
     //clear the planner's costmap
     planner_costmap_ros_->getRobotPose(global_pose);
 
-    geometry_msgs::Polygon clear_poly;
+    std::vector<geometry_msgs::Point> clear_poly;
     double x = global_pose.getOrigin().x();
     double y = global_pose.getOrigin().y();
-    geometry_msgs::Point32 pt;
+    geometry_msgs::Point pt;
 
     pt.x = x - size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     pt.x = x - size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     planner_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
 
     //clear the controller's costmap
     controller_costmap_ros_->getRobotPose(global_pose);
 
-    clear_poly.points.clear();
+    clear_poly.clear();
     x = global_pose.getOrigin().x();
     y = global_pose.getOrigin().y();
 
     pt.x = x - size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y - size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     pt.x = x - size_x / 2;
     pt.y = y + size_x / 2;
-    clear_poly.points.push_back(pt);
+    clear_poly.push_back(pt);
 
     controller_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
   }

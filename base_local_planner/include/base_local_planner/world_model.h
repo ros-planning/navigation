@@ -41,7 +41,6 @@
 #include <costmap_2d/observation.h>
 #include <costmap_2d/footprint.h>
 #include <geometry_msgs/Point.h>
-#include <geometry_msgs/Polygon.h>
 #include <base_local_planner/planar_laser_scan.h>
 
 namespace base_local_planner {
@@ -60,22 +59,22 @@ namespace base_local_planner {
        * @param  circumscribed_radius The radius of the circumscribed circle of the robot
        * @return Positive if all the points lie outside the footprint, negative otherwise
        */
-      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint,
+      virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius) = 0;
 
-      double footprintCost(double x, double y, double theta, const geometry_msgs::Polygon& footprint_spec, double inscribed_radius = 0.0, double circumscribed_radius=0.0){
+      double footprintCost(double x, double y, double theta, const std::vector<geometry_msgs::Point>& footprint_spec, double inscribed_radius = 0.0, double circumscribed_radius=0.0){
 
         double cos_th = cos(theta);
         double sin_th = sin(theta);
-        geometry_msgs::Polygon oriented_footprint;
-        for(unsigned int i = 0; i < footprint_spec.points.size(); ++i){
-          geometry_msgs::Point32 new_pt;
-          new_pt.x = x + (footprint_spec.points[i].x * cos_th - footprint_spec.points[i].y * sin_th);
-          new_pt.y = y + (footprint_spec.points[i].x * sin_th + footprint_spec.points[i].y * cos_th);
-          oriented_footprint.points.push_back(new_pt);
+        std::vector<geometry_msgs::Point> oriented_footprint;
+        for(unsigned int i = 0; i < footprint_spec.size(); ++i){
+          geometry_msgs::Point new_pt;
+          new_pt.x = x + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
+          new_pt.y = y + (footprint_spec[i].x * sin_th + footprint_spec[i].y * cos_th);
+          oriented_footprint.push_back(new_pt);
         }
 
-        geometry_msgs::Point32 robot_position;
+        geometry_msgs::Point robot_position;
         robot_position.x = x;
         robot_position.y = y;
 
@@ -96,7 +95,7 @@ namespace base_local_planner {
        */
       double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius, double extra) {
-        return footprintCost(costmap_2d::toPoint32(position), costmap_2d::toPolygon(footprint), inscribed_radius, circumscribed_radius); 
+        return footprintCost(position, footprint, inscribed_radius, circumscribed_radius); 
       }
 
       /**

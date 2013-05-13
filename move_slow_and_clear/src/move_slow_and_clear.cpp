@@ -37,7 +37,6 @@
 #include <move_slow_and_clear/move_slow_and_clear.h>
 #include <pluginlib/class_list_macros.h>
 #include <costmap_2d/obstacle_costmap_plugin.h>
-#include <geometry_msgs/Polygon.h>
 
 PLUGINLIB_DECLARE_CLASS(move_slow_and_clear, MoveSlowAndClear, move_slow_and_clear::MoveSlowAndClear,
     nav_core::RecoveryBehavior)
@@ -85,26 +84,26 @@ namespace move_slow_and_clear
     global_costmap_->getRobotPose(global_pose);
     local_costmap_->getRobotPose(local_pose);
 
-    geometry_msgs::Polygon global_poly, local_poly;
-    geometry_msgs::Point32 pt;
+    std::vector<geometry_msgs::Point> global_poly, local_poly;
+    geometry_msgs::Point pt;
 
     for(int i = -1; i <= 1; i+=2)
     {
       pt.x = global_pose.getOrigin().x() + i * clearing_distance_;
       pt.y = global_pose.getOrigin().y() + i * clearing_distance_;
-      global_poly.points.push_back(pt);
+      global_poly.push_back(pt);
 
       pt.x = global_pose.getOrigin().x() + i * clearing_distance_;
       pt.y = global_pose.getOrigin().y() + -1.0 * i * clearing_distance_;
-      global_poly.points.push_back(pt);
+      global_poly.push_back(pt);
 
       pt.x = local_pose.getOrigin().x() + i * clearing_distance_;
       pt.y = local_pose.getOrigin().y() + i * clearing_distance_;
-      local_poly.points.push_back(pt);
+      local_poly.push_back(pt);
 
       pt.x = local_pose.getOrigin().x() + i * clearing_distance_;
       pt.y = local_pose.getOrigin().y() + -1.0 * i * clearing_distance_;
-      local_poly.points.push_back(pt);
+      local_poly.push_back(pt);
     }
 
     //clear the desired space in the costmaps
