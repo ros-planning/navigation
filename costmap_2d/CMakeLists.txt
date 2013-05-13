@@ -5,6 +5,7 @@ find_package(catkin REQUIRED
         COMPONENTS
             roslib
             roscpp
+            rostest
             std_msgs
             geometry_msgs
             tf
