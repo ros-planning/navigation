@@ -1,7 +1,7 @@
 #include<costmap_2d/footprint_costmap_plugin.h>
+#include<costmap_2d/footprint.h>
 #include<string>
 #include<sstream>
-
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::FootprintCostmapPlugin, costmap_2d::CostmapPluginROS)
 
@@ -38,12 +38,12 @@ namespace common_costmap_plugins
     footprint_.polygon.points.clear();
     double cos_th = cos(origin_yaw);
     double sin_th = sin(origin_yaw);
-    const geometry_msgs::Polygon& footprint_spec = getFootprint();
-    for(unsigned int i = 0; i < footprint_spec.points.size(); ++i)
+    const std::vector<geometry_msgs::Point>& footprint_spec = getFootprint();
+    for(unsigned int i = 0; i < footprint_spec.size(); ++i)
     {
       geometry_msgs::Point32 new_pt;
-      new_pt.x = origin_x + (footprint_spec.points[i].x * cos_th - footprint_spec.points[i].y * sin_th);
-      new_pt.y = origin_y + (footprint_spec.points[i].x * sin_th + footprint_spec.points[i].y * cos_th);
+      new_pt.x = origin_x + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
+      new_pt.y = origin_y + (footprint_spec[i].x * sin_th + footprint_spec[i].y * cos_th);
       footprint_.polygon.points.push_back(new_pt);
     }
 
@@ -61,7 +61,7 @@ namespace common_costmap_plugins
   void FootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
   {
     if(!enabled_) return;
-    master_grid.setConvexPolygonCost(footprint_.polygon, costmap_2d::FREE_SPACE);
+    master_grid.setConvexPolygonCost(costmap_2d::toPointVector(footprint_.polygon), costmap_2d::FREE_SPACE);
   }
 }
 

@@ -67,13 +67,13 @@ void InflationCostmapPlugin::update_bounds(double origin_x, double origin_y, dou
 
 void InflationCostmapPlugin::onFootprintChanged()
 {
-  const geometry_msgs::Polygon& footprint_spec = getFootprint();
+  const std::vector<geometry_msgs::Point>& footprint_spec = getFootprint();
   //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
   costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
   // TODO: Set circumscribed_cost
   cell_inflation_radius_ = cellDistance(inflation_radius_);
   ROS_INFO("InflationCostmapPlugin::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f",
-           footprint_spec.points.size(), inscribed_radius_);
+           footprint_spec.size(), inscribed_radius_);
   computeCaches();
 }
 

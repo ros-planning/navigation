@@ -27,40 +27,40 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include<geometry_msgs/Point32.h>
 #include<costmap_2d/costmap_math.h>
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <costmap_2d/footprint.h>
+#include<geometry_msgs/Point32.h>
 
 namespace costmap_2d
 {
 
-void calculateMinAndMaxDistances(const geometry_msgs::Polygon& footprint, double& min_dist, double& max_dist)
+void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footprint, double& min_dist, double& max_dist)
 {
   min_dist = std::numeric_limits<double>::max();
   max_dist = 0.0;
 
-  if (footprint.points.size() <= 2)
+  if (footprint.size() <= 2)
   {
     return;
   }
 
-  for (unsigned int i = 0; i < footprint.points.size() - 1; ++i)
+  for (unsigned int i = 0; i < footprint.size() - 1; ++i)
   {
     //check the distance from the robot center point to the first vertex
-    double vertex_dist = distance(0.0, 0.0, footprint.points[i].x, footprint.points[i].y);
-    double edge_dist = distanceToLine(0.0, 0.0, footprint.points[i].x, footprint.points[i].y,
-                                      footprint.points[i + 1].x, footprint.points[i + 1].y);
+    double vertex_dist = distance(0.0, 0.0, footprint[i].x, footprint[i].y);
+    double edge_dist = distanceToLine(0.0, 0.0, footprint[i].x, footprint[i].y,
+                                      footprint[i + 1].x, footprint[i + 1].y);
     min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
     max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
   }
 
   //we also need to do the last vertex and the first vertex
-  double vertex_dist = distance(0.0, 0.0, footprint.points.back().x, footprint.points.back().y);
-  double edge_dist = distanceToLine(0.0, 0.0, footprint.points.back().x, footprint.points.back().y,
-                                      footprint.points.front().x, footprint.points.front().y);
+  double vertex_dist = distance(0.0, 0.0, footprint.back().x, footprint.back().y);
+  double edge_dist = distanceToLine(0.0, 0.0, footprint.back().x, footprint.back().y,
+                                      footprint.front().x, footprint.front().y);
   min_dist = std::min(min_dist, std::min(vertex_dist, edge_dist));
   max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
 }
