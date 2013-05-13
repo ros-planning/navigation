@@ -274,14 +274,14 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
   delete[] local_map;
 }
 
-bool Costmap2D::setConvexPolygonCost(const geometry_msgs::Polygon& polygon, unsigned char cost_value)
+bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value)
 {
   //we assume the polygon is given in the global_frame... we need to transform it to map coordinates
   std::vector<MapLocation> map_polygon;
-  for (unsigned int i = 0; i < polygon.points.size(); ++i)
+  for (unsigned int i = 0; i < polygon.size(); ++i)
   {
     MapLocation loc;
-    if (!worldToMap(polygon.points[i].x, polygon.points[i].y, loc.x, loc.y))
+    if (!worldToMap(polygon[i].x, polygon[i].y, loc.x, loc.y))
     {
       // ("Polygon lies outside map bounds, so we can't fill it");
       return false;

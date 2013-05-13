@@ -39,7 +39,7 @@
 #include <vector>
 #include <list>
 #include <cfloat>
-#include <geometry_msgs/Point32.h>
+#include <geometry_msgs/Point.h>
 #include <costmap_2d/observation.h>
 #include <base_local_planner/world_model.h>
 
@@ -86,7 +86,7 @@ namespace base_local_planner {
        * @param  circumscribed_radius The radius of the circumscribed circle of the robot
        * @return Positive if all the points lie outside the footprint, negative otherwise
        */
-      virtual double footprintCost(const geometry_msgs::Point32& position, const geometry_msgs::Polygon& footprint,
+      virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius);
 
       using WorldModel::footprintCost;
@@ -97,7 +97,7 @@ namespace base_local_planner {
        * @param observations The observations from various sensors 
        * @param laser_scan The scans used to clear freespace
        */
-      void updateWorld(const geometry_msgs::Polygon& footprint,
+      void updateWorld(const std::vector<geometry_msgs::Point>& footprint,
           const std::vector<costmap_2d::Observation>& observations, const std::vector<PlanarLaserScan>& laser_scans);
 
       void getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud);
