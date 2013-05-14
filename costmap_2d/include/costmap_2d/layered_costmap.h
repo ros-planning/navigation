@@ -39,7 +39,7 @@
 #define LAYERED_COSTMAP_H_
 
 #include <costmap_2d/cost_values.h>
-#include <costmap_2d/plugin_base.h>
+#include <costmap_2d/costmap_plugin.h>
 #include <costmap_2d/costmap_2d.h>
 #include <vector>
 #include <string>

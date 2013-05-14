@@ -36,7 +36,7 @@
  *********************************************************************/
 #ifndef COSTMAP_PLUGIN_ROS_H_
 #define COSTMAP_PLUGIN_ROS_H_
-#include <costmap_2d/plugin_base.h>
+#include <costmap_2d/costmap_plugin.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 

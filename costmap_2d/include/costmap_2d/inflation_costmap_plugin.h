@@ -38,7 +38,7 @@
 #ifndef INFLATION_COSTMAP_PLUGIN_H_
 #define INFLATION_COSTMAP_PLUGIN_H_
 #include <ros/ros.h>
-#include <costmap_2d/plugin_ros.h>
+#include <costmap_2d/costmap_plugin_ros.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/InflationPluginConfig.h>
 #include <dynamic_reconfigure/server.h>

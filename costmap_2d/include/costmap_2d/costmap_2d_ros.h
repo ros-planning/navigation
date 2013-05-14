@@ -39,7 +39,7 @@
 #define COSTMAP_COSTMAP_2D_ROS_H_
 
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_2d/plugin_ros.h>
+#include <costmap_2d/costmap_plugin_ros.h>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <costmap_2d/Costmap2DConfig.h>
 #include <costmap_2d/footprint.h>
