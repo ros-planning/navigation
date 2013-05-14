@@ -38,13 +38,13 @@
 #ifndef INFLATION_COSTMAP_PLUGIN_H_
 #define INFLATION_COSTMAP_PLUGIN_H_
 #include <ros/ros.h>
-#include <costmap_2d/costmap_plugin_ros.h>
+#include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/InflationPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <queue>
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 /**
  * @class CellData
@@ -82,33 +82,23 @@ inline bool operator<(const CellData &a, const CellData &b)
   return a.distance_ > b.distance_;
 }
 
-class InflationCostmapPlugin : public costmap_2d::CostmapPluginROS
+class InflationLayer : public Layer
 {
 public:
-  InflationCostmapPlugin()
-  {
-    layered_costmap_ = NULL;
-  }
-  ~InflationCostmapPlugin()
+  virtual ~InflationLayer()
   {
     deleteKernels();
   }
 
-  void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
-  void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
-                     double* max_y);
-  void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  virtual void onInitialize();
+  virtual void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
+                             double* max_y);
+  virtual void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
   virtual bool isDiscretized()
   {
     return true;
   }
   virtual void matchSize();
-  void activate()
-  {
-  }
-  void deactivate()
-  {
-  }
 
 protected:
   virtual void onFootprintChanged();
@@ -171,6 +161,7 @@ private:
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
   void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
 
+  bool need_reinflation_; ///< Indicates that the entire costmap should be reinflated next time around.
 };
 }
 #endif

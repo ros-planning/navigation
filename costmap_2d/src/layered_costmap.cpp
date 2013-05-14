@@ -67,7 +67,7 @@ void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double 
 {
   size_locked_ = size_locked;
   costmap_.resizeMap(global_frame_, size_x, size_y, resolution, origin_x, origin_y);
-  for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
     (*plugin)->matchSize();
@@ -91,30 +91,29 @@ void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_y
   minx_ = miny_ = 1e30;
   maxx_ = maxy_ = -1e30;
 
-  for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
     (*plugin)->update_bounds(origin_x, origin_y, origin_yaw, &minx_, &miny_, &maxx_, &maxy_);
   }
 
   int x0, xn, y0, yn;
-  costmap_.worldToMapNoBounds(minx_, miny_, x0, y0);
-  costmap_.worldToMapNoBounds(maxx_, maxy_, xn, yn);
+  costmap_.worldToMapEnforceBounds(minx_, miny_, x0, y0);
+  costmap_.worldToMapEnforceBounds(maxx_, maxy_, xn, yn);
 
   x0 = std::max(0, x0);
   xn = std::min(int(costmap_.getSizeInCellsX()), xn + 1);
   y0 = std::max(0, y0);
   yn = std::min(int(costmap_.getSizeInCellsY()), yn + 1);
 
-  if (xn < 0 || yn < 0)
+  if (xn < x0 || yn < y0)
     return;
 
   costmap_.resetMap(x0, y0, xn, yn);
 
   {
-
     boost::unique_lock < boost::shared_mutex > lock(*(costmap_.getLock()));
-    for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+    for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
         ++plugin)
     {
       (*plugin)->update_costs(costmap_, x0, y0, xn, yn);
@@ -131,7 +130,7 @@ void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_y
 bool LayeredCostmap::isCurrent()
 {
   current_ = true;
-  for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
     current_ = current_ && (*plugin)->isCurrent();
@@ -142,7 +141,7 @@ bool LayeredCostmap::isCurrent()
 /** @brief Call setFootprint() on all plugins. */
 void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
-  for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
     (*plugin)->setFootprint( footprint_spec );

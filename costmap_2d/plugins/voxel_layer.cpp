@@ -1,7 +1,7 @@
-#include<costmap_2d/voxel_costmap_plugin.h>
+#include<costmap_2d/voxel_layer.h>
 #include <pluginlib/class_list_macros.h>
 #define VOXEL_BITS 16
-PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::VoxelCostmapPlugin, costmap_2d::CostmapPluginROS)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::VoxelLayer, costmap_2d::Layer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;
@@ -10,17 +10,17 @@ using costmap_2d::FREE_SPACE;
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 
-void VoxelCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+void VoxelLayer::onInitialize()
 {
-  ObstacleCostmapPlugin::initialize(costmap, name);
-  ros::NodeHandle private_nh("~/" + name);
+  ObstacleLayer::onInitialize();
+  ros::NodeHandle private_nh("~/" + name_);
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(private_nh);
   dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>::CallbackType cb = boost::bind(
-      &VoxelCostmapPlugin::reconfigureCB, this, _1, _2);
+      &VoxelLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 
   private_nh.param("publish_voxel_map", publish_voxel_, false);
@@ -28,14 +28,14 @@ void VoxelCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::st
     voxel_pub_ = private_nh.advertise < costmap_2d::VoxelGrid > ("voxel_grid", 1);
 }
 
-void VoxelCostmapPlugin::initMaps()
+void VoxelLayer::initMaps()
 {
-  ObstacleCostmapPlugin::initMaps();
+  ObstacleLayer::initMaps();
   voxel_grid_.resize(size_x_, size_y_, size_z_);
   ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
 }
 
-void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level)
+void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
   max_obstacle_height_ = config.max_obstacle_height;
@@ -47,13 +47,13 @@ void VoxelCostmapPlugin::reconfigureCB(costmap_2d::VoxelPluginConfig &config, ui
   initMaps();
 }
 
-void VoxelCostmapPlugin::matchSize()
+void VoxelLayer::matchSize()
 {
   initMaps();
 
 }
 
-void VoxelCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void VoxelLayer::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
                                        double* min_y, double* max_x, double* max_y)
 {
   if (rolling_window_)
@@ -164,7 +164,7 @@ void VoxelCostmapPlugin::update_bounds(double origin_x, double origin_y, double 
   }
 }
 
-void VoxelCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void VoxelLayer::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
     return;
@@ -183,7 +183,7 @@ void VoxelCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int mi
   }
 }
 
-void VoxelCostmapPlugin::clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info)
+void VoxelLayer::clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info)
 {
   //get the cell coordinates of the center point of the window
   unsigned int mx, my;
@@ -234,7 +234,7 @@ void VoxelCostmapPlugin::clearNonLethal(double wx, double wy, double w_size_x, d
   }
 }
 
-void VoxelCostmapPlugin::raytraceFreespace(const Observation& clearing_observation, double* min_x, double* min_y,
+void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, double* min_x, double* min_y,
                                            double* max_x, double* max_y)
 {
   if (clearing_observation.cloud_.points.size() == 0)
@@ -332,7 +332,7 @@ void VoxelCostmapPlugin::raytraceFreespace(const Observation& clearing_observati
   }
 }
 
-void VoxelCostmapPlugin::updateOrigin(double new_origin_x, double new_origin_y)
+void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
 {
   //project the new origin into the grid
   int cell_ox, cell_oy;

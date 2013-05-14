@@ -61,7 +61,7 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
 Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     layered_costmap_(NULL), name_(name), tf_(tf), stop_updates_(false), initialized_(true), stopped_(false), robot_stopped_(
         false), map_update_thread_(NULL), last_publish_(0), plugin_loader_("costmap_2d",
-                                                                           "costmap_2d::CostmapPluginROS"), publisher_(
+                                                                           "costmap_2d::Layer"), publisher_(
         NULL)
 {
   ros::NodeHandle private_nh("~/" + name);
@@ -117,9 +117,9 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
       std::string type = static_cast<std::string>(my_list[i]["type"]);
       ROS_INFO("Using plugin \"%s\"", pname.c_str());
 
-      boost::shared_ptr<CostmapPluginROS> plugin = plugin_loader_.createInstance(type);
+      boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance(type);
       layered_costmap_->addPlugin(plugin);
-      plugin->initialize(layered_costmap_, name + "/" + pname, tf_);
+      plugin->initialize(layered_costmap_, name + "/" + pname, &tf_);
     }
   }
 
@@ -184,7 +184,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   if (nh.getParam("static_map", flag))
   {
     map["name"] = XmlRpc::XmlRpcValue("static_layer");
-    map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::StaticCostmapPlugin");
+    map["type"] = XmlRpc::XmlRpcValue("costmap_2d::StaticLayer");
     super_map.setStruct(&map);
     plugins.push_back(super_map);
 
@@ -200,7 +200,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   {
 
     map["name"] = XmlRpc::XmlRpcValue("obstacle_layer");
-    map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::VoxelCostmapPlugin");
+    map["type"] = XmlRpc::XmlRpcValue("costmap_2d::VoxelLayer");
     super_map.setStruct(&map);
     plugins.push_back(super_map);
 
@@ -214,7 +214,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   else
   {
     map["name"] = XmlRpc::XmlRpcValue("obstacle_layer");
-    map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::ObstacleCostmapPlugin");
+    map["type"] = XmlRpc::XmlRpcValue("costmap_2d::ObstacleLayer");
     super_map.setStruct(&map);
     plugins.push_back(super_map);
   }
@@ -232,7 +232,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   move_parameter(nh, obstacles, "observation_sources");
 
   map["name"] = XmlRpc::XmlRpcValue("footprint_layer");
-  map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::FootprintCostmapPlugin");
+  map["type"] = XmlRpc::XmlRpcValue("costmap_2d::FootprintLayer");
   super_map.setStruct(&map);
   plugins.push_back(super_map);
 
@@ -240,7 +240,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   move_parameter(nh, inflation, "cost_scaling_factor");
   move_parameter(nh, inflation, "inflation_radius");
   map["name"] = XmlRpc::XmlRpcValue("inflation_layer");
-  map["type"] = XmlRpc::XmlRpcValue("common_costmap_plugins::InflationCostmapPlugin");
+  map["type"] = XmlRpc::XmlRpcValue("costmap_2d::InflationLayer");
   super_map.setStruct(&map);
   plugins.push_back(super_map);
 
@@ -339,6 +339,7 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
     {
       unsigned int x0, y0, xn, yn;
       layered_costmap_->getBounds(&x0, &xn, &y0, &yn);
+      ROS_WARN( "publishing with bounds: x: %u %u y: %u %u", x0, xn, y0, yn );
       publisher_->updateBounds(x0, xn, y0, yn);
 
       ros::Time now = ros::Time::now();
@@ -358,12 +359,12 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
 
 void Costmap2DROS::start()
 {
-  std::vector < boost::shared_ptr<CostmapPlugin> > *plugins = layered_costmap_->getPlugins();
+  std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
   // check if we're stopped or just paused
   if (stopped_)
   {
     // if we're stopped we need to re-subscribe to topics
-    for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+    for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
         ++plugin)
     {
       (*plugin)->activate();
@@ -381,9 +382,9 @@ void Costmap2DROS::start()
 void Costmap2DROS::stop()
 {
   stop_updates_ = true;
-  std::vector < boost::shared_ptr<CostmapPlugin> > *plugins = layered_costmap_->getPlugins();
+  std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
   // unsubscribe from topics
-  for (vector<boost::shared_ptr<CostmapPlugin> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
       ++plugin)
   {
     (*plugin)->deactivate();

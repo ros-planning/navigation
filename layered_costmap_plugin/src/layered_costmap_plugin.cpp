@@ -32,7 +32,7 @@
 
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(layered_costmap_plugin::LayeredCostmapPlugin, costmap_2d::CostmapPluginROS)
+PLUGINLIB_EXPORT_CLASS(layered_costmap_plugin::LayeredCostmapPlugin, costmap_2d::Layer)
 
 using costmap_2d::NO_INFORMATION;
 

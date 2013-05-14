@@ -29,26 +29,26 @@
 #ifndef VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_
 #define VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_
 
-#include <costmap_2d/voxel_costmap_plugin.h>
-#include <costmap_2d/footprint_costmap_plugin.h>
+#include <costmap_2d/voxel_layer.h>
+#include <costmap_2d/footprint_layer.h>
 #include <dynamic_reconfigure/server.h>
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 
-class VoxelWithFootprintCostmapPlugin : public common_costmap_plugins::VoxelCostmapPlugin
+class VoxelWithFootprintLayer : public costmap_2d::VoxelLayer
 {
 public:
-  virtual void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
+  virtual void onInitialize();
   virtual void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
                              double* max_x, double* max_y);
   virtual void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
   virtual void onFootprintChanged();
 
 private:
-  FootprintCostmapPlugin footprint_layer_;
+  FootprintLayer footprint_layer_;
 };
 
-} // end namespace common_costmap_plugins
+} // end namespace costmap_2d
 
 #endif // VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_

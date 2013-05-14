@@ -27,37 +27,32 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <costmap_2d/voxel_with_footprint_costmap_plugin.h>
+#include "costmap_2d/layer.h"
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 
-void VoxelWithFootprintCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+Layer::Layer()
+  : layered_costmap_( NULL )
+  , current_( false )
+  , enabled_( false )
+  , name_()
+  , tf_(NULL)
+{}
+
+void Layer::initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf )
 {
-  VoxelCostmapPlugin::initialize(costmap, name);
-  ((CostmapPluginROS*)&footprint_layer_)->initialize(costmap, name + "_footprint", *tf_);
+  layered_costmap_ = parent;
+  name_ = name;
+  tf_ = tf;
+  onInitialize();
 }
 
-void VoxelWithFootprintCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
-                                                    double* min_y, double* max_x, double* max_y)
+void Layer::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
-  VoxelCostmapPlugin::update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
-  footprint_layer_.update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
+  // TODO: Ideally this would actually check if the footprint had changed or not.
+  footprint_spec_ = footprint_spec;
+  onFootprintChanged();
 }
 
-void VoxelWithFootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
-                                                   int max_j)
-{
-  footprint_layer_.update_costs(*this, min_i, min_j, max_i, max_j);
-  VoxelCostmapPlugin::update_costs(master_grid, min_i, min_j, max_i, max_j);
-}
-
-void VoxelWithFootprintCostmapPlugin::onFootprintChanged()
-{
-  footprint_layer_.setFootprint( getFootprint() );
-}
-
-} // end namespace common_costmap_plugins
-
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS( common_costmap_plugins::VoxelWithFootprintCostmapPlugin, costmap_2d::CostmapPluginROS )
+} // end namespace costmap_2d

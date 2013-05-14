@@ -38,14 +38,14 @@
 #ifndef LAYERED_COSTMAP_PLUGIN_H_
 #define LAYERED_COSTMAP_PLUGIN_H_
 #include <ros/ros.h>
-#include <costmap_2d/plugin_ros.h>
+#include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 
 namespace layered_costmap_plugin
 {
-class LayeredCostmapPlugin : public costmap_2d::CostmapPluginROS
+class LayeredCostmapPlugin : public costmap_2d::Layer
 {
     public:
         LayeredCostmapPlugin(): plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS")

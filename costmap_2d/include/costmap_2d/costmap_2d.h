@@ -152,6 +152,16 @@ public:
   void worldToMapNoBounds(double wx, double wy, int& mx, int& my) const;
 
   /**
+   * @brief  Convert from world coordinates to map coordinates, constraining results to legal bounds.
+   * @param  wx The x world coordinate
+   * @param  wy The y world coordinate
+   * @param  mx Will be set to the associated map x coordinate
+   * @param  my Will be set to the associated map y coordinate
+   * @note   The returned map coordinates are guaranteed to lie within the map.
+   */
+  void worldToMapEnforceBounds(double wx, double wy, int& mx, int& my) const;
+
+  /**
    * @brief  Given two map coordinates... compute the associated index
    * @param mx The x coordinate
    * @param my The y coordinate
