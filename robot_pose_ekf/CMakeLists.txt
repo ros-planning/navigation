@@ -12,6 +12,7 @@ link_directories(${BFL_LIBRARY_DIRS})
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
+            rostest
             tf
             nav_msgs
             std_msgs

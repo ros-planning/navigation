@@ -24,6 +24,8 @@ include_directories(
     )
 add_definitions(${EIGEN_DEFINITIONS})
 
+link_directories(${catkin_LIBRARY_DIRS})
+
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/DWAPlanner.cfg
