@@ -32,7 +32,7 @@
 
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(layered_costmap_plugin::LayeredCostmapPlugin, costmap_2d::CostmapPluginROS)
+PLUGINLIB_EXPORT_CLASS(layered_costmap_plugin::LayeredCostmapPlugin, costmap_2d::Layer)
 
 using costmap_2d::NO_INFORMATION;
 
@@ -91,14 +91,14 @@ namespace layered_costmap_plugin
                   master->getOriginX(), master->getOriginY(), true);
     }
 
-    void LayeredCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y, double* max_x, double* max_y){
+    void LayeredCostmapPlugin::updateBounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y, double* max_x, double* max_y){
         if(!enabled_) return;
         
         sub_layered_costmap_->updateMap(origin_x, origin_y, origin_z);
         sub_layered_costmap_->getUpdatedBounds(*min_x, *min_y, *max_x, *max_y);
     }
     
-    void LayeredCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
+    void LayeredCostmapPlugin::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
         if(!enabled_) return; 
         costmap_2d::Costmap2D* cmap = sub_layered_costmap_->getCostmap();
         unsigned char* master = master_grid.getCharMap();

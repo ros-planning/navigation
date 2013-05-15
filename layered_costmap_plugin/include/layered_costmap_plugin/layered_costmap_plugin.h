@@ -38,14 +38,14 @@
 #ifndef LAYERED_COSTMAP_PLUGIN_H_
 #define LAYERED_COSTMAP_PLUGIN_H_
 #include <ros/ros.h>
-#include <costmap_2d/plugin_ros.h>
+#include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/GenericPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 
 namespace layered_costmap_plugin
 {
-class LayeredCostmapPlugin : public costmap_2d::CostmapPluginROS
+class LayeredCostmapPlugin : public costmap_2d::Layer
 {
     public:
         LayeredCostmapPlugin(): plugin_loader_("costmap_2d", "costmap_2d::CostmapPluginROS")
@@ -57,9 +57,9 @@ class LayeredCostmapPlugin : public costmap_2d::CostmapPluginROS
         ~LayeredCostmapPlugin();
 
         void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
-        void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
+        void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
                            double* max_x, double* max_y);
-        void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+        void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
         void activate();
 

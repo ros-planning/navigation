@@ -160,8 +160,18 @@ void Costmap::subscribe()
     setStatus( rviz::StatusProperty::Error, "Topic", QString("Error subscribing: ") + e.what() );
   }
   
-  if(topic_property_->getTopicStd().length()>0)
-  update_sub_ = update_nh_.subscribe(std::string(topic_property_->getTopicStd() + "_updates"), 10, &Costmap::incomingUpdate, this);
+  if( topic_property_->getTopicStd().length() > 0 )
+  {
+    try
+    {
+      update_sub_ = update_nh_.subscribe(std::string(topic_property_->getTopicStd() + "_updates"), 10, &Costmap::incomingUpdate, this);
+      setStatus( rviz::StatusProperty::Ok, "Update Topic", "OK" );
+    }
+    catch( ros::Exception& e )
+    {
+      setStatus( rviz::StatusProperty::Error, "Update Topic", QString("Error subscribing: ") + e.what() );
+    }
+  }
 }
 
 void Costmap::unsubscribe()

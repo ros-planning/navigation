@@ -55,6 +55,7 @@ generate_dynamic_reconfigure_options(
 add_library(costmap_2d
   src/costmap_2d.cpp
   src/observation_buffer.cpp
+  src/layer.cpp
   src/layered_costmap.cpp
   src/costmap_2d_ros.cpp
   src/costmap_2d_publisher.cpp
@@ -67,16 +68,16 @@ target_link_libraries(costmap_2d
   ${catkin_LIBRARIES}
 )
 
-add_library(common_costmap_plugins
-  plugins/footprint_costmap_plugin.cpp
-  plugins/inflation_costmap_plugin.cpp
-  plugins/obstacle_costmap_plugin.cpp
-  plugins/static_costmap_plugin.cpp
-  plugins/voxel_costmap_plugin.cpp
-  plugins/voxel_with_footprint_costmap_plugin.cpp
+add_library(layers
+  plugins/footprint_layer.cpp
+  plugins/inflation_layer.cpp
+  plugins/obstacle_layer.cpp
+  plugins/static_layer.cpp
+  plugins/voxel_layer.cpp
+  plugins/voxel_with_footprint_layer.cpp
   src/observation_buffer.cpp
 )
-target_link_libraries(common_costmap_plugins
+target_link_libraries(layers
   costmap_2d
 )
 
@@ -99,7 +100,7 @@ catkin_package(
 )
 
 add_dependencies(costmap_2d costmap_2d_gencfg)
-add_dependencies(common_costmap_plugins costmap_2d_gencfg)
+add_dependencies(layers costmap_2d_gencfg)
 add_dependencies(costmap_2d costmap_2d_gencpp)
 
 add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
@@ -146,7 +147,7 @@ install( TARGETS
 
 install(TARGETS
     costmap_2d
-    common_costmap_plugins
+    layers
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 

@@ -1,21 +1,21 @@
 <class_libraries>
-  <library path="libcommon_costmap_plugins">
-    <class type="common_costmap_plugins::FootprintCostmapPlugin"  base_class_type="costmap_2d::CostmapPluginROS">
+  <library path="liblayers">
+    <class type="costmap_2d::FootprintLayer"  base_class_type="costmap_2d::Layer">
       <description>Clears the area in the costmap under the footprint of the robot.</description>
     </class>
-    <class type="common_costmap_plugins::InflationCostmapPlugin"  base_class_type="costmap_2d::CostmapPluginROS">
+    <class type="costmap_2d::InflationLayer"  base_class_type="costmap_2d::Layer">
       <description>Inflates obstacles to speed collision checking and to make robot prefer to stay away from obstacles.</description>
     </class>
-    <class type="common_costmap_plugins::ObstacleCostmapPlugin"   base_class_type="costmap_2d::CostmapPluginROS">
+    <class type="costmap_2d::ObstacleLayer"   base_class_type="costmap_2d::Layer">
       <description>Listens to laser scan and point cloud messages and marks and clears grid cells.</description>
     </class>
-    <class type="common_costmap_plugins::StaticCostmapPlugin"     base_class_type="costmap_2d::CostmapPluginROS">
+    <class type="costmap_2d::StaticLayer"     base_class_type="costmap_2d::Layer">
       <description>Listens to OccupancyGrid messages and copies them in, like from map_server.</description>
     </class>
-    <class type="common_costmap_plugins::VoxelCostmapPlugin"     base_class_type="costmap_2d::CostmapPluginROS">
+    <class type="costmap_2d::VoxelLayer"     base_class_type="costmap_2d::Layer">
       <description>Similar to obstacle costmap, but uses 3D voxel grid to store data.</description>
     </class>
-    <class type="common_costmap_plugins::VoxelWithFootprintCostmapPlugin" base_class_type="costmap_2d::CostmapPluginROS">
+    <class type="costmap_2d::VoxelWithFootprintLayer" base_class_type="costmap_2d::Layer">
       <description>
         Combines voxel and footprint plugins, so footprint-clearing is
         done in the voxelgrid itself, rather than in the combined costmap.

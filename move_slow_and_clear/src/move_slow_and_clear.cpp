@@ -36,7 +36,7 @@
 *********************************************************************/
 #include <move_slow_and_clear/move_slow_and_clear.h>
 #include <pluginlib/class_list_macros.h>
-#include <costmap_2d/obstacle_costmap_plugin.h>
+#include <costmap_2d/obstacle_layer.h>
 
 PLUGINLIB_DECLARE_CLASS(move_slow_and_clear, MoveSlowAndClear, move_slow_and_clear::MoveSlowAndClear,
     nav_core::RecoveryBehavior)
@@ -107,22 +107,22 @@ namespace move_slow_and_clear
     }
 
     //clear the desired space in the costmaps
-    std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >* plugins = global_costmap_->getLayeredCostmap()->getPlugins();
-    for (std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-            boost::shared_ptr<costmap_2d::CostmapPlugin> plugin = *pluginp;
+    std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = global_costmap_->getLayeredCostmap()->getPlugins();
+    for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+            boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
           if(plugin->getName().find("obstacles")!=std::string::npos){
-            boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap;
-            costmap = boost::static_pointer_cast<common_costmap_plugins::ObstacleCostmapPlugin>(plugin);
+            boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
+            costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
             costmap->setConvexPolygonCost(global_poly, costmap_2d::FREE_SPACE);
           }
     }
      
     plugins = local_costmap_->getLayeredCostmap()->getPlugins();
-    for (std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-            boost::shared_ptr<costmap_2d::CostmapPlugin> plugin = *pluginp;
+    for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+            boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
           if(plugin->getName().find("obstacles")!=std::string::npos){
-            boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap;
-            costmap = boost::static_pointer_cast<common_costmap_plugins::ObstacleCostmapPlugin>(plugin);
+            boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
+            costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
             costmap->setConvexPolygonCost(local_poly, costmap_2d::FREE_SPACE);
           }
     } 
