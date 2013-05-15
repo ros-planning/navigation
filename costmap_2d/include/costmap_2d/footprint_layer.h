@@ -32,32 +32,40 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: David V. Lu!!
+ * Author: Eitan Marder-Eppstein
+ *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_PLUGIN_ROS_H_
-#define COSTMAP_PLUGIN_ROS_H_
-#include <costmap_2d/costmap_plugin.h>
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
+#ifndef FOOTPRINT_COSTMAP_PLUGIN_H_
+#define FOOTPRINT_COSTMAP_PLUGIN_H_
+#include <ros/ros.h>
+#include <costmap_2d/layer.h>
+#include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/costmap_math.h>
+#include <costmap_2d/GenericPluginConfig.h>
+#include <dynamic_reconfigure/server.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PolygonStamped.h>
 
 namespace costmap_2d
 {
-class CostmapPluginROS : public CostmapPlugin
+class FootprintLayer : public Layer
 {
 public:
-  void initialize(LayeredCostmap* costmap, std::string name, tf::TransformListener &tf)
-  {
-    tf_ = &tf;
-    initialize(costmap, name);
-  }
-  virtual void initialize(LayeredCostmap* costmap, std::string name)= 0;
+  virtual void onInitialize();
 
-protected:
-  CostmapPluginROS()
-  {
-  }
+  virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
+                             double* max_y);
+  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
-  tf::TransformListener* tf_;
+private:
+  ros::Subscriber footprint_sub_;
+  geometry_msgs::PolygonStamped footprint_; ///< Storage for polygon being published.
+  void publishFootprint();
+  void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
+  ros::Publisher footprint_pub_;
+  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 };
-}  // namespace layered_costmap
+}
 #endif
+

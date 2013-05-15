@@ -32,51 +32,75 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Eitan Marder-Eppstein
- *         David V. Lu!!
+ * Author: David V. Lu!!
  *********************************************************************/
-#ifndef FOOTPRINT_COSTMAP_PLUGIN_H_
-#define FOOTPRINT_COSTMAP_PLUGIN_H_
-#include <ros/ros.h>
-#include <costmap_2d/costmap_plugin_ros.h>
+#ifndef COSTMAP_PLUGIN_BASE_H_
+#define COSTMAP_PLUGIN_BASE_H_
+#include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_2d/costmap_math.h>
-#include <costmap_2d/GenericPluginConfig.h>
-#include <dynamic_reconfigure/server.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PolygonStamped.h>
+#include <string>
+#include <tf/tf.h>
+#include <tf/transform_listener.h>
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
-class FootprintCostmapPlugin : public costmap_2d::CostmapPluginROS
+class LayeredCostmap;
+
+class Layer
 {
 public:
-  FootprintCostmapPlugin()
+  Layer();
+
+  void initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf );
+
+  virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
+                             double* max_x, double* max_y) {}
+  virtual void updateCosts(Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
+
+  virtual void deactivate() {}   // stop publishers
+  virtual void activate() {}     // restart publishers if they've been stopped
+  virtual ~Layer() {}
+
+  bool isCurrent() const
   {
-    layered_costmap_ = NULL;
+    return current_;
   }
 
-  void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
-  void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
-                     double* max_y);
-  void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  /** @brief Implement this to make this layer match the size of the parent costmap. */
+  virtual void matchSize() {}
 
-  void activate()
+  std::string getName() const
   {
+    return name_;
   }
-  void deactivate()
+
+  void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec);
+
+  const std::vector<geometry_msgs::Point>& getFootprint() const
   {
+    return footprint_spec_;
   }
+
+protected:
+  /** @brief This is called at the end of initialize().  Override to
+   * implement subclass-specific initialization.
+   *
+   * tf_, name_, and layered_costmap_ will all be set already when this is called. */
+  virtual void onInitialize() {}
+
+  /** @brief This is called at the end of setFootprint().  Override to
+   * be notified of changes in the robot's footprint. */
+  virtual void onFootprintChanged() {}
+
+  LayeredCostmap* layered_costmap_;
+  bool current_;
+  bool enabled_; ///< Currently this var is managed by subclasses.  TODO: make this managed by this class and/or container class.
+  std::string name_;
+  tf::TransformListener* tf_;
 
 private:
-  ros::Subscriber footprint_sub_;
-  geometry_msgs::PolygonStamped footprint_; ///< Storage for polygon being published.
-  void publishFootprint();
-  void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
-  ros::Publisher footprint_pub_;
-  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
+  std::vector<geometry_msgs::Point> footprint_spec_;
 };
-}
-#endif
 
+} // namespace costmap_2d
+#endif

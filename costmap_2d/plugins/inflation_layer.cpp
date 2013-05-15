@@ -1,43 +1,43 @@
-#include<costmap_2d/inflation_costmap_plugin.h>
+#include<costmap_2d/inflation_layer.h>
 #include<costmap_2d/costmap_math.h>
 #include<costmap_2d/footprint.h>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::InflationCostmapPlugin, costmap_2d::CostmapPluginROS)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 using costmap_2d::NO_INFORMATION;
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 
-void InflationCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+void InflationLayer::onInitialize()
 {
-  ros::NodeHandle nh("~/" + name), g_nh;
-  layered_costmap_ = costmap;
-  name_ = name;
+  ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
   seen_ = NULL;
+  need_reinflation_ = false;
   matchSize();
 
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name));
+  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
-      &InflationCostmapPlugin::reconfigureCB, this, _1, _2);
+      &InflationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 }
 
-void InflationCostmapPlugin::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
+void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
   if (weight_ != config.cost_scaling_factor || inflation_radius_ != config.inflation_radius)
   {
     inflation_radius_ = config.inflation_radius;
     weight_ = config.cost_scaling_factor;
+    need_reinflation_ = true;
     computeCaches();
   }
   enabled_ = config.enabled;
 }
 
-void InflationCostmapPlugin::matchSize()
+void InflationLayer::matchSize()
 {
   costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
   resolution_ = costmap->getResolution();
@@ -50,7 +50,7 @@ void InflationCostmapPlugin::matchSize()
   seen_ = new bool[size_x * size_y];
 }
 
-void InflationCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void InflationLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
   if (!enabled_)
@@ -58,26 +58,33 @@ void InflationCostmapPlugin::update_bounds(double origin_x, double origin_y, dou
   //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
   ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
 
-  double margin = 2 * inflation_radius_;
-  *min_x -= margin;
-  *min_y -= margin;
-  *max_x += margin;
-  *max_y += margin;
+  if( need_reinflation_ )
+  {
+    // For some reason when I make these -<double>::max() it does not
+    // work with Costmap2D::worldToMapEnforceBounds(), so I'm using
+    // -<float>::max() instead.
+    *min_x = -std::numeric_limits<float>::max();
+    *min_y = -std::numeric_limits<float>::max();
+    *max_x = std::numeric_limits<float>::max();
+    *max_y = std::numeric_limits<float>::max();
+    need_reinflation_ = false;
+  }
 }
 
-void InflationCostmapPlugin::onFootprintChanged()
+void InflationLayer::onFootprintChanged()
 {
   const std::vector<geometry_msgs::Point>& footprint_spec = getFootprint();
   //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
   costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
   // TODO: Set circumscribed_cost
   cell_inflation_radius_ = cellDistance(inflation_radius_);
-  ROS_INFO("InflationCostmapPlugin::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f",
+  ROS_INFO("InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f",
            footprint_spec.size(), inscribed_radius_);
   computeCaches();
+  need_reinflation_ = true;
 }
 
-void InflationCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
+void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
                                           int max_j)
 {
   if (!enabled_)
@@ -86,6 +93,20 @@ void InflationCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, in
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
   memset(seen_, false, size_x * size_y * sizeof(bool));
+
+  // We need to include in the inflation cells outside the bounding
+  // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
+  // up to that distance outside the box can still influence the costs
+  // stored in cells inside the box.
+  min_i -= cell_inflation_radius_;
+  min_j -= cell_inflation_radius_;
+  max_i += cell_inflation_radius_;
+  max_j += cell_inflation_radius_;
+
+  min_i = std::max( 0, min_i );
+  min_j = std::max( 0, min_j );
+  max_i = std::min( int( size_x - 1 ), max_i );
+  max_j = std::min( int( size_y - 1 ), max_j );
 
   for (int j = min_j; j < max_j; j++)
   {
@@ -134,7 +155,7 @@ void InflationCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, in
  * @param  src_x The x index of the obstacle point inflation started at
  * @param  src_y The y index of the obstacle point inflation started at
  */
-inline void InflationCostmapPlugin::enqueue(unsigned char* grid, unsigned int index, unsigned int mx, unsigned int my,
+inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, unsigned int mx, unsigned int my,
                                             unsigned int src_x, unsigned int src_y)
 {
 
@@ -163,7 +184,7 @@ inline void InflationCostmapPlugin::enqueue(unsigned char* grid, unsigned int in
   }
 }
 
-void InflationCostmapPlugin::computeCaches()
+void InflationLayer::computeCaches()
 {
   //based on the inflation radius... compute distance and cost caches
   cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
@@ -180,7 +201,7 @@ void InflationCostmapPlugin::computeCaches()
   }
 }
 
-void InflationCostmapPlugin::deleteKernels()
+void InflationLayer::deleteKernels()
 {
   if (cached_distances_ != NULL)
   {
@@ -206,7 +227,7 @@ void InflationCostmapPlugin::deleteKernels()
  * @param  distance The distance from an obstacle in cells
  * @return A cost value for the distance
  */
-inline unsigned char InflationCostmapPlugin::computeCost(double distance) const
+inline unsigned char InflationLayer::computeCost(double distance) const
 {
   unsigned char cost = 0;
   if (distance == 0)

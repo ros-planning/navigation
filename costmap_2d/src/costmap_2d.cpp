@@ -223,6 +223,38 @@ void Costmap2D::worldToMapNoBounds(double wx, double wy, int& mx, int& my) const
   my = (int)((wy - origin_y_) / resolution_);
 }
 
+void Costmap2D::worldToMapEnforceBounds(double wx, double wy, int& mx, int& my) const
+{
+  // Here we avoid doing any math to wx,wy before comparing them to
+  // the bounds, so their values can go out to the max and min values
+  // of double floating point.
+  if( wx < origin_x_ )
+  {
+    mx = 0;
+  }
+  else if( wx > resolution_ * size_x_ + origin_x_ )
+  {
+    mx = size_x_ - 1;
+  }
+  else
+  {
+    mx = (int)((wx - origin_x_) / resolution_);
+  }
+
+  if( wy < origin_y_ )
+  {
+    my = 0;
+  }
+  else if( wy > resolution_ * size_y_ + origin_y_ )
+  {
+    my = size_y_ - 1;
+  }
+  else
+  {
+    my = (int)((wy - origin_y_) / resolution_);
+  }
+}
+
 void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
 {
   //project the new origin into the grid
