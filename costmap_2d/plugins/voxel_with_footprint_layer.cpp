@@ -38,18 +38,18 @@ void VoxelWithFootprintLayer::onInitialize()
   footprint_layer_.initialize( layered_costmap_, name_ + "_footprint", tf_);
 }
 
-void VoxelWithFootprintLayer::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void VoxelWithFootprintLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
                                                     double* min_y, double* max_x, double* max_y)
 {
-  VoxelLayer::update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
-  footprint_layer_.update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
+  VoxelLayer::updateBounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
+  footprint_layer_.updateBounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
 }
 
-void VoxelWithFootprintLayer::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
+void VoxelWithFootprintLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
                                                    int max_j)
 {
-  footprint_layer_.update_costs(*this, min_i, min_j, max_i, max_j);
-  VoxelLayer::update_costs(master_grid, min_i, min_j, max_i, max_j);
+  footprint_layer_.updateCosts(*this, min_i, min_j, max_i, max_j);
+  VoxelLayer::updateCosts(master_grid, min_i, min_j, max_i, max_j);
 }
 
 void VoxelWithFootprintLayer::onFootprintChanged()

@@ -50,7 +50,7 @@ void InflationLayer::matchSize()
   seen_ = new bool[size_x * size_y];
 }
 
-void InflationLayer::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void InflationLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
   if (!enabled_)
@@ -84,7 +84,7 @@ void InflationLayer::onFootprintChanged()
   need_reinflation_ = true;
 }
 
-void InflationLayer::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
+void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
                                           int max_j)
 {
   if (!enabled_)

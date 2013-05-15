@@ -339,7 +339,6 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
     {
       unsigned int x0, y0, xn, yn;
       layered_costmap_->getBounds(&x0, &xn, &y0, &yn);
-      ROS_WARN( "publishing with bounds: x: %u %u y: %u %u", x0, xn, y0, yn );
       publisher_->updateBounds(x0, xn, y0, yn);
 
       ros::Time now = ros::Time::now();

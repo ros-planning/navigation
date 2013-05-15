@@ -228,7 +228,7 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
   buffer->unlock();
 }
 
-void ObstacleLayer::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void ObstacleLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
   if (rolling_window_)
@@ -315,7 +315,7 @@ void ObstacleLayer::update_bounds(double origin_x, double origin_y, double origi
   }
 }
 
-void ObstacleLayer::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
     return;

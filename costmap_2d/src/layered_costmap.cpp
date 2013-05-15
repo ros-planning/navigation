@@ -94,7 +94,7 @@ void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_y
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
-    (*plugin)->update_bounds(origin_x, origin_y, origin_yaw, &minx_, &miny_, &maxx_, &maxy_);
+    (*plugin)->updateBounds(origin_x, origin_y, origin_yaw, &minx_, &miny_, &maxx_, &maxy_);
   }
 
   int x0, xn, y0, yn;
@@ -116,7 +116,7 @@ void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_y
     for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
         ++plugin)
     {
-      (*plugin)->update_costs(costmap_, x0, y0, xn, yn);
+      (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
     }
   }
 

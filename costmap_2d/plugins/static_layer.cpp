@@ -95,7 +95,7 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   map_recieved_ = true;
 }
 
-void StaticLayer::update_bounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y,
+void StaticLayer::updateBounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y,
                                         double* max_x, double* max_y)
 {
   if (!map_recieved_ || map_initialized_)
@@ -107,7 +107,7 @@ void StaticLayer::update_bounds(double origin_x, double origin_y, double origin_
 
 }
 
-void StaticLayer::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!map_initialized_)
     return;

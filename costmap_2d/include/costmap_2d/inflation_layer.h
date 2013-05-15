@@ -91,9 +91,9 @@ public:
   }
 
   virtual void onInitialize();
-  virtual void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
+  virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
                              double* max_y);
-  virtual void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
   virtual bool isDiscretized()
   {
     return true;

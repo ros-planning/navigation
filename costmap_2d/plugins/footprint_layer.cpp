@@ -28,7 +28,7 @@ namespace costmap_2d
     enabled_ = config.enabled;
   }
 
-  void FootprintLayer::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y)
+  void FootprintLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y)
   {
     if(!enabled_) return;
     //update transformed polygon
@@ -56,7 +56,7 @@ namespace costmap_2d
     footprint_pub_.publish( footprint_ );
   }
 
-  void FootprintLayer::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+  void FootprintLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
   {
     if(!enabled_) return;
     std::vector<geometry_msgs::Point> footprint_points = costmap_2d::toPointVector(footprint_.polygon);
