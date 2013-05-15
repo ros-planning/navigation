@@ -46,11 +46,15 @@
 #include "nav_msgs/MapMetaData.h"
 #include "yaml-cpp/yaml.h"
 
+#include <actionlib/server/simple_action_server.h>
+#include <nav_msgs/GetMapAction.h>
+
 class MapServer
 {
   public:
     /** Trivial constructor */
-    MapServer(const std::string& fname, double res)
+    MapServer(const std::string& fname, double res) :
+        get_map_as(n, "get_static_map", boost::bind(&MapServer::mapActionCallback, this, _1), false)
     {
       std::string mapfname = "";   
       double origin[3];
@@ -141,8 +145,14 @@ class MapServer
                map_resp_.map.info.resolution);
       meta_data_message_ = map_resp_.map.info;
 
+      // Also cache the map for sending out to people via actionlib
+      map_action_result_.map = map_resp_.map;
+
+      // Service to get map
       service = n.advertiseService("static_map", &MapServer::mapCallback, this);
-      //pub = n.advertise<nav_msgs::MapMetaData>("map_metadata", 1,
+
+      // Action to get map
+      get_map_as.start();
 
       // Latched publisher for metadata
       metadata_pub= n.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
@@ -159,6 +169,7 @@ class MapServer
     ros::Publisher metadata_pub;
     ros::ServiceServer service;
     bool deprecated;
+    actionlib::SimpleActionServer<nav_msgs::GetMapAction> get_map_as;
 
     /** Callback invoked when someone requests our service */
     bool mapCallback(nav_msgs::GetMap::Request  &req,
@@ -173,10 +184,17 @@ class MapServer
       return true;
     }
 
+    void mapActionCallback(const nav_msgs::GetMapGoalConstPtr &goal)
+    {
+        ROS_INFO("Sending map in response to action call");
+        get_map_as.setSucceeded(map_action_result_);
+    }
+
     /** The map data is cached here, to be sent out to service callers
      */
     nav_msgs::MapMetaData meta_data_message_;
     nav_msgs::GetMap::Response map_resp_;
+    nav_msgs::GetMapResult map_action_result_;
 
     /*
     void metadataSubscriptionCallback(const ros::SingleSubscriberPublisher& pub)

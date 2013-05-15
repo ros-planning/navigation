@@ -9,6 +9,8 @@ find_package(catkin REQUIRED
             tf
             nav_msgs
             rostest
+            actionlib
+            actionlib_msgs
         )
 
 catkin_package(
@@ -17,6 +19,7 @@ catkin_package(
         roscpp
         tf
         nav_msgs
+        actionlib_msgs
 )
 include_directories( include )
 add_library(image_loader src/image_loader.cpp)
