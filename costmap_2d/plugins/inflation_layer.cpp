@@ -69,14 +69,6 @@ void InflationLayer::update_bounds(double origin_x, double origin_y, double orig
     *max_y = std::numeric_limits<float>::max();
     need_reinflation_ = false;
   }
-  else
-  {    
-    double margin = 2 * inflation_radius_;
-    *min_x -= margin;
-    *min_y -= margin;
-    *max_x += margin;
-    *max_y += margin;
-  }
 }
 
 void InflationLayer::onFootprintChanged()
@@ -101,6 +93,20 @@ void InflationLayer::update_costs(costmap_2d::Costmap2D& master_grid, int min_i,
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
   memset(seen_, false, size_x * size_y * sizeof(bool));
+
+  // We need to include in the inflation cells outside the bounding
+  // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
+  // up to that distance outside the box can still influence the costs
+  // stored in cells inside the box.
+  min_i -= cell_inflation_radius_;
+  min_j -= cell_inflation_radius_;
+  max_i += cell_inflation_radius_;
+  max_j += cell_inflation_radius_;
+
+  min_i = std::max( 0, min_i );
+  min_j = std::max( 0, min_j );
+  max_i = std::min( int( size_x - 1 ), max_i );
+  max_j = std::min( int( size_y - 1 ), max_j );
 
   for (int j = min_j; j < max_j; j++)
   {
