@@ -323,10 +323,10 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
                                       unknown_threshold_, mark_threshold_, FREE_SPACE, NO_INFORMATION,
                                       cell_raytrace_range);
 
-      *min_x = std::min(point_x, *min_x);
-      *min_y = std::min(point_y, *min_y);
-      *max_x = std::max(point_x, *max_x);
-      *max_y = std::max(point_y, *max_y);
+      *min_x = std::min(wpx, *min_x);
+      *min_y = std::min(wpy, *min_y);
+      *max_x = std::max(wpx, *max_x);
+      *max_y = std::max(wpy, *max_y);
     }
 
   }
