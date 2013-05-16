@@ -93,9 +93,7 @@ namespace estimation
     vo_meas_pdf_   = new LinearAnalyticConditionalGaussian(Hvo, measurement_Uncertainty_Vo);
     vo_meas_model_ = new LinearAnalyticMeasurementModelGaussianUncertainty(vo_meas_pdf_);
 
-
-
-// create MEASUREMENT MODEL GPS
+    // create MEASUREMENT MODEL GPS
     ColumnVector measNoiseGps_Mu(3);  measNoiseGps_Mu = 0;
     SymmetricMatrix measNoiseGps_Cov(3);  measNoiseGps_Cov = 0;
     for (unsigned int i=1; i<=3; i++) measNoiseGps_Cov(i,i) = 1;
@@ -272,7 +270,7 @@ namespace estimation
   
 
 
-// process gps measurement
+    // process gps measurement
     // ----------------------
     if (gps_active){
       if (!transformer_.canTransform("base_footprint","gps", filter_time)){
@@ -317,7 +315,7 @@ namespace estimation
     }
 
     return true;
-};
+  };
 
   void OdomEstimation::addMeasurement(const StampedTransform& meas)
   {
