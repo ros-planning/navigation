@@ -93,6 +93,8 @@ add_library(base_local_planner
 	src/trajectory.cpp
 	src/voxel_grid_model.cpp)
 add_dependencies(base_local_planner base_local_planner_gencfg)
+add_dependencies(base_local_planner base_local_planner_gencpp)
+add_dependencies(base_local_planner nav_msgs_gencpp)
 target_link_libraries(base_local_planner
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
@@ -103,6 +105,7 @@ target_link_libraries(base_local_planner
 add_library(trajectory_planner_ros
 	src/trajectory_planner.cpp
 	src/trajectory_planner_ros.cpp)
+add_dependencies(trajectory_planner_ros nav_msgs_gencpp)
 target_link_libraries(trajectory_planner_ros
      base_local_planner)
 

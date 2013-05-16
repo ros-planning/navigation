@@ -1,8 +1,8 @@
-#include<costmap_2d/obstacle_costmap_plugin.h>
+#include<costmap_2d/obstacle_layer.h>
 #include<costmap_2d/costmap_math.h>
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::ObstacleCostmapPlugin, costmap_2d::CostmapPluginROS)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;
@@ -11,22 +11,20 @@ using costmap_2d::FREE_SPACE;
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 
-void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+void ObstacleLayer::onInitialize()
 {
-  ros::NodeHandle nh("~/" + name), g_nh;
-  layered_costmap_ = costmap;
-  name_ = name;
-  rolling_window_ = costmap->isRolling();
+  ros::NodeHandle nh("~/" + name_), g_nh;
+  rolling_window_ = layered_costmap_->isRolling();
   default_value_ = NO_INFORMATION;
 
   initMaps();
   current_ = true;
   has_been_reset_ = false;
 
-  global_frame_ = costmap->getGlobalFrameID();
+  global_frame_ = layered_costmap_->getGlobalFrameID();
   double transform_tolerance;
   nh.param("transform_tolerance", transform_tolerance, 0.2);
 
@@ -111,7 +109,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
       boost::shared_ptr < tf::MessageFilter<sensor_msgs::LaserScan>
           > filter(new tf::MessageFilter<sensor_msgs::LaserScan>(*sub, *tf_, global_frame_, 50));
       filter->registerCallback(
-          boost::bind(&ObstacleCostmapPlugin::laserScanCallback, this, _1, observation_buffers_.back()));
+          boost::bind(&ObstacleLayer::laserScanCallback, this, _1, observation_buffers_.back()));
 
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
@@ -126,7 +124,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
       boost::shared_ptr < tf::MessageFilter<sensor_msgs::PointCloud>
           > filter(new tf::MessageFilter<sensor_msgs::PointCloud>(*sub, *tf_, global_frame_, 50));
       filter->registerCallback(
-          boost::bind(&ObstacleCostmapPlugin::pointCloudCallback, this, _1, observation_buffers_.back()));
+          boost::bind(&ObstacleLayer::pointCloudCallback, this, _1, observation_buffers_.back()));
 
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
@@ -139,7 +137,7 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
       boost::shared_ptr < tf::MessageFilter<sensor_msgs::PointCloud2>
           > filter(new tf::MessageFilter<sensor_msgs::PointCloud2>(*sub, *tf_, global_frame_, 50));
       filter->registerCallback(
-          boost::bind(&ObstacleCostmapPlugin::pointCloud2Callback, this, _1, observation_buffers_.back()));
+          boost::bind(&ObstacleLayer::pointCloud2Callback, this, _1, observation_buffers_.back()));
 
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
@@ -157,29 +155,29 @@ void ObstacleCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std:
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(
-      &ObstacleCostmapPlugin::reconfigureCB, this, _1, _2);
+      &ObstacleLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 }
 
-void ObstacleCostmapPlugin::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
+void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
   max_obstacle_height_ = config.max_obstacle_height;
 }
 
-void ObstacleCostmapPlugin::initMaps()
+void ObstacleLayer::initMaps()
 {
   Costmap2D* master = layered_costmap_->getCostmap();
   resizeMap(master->getGlobalFrameID(), master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
             master->getOriginX(), master->getOriginY());
 }
 
-void ObstacleCostmapPlugin::matchSize()
+void ObstacleLayer::matchSize()
 {
   initMaps();
 }
 
-void ObstacleCostmapPlugin::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
+void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
                                               const boost::shared_ptr<ObservationBuffer>& buffer)
 {
   //project the laser into a point cloud
@@ -204,7 +202,7 @@ void ObstacleCostmapPlugin::laserScanCallback(const sensor_msgs::LaserScanConstP
   buffer->unlock();
 }
 
-void ObstacleCostmapPlugin::pointCloudCallback(const sensor_msgs::PointCloudConstPtr& message,
+void ObstacleLayer::pointCloudCallback(const sensor_msgs::PointCloudConstPtr& message,
                                                const boost::shared_ptr<ObservationBuffer>& buffer)
 {
   sensor_msgs::PointCloud2 cloud2;
@@ -221,7 +219,7 @@ void ObstacleCostmapPlugin::pointCloudCallback(const sensor_msgs::PointCloudCons
   buffer->unlock();
 }
 
-void ObstacleCostmapPlugin::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message,
+void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message,
                                                 const boost::shared_ptr<ObservationBuffer>& buffer)
 {
   //buffer the point cloud
@@ -230,7 +228,7 @@ void ObstacleCostmapPlugin::pointCloud2Callback(const sensor_msgs::PointCloud2Co
   buffer->unlock();
 }
 
-void ObstacleCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void ObstacleLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
   if (rolling_window_)
@@ -322,7 +320,7 @@ void ObstacleCostmapPlugin::updateWorld(std::vector<Observation> observations, s
   }
 }
 
-void ObstacleCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
     return;
@@ -341,7 +339,7 @@ void ObstacleCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int
   }
 }
 
-bool ObstacleCostmapPlugin::getMarkingObservations(std::vector<Observation>& marking_observations) const
+bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_observations) const
 {
   bool current = true;
   //get the marking observations
@@ -355,7 +353,7 @@ bool ObstacleCostmapPlugin::getMarkingObservations(std::vector<Observation>& mar
   return current;
 }
 
-bool ObstacleCostmapPlugin::getClearingObservations(std::vector<Observation>& clearing_observations) const
+bool ObstacleLayer::getClearingObservations(std::vector<Observation>& clearing_observations) const
 {
   bool current = true;
   //get the clearing observations
@@ -369,7 +367,7 @@ bool ObstacleCostmapPlugin::getClearingObservations(std::vector<Observation>& cl
   return current;
 }
 
-void ObstacleCostmapPlugin::raytraceFreespace(const Observation& clearing_observation, double* min_x, double* min_y,
+void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, double* min_x, double* min_y,
                                               double* max_x, double* max_y)
 {
   double ox = clearing_observation.origin_.x;
@@ -449,7 +447,7 @@ void ObstacleCostmapPlugin::raytraceFreespace(const Observation& clearing_observ
   }
 }
 
-void ObstacleCostmapPlugin::activate()
+void ObstacleLayer::activate()
 {
   //if we're stopped we need to re-subscribe to topics
   for (unsigned int i = 0; i < observation_subscribers_.size(); ++i)
@@ -464,7 +462,7 @@ void ObstacleCostmapPlugin::activate()
       observation_buffers_[i]->resetLastUpdated();
   }
 }
-void ObstacleCostmapPlugin::deactivate()
+void ObstacleLayer::deactivate()
 {
   for (unsigned int i = 0; i < observation_subscribers_.size(); ++i)
   {

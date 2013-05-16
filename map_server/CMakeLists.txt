@@ -50,7 +50,7 @@ target_link_libraries( rtest
     gtest
     ${catkin_LIBRARIES}
 )
-
+add_dependencies(rtest nav_msgs_gencpp)
 
 add_executable(map_saver src/map_saver.cpp)
 target_link_libraries( map_saver

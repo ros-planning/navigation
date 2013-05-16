@@ -26,6 +26,9 @@ target_link_libraries(fake_localization
     ${Boost_LIBRARIES}
     )
 
+add_dependencies(fake_localization nav_msgs_gencpp)
+add_dependencies(fake_localization geometry_msgs_gencpp)
+
 install(
     PROGRAMS
        static_odom_broadcaster.py

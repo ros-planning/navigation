@@ -52,7 +52,8 @@ namespace estimation
     filter_initialized_(false),
     odom_initialized_(false),
     imu_initialized_(false),
-    vo_initialized_(false)
+    vo_initialized_(false),
+    gps_initialized_(false)
   {
     // create SYSTEM MODEL
     ColumnVector sysNoise_Mu(6);  sysNoise_Mu = 0;
@@ -91,6 +92,16 @@ namespace estimation
     Hvo(1,1) = 1;    Hvo(2,2) = 1;    Hvo(3,3) = 1;    Hvo(4,4) = 1;    Hvo(5,5) = 1;    Hvo(6,6) = 1;
     vo_meas_pdf_   = new LinearAnalyticConditionalGaussian(Hvo, measurement_Uncertainty_Vo);
     vo_meas_model_ = new LinearAnalyticMeasurementModelGaussianUncertainty(vo_meas_pdf_);
+
+    // create MEASUREMENT MODEL GPS
+    ColumnVector measNoiseGps_Mu(3);  measNoiseGps_Mu = 0;
+    SymmetricMatrix measNoiseGps_Cov(3);  measNoiseGps_Cov = 0;
+    for (unsigned int i=1; i<=3; i++) measNoiseGps_Cov(i,i) = 1;
+    Gaussian measurement_Uncertainty_GPS(measNoiseGps_Mu, measNoiseGps_Cov);
+    Matrix Hgps(3,6);  Hgps = 0;
+    Hgps(1,1) = 1;    Hgps(2,2) = 1;    Hgps(3,3) = 1;    
+    gps_meas_pdf_   = new LinearAnalyticConditionalGaussian(Hgps, measurement_Uncertainty_GPS);
+    gps_meas_model_ = new LinearAnalyticMeasurementModelGaussianUncertainty(gps_meas_pdf_);
   };
 
 
@@ -105,6 +116,8 @@ namespace estimation
     delete imu_meas_pdf_;
     delete vo_meas_model_;
     delete vo_meas_pdf_;
+    delete gps_meas_model_;
+    delete gps_meas_pdf_;
     delete sys_pdf_;
     delete sys_model_;
   };
@@ -141,7 +154,7 @@ namespace estimation
 
 
   // update filter
-  bool OdomEstimation::update(bool odom_active, bool imu_active, bool vo_active, const Time&  filter_time, bool& diagnostics_res)
+  bool OdomEstimation::update(bool odom_active, bool imu_active, bool gps_active, bool vo_active, const Time&  filter_time, bool& diagnostics_res)
   {
     // only update filter when it is initialized
     if (!filter_initialized_){
@@ -254,7 +267,34 @@ namespace estimation
     }
     // sensor not active
     else vo_initialized_ = false;
-    
+  
+
+
+    // process gps measurement
+    // ----------------------
+    if (gps_active){
+      if (!transformer_.canTransform("base_footprint","gps", filter_time)){
+        ROS_ERROR("filter time older than gps message buffer");
+        return false;
+      }
+      transformer_.lookupTransform("gps", "base_footprint", filter_time, gps_meas_);
+      if (gps_initialized_){
+        gps_meas_pdf_->AdditiveNoiseSigmaSet(gps_covariance_ * pow(dt,2));
+        ColumnVector gps_vec(3);
+        double tmp;
+        //Take gps as an absolute measurement, do not convert to relative measurement
+        decomposeTransform(gps_meas_, gps_vec(1), gps_vec(2), gps_vec(3), tmp, tmp, tmp);
+        filter_->Update(gps_meas_model_,  gps_vec);
+      }
+      else {
+        gps_initialized_ = true;
+        gps_meas_old_ = gps_meas_;
+      }
+    }
+    // sensor not active
+    else gps_initialized_ = false;
+
+  
     
     // remember last estimate
     filter_estimate_old_vec_ = filter_->PostGet()->ExpectedValueGet();
@@ -275,7 +315,7 @@ namespace estimation
     }
 
     return true;
-};
+  };
 
   void OdomEstimation::addMeasurement(const StampedTransform& meas)
   {
@@ -301,6 +341,7 @@ namespace estimation
     if (meas.child_frame_id_ == "wheelodom") odom_covariance_ = covar;
     else if (meas.child_frame_id_ == "imu")  imu_covariance_  = covar;
     else if (meas.child_frame_id_ == "vo")   vo_covariance_   = covar;
+    else if (meas.child_frame_id_ == "gps")  gps_covariance_  = covar;
     else ROS_ERROR("Adding a measurement for an unknown sensor %s", meas.child_frame_id_.c_str());
   };
 

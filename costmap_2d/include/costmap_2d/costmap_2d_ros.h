@@ -39,7 +39,7 @@
 #define COSTMAP_COSTMAP_2D_ROS_H_
 
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_2d/plugin_ros.h>
+#include <costmap_2d/layer.h>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <costmap_2d/Costmap2DConfig.h>
 #include <costmap_2d/footprint.h>
@@ -187,7 +187,7 @@ private:
   ros::Timer timer_;
   ros::Time last_publish_;
   ros::Duration publish_cycle;
-  pluginlib::ClassLoader<CostmapPluginROS> plugin_loader_;
+  pluginlib::ClassLoader<Layer> plugin_loader_;
   tf::Stamped<tf::Pose> old_pose_;
   Costmap2DPublisher* publisher_;
   dynamic_reconfigure::Server<costmap_2d::Costmap2DConfig> *dsrv_;

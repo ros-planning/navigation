@@ -26,38 +26,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_
+#define VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_
 
-#include <costmap_2d/voxel_with_footprint_costmap_plugin.h>
+#include <costmap_2d/voxel_layer.h>
+#include <costmap_2d/footprint_layer.h>
+#include <dynamic_reconfigure/server.h>
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 
-void VoxelWithFootprintCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+class VoxelWithFootprintLayer : public costmap_2d::VoxelLayer
 {
-  VoxelCostmapPlugin::initialize(costmap, name);
-  ((CostmapPluginROS*)&footprint_layer_)->initialize(costmap, name + "_footprint", *tf_);
-}
+public:
+  virtual void onInitialize();
+  virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
+                             double* max_x, double* max_y);
+  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  virtual void onFootprintChanged();
 
-void VoxelWithFootprintCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
-                                                    double* min_y, double* max_x, double* max_y)
-{
-  VoxelCostmapPlugin::update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
-  footprint_layer_.update_bounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
-}
+private:
+  FootprintLayer footprint_layer_;
+};
 
-void VoxelWithFootprintCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
-                                                   int max_j)
-{
-  footprint_layer_.update_costs(*this, min_i, min_j, max_i, max_j);
-  VoxelCostmapPlugin::update_costs(master_grid, min_i, min_j, max_i, max_j);
-}
+} // end namespace costmap_2d
 
-void VoxelWithFootprintCostmapPlugin::onFootprintChanged()
-{
-  footprint_layer_.setFootprint( getFootprint() );
-}
-
-} // end namespace common_costmap_plugins
-
-#include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS( common_costmap_plugins::VoxelWithFootprintCostmapPlugin, costmap_2d::CostmapPluginROS )
+#endif // VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_

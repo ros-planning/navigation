@@ -39,14 +39,14 @@
 #define LAYERED_COSTMAP_H_
 
 #include <costmap_2d/cost_values.h>
-#include <costmap_2d/plugin_base.h>
+#include <costmap_2d/layer.h>
 #include <costmap_2d/costmap_2d.h>
 #include <vector>
 #include <string>
 
 namespace costmap_2d
 {
-class CostmapPlugin;
+class Layer;
 
 /**
  * @class LayeredCostmap
@@ -99,12 +99,12 @@ public:
     return rolling_window_;
   }
 
-  std::vector<boost::shared_ptr<CostmapPlugin> >* getPlugins()
+  std::vector<boost::shared_ptr<Layer> >* getPlugins()
   {
     return &plugins_;
   }
 
-  void addPlugin(boost::shared_ptr<CostmapPlugin> plugin)
+  void addPlugin(boost::shared_ptr<Layer> plugin)
   {
     plugins_.push_back(plugin);
   }
@@ -126,7 +126,7 @@ public:
   void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec);
 
 private:
-  void updateUsingPlugins(std::vector<boost::shared_ptr<CostmapPlugin> > &plugins);
+  void updateUsingPlugins(std::vector<boost::shared_ptr<Layer> > &plugins);
 
   Costmap2D costmap_;
   std::string global_frame_;
@@ -137,7 +137,7 @@ private:
   double minx_, miny_, maxx_, maxy_;
   unsigned int bx0_, bxn_, by0_, byn_;
 
-  std::vector<boost::shared_ptr<CostmapPlugin> > plugins_;
+  std::vector<boost::shared_ptr<Layer> > plugins_;
 
   bool size_locked_;
 };

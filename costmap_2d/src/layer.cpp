@@ -26,29 +26,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_
-#define VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_
 
-#include <costmap_2d/voxel_costmap_plugin.h>
-#include <costmap_2d/footprint_costmap_plugin.h>
-#include <dynamic_reconfigure/server.h>
+#include "costmap_2d/layer.h"
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
 
-class VoxelWithFootprintCostmapPlugin : public common_costmap_plugins::VoxelCostmapPlugin
+Layer::Layer()
+  : layered_costmap_( NULL )
+  , current_( false )
+  , enabled_( false )
+  , name_()
+  , tf_(NULL)
+{}
+
+void Layer::initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf )
 {
-public:
-  virtual void initialize(costmap_2d::LayeredCostmap* costmap, std::string name);
-  virtual void update_bounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
-                             double* max_x, double* max_y);
-  virtual void update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
-  virtual void onFootprintChanged();
+  layered_costmap_ = parent;
+  name_ = name;
+  tf_ = tf;
+  onInitialize();
+}
 
-private:
-  FootprintCostmapPlugin footprint_layer_;
-};
+void Layer::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
+{
+  // TODO: Ideally this would actually check if the footprint had changed or not.
+  footprint_spec_ = footprint_spec;
+  onFootprintChanged();
+}
 
-} // end namespace common_costmap_plugins
-
-#endif // VOXEL_WITH_FOOTPRINT_COSTMAP_PLUGIN_H_
+} // end namespace costmap_2d

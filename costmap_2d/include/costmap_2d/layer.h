@@ -34,30 +34,73 @@
  *
  * Author: David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_PLUGIN_ROS_H_
-#define COSTMAP_PLUGIN_ROS_H_
-#include <costmap_2d/plugin_base.h>
+#ifndef COSTMAP_PLUGIN_BASE_H_
+#define COSTMAP_PLUGIN_BASE_H_
+#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/layered_costmap.h>
+#include <string>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 
 namespace costmap_2d
 {
-class CostmapPluginROS : public CostmapPlugin
+class LayeredCostmap;
+
+class Layer
 {
 public:
-  void initialize(LayeredCostmap* costmap, std::string name, tf::TransformListener &tf)
+  Layer();
+
+  void initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf );
+
+  virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y,
+                             double* max_x, double* max_y) {}
+  virtual void updateCosts(Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
+
+  virtual void deactivate() {}   // stop publishers
+  virtual void activate() {}     // restart publishers if they've been stopped
+  virtual ~Layer() {}
+
+  bool isCurrent() const
   {
-    tf_ = &tf;
-    initialize(costmap, name);
+    return current_;
   }
-  virtual void initialize(LayeredCostmap* costmap, std::string name)= 0;
+
+  /** @brief Implement this to make this layer match the size of the parent costmap. */
+  virtual void matchSize() {}
+
+  std::string getName() const
+  {
+    return name_;
+  }
+
+  void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec);
+
+  const std::vector<geometry_msgs::Point>& getFootprint() const
+  {
+    return footprint_spec_;
+  }
 
 protected:
-  CostmapPluginROS()
-  {
-  }
+  /** @brief This is called at the end of initialize().  Override to
+   * implement subclass-specific initialization.
+   *
+   * tf_, name_, and layered_costmap_ will all be set already when this is called. */
+  virtual void onInitialize() {}
 
+  /** @brief This is called at the end of setFootprint().  Override to
+   * be notified of changes in the robot's footprint. */
+  virtual void onFootprintChanged() {}
+
+  LayeredCostmap* layered_costmap_;
+  bool current_;
+  bool enabled_; ///< Currently this var is managed by subclasses.  TODO: make this managed by this class and/or container class.
+  std::string name_;
   tf::TransformListener* tf_;
+
+private:
+  std::vector<geometry_msgs::Point> footprint_spec_;
 };
-}  // namespace layered_costmap
+
+} // namespace costmap_2d
 #endif

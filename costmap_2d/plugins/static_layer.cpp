@@ -1,24 +1,23 @@
-#include<costmap_2d/static_costmap_plugin.h>
+#include<costmap_2d/static_layer.h>
 #include<costmap_2d/costmap_math.h>
 
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(common_costmap_plugins::StaticCostmapPlugin, costmap_2d::CostmapPluginROS)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayer, costmap_2d::Layer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::FREE_SPACE;
 
-namespace common_costmap_plugins
+namespace costmap_2d
 {
-void StaticCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::string name)
+
+void StaticLayer::onInitialize()
 {
-  ros::NodeHandle nh("~/" + name), g_nh;
-  layered_costmap_ = costmap;
-  name_ = name;
+  ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
 
-  global_frame_ = costmap->getGlobalFrameID();
+  global_frame_ = layered_costmap_->getGlobalFrameID();
 
   std::string map_topic;
   nh.param("map_topic", map_topic, std::string("map"));
@@ -32,7 +31,7 @@ void StaticCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::s
   unknown_cost_value_ = temp_unknown_cost_value;
   //we'll subscribe to the latched topic that the map server uses
   ROS_INFO("Requesting the map...");
-  map_sub_ = g_nh.subscribe(map_topic, 1, &StaticCostmapPlugin::incomingMap, this);
+  map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
   map_recieved_ = false;
 
   ros::Rate r(10);
@@ -46,11 +45,11 @@ void StaticCostmapPlugin::initialize(costmap_2d::LayeredCostmap* costmap, std::s
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
-      &StaticCostmapPlugin::reconfigureCB, this, _1, _2);
+      &StaticLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 }
 
-void StaticCostmapPlugin::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
+void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
 {
   if (config.enabled != enabled_)
   {
@@ -59,14 +58,14 @@ void StaticCostmapPlugin::reconfigureCB(costmap_2d::GenericPluginConfig &config,
   }
 }
 
-void StaticCostmapPlugin::matchSize()
+void StaticLayer::matchSize()
 {
   Costmap2D* master = layered_costmap_->getCostmap();
   resizeMap(master->getGlobalFrameID(), master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
             master->getOriginX(), master->getOriginY());
 }
 
-void StaticCostmapPlugin::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
+void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 {
   unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
 
@@ -96,7 +95,7 @@ void StaticCostmapPlugin::incomingMap(const nav_msgs::OccupancyGridConstPtr& new
   map_recieved_ = true;
 }
 
-void StaticCostmapPlugin::update_bounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y,
+void StaticLayer::updateBounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y,
                                         double* max_x, double* max_y)
 {
   if (!map_recieved_ || map_initialized_)
@@ -108,7 +107,7 @@ void StaticCostmapPlugin::update_bounds(double origin_x, double origin_y, double
 
 }
 
-void StaticCostmapPlugin::update_costs(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!map_initialized_)
     return;

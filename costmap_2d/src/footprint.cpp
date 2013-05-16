@@ -99,6 +99,7 @@ std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon)
   {
     pts.push_back( toPoint(polygon.points[i] ) );
   }
+  return pts;
 }
 
 RobotFootprintManager::RobotFootprintManager(ros::NodeHandle node, std::string param_name)

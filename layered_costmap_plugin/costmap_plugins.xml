@@ -1,6 +1,6 @@
 <class_libraries>
     <library path="lib/liblayered_costmap_plugin">
-      <class type="layered_costmap_plugin::LayeredCostmapPlugin"  base_class_type="costmap_2d::CostmapPluginROS">
+      <class type="layered_costmap_plugin::LayeredCostmapPlugin"  base_class_type="costmap_2d::Layer">
         <description></description>
       </class>
     </library>

@@ -83,7 +83,7 @@ void ClearCostmapRecovery::runBehavior(){
 }
 
 void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
-  std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >* plugins = costmap->getLayeredCostmap()->getPlugins();
+  std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = costmap->getLayeredCostmap()->getPlugins();
 
   tf::Stamped<tf::Pose> pose;
 
@@ -95,18 +95,18 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
   double x = pose.getOrigin().x();
   double y = pose.getOrigin().y();
 
-      for (std::vector<boost::shared_ptr<costmap_2d::CostmapPlugin> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-            boost::shared_ptr<costmap_2d::CostmapPlugin> plugin = *pluginp;
+      for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+            boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
           if(plugin->getName().find("obstacles")!=std::string::npos){
-            boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap;
-            costmap = boost::static_pointer_cast<common_costmap_plugins::ObstacleCostmapPlugin>(plugin);
+            boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
+            costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
             clearMap(costmap, x, y);
           }
       }
 }
 
 
-  void ClearCostmapRecovery::clearMap(boost::shared_ptr<common_costmap_plugins::ObstacleCostmapPlugin> costmap, double pose_x, double pose_y){
+  void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::ObstacleLayer> costmap, double pose_x, double pose_y){
          boost::unique_lock< boost::shared_mutex > lock(*(costmap->getLock()));
          
          double start_point_x = pose_x - reset_distance_ / 2;
