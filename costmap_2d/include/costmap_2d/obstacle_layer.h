@@ -110,6 +110,9 @@ public:
     has_been_reset_ = true;
   }
 
+  // for testing purposes
+  void addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing);
+
 protected:
   void initMaps();
 
@@ -144,6 +147,9 @@ protected:
   std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > observation_buffers_; ///< @brief Used to store observations from various sensors
   std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > marking_buffers_; ///< @brief Used to store observation buffers used for marking obstacles
   std::vector<boost::shared_ptr<costmap_2d::ObservationBuffer> > clearing_buffers_; ///< @brief Used to store observation buffers used for clearing obstacles
+
+  // Used only for testing purposes
+  std::vector<costmap_2d::Observation> static_clearing_observations_, static_marking_observations_;
 
   bool rolling_window_;
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
