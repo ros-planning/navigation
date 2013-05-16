@@ -93,6 +93,7 @@ add_library(base_local_planner
 	src/trajectory.cpp
 	src/voxel_grid_model.cpp)
 add_dependencies(base_local_planner base_local_planner_gencfg)
+add_dependencies(base_local_planner base_local_planner_gencpp)
 add_dependencies(base_local_planner nav_msgs_gencpp)
 target_link_libraries(base_local_planner
     ${catkin_LIBRARIES}
