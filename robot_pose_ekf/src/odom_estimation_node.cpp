@@ -55,15 +55,19 @@ namespace estimation
     : odom_active_(false),
       imu_active_(false),
       vo_active_(false),
+      gps_active_(false),
       odom_initializing_(false),
       imu_initializing_(false),
       vo_initializing_(false),
+      gps_initializing_(false),
       odom_covariance_(6),
       imu_covariance_(3),
       vo_covariance_(6),
+      gps_covariance_(3),
       odom_callback_counter_(0),
       imu_callback_counter_(0),
       vo_callback_counter_(0),
+      gps_callback_counter_(0),
       ekf_sent_counter_(0)
   {
     ros::NodeHandle nh_private("~");
@@ -75,6 +79,7 @@ namespace estimation
     nh_private.param("odom_used", odom_used_, true);
     nh_private.param("imu_used",  imu_used_, true);
     nh_private.param("vo_used",   vo_used_, true);
+    nh_private.param("gps_used",   gps_used_, false);
     nh_private.param("debug",   debug_, false);
     nh_private.param("self_diagnose",  self_diagnose_, false);
     double freq;
@@ -113,6 +118,13 @@ namespace estimation
     }
     else ROS_DEBUG("VO sensor will NOT be used");
 
+    if (gps_used_){
+      ROS_DEBUG("GPS sensor can be used");
+      gps_sub_ = nh.subscribe("gps", 10, &OdomEstimationNode::gpsCallback, this);
+    }
+    else ROS_DEBUG("GPS sensor will NOT be used");
+
+
     // publish state service
     state_srv_ = nh_private.advertiseService("get_status", &OdomEstimationNode::getStatus, this);
 
@@ -121,9 +133,10 @@ namespace estimation
       odom_file_.open("/tmp/odom_file.txt");
       imu_file_.open("/tmp/imu_file.txt");
       vo_file_.open("/tmp/vo_file.txt");
+      gps_file_.open("/tmp/gps_file.txt");
       corr_file_.open("/tmp/corr_file.txt");
-      time_file_.open("/tmp/time_file.txt");
-      extra_file_.open("/tmp/extra_file.txt");
+
+  
     }
   };
 
@@ -137,10 +150,9 @@ namespace estimation
       // close files for debugging
       odom_file_.close();
       imu_file_.close();
+      gps_file_.close();
       vo_file_.close();
       corr_file_.close();
-      time_file_.close();
-      extra_file_.close();
     }
   };
 
@@ -188,7 +200,7 @@ namespace estimation
       // write to file
       double tmp, yaw;
       odom_meas_.getBasis().getEulerYPR(yaw, tmp, tmp);
-      odom_file_ << odom_meas_.getOrigin().x() << " " << odom_meas_.getOrigin().y() << "  " << yaw << "  " << endl;
+      odom_file_<< fixed <<setprecision(5) << ros::Time::now().toSec() << " " << odom_meas_.getOrigin().x() << " " << odom_meas_.getOrigin().y() << "  " << yaw << "  " << endl;
     }
   };
 
@@ -259,7 +271,7 @@ namespace estimation
       // write to file
       double tmp, yaw;
       imu_meas_.getBasis().getEulerYPR(yaw, tmp, tmp); 
-      imu_file_ << yaw << endl;
+      imu_file_ <<fixed<<setprecision(5)<<ros::Time::now().toSec()<<" "<< yaw << endl;
     }
   };
 
@@ -302,12 +314,48 @@ namespace estimation
       // write to file
       double Rx, Ry, Rz;
       vo_meas_.getBasis().getEulerYPR(Rz, Ry, Rx);
-      vo_file_ << vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
+      vo_file_ <<fixed<<setprecision(5)<<ros::Time::now().toSec()<<" "<< vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
                << Rx << " " << Ry << " " << Rz << endl;
     }
   };
 
 
+  void OdomEstimationNode::gpsCallback(const GpsConstPtr& gps)
+  {
+    gps_callback_counter_++;
+
+    assert(gps_used_);
+
+    // get data
+    gps_stamp_ = gps->header.stamp;
+    gps_time_  = Time::now();
+    poseMsgToTF(gps->pose.pose, gps_meas_);
+    for (unsigned int i=0; i<3; i++)
+      for (unsigned int j=0; j<3; j++)
+        gps_covariance_(i+1, j+1) = gps->pose.covariance[6*i+j];
+    my_filter_.addMeasurement(StampedTransform(gps_meas_.inverse(), gps_stamp_, "base_footprint", "gps"), gps_covariance_);
+    
+    // activate gps
+    if (!gps_active_) {
+      if (!gps_initializing_){
+	    gps_initializing_ = true;
+	    gps_init_stamp_ = gps_stamp_;
+	    ROS_INFO("Initializing GPS sensor");      
+      }
+      if (filter_stamp_ >= gps_init_stamp_){
+	    gps_active_ = true;
+	    gps_initializing_ = false;
+	    ROS_INFO("GPS sensor activated");      
+      }
+      else ROS_DEBUG("Waiting to activate GPS, because GPS measurements are still %f sec in the future.", 
+		    (gps_init_stamp_ - filter_stamp_).toSec());
+    }
+    
+    if (debug_){
+      // write to file
+      gps_file_ <<fixed<<setprecision(5)<<ros::Time::now().toSec()<<" "<< gps_meas_.getOrigin().x() << " " << gps_meas_.getOrigin().y() << " " << gps_meas_.getOrigin().z() <<endl;
+    }
+  };
 
 
 
@@ -341,19 +389,28 @@ namespace estimation
       vo_active_ = false;  vo_initializing_ = false;
       ROS_INFO("VO sensor not active any more");
     }
+
+    if ((gps_active_ || gps_initializing_) && 
+        (Time::now() - gps_time_).toSec() > timeout_){
+      gps_active_ = false;  gps_initializing_ = false;
+      ROS_INFO("GPS sensor not active any more");
+    }
+
     
     // only update filter when one of the sensors is active
-    if (odom_active_ || imu_active_ || vo_active_){
+    if (odom_active_ || imu_active_ || vo_active_ || gps_active_){
       
       // update filter at time where all sensor measurements are available
       if (odom_active_)  filter_stamp_ = min(filter_stamp_, odom_stamp_);
       if (imu_active_)   filter_stamp_ = min(filter_stamp_, imu_stamp_);
       if (vo_active_)    filter_stamp_ = min(filter_stamp_, vo_stamp_);
+      if (gps_active_)  filter_stamp_ = min(filter_stamp_, gps_stamp_);
+
       
       // update filter
       if ( my_filter_.isInitialized() )  {
         bool diagnostics = true;
-        if (my_filter_.update(odom_active_, imu_active_, vo_active_,  filter_stamp_, diagnostics)){
+        if (my_filter_.update(odom_active_, imu_active_,gps_active_, vo_active_,  filter_stamp_, diagnostics)){
           
           // output most recent estimate and relative covariance
           my_filter_.getEstimate(output_);
@@ -363,7 +420,7 @@ namespace estimation
           // broadcast most recent estimate to TransformArray
           StampedTransform tmp;
           my_filter_.getEstimate(ros::Time(), tmp);
-          if(!vo_active_)
+          if(!vo_active_ && !gps_active_)
             tmp.getOrigin().setZ(0.0);
           odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, base_footprint_frame_));
           
@@ -371,20 +428,31 @@ namespace estimation
             // write to file
             ColumnVector estimate; 
             my_filter_.getEstimate(estimate);
+            corr_file_ << fixed << setprecision(5)<<ros::Time::now().toSec()<<" ";
+            
             for (unsigned int i=1; i<=6; i++)
-              corr_file_ << estimate(i) << " ";
+            corr_file_ << estimate(i) << " ";
             corr_file_ << endl;
           }
         }
         if (self_diagnose_ && !diagnostics)
           ROS_WARN("Robot pose ekf diagnostics discovered a potential problem");
       }
+
+
       // initialize filer with odometry frame
-      if ( odom_active_ && !my_filter_.isInitialized()){
+      if (imu_active_ && gps_active_ && !my_filter_.isInitialized()) {
+	Quaternion q = imu_meas_.getRotation();
+        Vector3 p = gps_meas_.getOrigin();
+        Transform init_meas_ = Transform(q, p);
+        my_filter_.initialize(init_meas_, gps_stamp_);
+        ROS_INFO("Kalman filter initialized with gps and imu measurement");
+      }	
+      else if ( odom_active_  && !gps_used_ && !my_filter_.isInitialized()){
         my_filter_.initialize(odom_meas_, odom_stamp_);
         ROS_INFO("Kalman filter initialized with odom measurement");
       }
-      else if ( vo_active_ && !my_filter_.isInitialized()){
+      else if ( vo_active_ && !gps_used_ && !my_filter_.isInitialized()){
         my_filter_.initialize(vo_meas_, vo_stamp_);
         ROS_INFO("Kalman filter initialized with vo measurement");
       }

@@ -69,12 +69,13 @@ public:
   /** update the extended Kalman filter
    * \param odom_active specifies if the odometry sensor is active or not
    * \param imu_active specifies if the imu sensor is active or not
+   * \param gps_active specifies if the gps sensor is active or not
    * \param vo_active specifies if the vo sensor is active or not
    * \param filter_time update the ekf up to this time
    * \param diagnostics_res returns false if the diagnostics found that the sensor measurements are inconsistent
    * returns true on successfull update
    */
-  bool update(bool odom_active, bool imu_active, bool vo_active, const ros::Time& filter_time, bool& diagnostics_res);
+  bool update(bool odom_active, bool imu_active, bool gps_active, bool vo_active, const ros::Time& filter_time, bool& diagnostics_res);
 
   /** initialize the extended Kalman filter
    * \param prior the prior robot pose
@@ -140,16 +141,18 @@ private:
   BFL::LinearAnalyticMeasurementModelGaussianUncertainty* imu_meas_model_;
   BFL::LinearAnalyticConditionalGaussian*                 vo_meas_pdf_;
   BFL::LinearAnalyticMeasurementModelGaussianUncertainty* vo_meas_model_;
+  BFL::LinearAnalyticConditionalGaussian*                 gps_meas_pdf_;
+  BFL::LinearAnalyticMeasurementModelGaussianUncertainty* gps_meas_model_;
   BFL::Gaussian*                                          prior_;
   BFL::ExtendedKalmanFilter*                              filter_;
-  MatrixWrapper::SymmetricMatrix                          odom_covariance_, imu_covariance_, vo_covariance_;
+  MatrixWrapper::SymmetricMatrix                          odom_covariance_, imu_covariance_, vo_covariance_, gps_covariance_;
 
   // vars
   MatrixWrapper::ColumnVector vel_desi_, filter_estimate_old_vec_;
   tf::Transform filter_estimate_old_;
-  tf::StampedTransform odom_meas_, odom_meas_old_, imu_meas_, imu_meas_old_, vo_meas_, vo_meas_old_;
+  tf::StampedTransform odom_meas_, odom_meas_old_, imu_meas_, imu_meas_old_, vo_meas_, vo_meas_old_, gps_meas_, gps_meas_old_;
   ros::Time filter_time_old_;
-  bool filter_initialized_, odom_initialized_, imu_initialized_, vo_initialized_;
+  bool filter_initialized_, odom_initialized_, imu_initialized_, vo_initialized_, gps_initialized_;
 
   // diagnostics
   double diagnostics_odom_rot_rel_, diagnostics_imu_rot_rel_;
