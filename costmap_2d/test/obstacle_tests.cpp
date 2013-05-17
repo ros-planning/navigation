@@ -34,8 +34,6 @@
 
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_2d/obstacle_layer.h>
-#include <costmap_2d/static_layer.h>
 #include <costmap_2d/observation_buffer.h>
 #include <costmap_2d/testing_helper.h>
 #include <set>
@@ -50,29 +48,11 @@ using namespace costmap_2d;
 TEST(costmap, testRaytracing){
   tf::TransformListener tf;
   LayeredCostmap layers("frame", false, false);
-  StaticLayer* slayer = new StaticLayer();
-  layers.addPlugin( boost::shared_ptr<Layer>(slayer) );
-  slayer->initialize(&layers, "static", &tf);
-
-    
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
+  addStaticLayer(layers, tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   
   // Add a point cloud, should not affect the map
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.points.resize(1);
-  cloud.points[0].x = 0;
-  cloud.points[0].y = 0;
-  cloud.points[0].z = MAX_Z/2;
-
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z/2;
-
-  Observation obs(p, cloud, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
+  addObservation(olayer, 0.0, 0.0, MAX_Z/2, 0, 0, MAX_Z/2);
 
   layers.updateMap(0,0,0);
   //printMap(*(layers.getCostmap()));
@@ -88,35 +68,15 @@ TEST(costmap, testRaytracing){
 TEST(costmap, testRaytracing2){
   tf::TransformListener tf;
   LayeredCostmap layers("frame", false, false);
-  StaticLayer* slayer = new StaticLayer();
-  layers.addPlugin( boost::shared_ptr<Layer>(slayer) );
-  slayer->initialize(&layers, "static", &tf);
-
-    
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
-
-
-  // The sensor origin will be <0,0>. So if we add an obstacle at 9,9, we would expect cells
-  // <0, 0> thru <8, 8> to be traced through
-  pcl::PointCloud<pcl::PointXYZ> c0;
-  c0.points.resize(1);
-  c0.points[0].x = 9.5;
-  c0.points[0].y = 9.5;
-  c0.points[0].z = MAX_Z/2;
-
-  geometry_msgs::Point p;
-  p.x = 0.5;
-  p.y = 0.5;
-  p.z = MAX_Z/2;
-
-  Observation obs(p, c0, 100.0, 100.0);
+  addStaticLayer(layers, tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
   layers.updateMap(0,0,0);
   int obs_before =  countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
 
-  olayer->addStaticObservation(obs, true, true);
+  // The sensor origin will be <0,0>. So if we add an obstacle at 9,9, we would expect cells
+  // <0, 0> thru <8, 8> to be traced through
+  addObservation(olayer, 9.5, 9.5, MAX_Z/2, 0.5, 0.5, MAX_Z/2);
   layers.updateMap(0,0,0);
   int obs_after = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
 
@@ -144,31 +104,12 @@ TEST(costmap, testWaveInterference){
   // Start with an empty map
   LayeredCostmap layers("frame", false, true);
   layers.resizeMap(10, 10, 1, 0, 0);
-
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
   // Lay out 3 obstacles in a line - along the diagonal, separated by a cell.
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.points.resize(3);
-  cloud.points[0].x = 3;
-  cloud.points[0].y = 3;
-  cloud.points[0].z = MAX_Z;
-  cloud.points[1].x = 5;
-  cloud.points[1].y = 5;
-  cloud.points[1].z = MAX_Z;
-  cloud.points[2].x = 7;
-  cloud.points[2].y = 7;
-  cloud.points[2].z = MAX_Z;
-
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, cloud, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
+  addObservation(olayer, 3.0, 3.0, MAX_Z);
+  addObservation(olayer, 5.0, 5.0, MAX_Z);
+  addObservation(olayer, 7.0, 7.0, MAX_Z);
   layers.updateMap(0,0,0);
 
   Costmap2D* costmap = layers.getCostmap();
@@ -187,27 +128,12 @@ TEST(costmap, testZThreshold){
   LayeredCostmap layers("frame", false, true);
   layers.resizeMap(10, 10, 1, 0, 0);
 
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
   // A point cloud with 2 points falling in a cell with a non-lethal cost
-  pcl::PointCloud<pcl::PointXYZ> c0;
-  c0.points.resize(2);
-  c0.points[0].x = 0;
-  c0.points[0].y = 5;
-  c0.points[0].z = 0.4;
-  c0.points[1].x = 1;
-  c0.points[1].y = 5;
-  c0.points[1].z = 2.2;
+  addObservation(olayer, 0.0, 5.0, 0.4);
+  addObservation(olayer, 1.0, 5.0, 2.2);
 
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, c0, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
   layers.updateMap(0,0,0);
 
   Costmap2D* costmap = layers.getCostmap();
@@ -221,33 +147,16 @@ TEST(costmap, testZThreshold){
 TEST(costmap, testDynamicObstacles){
   tf::TransformListener tf;
   LayeredCostmap layers("frame", false, false);
-  StaticLayer* slayer = new StaticLayer();
-  layers.addPlugin( boost::shared_ptr<Layer>(slayer) );
-  slayer->initialize(&layers, "static", &tf);
+  addStaticLayer(layers, tf);
 
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
   // Add a point cloud and verify its insertion. There should be only one new one
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.points.resize(3);
-  cloud.points[0].x = 0;
-  cloud.points[0].y = 0;
-  cloud.points[1].x = 0;
-  cloud.points[1].y = 0;
-  cloud.points[2].x = 0;
-  cloud.points[2].y = 0;
+  addObservation(olayer, 0.0, 0.0);
+  addObservation(olayer, 0.0, 0.0);
+  addObservation(olayer, 0.0, 0.0);
 
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, cloud, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
   layers.updateMap(0,0,0);
-
 
   Costmap2D* costmap = layers.getCostmap();
   // Should now have 1 insertion and no deletions
@@ -264,27 +173,12 @@ TEST(costmap, testDynamicObstacles){
 TEST(costmap, testMultipleAdditions){
   tf::TransformListener tf;
   LayeredCostmap layers("frame", false, false);
-  StaticLayer* slayer = new StaticLayer();
-  layers.addPlugin( boost::shared_ptr<Layer>(slayer) );
-  slayer->initialize(&layers, "static", &tf);
+  addStaticLayer(layers, tf);
 
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
   // A point cloud with one point that falls within an existing obstacle
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.points.resize(1);
-  cloud.points[0].x = 9.5;
-  cloud.points[0].y = 0;
-
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, cloud, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
+  addObservation(olayer, 9.5, 0.0);
   layers.updateMap(0,0,0);
   Costmap2D* costmap = layers.getCostmap();
   //printMap(*costmap);
