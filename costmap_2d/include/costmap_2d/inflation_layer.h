@@ -100,6 +100,9 @@ public:
   }
   virtual void matchSize();
 
+  // public for testing purposes
+  inline unsigned char computeCost(double distance) const;
+
 protected:
   virtual void onFootprintChanged();
 
@@ -136,7 +139,6 @@ private:
 
   void computeCaches();
   void deleteKernels();
-  inline unsigned char computeCost(double distance) const;
   void inflate_area(int min_i, int min_j, int max_i, int max_j, unsigned char* master_grid);
 
   unsigned int cellDistance(double world_dist)

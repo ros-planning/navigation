@@ -131,11 +131,24 @@ target_link_libraries(obstacle_tests
     costmap_2d gtest layers
     )
 
+
+add_executable(static_tests test/static_tests.cpp)
+target_link_libraries(static_tests
+    costmap_2d gtest layers
+    )
+
+add_executable(inflation_tests test/inflation_tests.cpp)
+target_link_libraries(inflation_tests
+    costmap_2d gtest layers
+    )
+
 download_test_data(http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag test/simple_driving_test_indexed.bag 61168cff9425b11e093ea3a627c81c8d)
 download_test_data(http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm test/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
  
 add_rostest(test/simple_driving_test.xml)
+add_rostest(test/static_tests.launch)
 add_rostest(test/obstacle_tests.launch)
+add_rostest(test/inflation_tests.launch)
 
 install( TARGETS
     costmap_2d_markers

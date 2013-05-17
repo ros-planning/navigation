@@ -214,6 +214,86 @@ TEST(costmap, testZThreshold){
   ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), 1);
 }
 
+
+/**
+ * Verify that dynamic obstacles are added
+ */
+TEST(costmap, testDynamicObstacles){
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);
+  StaticLayer* slayer = new StaticLayer();
+  layers.addPlugin( boost::shared_ptr<Layer>(slayer) );
+  slayer->initialize(&layers, "static", &tf);
+
+  ObstacleLayer* olayer = new ObstacleLayer();
+  olayer->initialize(&layers, "obstacles", &tf);
+  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
+
+  // Add a point cloud and verify its insertion. There should be only one new one
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  cloud.points.resize(3);
+  cloud.points[0].x = 0;
+  cloud.points[0].y = 0;
+  cloud.points[1].x = 0;
+  cloud.points[1].y = 0;
+  cloud.points[2].x = 0;
+  cloud.points[2].y = 0;
+
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, cloud, 100.0, 100.0);
+  olayer->addStaticObservation(obs, true, true);
+  layers.updateMap(0,0,0);
+
+
+  Costmap2D* costmap = layers.getCostmap();
+  // Should now have 1 insertion and no deletions
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), 21);
+
+  // Repeating the call - we should see no insertions or deletions
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), 21);
+}
+
+
+/**
+ * Verify that if we add a point that is already a static obstacle we do not end up with a new ostacle
+ */
+TEST(costmap, testMultipleAdditions){
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);
+  StaticLayer* slayer = new StaticLayer();
+  layers.addPlugin( boost::shared_ptr<Layer>(slayer) );
+  slayer->initialize(&layers, "static", &tf);
+
+  ObstacleLayer* olayer = new ObstacleLayer();
+  olayer->initialize(&layers, "obstacles", &tf);
+  layers.addPlugin( boost::shared_ptr<Layer>(olayer) );
+
+  // A point cloud with one point that falls within an existing obstacle
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  cloud.points.resize(1);
+  cloud.points[0].x = 9.5;
+  cloud.points[0].y = 0;
+
+  geometry_msgs::Point p;
+  p.x = 0.0;
+  p.y = 0.0;
+  p.z = MAX_Z;
+
+  Observation obs(p, cloud, 100.0, 100.0);
+  olayer->addStaticObservation(obs, true, true);
+  layers.updateMap(0,0,0);
+  Costmap2D* costmap = layers.getCostmap();
+  //printMap(*costmap);
+
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), 20);
+
+}
+
+
 int main(int argc, char** argv){
   ros::init(argc, argv, "obstacle_tests");
   testing::InitGoogleTest(&argc, argv);
