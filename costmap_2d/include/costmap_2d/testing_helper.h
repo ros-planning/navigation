@@ -5,6 +5,7 @@
 #include<costmap_2d/costmap_2d.h>
 #include <costmap_2d/static_layer.h>
 #include <costmap_2d/obstacle_layer.h>
+#include <costmap_2d/inflation_layer.h>
 
 const double MAX_Z(1.0);
 
@@ -85,6 +86,15 @@ void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, doubl
 
   costmap_2d::Observation obs(p, cloud, 100.0, 100.0);
   olayer->addStaticObservation(obs, true, true);
+}
+
+costmap_2d::InflationLayer* addInflationLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
+{
+  costmap_2d::InflationLayer* ilayer = new costmap_2d::InflationLayer();
+  ilayer->initialize(&layers, "inflation", &tf);
+  boost::shared_ptr<costmap_2d::Layer> ipointer(ilayer);
+  layers.addPlugin( ipointer );
+  return ilayer;
 }
 
 

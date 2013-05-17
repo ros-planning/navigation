@@ -45,56 +45,44 @@
 using namespace costmap_2d;
 using geometry_msgs::Point;
 
-TEST(costmap, testAdjacentToObstacleCanStillMove){
-  tf::TransformListener tf;
-  LayeredCostmap layers("frame", false, false);
-  layers.resizeMap(10, 10, 1, 0, 0);
+std::vector<Point> setRadii(LayeredCostmap& layers, double length, double width, double inflation_radius)
+{
   std::vector<Point> polygon;
   Point p;
-
-  // Footprint with inscribed radius = 2.1
-  //               circumscribed radius = 3.1
-  double a = 2.1, b = 2.3;
-  p.x = b;
-  p.y = a;
+  p.x = width;
+  p.y = length; 
   polygon.push_back(p);
-  p.x = b;
-  p.y = -a;
+  p.x = width;
+  p.y = -length; 
   polygon.push_back(p);
-  p.x = -b;
-  p.y = -a;
+  p.x = -width;
+  p.y = -length; 
   polygon.push_back(p);
-  p.x = -b;
-  p.y = a;
+  p.x = -width;
+  p.y = length; 
   polygon.push_back(p);
   layers.setFootprint(polygon);
 
   ros::NodeHandle nh;
-  nh.setParam("/inflation_tests/inflation/inflation_radius", 4.1);
-  
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  boost::shared_ptr<Layer> opointer(olayer);
-  layers.addPlugin( opointer );
+  nh.setParam("/inflation_tests/inflation/inflation_radius", inflation_radius);
 
-  InflationLayer* ilayer = new InflationLayer();
-  ilayer->initialize(&layers, "inflation", &tf);
+  return polygon;
+}
+
+TEST(costmap, testAdjacentToObstacleCanStillMove){
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);
+  layers.resizeMap(10, 10, 1, 0, 0);
+
+  // Footprint with inscribed radius = 2.1
+  //               circumscribed radius = 3.1
+  std::vector<Point> polygon = setRadii(layers, 2.1, 2.3, 4.1);
+
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  InflationLayer* ilayer = addInflationLayer(layers, tf);
   ilayer->setFootprint(polygon);
-  boost::shared_ptr<Layer> ipointer(ilayer);
-  layers.addPlugin( ipointer );
 
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.points.resize(1);
-  cloud.points[0].x = 0;
-  cloud.points[0].y = 0;
-  cloud.points[0].z = MAX_Z;
-
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, cloud, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
+  addObservation(olayer, 0, 0, MAX_Z);
 
   layers.updateMap(0,0,0);
   Costmap2D* costmap = layers.getCostmap();
@@ -111,49 +99,16 @@ TEST(costmap, testInflationShouldNotCreateUnknowns){
   tf::TransformListener tf;
   LayeredCostmap layers("frame", false, false);
   layers.resizeMap(10, 10, 1, 0, 0);
-  std::vector<Point> polygon;
-  Point p;
 
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
-  double a = 2.1, b = 2.3;
-  p.x = b;
-  p.y = a;
-  polygon.push_back(p);
-  p.x = b;
-  p.y = -a;
-  polygon.push_back(p);
-  p.x = -b;
-  p.y = -a;
-  polygon.push_back(p);
-  p.x = -b;
-  p.y = a;
-  polygon.push_back(p);
-  layers.setFootprint(polygon);
-  
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  boost::shared_ptr<Layer> opointer(olayer);
-  layers.addPlugin( opointer );
+  std::vector<Point> polygon = setRadii(layers, 2.1, 2.3, 4.1);
 
-  InflationLayer* ilayer = new InflationLayer();
-  ilayer->initialize(&layers, "inflation", &tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  InflationLayer* ilayer = addInflationLayer(layers, tf);
   ilayer->setFootprint(polygon);
-  boost::shared_ptr<Layer> ipointer(ilayer);
-  layers.addPlugin( ipointer );
 
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.points.resize(1);
-  cloud.points[0].x = 0;
-  cloud.points[0].y = 0;
-  cloud.points[0].z = MAX_Z;
-
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, cloud, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
+  addObservation(olayer, 0, 0, MAX_Z);
 
   layers.updateMap(0,0,0);
   Costmap2D* costmap = layers.getCostmap();
@@ -169,53 +124,16 @@ TEST(costmap, testCostFunctionCorrectness){
   tf::TransformListener tf;
   LayeredCostmap layers("frame", false, false);
   layers.resizeMap(100, 100, 1, 0, 0);
-  std::vector<Point> polygon;
-  Point p;
 
   // Footprint with inscribed radius = 5.0
   //               circumscribed radius = 8.0
-  double a = 5.0, b = 6.25;
-  p.x = b;
-  p.y = a;
-  polygon.push_back(p);
-  p.x = b;
-  p.y = -a;
-  polygon.push_back(p);
-  p.x = -b;
-  p.y = -a;
-  polygon.push_back(p);
-  p.x = -b;
-  p.y = a;
-  polygon.push_back(p);
-  layers.setFootprint(polygon);
+  std::vector<Point> polygon = setRadii(layers, 5.0, 6.25, 10.5);
 
-  ros::NodeHandle nh;
-  nh.setParam("/inflation_tests/inflation/inflation_radius", 10.5);
-  
-  ObstacleLayer* olayer = new ObstacleLayer();
-  olayer->initialize(&layers, "obstacles", &tf);
-  boost::shared_ptr<Layer> opointer(olayer);
-  layers.addPlugin( opointer );
-
-  InflationLayer* ilayer = new InflationLayer();
-  ilayer->initialize(&layers, "inflation", &tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  InflationLayer* ilayer = addInflationLayer(layers, tf);
   ilayer->setFootprint(polygon);
-  boost::shared_ptr<Layer> ipointer(ilayer);
-  layers.addPlugin( ipointer );
 
-  // Add a point in the center
-  pcl::PointCloud<pcl::PointXYZ> cloud;
-  cloud.points.resize(1);
-  cloud.points[0].x = 50;
-  cloud.points[0].y = 50;
-  cloud.points[0].z = MAX_Z;
-
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, cloud, 100.0, 100.0);
-  olayer->addStaticObservation(obs, true, true);
+  addObservation(olayer, 50, 50, MAX_Z);
 
   layers.updateMap(0,0,0);
   Costmap2D* map = layers.getCostmap();
@@ -224,7 +142,7 @@ TEST(costmap, testCostFunctionCorrectness){
   //unsigned char c = ilayer->computeCost(8.0);
   //ASSERT_EQ(ilayer->getCircumscribedCost(), c);
 
-  for(unsigned int i = 0; i <= (unsigned int)ceil(a); i++){
+  for(unsigned int i = 0; i <= (unsigned int)ceil(5.0); i++){
     // To the right
     ASSERT_EQ(map->getCost(50 + i, 50) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
     ASSERT_EQ(map->getCost(50 + i, 50) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
@@ -269,7 +187,6 @@ TEST(costmap, testCostFunctionCorrectness){
 /**
  * Test inflation for both static and dynamic obstacles
  *
-
 TEST(costmap, testInflation){
   Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
       10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
