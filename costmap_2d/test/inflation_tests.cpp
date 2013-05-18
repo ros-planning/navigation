@@ -186,262 +186,135 @@ TEST(costmap, testCostFunctionCorrectness){
 
 /**
  * Test inflation for both static and dynamic obstacles
- *
+ */
 TEST(costmap, testInflation){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
-      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-  // Verify that obstacles correctly identified
-  std::vector<unsigned int> occupiedCells;
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);
 
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
-        occupiedCells.push_back(map.getIndex(i, j));
-      }
-    }
-  }
+  // Footprint with inscribed radius = 2.1
+  //               circumscribed radius = 3.1
+  std::vector<Point> polygon = setRadii(layers, 1, 1, 1);
 
-  // There should be no duplicates
-  std::set<unsigned int> setOfCells;
-  for(unsigned int i=0;i<occupiedCells.size(); i++)
-    setOfCells.insert(i);
+  addStaticLayer(layers, tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  InflationLayer* ilayer = addInflationLayer(layers, tf);
+  ilayer->setFootprint(polygon);
 
-  ASSERT_EQ(setOfCells.size(), occupiedCells.size());
-  ASSERT_EQ(setOfCells.size(), (unsigned int)48);
+  Costmap2D* costmap = layers.getCostmap();
 
-  // Iterate over all id's and verify they are obstacles
+  layers.updateMap(0,0,0);
+  //printMap(*costmap);
+  ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE),             (unsigned int)20);
+  ASSERT_EQ(countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)28);
+
+  /*/ Iterate over all id's and verify they are obstacles
   for(std::vector<unsigned int>::const_iterator it = occupiedCells.begin(); it != occupiedCells.end(); ++it){
     unsigned int ind = *it;
     unsigned int x, y;
     map.indexToCells(ind, x, y);
     ASSERT_EQ(find(occupiedCells, map.getIndex(x, y)), true);
     ASSERT_EQ(map.getCost(x, y) == costmap_2d::LETHAL_OBSTACLE || map.getCost(x, y) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE, true);
-  }
+  }*/
 
-  // Set an obstacle at the origin and observe insertions for it and its neighbors
-  pcl::PointCloud<pcl::PointXYZ> c0;
-  c0.points.resize(1);
-  c0.points[0].x = 0;
-  c0.points[0].y = 0;
-  c0.points[0].z = 0.4;
-
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, c0, 100.0, 100.0);
-  std::vector<Observation> obsBuf, empty;
-  obsBuf.push_back(obs);
-
-  map.updateWorld(0, 0, obsBuf, empty);
-
-  occupiedCells.clear();
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
-        occupiedCells.push_back(map.getIndex(i, j));
-      }
-    }
-  }
+  addObservation(olayer, 0, 0, 0.4);
+  layers.updateMap(0,0,0);
 
   // It and its 2 neighbors makes 3 obstacles
-  ASSERT_EQ(occupiedCells.size(), (unsigned int)51);
+  ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE) + countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)51);
 
   // @todo Rewrite 
   // Add an obstacle at <2,0> which will inflate and refresh to of the other inflated cells
-  pcl::PointCloud<pcl::PointXYZ> c1;
-  c1.points.resize(1);
-  c1.points[0].x = 2;
-  c1.points[0].y = 0;
-  c1.points[0].z = 0.0;
-
-  geometry_msgs::Point p1;
-  p1.x = 0.0;
-  p1.y = 0.0;
-  p1.z = MAX_Z;
-
-  Observation obs1(p1, c1, 100.0, 100.0);
-  std::vector<Observation> obsBuf1;
-  obsBuf1.push_back(obs1);
-
-  map.updateWorld(0, 0, obsBuf1, empty);
-
-  occupiedCells.clear();
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
-        occupiedCells.push_back(map.getIndex(i, j));
-      }
-    }
-  }
+  addObservation(olayer, 2, 0);
+  layers.updateMap(0,0,0);
 
   // Now we expect insertions for it, and 2 more neighbors, but not all 5. Free space will propagate from
   // the origin to the target, clearing the point at <0, 0>, but not over-writing the inflation of the obstacle
   // at <0, 1>
-  ASSERT_EQ(occupiedCells.size(), (unsigned int)54);
-
+  ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE) + countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)54);
 
   // Add an obstacle at <1, 9>. This will inflate obstacles around it
-  pcl::PointCloud<pcl::PointXYZ> c2;
-  c2.points.resize(1);
-  c2.points[0].x = 1;
-  c2.points[0].y = 9;
-  c2.points[0].z = 0.0;
+  addObservation(olayer, 1, 9);
+  layers.updateMap(0,0,0);
 
-  geometry_msgs::Point p2;
-  p2.x = 0.0;
-  p2.y = 0.0;
-  p2.z = MAX_Z;
-
-  Observation obs2(p2, c2, 100.0, 100.0);
-  std::vector<Observation> obsBuf2;
-  obsBuf2.push_back(obs2);
-
-  map.updateWorld(0, 0, obsBuf2, empty);
-
-  ASSERT_EQ(map.getCost(1, 9), costmap_2d::LETHAL_OBSTACLE);
-  ASSERT_EQ(map.getCost(0, 9), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
-  ASSERT_EQ(map.getCost(2, 9), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
+  ASSERT_EQ(costmap->getCost(1, 9), LETHAL_OBSTACLE);
+  ASSERT_EQ(costmap->getCost(0, 9), INSCRIBED_INFLATED_OBSTACLE);
+  ASSERT_EQ(costmap->getCost(2, 9), INSCRIBED_INFLATED_OBSTACLE);
 
   // Add an obstacle and verify that it over-writes its inflated status
-  pcl::PointCloud<pcl::PointXYZ> c3;
-  c3.points.resize(1);
-  c3.points[0].x = 0;
-  c3.points[0].y = 9;
-  c3.points[0].z = 0.0;
+  addObservation(olayer, 0, 9);
+  layers.updateMap(0,0,0);
 
-  geometry_msgs::Point p3;
-  p3.x = 0.0;
-  p3.y = 0.0;
-  p3.z = MAX_Z;
-
-  Observation obs3(p3, c3, 100.0, 100.0);
-  std::vector<Observation> obsBuf3;
-  obsBuf3.push_back(obs3);
-
-  map.updateWorld(0, 0, obsBuf3, empty);
-
-  ASSERT_EQ(map.getCost(0, 9), costmap_2d::LETHAL_OBSTACLE);
+  ASSERT_EQ(costmap->getCost(0, 9), LETHAL_OBSTACLE);
 }
 
 /**
  * Test specific inflation scenario to ensure we do not set inflated obstacles to be raw obstacles.
- *
+ */
 TEST(costmap, testInflation2){
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
-      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);
+
+  // Footprint with inscribed radius = 2.1
+  //               circumscribed radius = 3.1
+  std::vector<Point> polygon = setRadii(layers, 1, 1, 1);
+
+  addStaticLayer(layers, tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  InflationLayer* ilayer = addInflationLayer(layers, tf);
+  ilayer->setFootprint(polygon);
 
   // Creat a small L-Shape all at once
-  pcl::PointCloud<pcl::PointXYZ> c0;
-  c0.points.resize(3);
-  c0.points[0].x = 1;
-  c0.points[0].y = 1;
-  c0.points[0].z = MAX_Z;
-  c0.points[1].x = 1;
-  c0.points[1].y = 2;
-  c0.points[1].z = MAX_Z;
-  c0.points[2].x = 2;
-  c0.points[2].y = 2;
-  c0.points[2].z = MAX_Z;
+  addObservation(olayer, 1, 1, MAX_Z);
+  addObservation(olayer, 2, 1, MAX_Z);
+  addObservation(olayer, 2, 2, MAX_Z);
+  layers.updateMap(0,0,0);
 
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, c0, 100.0, 100.0);
-  std::vector<Observation> obsBuf;
-  obsBuf.push_back(obs);
-
-  map.updateWorld(0, 0, obsBuf, obsBuf);
-
-  ASSERT_EQ(map.getCost(3, 2), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);  
-  ASSERT_EQ(map.getCost(3, 3), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
+  Costmap2D* costmap = layers.getCostmap();
+  //printMap(*costmap);
+  ASSERT_EQ(costmap->getCost(2, 3), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);  
+  ASSERT_EQ(costmap->getCost(3, 3), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
 }
 
 /**
  * Test inflation behavior, starting with an empty map
- *
+ */
 TEST(costmap, testInflation3){
-  std::vector<unsigned char> mapData;
-  for(unsigned int i=0; i< GRID_WIDTH; i++){
-    for(unsigned int j = 0; j < GRID_HEIGHT; j++){
-      mapData.push_back(0);
-    }
-  }
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);
+  layers.resizeMap(10, 10, 1, 0, 0);
 
-  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS * 2, ROBOT_RADIUS * 3, 
-      10.0, MAX_Z, 10.0, 1, mapData, THRESHOLD);
+  // 1 2 3
+  std::vector<Point> polygon = setRadii(layers, 1, 1.75, 3);
+
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  InflationLayer* ilayer = addInflationLayer(layers, tf);
+  ilayer->setFootprint(polygon);
 
   // There should be no occupied cells
-  std::vector<unsigned int> ids;
-
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
-        ids.push_back(map.getIndex(i, j));
-      }
-    }
-  }
-
-  ASSERT_EQ(ids.size(), (unsigned int)0);
-
+  Costmap2D* costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE),             (unsigned int)0);
+  ASSERT_EQ(countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)0);
+  printMap(*costmap);
   // Add an obstacle at 5,5
-  pcl::PointCloud<pcl::PointXYZ> c0;
-  c0.points.resize(1);
-  c0.points[0].x = 5;
-  c0.points[0].y = 5;
-  c0.points[0].z = MAX_Z;
+  addObservation(olayer, 5, 5, MAX_Z);
+  layers.updateMap(0,0,0);
+  printMap(*costmap);
 
-  geometry_msgs::Point p;
-  p.x = 0.0;
-  p.y = 0.0;
-  p.z = MAX_Z;
-
-  Observation obs(p, c0, 100.0, 100.0);
-  std::vector<Observation> obsBuf;
-  obsBuf.push_back(obs);
-
-  map.updateWorld(0, 0, obsBuf, obsBuf);
-
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      if(map.getCost(i, j) != costmap_2d::FREE_SPACE){
-        ids.push_back(map.getIndex(i, j));
-      }
-    }
-  }
-
-  ASSERT_EQ(ids.size(), (unsigned int)29);
-
-  ids.clear();
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE || map.getCost(i, j) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
-        ids.push_back(map.getIndex(i, j));
-      }
-    }
-  }
-
-  ASSERT_EQ(ids.size(), (unsigned int)5);
+  // Test fails because updated cell value is 0
+  ASSERT_EQ(countValues(*costmap, FREE_SPACE, false), (unsigned int)29);
+  ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE), (unsigned int)1);
+  ASSERT_EQ(countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)4);
 
   // Update again - should see no change
-  map.updateWorld(0, 0, obsBuf, obsBuf);
+  layers.updateMap(0,0,0);
 
-  ids.clear();
-  for(unsigned int i = 0; i < 10; ++i){
-    for(unsigned int j = 0; j < 10; ++j){
-      if(map.getCost(i, j) != costmap_2d::FREE_SPACE){
-        ids.push_back(map.getIndex(i, j));
-      }
-    }
-  }
-  
-  ASSERT_EQ(ids.size(), (unsigned int)29);
+  ASSERT_EQ(countValues(*costmap, FREE_SPACE, false), (unsigned int)29);
+  ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE), (unsigned int)1);
+  ASSERT_EQ(countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)4);
 }
-//*/
+
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "inflation_tests");

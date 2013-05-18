@@ -30,6 +30,7 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
   if (weight_ != config.cost_scaling_factor || inflation_radius_ != config.inflation_radius)
   {
     inflation_radius_ = config.inflation_radius;
+    cell_inflation_radius_ = cellDistance(inflation_radius_);
     weight_ = config.cost_scaling_factor;
     need_reinflation_ = true;
     computeCaches();
@@ -82,6 +83,7 @@ void InflationLayer::onFootprintChanged()
            footprint_spec.size(), inscribed_radius_);
   computeCaches();
   need_reinflation_ = true;
+  ROS_DEBUG("Inscribed: %f    Circumscribed: %f     Inflation: %f", inscribed_radius_, circumscribed_radius_, inflation_radius_);
 }
 
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
@@ -105,8 +107,8 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
 
   min_i = std::max( 0, min_i );
   min_j = std::max( 0, min_j );
-  max_i = std::min( int( size_x - 1 ), max_i );
-  max_j = std::min( int( size_y - 1 ), max_j );
+  max_i = std::min( int( size_x  ), max_i );
+  max_j = std::min( int( size_y  ), max_j );
 
   for (int j = min_j; j < max_j; j++)
   {
