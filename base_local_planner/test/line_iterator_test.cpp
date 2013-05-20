@@ -34,45 +34,45 @@
 TEST( LineIterator, south )
 {
   base_local_planner::LineIterator line( 1, 2, 1, 4 );
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( 1, line.getX() );
   EXPECT_EQ( 2, line.getY() );
   line.advance();
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( 1, line.getX() );
   EXPECT_EQ( 3, line.getY() );
   line.advance();
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( 1, line.getX() );
   EXPECT_EQ( 4, line.getY() );
   line.advance();
-  EXPECT_EQ( false, line.isValid() );
+  EXPECT_FALSE( line.isValid() );
 }
 
 TEST( LineIterator, north_north_west )
 {
   base_local_planner::LineIterator line( 0, 0, -2, -4 );
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( 0, line.getX() );
   EXPECT_EQ( 0, line.getY() );
   line.advance();
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( -1, line.getX() );
   EXPECT_EQ( -1, line.getY() );
   line.advance();
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( -1, line.getX() );
   EXPECT_EQ( -2, line.getY() );
   line.advance();
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( -2, line.getX() );
   EXPECT_EQ( -3, line.getY() );
   line.advance();
-  EXPECT_EQ( true, line.isValid() );
+  EXPECT_TRUE( line.isValid() );
   EXPECT_EQ( -2, line.getX() );
   EXPECT_EQ( -4, line.getY() );
   line.advance();
-  EXPECT_EQ( false, line.isValid() );
+  EXPECT_FALSE( line.isValid() );
 }
 
 int main( int argc, char **argv ) {

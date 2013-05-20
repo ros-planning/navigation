@@ -100,12 +100,9 @@ public:
   }
   virtual void matchSize();
 
-  /**
-   * @brief  Given a distance... compute a cost
+  /** @brief  Given a distance, compute a cost.
    * @param  distance The distance from an obstacle in cells
-   * @return A cost value for the distance
-   */
-  // public for testing purposes
+   * @return A cost value for the distance */
   inline unsigned char computeCost(double distance) const
   {
     unsigned char cost = 0;

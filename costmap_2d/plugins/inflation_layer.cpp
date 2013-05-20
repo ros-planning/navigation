@@ -223,4 +223,5 @@ void InflationLayer::deleteKernels()
     delete[] cached_costs_;
   }
 }
-}
+
+} // end namespace costmap_2d
