@@ -1,0 +1,19 @@
+<launch>
+  <!-- use sim time -->
+  <param name="use_sim_time" value="true"/>
+
+  <!-- Robot pose ekf -->
+  <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" output="screen">
+    <param name="freq" value="30.0"/>
+    <param name="sensor_timeout" value="1.0"/>
+    <param name="odom_used" value="true"/>
+    <param name="imu_used" value="true"/>
+    <param name="vo_used" value="false"/>
+    <param name="gps_used" value="true"/>
+    <remap from="odom" to="encoder" />
+  </node>
+
+  <node pkg="rosbag" name="play" type="play" args="--clock --hz 100 -d .4  $(find robot_pose_ekf)/test/gps_data.bag" />
+
+  <test test-name="test_robot_pose_ekf_gps" pkg="robot_pose_ekf" type="test_robot_pose_ekf_gps" time-limit="50" />
+</launch>

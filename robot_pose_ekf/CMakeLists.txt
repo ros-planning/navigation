@@ -31,4 +31,9 @@ rosbuild_link_boost(test_robot_pose_ekf_zero_covariance thread)
 rosbuild_add_gtest_build_flags(test_robot_pose_ekf_zero_covariance)
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
 
+rosbuild_add_executable(test_robot_pose_ekf_gps test/test_robot_pose_ekf_gps.cpp)
+rosbuild_link_boost(test_robot_pose_ekf_gps thread)
+rosbuild_add_gtest_build_flags(test_robot_pose_ekf_gps)
+rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_gps.launch)
+
 endif(CMAKE_SYSTEM_NAME MATCHES "Linux")
