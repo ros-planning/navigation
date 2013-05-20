@@ -126,6 +126,8 @@ target_link_libraries(costmap_tester
     costmap_2d
     )
 
+include_directories(test)
+
 add_executable(obstacle_tests test/obstacle_tests.cpp)
 target_link_libraries(obstacle_tests
     costmap_2d gtest layers

@@ -36,9 +36,9 @@ void printMap( costmap_2d::Costmap2D& costmap )
   printf("map:\n");
   for(int i=0;i<costmap.getSizeInCellsY();i++){
     for(int j=0;j<costmap.getSizeInCellsX();j++){
-      printf("%c", printableCost(costmap.getCost(j,i) ));
+      printf("%4d", int(costmap.getCost(j,i) ));
     }
-    printf("\n");
+    printf("\n\n");
   }
 }
 
