@@ -130,7 +130,7 @@ catkin_add_gtest(base_local_planner_utest
 	test/trajectory_generator_test.cpp
 	test/map_grid_test.cpp)
 target_link_libraries(base_local_planner_utest
-    base_local_planner
+    base_local_planner trajectory_planner_ros
     )
 
 
