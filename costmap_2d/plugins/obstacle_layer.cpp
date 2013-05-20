@@ -334,6 +334,14 @@ void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, i
   }
 }
 
+void ObstacleLayer::addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing)
+{
+  if(marking)
+    static_marking_observations_.push_back(obs);
+  if(clearing)
+    static_clearing_observations_.push_back(obs);
+}
+
 bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_observations) const
 {
   bool current = true;
@@ -345,6 +353,8 @@ bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_obs
     current = marking_buffers_[i]->isCurrent() && current;
     marking_buffers_[i]->unlock();
   }
+  marking_observations.insert(marking_observations.end(), 
+                              static_marking_observations_.begin(), static_marking_observations_.end());
   return current;
 }
 
@@ -359,6 +369,8 @@ bool ObstacleLayer::getClearingObservations(std::vector<Observation>& clearing_o
     current = clearing_buffers_[i]->isCurrent() && current;
     clearing_buffers_[i]->unlock();
   }
+  clearing_observations.insert(clearing_observations.end(), 
+                              static_clearing_observations_.begin(), static_clearing_observations_.end());
   return current;
 }
 
@@ -383,6 +395,12 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   double origin_x = origin_x_, origin_y = origin_y_;
   double map_end_x = origin_x + size_x_ * resolution_;
   double map_end_y = origin_y + size_y_ * resolution_;
+
+
+  *min_x = std::min(ox, *min_x);
+  *min_y = std::min(oy, *min_y);
+  *max_x = std::max(ox, *max_x);
+  *max_y = std::max(oy, *max_y);
 
   //for each point in the cloud, we want to trace a line from the origin and clear obstacles along it
   for (unsigned int i = 0; i < cloud.points.size(); ++i)

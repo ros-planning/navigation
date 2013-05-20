@@ -33,6 +33,6 @@ install(TARGETS voxel_grid
 
 catkin_add_gtest(voxel_grid_tests test/voxel_grid_tests.cpp)
 target_link_libraries(voxel_grid_tests
-    libvoxel_grid
+    voxel_grid
     ${catkin_LIBRARIES}
     )

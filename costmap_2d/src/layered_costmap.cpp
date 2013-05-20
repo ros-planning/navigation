@@ -106,6 +106,8 @@ void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_y
   y0 = std::max(0, y0);
   yn = std::min(int(costmap_.getSizeInCellsY()), yn + 1);
 
+  ROS_DEBUG("Updating area x: [%d, %d] y: [%d, %d]", x0, xn, y0, yn);
+
   if (xn < x0 || yn < y0)
     return;
 
