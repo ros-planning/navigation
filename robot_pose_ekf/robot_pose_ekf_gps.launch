@@ -8,7 +8,7 @@
   <param name="odom_used" value="true"/>
   <param name="imu_used" value="true"/>
   <param name="vo_used" value="false"/>
-  <param name="gps_used" value="false"/>
+  <param name="gps_used" value="true"/>
 
 </node>
 
