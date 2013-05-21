@@ -133,7 +133,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   private_nh.param(topic_param, topic, std::string("footprint"));
   footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
 
-  publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), "costmap");
+  publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
 
   // create a thread to handle updating the map
   stop_updates_ = false;

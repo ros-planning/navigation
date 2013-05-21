@@ -69,7 +69,7 @@ public:
    * @param  origin_x The x origin of the map
    * @param  origin_y The y origin of the map
    */
-  Costmap2D(std::string global_frame, unsigned int cells_size_x, unsigned int cells_size_y, double resolution,
+  Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, double resolution,
             double origin_x, double origin_y, unsigned char default_value = 0);
 
   /**
@@ -232,11 +232,6 @@ public:
    */
   double getResolution() const;
 
-  std::string getGlobalFrameID()
-  {
-    return global_frame_;
-  }
-
   void setDefaultValue(unsigned char c)
   {
     default_value_ = c;
@@ -282,7 +277,7 @@ public:
    */
   bool saveMap(std::string file_name);
 
-  void resizeMap(std::string global_frame, unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
+  void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
                  double origin_y);
 
   void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
@@ -422,7 +417,6 @@ private:
 
   boost::shared_mutex* access_;
 protected:
-  std::string global_frame_;
   unsigned int size_x_;
   unsigned int size_y_;
   double resolution_;

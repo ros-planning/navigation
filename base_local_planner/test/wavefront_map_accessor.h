@@ -17,7 +17,7 @@ namespace base_local_planner {
 class WavefrontMapAccessor : public costmap_2d::Costmap2D {
   public:
     WavefrontMapAccessor(MapGrid* map, double outer_radius)
-      : costmap_2d::Costmap2D("some_frame", map->size_x_, map->size_y_, 1, 0, 0),
+      : costmap_2d::Costmap2D(map->size_x_, map->size_y_, 1, 0, 0),
         map_(map), outer_radius_(outer_radius) {
       synchronize();
     }

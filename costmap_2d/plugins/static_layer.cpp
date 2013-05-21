@@ -61,7 +61,7 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
 void StaticLayer::matchSize()
 {
   Costmap2D* master = layered_costmap_->getCostmap();
-  resizeMap(master->getGlobalFrameID(), master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
+  resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
             master->getOriginX(), master->getOriginY());
 }
 

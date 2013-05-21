@@ -179,7 +179,7 @@ namespace navfn {
     makePlan(req.start, req.goal, resp.plan.poses);
 
     resp.plan.header.stamp = ros::Time::now();
-    resp.plan.header.frame_id = costmap_ros_->getCostmap()->getGlobalFrameID();
+    resp.plan.header.frame_id = costmap_ros_->getGlobalFrameID();
 
     return true;
   } 
@@ -208,7 +208,7 @@ namespace navfn {
 
     ros::NodeHandle n;
     costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
-    std::string global_frame = costmap->getGlobalFrameID();
+    std::string global_frame = costmap_ros_->getGlobalFrameID();
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame)){
@@ -384,14 +384,15 @@ namespace navfn {
     }
     
     costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
+    std::string global_frame = costmap_ros_->getGlobalFrameID();
 
     //clear the plan, just in case
     plan.clear();
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, costmap->getGlobalFrameID())){
+    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame)){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, costmap->getGlobalFrameID()).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
       return false;
     }
 
@@ -418,7 +419,7 @@ namespace navfn {
     float *y = planner_->getPathY();
     int len = planner_->getPathLen();
     ros::Time plan_time = ros::Time::now();
-    std::string global_frame = costmap->getGlobalFrameID();
+
     for(int i = len - 1; i >= 0; --i){
       //convert the plan to world coordinates
       double world_x, world_y;
