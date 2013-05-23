@@ -40,8 +40,8 @@
 
 namespace costmap_2d
 {
-Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string topic_name) :
-    node(&ros_node), costmap_(costmap), active_(false)
+Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name) :
+    node(&ros_node), costmap_(costmap), global_frame_(global_frame), active_(false)
 {
 
   costmap_pub_ = ros_node.advertise < nav_msgs::OccupancyGrid > (topic_name, 1, true);
@@ -58,12 +58,11 @@ void Costmap2DPublisher::publishCostmap()
   boost::shared_lock < boost::shared_mutex > lock(*(costmap_->getLock()));
   double resolution = costmap_->getResolution();
 
-  if (grid_.header.frame_id != costmap_->getGlobalFrameID() || grid_.info.resolution != resolution
-      || grid_.info.width != costmap_->getSizeInCellsX())
+  if (grid_.info.resolution != resolution || grid_.info.width != costmap_->getSizeInCellsX())
   {
 
     // Publish Whole Grid
-    grid_.header.frame_id = costmap_->getGlobalFrameID();
+    grid_.header.frame_id = global_frame_;
     grid_.header.stamp = ros::Time::now();
     grid_.info.resolution = resolution;
 
@@ -91,7 +90,7 @@ void Costmap2DPublisher::publishCostmap()
     // Publish Just an Update
     costmap_2d::OccupancyGridUpdate update;
     update.header.stamp = ros::Time::now();
-    update.header.frame_id = costmap_->getGlobalFrameID();
+    update.header.frame_id = global_frame_;
     update.x = x0_;
     update.y = y0_;
     update.width = xn_ - x0_;

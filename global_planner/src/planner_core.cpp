@@ -157,7 +157,7 @@ bool PlannerCore::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::Get
     makePlan(req.start, req.goal, resp.plan.poses);
 
     resp.plan.header.stamp = ros::Time::now();
-    resp.plan.header.frame_id = costmap_ros_->getCostmap()->getGlobalFrameID();
+    resp.plan.header.frame_id = costmap_ros_->getGlobalFrameID();
 
     return true;
 }
@@ -187,7 +187,7 @@ bool PlannerCore::makePlan(const geometry_msgs::PoseStamped& start, const geomet
 
     ros::NodeHandle n;
     costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
-    std::string global_frame = costmap->getGlobalFrameID();
+    std::string global_frame = costmap_ros_->getGlobalFrameID();
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if (tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
@@ -241,7 +241,7 @@ bool PlannerCore::makePlan(const geometry_msgs::PoseStamped& start, const geomet
     double resolution = costmap->getResolution();
     nav_msgs::OccupancyGrid grid;
     // Publish Whole Grid
-    grid.header.frame_id = costmap->getGlobalFrameID();
+    grid.header.frame_id = costmap_ros_->getGlobalFrameID();
     grid.header.stamp = ros::Time::now();
     grid.info.resolution = resolution;
 
@@ -328,14 +328,15 @@ bool PlannerCore::getPlanFromPotential(const geometry_msgs::PoseStamped& goal,
     }
 
     costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
+    std::string global_frame = costmap_ros_->getGlobalFrameID();
 
     //clear the plan, just in case
     plan.clear();
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if (tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, costmap->getGlobalFrameID())) {
+    if (tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
         ROS_ERROR(
-                "The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, costmap->getGlobalFrameID()).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                "The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
         return false;
     }
 
@@ -353,7 +354,6 @@ bool PlannerCore::getPlanFromPotential(const geometry_msgs::PoseStamped& goal,
     }
 
     ros::Time plan_time = ros::Time::now();
-    std::string global_frame = costmap->getGlobalFrameID();
     for (unsigned int i = 0; i < path.size(); i++) {
         std::pair<float, float> point = path[i];
         //convert the plan to world coordinates
