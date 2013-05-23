@@ -31,6 +31,7 @@ rosbuild_link_boost(test_robot_pose_ekf_zero_covariance thread)
 rosbuild_add_gtest_build_flags(test_robot_pose_ekf_zero_covariance)
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
 
+rosbuild_download_test_data(http://pr.willowgarage.com/data/robot_pose_ekf/gps_data.bag test/gps_data.bag c4427fe556f53a1af5e4816b9e04a6a8)
 rosbuild_add_executable(test_robot_pose_ekf_gps test/test_robot_pose_ekf_gps.cpp)
 rosbuild_link_boost(test_robot_pose_ekf_gps thread)
 rosbuild_add_gtest_build_flags(test_robot_pose_ekf_gps)
