@@ -61,7 +61,6 @@ add_library(costmap_2d
   src/costmap_2d_publisher.cpp
   src/costmap_math.cpp
   src/footprint.cpp
-  src/range_based_point_filter.cpp
 )
 add_dependencies(costmap_2d geometry_msgs_gencpp)
 target_link_libraries(costmap_2d
@@ -152,9 +151,6 @@ add_rostest(test/simple_driving_test.xml)
 add_rostest(test/static_tests.launch)
 add_rostest(test/obstacle_tests.launch)
 add_rostest(test/inflation_tests.launch)
-
-catkin_add_gtest( range_based_point_filter_test test/range_based_point_filter_test.cpp )
-target_link_libraries( range_based_point_filter_test ${catkin_LIBRARIES} costmap_2d )
 
 install( TARGETS
     costmap_2d_markers
