@@ -181,7 +181,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   SuperValue super_map;
   SuperValue super_array;
 
-  if (nh.getParam("static_map", flag))
+  if (nh.getParam("static_map", flag) && flag)
   {
     map["name"] = XmlRpc::XmlRpcValue("static_layer");
     map["type"] = XmlRpc::XmlRpcValue("costmap_2d::StaticLayer");
