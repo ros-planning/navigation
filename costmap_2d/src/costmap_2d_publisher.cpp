@@ -81,7 +81,12 @@ void Costmap2DPublisher::publishCostmap()
     unsigned char* data = costmap_->getCharMap();
     for (unsigned int i = 0; i < grid_.data.size(); i++)
     {
-      grid_.data[i] = data[i];
+      if (data[i] == NO_INFORMATION) {
+        grid_.data[i] = -1;
+      } else {
+        float scaled_value = (float) data[i] * 100.0 / LETHAL_OBSTACLE;
+        grid_.data[i] = (unsigned char) scaled_value;
+      }
     }
     costmap_pub_.publish(grid_);
   }
