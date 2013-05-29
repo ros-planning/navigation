@@ -12,6 +12,10 @@ find_package(catkin REQUIRED
         )
 
 catkin_package(
+    INCLUDE_DIRS
+        include
+    LIBRARIES
+        image_loader
     CATKIN_DEPENDS
         roslib
         roscpp
@@ -20,13 +24,11 @@ catkin_package(
 )
 include_directories( include )
 add_library(image_loader src/image_loader.cpp)
-#target_link_libraries(image_loader SDL SDL_image)
+target_link_libraries(image_loader SDL SDL_image)
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server
     image_loader
-    SDL
-    SDL_image
     yaml-cpp
     ${catkin_LIBRARIES}
 )
@@ -64,6 +66,11 @@ install(
         map_saver
         map_server
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY 
+    include/
+    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
 install(TARGETS
