@@ -22,6 +22,8 @@ void InflationLayer::onInitialize()
   weight_ = 10;
   inscribed_radius_ = 0.451;
   cell_cache_radius_ = cellDistance(getCacheRadius());
+  cached_distances_ = NULL;
+  cached_costs_ = NULL;
   matchSize();
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
@@ -195,14 +197,16 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
 
 void InflationLayer::computeCaches()
 {
-  //based on the inflation radius... compute distance and cost caches
-  cached_costs_ = new unsigned char*[cell_cache_radius_ + 2];
-  cached_distances_ = new double*[cell_cache_radius_ + 2];
-  for (unsigned int i = 0; i <= cell_cache_radius_ + 1; ++i)
+  deleteKernels();
+  //based on the cache radius... compute distance and cost caches
+  cache_size_ = cell_cache_radius_ + 2;
+  cached_costs_ = new unsigned char*[cache_size_];
+  cached_distances_ = new double*[cache_size_];
+  for (unsigned int i = 0; i < cache_size_; ++i)
   {
-    cached_costs_[i] = new unsigned char[cell_cache_radius_ + 2];
-    cached_distances_[i] = new double[cell_cache_radius_ + 2];
-    for (unsigned int j = 0; j <= cell_cache_radius_ + 1; ++j)
+    cached_costs_[i] = new unsigned char[cache_size_];
+    cached_distances_[i] = new double[cache_size_];
+    for (unsigned int j = 0; j < cache_size_; ++j)
     {
       cached_distances_[i][j] = sqrt(i * i + j * j);
       cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
@@ -214,7 +218,7 @@ void InflationLayer::deleteKernels()
 {
   if (cached_distances_ != NULL)
   {
-    for (unsigned int i = 0; i <= cell_cache_radius_ + 1; ++i)
+    for (unsigned int i = 0; i < cache_size_; ++i)
     {
       delete[] cached_distances_[i];
     }
@@ -223,7 +227,7 @@ void InflationLayer::deleteKernels()
 
   if (cached_costs_ != NULL)
   {
-    for (unsigned int i = 0; i <= cell_cache_radius_ + 1; ++i)
+    for (unsigned int i = 0; i < cache_size_; ++i)
     {
       delete[] cached_costs_[i];
     }

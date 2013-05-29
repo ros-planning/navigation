@@ -185,6 +185,7 @@ private:
 
   unsigned char** cached_costs_;
   double** cached_distances_;
+  unsigned int cache_size_;
 
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
   void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
