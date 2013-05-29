@@ -45,7 +45,12 @@ generate_messages(
 )
 
 catkin_package(
+    INCLUDE_DIRS
+        include
+    LIBRARIES
+        navfn
     CATKIN_DEPENDS
+        nav_core
         roscpp
         pluginlib
 )
@@ -63,6 +68,10 @@ target_link_libraries(navfn_node
 install(TARGETS navfn
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
+
+install(DIRECTORY include/
+    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
 
 install(FILES bgp_plugin.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
