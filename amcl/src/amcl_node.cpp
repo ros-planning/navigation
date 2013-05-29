@@ -479,6 +479,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   max_particles_ = config.max_particles;
   alpha_slow_ = config.recovery_alpha_slow;
   alpha_fast_ = config.recovery_alpha_fast;
+  tf_broadcast_ = config.tf_broadcast;
 
   pf_ = pf_alloc(min_particles_, max_particles_,
                  alpha_slow_, alpha_fast_,
