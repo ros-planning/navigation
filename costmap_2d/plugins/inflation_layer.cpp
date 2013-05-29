@@ -17,6 +17,11 @@ void InflationLayer::onInitialize()
   current_ = true;
   seen_ = NULL;
   need_reinflation_ = false;
+
+  // Setting up some sane default values
+  weight_ = 10;
+  inscribed_radius_ = 0.451;
+  cell_cache_radius_ = cellDistance(getCacheRadius());
   matchSize();
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
@@ -33,6 +38,7 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
     cell_inflation_radius_ = cellDistance(inflation_radius_);
     weight_ = config.cost_scaling_factor;
     need_reinflation_ = true;
+    cell_cache_radius_ = cellDistance(getCacheRadius());
     computeCaches();
   }
   enabled_ = config.enabled;
@@ -79,8 +85,9 @@ void InflationLayer::onFootprintChanged()
   costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
   // TODO: Set circumscribed_cost
   cell_inflation_radius_ = cellDistance(inflation_radius_);
-  ROS_INFO("InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f",
-           footprint_spec.size(), inscribed_radius_);
+  cell_cache_radius_ = cellDistance(getCacheRadius());
+  ROS_INFO("InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f, cache_radius_ = %.3f",
+           footprint_spec.size(), inscribed_radius_, getCacheRadius());
   computeCaches();
   need_reinflation_ = true;
   ROS_DEBUG("Inscribed: %f    Circumscribed: %f     Inflation: %f", inscribed_radius_, circumscribed_radius_, inflation_radius_);
@@ -168,7 +175,7 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
     double distance = distanceLookup(mx, my, src_x, src_y);
 
     //we only want to put the cell in the queue if it is within the inflation radius of the obstacle point
-    if (distance > cell_inflation_radius_)
+    if (distance > cell_cache_radius_)
       return;
 
     //assign the cost associated with the distance from an obstacle to the cell
@@ -189,13 +196,13 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
 void InflationLayer::computeCaches()
 {
   //based on the inflation radius... compute distance and cost caches
-  cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
-  cached_distances_ = new double*[cell_inflation_radius_ + 2];
-  for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
+  cached_costs_ = new unsigned char*[cell_cache_radius_ + 2];
+  cached_distances_ = new double*[cell_cache_radius_ + 2];
+  for (unsigned int i = 0; i <= cell_cache_radius_ + 1; ++i)
   {
-    cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
-    cached_distances_[i] = new double[cell_inflation_radius_ + 2];
-    for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
+    cached_costs_[i] = new unsigned char[cell_cache_radius_ + 2];
+    cached_distances_[i] = new double[cell_cache_radius_ + 2];
+    for (unsigned int j = 0; j <= cell_cache_radius_ + 1; ++j)
     {
       cached_distances_[i][j] = sqrt(i * i + j * j);
       cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
@@ -207,7 +214,7 @@ void InflationLayer::deleteKernels()
 {
   if (cached_distances_ != NULL)
   {
-    for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
+    for (unsigned int i = 0; i <= cell_cache_radius_ + 1; ++i)
     {
       delete[] cached_distances_[i];
     }
@@ -216,7 +223,7 @@ void InflationLayer::deleteKernels()
 
   if (cached_costs_ != NULL)
   {
-    for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
+    for (unsigned int i = 0; i <= cell_cache_radius_ + 1; ++i)
     {
       delete[] cached_costs_[i];
     }

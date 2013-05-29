@@ -120,6 +120,14 @@ public:
     return cost;
   }
 
+  /** @brief Computes the maximum distance for which a cost will not be 0
+   * @return Maximum distance at which cost is 1 */
+  inline double getCacheRadius() {
+    double factor = 1.0 / (INSCRIBED_INFLATED_OBSTACLE - 1);
+    double distance = (log(factor) / (-1.0 * weight_)) + inscribed_radius_;
+    return distance;
+  }
+
 protected:
   virtual void onFootprintChanged();
 
@@ -168,6 +176,7 @@ private:
 
   double inflation_radius_, inscribed_radius_, circumscribed_radius_, weight_;
   unsigned int cell_inflation_radius_;
+  unsigned int cell_cache_radius_;
   std::priority_queue<CellData> inflation_queue_;
 
   double resolution_;
