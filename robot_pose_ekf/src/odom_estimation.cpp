@@ -154,7 +154,7 @@ namespace estimation
 
 
   // update filter
-  bool OdomEstimation::update(bool odom_active, bool imu_active, bool gps_active, bool vo_active, const Time&  filter_time, bool& diagnostics_res)
+  bool OdomEstimation::update(bool odom_active, bool imu_active, bool gps_active, bool vo_active, bool imu_absolute, bool use_gps_orientation, const Time&  filter_time, bool& diagnostics_res)
   {
     // only update filter when it is initialized
     if (!filter_initialized_){
@@ -211,7 +211,6 @@ namespace estimation
     }
     // sensor not active
     else odom_initialized_ = false;
-
     
     // process imu measurement
     // -----------------------
@@ -224,11 +223,10 @@ namespace estimation
       if (imu_initialized_){
 	// convert absolute imu yaw measurement to relative imu yaw measurement 
 	Transform imu_rel_frame;
-	if (gps_active)
+	if (imu_absolute) //IMU measurement is absolute
 		imu_rel_frame = imu_meas_;
 	else
 		imu_rel_frame =  filter_estimate_old_ * imu_meas_old_.inverse() * imu_meas_;
-
 
 	ColumnVector imu_rel(3); double tmp;
 	decomposeTransform(imu_rel_frame, tmp, tmp, tmp, tmp, tmp, imu_rel(3));
@@ -286,11 +284,23 @@ namespace estimation
       transformer_.lookupTransform("gps", "base_footprint", filter_time, gps_meas_);
       if (gps_initialized_){
         gps_meas_pdf_->AdditiveNoiseSigmaSet(gps_covariance_ * pow(dt,2));
-        ColumnVector gps_vec(3);
-        double tmp;
-        //Take gps as an absolute measurement, do not convert to relative measurement
-        decomposeTransform(gps_meas_, gps_vec(1), gps_vec(2), gps_vec(3), tmp, tmp, tmp);
-        filter_->Update(gps_meas_model_,  gps_vec);
+
+        if (!use_gps_orientation) {
+            ColumnVector gps_vec(3);
+            double tmp;
+            //Take gps as an absolute measurement, do not convert to relative measurement
+            decomposeTransform(gps_meas_, gps_vec(1), gps_vec(2), gps_vec(3), tmp, tmp, tmp);
+            filter_->Update(gps_meas_model_,  gps_vec);
+
+        } 
+        else {
+            ColumnVector gps_vec(6);
+            decomposeTransform(gps_meas_, gps_vec(1), gps_vec(2), gps_vec(3), gps_vec(4), gps_vec(5), gps_vec(6));
+            filter_->Update(gps_meas_model_,  gps_vec);
+
+        }
+                
+
       }
       else {
         gps_initialized_ = true;

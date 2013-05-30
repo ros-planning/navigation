@@ -76,7 +76,7 @@ public:
    * \param diagnostics_res returns false if the diagnostics found that the sensor measurements are inconsistent
    * returns true on successfull update
    */
-  bool update(bool odom_active, bool imu_active, bool gps_active, bool vo_active, const ros::Time& filter_time, bool& diagnostics_res);
+  bool update(bool odom_active, bool imu_active, bool gps_active, bool vo_active,bool imu_absolute,bool use_gps_orientation, const ros::Time& filter_time, bool& diagnostics_res);
 
   /** initialize the extended Kalman filter
    * \param prior the prior robot pose
