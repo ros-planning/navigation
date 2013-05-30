@@ -411,7 +411,7 @@ namespace estimation
       // update filter
       if ( my_filter_.isInitialized() )  {
         bool diagnostics = true;
-        if (my_filter_.update(odom_active_, imu_active_,gps_active_, vo_active_,imu_absolute_, use_gps_orientation,  filter_stamp_, diagnostics)){
+        if (my_filter_.update(odom_active_, imu_active_,gps_active_, vo_active_,imu_absolute_, filter_stamp_, diagnostics)){
           
           // output most recent estimate and relative covariance
           my_filter_.getEstimate(output_);
