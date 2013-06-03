@@ -157,6 +157,8 @@ void ObstacleLayer::onInitialize()
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(
       &ObstacleLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+
+  footprint_layer_.initialize( layered_costmap_, name_ + "_footprint", tf_);
 }
 
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
@@ -313,12 +315,19 @@ void ObstacleLayer::updateBounds(double origin_x, double origin_y, double origin
       *max_y = std::max(py, *max_y);
     }
   }
+
+  footprint_layer_.updateBounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
 }
 
 void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
     return;
+
+  // The footprint layer clears the footprint in this ObstacleLayer
+  // before we merge this obstacle layer into the master_grid.
+  footprint_layer_.updateCosts(*this, min_i, min_j, max_i, max_j);
+
   const unsigned char* master_array = master_grid.getCharMap();
   for (int j = min_j; j < max_j; j++)
   {
@@ -484,4 +493,9 @@ void ObstacleLayer::deactivate()
   }
 }
 
+void ObstacleLayer::onFootprintChanged()
+{
+  footprint_layer_.setFootprint( getFootprint() );
 }
+
+} // end namespace costmap_2d

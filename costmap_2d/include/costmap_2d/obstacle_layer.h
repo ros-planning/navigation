@@ -53,6 +53,7 @@
 #include <message_filters/subscriber.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
+#include <costmap_2d/footprint_layer.h>
 
 namespace costmap_2d
 {
@@ -137,6 +138,9 @@ protected:
   virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
                                  double* max_x, double* max_y);
 
+  /** @brief Overridden from superclass Layer to pass new footprint into footprint_layer_. */
+  virtual void onFootprintChanged();
+
   std::string global_frame_; ///< @brief The global frame for the costmap
   double max_obstacle_height_; ///< @brief Max Obstacle Height
 
@@ -157,9 +161,10 @@ protected:
   bool has_been_reset_;
   double reset_min_x_, reset_max_x_, reset_min_y_, reset_max_y_;
 
+  FootprintLayer footprint_layer_; ///< @brief clears the footprint in this obstacle layer.
+
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
-
 };
 }
 #endif
