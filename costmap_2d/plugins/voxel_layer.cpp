@@ -162,25 +162,8 @@ void VoxelLayer::updateBounds(double origin_x, double origin_y, double origin_ya
     grid_msg.header.stamp = ros::Time::now();
     voxel_pub_.publish(grid_msg);
   }
-}
 
-void VoxelLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
-{
-  if (!enabled_)
-    return;
-  const unsigned char* master_array = master_grid.getCharMap();
-  for (int j = min_j; j < max_j; j++)
-  {
-    for (int i = min_i; i < max_i; i++)
-    {
-      int index = getIndex(i, j);
-      if (costmap_[index] == NO_INFORMATION)
-        continue;
-      unsigned char old_cost = master_array[index];
-      if (old_cost == NO_INFORMATION || old_cost < costmap_[index])
-        master_grid.setCost(i, j, costmap_[index]);
-    }
-  }
+  footprint_layer_.updateBounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
 }
 
 void VoxelLayer::clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info)
