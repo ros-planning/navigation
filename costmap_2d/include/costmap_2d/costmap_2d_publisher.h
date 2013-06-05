@@ -93,6 +93,7 @@ private:
   ros::Publisher costmap_pub_;
   ros::Publisher costmap_update_pub_;
   nav_msgs::OccupancyGrid grid_;
+  static char* cost_translation_table_; ///< Translate from 0-255 values in costmap to -1 to 100 values in message.
 };
 }
 #endif

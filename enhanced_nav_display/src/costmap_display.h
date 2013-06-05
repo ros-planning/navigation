@@ -45,6 +45,7 @@
 #include "rviz/properties/bool_property.h"
 #include "rviz/properties/color_property.h"
 #include "rviz/properties/float_property.h"
+#include "rviz/properties/int_property.h"
 #include "rviz/properties/ros_topic_property.h"
 #include <boost/shared_ptr.hpp>
 
@@ -93,15 +94,15 @@ private:
   
   bool updateBaseColors();
   void colorAll();
-  void getColor(Ogre::ColourValue& color, unsigned char value);
+  void getColor(Ogre::ColourValue& color, char value);
 
-  std::vector< unsigned char > values_;
+  std::vector< char > values_;
   V_Point points_;
   rviz::PointCloud* cloud_;
   
   Ogre::ColourValue hi_color_, lo_color_, sp_color_;
   bool use_special_;
-  float sp_value_;
+  int sp_value_;
 
   message_filters::Subscriber<nav_msgs::OccupancyGrid> grid_sub_;
   tf::MessageFilter<nav_msgs::OccupancyGrid>* grid_filter_;
@@ -112,14 +113,14 @@ private:
   rviz::ColorProperty* hi_color_property_;
   rviz::ColorProperty* lo_color_property_;
   rviz::RosTopicProperty* topic_property_;
-  rviz::FloatProperty* max_property_;
-  rviz::FloatProperty* min_property_;
+  rviz::IntProperty* max_property_;
+  rviz::IntProperty* min_property_;
   rviz::BoolProperty* use_special_property_;
-  rviz::FloatProperty* special_value_property_;
+  rviz::IntProperty* special_value_property_;
   rviz::ColorProperty* special_color_property_;
   
   int width_;
-  double min_v_, max_v_;
+  char min_v_, max_v_;
 
   uint32_t messages_received_;
   uint64_t last_frame_count_;

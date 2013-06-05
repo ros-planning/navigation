@@ -67,22 +67,27 @@ Costmap::Costmap()
   lo_color_property_ = new rviz::ColorProperty( "Low Color", QColor( 0, 0, 255 ),
                                                "Color of the lowest grid cells.", this );
 
-  max_property_ = new rviz::FloatProperty( "Max Value", 255.0,
-                                       "Highest Value to Display.",
-                                       this, SLOT( updateBounds() ));
-  min_property_ = new rviz::FloatProperty( "Min Value", 0,
-                                       "Lowest Value to Display.",
-                                       this, SLOT( updateBounds() ));
+  max_property_ = new rviz::IntProperty( "Max Value", 100,
+                                         "Highest Value to Display.",
+                                         this, SLOT( updateBounds() ));
+  max_property_->setMax( 127 );
+  max_property_->setMin( -128 );
+  min_property_ = new rviz::IntProperty( "Min Value", 0,
+                                         "Lowest Value to Display.",
+                                         this, SLOT( updateBounds() ));
+  min_property_->setMax( 127 );
+  min_property_->setMin( -128 );
                                        
   use_special_property_ = new rviz::BoolProperty( "Use Special Value", false, "Use Special Value or not", this);
   
-  special_value_property_ = new rviz::FloatProperty( "Special Value", 0,
-                                       "Special Value to Display in Special Color.",
-                                       use_special_property_);
+  special_value_property_ = new rviz::IntProperty( "Special Value", 0,
+                                                   "Special Value to Display in Special Color.",
+                                                   use_special_property_);
+  special_value_property_->setMax( 127 );
+  special_value_property_->setMin( -128 );
 
   special_color_property_ = new rviz::ColorProperty( "Special Color", QColor( 0, 255, 0 ),
-                                               "Color of the special grid cells.", use_special_property_ );
-
+                                                     "Color of the special grid cells.", use_special_property_ );
 }
 
 void Costmap::onInitialize()
@@ -132,8 +137,8 @@ void Costmap::updateTopic()
 
 void Costmap::updateBounds()
 {
-  min_v_ = min_property_->getFloat(); 
-  max_v_ = max_property_->getFloat(); 
+  min_v_ = char( min_property_->getInt() );
+  max_v_ = char( max_property_->getInt() );
   context_->queueRender();
 }
 
@@ -262,7 +267,7 @@ void Costmap::incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg )
     current_point.position.y = result.getOrigin().y();
     current_point.position.z = result.getOrigin().z();
    
-    values_[i] = (unsigned char) msg->data[i];
+    values_[i] = msg->data[i];
   }
   colorAll();
   cloud_->clear();
@@ -282,10 +287,10 @@ bool Costmap::updateBaseColors(){
   Ogre::ColourValue lo_color = rviz::qtToOgre( lo_color_property_->getColor() );
   bool use_special = use_special_property_->getBool();
   Ogre::ColourValue sp_color;
-  float sp_value = 0;
+  int sp_value = 0;
   if(use_special){
     sp_color = rviz::qtToOgre( special_color_property_->getColor() );
-    sp_value = special_value_property_->getFloat(); 
+    sp_value = special_value_property_->getInt(); 
   }
   
   bool rv;
@@ -308,12 +313,12 @@ bool Costmap::updateBaseColors(){
         
 }
 
-void Costmap::getColor(Ogre::ColourValue& color, unsigned char value){
+void Costmap::getColor(Ogre::ColourValue& color, char value){
 
-    if(use_special_ && fabs(value-sp_value_)<.01){
+    if(use_special_ && value == sp_value_){
         color = sp_color_;
     }else if(value <= max_v_ and value >= min_v_){
-        float pct = (value - min_v_) / (max_v_ - min_v_);
+        float pct = (value - min_v_) / float(max_v_ - min_v_);
         color.r = lo_color_.r - pct * (lo_color_.r - hi_color_.r);
         color.g = lo_color_.g - pct * (lo_color_.g - hi_color_.g);
         color.b = lo_color_.b - pct * (lo_color_.b - hi_color_.b);
@@ -331,7 +336,7 @@ void Costmap::incomingUpdate(const costmap_2d::OccupancyGridUpdate::ConstPtr& ms
         int ly = msg->y + i / msg->width;
         int gi = ly * width_ + lx;
         rviz::PointCloud::Point& current_point = points_[gi];
-        float value = (unsigned char) msg->data[i];
+        char value = msg->data[i];
         values_[gi] = value;
         getColor(current_point.color, value);
       }
