@@ -91,6 +91,8 @@ private:
   voxel_grid::VoxelGrid voxel_grid_;
   double z_resolution_, origin_z_;
   unsigned int unknown_threshold_, mark_threshold_, size_z_;
+  ros::Publisher clearing_endpoints_pub_;
+  sensor_msgs::PointCloud clearing_endpoints_;
 
   inline bool worldToMap3DFloat(double wx, double wy, double wz, double& mx, double& my, double& mz)
   {

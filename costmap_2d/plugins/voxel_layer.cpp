@@ -26,6 +26,8 @@ void VoxelLayer::onInitialize()
   private_nh.param("publish_voxel_map", publish_voxel_, false);
   if (publish_voxel_)
     voxel_pub_ = private_nh.advertise < costmap_2d::VoxelGrid > ("voxel_grid", 1);
+
+  clearing_endpoints_pub_ = private_nh.advertise<sensor_msgs::PointCloud>( "clearing_endpoints", 1 );
 }
 
 void VoxelLayer::initMaps()
@@ -237,6 +239,13 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
     return;
   }
 
+  bool publish_clearing_points = (clearing_endpoints_pub_.getNumSubscribers() > 0);
+  if( publish_clearing_points )
+  {
+    clearing_endpoints_.points.clear();
+    clearing_endpoints_.points.reserve( clearing_observation.cloud_.points.size() );
+  }
+
   //we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
   double map_end_x = origin_x_ + getSizeInMetersX();
   double map_end_y = origin_y_ + getSizeInMetersY();
@@ -310,8 +319,25 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
       *min_y = std::min(wpy, *min_y);
       *max_x = std::max(wpx, *max_x);
       *max_y = std::max(wpy, *max_y);
-    }
 
+      if( publish_clearing_points )
+      {
+        geometry_msgs::Point32 point;
+        point.x = wpx;
+        point.y = wpy;
+        point.z = wpz;
+        clearing_endpoints_.points.push_back( point );
+      }
+    }
+  }
+
+  if( publish_clearing_points )
+  {
+    clearing_endpoints_.header.frame_id = global_frame_;
+    clearing_endpoints_.header.stamp = clearing_observation.cloud_.header.stamp;
+    clearing_endpoints_.header.seq = clearing_observation.cloud_.header.seq;
+
+    clearing_endpoints_pub_.publish( clearing_endpoints_ );
   }
 }
 
