@@ -99,7 +99,7 @@ namespace costmap_2d{
     if(!worldToMap(start_point_x, start_point_y, start_x, start_y) || !worldToMap(end_point_x, end_point_y, end_x, end_y))
       return;
 
-    ROS_ASSERT(end_x > start_x && end_y > start_y);
+    ROS_ASSERT(end_x >= start_x && end_y >= start_y);
     unsigned int cell_size_x = end_x - start_x;
     unsigned int cell_size_y = end_y - start_y;
 
