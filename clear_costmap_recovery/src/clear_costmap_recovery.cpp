@@ -59,6 +59,7 @@ void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* t
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
+    private_nh.param("layer_search_string", layer_search_string_, std::string("obstacle"));
 
     initialized_ = true;
   }
@@ -97,7 +98,7 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
       for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
             boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
-          if(plugin->getName().find("obstacle")!=std::string::npos){
+          if(plugin->getName().find(layer_search_string_)!=std::string::npos){
             boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
             costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
             clearMap(costmap, x, y);

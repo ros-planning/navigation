@@ -80,6 +80,7 @@ namespace clear_costmap_recovery{
       tf::TransformListener* tf_;
       bool initialized_;
       double reset_distance_;
+      std::string layer_search_string_; ///< Substring of layer names which will be cleared.
   };
 };
 #endif  
