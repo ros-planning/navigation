@@ -97,7 +97,7 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
       for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
             boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
-          if(plugin->getName().find("obstacles")!=std::string::npos){
+          if(plugin->getName().find("obstacle")!=std::string::npos){
             boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
             costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
             clearMap(costmap, x, y);
