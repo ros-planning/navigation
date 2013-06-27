@@ -35,6 +35,7 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
+#include <boost/bind.hpp>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <costmap_2d/cost_values.h>
 
@@ -46,10 +47,8 @@ char* Costmap2DPublisher::cost_translation_table_ = NULL;
 Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name) :
     node(&ros_node), costmap_(costmap), global_frame_(global_frame), active_(false)
 {
-
-  costmap_pub_ = ros_node.advertise < nav_msgs::OccupancyGrid > (topic_name, 1, true);
-  costmap_update_pub_ = ros_node.advertise < costmap_2d::OccupancyGridUpdate
-      > (topic_name + std::string("_updates"), 1);
+  costmap_pub_ = ros_node.advertise<nav_msgs::OccupancyGrid>( topic_name, 1, boost::bind( &Costmap2DPublisher::onNewSubscription, this, _1 ));
+  costmap_update_pub_ = ros_node.advertise<costmap_2d::OccupancyGridUpdate>( topic_name + "_updates", 1 );
 
   if( cost_translation_table_ == NULL )
   {
@@ -74,40 +73,53 @@ Costmap2DPublisher::~Costmap2DPublisher()
 {
 }
 
-void Costmap2DPublisher::publishCostmap()
+void Costmap2DPublisher::onNewSubscription( const ros::SingleSubscriberPublisher& pub )
+{
+  prepareGrid();
+  pub.publish( grid_ );
+}
+
+// prepare grid_ message for publication.
+void Costmap2DPublisher::prepareGrid()
 {
   boost::shared_lock < boost::shared_mutex > lock(*(costmap_->getLock()));
   double resolution = costmap_->getResolution();
 
+  grid_.header.frame_id = global_frame_;
+  grid_.header.stamp = ros::Time::now();
+  grid_.info.resolution = resolution;
+
+  grid_.info.width = costmap_->getSizeInCellsX();
+  grid_.info.height = costmap_->getSizeInCellsY();
+
+  double wx, wy;
+  costmap_->mapToWorld(0, 0, wx, wy);
+  grid_.info.origin.position.x = wx - resolution / 2;
+  grid_.info.origin.position.y = wy - resolution / 2;
+  grid_.info.origin.position.z = 0.0;
+  grid_.info.origin.orientation.w = 1.0;
+
+  grid_.data.resize(grid_.info.width * grid_.info.height);
+
+  unsigned char* data = costmap_->getCharMap();
+  for (unsigned int i = 0; i < grid_.data.size(); i++)
+  {
+    grid_.data[i] = cost_translation_table_[ data[ i ]];
+  }
+}
+
+void Costmap2DPublisher::publishCostmap()
+{
+  double resolution = costmap_->getResolution();
+
   if (grid_.info.resolution != resolution || grid_.info.width != costmap_->getSizeInCellsX())
   {
-
-    // Publish Whole Grid
-    grid_.header.frame_id = global_frame_;
-    grid_.header.stamp = ros::Time::now();
-    grid_.info.resolution = resolution;
-
-    grid_.info.width = costmap_->getSizeInCellsX();
-    grid_.info.height = costmap_->getSizeInCellsY();
-
-    double wx, wy;
-    costmap_->mapToWorld(0, 0, wx, wy);
-    grid_.info.origin.position.x = wx - resolution / 2;
-    grid_.info.origin.position.y = wy - resolution / 2;
-    grid_.info.origin.position.z = 0.0;
-    grid_.info.origin.orientation.w = 1.0;
-
-    grid_.data.resize(grid_.info.width * grid_.info.height);
-
-    unsigned char* data = costmap_->getCharMap();
-    for (unsigned int i = 0; i < grid_.data.size(); i++)
-    {
-      grid_.data[i] = cost_translation_table_[ data[ i ]];
-    }
-    costmap_pub_.publish(grid_);
+    prepareGrid();
+    costmap_pub_.publish( grid_ );
   }
   else if (x0_ < xn_)
   {
+    boost::shared_lock < boost::shared_mutex > lock(*(costmap_->getLock()));
     // Publish Just an Update
     costmap_2d::OccupancyGridUpdate update;
     update.header.stamp = ros::Time::now();
@@ -135,4 +147,4 @@ void Costmap2DPublisher::publishCostmap()
   y0_ = costmap_->getSizeInCellsY();
 }
 
-}
+} // end namespace costmap_2d
