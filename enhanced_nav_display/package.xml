@@ -15,7 +15,7 @@
   <build_depend>roscpp</build_depend>
   <build_depend>rviz</build_depend>
   <build_depend>nav_msgs</build_depend>
-  <build_depend>costmap_2d</build_depend> <!-- map_msgs/OccupancyGridUpdate.msg copied to costmap_2d during catkinization. -->
+  <build_depend>map_msgs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>message_filters</build_depend>
   <build_depend>pluginlib</build_depend>

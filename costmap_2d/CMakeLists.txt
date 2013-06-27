@@ -33,7 +33,6 @@ add_definitions(${EIGEN_DEFINITIONS})
 add_message_files(
     DIRECTORY msg
     FILES
-    OccupancyGridUpdate.msg
     VoxelGrid.msg
 )
 
