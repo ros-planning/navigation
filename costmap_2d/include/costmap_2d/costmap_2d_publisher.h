@@ -62,6 +62,7 @@ public:
    */
   ~Costmap2DPublisher();
 
+  /** @brief Include the given bounds in the changed-rectangle. */
   void updateBounds(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn)
   {
     x0_ = std::min(x0, x0_);
@@ -85,6 +86,12 @@ public:
   }
 
 private:
+  /** @brief Prepare grid_ message for publication. */
+  void prepareGrid();
+
+  /** @brief Publish the latest full costmap to the new subscriber. */
+  void onNewSubscription( const ros::SingleSubscriberPublisher& pub );
+
   ros::NodeHandle* node;
   Costmap2D* costmap_;
   std::string global_frame_;
