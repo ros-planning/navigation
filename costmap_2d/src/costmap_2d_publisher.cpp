@@ -48,7 +48,7 @@ Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* cost
     node(&ros_node), costmap_(costmap), global_frame_(global_frame), active_(false)
 {
   costmap_pub_ = ros_node.advertise<nav_msgs::OccupancyGrid>( topic_name, 1, boost::bind( &Costmap2DPublisher::onNewSubscription, this, _1 ));
-  costmap_update_pub_ = ros_node.advertise<costmap_2d::OccupancyGridUpdate>( topic_name + "_updates", 1 );
+  costmap_update_pub_ = ros_node.advertise<map_msgs::OccupancyGridUpdate>( topic_name + "_updates", 1 );
 
   if( cost_translation_table_ == NULL )
   {
@@ -121,7 +121,7 @@ void Costmap2DPublisher::publishCostmap()
   {
     boost::shared_lock < boost::shared_mutex > lock(*(costmap_->getLock()));
     // Publish Just an Update
-    costmap_2d::OccupancyGridUpdate update;
+    map_msgs::OccupancyGridUpdate update;
     update.header.stamp = ros::Time::now();
     update.header.frame_id = global_frame_;
     update.x = x0_;
