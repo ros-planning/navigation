@@ -6,7 +6,7 @@ find_package(catkin REQUIRED
   roscpp
   rviz
   tf
-  costmap_2d
+  map_msgs
   message_filters
 )
 

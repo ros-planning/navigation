@@ -33,7 +33,7 @@
 
 #include <rviz/display.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <costmap_2d/OccupancyGridUpdate.h>
+#include <map_msgs/OccupancyGridUpdate.h>
 #include <nav_msgs/MapMetaData.h>
 
 #ifndef Q_MOC_RUN
@@ -90,7 +90,7 @@ private:
   void unsubscribe();
   void clear();
   void incomingGrid( const nav_msgs::OccupancyGrid::ConstPtr& msg );
-  void incomingUpdate( const costmap_2d::OccupancyGridUpdate::ConstPtr& msg );
+  void incomingUpdate( const map_msgs::OccupancyGridUpdate::ConstPtr& msg );
   
   bool updateBaseColors();
   void colorAll();
