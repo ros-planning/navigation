@@ -1,9 +1,0 @@
-<library path="libenhanced_nav_display">
-  <class name="enhanced_nav_display/Costmap"
-         type="enhanced_nav_display::Costmap"
-         base_class_type="rviz::Display">
-    <description>
-      Displays costmap cells with a convenient and flexible color scheme.
-    </description>
-  </class>
-</library>
