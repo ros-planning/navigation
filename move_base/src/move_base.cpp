@@ -1069,7 +1069,7 @@ namespace move_base {
 
   //we'll load our default recovery behaviors here
   void MoveBase::loadDefaultRecoveryBehaviors(){
-    recovery_behaviors_.clear();/*
+    recovery_behaviors_.clear();
     try{
       //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
       ros::NodeHandle n("~");
@@ -1099,7 +1099,7 @@ namespace move_base {
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
-    }*/
+    }
 
     return;
   }
