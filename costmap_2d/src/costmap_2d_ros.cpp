@@ -123,7 +123,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     }
   }
 
-  // load the footprint from a topic
+  // subscribe to the footprint topic
   std::string topic_param, topic;
   if(!private_nh.searchParam("footprint_topic", topic_param))
   {
@@ -132,6 +132,8 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
   private_nh.param(topic_param, topic, std::string("footprint"));
   footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
+
+  readFootprintFromParams();
 
   publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
 
@@ -152,8 +154,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
 void Costmap2DROS::footprint_cb(const geometry_msgs::Polygon& footprint)
 {
-  footprint_spec_ = toPointVector(footprint);
-  layered_costmap_->setFootprint( footprint_spec_ );
+  setFootprint( toPointVector( footprint ));
 }
 
 Costmap2DROS::~Costmap2DROS()
@@ -278,7 +279,77 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
                                 (unsigned int)(map_height_meters / resolution), resolution, origin_x, origin_y);
   }
 
+  readFootprintFromConfig( config, old_config_ );
+
+  old_config_ = config;
+
   map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+}
+
+void Costmap2DROS::readFootprintFromConfig( const costmap_2d::Costmap2DConfig &new_config, const costmap_2d::Costmap2DConfig &old_config )
+{
+  // Only change the footprint if footprint or robot_radius has
+  // changed.  Otherwise we might overwrite a footprint sent on a
+  // topic by a dynamic_reconfigure call which was setting some other
+  // variable.
+  if( new_config.footprint == old_config.footprint &&
+      new_config.robot_radius == old_config.robot_radius )
+  {
+    return;
+  }
+
+  if( new_config.footprint != "" && new_config.footprint != "[]" )
+  {
+    readFootprintFromString( new_config.footprint );
+  }
+  else
+  {
+    // robot_radius may be 0, but that must be intended at this point.
+    setFootprintFromRadius( new_config.robot_radius );
+  }
+}
+
+void Costmap2DROS::readFootprintFromString( const std::string& footprint_string )
+{
+  std::vector<geometry_msgs::Point> points;
+
+  std::string str = footprint_string;
+
+  boost::erase_all( str, " " );
+
+  boost::char_separator<char> sep("[]");
+  boost::tokenizer<boost::char_separator<char> > tokens( str, sep );
+  std::vector<string> footstring_list = std::vector<string>( tokens.begin(), tokens.end() );
+  
+
+  setFootprint( points );
+}
+
+void Costmap2DROS::setFootprintFromRadius( double radius )
+{
+  // loop over 16 angles around a circle
+  //   points.push_back( point on the circle )
+  setFootprint( points );
+}
+
+void Costmap2DROS::readFootprintFromParams()
+{
+  // if searchParam( "footprint" )
+  //   if footprint param type is string:
+  //     readFootprintFromString( param )
+  //   else if type is xmlrpc
+  //     readFootprintFromXMLRPC( param )
+  // else if searchParam( "robot_radius" )
+  //   setFootprintFromRadius( param )
+  // else
+  //   setFootprintFromRadius( default value )
+}
+
+void Costmap2DROS::setFootprint( const std::vector<geometry_msgs::Point>& points )
+{
+  // apply footprint_padding_ to points
+  footprint_spec_ = points;
+  layered_costmap_->setFootprint( footprint_spec_ );
 }
 
 void Costmap2DROS::movementCB(const ros::TimerEvent &event)
