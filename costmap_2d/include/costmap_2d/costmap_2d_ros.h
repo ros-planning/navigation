@@ -177,6 +177,37 @@ protected:
   double transform_tolerance_; ///< timeout before transform errors
 
 private:
+  /** @brief Set the footprint from the given string.
+   *
+   * Format should be bracketed array of arrays of floats, like so: [[1.0, 2.2], [3.3, 4.2], ...] */
+  void readFootprintFromString( const std::string& footprint_string );
+
+  /** @brief Set the footprint from the new_config object.
+   *
+   * If the values of footprint and robot_radius are the same in
+   * new_config and old_config, nothing is changed. */
+  void readFootprintFromConfig( const costmap_2d::Costmap2DConfig &new_config,
+                                const costmap_2d::Costmap2DConfig &old_config );
+
+  /** @brief Set the footprint to a circle of the given radius, in meters. */
+  void setFootprintFromRadius( double radius );
+  
+  /** @brief Read the ros-params "footprint" and/or "robot_radius" from
+   * the given NodeHandle using searchParam() to go up the tree.
+   *
+   * Calls setFootprint() when successful. */
+  void readFootprintFromParams( ros::NodeHandle& nh );
+
+  /** @brief Set the footprint of the robot to be the given set of
+   * points, including footprint_padding.
+   *
+   * Should be a convex polygon, though this is not enforced.
+   *
+   * First expands the given polygon by footprint_padding_ and then
+   * sets footprint_spec_ and calls
+   * layered_costmap_->setFootprint(). */
+  void setFootprint( const std::vector<geometry_msgs::Point>& points );
+
   void resetOldParameters(ros::NodeHandle& nh);
   void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
   void movementCB(const ros::TimerEvent &event);
@@ -198,6 +229,8 @@ private:
   ros::Subscriber footprint_sub_;
   bool got_footprint_;
   std::vector<geometry_msgs::Point> footprint_spec_; 
+  float footprint_padding_;
+  costmap_2d::Costmap2DConfig old_config_;
 };
 // class Costmap2DROS
 }// namespace costmap_2d

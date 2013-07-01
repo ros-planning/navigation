@@ -35,12 +35,14 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
+#include "costmap_2d/array_parser.h"
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <cstdio>
 #include <string>
 #include <algorithm>
 #include <vector>
+
 
 using namespace std;
 
@@ -133,7 +135,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   private_nh.param(topic_param, topic, std::string("footprint"));
   footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
 
-  readFootprintFromParams();
+  readFootprintFromParams( private_nh );
 
   publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
 
@@ -286,7 +288,8 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
   map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 }
 
-void Costmap2DROS::readFootprintFromConfig( const costmap_2d::Costmap2DConfig &new_config, const costmap_2d::Costmap2DConfig &old_config )
+void Costmap2DROS::readFootprintFromConfig( const costmap_2d::Costmap2DConfig &new_config,
+                                            const costmap_2d::Costmap2DConfig &old_config )
 {
   // Only change the footprint if footprint or robot_radius has
   // changed.  Otherwise we might overwrite a footprint sent on a
@@ -313,26 +316,29 @@ void Costmap2DROS::readFootprintFromString( const std::string& footprint_string 
 {
   std::vector<geometry_msgs::Point> points;
 
-  std::string str = footprint_string;
+  std::string error;
+  std::vector<std::vector<float> > vvf = parseVVF( footprint_string, error );
+  if( error != "" )
+  {
+    ROS_ERROR( "Error parsing footprint parameter: '%s'", error.c_str() );
+    ROS_ERROR( "  Footprint string was '%s'.", footprint_string.c_str() );
+    return;
+  }
 
-  boost::erase_all( str, " " );
-
-  boost::char_separator<char> sep("[]");
-  boost::tokenizer<boost::char_separator<char> > tokens( str, sep );
-  std::vector<string> footstring_list = std::vector<string>( tokens.begin(), tokens.end() );
-  
+  // convert vvf into points.
 
   setFootprint( points );
 }
 
 void Costmap2DROS::setFootprintFromRadius( double radius )
 {
+  std::vector<geometry_msgs::Point> points;
   // loop over 16 angles around a circle
   //   points.push_back( point on the circle )
   setFootprint( points );
 }
 
-void Costmap2DROS::readFootprintFromParams()
+void Costmap2DROS::readFootprintFromParams( ros::NodeHandle& nh )
 {
   // if searchParam( "footprint" )
   //   if footprint param type is string:
