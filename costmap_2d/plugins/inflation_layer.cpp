@@ -11,18 +11,24 @@ using costmap_2d::NO_INFORMATION;
 namespace costmap_2d
 {
 
+InflationLayer::InflationLayer()
+  : inflation_radius_( 0 )
+  , weight_( 0 )
+{}
+
 void InflationLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
   seen_ = NULL;
   need_reinflation_ = false;
-  matchSize();
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
       &InflationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+
+  matchSize();
 }
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)

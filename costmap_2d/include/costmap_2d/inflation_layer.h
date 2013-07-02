@@ -85,6 +85,8 @@ inline bool operator<(const CellData &a, const CellData &b)
 class InflationLayer : public Layer
 {
 public:
+  InflationLayer();
+
   virtual ~InflationLayer()
   {
     deleteKernels();
