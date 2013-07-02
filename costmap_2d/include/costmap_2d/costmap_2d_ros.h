@@ -143,13 +143,17 @@ public:
 
   geometry_msgs::Polygon getRobotFootprintPolygon()
   {
-    return costmap_2d::toPolygon(footprint_spec_); 
+    return costmap_2d::toPolygon( padded_footprint_ );
   }
-
 
   std::vector<geometry_msgs::Point> getRobotFootprint()
   {
-    return footprint_spec_;
+    return padded_footprint_;
+  }
+
+  std::vector<geometry_msgs::Point> getUnpaddedRobotFootprint()
+  {
+    return unpadded_footprint_;
   }
 
   /**
@@ -167,6 +171,29 @@ public:
    */
   void getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const;
 
+  /** @brief Set the footprint of the robot to be the given set of
+   * points, padded by footprint_padding.
+   *
+   * Should be a convex polygon, though this is not enforced.
+   *
+   * First expands the given polygon by footprint_padding_ and then
+   * sets padded_footprint_ and calls
+   * layered_costmap_->setFootprint().  Also saves the unpadded
+   * footprint, which is available from
+   * getUnpaddedRobotFootprint(). */
+  void setUnpaddedRobotFootprint( const std::vector<geometry_msgs::Point>& points );
+
+  /** @brief Set the footprint of the robot to be the given polygon,
+   * padded by footprint_padding.
+   *
+   * Should be a convex polygon, though this is not enforced.
+   *
+   * First expands the given polygon by footprint_padding_ and then
+   * sets padded_footprint_ and calls
+   * layered_costmap_->setFootprint().  Also saves the unpadded
+   * footprint, which is available from
+   * getUnpaddedRobotFootprint(). */
+  void setUnpaddedRobotFootprintPolygon( const geometry_msgs::Polygon& footprint );
 
 protected:
   LayeredCostmap* layered_costmap_;
@@ -198,15 +225,18 @@ private:
    * Calls setFootprint() when successful. */
   void readFootprintFromParams( ros::NodeHandle& nh );
 
-  /** @brief Set the footprint of the robot to be the given set of
-   * points, including footprint_padding.
+  /** @brief Set the footprint from the given XmlRpcValue.
    *
-   * Should be a convex polygon, though this is not enforced.
+   * @param footprint_xmlrpc should be an array of arrays, where the
+   * top-level array should have 3 or more elements, and the
+   * sub-arrays should all have exactly 2 elements (x and y
+   * coordinates).
    *
-   * First expands the given polygon by footprint_padding_ and then
-   * sets footprint_spec_ and calls
-   * layered_costmap_->setFootprint(). */
-  void setFootprint( const std::vector<geometry_msgs::Point>& points );
+   * @param full_param_name this is the full name of the rosparam from
+   * which the footprint_xmlrpc value came.  It is used only for
+   * reporting errors. */
+  void readFootprintFromXMLRPC( XmlRpc::XmlRpcValue& footprint_xmlrpc,
+                                const std::string& full_param_name );
 
   void resetOldParameters(ros::NodeHandle& nh);
   void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
@@ -225,10 +255,10 @@ private:
 
   boost::recursive_mutex configuration_mutex_;
 
-  void footprint_cb(const geometry_msgs::Polygon& footprint);
   ros::Subscriber footprint_sub_;
   bool got_footprint_;
-  std::vector<geometry_msgs::Point> footprint_spec_; 
+  std::vector<geometry_msgs::Point> unpadded_footprint_;
+  std::vector<geometry_msgs::Point> padded_footprint_;
   float footprint_padding_;
   costmap_2d::Costmap2DConfig old_config_;
 };

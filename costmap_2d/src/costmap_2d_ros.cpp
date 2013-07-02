@@ -133,7 +133,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   }
 
   private_nh.param(topic_param, topic, std::string("footprint"));
-  footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::footprint_cb, this);
+  footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::setUnpaddedRobotFootprintPolygon, this);
 
   readFootprintFromParams( private_nh );
 
@@ -154,9 +154,9 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   dsrv_->setCallback(cb);
 }
 
-void Costmap2DROS::footprint_cb(const geometry_msgs::Polygon& footprint)
+void Costmap2DROS::setUnpaddedRobotFootprintPolygon( const geometry_msgs::Polygon& footprint )
 {
-  setFootprint( toPointVector( footprint ));
+  setUnpaddedRobotFootprint( toPointVector( footprint ));
 }
 
 Costmap2DROS::~Costmap2DROS()
@@ -281,6 +281,8 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
                                 (unsigned int)(map_height_meters / resolution), resolution, origin_x, origin_y);
   }
 
+  footprint_padding_ = config.footprint_padding;
+
   readFootprintFromConfig( config, old_config_ );
 
   old_config_ = config;
@@ -314,8 +316,6 @@ void Costmap2DROS::readFootprintFromConfig( const costmap_2d::Costmap2DConfig &n
 
 void Costmap2DROS::readFootprintFromString( const std::string& footprint_string )
 {
-  std::vector<geometry_msgs::Point> points;
-
   std::string error;
   std::vector<std::vector<float> > vvf = parseVVF( footprint_string, error );
   if( error != "" )
@@ -326,36 +326,152 @@ void Costmap2DROS::readFootprintFromString( const std::string& footprint_string 
   }
 
   // convert vvf into points.
+  if( vvf.size() < 3 )
+  {
+    ROS_ERROR( "You must specify at least three points for the robot footprint, reverting to previous footprint." );
+    return;
+  }
+  std::vector<geometry_msgs::Point> points;
+  points.reserve( vvf.size() );
+  for( unsigned int i = 0; i < vvf.size(); i++ )
+  {
+    if( vvf[ i ].size() == 2 )
+    {
+      geometry_msgs::Point point;
+      point.x = vvf[ i ][ 0 ];
+      point.y = vvf[ i ][ 1 ];
+      point.z = 0;
+      points.push_back( point );
+    }
+    else
+    {
+      ROS_ERROR( "Points in the footprint specification must be pairs of numbers.  Found a point with %d numbers.",
+                 int( vvf[ i ].size() ));
+      return;
+    }
+  }
 
-  setFootprint( points );
+  setUnpaddedRobotFootprint( points );
 }
 
 void Costmap2DROS::setFootprintFromRadius( double radius )
 {
   std::vector<geometry_msgs::Point> points;
-  // loop over 16 angles around a circle
-  //   points.push_back( point on the circle )
-  setFootprint( points );
+
+  // Loop over 16 angles around a circle making a point each time
+  int N = 16;
+  geometry_msgs::Point pt;
+  for( int i = 0; i < N; ++i )
+  {
+    double angle = i * 2 * M_PI / N;
+    pt.x = cos( angle ) * radius;
+    pt.y = sin( angle ) * radius;
+
+    points.push_back( pt );
+  }
+
+  setUnpaddedRobotFootprint( points );
 }
 
 void Costmap2DROS::readFootprintFromParams( ros::NodeHandle& nh )
 {
-  // if searchParam( "footprint" )
-  //   if footprint param type is string:
-  //     readFootprintFromString( param )
-  //   else if type is xmlrpc
-  //     readFootprintFromXMLRPC( param )
-  // else if searchParam( "robot_radius" )
-  //   setFootprintFromRadius( param )
-  // else
-  //   setFootprintFromRadius( default value )
+  double default_radius = 0.46;
+  std::string full_param_name;
+  std::string full_radius_param_name;
+
+  if( nh.searchParam( "footprint", full_param_name ))
+  {
+    XmlRpc::XmlRpcValue footprint_xmlrpc;
+    nh.getParam( full_param_name, footprint_xmlrpc );
+    if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString )
+    {
+      readFootprintFromString( std::string( footprint_xmlrpc ));
+    }
+    else if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray )
+    {
+      readFootprintFromXMLRPC( footprint_xmlrpc, full_param_name );
+    }
+  }
+  else if( nh.searchParam( "robot_radius", full_radius_param_name ))
+  {
+    double robot_radius;
+    nh.param( full_radius_param_name, robot_radius, default_radius );
+    setFootprintFromRadius( robot_radius );
+  }
+  else
+  {
+    setFootprintFromRadius( default_radius );
+  }
 }
 
-void Costmap2DROS::setFootprint( const std::vector<geometry_msgs::Point>& points )
+double getNumberFromXMLRPC( XmlRpc::XmlRpcValue& value, const std::string& full_param_name )
 {
-  // apply footprint_padding_ to points
-  footprint_spec_ = points;
-  layered_costmap_->setFootprint( footprint_spec_ );
+  // Make sure that the value we're looking at is either a double or an int.
+  if( value.getType() != XmlRpc::XmlRpcValue::TypeInt &&
+      value.getType() != XmlRpc::XmlRpcValue::TypeDouble )
+  {
+    std::string& value_string = value;
+    ROS_FATAL( "Values in the footprint specification (param %s) must be numbers. Found value %s.",
+               full_param_name.c_str(), value_string.c_str() );
+    throw std::runtime_error("Values in the footprint specification must be numbers");
+  }
+  return value.getType() == XmlRpc::XmlRpcValue::TypeInt ? (int)(value) : (double)(value);
+}
+
+void Costmap2DROS::readFootprintFromXMLRPC( XmlRpc::XmlRpcValue& footprint_xmlrpc,
+                                            const std::string& full_param_name )
+{
+  // Make sure we have an array of at least 3 elements.
+  if( footprint_xmlrpc.getType() != XmlRpc::XmlRpcValue::TypeArray ||
+      footprint_xmlrpc.size() < 3 )
+  {
+    ROS_FATAL( "The footprint must be specified as list of lists on the parameter server, %s was specified as %s",
+               full_param_name.c_str(), std::string( footprint_xmlrpc ).c_str() );
+    throw std::runtime_error( "The footprint must be specified as list of lists on the parameter server with at least 3 points eg: [[x1, y1], [x2, y2], ..., [xn, yn]]");
+  }
+
+  std::vector<geometry_msgs::Point> footprint;  
+  geometry_msgs::Point pt;
+
+  for( int i = 0; i < footprint_xmlrpc.size(); ++i )
+  {
+    // Make sure each element of the list is an array of size 2. (x and y coordinates)
+    XmlRpc::XmlRpcValue point = footprint_xmlrpc[ i ];
+    if( point.getType() != XmlRpc::XmlRpcValue::TypeArray ||
+        point.size() != 2 )
+    {
+      ROS_FATAL( "The footprint (parameter %s) must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form.",
+                 full_param_name.c_str() );
+      throw std::runtime_error( "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form" );
+    }
+       
+    pt.x = getNumberFromXMLRPC( point[ 0 ], full_param_name );
+    pt.y = getNumberFromXMLRPC( point[ 1 ], full_param_name );
+       
+    footprint.push_back( pt );
+  }
+
+  setUnpaddedRobotFootprint( footprint );
+}
+
+double sign(double x){
+  return x < 0.0 ? -1.0 : (x > 0.0 ? 1.0 : 0.0);
+}
+
+void Costmap2DROS::setUnpaddedRobotFootprint( const std::vector<geometry_msgs::Point>& points )
+{
+  unpadded_footprint_ = points;
+  padded_footprint_ = points;
+
+  // apply footprint_padding_ to padded_footprint_ (changing it in place).
+  for( unsigned int i = 0; i < padded_footprint_.size(); i++ )
+  {
+    geometry_msgs::Point& pt = padded_footprint_[ i ];
+    pt.x += sign( pt.x ) * footprint_padding_;
+    pt.y += sign( pt.y ) * footprint_padding_;
+  }
+
+  layered_costmap_->setFootprint( padded_footprint_ );
 }
 
 void Costmap2DROS::movementCB(const ros::TimerEvent &event)
@@ -540,10 +656,10 @@ void Costmap2DROS::getOrientedFootprint(double x, double y, double theta, std::v
   //build the oriented footprint at the robot's current location
   double cos_th = cos(theta);
   double sin_th = sin(theta);
-  for(unsigned int i = 0; i < footprint_spec_.size(); ++i){
+  for(unsigned int i = 0; i < padded_footprint_.size(); ++i){
     geometry_msgs::Point new_pt;
-    new_pt.x = x + (footprint_spec_[i].x * cos_th - footprint_spec_[i].y * sin_th);
-    new_pt.y = y + (footprint_spec_[i].x * sin_th + footprint_spec_[i].y * cos_th);
+    new_pt.x = x + (padded_footprint_[i].x * cos_th - padded_footprint_[i].y * sin_th);
+    new_pt.y = y + (padded_footprint_[i].x * sin_th + padded_footprint_[i].y * cos_th);
     oriented_footprint.push_back(new_pt);
   }
 }
