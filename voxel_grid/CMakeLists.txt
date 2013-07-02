@@ -31,6 +31,11 @@ install(TARGETS voxel_grid
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
 catkin_add_gtest(voxel_grid_tests test/voxel_grid_tests.cpp)
 target_link_libraries(voxel_grid_tests
     voxel_grid

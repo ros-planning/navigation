@@ -122,6 +122,11 @@ install(FILES blp_plugin.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
 catkin_add_gtest(base_local_planner_utest
 	test/gtest_main.cpp
 	test/utest.cpp
