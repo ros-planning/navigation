@@ -17,9 +17,10 @@ catkin_package(
         roscpp
 )
 
-include_directories(include)
+include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_library(voxel_grid src/voxel_grid.cpp)
+target_link_libraries(voxel_grid ${catkin_LIBRARIES})
 
 add_executable(voxel_grid_sample src/voxel_grid_main.cpp)
 target_link_libraries(voxel_grid_sample

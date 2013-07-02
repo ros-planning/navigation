@@ -28,6 +28,7 @@ catkin_package(
 )
 
 add_library(rotate_recovery src/rotate_recovery.cpp)
+target_link_libraries(rotate_recovery ${catkin_LIBRARIES})
 
 install(TARGETS rotate_recovery
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
