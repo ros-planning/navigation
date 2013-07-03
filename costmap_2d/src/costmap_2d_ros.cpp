@@ -314,7 +314,7 @@ void Costmap2DROS::readFootprintFromConfig( const costmap_2d::Costmap2DConfig &n
   }
 }
 
-void Costmap2DROS::readFootprintFromString( const std::string& footprint_string )
+bool Costmap2DROS::readFootprintFromString( const std::string& footprint_string )
 {
   std::string error;
   std::vector<std::vector<float> > vvf = parseVVF( footprint_string, error );
@@ -322,14 +322,14 @@ void Costmap2DROS::readFootprintFromString( const std::string& footprint_string 
   {
     ROS_ERROR( "Error parsing footprint parameter: '%s'", error.c_str() );
     ROS_ERROR( "  Footprint string was '%s'.", footprint_string.c_str() );
-    return;
+    return false;
   }
 
   // convert vvf into points.
   if( vvf.size() < 3 )
   {
     ROS_ERROR( "You must specify at least three points for the robot footprint, reverting to previous footprint." );
-    return;
+    return false;
   }
   std::vector<geometry_msgs::Point> points;
   points.reserve( vvf.size() );
@@ -347,11 +347,12 @@ void Costmap2DROS::readFootprintFromString( const std::string& footprint_string 
     {
       ROS_ERROR( "Points in the footprint specification must be pairs of numbers.  Found a point with %d numbers.",
                  int( vvf[ i ].size() ));
-      return;
+      return false;
     }
   }
 
   setUnpaddedRobotFootprint( points );
+  return true;
 }
 
 void Costmap2DROS::setFootprintFromRadius( double radius )
@@ -375,7 +376,6 @@ void Costmap2DROS::setFootprintFromRadius( double radius )
 
 void Costmap2DROS::readFootprintFromParams( ros::NodeHandle& nh )
 {
-  double default_radius = 0.46;
   std::string full_param_name;
   std::string full_radius_param_name;
 
@@ -385,23 +385,48 @@ void Costmap2DROS::readFootprintFromParams( ros::NodeHandle& nh )
     nh.getParam( full_param_name, footprint_xmlrpc );
     if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString )
     {
-      readFootprintFromString( std::string( footprint_xmlrpc ));
+      if( readFootprintFromString( std::string( footprint_xmlrpc )))
+      {
+        writeFootprintToParam( nh );
+      }
     }
     else if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray )
     {
       readFootprintFromXMLRPC( footprint_xmlrpc, full_param_name );
+      writeFootprintToParam( nh );
     }
   }
   else if( nh.searchParam( "robot_radius", full_radius_param_name ))
   {
     double robot_radius;
-    nh.param( full_radius_param_name, robot_radius, default_radius );
+    nh.param( full_radius_param_name, robot_radius, 1.234 );
     setFootprintFromRadius( robot_radius );
+    nh.setParam( "robot_radius", robot_radius );
   }
-  else
+  // Else neither param was found anywhere this knows about, so
+  // defaults will come from dynamic_reconfigure stuff, set in
+  // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
+}
+
+void Costmap2DROS::writeFootprintToParam( ros::NodeHandle& nh )
+{
+  ostringstream oss;
+  bool first = true;
+  for( unsigned int i = 0; i < unpadded_footprint_.size(); i++ )
   {
-    setFootprintFromRadius( default_radius );
+    geometry_msgs::Point& p = unpadded_footprint_[ i ];
+    if( first )
+    {
+      oss << "[[" << p.x << "," << p.y << "]";
+      first = false;
+    }
+    else
+    {
+      oss << ",[" << p.x << "," << p.y << "]";
+    }
   }
+  oss << "]";
+  nh.setParam( "footprint", oss.str().c_str() );
 }
 
 double getNumberFromXMLRPC( XmlRpc::XmlRpcValue& value, const std::string& full_param_name )

@@ -206,8 +206,9 @@ protected:
 private:
   /** @brief Set the footprint from the given string.
    *
-   * Format should be bracketed array of arrays of floats, like so: [[1.0, 2.2], [3.3, 4.2], ...] */
-  void readFootprintFromString( const std::string& footprint_string );
+   * Format should be bracketed array of arrays of floats, like so: [[1.0, 2.2], [3.3, 4.2], ...] 
+   * @return true on success, false on failure. */
+  bool readFootprintFromString( const std::string& footprint_string );
 
   /** @brief Set the footprint from the new_config object.
    *
@@ -237,6 +238,11 @@ private:
    * reporting errors. */
   void readFootprintFromXMLRPC( XmlRpc::XmlRpcValue& footprint_xmlrpc,
                                 const std::string& full_param_name );
+
+  /** @brief Write the current unpadded_footprint_ to the "footprint"
+   * parameter of the given NodeHandle so that dynamic_reconfigure
+   * will see the new value. */
+  void writeFootprintToParam( ros::NodeHandle& nh );
 
   void resetOldParameters(ros::NodeHandle& nh);
   void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
