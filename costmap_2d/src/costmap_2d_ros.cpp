@@ -281,7 +281,13 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
                                 (unsigned int)(map_height_meters / resolution), resolution, origin_x, origin_y);
   }
 
-  footprint_padding_ = config.footprint_padding;
+  // If the padding has changed, call setUnpaddedRobotFootprint() to
+  // re-apply the padding.
+  if( footprint_padding_ != config.footprint_padding )
+  {
+    footprint_padding_ = config.footprint_padding;
+    setUnpaddedRobotFootprint( unpadded_footprint_ );
+  }
 
   readFootprintFromConfig( config, old_config_ );
 
