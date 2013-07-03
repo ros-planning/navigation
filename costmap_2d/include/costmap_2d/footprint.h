@@ -52,23 +52,6 @@ geometry_msgs::Point32            toPoint32    (geometry_msgs::Point   pt);
 geometry_msgs::Polygon            toPolygon    (std::vector<geometry_msgs::Point> pts);
 std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon);
 
-/** @brief Footprint publisher.
- *
- * When instantiated, this class reads the "footprint" parameter and
- * publishes it as a Polygon message. */
-class RobotFootprintManager
-{
-public:
-  RobotFootprintManager(ros::NodeHandle node, std::string param_name = "footprint");
-
-private:
-  void loadFromString(std::string footprint_string);
-  std::string loadFromArray(XmlRpc::XmlRpcValue footprint_value);
-
-  ros::Publisher publisher;
-  geometry_msgs::Polygon footprint;
-};
-
 } // end namespace costmap_2d
 
 #endif

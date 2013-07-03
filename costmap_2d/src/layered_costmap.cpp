@@ -36,6 +36,7 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/footprint.h>
 #include <cstdio>
 #include <string>
 #include <algorithm>
@@ -143,10 +144,13 @@ bool LayeredCostmap::isCurrent()
 /** @brief Call setFootprint() on all plugins. */
 void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
+  footprint_ = footprint_spec;
+  costmap_2d::calculateMinAndMaxDistances( footprint_spec, inscribed_radius_, circumscribed_radius_ );
+
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
-    (*plugin)->setFootprint( footprint_spec );
+    (*plugin)->onFootprintChanged();
   }  
 }
 
