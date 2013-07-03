@@ -495,7 +495,7 @@ void ObstacleLayer::deactivate()
 
 void ObstacleLayer::onFootprintChanged()
 {
-  footprint_layer_.setFootprint( getFootprint() );
+  footprint_layer_.onFootprintChanged();
 }
 
 } // end namespace costmap_2d

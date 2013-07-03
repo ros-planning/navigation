@@ -74,12 +74,13 @@ public:
     return name_;
   }
 
-  void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec);
+  /** @brief Convenience function for layered_costmap_->getFootprint(). */
+  const std::vector<geometry_msgs::Point>& getFootprint() const;
 
-  const std::vector<geometry_msgs::Point>& getFootprint() const
-  {
-    return footprint_spec_;
-  }
+  /** @brief LayeredCostmap calls this whenever the footprint there
+   * changes (via LayeredCostmap::setFootprint()).  Override to be
+   * notified of changes to the robot's footprint. */
+  virtual void onFootprintChanged() {}
 
 protected:
   /** @brief This is called at the end of initialize().  Override to
@@ -87,10 +88,6 @@ protected:
    *
    * tf_, name_, and layered_costmap_ will all be set already when this is called. */
   virtual void onInitialize() {}
-
-  /** @brief This is called at the end of setFootprint().  Override to
-   * be notified of changes in the robot's footprint. */
-  virtual void onFootprintChanged() {}
 
   LayeredCostmap* layered_costmap_;
   bool current_;

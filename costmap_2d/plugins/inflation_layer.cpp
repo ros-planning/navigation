@@ -80,16 +80,13 @@ void InflationLayer::updateBounds(double origin_x, double origin_y, double origi
 
 void InflationLayer::onFootprintChanged()
 {
-  const std::vector<geometry_msgs::Point>& footprint_spec = getFootprint();
-  //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
-  costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
-  // TODO: Set circumscribed_cost
-  cell_inflation_radius_ = cellDistance(inflation_radius_);
-  ROS_INFO("InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f",
-           footprint_spec.size(), inscribed_radius_);
+  inscribed_radius_ = layered_costmap_->getInscribedRadius();
+  cell_inflation_radius_ = cellDistance( inflation_radius_ );
   computeCaches();
   need_reinflation_ = true;
-  ROS_DEBUG("Inscribed: %f    Circumscribed: %f     Inflation: %f", inscribed_radius_, circumscribed_radius_, inflation_radius_);
+
+  ROS_DEBUG( "InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
+             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_ );
 }
 
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,

@@ -102,6 +102,7 @@ public:
    */
   void resume();
 
+  /** @brief Same as getLayeredCostmap()->isCurrent(). */
   bool isCurrent()
     {
       return layered_costmap_->isCurrent();
@@ -114,6 +115,9 @@ public:
    */
   bool getRobotPose(tf::Stamped<tf::Pose>& global_pose) const;
 
+  /** @brief Return a pointer to the "master" costmap which receives updates from all the layers.
+   *
+   * Same as calling getLayeredCostmap()->getCostmap(). */
   Costmap2D* getCostmap()
     {
       return layered_costmap_->getCostmap();
@@ -141,16 +145,32 @@ public:
       return layered_costmap_;
     }
 
+  /** @brief Returns the current padded footprint as a geometry_msgs::Polygon. */
   geometry_msgs::Polygon getRobotFootprintPolygon()
   {
     return costmap_2d::toPolygon( padded_footprint_ );
   }
 
+  /** @brief Return the current footprint of the robot as a vector of points.
+   *
+   * This version of the footprint is padded by the footprint_padding_
+   * distance, set in the rosparam "footprint_padding".
+   *
+   * The footprint initially comes from the rosparam "footprint" but
+   * can be overwritten by dynamic reconfigure or by messages received
+   * on the "footprint" topic. */
   std::vector<geometry_msgs::Point> getRobotFootprint()
   {
     return padded_footprint_;
   }
 
+  /** @brief Return the current unpadded footprint of the robot as a vector of points.
+   *
+   * This is the raw version of the footprint without padding.
+   *
+   * The footprint initially comes from the rosparam "footprint" but
+   * can be overwritten by dynamic reconfigure or by messages received
+   * on the "footprint" topic. */
   std::vector<geometry_msgs::Point> getUnpaddedRobotFootprint()
   {
     return unpadded_footprint_;

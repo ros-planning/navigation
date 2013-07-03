@@ -48,11 +48,9 @@ void Layer::initialize( LayeredCostmap* parent, std::string name, tf::TransformL
   onInitialize();
 }
 
-void Layer::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
+const std::vector<geometry_msgs::Point>& Layer::getFootprint() const
 {
-  // TODO: Ideally this would actually check if the footprint had changed or not.
-  footprint_spec_ = footprint_spec;
-  onFootprintChanged();
+  return layered_costmap_->getFootprint();
 }
 
 } // end namespace costmap_2d
