@@ -11,6 +11,8 @@ find_package(catkin REQUIRED
             rostest
         )
 
+find_package(Boost REQUIRED COMPONENTS system)
+
 catkin_package(
     INCLUDE_DIRS
         include
@@ -22,9 +24,9 @@ catkin_package(
         tf
         nav_msgs
 )
-include_directories( include )
+include_directories( include ${Boost_INCLUDE_DIRS} )
 add_library(image_loader src/image_loader.cpp)
-target_link_libraries(image_loader SDL SDL_image)
+target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server
