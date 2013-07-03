@@ -52,6 +52,7 @@ generate_dynamic_reconfigure_options(
 )
 
 add_library(costmap_2d
+  src/array_parser.cpp
   src/costmap_2d.cpp
   src/observation_buffer.cpp
   src/layer.cpp
@@ -125,6 +126,13 @@ target_link_libraries(costmap_tester
     )
 
 include_directories(test)
+
+add_gtest(array_parser_test test/array_parser_test.cpp)
+target_link_libraries(array_parser_test costmap_2d gtest)
+
+add_executable(footprint_tests test/footprint_tests.cpp)
+target_link_libraries(footprint_tests gtest costmap_2d)
+add_rostest(test/footprint_tests.launch)
 
 add_executable(obstacle_tests test/obstacle_tests.cpp)
 target_link_libraries(obstacle_tests

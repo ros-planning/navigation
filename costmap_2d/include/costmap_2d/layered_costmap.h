@@ -122,8 +122,27 @@ public:
     *yn = byn_;
   }
 
-  /** @brief Call setFootprint() on all plugins. */
+  /** @brief Updates the stored footprint, updates the circumscribed
+   * and inscribed radii, and calls onFootprintChanged() in all
+   * layers. */
   void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec);
+
+  /** @brief Returns the latest footprint stored with setFootprint(). */
+  const std::vector<geometry_msgs::Point>& getFootprint() { return footprint_; }
+
+  /** @brief The radius of a circle centered at the origin of the
+   * robot which just surrounds all points on the robot's
+   * footprint.
+   *
+   * This is updated by setFootprint(). */
+  double getCircumscribedRadius() { return circumscribed_radius_; }
+
+  /** @brief The radius of a circle centered at the origin of the
+   * robot which is just within all points and edges of the robot's
+   * footprint.
+   *
+   * This is updated by setFootprint(). */
+  double getInscribedRadius() { return inscribed_radius_; }
 
 private:
   void updateUsingPlugins(std::vector<boost::shared_ptr<Layer> > &plugins);
@@ -140,6 +159,8 @@ private:
   std::vector<boost::shared_ptr<Layer> > plugins_;
 
   bool size_locked_;
+  double circumscribed_radius_, inscribed_radius_;
+  std::vector<geometry_msgs::Point> footprint_;
 };
 }
 ;

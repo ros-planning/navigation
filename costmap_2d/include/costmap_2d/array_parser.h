@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Willow Garage, Inc.
+ * Copyright (c) 2012, Willow Garage, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,32 +25,27 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * author: Dave Hershberger
  */
+#ifndef ARRAY_PARSER_H
+#define ARRAY_PARSER_H
 
-#include "costmap_2d/layer.h"
+#include <vector>
+#include <string>
 
 namespace costmap_2d
 {
 
-Layer::Layer()
-  : layered_costmap_( NULL )
-  , current_( false )
-  , enabled_( false )
-  , name_()
-  , tf_(NULL)
-{}
-
-void Layer::initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf )
-{
-  layered_costmap_ = parent;
-  name_ = name;
-  tf_ = tf;
-  onInitialize();
-}
-
-const std::vector<geometry_msgs::Point>& Layer::getFootprint() const
-{
-  return layered_costmap_->getFootprint();
-}
+/** @brief Parse a vector of vectors of floats from a string.
+ * @param error_return If no error, error_return is set to "".  If
+ *        error, error_return will describe the error.
+ * Syntax is [[1.0, 2.0], [3.3, 4.4, 5.5], ...]
+ *
+ * On error, error_return is set and the return value could be
+ * anything, like part of a successful parse. */
+std::vector<std::vector<float> > parseVVF( const std::string& input, std::string& error_return );
 
 } // end namespace costmap_2d
+
+#endif // ARRAY_PARSER_H

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Willow Garage, Inc.
+ * Copyright (c) 2012, Willow Garage, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,30 +27,54 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "costmap_2d/layer.h"
+#include <gtest/gtest.h>
 
-namespace costmap_2d
+#include "costmap_2d/array_parser.h"
+
+using namespace costmap_2d;
+
+TEST(array_parser, basic_operation)
 {
-
-Layer::Layer()
-  : layered_costmap_( NULL )
-  , current_( false )
-  , enabled_( false )
-  , name_()
-  , tf_(NULL)
-{}
-
-void Layer::initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf )
-{
-  layered_costmap_ = parent;
-  name_ = name;
-  tf_ = tf;
-  onInitialize();
+  std::string error;
+  std::vector<std::vector<float> > vvf;
+  vvf = parseVVF( "[[1, 2.2], [.3, -4e4]]", error );
+  EXPECT_EQ( 2, vvf.size() );
+  EXPECT_EQ( 2, vvf[0].size() );
+  EXPECT_EQ( 2, vvf[1].size() );
+  EXPECT_EQ( 1.0f, vvf[0][0] );
+  EXPECT_EQ( 2.2f, vvf[0][1] );
+  EXPECT_EQ( 0.3f, vvf[1][0] );
+  EXPECT_EQ( -40000.0f, vvf[1][1] );
+  EXPECT_EQ( "", error );
 }
 
-const std::vector<geometry_msgs::Point>& Layer::getFootprint() const
+TEST(array_parser, missing_open)
 {
-  return layered_costmap_->getFootprint();
+  std::string error;
+  std::vector<std::vector<float> > vvf;
+  vvf = parseVVF( "[1, 2.2], [.3, -4e4]]", error );
+  EXPECT_FALSE( error == "" );
 }
 
-} // end namespace costmap_2d
+TEST(array_parser, missing_close)
+{
+  std::string error;
+  std::vector<std::vector<float> > vvf;
+  vvf = parseVVF( "[[1, 2.2], [.3, -4e4]", error );
+  EXPECT_FALSE( error == "" );
+}
+
+TEST(array_parser, wrong_depth)
+{
+  std::string error;
+  std::vector<std::vector<float> > vvf;
+  vvf = parseVVF( "[1, 2.2], [.3, -4e4]", error );
+  EXPECT_FALSE( error == "" );
+}
+
+int main(int argc, char** argv)
+{
+  testing::InitGoogleTest( &argc, argv );
+  return RUN_ALL_TESTS();
+}
+

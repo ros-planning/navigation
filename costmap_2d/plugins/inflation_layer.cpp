@@ -11,18 +11,24 @@ using costmap_2d::NO_INFORMATION;
 namespace costmap_2d
 {
 
+InflationLayer::InflationLayer()
+  : inflation_radius_( 0 )
+  , weight_( 0 )
+{}
+
 void InflationLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
   seen_ = NULL;
   need_reinflation_ = false;
-  matchSize();
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
       &InflationLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+
+  matchSize();
 }
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
@@ -74,16 +80,13 @@ void InflationLayer::updateBounds(double origin_x, double origin_y, double origi
 
 void InflationLayer::onFootprintChanged()
 {
-  const std::vector<geometry_msgs::Point>& footprint_spec = getFootprint();
-  //now we need to compute the inscribed/circumscribed radius of the robot from the footprint specification
-  costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
-  // TODO: Set circumscribed_cost
-  cell_inflation_radius_ = cellDistance(inflation_radius_);
-  ROS_INFO("InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f",
-           footprint_spec.size(), inscribed_radius_);
+  inscribed_radius_ = layered_costmap_->getInscribedRadius();
+  cell_inflation_radius_ = cellDistance( inflation_radius_ );
   computeCaches();
   need_reinflation_ = true;
-  ROS_DEBUG("Inscribed: %f    Circumscribed: %f     Inflation: %f", inscribed_radius_, circumscribed_radius_, inflation_radius_);
+
+  ROS_DEBUG( "InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
+             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_ );
 }
 
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,

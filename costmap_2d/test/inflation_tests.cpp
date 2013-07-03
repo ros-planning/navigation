@@ -80,7 +80,7 @@ TEST(costmap, testAdjacentToObstacleCanStillMove){
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
   InflationLayer* ilayer = addInflationLayer(layers, tf);
-  ilayer->setFootprint(polygon);
+  layers.setFootprint(polygon);
 
   addObservation(olayer, 0, 0, MAX_Z);
 
@@ -106,7 +106,7 @@ TEST(costmap, testInflationShouldNotCreateUnknowns){
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
   InflationLayer* ilayer = addInflationLayer(layers, tf);
-  ilayer->setFootprint(polygon);
+  layers.setFootprint(polygon);
 
   addObservation(olayer, 0, 0, MAX_Z);
 
@@ -131,7 +131,7 @@ TEST(costmap, testCostFunctionCorrectness){
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
   InflationLayer* ilayer = addInflationLayer(layers, tf);
-  ilayer->setFootprint(polygon);
+  layers.setFootprint(polygon);
 
   addObservation(olayer, 50, 50, MAX_Z);
 
@@ -199,7 +199,7 @@ TEST(costmap, testInflation){
   addStaticLayer(layers, tf);
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
   InflationLayer* ilayer = addInflationLayer(layers, tf);
-  ilayer->setFootprint(polygon);
+  layers.setFootprint(polygon);
 
   Costmap2D* costmap = layers.getCostmap();
 
@@ -263,7 +263,7 @@ TEST(costmap, testInflation2){
   addStaticLayer(layers, tf);
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
   InflationLayer* ilayer = addInflationLayer(layers, tf);
-  ilayer->setFootprint(polygon);
+  layers.setFootprint(polygon);
 
   // Creat a small L-Shape all at once
   addObservation(olayer, 1, 1, MAX_Z);
@@ -290,7 +290,7 @@ TEST(costmap, testInflation3){
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
   InflationLayer* ilayer = addInflationLayer(layers, tf);
-  ilayer->setFootprint(polygon);
+  layers.setFootprint(polygon);
 
   // There should be no occupied cells
   Costmap2D* costmap = layers.getCostmap();
