@@ -46,6 +46,7 @@ add_library(${PROJECT_NAME}
   src/gradient_path.cpp
   src/planner_core.cpp
 )
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 

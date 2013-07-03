@@ -30,6 +30,7 @@ catkin_package(
 )
 
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
+target_link_libraries(clear_costmap_recovery ${catkin_LIBRARIES})
 
 install(TARGETS clear_costmap_recovery
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
