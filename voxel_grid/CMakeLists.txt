@@ -7,10 +7,6 @@ find_package(catkin REQUIRED
             roscpp
         )
 
-find_package(Boost REQUIRED
-    COMPONENTS
-        thread
-        )
 
 catkin_package(
     INCLUDE_DIRS
