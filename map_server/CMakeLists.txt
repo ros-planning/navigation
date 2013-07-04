@@ -11,6 +11,12 @@ find_package(catkin REQUIRED
             rostest
         )
 
+find_package(Boost REQUIRED
+    COMPONENTS
+        system
+        )
+
+
 catkin_package(
     CATKIN_DEPENDS
         roslib
@@ -20,7 +26,8 @@ catkin_package(
 )
 include_directories( include )
 add_library(image_loader src/image_loader.cpp)
-#target_link_libraries(image_loader SDL SDL_image)
+target_link_libraries(image_loader SDL SDL_image)
+target_link_libraries(image_loader ${Boost_LIBRARIES})
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server
