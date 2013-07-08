@@ -15,7 +15,8 @@
     </description>
     <url>http://ros.org/wiki/amcl</url>
     <author>Brian P. Gerkey</author>
-    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <author>contradict@gmail.com</author>
+    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>LGPL</license>
 
     <buildtool_depend>catkin</buildtool_depend>

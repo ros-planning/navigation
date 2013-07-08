@@ -7,7 +7,8 @@
 
     </description>
     <author>Wim Meeussen</author>
-    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <author>contradict@gmail.com</author>
+    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
     <url>http://ros.org/wiki/robot_pose_ekf</url>
 

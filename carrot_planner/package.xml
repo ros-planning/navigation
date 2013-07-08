@@ -6,8 +6,10 @@
         This planner attempts to find a legal place to put a carrot for the robot to follow. It does this by moving back along the vector between the robot and the goal point.
 
     </description>
-    <author>Eitan Marder-Eppstein, Sachin Chitta</author>
-    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <author>Eitan Marder-Eppstein</author>
+    <author>Sachin Chitta</author>
+    <author>contradict@gmail.com</author>
+    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
     <url>http://pr.willowgarage.com/wiki/carrot_planner</url>
 

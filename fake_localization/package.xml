@@ -3,7 +3,8 @@
     <version>1.11.0</version>
     <description>A ROS node that simply forwards odometry information.</description>
     <author>Ioan A. Sucan</author>
-    <maintainer email="contradict@gmail.com">contradict</maintainer>
+    <author>contradict@gmail.com</author>
+    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
     <url>http://pr.willowgarage.com/wiki/fake_localization</url>
 

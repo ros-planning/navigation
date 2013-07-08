@@ -6,8 +6,9 @@
         streams, and a goal pose and outputs safe velocity commands that are sent
         to a mobile base.
     </description>
-    <maintainer email="contradict@gmail.com">contradict</maintainer>
-    <author>Maintained by Eitan Marder-Eppstein eitan@willowgarage.com</author>
+    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
+    <author>contradict@gmail.com</author>
+    <author>Eitan Marder-Eppstein</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  
     <url>http://ros.org/wiki/navigation</url>
 
