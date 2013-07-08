@@ -3,6 +3,7 @@ project(fake_localization)
 
 find_package(catkin REQUIRED
         COMPONENTS
+            angles
             roscpp
             rosconsole
             nav_msgs

@@ -9,6 +9,7 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
+    <build_depend>angles</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>rosconsole</build_depend>
     <build_depend>nav_msgs</build_depend>
