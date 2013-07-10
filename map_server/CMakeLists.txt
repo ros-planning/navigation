@@ -60,19 +60,14 @@ target_link_libraries( map_saver
 
 add_rostest(test/rtest.xml)
 
-install(
-    TARGETS
-        map_saver
-        map_server
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+## Install executables and/or libraries
+install(TARGETS map_saver map_server image_loader
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-install(DIRECTORY 
-    include/
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)
-
-install(TARGETS
-    image_loader
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+## Install project namespaced headers
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE)
