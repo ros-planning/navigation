@@ -3,14 +3,14 @@ project(dwa_local_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roscpp
-            tf
+            base_local_planner
             costmap_2d
+            dynamic_reconfigure
             nav_core
             nav_msgs
-            base_local_planner
-            dynamic_reconfigure
             pluginlib
+            roscpp
+            tf
         )
 
 find_package(Eigen REQUIRED)
@@ -34,9 +34,9 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES dwa_local_planner
     CATKIN_DEPENDS
-        roscpp
         dynamic_reconfigure
         pluginlib
+        roscpp
 )
 
 add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)
