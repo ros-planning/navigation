@@ -4,7 +4,6 @@ project(dwa_local_planner)
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            roslib
             tf
             costmap_2d
             nav_core
@@ -35,7 +34,6 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES dwa_local_planner
     CATKIN_DEPENDS
-        roslib
         roscpp
         dynamic_reconfigure
         pluginlib
