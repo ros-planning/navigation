@@ -55,7 +55,7 @@ public:
   /**
    * @brief  Constructor for the Costmap2DPublisher
    */
-  Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name, bool always_send_full_costmap = false);
+  Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name, bool always_send_full_costmap = false);
 
   /**
    * @brief  Destructor
