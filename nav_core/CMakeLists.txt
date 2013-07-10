@@ -20,7 +20,8 @@ catkin_package(
 )
 
 
+## Install project namespaced headers
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  PATTERN ".svn" EXCLUDE
-)
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE)
