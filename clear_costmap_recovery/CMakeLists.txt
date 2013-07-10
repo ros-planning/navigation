@@ -3,11 +3,11 @@ project(clear_costmap_recovery)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roscpp
-            tf
             costmap_2d
             nav_core
             pluginlib
+            roscpp
+            tf
         )
 
 find_package(Eigen REQUIRED)
@@ -24,8 +24,11 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES clear_costmap_recovery
     CATKIN_DEPENDS
-        roscpp
+        costmap_2d
+        nav_core
         pluginlib
+        roscpp
+        tf
 )
 
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
