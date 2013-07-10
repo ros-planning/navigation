@@ -1,4 +1,4 @@
-#include<costmap_2d/voxel_layer.h>
+#include <costmap_2d/voxel_layer.h>
 #include <pluginlib/class_list_macros.h>
 #define VOXEL_BITS 16
 PLUGINLIB_EXPORT_CLASS(costmap_2d::VoxelLayer, costmap_2d::Layer)
