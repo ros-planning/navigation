@@ -1,8 +1,7 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 
-import sys
 import rospy
-from robot_pose_ekf.srv import *
+from robot_pose_ekf.srv import GetStatus, GetStatusRequest
 
 if __name__ == '__main__':
     rospy.init_node('spawner', anonymous=True)
