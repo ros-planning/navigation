@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-import roslib; roslib.load_manifest('robot_pose_ekf')
 import sys
 import rospy
 from robot_pose_ekf.srv import *
