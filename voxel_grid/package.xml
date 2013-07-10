@@ -15,8 +15,6 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>roscpp</build_depend>
-    <build_depend>roslib</build_depend>
 
     <run_depend>roscpp</run_depend>
-    <run_depend>roslib</run_depend>
 </package>
