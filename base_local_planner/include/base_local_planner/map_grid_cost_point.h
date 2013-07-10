@@ -34,7 +34,7 @@
 #ifndef MAP_GRID_COST_POINT_H_
 #define MAP_GRID_COST_POINT_H_
 
-#include <pcl/ros/register_point_struct.h>
+#include <pcl/register_point_struct.h>
 
 namespace base_local_planner {
     struct MapGridCostPoint {
