@@ -22,9 +22,8 @@ find_package(Eigen REQUIRED)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    SYSTEM
-        ${EIGEN_INCLUDE_DIRS}
-        ${PCL_INCLUDE_DIRS}
+    ${EIGEN_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
 )
 
 add_definitions(${EIGEN_DEFINITIONS})
