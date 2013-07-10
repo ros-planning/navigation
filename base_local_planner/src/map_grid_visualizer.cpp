@@ -35,6 +35,8 @@
 #include <base_local_planner/map_cell.h>
 #include <vector>
 
+#include <pcl_conversions/pcl_conversions.h>
+
 namespace base_local_planner {
   MapGridVisualizer::MapGridVisualizer() {}
 
@@ -57,7 +59,9 @@ namespace base_local_planner {
     double x_coord, y_coord;
     MapGridCostPoint pt;
     cost_cloud_.points.clear();
-    cost_cloud_.header.stamp = ros::Time::now();
+    std_msgs::Header header = pcl_conversions::fromPCL(cost_cloud_.header);
+    header.stamp = ros::Time::now();
+    cost_cloud_.header = pcl_conversions::toPCL(header);
     float path_cost, goal_cost, occ_cost, total_cost;
     for (unsigned int cx = 0; cx < x_size; cx++) {
       for (unsigned int cy = 0; cy < y_size; cy++) {

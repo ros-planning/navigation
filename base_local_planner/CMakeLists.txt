@@ -8,6 +8,7 @@ find_package(catkin REQUIRED
             message_generation
             dynamic_reconfigure
             nav_core
+            pcl_conversions
             rostest
             costmap_2d
             pluginlib
