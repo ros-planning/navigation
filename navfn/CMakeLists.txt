@@ -7,6 +7,7 @@ find_package(catkin REQUIRED
         geometry_msgs
         nav_core
         nav_msgs
+        pcl_conversions
         pcl_ros
         pluginlib
         roscpp

@@ -19,6 +19,7 @@
     <build_depend>geometry_msgs</build_depend>
     <build_depend>nav_core</build_depend>
     <build_depend>nav_msgs</build_depend>
+    <build_depend>pcl_conversions</build_depend>
     <build_depend>pcl_ros</build_depend>
     <build_depend>pluginlib</build_depend>
     <build_depend>rosconsole</build_depend>
@@ -30,6 +31,7 @@
     <run_depend>geometry_msgs</run_depend>
     <run_depend>nav_core</run_depend>
     <run_depend>nav_msgs</run_depend>
+    <run_depend>pcl_conversions</run_depend>
     <run_depend>pcl_ros</run_depend>
     <run_depend>pluginlib</run_depend>
     <run_depend>rosconsole</run_depend>

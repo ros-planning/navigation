@@ -40,6 +40,8 @@
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
 
+#include <pcl_conversions/pcl_conversions.h>
+
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_DECLARE_CLASS(navfn, NavfnROS, navfn::NavfnROS, nav_core::BaseGlobalPlanner)
 
@@ -327,7 +329,10 @@ namespace navfn {
       pcl::PointCloud<PotarrPoint> pot_area;
       pot_area.header.frame_id = global_frame;
       pot_area.points.clear();
-      pot_area.header.stamp = ros::Time::now();
+      std_msgs::Header header;
+      pcl_conversions::fromPCL(pot_area.header, header);
+      header.stamp = ros::Time::now();
+      pot_area.header = pcl_conversions::toPCL(header);
 
       PotarrPoint pt;
       float *pp = planner_->potarr;
