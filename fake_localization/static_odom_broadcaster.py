@@ -9,7 +9,6 @@
 # Author: Armin Hornung
 # License: BSD
 
-import roslib
 import rospy
 
 import tf
