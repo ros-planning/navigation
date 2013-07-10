@@ -3,7 +3,6 @@ project(base_local_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
             tf
             message_generation
@@ -54,7 +53,6 @@ catkin_package(
         base_local_planner
 #       trajectory_planner_ros
     CATKIN_DEPENDS
-        roslib
         roscpp
         dynamic_reconfigure
         message_generation

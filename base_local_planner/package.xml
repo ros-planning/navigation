@@ -20,7 +20,6 @@
     <build_depend>rosconsole</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>tf</build_depend>
-    <build_depend>roslib</build_depend>
     <build_depend>rospy</build_depend>
     <build_depend>pluginlib</build_depend>
     <build_depend>costmap_2d</build_depend>
@@ -39,7 +38,6 @@
     <run_depend>rosconsole</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>tf</run_depend>
-    <run_depend>roslib</run_depend>
     <run_depend>rospy</run_depend>
     <run_depend>pluginlib</run_depend>
     <run_depend>costmap_2d</run_depend>
