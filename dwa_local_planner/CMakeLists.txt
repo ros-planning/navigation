@@ -14,8 +14,8 @@ find_package(catkin REQUIRED
             pluginlib
         )
 
-find_package(Eigen)
-find_package(PCL)
+find_package(Eigen REQUIRED)
+find_package(PCL REQUIRED)
 include_directories(
     include
     ${EIGEN_INCLUDE_DIRS}
