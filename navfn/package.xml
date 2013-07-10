@@ -19,6 +19,7 @@
     <build_depend>geometry_msgs</build_depend>
     <build_depend>nav_core</build_depend>
     <build_depend>nav_msgs</build_depend>
+    <build_depend>netpbm</build_depend> <!-- This is a test dependency -->
     <build_depend>pcl_conversions</build_depend>
     <build_depend>pcl_ros</build_depend>
     <build_depend>pluginlib</build_depend>
