@@ -10,7 +10,6 @@ find_package(catkin REQUIRED
             pcl_ros
             pluginlib
             roscpp
-            roslib
             rostest
             std_msgs
             tf
@@ -62,7 +61,6 @@ catkin_package(
         message_generation
         pcl_ros
         roscpp
-        roslib
         voxel_grid
     DEPENDS
         PCL

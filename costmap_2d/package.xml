@@ -28,7 +28,6 @@
     <build_depend>pcl_ros</build_depend>
     <build_depend>pluginlib</build_depend>
     <build_depend>roscpp</build_depend>
-    <build_depend>roslib</build_depend>
     <build_depend>rostest</build_depend>
     <build_depend>sensor_msgs</build_depend>
     <build_depend>std_msgs</build_depend>
@@ -46,7 +45,6 @@
     <run_depend>pluginlib</run_depend>
     <run_depend>rosconsole</run_depend>
     <run_depend>roscpp</run_depend>
-    <run_depend>roslib</run_depend>
     <run_depend>rostest</run_depend>
     <run_depend>sensor_msgs</run_depend>
     <run_depend>std_msgs</run_depend>
