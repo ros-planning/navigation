@@ -25,6 +25,9 @@ catkin_package(
   LIBRARIES amcl_sensors amcl_map amcl_pf
 )
 
+include_directories(include/amcl include/amcl/map include/amcl/sensors include/amcl/pf)
+include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+
 add_library(amcl_pf 
                     src/amcl/pf/pf.c 
                     src/amcl/pf/pf_kdtree.c 
@@ -50,7 +53,6 @@ target_link_libraries(amcl_sensors amcl_map amcl_pf)
 add_executable(amcl
                        src/amcl_node.cpp)
 add_dependencies(amcl amcl_gencfg)
-include_directories(${Boost_INCLUDE_DIRS} include/amcl include/amcl/map include/amcl/sensors include/amcl/pf)
 
 target_link_libraries(amcl
     amcl_sensors amcl_map amcl_pf
