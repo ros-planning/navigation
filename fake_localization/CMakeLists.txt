@@ -21,6 +21,8 @@ catkin_package(
         rospy
 )
 
+include_directories(${caktin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+
 add_executable(fake_localization fake_localization.cpp)
 target_link_libraries(fake_localization
     ${catkin_LIBRARIES}
