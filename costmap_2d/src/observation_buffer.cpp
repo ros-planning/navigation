@@ -38,7 +38,7 @@
 
 #include <pcl/point_types.h>
 #include <pcl_ros/transforms.h>
-#include <pcl/ros/conversions.h>
+#include <pcl/conversions.h>
 
 using namespace std;
 using namespace tf;
