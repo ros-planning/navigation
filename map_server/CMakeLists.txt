@@ -3,7 +3,6 @@ project(map_server)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
             tf
             nav_msgs
@@ -18,7 +17,6 @@ catkin_package(
     LIBRARIES
         image_loader
     CATKIN_DEPENDS
-        roslib
         roscpp
         tf
         nav_msgs
