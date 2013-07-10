@@ -26,6 +26,7 @@
     <build_depend>message_filters</build_depend>
     <build_depend>message_generation</build_depend>
     <build_depend>nav_msgs</build_depend>
+    <build_depend>pcl_conversions</build_depend>
     <build_depend>pcl_ros</build_depend>
     <build_depend>pluginlib</build_depend>
     <build_depend>roscpp</build_depend>
@@ -43,6 +44,7 @@
     <run_depend>message_filters</run_depend>
     <run_depend>message_runtime</run_depend>
     <run_depend>nav_msgs</run_depend>
+    <run_depend>pcl_conversions</run_depend>
     <run_depend>pcl_ros</run_depend>
     <run_depend>pluginlib</run_depend>
     <run_depend>rosconsole</run_depend>

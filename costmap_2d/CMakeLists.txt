@@ -10,6 +10,7 @@ find_package(catkin REQUIRED
             message_filters
             message_generation
             nav_msgs
+            pcl_conversions
             pcl_ros
             pluginlib
             roscpp
