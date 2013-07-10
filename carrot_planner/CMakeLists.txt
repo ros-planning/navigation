@@ -3,7 +3,6 @@ project(carrot_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
             tf
             nav_core
@@ -22,7 +21,6 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES carrot_planner
     CATKIN_DEPENDS
-        roslib
         roscpp
         pluginlib
         costmap_2d
