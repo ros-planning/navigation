@@ -36,7 +36,6 @@
 #***********************************************************
 PKG = "move_base"
 NAME = "warner"
-import roslib; roslib.load_manifest(PKG)
 
 import rospy
 import sys

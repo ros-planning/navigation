@@ -4,7 +4,6 @@ project(move_base)
 find_package(catkin REQUIRED
     COMPONENTS
         roscpp
-        roslib
         pluginlib
         actionlib
         dynamic_reconfigure

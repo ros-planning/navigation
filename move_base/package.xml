@@ -15,7 +15,6 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>roscpp</build_depend>
-    <build_depend>roslib</build_depend>
     <build_depend>std_msgs</build_depend>
     <build_depend>move_base_msgs</build_depend>
     <build_depend>geometry_msgs</build_depend>
@@ -38,7 +37,6 @@
 <!--  This is commented out until rotate_recovery is ported to layered costmaps. <build_depend>rotate_recovery</build_depend> -->
 
     <run_depend>roscpp</run_depend>
-    <run_depend>roslib</run_depend>
     <run_depend>std_msgs</run_depend>
     <run_depend>move_base_msgs</run_depend>
     <run_depend>geometry_msgs</run_depend>

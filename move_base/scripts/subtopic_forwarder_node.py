@@ -37,8 +37,6 @@
 PKG = 'move_base'
 NAME = 'subtopic_forwarder_node'
 
-import roslib; roslib.load_manifest(PKG)
-
 import rospy
 import sys
 
