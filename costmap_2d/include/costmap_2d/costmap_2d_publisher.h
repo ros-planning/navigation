@@ -55,7 +55,7 @@ public:
   /**
    * @brief  Constructor for the Costmap2DPublisher
    */
-  Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name);
+  Costmap2DPublisher(ros::NodeHandle ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name, bool always_send_full_costmap = false);
 
   /**
    * @brief  Destructor
@@ -97,6 +97,7 @@ private:
   std::string global_frame_;
   unsigned int x0_, xn_, y0_, yn_;
   bool active_;
+  bool always_send_full_costmap_;
   ros::Publisher costmap_pub_;
   ros::Publisher costmap_update_pub_;
   nav_msgs::OccupancyGrid grid_;
