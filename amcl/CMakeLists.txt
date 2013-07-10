@@ -3,7 +3,6 @@ project(amcl)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
             tf
             dynamic_reconfigure
@@ -19,7 +18,6 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
     CATKIN_DEPENDS
-        roslib
         roscpp
         dynamic_reconfigure
         tf
