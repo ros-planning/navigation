@@ -9,6 +9,7 @@ find_package(catkin REQUIRED
             nav_core
             nav_msgs
             pluginlib
+            pcl_conversions
             roscpp
             tf
         )
