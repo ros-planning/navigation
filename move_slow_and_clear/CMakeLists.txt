@@ -40,6 +40,12 @@ target_link_libraries(${PROJECT_NAME}
     ${catkin_LIBRARIES}
     )
 
+## Install project namespaced headers
+install(DIRECTORY include/${PROJECT_NAME}/
+    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN ".svn" EXCLUDE)
+
 install(TARGETS move_slow_and_clear
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )

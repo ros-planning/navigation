@@ -137,7 +137,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
   readFootprintFromParams( private_nh );
 
-  publisher_ = new Costmap2DPublisher(private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
+  publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
 
   // create a thread to handle updating the map
   stop_updates_ = false;

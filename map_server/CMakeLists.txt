@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(map_server)
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
             tf
             nav_msgs
@@ -19,12 +17,11 @@ catkin_package(
     LIBRARIES
         image_loader
     CATKIN_DEPENDS
-        roslib
         roscpp
         tf
         nav_msgs
 )
-include_directories( include ${Boost_INCLUDE_DIRS} )
+include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 add_library(image_loader src/image_loader.cpp)
 target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
 
@@ -63,19 +60,14 @@ target_link_libraries( map_saver
 
 add_rostest(test/rtest.xml)
 
-install(
-    TARGETS
-        map_saver
-        map_server
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+## Install executables and/or libraries
+install(TARGETS map_saver map_server image_loader
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-install(DIRECTORY 
-    include/
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)
-
-install(TARGETS
-    image_loader
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+## Install project namespaced headers
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE)

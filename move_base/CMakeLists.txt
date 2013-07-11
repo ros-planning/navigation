@@ -4,7 +4,6 @@ project(move_base)
 find_package(catkin REQUIRED
     COMPONENTS
         roscpp
-        roslib
         pluginlib
         actionlib
         dynamic_reconfigure
@@ -12,7 +11,7 @@ find_package(catkin REQUIRED
         nav_core
         tf
 )
-find_package(Eigen)
+find_package(Eigen REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})
 
 # dynamic reconfigure
@@ -29,9 +28,7 @@ catkin_package(
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-#    ${EIGEN_INCLUDE_DIRS}
-#    ${PCL_INCLUDE_DIRS}
-#    ${Boost_INCLUDE_DIRS}
+    ${EIGEN_INCLUDE_DIRS}
 )
 
 # move_base

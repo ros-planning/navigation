@@ -31,29 +31,26 @@
 #*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 #*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #*  POSSIBILITY OF SUCH DAMAGE.
-#* 
+#*
 #* Author: Eitan Marder-Eppstein
 #***********************************************************
 PKG = 'move_base'
 NAME = 'subtopic_forwarder_node'
-
-import roslib; roslib.load_manifest(PKG)
 
 import rospy
 import sys
 
 from subtopic_forwarder import SubtopicForwarder
 if __name__ == '__main__':
-  rospy.init_node(NAME, anonymous=True)
+    rospy.init_node(NAME, anonymous=True)
 
-  if not rospy.has_param("~source_topic") or not rospy.has_param("~destination_topic"):
-    rospy.logerr("You must specify both the \"~source_topic\" and \"~destination_topic\" parameters to run this node and you have not. Exiting")
-    sys.exit(-1)
+    if not rospy.has_param("~source_topic") or not rospy.has_param("~destination_topic"):
+        rospy.logerr("You must specify both the \"~source_topic\" and \"~destination_topic\" parameters to run this node and you have not. Exiting")
+        sys.exit(-1)
 
-  topic = rospy.resolve_name(rospy.get_param('~source_topic'))
-  remapped_topic = rospy.resolve_name(rospy.get_param('~destination_topic'))
+    topic = rospy.resolve_name(rospy.get_param('~source_topic'))
+    remapped_topic = rospy.resolve_name(rospy.get_param('~destination_topic'))
 
-  sf = SubtopicForwarder(topic, remapped_topic)
+    sf = SubtopicForwarder(topic, remapped_topic)
 
-  rospy.spin()
-
+    rospy.spin()

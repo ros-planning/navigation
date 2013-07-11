@@ -46,6 +46,8 @@
 
 #include <ros/ros.h>
 
+#include <pcl_conversions/pcl_conversions.h>
+
 namespace dwa_local_planner {
   void DWAPlanner::reconfigure(DWAPlannerConfig &config)
   {
@@ -311,10 +313,13 @@ namespace dwa_local_planner {
     {
         base_local_planner::MapGridCostPoint pt;
         traj_cloud_.points.clear();
-        traj_cloud_.width=0;
-        traj_cloud_.height=0;
-        traj_cloud_.header.stamp = ros::Time::now();
-        for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); t++)
+        traj_cloud_.width = 0;
+        traj_cloud_.height = 0;
+        std_msgs::Header header;
+        pcl_conversions::fromPCL(traj_cloud_.header, header);
+        header.stamp = ros::Time::now();
+        traj_cloud_.header = pcl_conversions::toPCL(header);
+        for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); ++t)
         {
             if(t->cost_<0)
                 continue;

@@ -37,7 +37,7 @@
 #ifndef POTARR_POINT_H_
 #define POTARR_POINT_H_
 
-#include <pcl/ros/register_point_struct.h>
+#include <pcl/register_point_struct.h>
 
 namespace navfn {
     struct PotarrPoint {

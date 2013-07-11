@@ -14,44 +14,42 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <build_depend>roscpp</build_depend>
-    <build_depend>roslib</build_depend>
-    <build_depend>std_msgs</build_depend>
-    <build_depend>move_base_msgs</build_depend>
-    <build_depend>geometry_msgs</build_depend>
-    <build_depend>visualization_msgs</build_depend>
     <build_depend>actionlib</build_depend>
-    <build_depend>nav_core</build_depend>
-    <build_depend>pluginlib</build_depend>
     <build_depend>costmap_2d</build_depend>
-    <build_depend>tf</build_depend>
-    <build_depend>nav_msgs</build_depend>
-    <build_depend>rospy</build_depend>
-    <build_depend>message_generation</build_depend>
-    <build_depend>std_srvs</build_depend>
     <build_depend>dynamic_reconfigure</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>message_generation</build_depend>
+    <build_depend>move_base_msgs</build_depend>
+    <build_depend>nav_core</build_depend>
+    <build_depend>nav_msgs</build_depend>
+    <build_depend>pluginlib</build_depend>
+    <build_depend>roscpp</build_depend>
+    <build_depend>rospy</build_depend>
+    <build_depend>std_msgs</build_depend>
+    <build_depend>std_srvs</build_depend>
+    <build_depend>tf</build_depend>
+    <build_depend>visualization_msgs</build_depend>
 
     <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->
     <build_depend>base_local_planner</build_depend>
-    <build_depend>navfn</build_depend>
     <build_depend>clear_costmap_recovery</build_depend>
+    <build_depend>navfn</build_depend>
 <!--  This is commented out until rotate_recovery is ported to layered costmaps. <build_depend>rotate_recovery</build_depend> -->
 
-    <run_depend>roscpp</run_depend>
-    <run_depend>roslib</run_depend>
-    <run_depend>std_msgs</run_depend>
-    <run_depend>move_base_msgs</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>visualization_msgs</run_depend>
     <run_depend>actionlib</run_depend>
-    <run_depend>nav_core</run_depend>
-    <run_depend>pluginlib</run_depend>
     <run_depend>costmap_2d</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>rospy</run_depend>
-    <run_depend>message_generation</run_depend>
-    <run_depend>std_srvs</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
+    <run_depend>geometry_msgs</run_depend>
+    <run_depend>message_runtime</run_depend>
+    <run_depend>move_base_msgs</run_depend>
+    <run_depend>nav_core</run_depend>
+    <run_depend>nav_msgs</run_depend>
+    <run_depend>pluginlib</run_depend>
+    <run_depend>roscpp</run_depend>
+    <run_depend>rospy</run_depend>
+    <run_depend>std_msgs</run_depend>
+    <run_depend>std_srvs</run_depend>
+    <run_depend>tf</run_depend>
+    <run_depend>visualization_msgs</run_depend>
 
 </package>

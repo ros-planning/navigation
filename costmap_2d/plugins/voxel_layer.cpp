@@ -1,5 +1,7 @@
-#include<costmap_2d/voxel_layer.h>
+#include <costmap_2d/voxel_layer.h>
 #include <pluginlib/class_list_macros.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #define VOXEL_BITS 16
 PLUGINLIB_EXPORT_CLASS(costmap_2d::VoxelLayer, costmap_2d::Layer)
 
@@ -334,7 +336,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
   if( publish_clearing_points )
   {
     clearing_endpoints_.header.frame_id = global_frame_;
-    clearing_endpoints_.header.stamp = clearing_observation.cloud_.header.stamp;
+    clearing_endpoints_.header.stamp = pcl_conversions::fromPCL(clearing_observation.cloud_.header).stamp;
     clearing_endpoints_.header.seq = clearing_observation.cloud_.header.seq;
 
     clearing_endpoints_pub_.publish( clearing_endpoints_ );

@@ -3,11 +3,11 @@ project(clear_costmap_recovery)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roscpp
-            tf
             costmap_2d
             nav_core
             pluginlib
+            roscpp
+            tf
         )
 
 find_package(Eigen REQUIRED)
@@ -15,9 +15,8 @@ find_package(PCL REQUIRED)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    SYSTEM
-        ${EIGEN_INCLUDE_DIRS}
-        ${PCL_INCLUDE_DIRS}
+    ${EIGEN_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
 )
 add_definitions(${EIGEN_DEFINITIONS})
 
@@ -25,8 +24,11 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES clear_costmap_recovery
     CATKIN_DEPENDS
-        roscpp
+        costmap_2d
+        nav_core
         pluginlib
+        roscpp
+        tf
 )
 
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
@@ -40,4 +42,7 @@ install(FILES ccr_plugin.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)

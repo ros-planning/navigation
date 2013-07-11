@@ -3,12 +3,12 @@ project(base_local_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
             tf
             message_generation
             dynamic_reconfigure
             nav_core
+            pcl_conversions
             rostest
             costmap_2d
             pluginlib
@@ -24,9 +24,8 @@ find_package(PCL REQUIRED)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    SYSTEM
-        ${EIGEN_INCLUDE_DIRS}
-        ${PCL_INCLUDE_DIRS}
+    ${EIGEN_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
 )
 add_definitions(${EIGEN_DEFINITIONS})
 
@@ -38,8 +37,6 @@ add_message_files(
     FILES
     Position2DInt.msg
 )
-
-catkin_python_setup()
 
 generate_messages(
     DEPENDENCIES
@@ -57,7 +54,6 @@ catkin_package(
         base_local_planner
 #       trajectory_planner_ros
     CATKIN_DEPENDS
-        roslib
         roscpp
         dynamic_reconfigure
         message_generation
