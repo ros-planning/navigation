@@ -31,6 +31,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#ifdef __APPLE__
+# include <netpbm/pgm.h>
+#else
 extern "C" {
 #include <stdio.h>
 // pgm.h is not very friendly with system headers... need to undef max() and min() afterwards
@@ -38,6 +41,7 @@ extern "C" {
 #undef max
 #undef min
 }
+#endif
 
 void
 setcostobs(COSTTYPE *cmap, int n, int w)
