@@ -3,20 +3,18 @@ project(navfn)
 
 find_package(catkin REQUIRED
     COMPONENTS
-        roscpp
-        geometry_msgs
         costmap_2d
+        geometry_msgs
         nav_core
-        pluginlib
         nav_msgs
+        pcl_conversions
+        pcl_ros
+        pluginlib
+        roscpp
         tf
         visualization_msgs
-        pcl_ros
-        message_generation
         )
 
-# <rosdep name="fltk"/>
-# <rosdep name="netpbm"/>
 find_package(Eigen REQUIRED)
 find_package(PCL REQUIRED)
 include_directories(

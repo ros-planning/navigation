@@ -31,32 +31,32 @@
 #*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 #*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #*  POSSIBILITY OF SUCH DAMAGE.
-#* 
+#*
 #* Author: Eitan Marder-Eppstein
 #***********************************************************
 PKG = "move_base"
 NAME = "warner"
-import roslib; roslib.load_manifest(PKG)
 
 import rospy
 import sys
 
+
 def warner():
-  rospy.init_node(NAME, anonymous=True)
-  if not rospy.has_param('~string'):
-    rospy.logerr("You must fill in the \"~string\" parameter to run this node, otherwise we don't know what to warn about. Exiting")
-    sys.exit(-1)
+    rospy.init_node(NAME, anonymous=True)
+    if not rospy.has_param('~string'):
+        rospy.logerr("You must fill in the \"~string\" parameter to run this node, otherwise we don't know what to warn about. Exiting")
+        sys.exit(-1)
 
-  period = rospy.get_param('~period', 5.0)
-  string = rospy.get_param('~string')
+    period = rospy.get_param('~period', 5.0)
+    string = rospy.get_param('~string')
 
-  r = rospy.Rate(1.0 / period)
-  while not rospy.is_shutdown():
-    print "%s" % string #TODO: Take this out after ROS 0.9 is released
-    rospy.logwarn("%s", string)
-    r.sleep()
+    r = rospy.Rate(1.0 / period)
+    while not rospy.is_shutdown():
+        rospy.logwarn("%s", string)
+        r.sleep()
 
 if __name__ == '__main__':
-  try:
-    warner()
-  except rospy.ROSInterruptException: pass
+    try:
+        warner()
+    except rospy.ROSInterruptException:
+        pass

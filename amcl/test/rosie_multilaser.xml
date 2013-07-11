@@ -4,8 +4,8 @@ Setting pose: 33.118 34.530 -0.519
 <launch>
     <param name="/use_sim_time" value="true"/>
     <node name="rosbag" pkg="rosbag" type="play" 
-        args="-d 5 -r 1 --clock --hz 10 $(find amcl)/../../../build/navigation/amcl/test/rosie_localization_stage.bag"/>
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find amcl)/../../../build/navigation/amcl/test/willow-full-0.05.pgm 0.05"/>
+        args="-d 5 -r 1 --clock --hz 10 $(find amcl)/test/rosie_localization_stage.bag"/>
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find amcl)/test/willow-full-0.05.pgm 0.05"/>
     <node pkg="amcl" type="amcl" name="amcl" respawn="false" output="screen">
       <remap from="scan" to="base_scan" />
       <param name="transform_tolerance" value="0.2" />

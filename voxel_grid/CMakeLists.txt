@@ -3,7 +3,6 @@ project(voxel_grid)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
         )
 
@@ -13,7 +12,6 @@ catkin_package(
     LIBRARIES
         voxel_grid
     CATKIN_DEPENDS
-        roslib
         roscpp
 )
 

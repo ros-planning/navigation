@@ -38,7 +38,10 @@
 
 #include <pcl/point_types.h>
 #include <pcl_ros/transforms.h>
-#include <pcl/ros/conversions.h>
+#include <pcl/conversions.h>
+#include <pcl/PCLPointCloud2.h>
+
+#include <pcl_conversions/pcl_conversions.h>
 
 using namespace std;
 using namespace tf;
@@ -110,9 +113,11 @@ void ObservationBuffer::bufferCloud(const sensor_msgs::PointCloud2& cloud)
 {
   try
   {
-    //actually convert the PointCloud2 message into a type we can reason about
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl_conversions::toPCL(cloud, pcl_pc2);
+    // Actually convert the PointCloud2 message into a type we can reason about
     pcl::PointCloud < pcl::PointXYZ > pcl_cloud;
-    pcl::fromROSMsg(cloud, pcl_cloud);
+    pcl::fromPCLPointCloud2(pcl_pc2, pcl_cloud);
     bufferCloud (pcl_cloud);
   }
   catch (pcl::PCLException& ex)
@@ -135,7 +140,7 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
   try
   {
     //given these observations come from sensors... we'll need to store the origin pt of the sensor
-    Stamped < tf::Vector3 > local_origin(tf::Vector3(0, 0, 0), cloud.header.stamp, origin_frame);
+    Stamped < tf::Vector3 > local_origin(tf::Vector3(0, 0, 0), pcl_conversions::fromPCL(cloud.header).stamp, origin_frame);
     tf_.transformPoint(global_frame_, local_origin, global_origin);
     observation_list_.front().origin_.x = global_origin.getX();
     observation_list_.front().origin_.y = global_origin.getY();
@@ -221,8 +226,8 @@ void ObservationBuffer::purgeStaleObservations()
     {
       Observation& obs = *obs_it;
       //check if the observation is out of date... and if it is, remove it and those that follow from the list
-      ros::Duration time_diff = last_updated_ - obs.cloud_.header.stamp;
-      if ((last_updated_ - obs.cloud_.header.stamp) > observation_keep_time_)
+      ros::Duration time_diff = last_updated_ - pcl_conversions::fromPCL(obs.cloud_.header).stamp;
+      if ((last_updated_ - pcl_conversions::fromPCL(obs.cloud_.header).stamp) > observation_keep_time_)
       {
         observation_list_.erase(obs_it, observation_list_.end());
         return;

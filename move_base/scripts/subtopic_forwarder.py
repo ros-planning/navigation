@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 #***********************************************************
 #* Software License Agreement (BSD License)
 #*
@@ -31,50 +31,49 @@
 #*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 #*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #*  POSSIBILITY OF SUCH DAMAGE.
-#* 
+#*
 #* Author: Eitan Marder-Eppstein
 #***********************************************************
 PKG = 'move_base'
 NAME = 'subtopic_forwarder'
 
-import roslib; roslib.load_manifest(PKG)
-
 import rospy
 import sys
 import rostopic
-from std_msgs.msg import *
 from roslib.message import Message
 
+
 class SubtopicForwarder(object):
-  def __init__(self, topic, remapped_topic):
-    topic_class, real_topic, msg_eval = rostopic.get_topic_class(topic)
-    try:
-      rospy.Subscriber(real_topic, topic_class, self.callback, (remapped_topic, msg_eval))
-    except ValueError: pass
+    def __init__(self, topic, remapped_topic):
+        topic_class, real_topic, msg_eval = rostopic.get_topic_class(topic)
+        try:
+            rospy.Subscriber(real_topic, topic_class, self.callback, (remapped_topic, msg_eval))
+        except ValueError:
+            pass
 
-  def callback(self, data, args):
-    remapped_topic, msg_eval = args
+    def callback(self, data, args):
+        remapped_topic, msg_eval = args
 
-    #make sure to check if we have a subtopic or just a topic
-    remapped_msg = msg_eval != None and msg_eval(data) or data
+        #make sure to check if we have a subtopic or just a topic
+        remapped_msg = msg_eval is not None and msg_eval(data) or data
 
-    if not issubclass(type(remapped_msg), Message):
-      rospy.logerr("Sorry, forwarding primitive types, in this case a %s, is not supported by this tool :(", type(remapped_msg))
-      return 
-        
-    remap_pub = rospy.Publisher(remapped_topic, type(remapped_msg))
-    remap_pub.publish(remapped_msg)
+        if not issubclass(type(remapped_msg), Message):
+            rospy.logerr("Sorry, forwarding primitive types, in this case a %s, is not supported by this tool :(", type(remapped_msg))
+        return
+
+        remap_pub = rospy.Publisher(remapped_topic, type(remapped_msg))
+        remap_pub.publish(remapped_msg)
 
 if __name__ == '__main__':
-  if len(sys.argv) < 3:
-    print "You are uinsg this tool wrong, usage is:" 
-    print "subtopic_forwarder [source_topic] [destination_topic]"
-    sys.exit(-1)
+    if len(sys.argv) < 3:
+        print "You are uinsg this tool wrong, usage is:"
+        print "subtopic_forwarder [source_topic] [destination_topic]"
+        sys.exit(-1)
 
-  rospy.init_node(NAME, anonymous=True)
+    rospy.init_node(NAME, anonymous=True)
 
-  topic = rospy.resolve_name(sys.argv[1])
-  remapped_topic = rospy.resolve_name(sys.argv[2])
-  sf = SubtopicForwarder(topic, remapped_topic)
+    topic = rospy.resolve_name(sys.argv[1])
+    remapped_topic = rospy.resolve_name(sys.argv[2])
+    sf = SubtopicForwarder(topic, remapped_topic)
 
-  rospy.spin()
+    rospy.spin()

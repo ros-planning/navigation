@@ -3,7 +3,6 @@ project(carrot_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            roslib
             roscpp
             tf
             nav_core
@@ -22,7 +21,6 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES carrot_planner
     CATKIN_DEPENDS
-        roslib
         roscpp
         pluginlib
         costmap_2d
@@ -38,6 +36,11 @@ target_link_libraries(carrot_planner
 install(TARGETS carrot_planner
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
 
 install(FILES bgp_plugin.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
