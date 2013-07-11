@@ -37,7 +37,7 @@
 #include <move_slow_and_clear/move_slow_and_clear.h>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_DECLARE_CLASS(move_slow_and_clear, MoveSlowAndClear, move_slow_and_clear::MoveSlowAndClear,
+PLUGINLIB_EXPORT_CLASS(move_slow_and_clear::MoveSlowAndClear,
     nav_core::RecoveryBehavior)
 
 namespace move_slow_and_clear
