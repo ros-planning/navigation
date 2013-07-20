@@ -1,6 +1,6 @@
 <package>
     <name>carrot_planner</name>
-    <version>1.11.2</version>
+    <version>1.11.3</version>
     <description>
 
         This planner attempts to find a legal place to put a carrot for the robot to follow. It does this by moving back along the vector between the robot and the goal point.

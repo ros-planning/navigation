@@ -1,6 +1,6 @@
 <package>
     <name>fake_localization</name>
-    <version>1.11.2</version>
+    <version>1.11.3</version>
     <description>A ROS node that simply forwards odometry information.</description>
     <author>Ioan A. Sucan</author>
     <author>contradict@gmail.com</author>

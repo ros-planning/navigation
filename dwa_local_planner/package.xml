@@ -1,6 +1,6 @@
 <package>
     <name>dwa_local_planner</name>
-    <version>1.11.2</version>
+    <version>1.11.3</version>
     <description>
 
         This package provides an implementation of the Dynamic Window Approach to
