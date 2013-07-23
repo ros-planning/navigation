@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
             rostest
             costmap_2d
             pluginlib
+            angles
         )
 
 find_package(Boost REQUIRED
@@ -61,6 +62,7 @@ catkin_package(
         pluginlib
         costmap_2d
         nav_core
+        angles
 )
 
 #uncomment for profiling

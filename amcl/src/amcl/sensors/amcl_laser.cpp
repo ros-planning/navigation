@@ -208,6 +208,11 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     double z_rand_mult = 1.0/data->range_max;
 
     step = (data->range_count - 1) / (self->max_beams - 1);
+
+    // Step size must be at least 1
+    if(step < 1)
+      step = 1;
+
     for (i = 0; i < data->range_count; i += step)
     {
       obs_range = data->ranges[i][0];
@@ -215,6 +220,10 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
 
       // This model ignores max range readings
       if(obs_range >= data->range_max)
+        continue;
+
+      // Check for NaN
+      if(obs_range != obs_range)
         continue;
 
       pz = 0.0;
