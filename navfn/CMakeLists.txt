@@ -3,6 +3,7 @@ project(navfn)
 
 find_package(catkin REQUIRED
     COMPONENTS
+        actionlib_msgs
         costmap_2d
         geometry_msgs
         nav_core
@@ -37,6 +38,7 @@ add_service_files(
 
 generate_messages(
     DEPENDENCIES
+        actionlib_msgs
         std_msgs
         geometry_msgs
         nav_msgs
