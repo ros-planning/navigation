@@ -137,28 +137,34 @@ target_link_libraries(costmap_2d_node
 if(CATKIN_ENABLE_TESTING)
   # Find package test dependencies
   find_package(rostest REQUIRED)
+  find_package(gtest)
 
   # Add the test folder to the include directories
   include_directories(test)
 
+  include_directories(${GTEST_INCLUDE_DIRS})
+  link_directories(${GTEST_LIBRARY_DIRS})
+
   # Create targets for test executables
-  catkin_add_gtest(costmap_tester test/costmap_tester.cpp)
-  target_link_libraries(costmap_tester costmap_2d)
+  add_executable(costmap_tester EXCLUDE_FROM_ALL test/costmap_tester.cpp)
+  add_dependencies(tests costmap_tester)
+  target_link_libraries(costmap_tester costmap_2d ${GTEST_LIBRARIES})
 
-  catkin_add_gtest(array_parser_test test/array_parser_test.cpp)
-  target_link_libraries(array_parser_test costmap_2d)
+  add_executable(footprint_tests EXCLUDE_FROM_ALL test/footprint_tests.cpp)
+  add_dependencies(tests footprint_tests)
+  target_link_libraries(footprint_tests costmap_2d ${GTEST_LIBRARIES})
 
-  catkin_add_gtest(footprint_tests test/footprint_tests.cpp)
-  target_link_libraries(footprint_tests costmap_2d)
+  add_executable(obstacle_tests EXCLUDE_FROM_ALL test/obstacle_tests.cpp)
+  add_dependencies(tests obstacle_tests)
+  target_link_libraries(obstacle_tests costmap_2d layers ${GTEST_LIBRARIES})
 
-  catkin_add_gtest(obstacle_tests test/obstacle_tests.cpp)
-  target_link_libraries(obstacle_tests costmap_2d layers)
+  add_executable(static_tests EXCLUDE_FROM_ALL test/static_tests.cpp)
+  add_dependencies(tests static_tests)
+  target_link_libraries(static_tests costmap_2d layers ${GTEST_LIBRARIES})
 
-  catkin_add_gtest(static_tests test/static_tests.cpp)
-  target_link_libraries(static_tests costmap_2d layers)
-
-  catkin_add_gtest(inflation_tests test/inflation_tests.cpp)
-  target_link_libraries(inflation_tests costmap_2d layers)
+  add_executable(inflation_tests EXCLUDE_FROM_ALL test/inflation_tests.cpp)
+  add_dependencies(tests inflation_tests)
+  target_link_libraries(inflation_tests costmap_2d layers ${GTEST_LIBRARIES})
 
   catkin_download_test_data(${PROJECT_NAME}_simple_driving_test_indexed.bag
     http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag
@@ -174,6 +180,9 @@ if(CATKIN_ENABLE_TESTING)
   add_rostest(test/obstacle_tests.launch)
   add_rostest(test/simple_driving_test.xml)
   add_rostest(test/static_tests.launch)
+
+  catkin_add_gtest(array_parser_test test/array_parser_test.cpp)
+  target_link_libraries(array_parser_test costmap_2d)
 endif()
 
 install( TARGETS
