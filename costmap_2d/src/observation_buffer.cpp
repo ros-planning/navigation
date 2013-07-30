@@ -93,7 +93,7 @@ bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame)
       obs.origin_ = origin.point;
 
       //we also need to transform the cloud of the observation to the new global frame
-      pcl_ros::transformPointCloud(new_global_frame, obs.cloud_, obs.cloud_, tf_);
+      pcl_ros::transformPointCloud(new_global_frame, *obs.cloud_, *obs.cloud_, tf_);
 
     }
     catch (TransformException& ex)
@@ -157,7 +157,7 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
     global_frame_cloud.header.stamp = cloud.header.stamp;
 
     //now we need to remove observations from the cloud that are below or above our height thresholds
-    pcl::PointCloud < pcl::PointXYZ > &observation_cloud = observation_list_.front().cloud_;
+    pcl::PointCloud < pcl::PointXYZ > &observation_cloud = *(observation_list_.front().cloud_);
     unsigned int cloud_size = global_frame_cloud.points.size();
     observation_cloud.points.resize(cloud_size);
     unsigned int point_count = 0;
@@ -226,8 +226,8 @@ void ObservationBuffer::purgeStaleObservations()
     {
       Observation& obs = *obs_it;
       //check if the observation is out of date... and if it is, remove it and those that follow from the list
-      ros::Duration time_diff = last_updated_ - pcl_conversions::fromPCL(obs.cloud_.header).stamp;
-      if ((last_updated_ - pcl_conversions::fromPCL(obs.cloud_.header).stamp) > observation_keep_time_)
+      ros::Duration time_diff = last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp;
+      if ((last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp) > observation_keep_time_)
       {
         observation_list_.erase(obs_it, observation_list_.end());
         return;

@@ -100,7 +100,7 @@ void VoxelLayer::updateBounds(double origin_x, double origin_y, double origin_ya
   {
     const Observation& obs = *it;
 
-    const pcl::PointCloud<pcl::PointXYZ>& cloud = obs.cloud_;
+    const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
 
     double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
 
@@ -224,7 +224,7 @@ void VoxelLayer::clearNonLethal(double wx, double wy, double w_size_x, double w_
 void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, double* min_x, double* min_y,
                                            double* max_x, double* max_y)
 {
-  if (clearing_observation.cloud_.points.size() == 0)
+  if (clearing_observation.cloud_->points.size() == 0)
     return;
 
   double sensor_x, sensor_y, sensor_z;
@@ -245,18 +245,18 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
   if( publish_clearing_points )
   {
     clearing_endpoints_.points.clear();
-    clearing_endpoints_.points.reserve( clearing_observation.cloud_.points.size() );
+    clearing_endpoints_.points.reserve( clearing_observation.cloud_->points.size() );
   }
 
   //we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
   double map_end_x = origin_x_ + getSizeInMetersX();
   double map_end_y = origin_y_ + getSizeInMetersY();
 
-  for (unsigned int i = 0; i < clearing_observation.cloud_.points.size(); ++i)
+  for (unsigned int i = 0; i < clearing_observation.cloud_->points.size(); ++i)
   {
-    double wpx = clearing_observation.cloud_.points[i].x;
-    double wpy = clearing_observation.cloud_.points[i].y;
-    double wpz = clearing_observation.cloud_.points[i].z;
+    double wpx = clearing_observation.cloud_->points[i].x;
+    double wpy = clearing_observation.cloud_->points[i].y;
+    double wpz = clearing_observation.cloud_->points[i].z;
 
     double distance = dist(ox, oy, oz, wpx, wpy, wpz);
     double scaling_fact = 1.0;
@@ -336,8 +336,8 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
   if( publish_clearing_points )
   {
     clearing_endpoints_.header.frame_id = global_frame_;
-    clearing_endpoints_.header.stamp = pcl_conversions::fromPCL(clearing_observation.cloud_.header).stamp;
-    clearing_endpoints_.header.seq = clearing_observation.cloud_.header.seq;
+    clearing_endpoints_.header.stamp = pcl_conversions::fromPCL(clearing_observation.cloud_->header).stamp;
+    clearing_endpoints_.header.seq = clearing_observation.cloud_->header.seq;
 
     clearing_endpoints_pub_.publish( clearing_endpoints_ );
   }
