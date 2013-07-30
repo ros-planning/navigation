@@ -22,7 +22,7 @@ class TestBasicLocalization(unittest.TestCase):
 
     def tf_cb(self, msg):
         for t in msg.transforms:
-            if t.header.frame_id == '/map':
+            if t.header.frame_id == 'map':
                 self.tf = t.transform
                 (a_curr, a_diff) = self.compute_angle_diff()
                 print 'Curr:\t %16.6f %16.6f %16.6f' % (self.tf.translation.x, self.tf.translation.y, a_curr)

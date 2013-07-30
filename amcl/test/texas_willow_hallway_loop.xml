@@ -33,5 +33,16 @@
       <param name="initial_pose_a" value="0.0"/>
     </node>
     <test time-limit="350" test-name="texas_willow_hallway_loop" pkg="amcl" 
-          type="basic_localization.py" args="0 77.993 22.130 -2.603 0.75 0.75 250.0"/>
+          type="basic_localization.py" args="0 77.993 22.130 -2.603 2.5 0.25 250.0"/>
+
+    <!-- The translation error limit on this is quite large (2.5
+         meters).  The reason is that basic_localization.py is not
+         actually testing robot pose relative to the map, it is
+         testing odom frame relative to map frame.  The robot has
+         travelled quite a ways from the odom frame origin in this
+         test, and that means that a small error in the robot's
+         orientation becomes a large error in the odom frame's
+         position relative to the map.  TODO: change
+         basic_localization.py to use a tf listener and compare the
+         robot's position directly instead of the odom frame. -->
 </launch>
