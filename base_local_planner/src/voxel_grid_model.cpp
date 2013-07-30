@@ -189,7 +189,7 @@ namespace base_local_planner {
     //iterate through all observations and update the grid
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
-      const pcl::PointCloud<pcl::PointXYZ>& cloud = obs.cloud_;
+      const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
       for(unsigned int i = 0; i < cloud.size(); ++i){
         //filter out points that are too high
         if(cloud[i].z > max_z_)

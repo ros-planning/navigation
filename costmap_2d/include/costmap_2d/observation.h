@@ -78,7 +78,7 @@ public:
    * @param obs The observation to copy
    */
   Observation(const Observation& obs) :
-      origin_(obs.origin_), cloud_(new pcl::PointCloud<pcl::PointXYZ>(obs.cloud_)), obstacle_range_(obs.obstacle_range_), raytrace_range_(
+      origin_(obs.origin_), cloud_(new pcl::PointCloud<pcl::PointXYZ>(*(obs.cloud_))), obstacle_range_(obs.obstacle_range_), raytrace_range_(
           obs.raytrace_range_)
   {
   }
