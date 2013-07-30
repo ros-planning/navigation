@@ -153,10 +153,12 @@ void ObstacleLayer::onInitialize()
 
   }
 
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
-  dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(
-      &ObstacleLayer::reconfigureCB, this, _1, _2);
-  dsrv_->setCallback(cb);
+  if(obstacle_configuration_){
+    dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
+    dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(
+        &ObstacleLayer::reconfigureCB, this, _1, _2);
+    dsrv_->setCallback(cb);
+  }
 
   footprint_layer_.initialize( layered_costmap_, name_ + "_footprint", tf_);
 }

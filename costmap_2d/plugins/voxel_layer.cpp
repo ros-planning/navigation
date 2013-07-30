@@ -17,6 +17,7 @@ namespace costmap_2d
 
 void VoxelLayer::onInitialize()
 {
+  obstacle_configuration_ = false;
   ObstacleLayer::onInitialize();
   ros::NodeHandle private_nh("~/" + name_);
 
