@@ -34,9 +34,9 @@ void VoxelLayer::initMaps()
   ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
 }
 
-void VoxelLayer::setupDynamicReconfigure()
+void VoxelLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
 {
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(private_nh);
+  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>::CallbackType cb = boost::bind(
       &VoxelLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);

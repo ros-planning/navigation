@@ -117,7 +117,7 @@ public:
 protected:
   void initMaps();
 
-  virtual void setupDynamicReconfigure();
+  virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
   /**
    * @brief  Get the observations used to mark space

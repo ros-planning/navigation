@@ -153,11 +153,11 @@ void ObstacleLayer::onInitialize()
 
   }
 
-  setupDynamicReconfigure();
+  setupDynamicReconfigure(nh);
   footprint_layer_.initialize( layered_costmap_, name_ + "_footprint", tf_);
 }
 
-void ObstacleLayer::setupDynamicReconfigure()
+void ObstacleLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
 {
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(
