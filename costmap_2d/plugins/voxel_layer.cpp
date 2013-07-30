@@ -20,8 +20,6 @@ void VoxelLayer::onInitialize()
   ObstacleLayer::onInitialize();
   ros::NodeHandle private_nh("~/" + name_);
 
-  setupDynamicReconfigure();
-
   private_nh.param("publish_voxel_map", publish_voxel_, false);
   if (publish_voxel_)
     voxel_pub_ = private_nh.advertise < costmap_2d::VoxelGrid > ("voxel_grid", 1);
