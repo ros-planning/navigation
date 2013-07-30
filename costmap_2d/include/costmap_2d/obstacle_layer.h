@@ -63,7 +63,6 @@ public:
   ObstacleLayer()
   {
     costmap_ = NULL; // this is the unsigned char* member of parent class Costmap2D.
-    obstacle_configuration_ = true;
   }
 
   virtual void onInitialize();
@@ -118,6 +117,8 @@ public:
 protected:
   void initMaps();
 
+  virtual void setupDynamicReconfigure();
+
   /**
    * @brief  Get the observations used to mark space
    * @param marking_observations A reference to a vector that will be populated with the observations
@@ -163,7 +164,6 @@ protected:
   double reset_min_x_, reset_max_x_, reset_min_y_, reset_max_y_;
 
   FootprintLayer footprint_layer_; ///< @brief clears the footprint in this obstacle layer.
-  bool obstacle_configuration_;
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
