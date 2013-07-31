@@ -117,6 +117,8 @@ public:
 protected:
   void initMaps();
 
+  virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
+
   /**
    * @brief  Get the observations used to mark space
    * @param marking_observations A reference to a vector that will be populated with the observations

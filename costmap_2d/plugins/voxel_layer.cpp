@@ -20,11 +20,6 @@ void VoxelLayer::onInitialize()
   ObstacleLayer::onInitialize();
   ros::NodeHandle private_nh("~/" + name_);
 
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(private_nh);
-  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>::CallbackType cb = boost::bind(
-      &VoxelLayer::reconfigureCB, this, _1, _2);
-  dsrv_->setCallback(cb);
-
   private_nh.param("publish_voxel_map", publish_voxel_, false);
   if (publish_voxel_)
     voxel_pub_ = private_nh.advertise < costmap_2d::VoxelGrid > ("voxel_grid", 1);
@@ -37,6 +32,14 @@ void VoxelLayer::initMaps()
   ObstacleLayer::initMaps();
   voxel_grid_.resize(size_x_, size_y_, size_z_);
   ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
+}
+
+void VoxelLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
+{
+  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(nh);
+  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>::CallbackType cb = boost::bind(
+      &VoxelLayer::reconfigureCB, this, _1, _2);
+  dsrv_->setCallback(cb);
 }
 
 void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level)
