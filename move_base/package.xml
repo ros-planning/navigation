@@ -34,9 +34,11 @@
     <build_depend>base_local_planner</build_depend>
     <build_depend>clear_costmap_recovery</build_depend>
     <build_depend>navfn</build_depend>
+    <build_depend>rotate_recovery</build_depend>
     <run_depend>base_local_planner</run_depend>
     <run_depend>clear_costmap_recovery</run_depend>
     <run_depend>navfn</run_depend>
+    <run_depend>rotate_recovery</run_depend>
 
 <!--  This is commented out until rotate_recovery is ported to layered costmaps. <build_depend>rotate_recovery</build_depend> -->
 
