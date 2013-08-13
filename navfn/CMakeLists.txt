@@ -63,8 +63,9 @@ target_link_libraries(navfn_node
     navfn
     )
 
-install(TARGETS navfn
+install(TARGETS navfn navfn_node
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
        )
 
 install(DIRECTORY include/
