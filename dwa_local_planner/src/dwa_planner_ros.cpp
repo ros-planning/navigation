@@ -89,7 +89,7 @@ namespace dwa_local_planner {
     }
 
     DWAPlannerROS::DWAPlannerROS() : initialized_(false),
-        odom_helper_("odom") {
+         odom_helper_("odom") {
     }
 
     void DWAPlannerROS::initialize(
