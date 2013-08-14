@@ -163,7 +163,7 @@ namespace base_local_planner {
        * @param  gy The y coordinate of the corresponding grid cell to be set by the function
        * @return True if the conversion was successful, false otherwise
        */
-      inline bool gridCoords(pcl::PointXYZ pt, unsigned int& gx, unsigned int& gy) const {
+      inline bool gridCoords(pcl::PointXYZ& pt, unsigned int& gx, unsigned int& gy) const {
         if(pt.x < origin_.x || pt.y < origin_.y){
           gx = 0;
           gy = 0;

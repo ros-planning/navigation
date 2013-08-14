@@ -72,67 +72,67 @@ enum CostAggregationType { Last, Sum, Product};
  */
 class MapGridCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
-  MapGridCostFunction(costmap_2d::Costmap2D* costmap,
-      double xshift = 0.0,
-      double yshift = 0.0,
-      bool is_local_goal_function = false,
-      CostAggregationType aggregationType = Last);
+    MapGridCostFunction(costmap_2d::Costmap2D* costmap,
+                        double xshift = 0.0,
+                        double yshift = 0.0,
+                        bool is_local_goal_function = false,
+                        CostAggregationType aggregationType = Last);
 
-  ~MapGridCostFunction() {}
+    ~MapGridCostFunction() {}
 
-  /**
+    /**
    * set line segments on the grid with distance 0, resets the grid
    */
-  void setTargetPoses(std::vector<geometry_msgs::PoseStamped> target_poses);
+    void setTargetPoses(std::vector<geometry_msgs::PoseStamped> target_poses);
 
-  void setXShift(double xshift) {xshift_ = xshift;}
-  void setYShift(double yshift) {yshift_ = yshift;}
+    void setXShift(double xshift) {xshift_ = xshift;}
+    void setYShift(double yshift) {yshift_ = yshift;}
 
-  /** @brief If true, failures along the path cause the entire path to be rejected.
+    /** @brief If true, failures along the path cause the entire path to be rejected.
    *
    * Default is true. */
-  void setStopOnFailure(bool stop_on_failure) {stop_on_failure_ = stop_on_failure;}
+    void setStopOnFailure(bool stop_on_failure) {stop_on_failure_ = stop_on_failure;}
 
-  /**
+    /**
    * propagate distances
    */
-  bool prepare();
+    bool prepare();
 
-  double scoreTrajectory(Trajectory &traj);
+    double scoreTrajectory(Trajectory &traj);
 
-  /**
+    /**
    * return a value that indicates cell is in obstacle
    */
-  double obstacleCosts() {
-    return map_.obstacleCosts();
-  }
+    double obstacleCosts() {
+        return map_.obstacleCosts();
+    }
 
-  /**
+    /**
    * returns a value indicating cell was not reached by wavefront
    * propagation of set cells. (is behind walls, regarding the region covered by grid)
    */
-  double unreachableCellCosts() {
-    return map_.unreachableCellCosts();
-  }
+    double unreachableCellCosts() {
+        return map_.unreachableCellCosts();
+    }
 
-  // used for easier debugging
-  double getCellCosts(unsigned int cx, unsigned int cy);
+    // used for easier debugging
+    double getCellCosts(unsigned int cx, unsigned int cy);
 
 private:
-  std::vector<geometry_msgs::PoseStamped> target_poses_;
-  costmap_2d::Costmap2D* costmap_;
+    std::vector<geometry_msgs::PoseStamped> target_poses_;
+    costmap_2d::Costmap2D* costmap_;
 
-  base_local_planner::MapGrid map_;
-  CostAggregationType aggregationType_;
-  /// xshift and yshift allow scoring for different
-  // ooints of robots than center, like fron or back
-  // this can help with alignment or keeping specific
-  // wheels on tracks both default to 0
-  double xshift_;
-  double yshift_;
-  // if true, we look for a suitable local goal on path, else we use the full path for costs
-  bool is_local_goal_function_;
-  bool stop_on_failure_;
+    base_local_planner::MapGrid map_;
+    CostAggregationType aggregationType_;
+    /// xshift and yshift allow scoring for different
+    // ooints of robots than center, like fron or back
+    // this can help with alignment or keeping specific
+    // wheels on tracks both default to 0
+    double xshift_;
+    double yshift_;
+    // if true, we look for a suitable local goal on path, else we use the full path for costs
+    bool is_local_goal_function_;
+    bool stop_on_failure_;
 };
 
 } /* namespace base_local_planner */
