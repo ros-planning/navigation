@@ -48,26 +48,29 @@ namespace base_local_planner {
 class OdometryHelperRos {
 public:
 
-  OdometryHelperRos(std::string odom_topic);
-  ~OdometryHelperRos() {}
+    OdometryHelperRos(std::string odom_topic);
+    ~OdometryHelperRos() {}
 
-  /**
+    /**
    * @brief  Callback for receiving odometry data
    * @param msg An Odometry message
    */
-  void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
+    void odomCallback(const nav_msgs::Odometry::ConstPtr& msg);
 
-  void getOdom(nav_msgs::Odometry& base_odom);
+    void getOdom(nav_msgs::Odometry& base_odom);
 
-  void getRobotVel(tf::Stamped<tf::Pose>& robot_vel);
+    void getRobotVel(tf::Stamped<tf::Pose>& robot_vel);
+
+    void initialize(std::string odom_topic="");
 
 private:
-  // we listen on odometry on the odom topic
-  ros::Subscriber odom_sub_;
-  nav_msgs::Odometry base_odom_;
-  boost::mutex odom_mutex_;
-  // global tf frame id
-  std::string frame_id_; ///< The frame_id associated this data
+    // we listen on odometry on the odom topic
+    ros::Subscriber odom_sub_;
+    nav_msgs::Odometry base_odom_;
+    boost::mutex odom_mutex_;
+    // global tf frame id
+    std::string frame_id_; ///< The frame_id associated this data
+    std::string odom_topic_;
 };
 
 } /* namespace base_local_planner */

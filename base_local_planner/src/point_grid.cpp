@@ -44,7 +44,7 @@
 using namespace std;
 using namespace costmap_2d;
 
-void printPoint(pcl::PointXYZ pt){
+void printPoint(pcl::PointXYZ& pt){
   printf("(%.2f, %.2f, %.2f)", pt.x, pt.y, pt.z);
 }
 
