@@ -40,11 +40,14 @@ namespace base_local_planner {
 
 OdometryHelperRos::OdometryHelperRos(std::string odom_topic) {
   //to get odometry information, we need to get a handle to the topic in the global namespace of the node
-  ros::NodeHandle gn;
-  odom_sub_ = gn.subscribe<nav_msgs::Odometry>(odom_topic, 1, boost::bind(&OdometryHelperRos::odomCallback, this, _1));
+  //ros::NodeHandle gn;
+  //odom_sub_ = gn.subscribe<nav_msgs::Odometry>(odom_topic, 1, boost::bind(&OdometryHelperRos::odomCallback, this, _1));
+  odom_topic_ = odom_topic;
 }
 
 void OdometryHelperRos::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
+    ROS_INFO_ONCE("odom received!");
+
   //we assume that the odometry is published in the frame of the base
   boost::mutex::scoped_lock lock(odom_mutex_);
   base_odom_.twist.twist.linear.x = msg->twist.twist.linear.x;
@@ -73,6 +76,15 @@ void OdometryHelperRos::getRobotVel(tf::Stamped<tf::Pose>& robot_vel) {
   robot_vel.setData(tf::Transform(tf::createQuaternionFromYaw(global_vel.angular.z), tf::Vector3(global_vel.linear.x, global_vel.linear.y, 0)));
   robot_vel.frame_id_ = frame_id_;//costmap_ros_->getBaseFrameID();
   robot_vel.stamp_ = ros::Time();
+}
+
+void OdometryHelperRos::initialize(std::string odom_topic){
+    if(odom_topic != ""){
+        odom_topic_ = odom_topic;
+    }
+
+    ros::NodeHandle gn;
+    odom_sub_ = gn.subscribe<nav_msgs::Odometry>(odom_topic_, 1, boost::bind(&OdometryHelperRos::odomCallback, this, _1));
 }
 
 } /* namespace base_local_planner */

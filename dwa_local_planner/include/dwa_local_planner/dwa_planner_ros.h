@@ -153,6 +153,7 @@ namespace dwa_local_planner {
 
 
       base_local_planner::OdometryHelperRos odom_helper_;
+      std::string odom_topic_;
   };
 };
 #endif

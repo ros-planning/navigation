@@ -48,7 +48,9 @@ namespace base_local_planner {
     ns_nh_ = ros::NodeHandle("~/" + name_);
     ns_nh_.param("global_frame_id", frame_id_, std::string("odom"));
 
-    cost_cloud_.header.frame_id = frame_id_;
+    cost_cloud_ = new pcl::PointCloud<MapGridCostPoint>;
+
+    cost_cloud_->header.frame_id = frame_id_;
     pub_.advertise(ns_nh_, "cost_cloud", 1);
   }
 
@@ -58,10 +60,10 @@ namespace base_local_planner {
     double z_coord = 0.0;
     double x_coord, y_coord;
     MapGridCostPoint pt;
-    cost_cloud_.points.clear();
-    std_msgs::Header header = pcl_conversions::fromPCL(cost_cloud_.header);
+    cost_cloud_->points.clear();
+    std_msgs::Header header = pcl_conversions::fromPCL(cost_cloud_->header);
     header.stamp = ros::Time::now();
-    cost_cloud_.header = pcl_conversions::toPCL(header);
+    cost_cloud_->header = pcl_conversions::toPCL(header);
     float path_cost, goal_cost, occ_cost, total_cost;
     for (unsigned int cx = 0; cx < x_size; cx++) {
       for (unsigned int cy = 0; cy < y_size; cy++) {
@@ -74,11 +76,11 @@ namespace base_local_planner {
           pt.goal_cost = goal_cost;
           pt.occ_cost = occ_cost;
           pt.total_cost = total_cost;
-          cost_cloud_.push_back(pt);
+          cost_cloud_->push_back(pt);
         }
       }
     }
-    pub_.publish(cost_cloud_);
+    pub_.publish(*cost_cloud_);
     ROS_DEBUG("Cost PointCloud published");
   }
 };

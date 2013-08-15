@@ -61,7 +61,12 @@ public:
 
   void getRobotVel(tf::Stamped<tf::Pose>& robot_vel);
 
+  void initialize(std::string odom_topic="");
+
 private:
+  //odom topic
+  std::string odom_topic_;
+
   // we listen on odometry on the odom topic
   ros::Subscriber odom_sub_;
   nav_msgs::Odometry base_odom_;

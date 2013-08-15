@@ -80,7 +80,7 @@ namespace dwa_local_planner {
       /**
        * @brief  Destructor for the planner
        */
-      ~DWAPlanner() {}
+      ~DWAPlanner() {if(traj_cloud_) delete traj_cloud_;}
 
       /**
        * @brief Reconfigures the trajectory planner
@@ -158,7 +158,7 @@ namespace dwa_local_planner {
       std::vector<geometry_msgs::PoseStamped> global_plan_;
 
       boost::mutex configuration_mutex_;
-      pcl::PointCloud<base_local_planner::MapGridCostPoint> traj_cloud_;
+      pcl::PointCloud<base_local_planner::MapGridCostPoint>* traj_cloud_;
       pcl_ros::Publisher<base_local_planner::MapGridCostPoint> traj_cloud_pub_;
       bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud
       bool publish_traj_pc_;
