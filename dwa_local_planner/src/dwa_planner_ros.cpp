@@ -111,6 +111,10 @@ namespace dwa_local_planner {
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
+
+      //odom_helper_init
+      private_nh.param("odom_topic", odom_topic_, std::string(""));
+      odom_helper_.initialize(odom_topic_);
       
       initialized_ = true;
 

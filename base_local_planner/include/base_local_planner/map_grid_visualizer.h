@@ -59,7 +59,7 @@ namespace base_local_planner {
             /**
               * Destructor for the visualizer
               */
-            ~MapGridVisualizer() {}
+            ~MapGridVisualizer() {if(cost_cloud_) delete cost_cloud_;}
 
             /**
               * @brief Build and publish a PointCloud if the publish_cost_grid_pc parameter was true. Only include points for which the cost_function at (cx,cy) returns true.
@@ -71,7 +71,7 @@ namespace base_local_planner {
             std::string frame_id_; ///< @brief The frame to assign to the output PointCloud
             boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function_; ///< @brief The function to be used to generate the cost components for the output PointCloud
             ros::NodeHandle ns_nh_;
-            pcl::PointCloud<MapGridCostPoint> cost_cloud_;
+            pcl::PointCloud<MapGridCostPoint>* cost_cloud_;
             pcl_ros::Publisher<MapGridCostPoint> pub_;
     };
 };
