@@ -92,8 +92,8 @@ class FakeOdomNode
   public:
     FakeOdomNode(void)
     {
-      m_posePub = m_nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose",1);
-      m_particlecloudPub = m_nh.advertise<geometry_msgs::PoseArray>("particlecloud",1);
+      m_posePub = m_nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose",1,true);
+      m_particlecloudPub = m_nh.advertise<geometry_msgs::PoseArray>("particlecloud",1,true);
       m_tfServer = new tf::TransformBroadcaster();	
       m_tfListener = new tf::TransformListener();
 
