@@ -78,7 +78,6 @@ public:
    */
   Costmap2DROS(std::string name, tf::TransformListener& tf);
   ~Costmap2DROS();
-  void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y);
 
   /**
    * @brief  Subscribes to sensor topics if necessary and starts costmap
