@@ -132,7 +132,9 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 		}
 	    }
 	 }
-	 costmap->setResetBounds(0,0, costmap->getSizeInMetersX(), costmap->getSizeInMetersY());
+	 double ox = costmap->getOriginX(), oy = costmap->getOriginY();
+	 double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
+	 costmap->setResetBounds(ox - width/2, ox + width / 2, oy - height / 2, oy + height / 2);
 	 return;
     }
 
