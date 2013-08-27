@@ -315,7 +315,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
       unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
 
       //voxel_grid_.markVoxelLine(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z);
-      voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z, costmap_,
+      voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z, costmap_.get(),
                                       unknown_threshold_, mark_threshold_, FREE_SPACE, NO_INFORMATION,
                                       cell_raytrace_range);
 
@@ -370,13 +370,13 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
   unsigned int cell_size_y = upper_right_y - lower_left_y;
 
   //we need a map to store the obstacles in the window temporarily
-  unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
-  unsigned int* local_voxel_map = new unsigned int[cell_size_x * cell_size_y];
+  boost::shared_array<unsigned char> local_map(new unsigned char[cell_size_x * cell_size_y]);
+  boost::shared_array<unsigned int> local_voxel_map(new unsigned int[cell_size_x * cell_size_y]);
   unsigned int* voxel_map = voxel_grid_.getData();
 
   //copy the local window in the costmap to the local map
-  copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
-  copyMapRegion(voxel_map, lower_left_x, lower_left_y, size_x_, local_voxel_map, 0, 0, cell_size_x, cell_size_x,
+  copyMapRegion(costmap_.get(), lower_left_x, lower_left_y, size_x_, local_map.get(), 0, 0, cell_size_x, cell_size_x, cell_size_y);
+  copyMapRegion(voxel_map, lower_left_x, lower_left_y, size_x_, local_voxel_map.get(), 0, 0, cell_size_x, cell_size_x,
                 cell_size_y);
 
   //we'll reset our maps to unknown space if appropriate
@@ -391,12 +391,8 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
   int start_y = lower_left_y - cell_oy;
 
   //now we want to copy the overlapping information back into the map, but in its new location
-  copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
-  copyMapRegion(local_voxel_map, 0, 0, cell_size_x, voxel_map, start_x, start_y, size_x_, cell_size_x, cell_size_y);
-
-  //make sure to clean up
-  delete[] local_map;
-  delete[] local_voxel_map;
+  copyMapRegion(local_map.get(), 0, 0, cell_size_x, costmap_.get(), start_x, start_y, size_x_, cell_size_x, cell_size_y);
+  copyMapRegion(local_voxel_map.get(), 0, 0, cell_size_x, voxel_map, start_x, start_y, size_x_, cell_size_x, cell_size_y);
 
 }
 
