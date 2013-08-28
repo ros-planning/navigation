@@ -85,7 +85,7 @@ void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resol
 void Costmap2D::resetMaps()
 {
   boost::unique_lock < boost::shared_mutex > lock(*access_);
-  memset(costmap_.get(), default_value_, size_x_ * size_y_ * sizeof(unsigned char));
+  std::fill_n(costmap_.get(), size_x_ * size_y_, default_value_);
 }
 
 void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn)
@@ -93,7 +93,7 @@ void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsi
   boost::unique_lock < boost::shared_mutex > lock(*(access_));
   unsigned int len = xn - x0;
   for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
-    memset(costmap_.get() + y, default_value_, len * sizeof(unsigned char));
+    std::fill_n(costmap_.get() + y, len, default_value_);
 }
 
 bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x,
