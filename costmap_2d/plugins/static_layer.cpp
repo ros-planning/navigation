@@ -12,6 +12,8 @@ using costmap_2d::FREE_SPACE;
 namespace costmap_2d
 {
 
+StaticLayer::StaticLayer() : dsrv_(NULL) {}
+
 void StaticLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
@@ -42,6 +44,11 @@ void StaticLayer::onInitialize()
   }
 
   map_initialized_ = false;
+
+  if(dsrv_)
+  {
+    delete dsrv_;
+  }
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
@@ -93,6 +100,22 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
     }
   }
   map_recieved_ = true;
+}
+
+void StaticLayer::activate()
+{
+    onInitialize();
+}
+
+void StaticLayer::deactivate()
+{
+    map_sub_.shutdown();
+}
+
+void StaticLayer::reset()
+{
+    deactivate();
+    activate();
 }
 
 void StaticLayer::updateBounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y,
