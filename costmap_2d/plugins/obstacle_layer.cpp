@@ -501,7 +501,6 @@ void ObstacleLayer::reset()
 {
     deactivate();
     initMaps();
-    ROS_INFO("RESET OBS");
     current_ = true;
     has_been_reset_ = false;
     activate();
