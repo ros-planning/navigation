@@ -72,6 +72,8 @@ public:
 
   virtual void activate();
   virtual void deactivate();
+  virtual void reset();
+
   bool isDiscretized()
   {
     return true;
