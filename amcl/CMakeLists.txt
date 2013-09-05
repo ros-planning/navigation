@@ -25,6 +25,7 @@ catkin_package(
         tf
 )
 
+include_directories(${catkin_INCLUDE_DIRS})
 
 add_library(amcl_pf 
                     src/pf/pf.c 
