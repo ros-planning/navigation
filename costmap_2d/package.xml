@@ -15,7 +15,7 @@
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
-    <url>http://pr.willowgarage.com/wiki/costmap_2d</url>
+    <url>http://wiki.ros.org/costmap_2d</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 
