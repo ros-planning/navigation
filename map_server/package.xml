@@ -9,7 +9,7 @@
     <author>Brian Gerkey, Tony Pratkanis</author>
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
-    <url>http://ros.org/wiki/map_server</url>
+    <url>http://wiki.ros.org/map_server</url>
     <license>BSD</license>
 
     <buildtool_depend>catkin</buildtool_depend>

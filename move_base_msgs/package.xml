@@ -10,7 +10,7 @@
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
-    <url>http://pr.willowgarage.com/wiki/move_base_msgs</url>
+    <url>http://wiki.ros.org/move_base_msgs</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 
