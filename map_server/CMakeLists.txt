@@ -43,8 +43,8 @@ endfunction()
 copy_test_data( FILES
     test/testmap.bmp
     test/testmap.png )
-catkin_add_gtest(utest test/utest.cpp test/test_constants.cpp)
-target_link_libraries(utest image_loader SDL SDL_image)
+catkin_add_gtest(${PROJECT_NAME}_utest test/utest.cpp test/test_constants.cpp)
+target_link_libraries(${PROJECT_NAME}_utest image_loader SDL SDL_image)
 
 add_executable(rtest test/rtest.cpp test/test_constants.cpp)
 target_link_libraries( rtest
