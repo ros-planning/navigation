@@ -142,6 +142,9 @@ protected:
   virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
                                  double* max_x, double* max_y);
 
+  void updateRaytraceBounds(double ox, double oy, double wx, double wy, double range, double* min_x, double* min_y,
+			    double* max_x, double* max_y);
+
   /** @brief Overridden from superclass Layer to pass new footprint into footprint_layer_. */
   virtual void onFootprintChanged();
 
