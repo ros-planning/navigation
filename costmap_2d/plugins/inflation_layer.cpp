@@ -14,6 +14,7 @@ namespace costmap_2d
 InflationLayer::InflationLayer()
   : inflation_radius_( 0 )
   , weight_( 0 )
+  , dsrv_(NULL)
 {}
 
 void InflationLayer::onInitialize()
@@ -22,6 +23,10 @@ void InflationLayer::onInitialize()
   current_ = true;
   seen_ = NULL;
   need_reinflation_ = false;
+
+  if(dsrv_ != NULL){
+    delete dsrv_;
+  }
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(

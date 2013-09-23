@@ -76,6 +76,8 @@ public:
     return true;
   }
   virtual void matchSize();
+  virtual void reset();
+
 
 protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);

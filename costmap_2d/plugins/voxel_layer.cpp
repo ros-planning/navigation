@@ -60,6 +60,14 @@ void VoxelLayer::matchSize()
 
 }
 
+void VoxelLayer::reset()
+{
+  deactivate();
+  ObstacleLayer::initMaps();
+  voxel_grid_.reset();
+  activate();
+}
+
 void VoxelLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
                                        double* min_y, double* max_x, double* max_y)
 {

@@ -171,6 +171,9 @@ namespace move_base {
     //advertise a service for getting a plan
     make_plan_srv_ = private_nh.advertiseService("make_plan", &MoveBase::planService, this);
 
+    //advertise a service for clearing the costmaps
+    clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
+
     //if we shutdown our costmaps when we're deactivated... we'll do that now
     if(shutdown_costmaps_){
       ROS_DEBUG_NAMED("move_base","Stopping costmaps initially");
@@ -377,6 +380,14 @@ namespace move_base {
 
     controller_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
   }
+
+  bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
+    //clear the costmaps
+    planner_costmap_ros_->resetLayers();
+    controller_costmap_ros_->resetLayers();
+    return true;
+  }
+
 
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
     if(as_->isActive()){
@@ -1116,5 +1127,4 @@ namespace move_base {
       controller_costmap_ros_->stop();
     }
   }
-
 };
