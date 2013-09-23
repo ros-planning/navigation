@@ -632,6 +632,17 @@ void Costmap2DROS::resume()
     r.sleep();
 }
 
+
+void Costmap2DROS::resetLayers()
+{
+  std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+      ++plugin)
+  {
+    (*plugin)->reset();
+  }
+}
+
 bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const
 {
 

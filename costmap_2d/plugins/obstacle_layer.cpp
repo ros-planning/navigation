@@ -497,6 +497,15 @@ void ObstacleLayer::deactivate()
   }
 }
 
+void ObstacleLayer::reset()
+{
+    deactivate();
+    initMaps();
+    current_ = true;
+    has_been_reset_ = false;
+    activate();
+}
+
 void ObstacleLayer::onFootprintChanged()
 {
   footprint_layer_.onFootprintChanged();

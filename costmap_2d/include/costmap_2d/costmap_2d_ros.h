@@ -101,6 +101,11 @@ public:
    */
   void resume();
 
+  /**
+   * @brief Reset each individual layer
+   */
+  void resetLayers();
+
   /** @brief Same as getLayeredCostmap()->isCurrent(). */
   bool isCurrent()
     {

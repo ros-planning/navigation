@@ -50,7 +50,12 @@ namespace costmap_2d
 class StaticLayer : public Layer, public Costmap2D
 {
 public:
+  StaticLayer();
   virtual void onInitialize();
+  virtual void activate();
+  virtual void deactivate();
+  virtual void reset();
+
   virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
                              double* max_y);
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
