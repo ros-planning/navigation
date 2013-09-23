@@ -11,7 +11,7 @@
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
-    <url>http://pr.willowgarage.com/wiki/carrot_planner</url>
+    <url>http://wiki.ros.org/carrot_planner</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 

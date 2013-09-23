@@ -10,7 +10,7 @@
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
-    <url>http://ros.org/wiki/rotate_recovery</url>
+    <url>http://wiki.ros.org/rotate_recovery</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 

@@ -13,7 +13,7 @@
             'amcl' Player driver.
         </p>
     </description>
-    <url>http://ros.org/wiki/amcl</url>
+    <url>http://wiki.ros.org/amcl</url>
     <author>Brian P. Gerkey</author>
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>

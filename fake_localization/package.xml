@@ -6,7 +6,7 @@
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
-    <url>http://pr.willowgarage.com/wiki/fake_localization</url>
+    <url>http://wiki.ros.org/fake_localization</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 

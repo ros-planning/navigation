@@ -10,7 +10,7 @@
     <author>contradict@gmail.com</author>
     <author>Eitan Marder-Eppstein</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  
-    <url>http://ros.org/wiki/navigation</url>
+    <url>http://wiki.ros.org/navigation</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 
