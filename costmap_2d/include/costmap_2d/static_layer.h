@@ -73,7 +73,7 @@ private:
   void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 
   std::string global_frame_; ///< @brief The global frame for the costmap
-  bool map_recieved_, map_initialized_;
+  bool map_received_, map_initialized_;
   bool track_unknown_space_;
   ros::Subscriber map_sub_;
 
