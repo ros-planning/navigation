@@ -10,14 +10,14 @@
         a convex polygon or cicrle, and exposes its configuration as ROS parameters
         that can be set in a launch file. The parameters for this planner are also
         dynamically reconfigurable. This package's ROS wrapper adheres to the
-        BaseLocalPlanner interface specified in the <a href="http://ros.org/wiki/nav_core">nav_core</a> package.
+        BaseLocalPlanner interface specified in the <a href="http://wiki.ros.org/nav_core">nav_core</a> package.
 
     </description>
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
     <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
     <license>BSD</license>
-    <url>http://ros.org/wiki/dwa_local_planner</url>
+    <url>http://wiki.ros.org/dwa_local_planner</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 
