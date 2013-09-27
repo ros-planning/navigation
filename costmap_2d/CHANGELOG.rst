@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.4 (2013-09-27)
+-------------------
 * Improve bounds checking 
 * Reimplement Clear Costmaps Service by implementing reset functions in each layer
 * Package URL Updates
