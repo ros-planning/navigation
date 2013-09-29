@@ -6,7 +6,7 @@
         streams, and a goal pose and outputs safe velocity commands that are sent
         to a mobile base.
     </description>
-    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
+    <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
     <author>contradict@gmail.com</author>
     <author>Eitan Marder-Eppstein</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  
