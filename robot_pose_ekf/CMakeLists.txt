@@ -87,6 +87,7 @@ target_link_libraries(test_robot_pose_ekf
     gtest
     )
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf.launch)
+add_dependencies(run_tests_robot_pose_ekf_rostest_test_test_robot_pose_ekf.launch download_data_ekf_test2_indexed.bag)
 
 catkin_download_test_data(download_data_zero_covariance.bag http://pr.willowgarage.com/data/robot_pose_ekf/zero_covariance_indexed.bag FILENAME test/zero_covariance.bag MD5 1f1f4e361a9e0b0f6b1379b2dd011088)
 add_executable(test_robot_pose_ekf_zero_covariance test/test_robot_pose_ekf_zero_covariance.cpp)
@@ -97,5 +98,6 @@ target_link_libraries(test_robot_pose_ekf_zero_covariance
     gtest
     )
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
+add_dependencies(run_tests_robot_pose_ekf_rostest_test_test_robot_pose_ekf_zero_covariance.launch download_data_zero_covariance.bag)
 
 endif(CMAKE_SYSTEM_NAME MATCHES "Linux")
