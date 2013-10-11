@@ -1,6 +1,6 @@
 <package>
     <name>clear_costmap_recovery</name>
-    <version>1.11.3</version>
+    <version>1.11.4</version>
     <description>
 
         This package provides a recovery behavior for the navigation stack that attempts to clear space by reverting the costmaps used by the navigation stack to the static map outside of a given area.
@@ -8,9 +8,9 @@
     </description>
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
-    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
+    <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
     <license>BSD</license>
-    <url>http://ros.org/wiki/clear_costmap_recovery</url>
+    <url>http://wiki.ros.org/clear_costmap_recovery</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 

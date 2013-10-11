@@ -1,16 +1,16 @@
 <package>
     <name>navigation</name>
-    <version>1.11.3</version>
+    <version>1.11.4</version>
     <description>
         A 2D navigation stack that takes in information from odometry, sensor
         streams, and a goal pose and outputs safe velocity commands that are sent
         to a mobile base.
     </description>
-    <maintainer email="hersh@willowgarage.com">Dave Hershberger</maintainer>
+    <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
     <author>contradict@gmail.com</author>
     <author>Eitan Marder-Eppstein</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  
-    <url>http://ros.org/wiki/navigation</url>
+    <url>http://wiki.ros.org/navigation</url>
 
     <buildtool_depend>catkin</buildtool_depend>
 

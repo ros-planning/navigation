@@ -167,11 +167,11 @@ if(CATKIN_ENABLE_TESTING)
   target_link_libraries(inflation_tests costmap_2d layers ${GTEST_LIBRARIES})
 
   catkin_download_test_data(${PROJECT_NAME}_simple_driving_test_indexed.bag
-    http://pr.willowgarage.com/data/costmap_2d/simple_driving_test_indexed.bag
+    http://download.ros.org/data/costmap_2d/simple_driving_test_indexed.bag
     DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/test
     MD5 61168cff9425b11e093ea3a627c81c8d)
   catkin_download_test_data(${PROJECT_NAME}_willow-full-0.025.pgm
-    http://pr.willowgarage.com/data/costmap_2d/willow-full-0.025.pgm
+    http://download.ros.org/data/costmap_2d/willow-full-0.025.pgm
     DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/test
     MD5 e66b17ee374f2d7657972efcb3e2e4f7)
 

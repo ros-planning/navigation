@@ -59,6 +59,9 @@ public:
 
   virtual void deactivate() {}   // stop publishers
   virtual void activate() {}     // restart publishers if they've been stopped
+
+  virtual void reset() {}
+
   virtual ~Layer() {}
 
   bool isCurrent() const

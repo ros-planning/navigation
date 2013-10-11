@@ -102,6 +102,8 @@ public:
   }
   virtual void matchSize();
 
+  virtual void reset() { onInitialize(); }
+
   /** @brief  Given a distance, compute a cost.
    * @param  distance The distance from an obstacle in cells
    * @return A cost value for the distance */

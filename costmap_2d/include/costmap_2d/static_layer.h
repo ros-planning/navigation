@@ -50,7 +50,12 @@ namespace costmap_2d
 class StaticLayer : public Layer, public Costmap2D
 {
 public:
+  StaticLayer();
   virtual void onInitialize();
+  virtual void activate();
+  virtual void deactivate();
+  virtual void reset();
+
   virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
                              double* max_y);
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
@@ -73,7 +78,7 @@ private:
   void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
 
   std::string global_frame_; ///< @brief The global frame for the costmap
-  bool map_recieved_, map_initialized_;
+  bool map_received_, map_initialized_;
   bool track_unknown_space_;
   ros::Subscriber map_sub_;
 

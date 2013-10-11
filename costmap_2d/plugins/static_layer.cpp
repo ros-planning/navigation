@@ -12,6 +12,8 @@ using costmap_2d::FREE_SPACE;
 namespace costmap_2d
 {
 
+StaticLayer::StaticLayer() : dsrv_(NULL) {}
+
 void StaticLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
@@ -32,16 +34,21 @@ void StaticLayer::onInitialize()
   //we'll subscribe to the latched topic that the map server uses
   ROS_INFO("Requesting the map...");
   map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
-  map_recieved_ = false;
+  map_received_ = false;
 
   ros::Rate r(10);
-  while (!map_recieved_ && g_nh.ok())
+  while (!map_received_ && g_nh.ok())
   {
     ros::spinOnce();
     r.sleep();
   }
 
-  map_initialized_ = false;
+  ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+
+  if(dsrv_)
+  {
+    delete dsrv_;
+  }
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
@@ -69,10 +76,22 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 {
   unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
 
-  ROS_INFO("Received a %d X %d map at %f m/pix", size_x, size_y, new_map->info.resolution);
+  ROS_DEBUG("Received a %d X %d map at %f m/pix", size_x, size_y, new_map->info.resolution);
 
-  layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
-                              new_map->info.origin.position.y, true);
+  // resize costmap if size, resolution or origin do not match
+  Costmap2D* master = layered_costmap_->getCostmap();
+  if (master->getSizeInCellsX() != size_x ||
+      master->getSizeInCellsY() != size_y ||
+      master->getResolution() != new_map->info.resolution ||
+      master->getOriginX() != new_map->info.origin.position.x ||
+      master->getOriginY() != new_map->info.origin.position.y ||
+      !layered_costmap_->isSizeLocked())
+  {
+    ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
+    layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
+                                new_map->info.origin.position.y, true);
+  }
+
   unsigned int index = 0;
 
   //initialize the costmap with static data
@@ -92,13 +111,30 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       ++index;
     }
   }
-  map_recieved_ = true;
+  map_received_ = true;
+  map_initialized_ = false; // force costmap update
+}
+
+void StaticLayer::activate()
+{
+    onInitialize();
+}
+
+void StaticLayer::deactivate()
+{
+    map_sub_.shutdown();
+}
+
+void StaticLayer::reset()
+{
+    deactivate();
+    activate();
 }
 
 void StaticLayer::updateBounds(double origin_x, double origin_y, double origin_z, double* min_x, double* min_y,
                                         double* max_x, double* max_y)
 {
-  if (!map_recieved_ || map_initialized_)
+  if (!map_received_ || map_initialized_)
     return;
 
   mapToWorld(0, 0, *min_x, *min_y);
