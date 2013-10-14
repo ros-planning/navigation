@@ -77,6 +77,7 @@ install(
 ## Tests are failing on OSX for an unknown reason
 include(CMakeDetermineSystem)
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+if(CATKIN_ENABLE_TESTING)
 
 catkin_download_test_data(download_data_ekf_test2_indexed.bag http://download.ros.org/data/robot_pose_ekf/ekf_test2_indexed.bag FILENAME test/ekf_test2.bag MD5 71addef0ed900e05b301e0b4fdca99e2)
 add_executable(test_robot_pose_ekf test/test_robot_pose_ekf.cpp)
@@ -98,4 +99,5 @@ target_link_libraries(test_robot_pose_ekf_zero_covariance
     )
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
 
+endif(CATKIN_ENABLE_TESTING)
 endif(CMAKE_SYSTEM_NAME MATCHES "Linux")

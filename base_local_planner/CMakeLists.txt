@@ -125,17 +125,19 @@ install(DIRECTORY include/${PROJECT_NAME}/
   PATTERN ".svn" EXCLUDE
 )
 
-catkin_add_gtest(base_local_planner_utest
-	test/gtest_main.cpp
-	test/utest.cpp
-	test/velocity_iterator_test.cpp
-	test/footprint_helper_test.cpp
-	test/trajectory_generator_test.cpp
-	test/map_grid_test.cpp)
-target_link_libraries(base_local_planner_utest
-    base_local_planner trajectory_planner_ros
-    )
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_gtest(base_local_planner_utest
+    test/gtest_main.cpp
+    test/utest.cpp
+    test/velocity_iterator_test.cpp
+    test/footprint_helper_test.cpp
+    test/trajectory_generator_test.cpp
+    test/map_grid_test.cpp)
+  target_link_libraries(base_local_planner_utest
+      base_local_planner trajectory_planner_ros
+      )
 
 
-catkin_add_gtest(line_iterator
-    test/line_iterator_test.cpp)
+  catkin_add_gtest(line_iterator
+      test/line_iterator_test.cpp)
+endif()
