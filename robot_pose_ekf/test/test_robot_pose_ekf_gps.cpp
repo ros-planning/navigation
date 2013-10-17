@@ -142,7 +142,6 @@ TEST_F(TestEKF, test)
 
   ROS_INFO("Waiting until end time is reached");
   while( odom_end_->header.stamp.toSec() < time_end){
-    ROS_INFO("waitinf for end");
     d.sleep();
   }
   ROS_INFO("End time reached");
@@ -168,13 +167,13 @@ TEST_F(TestEKF, test)
             ekf_end_->header.stamp.toSec());
 
 
-  EXPECT_NEAR(ekf_end_->pose.pose.position.x, 1.669542, EPS_trans_x);
-  EXPECT_NEAR(ekf_end_->pose.pose.position.y, -3.849846, EPS_trans_y);
+  EXPECT_NEAR(ekf_end_->pose.pose.position.x, 1.637197784159544, EPS_trans_x);
+  EXPECT_NEAR(ekf_end_->pose.pose.position.y, -3.8503403786344643, EPS_trans_y);
   EXPECT_NEAR(ekf_end_->pose.pose.position.z, 0.0, EPS_trans_z);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.x, -0.007353,  EPS_rot_x);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.y, -0.007765, EPS_rot_y);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.z, -0.597720,  EPS_rot_z);
-  EXPECT_NEAR(ekf_end_->pose.pose.orientation.w, 0.801634,  EPS_rot_w);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.x, 0,  EPS_rot_x);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.y, 0, EPS_rot_y);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.z, -0.59774347342736978,  EPS_rot_z);
+  EXPECT_NEAR(ekf_end_->pose.pose.orientation.w, 0.80168743276968257,  EPS_rot_w);
 
   SUCCEED();
 }

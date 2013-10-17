@@ -10,10 +10,11 @@
     <param name="imu_used" value="true"/>
     <param name="vo_used" value="false"/>
     <param name="gps_used" value="true"/>
+    <param name="imu_absolute" value="true"/>
     <remap from="odom" to="encoder" />
   </node>
 
-  <node pkg="rosbag" name="play" type="play" args="--clock --hz 100 -d .4  $(find robot_pose_ekf)/test/gps_data.bag" />
+  <node pkg="rosbag" name="play" type="play" args="--clock --hz 100 -d .4   $(find robot_pose_ekf)/../../../build/navigation/robot_pose_ekf/test/gps_data.bag" />
 
-  <test test-name="test_robot_pose_ekf_gps" pkg="robot_pose_ekf" type="test_robot_pose_ekf_gps" time-limit="50" />
+  <test test-name="test_robot_pose_ekf_gps" pkg="robot_pose_ekf" type="test_robot_pose_ekf_gps" time-limit="50"/>
 </launch>
