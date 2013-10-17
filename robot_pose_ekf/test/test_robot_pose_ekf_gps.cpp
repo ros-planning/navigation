@@ -58,8 +58,8 @@ static const double EPS_rot_w      = 0.005;
 int g_argc;
 char** g_argv;
 
-//typedef boost::shared_ptr<nav_msgs::Odometry const> OdomConstPtr;
-//typedef boost::shared_ptr<geometry_msgs::PoseWithCovarianceStamped const> EkfConstPtr;
+typedef boost::shared_ptr<nav_msgs::Odometry const> OdomConstPtr;
+typedef boost::shared_ptr<geometry_msgs::PoseWithCovarianceStamped const> EkfConstPtr;
 
 
 class TestEKF : public testing::Test
@@ -67,14 +67,12 @@ class TestEKF : public testing::Test
 public:
   NodeHandle node_;
   ros::Subscriber odom_sub_, ekf_sub_;
-  //EkfConstPtr ekf_begin_, ekf_end_;
-  geometry_msgs::PoseWithCovarianceStampedPtr ekf_begin_,ekf_end_;
-  //OdomConstPtr odom_end_;
-  nav_msgs::OdometryPtr odom_end_;
+  EkfConstPtr ekf_begin_, ekf_end_;
+  OdomConstPtr odom_end_;
   double ekf_counter_, odom_counter_;
   Time ekf_time_begin_, odom_time_begin_;
 
-  void OdomCallback(const nav_msgs::OdometryPtr odom)
+  void OdomCallback(const OdomConstPtr& odom)
   {
     // get initial time
     if (odom_counter_ == 0)
@@ -86,7 +84,7 @@ public:
     odom_counter_++;
   }
 
-  void EKFCallback(const geometry_msgs::PoseWithCovarianceStampedPtr ekf)
+  void EKFCallback(const EkfConstPtr& ekf)
   {
     // get initial time
     if (ekf_counter_ == 0){
