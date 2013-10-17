@@ -118,8 +118,8 @@ protected:
 
   void SetUp()
   {
-    ROS_INFO("Subscribing to robot_pose_ekf/odom");
-    ekf_sub_ = node_.subscribe("/robot_pose_ekf/odom", 10, &TestEKF::EKFCallback, (TestEKF*)this);
+    ROS_INFO("Subscribing to robot_pose_ekf/odom_combined");
+    ekf_sub_ = node_.subscribe("/robot_pose_ekf/odom_combined", 10, &TestEKF::EKFCallback, (TestEKF*)this);
 
     ROS_INFO("Subscribing to wheel odometry");
     odom_sub_ = node_.subscribe("/encoder", 10 , &TestEKF::OdomCallback, (TestEKF*)this);
