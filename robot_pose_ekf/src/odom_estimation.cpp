@@ -93,13 +93,13 @@ namespace estimation
     vo_meas_pdf_   = new LinearAnalyticConditionalGaussian(Hvo, measurement_Uncertainty_Vo);
     vo_meas_model_ = new LinearAnalyticMeasurementModelGaussianUncertainty(vo_meas_pdf_);
 
-    // create MEASUREMENT MODEL GPS
-    ColumnVector measNoiseGps_Mu(3);  measNoiseGps_Mu = 0;
-    SymmetricMatrix measNoiseGps_Cov(3);  measNoiseGps_Cov = 0;
-    for (unsigned int i=1; i<=3; i++) measNoiseGps_Cov(i,i) = 1;
+// create MEASUREMENT MODEL GPS
+    ColumnVector measNoiseGps_Mu(6);  measNoiseGps_Mu = 0;
+    SymmetricMatrix measNoiseGps_Cov(6);  measNoiseGps_Cov = 0;
+    for (unsigned int i=1; i<=6; i++) measNoiseGps_Cov(i,i) = 1;
     Gaussian measurement_Uncertainty_GPS(measNoiseGps_Mu, measNoiseGps_Cov);
-    Matrix Hgps(3,6);  Hgps = 0;
-    Hgps(1,1) = 1;    Hgps(2,2) = 1;    Hgps(3,3) = 1;    
+    Matrix Hgps(6,6);  Hgps = 0;
+    Hgps(1,1) = 1;    Hgps(2,2) = 1;    Hgps(3,3) = 1;    Hgps(4,4) = 1;    Hgps(5,5) = 1;    Hgps(6,6) = 1;
     gps_meas_pdf_   = new LinearAnalyticConditionalGaussian(Hgps, measurement_Uncertainty_GPS);
     gps_meas_model_ = new LinearAnalyticMeasurementModelGaussianUncertainty(gps_meas_pdf_);
   };
@@ -154,7 +154,7 @@ namespace estimation
 
 
   // update filter
-  bool OdomEstimation::update(bool odom_active, bool imu_active, bool gps_active, bool vo_active, const Time&  filter_time, bool& diagnostics_res)
+  bool OdomEstimation::update(bool odom_active, bool imu_active, bool gps_active, bool vo_active, bool imu_absolute, const Time&  filter_time, bool& diagnostics_res)
   {
     // only update filter when it is initialized
     if (!filter_initialized_){
@@ -211,7 +211,6 @@ namespace estimation
     }
     // sensor not active
     else odom_initialized_ = false;
-
     
     // process imu measurement
     // -----------------------
@@ -223,7 +222,12 @@ namespace estimation
       transformer_.lookupTransform("imu", "base_footprint", filter_time, imu_meas_);
       if (imu_initialized_){
 	// convert absolute imu yaw measurement to relative imu yaw measurement 
-	Transform imu_rel_frame =  filter_estimate_old_ * imu_meas_old_.inverse() * imu_meas_;
+	Transform imu_rel_frame;
+	if (imu_absolute) //IMU measurement is absolute
+		imu_rel_frame = imu_meas_;
+	else
+		imu_rel_frame =  filter_estimate_old_ * imu_meas_old_.inverse() * imu_meas_;
+
 	ColumnVector imu_rel(3); double tmp;
 	decomposeTransform(imu_rel_frame, tmp, tmp, tmp, tmp, tmp, imu_rel(3));
 	decomposeTransform(imu_meas_,     tmp, tmp, tmp, imu_rel(1), imu_rel(2), tmp);
@@ -280,11 +284,11 @@ namespace estimation
       transformer_.lookupTransform("gps", "base_footprint", filter_time, gps_meas_);
       if (gps_initialized_){
         gps_meas_pdf_->AdditiveNoiseSigmaSet(gps_covariance_ * pow(dt,2));
-        ColumnVector gps_vec(3);
-        double tmp;
-        //Take gps as an absolute measurement, do not convert to relative measurement
-        decomposeTransform(gps_meas_, gps_vec(1), gps_vec(2), gps_vec(3), tmp, tmp, tmp);
-        filter_->Update(gps_meas_model_,  gps_vec);
+        
+            ColumnVector gps_vec(6);
+            decomposeTransform(gps_meas_, gps_vec(1), gps_vec(2), gps_vec(3), gps_vec(4), gps_vec(5), gps_vec(6));
+            filter_->Update(gps_meas_model_,  gps_vec);
+
       }
       else {
         gps_initialized_ = true;

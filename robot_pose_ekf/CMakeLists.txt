@@ -88,6 +88,7 @@ target_link_libraries(test_robot_pose_ekf
     gtest
     )
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf.launch)
+add_dependencies(run_tests_robot_pose_ekf_rostest_test_test_robot_pose_ekf.launch download_data_ekf_test2_indexed.bag)
 
 catkin_download_test_data(download_data_zero_covariance.bag http://download.ros.org/data/robot_pose_ekf/zero_covariance_indexed.bag FILENAME test/zero_covariance.bag MD5 1f1f4e361a9e0b0f6b1379b2dd011088)
 add_executable(test_robot_pose_ekf_zero_covariance test/test_robot_pose_ekf_zero_covariance.cpp)
@@ -98,6 +99,20 @@ target_link_libraries(test_robot_pose_ekf_zero_covariance
     gtest
     )
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
+add_dependencies(run_tests_robot_pose_ekf_rostest_test_test_robot_pose_ekf_zero_covariance.launch download_data_zero_covariance.bag)
+
+
+catkin_download_test_data(download_data_gps_data.bag http://pr.willowgarage.com/data/robot_pose_ekf/gps_data.bag FILENAME test/gps_data.bag)
+add_executable(test_robot_pose_ekf_gps test/test_robot_pose_ekf_gps.cpp)
+target_link_libraries(test_robot_pose_ekf_gps
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+    ${BFL_LIBRARIES}
+    gtest
+    )
+add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_gps.launch)
+add_dependencies(run_tests_robot_pose_ekf_rostest_test_test_robot_pose_ekf_gps.launch download_data_gps_data.bag)
+
 
 endif(CATKIN_ENABLE_TESTING)
 endif(CMAKE_SYSTEM_NAME MATCHES "Linux")
