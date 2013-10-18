@@ -11,6 +11,12 @@ find_package(catkin REQUIRED
 
 find_package(Boost REQUIRED COMPONENTS system)
 
+find_package(PkgConfig)
+pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
+if(NEW_YAMLCPP_FOUND)
+add_definitions(-DHAVE_NEW_YAMLCPP)
+endif(NEW_YAMLCPP_FOUND)
+
 catkin_package(
     INCLUDE_DIRS
         include
