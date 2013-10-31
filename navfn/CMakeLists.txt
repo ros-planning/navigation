@@ -68,7 +68,7 @@ install(TARGETS navfn navfn_node
        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
        )
 
-install(DIRECTORY include/
+install(DIRECTORY include/navfn/
     DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
