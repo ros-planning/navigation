@@ -102,7 +102,7 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, int start_x, i
             {
         // 
         if (currentEnd_ == 0 && nextEnd_ == 0) // priority blocks empty
-            break;
+            return false;
 
         // stats
         nc += currentEnd_;
