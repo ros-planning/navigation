@@ -133,7 +133,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::ObstacleLayer>
       }
     }
   }
-  
+
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
   costmap->setResetBounds(ox, ox + width, oy, oy + height);
