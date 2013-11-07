@@ -57,7 +57,7 @@ public:
   }
 
 private:
-  bool penalty_;
+  double penalty_;
 };
 
 } /* namespace base_local_planner */
