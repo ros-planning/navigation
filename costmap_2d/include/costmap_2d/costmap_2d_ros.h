@@ -101,6 +101,8 @@ public:
    */
   void resume();
 
+  void updateMap();
+
   /**
    * @brief Reset each individual layer
    */

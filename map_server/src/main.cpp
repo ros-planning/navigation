@@ -66,6 +66,7 @@ class MapServer
       double origin[3];
       int negate;
       double occ_th, free_th;
+      bool trinary = true;
       std::string frame_id;
       ros::NodeHandle private_nh("~");
       private_nh.param("frame_id", frame_id, std::string("map"));
@@ -111,6 +112,12 @@ class MapServer
           exit(-1);
         }
         try { 
+          doc["trinary"] >> trinary; 
+        } catch (YAML::Exception) { 
+          ROS_DEBUG("The map does not contain a trinary tag or it is invalid... assuming true");
+          trinary = true;
+        }
+        try { 
           doc["origin"][0] >> origin[0]; 
           doc["origin"][1] >> origin[1]; 
           doc["origin"][2] >> origin[2]; 
@@ -146,7 +153,7 @@ class MapServer
       }
 
       ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
-      map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin);
+      map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin, trinary);
       map_resp_.map.info.map_load_time = ros::Time::now();
       map_resp_.map.header.frame_id = frame_id;
       map_resp_.map.header.stamp = ros::Time::now();

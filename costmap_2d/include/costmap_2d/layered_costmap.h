@@ -69,7 +69,7 @@ public:
    * @brief  Update the underlying costmap with new data.
    * If you want to update the map outside of the update loop that runs, you can call this.
    */
-  void updateMap(double origin_x, double origin_y, double origin_yaw);
+  void updateMap(double robot_x, double robot_y, double robot_yaw);
 
   std::string getGlobalFrameID() const
   {

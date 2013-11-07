@@ -75,14 +75,14 @@ void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double 
   }
 }
 
-void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_yaw)
+void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 {
 
   // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
   if (rolling_window_)
   {
-    double new_origin_x = origin_x - costmap_.getSizeInMetersX() / 2;
-    double new_origin_y = origin_y - costmap_.getSizeInMetersY() / 2;
+    double new_origin_x = robot_x - costmap_.getSizeInMetersX() / 2;
+    double new_origin_y = robot_y - costmap_.getSizeInMetersY() / 2;
     costmap_.updateOrigin(new_origin_x, new_origin_y);
   }
 
@@ -95,7 +95,7 @@ void LayeredCostmap::updateMap(double origin_x, double origin_y, double origin_y
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
-    (*plugin)->updateBounds(origin_x, origin_y, origin_yaw, &minx_, &miny_, &maxx_, &maxy_);
+    (*plugin)->updateBounds(robot_x, robot_y, robot_yaw, &minx_, &miny_, &maxx_, &maxy_);
   }
 
   int x0, xn, y0, yn;

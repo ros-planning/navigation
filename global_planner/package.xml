@@ -31,5 +31,8 @@
   <run_depend>pluginlib</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>tf</run_depend>
+  <export>
+      <nav_core plugin="${prefix}/bgp_plugin.xml" />
+  </export>
 
 </package>

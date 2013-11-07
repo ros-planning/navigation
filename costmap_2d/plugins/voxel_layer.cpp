@@ -27,13 +27,6 @@ void VoxelLayer::onInitialize()
   clearing_endpoints_pub_ = private_nh.advertise<sensor_msgs::PointCloud>( "clearing_endpoints", 1 );
 }
 
-void VoxelLayer::initMaps()
-{
-  ObstacleLayer::initMaps();
-  voxel_grid_.resize(size_x_, size_y_, size_z_);
-  ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
-}
-
 void VoxelLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
 {
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(nh);
@@ -51,28 +44,29 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   z_resolution_ = config.z_resolution;
   unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
   mark_threshold_ = config.mark_threshold;
-  initMaps();
+  matchSize();
 }
 
 void VoxelLayer::matchSize()
 {
-  initMaps();
-
+  ObstacleLayer::matchSize();
+  voxel_grid_.resize(size_x_, size_y_, size_z_);
+  ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
 }
 
 void VoxelLayer::reset()
 {
   deactivate();
-  ObstacleLayer::initMaps();
+  resetMaps();
   voxel_grid_.reset();
   activate();
 }
 
-void VoxelLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                        double* min_y, double* max_x, double* max_y)
 {
   if (rolling_window_)
-    updateOrigin(origin_x - getSizeInMetersX() / 2, origin_y - getSizeInMetersY() / 2);
+    updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   if (!enabled_)
     return;
   if (has_been_reset_)
@@ -148,10 +142,7 @@ void VoxelLayer::updateBounds(double origin_x, double origin_y, double origin_ya
         unsigned int index = getIndex(mx, my);
 
         costmap_[index] = LETHAL_OBSTACLE;
-        *min_x = std::min((double)cloud.points[i].x, *min_x);
-        *min_y = std::min((double)cloud.points[i].y, *min_y);
-        *max_x = std::max((double)cloud.points[i].x, *max_x);
-        *max_y = std::max((double)cloud.points[i].y, *max_y);
+        touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
       }
     }
   }
@@ -178,7 +169,7 @@ void VoxelLayer::updateBounds(double origin_x, double origin_y, double origin_ya
     voxel_pub_.publish(grid_msg);
   }
 
-  footprint_layer_.updateBounds(origin_x, origin_y, origin_yaw, min_x, min_y, max_x, max_y);
+  footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
 
 void VoxelLayer::clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info)
@@ -285,7 +276,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
     if (wpz > max_obstacle_height_)
     {
       //we know we want the vector's z value to be max_z
-      t = std::min(t, (max_obstacle_height_ - 0.01 - oz) / c);
+      t = std::max(0.0, std::min(t, (max_obstacle_height_ - 0.01 - oz) / c));
     }
     //and we can only raytrace down to the floor
     else if (wpz < origin_z_)

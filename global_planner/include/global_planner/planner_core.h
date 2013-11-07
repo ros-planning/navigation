@@ -73,16 +73,19 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
         /**
          * @brief  Constructor for the PlannerCore object
          * @param  name The name of this planner
-         * @param  costmap A pointer to the ROS wrapper of the costmap to use
+         * @param  costmap A pointer to the costmap to use
+         * @param  frame_id Frame of the costmap
          */
-        PlannerCore(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+        PlannerCore(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
          * @brief  Initialization function for the PlannerCore object
          * @param  name The name of this planner
-         * @param  costmap A pointer to the ROS wrapper of the costmap to use for planning
+         * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
          */
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+
+        void initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
          * @brief Given a goal pose in the world, compute a plan
@@ -158,13 +161,16 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
         /**
          * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
          */
-        costmap_2d::Costmap2DROS* costmap_ros_;
+        costmap_2d::Costmap2D* costmap_;
+        std::string frame_id_;
         ros::Publisher plan_pub_;
         bool initialized_, allow_unknown_, visualize_potential_;
 
     private:
         void mapToWorld(double mx, double my, double& wx, double& wy);
         void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
+        void publishPotential(float* potential);
+
         double planner_window_x_, planner_window_y_, default_tolerance_;
         std::string tf_prefix_;
         boost::mutex mutex_;
@@ -174,7 +180,9 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
         Expander* planner_;
         Traceback* path_maker_;
 
+        bool publish_potential_;
         ros::Publisher potential_pub_;
+        int publish_scale_;
 
         void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
         unsigned char* cost_array_;

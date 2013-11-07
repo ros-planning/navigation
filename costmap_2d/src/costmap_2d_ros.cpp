@@ -49,7 +49,7 @@ using namespace std;
 namespace costmap_2d
 {
 
-void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string name)
+void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string name, bool should_delete=true)
 {
   if (!old_h.hasParam(name))
     return;
@@ -57,7 +57,7 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
   XmlRpc::XmlRpcValue value;
   old_h.getParam(name, value);
   new_h.setParam(name, value);
-  old_h.deleteParam(name);
+  if(should_delete) old_h.deleteParam(name);
 }
 
 Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
@@ -195,7 +195,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
     move_parameter(nh, map_layer, "map_topic");
     move_parameter(nh, map_layer, "unknown_cost_value");
     move_parameter(nh, map_layer, "lethal_cost_threshold");
-    move_parameter(nh, map_layer, "track_unknown_space");
+    move_parameter(nh, map_layer, "track_unknown_space", false);
   }
 
   ros::NodeHandle obstacles(nh, "obstacle_layer");
@@ -225,6 +225,7 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
   move_parameter(nh, obstacles, "max_obstacle_height");
   move_parameter(nh, obstacles, "raytrace_range");
   move_parameter(nh, obstacles, "obstacle_range");
+  move_parameter(nh, obstacles, "track_unknown_space", true);
   nh.param("observation_sources", s, std::string(""));
   std::stringstream ss(s);
   std::string source;
@@ -233,11 +234,6 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
     move_parameter(nh, obstacles, source);
   }
   move_parameter(nh, obstacles, "observation_sources");
-
-  map["name"] = XmlRpc::XmlRpcValue("footprint_layer");
-  map["type"] = XmlRpc::XmlRpcValue("costmap_2d::FootprintLayer");
-  super_map.setStruct(&map);
-  plugins.push_back(super_map);
 
   ros::NodeHandle inflation(nh, "inflation_layer");
   move_parameter(nh, inflation, "cost_scaling_factor");
@@ -544,16 +540,9 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
     struct timeval start, end;
     double start_t, end_t, t_diff;
     gettimeofday(&start, NULL);
-    if (!stop_updates_)
-    {
-      //get global pose
-      tf::Stamped < tf::Pose > pose;
-      if (getRobotPose (pose))
-      {
-        layered_costmap_->updateMap(pose.getOrigin().x(), pose.getOrigin().y(), tf::getYaw(pose.getRotation()));
-        initialized_ = true;
-      }
-    }
+
+    updateMap();    
+
     gettimeofday(&end, NULL);
     start_t = start.tv_sec + double(start.tv_usec) / 1e6;
     end_t = end.tv_sec + double(end.tv_usec) / 1e6;
@@ -577,6 +566,20 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
     if (r.cycleTime() > ros::Duration(1 / frequency))
       ROS_WARN("Map update loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", frequency,
                r.cycleTime().toSec());
+  }
+}
+
+void Costmap2DROS::updateMap()
+{
+  if (!stop_updates_)
+  {
+    //get global pose
+    tf::Stamped < tf::Pose > pose;
+    if (getRobotPose (pose))
+    {
+      layered_costmap_->updateMap(pose.getOrigin().x(), pose.getOrigin().y(), tf::getYaw(pose.getRotation()));
+      initialized_ = true;
+    }
   }
 }
 

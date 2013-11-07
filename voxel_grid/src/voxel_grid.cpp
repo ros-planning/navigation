@@ -46,7 +46,7 @@ namespace voxel_grid {
     size_z_ = size_z; 
 
     if(size_z_ > 16){
-      ROS_INFO("Error, this implementation can only support up to 16 z values"); 
+      ROS_INFO("Error, this implementation can only support up to 16 z values (%d)", size_z_); 
       size_z_ = 16;
     }
 
@@ -73,7 +73,7 @@ namespace voxel_grid {
     size_z_ = size_z; 
 
     if(size_z_ > 16){
-      ROS_INFO("Error, this implementation can only support up to 16 z values"); 
+      ROS_INFO("Error, this implementation can only support up to 16 z values (%d)", size_z); 
       size_z_ = 16;
     }
 

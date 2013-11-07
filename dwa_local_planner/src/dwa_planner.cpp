@@ -147,7 +147,7 @@ namespace dwa_local_planner {
     oscillation_costs_.resetOscillationFlags();
 
     private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
-    map_viz_.initialize(name, boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
+    map_viz_.initialize(name, planner_util->getGlobalFrame(), boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
 
     std::string frame_id;
     private_nh.param("global_frame_id", frame_id, std::string("odom"));
@@ -172,6 +172,8 @@ namespace dwa_local_planner {
     generator_list.push_back(&generator_);
 
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
+
+    private_nh.param("cheat_factor", cheat_factor_, 1.0);
   }
 
   // used for visualization only, total_costs are not really total costs
@@ -267,7 +269,7 @@ namespace dwa_local_planner {
     goal_front_costs_.setTargetPoses(front_global_plan);
     
     // keeping the nose on the path
-    if (sq_dist > forward_point_distance_ * forward_point_distance_ ) {
+    if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
       alignment_costs_.setScale(1.0);
       // costs for robot being aligned with path (nose on path, not ju
       alignment_costs_.setTargetPoses(global_plan_);
