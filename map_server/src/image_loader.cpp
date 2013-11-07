@@ -54,16 +54,19 @@ namespace map_server
 void
 loadMapFromFile(nav_msgs::GetMap::Response* resp,
                 const char* fname, double res, bool negate,
-                double occ_th, double free_th, double* origin)
+                double occ_th, double free_th, double* origin,
+                bool trinary)
 {
   SDL_Surface* img;
 
   unsigned char* pixels;
   unsigned char* p;
-  int rowstride, n_channels;
+  unsigned char value;
+  int rowstride, n_channels, avg_channels;
   unsigned int i,j;
   int k;
   double occ;
+  int alpha;
   int color_sum;
   double color_avg;
 
@@ -96,6 +99,11 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   rowstride = img->pitch;
   n_channels = img->format->BytesPerPixel;
 
+  if (trinary || n_channels == 1)
+    avg_channels = n_channels;
+  else
+    avg_channels = n_channels - 1;
+
   // Copy pixel data into the map structure
   pixels = (unsigned char*)(img->pixels);
   for(j = 0; j < resp->map.info.height; j++)
@@ -105,9 +113,14 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
       // Compute mean of RGB for this pixel
       p = pixels + j*rowstride + i*n_channels;
       color_sum = 0;
-      for(k=0;k<n_channels;k++)
+      for(k=0;k<avg_channels;k++)
         color_sum += *(p + (k));
-      color_avg = color_sum / (double)n_channels;
+      color_avg = color_sum / (double)avg_channels;
+
+      if (n_channels == 1)
+          alpha = 1;
+      else
+          alpha = *(p+n_channels-1);
 
       // If negate is true, we consider blacker pixels free, and whiter
       // pixels free.  Otherwise, it's vice versa.
@@ -120,11 +133,17 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
       // map.  Note that we invert the graphics-ordering of the pixels to
       // produce a map with cell (0,0) in the lower-left corner.
       if(occ > occ_th)
-        resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = +100;
+        value = +100;
       else if(occ < free_th)
-        resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = 0;
-      else
-        resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = -1;
+        value = 0;
+      else if(trinary || alpha < 1.0)
+        value = -1;
+      else {
+        double ratio = (occ - free_th) / (occ_th - free_th);
+        value = 99 * ratio;
+      }
+           
+      resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
     }
   }
 

@@ -93,7 +93,7 @@ public:
   }
 
   virtual void onInitialize();
-  virtual void updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x,
+  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
                              double* max_y);
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
   virtual bool isDiscretized()
@@ -172,6 +172,7 @@ private:
 
   double inflation_radius_, inscribed_radius_, weight_;
   unsigned int cell_inflation_radius_;
+  unsigned int cached_cell_inflation_radius_;
   std::priority_queue<CellData> inflation_queue_;
 
   double resolution_;

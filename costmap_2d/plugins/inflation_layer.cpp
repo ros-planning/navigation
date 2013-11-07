@@ -14,6 +14,8 @@ namespace costmap_2d
 InflationLayer::InflationLayer()
   : inflation_radius_( 0 )
   , weight_( 0 )
+  , cell_inflation_radius_(0)
+  , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
 {}
 
@@ -46,7 +48,11 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
     need_reinflation_ = true;
     computeCaches();
   }
-  enabled_ = config.enabled;
+
+  if (enabled_ != config.enabled) {
+    enabled_ = config.enabled;
+    need_reinflation_ = true;
+  }
 }
 
 void InflationLayer::matchSize()
@@ -62,14 +68,9 @@ void InflationLayer::matchSize()
   seen_ = new bool[size_x * size_y];
 }
 
-void InflationLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x,
+void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
-  if (!enabled_)
-    return;
-  //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
-  ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
-
   if( need_reinflation_ )
   {
     // For some reason when I make these -<double>::max() it does not
@@ -99,6 +100,10 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
 {
   if (!enabled_)
     return;
+
+  //make sure the inflation queue is empty at the beginning of the cycle (should always be true)
+  ROS_ASSERT_MSG(inflation_queue_.empty(), "The inflation queue must be empty at the beginning of inflation");
+
   unsigned char* master_array = master_grid.getCharMap();
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
@@ -196,16 +201,35 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
 
 void InflationLayer::computeCaches()
 {
+  if(cell_inflation_radius_ == 0)
+    return;
+
   //based on the inflation radius... compute distance and cost caches
-  cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
-  cached_distances_ = new double*[cell_inflation_radius_ + 2];
+  if(cell_inflation_radius_ != cached_cell_inflation_radius_)
+  {
+    if(cached_cell_inflation_radius_ > 0)
+      deleteKernels();
+
+    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
+    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+
+    for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
+    {
+      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
+      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
+      {
+        cached_distances_[i][j] = sqrt(i * i + j * j);
+      }
+    }
+
+    cached_cell_inflation_radius_ = cell_inflation_radius_;
+  }
+
   for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
   {
-    cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
-    cached_distances_[i] = new double[cell_inflation_radius_ + 2];
     for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
     {
-      cached_distances_[i][j] = sqrt(i * i + j * j);
       cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
     }
   }
@@ -215,7 +239,7 @@ void InflationLayer::deleteKernels()
 {
   if (cached_distances_ != NULL)
   {
-    for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
+    for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 1; ++i)
     {
       delete[] cached_distances_[i];
     }
@@ -224,7 +248,7 @@ void InflationLayer::deleteKernels()
 
   if (cached_costs_ != NULL)
   {
-    for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
+    for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 1; ++i)
     {
       delete[] cached_costs_[i];
     }

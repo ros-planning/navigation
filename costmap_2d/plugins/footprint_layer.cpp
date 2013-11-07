@@ -28,20 +28,20 @@ namespace costmap_2d
     enabled_ = config.enabled;
   }
 
-  void FootprintLayer::updateBounds(double origin_x, double origin_y, double origin_yaw, double* min_x, double* min_y, double* max_x, double* max_y)
+  void FootprintLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x, double* max_y)
   {
     if(!enabled_) return;
     //update transformed polygon
     footprint_.header.stamp = ros::Time::now();
     footprint_.polygon.points.clear();
-    double cos_th = cos(origin_yaw);
-    double sin_th = sin(origin_yaw);
+    double cos_th = cos(robot_yaw);
+    double sin_th = sin(robot_yaw);
     const std::vector<geometry_msgs::Point>& footprint_spec = getFootprint();
     for(unsigned int i = 0; i < footprint_spec.size(); ++i)
     {
       geometry_msgs::Point32 new_pt;
-      new_pt.x = origin_x + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
-      new_pt.y = origin_y + (footprint_spec[i].x * sin_th + footprint_spec[i].y * cos_th);
+      new_pt.x = robot_x + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
+      new_pt.y = robot_y + (footprint_spec[i].x * sin_th + footprint_spec[i].y * cos_th);
       footprint_.polygon.points.push_back(new_pt);
     }
 

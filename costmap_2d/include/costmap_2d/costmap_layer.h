@@ -35,35 +35,31 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef FOOTPRINT_COSTMAP_PLUGIN_H_
-#define FOOTPRINT_COSTMAP_PLUGIN_H_
+#ifndef COSTMAP_LAYER_H_
+#define COSTMAP_LAYER_H_
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_2d/costmap_math.h>
-#include <costmap_2d/GenericPluginConfig.h>
-#include <dynamic_reconfigure/server.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/Polygon.h>
-#include <geometry_msgs/PolygonStamped.h>
 
 namespace costmap_2d
 {
-class FootprintLayer : public Layer
+class CostmapLayer : public Layer, public Costmap2D
 {
 public:
-  virtual void onInitialize();
+  bool isDiscretized()
+  {
+    return true;
+  }
 
-  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
-                             double* max_y);
-  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  virtual void matchSize();
 
-private:
-  geometry_msgs::PolygonStamped footprint_; ///< Storage for polygon being published.
-  void publishFootprint();
-  void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
-  ros::Publisher footprint_pub_;
-  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
+protected:
+  void updateWithTrueOverwrite(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  void updateWithOverwrite    (costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  void updateWithMax          (costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  void updateWithAddition     (costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+
+  void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
 };
 }
 #endif
