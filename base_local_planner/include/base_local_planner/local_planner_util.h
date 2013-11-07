@@ -100,6 +100,8 @@ public:
   costmap_2d::Costmap2D* getCostmap();
 
   LocalPlannerLimits getCurrentLimits();
+
+  std::string getGlobalFrame(){ return global_frame_; }
 };
 
 

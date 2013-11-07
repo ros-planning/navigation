@@ -41,7 +41,7 @@ namespace base_local_planner {
   MapGridVisualizer::MapGridVisualizer() {}
 
 
-  void MapGridVisualizer::initialize(const std::string& name, boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function) {
+  void MapGridVisualizer::initialize(const std::string& name, std::string frame_id, boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function) {
     name_ = name;
     cost_function_ = cost_function;
 

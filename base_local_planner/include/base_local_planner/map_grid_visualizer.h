@@ -54,7 +54,7 @@ namespace base_local_planner {
               * @param costmap The costmap instance to use to get the size of the map to generate a point cloud for
               * @param cost_function The function to use to compute the cost values to be inserted into each point in the output PointCloud as well as whether to include a given point or not
               */
-            void initialize(const std::string& name, boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function);
+            void initialize(const std::string& name, std::string frame, boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function);
 
             /**
               * Destructor for the visualizer
