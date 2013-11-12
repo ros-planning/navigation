@@ -122,6 +122,11 @@ public:
     *yn = byn_;
   }
 
+  bool isInitialized()
+  {
+      return initialized_;
+  }
+
   /** @brief Updates the stored footprint, updates the circumscribed
    * and inscribed radii, and calls onFootprintChanged() in all
    * layers. */
@@ -158,6 +163,7 @@ private:
 
   std::vector<boost::shared_ptr<Layer> > plugins_;
 
+  bool initialized_;
   bool size_locked_;
   double circumscribed_radius_, inscribed_radius_;
   std::vector<geometry_msgs::Point> footprint_;
