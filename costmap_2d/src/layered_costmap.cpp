@@ -73,7 +73,6 @@ void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double 
   {
     (*plugin)->matchSize();
   }
-  initialized_ = true;
 }
 
 void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
@@ -128,6 +127,8 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   bxn_ = xn;
   by0_ = y0;
   byn_ = yn;
+
+  initialized_ = true;
 
 }
 
