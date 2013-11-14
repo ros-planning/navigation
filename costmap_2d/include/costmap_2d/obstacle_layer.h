@@ -62,7 +62,7 @@ class ObstacleLayer : public CostmapLayer
 public:
   ObstacleLayer()
   {
-    costmap_ = NULL; // this is the unsigned char* member of parent class Costmap2D.
+    costmap_.reset(); // this is the unsigned char* member of parent class Costmap2D.
   }
 
   virtual void onInitialize();

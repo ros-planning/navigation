@@ -23,7 +23,7 @@ void InflationLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
-  seen_ = NULL;
+  seen_.reset();
   need_reinflation_ = false;
 
   if(dsrv_ != NULL){
@@ -63,9 +63,7 @@ void InflationLayer::matchSize()
   computeCaches();
 
   unsigned int size_x = costmap->getSizeInCellsX(), size_y = costmap->getSizeInCellsY();
-  if (seen_)
-    delete seen_;
-  seen_ = new bool[size_x * size_y];
+  seen_.reset(new bool[size_x * size_y]);
 }
 
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -107,7 +105,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   unsigned char* master_array = master_grid.getCharMap();
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
-  memset(seen_, false, size_x * size_y * sizeof(bool));
+  std::fill_n(seen_.get(), size_x * size_y, false);
 
   // We need to include in the inflation cells outside the bounding
   // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
@@ -207,16 +205,13 @@ void InflationLayer::computeCaches()
   //based on the inflation radius... compute distance and cost caches
   if(cell_inflation_radius_ != cached_cell_inflation_radius_)
   {
-    if(cached_cell_inflation_radius_ > 0)
-      deleteKernels();
-
-    cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
-    cached_distances_ = new double*[cell_inflation_radius_ + 2];
+    cached_costs_.reset(new boost::shared_array<unsigned char>[cell_inflation_radius_ + 2]);
+    cached_distances_.reset(new boost::shared_array<double>[cell_inflation_radius_ + 2]);
 
     for (unsigned int i = 0; i <= cell_inflation_radius_ + 1; ++i)
     {
-      cached_costs_[i] = new unsigned char[cell_inflation_radius_ + 2];
-      cached_distances_[i] = new double[cell_inflation_radius_ + 2];
+      cached_costs_[i].reset(new unsigned char[cell_inflation_radius_ + 2]);
+      cached_distances_[i].reset(new double[cell_inflation_radius_ + 2]);
       for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
       {
         cached_distances_[i][j] = sqrt(i * i + j * j);
@@ -237,23 +232,8 @@ void InflationLayer::computeCaches()
 
 void InflationLayer::deleteKernels()
 {
-  if (cached_distances_ != NULL)
-  {
-    for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 1; ++i)
-    {
-      delete[] cached_distances_[i];
-    }
-    delete[] cached_distances_;
-  }
-
-  if (cached_costs_ != NULL)
-  {
-    for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 1; ++i)
-    {
-      delete[] cached_costs_[i];
-    }
-    delete[] cached_costs_;
-  }
+  cached_distances_.reset();
+  cached_costs_.reset();
 }
 
 } // end namespace costmap_2d

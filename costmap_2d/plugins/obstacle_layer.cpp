@@ -504,7 +504,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
       continue;
 
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
-    MarkCell marker(costmap_, FREE_SPACE);
+    MarkCell marker(costmap_.get(), FREE_SPACE);
     //and finally... we can execute our trace to clear obstacles along that line
     raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
 

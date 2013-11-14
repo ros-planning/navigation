@@ -44,6 +44,8 @@
 #include <dynamic_reconfigure/server.h>
 #include <queue>
 
+#include <boost/shared_array.hpp>
+
 namespace costmap_2d
 {
 /**
@@ -177,10 +179,10 @@ private:
 
   double resolution_;
 
-  bool* seen_;
+  boost::shared_array<bool> seen_;
 
-  unsigned char** cached_costs_;
-  double** cached_distances_;
+  boost::shared_array< boost::shared_array<unsigned char> > cached_costs_;
+  boost::shared_array< boost::shared_array<double> > cached_distances_;
 
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
   void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);

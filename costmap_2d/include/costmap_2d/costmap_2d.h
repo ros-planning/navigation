@@ -43,6 +43,8 @@
 #include <geometry_msgs/Point.h>
 #include <boost/thread.hpp>
 
+#include <boost/shared_array.hpp>
+
 namespace costmap_2d
 {
 
@@ -422,7 +424,7 @@ protected:
   double resolution_;
   double origin_x_;
   double origin_y_;
-  unsigned char* costmap_;
+  boost::shared_array<unsigned char> costmap_;
   unsigned char default_value_;
 
   class MarkCell
