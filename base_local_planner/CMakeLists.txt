@@ -53,7 +53,7 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES
         base_local_planner
-#       trajectory_planner_ros
+        trajectory_planner_ros
     CATKIN_DEPENDS
         roscpp
         dynamic_reconfigure
