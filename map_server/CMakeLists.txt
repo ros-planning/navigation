@@ -27,6 +27,7 @@ catkin_package(
         tf
         nav_msgs
 )
+
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 add_library(image_loader src/image_loader.cpp)
 target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
@@ -81,3 +82,9 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE)
+
+## Install excutable python script
+install( 
+    PROGRAMS
+      scripts/crop_map
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
