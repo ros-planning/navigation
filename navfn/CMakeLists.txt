@@ -57,6 +57,7 @@ add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
 target_link_libraries(navfn
     ${catkin_LIBRARIES}
     )
+add_dependencies(navfn ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 add_executable(navfn_node src/navfn_node.cpp)
 target_link_libraries(navfn_node

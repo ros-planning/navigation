@@ -71,7 +71,7 @@ catkin_package(
 #set(ROS_COMPILE_FLAGS "-g" ${ROS_COMPILE_FLAGS})
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
-add_library(base_local_planner 
+add_library(base_local_planner
 	src/footprint_helper.cpp
 	src/goal_functions.cpp
 	src/map_cell.cpp
