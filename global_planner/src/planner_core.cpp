@@ -260,6 +260,8 @@ bool PlannerCore::makePlan(const geometry_msgs::PoseStamped& start, const geomet
     }else{
         ROS_ERROR("Failed to get a plan.");
     }
+    
+    reverse(plan.begin(), plan.end());
 
     //publish the plan for visualization purposes
     publishPlan(plan, 0.0, 1.0, 0.0, 0.0);
