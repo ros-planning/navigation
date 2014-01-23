@@ -260,8 +260,6 @@ bool PlannerCore::makePlan(const geometry_msgs::PoseStamped& start, const geomet
     }else{
         ROS_ERROR("Failed to get a plan.");
     }
-    
-    reverse(plan.begin(), plan.end());
 
     //publish the plan for visualization purposes
     publishPlan(plan, 0.0, 1.0, 0.0, 0.0);
@@ -328,7 +326,7 @@ bool PlannerCore::getPlanFromPotential(const geometry_msgs::PoseStamped& goal,
     }
 
     ros::Time plan_time = ros::Time::now();
-    for (unsigned int i = 0; i < path.size(); i++) {
+    for (unsigned int i = path.size()-1; i > 0; i--) {
         std::pair<float, float> point = path[i];
         //convert the plan to world coordinates
         double world_x, world_y;
