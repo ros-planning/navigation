@@ -222,8 +222,8 @@ class FakeOdomNode
       tf::StampedTransform baseInMap;
       try{
         m_tfListener->lookupTransform(base_frame_id_, global_frame_id_, msg->header.stamp, baseInMap);
-      } catch(tf::TransformException){
-        ROS_WARN("Failed to lookup transform!");
+      } catch(tf::TransformException const &ex){
+        ROS_WARN_STREAM("Failed to lookup transform!(" << ex.what() << ")");
         return;
       }
 

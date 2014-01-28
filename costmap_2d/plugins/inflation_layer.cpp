@@ -14,6 +14,7 @@ namespace costmap_2d
 InflationLayer::InflationLayer()
   : inflation_radius_( 0 )
   , weight_( 0 )
+  , seen_(NULL)
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
@@ -23,7 +24,6 @@ void InflationLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
-  seen_ = NULL;
   need_reinflation_ = false;
 
   if(dsrv_ != NULL){
@@ -63,9 +63,12 @@ void InflationLayer::matchSize()
   computeCaches();
 
   unsigned int size_x = costmap->getSizeInCellsX(), size_y = costmap->getSizeInCellsY();
+
+  seen_mutex_.lock();
   if (seen_)
     delete seen_;
   seen_ = new bool[size_x * size_y];
+  seen_mutex_.unlock();
 }
 
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -107,7 +110,10 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   unsigned char* master_array = master_grid.getCharMap();
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
+  // Issue #137 fix; mutual exclusion with seen_ array rebuilding on InflationLayer::matchSize method
+  seen_mutex_.lock();
   memset(seen_, false, size_x * size_y * sizeof(bool));
+  seen_mutex_.unlock();
 
   // We need to include in the inflation cells outside the bounding
   // box min_i...max_j, by the amount cell_inflation_radius_.  Cells

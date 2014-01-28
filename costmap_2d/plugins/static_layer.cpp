@@ -22,6 +22,7 @@ void StaticLayer::onInitialize()
 
   std::string map_topic;
   nh.param("map_topic", map_topic, std::string("map"));
+  nh.param("first_map_only", first_map_only_, false);
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
   
   nh.param("track_unknown_space", track_unknown_space_, true);
@@ -34,25 +35,34 @@ void StaticLayer::onInitialize()
 
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
-  //we'll subscribe to the latched topic that the map server uses
-  ROS_INFO("Requesting the map...");
-  map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
-  map_received_ = false;
-  has_updated_data_ = false;
 
-  ros::Rate r(10);
-  while (!map_received_ && g_nh.ok())
+  if (first_map_only_ && first_map_)
   {
-    ros::spinOnce();
-    r.sleep();
+    ROS_INFO("Reseting %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+    initialize(static_cast<const nav_msgs::OccupancyGridConstPtr>(first_map_));
   }
-
-  ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
-  
-  if(subscribe_to_updates_)
+  else
   {
-    ROS_INFO("Subscribing to updates");
-    map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
+    //we'll subscribe to the latched topic that the map server uses
+    ROS_INFO("Requesting the map...");
+    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
+    map_received_ = false;
+    has_updated_data_ = false;
+
+    ros::Rate r(10);
+    while (!map_received_ && g_nh.ok())
+    {
+      ros::spinOnce();
+      r.sleep();
+    }
+
+    ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+  
+    if(subscribe_to_updates_)
+    {
+      ROS_INFO("Subscribing to updates");
+      map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
+    }
   }
 
   if(dsrv_)
@@ -101,6 +111,9 @@ unsigned char StaticLayer::interpretValue(unsigned char value)
 
 void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 {
+  if (first_map_only_)
+    first_map_.reset(new nav_msgs::OccupancyGrid(*new_map));
+
   unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
 
   ROS_DEBUG("Received a %d X %d map at %f m/pix", size_x, size_y, new_map->info.resolution);
@@ -123,6 +136,13 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       origin_y_ != new_map->info.origin.position.y){
     matchSize();
   }
+
+  initialize(new_map);
+}
+
+void StaticLayer::initialize(const nav_msgs::OccupancyGridConstPtr& new_map)
+{
+  unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
 
   unsigned int index = 0;
 

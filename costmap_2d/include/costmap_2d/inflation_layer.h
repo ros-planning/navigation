@@ -178,6 +178,7 @@ private:
   double resolution_;
 
   bool* seen_;
+  boost::mutex seen_mutex_;
 
   unsigned char** cached_costs_;
   double** cached_distances_;
