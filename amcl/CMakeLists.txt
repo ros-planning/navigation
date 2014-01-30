@@ -70,6 +70,10 @@ install(DIRECTORY include/amcl/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
+install(DIRECTORY examples/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/examples
+)
+
 ## Configure Tests
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
