@@ -1,6 +1,6 @@
 <package>
     <name>amcl</name>
-    <version>1.11.4</version>
+    <version>1.11.5</version>
     <description>
         <p>
             amcl is a probabilistic localization system for a robot moving in
