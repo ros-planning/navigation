@@ -47,7 +47,7 @@ using namespace std;
 namespace costmap_2d
 {
 LayeredCostmap::LayeredCostmap(string global_frame, bool rolling_window, bool track_unknown) :
-    costmap_(), global_frame_(global_frame), rolling_window_(rolling_window), size_locked_(false)
+    costmap_(), global_frame_(global_frame), rolling_window_(rolling_window), initialized_(false), size_locked_(false)
 {
   if (track_unknown)
     costmap_.setDefaultValue(255);
@@ -127,6 +127,8 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   bxn_ = xn;
   by0_ = y0;
   byn_ = yn;
+
+  initialized_ = true;
 
 }
 
