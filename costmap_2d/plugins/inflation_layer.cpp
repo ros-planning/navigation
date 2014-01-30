@@ -17,23 +17,33 @@ InflationLayer::InflationLayer()
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
-{}
+{
+  access_ = new boost::shared_mutex();
+}
 
 void InflationLayer::onInitialize()
 {
-  ros::NodeHandle nh("~/" + name_), g_nh;
-  current_ = true;
-  seen_ = NULL;
-  need_reinflation_ = false;
+  {
+    boost::unique_lock < boost::shared_mutex > lock(*access_);
+    ros::NodeHandle nh("~/" + name_), g_nh;
+    current_ = true;
+    seen_ = NULL;
+    need_reinflation_ = false;
 
-  if(dsrv_ != NULL){
-    delete dsrv_;
+    dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
+        &InflationLayer::reconfigureCB, this, _1, _2);
+  
+    if(dsrv_ != NULL){
+      dsrv_->clearCallback();
+      dsrv_->setCallback(cb);
+    }
+    else
+    {
+      dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
+      dsrv_->setCallback(cb);
+    }
+
   }
-
-  dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
-  dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
-      &InflationLayer::reconfigureCB, this, _1, _2);
-  dsrv_->setCallback(cb);
 
   matchSize();
 }
@@ -57,6 +67,7 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
 
 void InflationLayer::matchSize()
 {
+  boost::unique_lock < boost::shared_mutex > lock(*access_);
   costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
   resolution_ = costmap->getResolution();
   cell_inflation_radius_ = cellDistance(inflation_radius_);
@@ -98,6 +109,7 @@ void InflationLayer::onFootprintChanged()
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
                                           int max_j)
 {
+  boost::unique_lock < boost::shared_mutex > lock(*access_);
   if (!enabled_)
     return;
 
