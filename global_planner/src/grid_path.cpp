@@ -40,13 +40,15 @@
 #include <stdio.h>
 namespace global_planner {
 
-bool GridPath::getPath(float* potential, int end_x, int end_y, std::vector<std::pair<float, float> >& path) {
+bool GridPath::getPath(float* potential, double start_x, double start_y, double end_x, double end_y, std::vector<std::pair<float, float> >& path) {
     std::pair<float, float> current;
     current.first = end_x;
     current.second = end_y;
 
+    int start_index = getIndex(start_x, start_y);
+
     path.push_back(current);
-    while (potential[getIndex(current.first, current.second)] > 0) {
+    while (getIndex(current.first, current.second) != start_index) {
         float min_val = 1e10;
         int min_x = 0, min_y = 0;
         for (int xd = -1; xd <= 1; xd++) {

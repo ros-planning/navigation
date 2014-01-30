@@ -60,7 +60,7 @@ class GradientPath : public Traceback {
         //  2. Doesn't get near goal
         //  3. Surrounded by high potentials
         //
-        bool getPath(float* potential, int end_x, int end_y, std::vector<std::pair<float, float> >& path);
+        bool getPath(float* potential, double start_x, double start_y, double end_x, double end_y, std::vector<std::pair<float, float> >& path);
     private:
         inline int getNearestPoint(int stc, float dx, float dy) {
             int pt = stc + (int)round(dx) + (int)(xs_ * round(dy));

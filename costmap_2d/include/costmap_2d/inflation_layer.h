@@ -126,6 +126,7 @@ public:
 
 protected:
   virtual void onFootprintChanged();
+  boost::shared_mutex* access_;
 
 private:
   /**

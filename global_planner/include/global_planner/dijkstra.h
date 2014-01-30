@@ -52,13 +52,13 @@
 #define push_next(n) { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ &&    nextEnd_<PRIORITYBUFSIZE){    nextBuffer_[   nextEnd_++]=n; pending_[n]=true; }}
 #define push_over(n) { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ &&    overEnd_<PRIORITYBUFSIZE){    overBuffer_[   overEnd_++]=n; pending_[n]=true; }}
 // potential defs
-#define POT_HIGH 1.0e10		// unassigned cell potential
+#define POT_HIGH 1.0e10        // unassigned cell potential
 
 namespace global_planner {
 class DijkstraExpansion : public Expander {
     public:
         DijkstraExpansion(PotentialCalculator* p_calc, int nx, int ny);
-        bool calculatePotentials(unsigned char* costs, int start_x, int start_y, int end_x, int end_y, int cycles,
+        bool calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y, int cycles,
                                 float* potential);
 
         /**
@@ -72,6 +72,8 @@ class DijkstraExpansion : public Expander {
             neutral_cost_ = neutral_cost;
             priorityIncrement_ = 2 * neutral_cost_;
         }
+
+        void setPreciseStart(bool precise){ precise_ = precise; }
     private:
 
         /**
@@ -98,6 +100,7 @@ class DijkstraExpansion : public Expander {
         int *currentBuffer_, *nextBuffer_, *overBuffer_; /**< priority buffer block ptrs */
         int currentEnd_, nextEnd_, overEnd_; /**< end points of arrays */
         bool *pending_; /**< pending_ cells during propagation */
+        bool precise_;
 
         /** block priority thresholds */
         float threshold_; /**< current threshold */

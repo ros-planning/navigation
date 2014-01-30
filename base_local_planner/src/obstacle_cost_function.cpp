@@ -42,7 +42,8 @@
 
 namespace base_local_planner {
 
-ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap) : costmap_(costmap) {
+ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap) 
+    : costmap_(costmap), sum_scores_(false) {
   if (costmap != NULL) {
     world_model_ = new base_local_planner::CostmapModel(*costmap_);
   }
@@ -82,11 +83,18 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
 
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     traj.getPoint(i, px, py, pth);
-    cost = footprintCost(px, py, pth,
-        scale,
-        footprint_spec_,
-        costmap_,
-        world_model_);
+    double f_cost = footprintCost(px, py, pth,
+        scale, footprint_spec_,
+        costmap_, world_model_);
+
+    if(f_cost < 0){
+        return f_cost;
+    }
+
+    if(sum_scores_)
+        cost +=  f_cost;
+    else
+        cost = f_cost;
   }
   return cost;
 }
