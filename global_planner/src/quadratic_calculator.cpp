@@ -38,7 +38,7 @@ float QuadraticCalculator::calculatePotential(float* potential, unsigned char co
     u = potential[n - nx_];
     d = potential[n + nx_];
     //  ROS_INFO("[Update] c: %f  l: %f  r: %f  u: %f  d: %f\n",
-    //	 potential[n], l, r, u, d);
+    //     potential[n], l, r, u, d);
     //  ROS_INFO("[Update] cost: %d\n", costs[n]);
 
     // find lowest, and its lowest neighbor
@@ -53,17 +53,17 @@ float QuadraticCalculator::calculatePotential(float* potential, unsigned char co
         ta = d;
 
     float hf = cost; // traversability factor
-    float dc = tc - ta;		// relative cost between ta,tc
-    if (dc < 0) 		// tc is lowest
+    float dc = tc - ta;        // relative cost between ta,tc
+    if (dc < 0)         // tc is lowest
             {
         dc = -dc;
         ta = tc;
     }
 
     // calculate new potential
-    if (dc >= hf)		// if too large, use ta-only update
+    if (dc >= hf)        // if too large, use ta-only update
         return ta + hf;
-    else			// two-neighbor interpolation update
+    else            // two-neighbor interpolation update
     {
         // use quadratic approximation
         // might speed this up through table lookup, but still have to

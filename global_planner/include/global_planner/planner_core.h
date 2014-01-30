@@ -52,7 +52,7 @@
 #include <global_planner/traceback.h>
 #include <global_planner/GlobalPlannerConfig.h>
 
-#define POT_HIGH 1.0e10		// unassigned cell potential
+#define POT_HIGH 1.0e10        // unassigned cell potential
 namespace global_planner {
 
 class Expander;
@@ -63,12 +63,12 @@ class GridPath;
  * @brief Provides a ROS wrapper for the global_planner planner which runs a fast, interpolated navigation function on a costmap.
  */
 
-class PlannerCore : public nav_core::BaseGlobalPlanner {
+class GlobalPlanner : public nav_core::BaseGlobalPlanner {
     public:
         /**
          * @brief  Default constructor for the PlannerCore object
          */
-        PlannerCore();
+        GlobalPlanner();
 
         /**
          * @brief  Constructor for the PlannerCore object
@@ -76,7 +76,7 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
          * @param  costmap A pointer to the costmap to use
          * @param  frame_id Frame of the costmap
          */
-        PlannerCore(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
+        GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
          * @brief  Initialization function for the PlannerCore object
@@ -121,7 +121,8 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
          * @param plan The plan... filled by the planner
          * @return True if a valid plan was found, false otherwise
          */
-        bool getPlanFromPotential(const geometry_msgs::PoseStamped& goal,
+        bool getPlanFromPotential(double start_x, double start_y, double end_x, double end_y,
+                                  const geometry_msgs::PoseStamped& goal,
                                   std::vector<geometry_msgs::PoseStamped>& plan);
 
         /**
@@ -149,9 +150,9 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
         /**
          * @brief  Publish a path for visualization purposes
          */
-        void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path, double r, double g, double b, double a);
+        void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
 
-        ~PlannerCore() {
+        ~GlobalPlanner() {
         }
 
         bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
@@ -168,6 +169,7 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
 
     private:
         void mapToWorld(double mx, double my, double& wx, double& wy);
+        bool worldToMap(double wx, double wy, double& mx, double& my);
         void clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my);
         void publishPotential(float* potential);
 
@@ -188,6 +190,9 @@ class PlannerCore : public nav_core::BaseGlobalPlanner {
         unsigned char* cost_array_;
         float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
+
+        bool old_navfn_behavior_;
+        float convert_offset_;
 
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
         void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);

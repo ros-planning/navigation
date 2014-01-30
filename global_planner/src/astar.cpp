@@ -36,6 +36,7 @@
  *         David V. Lu!!
  *********************************************************************/
 #include<global_planner/astar.h>
+#include<costmap_2d/cost_values.h>
 
 namespace global_planner {
 
@@ -43,7 +44,7 @@ AStarExpansion::AStarExpansion(PotentialCalculator* p_calc, int xs, int ys) :
         Expander(p_calc, xs, ys) {
 }
 
-bool AStarExpansion::calculatePotentials(unsigned char* costs, int start_x, int start_y, int end_x, int end_y,
+bool AStarExpansion::calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y,
                                         int cycles, float* potential) {
     queue_.clear();
     int start_i = toIndex(start_x, start_y);
@@ -78,7 +79,7 @@ void AStarExpansion::add(unsigned char* costs, float* potential, float prev_pote
     if (potential[next_i] < POT_HIGH)
         return;
 
-    if(costs[next_i]>=lethal_cost_ && !(unknown_ && costs[next_i]==255))
+    if(costs[next_i]>=lethal_cost_ && !(unknown_ && costs[next_i]==costmap_2d::NO_INFORMATION))
         return;
 
     potential[next_i] = p_calc_->calculatePotential(potential, costs[next_i] + neutral_cost_, next_i, prev_potential);

@@ -51,7 +51,7 @@ using cm::Costmap2DROS;
 
 namespace global_planner {
 
-class PlannerWithCostmap : public PlannerCore {
+class PlannerWithCostmap : public GlobalPlanner {
     public:
         PlannerWithCostmap(string name, Costmap2DROS* cmap);
         bool makePlanService(navfn::MakeNavPlan::Request& req, navfn::MakeNavPlan::Response& resp);
@@ -95,7 +95,7 @@ void PlannerWithCostmap::poseCallback(const rm::PoseStamped::ConstPtr& goal) {
 }
 
 PlannerWithCostmap::PlannerWithCostmap(string name, Costmap2DROS* cmap) :
-        PlannerCore(name, cmap->getCostmap(), cmap->getGlobalFrameID()) {
+        GlobalPlanner(name, cmap->getCostmap(), cmap->getGlobalFrameID()) {
     ros::NodeHandle private_nh("~");
     cmap_ = cmap;
     make_plan_service_ = private_nh.advertiseService("make_plan", &PlannerWithCostmap::makePlanService, this);

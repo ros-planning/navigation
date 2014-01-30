@@ -65,37 +65,37 @@ void GradientPath::setSize(int xs, int ys) {
     grady_ = new float[xs * ys];
 }
 
-bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<std::pair<float, float> >& path) {
+bool GradientPath::getPath(float* potential, double start_x, double start_y, double goal_x, double goal_y, std::vector<std::pair<float, float> >& path) {
     std::pair<float, float> current;
-    current.first = end_x;
-    current.second = end_y;
-    int stc = getIndex(end_x, end_y);
+    int stc = getIndex(goal_x, goal_y);
 
     // set up offset
-    float dx = 0;
-    float dy = 0;
+    float dx = goal_x - (int)goal_x;
+    float dy = goal_y - (int)goal_y;
     int ns = xs_ * ys_;
     memset(gradx_, 0, ns * sizeof(float));
     memset(grady_, 0, ns * sizeof(float));
 
-    while (1) {
+    int c = 0;
+    while (c++<ns*4) {
         // check if near goal
-        int nearest_point = getNearestPoint(stc, dx, dy);
-        if (potential[nearest_point] == 0) {
-            current.first = nearest_point % xs_;
-            current.second = nearest_point / xs_;
+        double nx = stc % xs_ + dx, ny = stc / xs_ + dy;
+
+        if (fabs(nx - start_x) < .5 && fabs(ny - start_y) < .5) {
+            current.first = start_x;
+            current.second = start_y;
             path.push_back(current);
             return true;
         }
 
         if (stc < xs_ || stc > xs_ * ys_ - xs_) // would be out of bounds
-                {
+        {
             printf("[PathCalc] Out of bounds\n");
             return false;
         }
 
-        current.first = stc % xs_ + dx;
-        current.second = stc / xs_ + dy;
+        current.first = nx;
+        current.second = ny;
 
         //ROS_INFO("%d %d | %f %f ", stc%xs_, stc/xs_, dx, dy);
 
@@ -228,7 +228,7 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
         }
 
         //printf("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
-        //	     potential[stc], dx, dy, path[npath-1].first, path[npath-1].second);
+        //         potential[stc], dx, dy, path[npath-1].first, path[npath-1].second);
     }
 
     return false;
@@ -251,10 +251,10 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
 
  }
 
- //  return npath;			// out of cycles, return failure
+ //  return npath;            // out of cycles, return failure
  ROS_DEBUG("[PathCalc] No path found, path too long");
  //savemap("navfn_pathlong");
- return 0;			// out of cycles, return failure
+ return 0;            // out of cycles, return failure
  }
  */
 
@@ -264,10 +264,10 @@ bool GradientPath::getPath(float* potential, int end_x, int end_y, std::vector<s
 // calculate gradient at a cell
 // positive value are to the right and down
 float GradientPath::gradCell(float* potential, int n) {
-    if (gradx_[n] + grady_[n] > 0.0)	// check this cell
+    if (gradx_[n] + grady_[n] > 0.0)    // check this cell
         return 1.0;
 
-    if (n < xs_ || n > xs_ * ys_ - xs_)	// would be out of bounds
+    if (n < xs_ || n > xs_ * ys_ - xs_)    // would be out of bounds
         return 0.0;
     float cv = potential[n];
     float dx = 0.0;
@@ -286,7 +286,7 @@ float GradientPath::gradCell(float* potential, int n) {
             dy = lethal_cost_;
     }
 
-    else				// not in an obstacle
+    else                // not in an obstacle
     {
         // dx calc, average to sides
         if (potential[n - 1] < POT_HIGH)
