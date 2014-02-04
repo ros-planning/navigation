@@ -6,7 +6,6 @@ find_package(catkin REQUIRED
             roscpp
             tf
             nav_msgs
-            rostest
         )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -55,6 +54,7 @@ endfunction()
 
 ## Tests
 if(CATKIN_ENABLE_TESTING)
+  find_package(rostest)
   copy_test_data( FILES
       test/testmap.bmp
       test/testmap.png )
