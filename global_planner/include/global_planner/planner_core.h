@@ -117,6 +117,10 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         /**
          * @brief Compute a plan to a goal after the potential for a start point has already been computed (Note: You should call computePotential first)
+         * @param start_x
+         * @param start_y
+         * @param end_x
+         * @param end_y
          * @param goal The goal pose to create a plan to
          * @param plan The plan... filled by the planner
          * @return True if a valid plan was found, false otherwise
