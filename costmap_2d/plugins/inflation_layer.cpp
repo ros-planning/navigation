@@ -176,6 +176,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
 
 /**
  * @brief  Given an index of a cell in the costmap, place it into a priority queue for obstacle inflation
+ * @param  grid The costmap
  * @param  index The index of the cell
  * @param  mx The x coordinate of the cell (can be computed from the index, but saves time to store it)
  * @param  my The y coordinate of the cell (can be computed from the index, but saves time to store it)

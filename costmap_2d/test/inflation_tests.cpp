@@ -29,7 +29,7 @@
 
 /**
  * @author David Lu!!
- * @file Test harness for InflationLayer for Costmap2D
+ * Test harness for InflationLayer for Costmap2D
  */
 
 #include <costmap_2d/costmap_2d.h>

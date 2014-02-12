@@ -347,7 +347,7 @@ namespace estimation
 
 
   // get latest filter posterior as vector
-  void OdomEstimation::getEstimate(ColumnVector& estimate)
+  void OdomEstimation::getEstimate(MatrixWrapper::ColumnVector& estimate)
   {
     estimate = filter_estimate_old_vec_;
   };
