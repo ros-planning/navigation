@@ -20,7 +20,7 @@ void ObstacleLayer::onInitialize()
   rolling_window_ = layered_costmap_->isRolling();
 
   bool track_unknown_space;
-  nh.param("track_unknown_space", track_unknown_space, false);
+  nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
   if(track_unknown_space)
     default_value_ = NO_INFORMATION;
   else
