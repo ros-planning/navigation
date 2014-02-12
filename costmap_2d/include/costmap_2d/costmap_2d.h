@@ -68,6 +68,7 @@ public:
    * @param  resolution The resolution of the map in meters/cell
    * @param  origin_x The x origin of the map
    * @param  origin_y The y origin of the map
+   * @param  default_value Default Value
    */
   Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, double resolution,
             double origin_x, double origin_y, unsigned char default_value = 0);
@@ -307,7 +308,6 @@ protected:
    * @param dm_size_x The x size of the destination map
    * @param region_size_x The x size of the region to copy
    * @param region_size_y The y size of the region to copy
-   * @param data_size The size of the data-type stored in the map arrays
    */
   template<typename data_type>
     void copyMapRegion(data_type* source_map, unsigned int sm_lower_left_x, unsigned int sm_lower_left_y,

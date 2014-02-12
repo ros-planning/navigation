@@ -29,7 +29,7 @@
 
 /**
  * @author Conor McGann
- * @file Test harness for Costmap2D
+ * Test harness for Costmap2D
  */
 
 #include <costmap_2d/costmap_2d.h>
