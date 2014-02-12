@@ -68,7 +68,6 @@ namespace base_local_planner {
 
         private:
             std::string name_; ///< @brief The name to get parameters relative to.
-            std::string frame_id_; ///< @brief The frame to assign to the output PointCloud
             boost::function<bool (int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost)> cost_function_; ///< @brief The function to be used to generate the cost components for the output PointCloud
             ros::NodeHandle ns_nh_;
             pcl::PointCloud<MapGridCostPoint>* cost_cloud_;
