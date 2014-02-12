@@ -46,11 +46,9 @@ namespace base_local_planner {
     cost_function_ = cost_function;
 
     ns_nh_ = ros::NodeHandle("~/" + name_);
-    ns_nh_.param("global_frame_id", frame_id_, std::string("odom"));
 
     cost_cloud_ = new pcl::PointCloud<MapGridCostPoint>;
-
-    cost_cloud_->header.frame_id = frame_id_;
+    cost_cloud_->header.frame_id = frame_id;
     pub_.advertise(ns_nh_, "cost_cloud", 1);
   }
 
