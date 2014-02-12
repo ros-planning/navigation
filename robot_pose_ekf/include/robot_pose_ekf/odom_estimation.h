@@ -98,13 +98,13 @@ public:
    * \param time the time of the filter posterior
    * \param estimate the filter posterior as a tf transform
    */
-  void getEstimate(ros::Time time, tf::Transform& estiamte);
+  void getEstimate(ros::Time time, tf::Transform& estimate);
 
   /** get the filter posterior
    * \param time the time of the filter posterior
    * \param estimate the filter posterior as a stamped tf transform
    */
-  void getEstimate(ros::Time time, tf::StampedTransform& estiamte);
+  void getEstimate(ros::Time time, tf::StampedTransform& estimate);
 
   /** get the filter posterior
    * \param estimate the filter posterior as a pose with covariance

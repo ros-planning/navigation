@@ -89,7 +89,7 @@ public:
    * @brief Sets the global frame of an observation buffer. This will
    * transform all the currently cached observations to the new global
    * frame
-   * @param The name of the new global frame.
+   * @param new_global_frame The name of the new global frame.
    * @return True if the operation succeeds, false otherwise
    */
   bool setGlobalFrame(const std::string new_global_frame);

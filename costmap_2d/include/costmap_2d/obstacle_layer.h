@@ -131,7 +131,7 @@ protected:
 
   /**
    * @brief  Get the observations used to clear space
-   * @param marking_observations A reference to a vector that will be populated with the observations
+   * @param clearing_observations A reference to a vector that will be populated with the observations
    * @return True if all the observation buffers are current, false otherwise
    */
   bool getClearingObservations(std::vector<costmap_2d::Observation>& clearing_observations) const;
@@ -139,6 +139,10 @@ protected:
   /**
    * @brief  Clear freespace based on one observation
    * @param clearing_observation The observation used to raytrace
+   * @param min_x
+   * @param min_y
+   * @param max_x
+   * @param max_y
    */
   virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
                                  double* max_x, double* max_y);

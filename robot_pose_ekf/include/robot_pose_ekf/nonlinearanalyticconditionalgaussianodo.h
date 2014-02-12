@@ -38,9 +38,6 @@ namespace BFL
 	  This is currently not checked.  The same goes for the number
 	  of columns, which should be equal to the number of rows of
 	  the corresponding conditional argument!
-	  @param ratio: vector containing the different matrices of
-	  the linear relationship between the conditional arguments
-	  and \f$\mu\f$
 	  @param additiveNoise Pdf representing the additive Gaussian uncertainty
       */
       NonLinearAnalyticConditionalGaussianOdo( const Gaussian& additiveNoise);
