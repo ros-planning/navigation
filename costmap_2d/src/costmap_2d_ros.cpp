@@ -98,9 +98,10 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   }
 
   // check if we want a rolling window version of the costmap
-  bool rolling_window, track_unknown_space;
+  bool rolling_window, track_unknown_space, always_send_full_costmap;
   private_nh.param("rolling_window", rolling_window, false);
   private_nh.param("track_unknown_space", track_unknown_space, false);
+  private_nh.param("always_send_full_costmap", always_send_full_costmap, false);
 
   layered_costmap_ = new LayeredCostmap(global_frame_, rolling_window, track_unknown_space);
 
@@ -137,7 +138,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
   readFootprintFromParams( private_nh );
 
-  publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap");
+  publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap", always_send_full_costmap);
 
   // create a thread to handle updating the map
   stop_updates_ = false;
