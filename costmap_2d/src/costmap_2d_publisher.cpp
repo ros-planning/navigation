@@ -115,7 +115,9 @@ void Costmap2DPublisher::publishCostmap()
   if (always_send_full_costmap_ || grid_.info.resolution != resolution || grid_.info.width != costmap_->getSizeInCellsX())
   {
     prepareGrid();
-    costmap_pub_.publish( grid_ );
+    if (costmap_pub_.getNumSubscribers() > 0) {
+      costmap_pub_.publish( grid_ );
+    }
   }
   else if (x0_ < xn_)
   {
@@ -139,7 +141,9 @@ void Costmap2DPublisher::publishCostmap()
         update.data[i++] = cost_translation_table_[ cost ];
       }
     }
-    costmap_update_pub_.publish(update);
+    if (costmap_update_pub_.getNumSubscribers() > 0) {
+      costmap_update_pub_.publish(update);
+    }
   }
 
   xn_ = yn_ = 0;
