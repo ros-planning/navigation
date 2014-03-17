@@ -63,7 +63,7 @@ namespace estimation
       odom_covariance_(6),
       imu_covariance_(3),
       vo_covariance_(6),
-      gps_covariance_(3),
+      gps_covariance_(6),
       odom_callback_counter_(0),
       imu_callback_counter_(0),
       vo_callback_counter_(0),
@@ -78,6 +78,7 @@ namespace estimation
     nh_private.param("sensor_timeout", timeout_, 1.0);
     nh_private.param("odom_used", odom_used_, true);
     nh_private.param("imu_used",  imu_used_, true);
+    nh_private.param("imu_absolute",imu_absolute_, false);
     nh_private.param("vo_used",   vo_used_, true);
     nh_private.param("gps_used",   gps_used_, false);
     nh_private.param("debug",   debug_, false);
@@ -330,8 +331,8 @@ namespace estimation
     gps_stamp_ = gps->header.stamp;
     gps_time_  = Time::now();
     poseMsgToTF(gps->pose.pose, gps_meas_);
-    for (unsigned int i=0; i<3; i++)
-      for (unsigned int j=0; j<3; j++)
+    for (unsigned int i=0; i<6; i++)
+      for (unsigned int j=0; j<6; j++)
         gps_covariance_(i+1, j+1) = gps->pose.covariance[6*i+j];
     my_filter_.addMeasurement(StampedTransform(gps_meas_.inverse(), gps_stamp_, "base_footprint", "gps"), gps_covariance_);
     
@@ -410,7 +411,7 @@ namespace estimation
       // update filter
       if ( my_filter_.isInitialized() )  {
         bool diagnostics = true;
-        if (my_filter_.update(odom_active_, imu_active_,gps_active_, vo_active_,  filter_stamp_, diagnostics)){
+        if (my_filter_.update(odom_active_, imu_active_,gps_active_, vo_active_,imu_absolute_, filter_stamp_, diagnostics)){
           
           // output most recent estimate and relative covariance
           my_filter_.getEstimate(output_);
@@ -440,14 +441,40 @@ namespace estimation
       }
 
 
-      // initialize filer with odometry frame
-      if (imu_active_ && gps_active_ && !my_filter_.isInitialized()) {
-	Quaternion q = imu_meas_.getRotation();
-        Vector3 p = gps_meas_.getOrigin();
-        Transform init_meas_ = Transform(q, p);
-        my_filter_.initialize(init_meas_, gps_stamp_);
-        ROS_INFO("Kalman filter initialized with gps and imu measurement");
-      }	
+      // initalized filte with absolute information
+      if (gps_active_ && !my_filter_.isInitialized()) { //if gps is being used, use absolute information
+        if (imu_absolute_) //treat imu like compass, initialize on first imu data 
+        {
+            Quaternion q = imu_meas_.getRotation();
+            Vector3 p = gps_meas_.getOrigin();
+            Transform init_meas_ = Transform(q, p);
+            my_filter_.initialize(init_meas_, gps_stamp_);
+            ROS_INFO("Kalman filter initialized with gps (position) and imu (orientation) measurement");
+            use_gps_orientation = false;
+        }
+        else //imu data to be used differentially, don't initialize on imu data
+        {
+            double orientation_covariance = (gps_covariance_(4,4) + gps_covariance_(5,5) + gps_covariance_(6,6)) /3;
+            if (orientation_covariance < 1) { //initialize and use gps orientation
+                use_gps_orientation = true;
+                Quaternion q = gps_meas_.getRotation();
+                Vector3 p = gps_meas_.getOrigin();
+                Transform init_meas_ = Transform(q, p);
+                my_filter_.initialize(init_meas_, gps_stamp_);
+                ROS_INFO("Kalman filter initialized with position and orientation from gps measurement");
+            }
+            else { //can't use absolute gps orientation or imu orientation, initialize at zero
+                use_gps_orientation = false;
+                Quaternion q (0,0,0,1);
+                Vector3 p = gps_meas_.getOrigin();
+                Transform init_meas_ = Transform(q, p);
+                my_filter_.initialize(init_meas_, gps_stamp_);
+                ROS_INFO("Kalman filter initialized with position from gps measurement");
+            }
+        }
+
+
+      }
       else if ( odom_active_  && !gps_used_ && !my_filter_.isInitialized()){
         my_filter_.initialize(odom_meas_, odom_stamp_);
         ROS_INFO("Kalman filter initialized with odom measurement");
