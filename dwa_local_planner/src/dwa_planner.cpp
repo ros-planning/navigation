@@ -57,7 +57,6 @@ namespace dwa_local_planner {
 * @author Markus Bader <markus.bader@tuwien.ac.at>
 */
 void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
-  ROS_INFO("addNameSpace(%s, %s)", name_space.c_str(), variable.c_str());
   if(!variable.empty() && variable.at(0) != '/'){
     boost::trim_right_if(name_space,boost::is_any_of("/"));
     boost::trim_left_if(name_space,boost::is_any_of("/"));

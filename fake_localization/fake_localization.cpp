@@ -95,7 +95,6 @@
 * @author Markus Bader <markus.bader@tuwien.ac.at>
 */
 void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
-  ROS_INFO("addNameSpace(%s, %s)", name_space.c_str(), variable.c_str());
   if(!variable.empty() && variable.at(0) != '/'){
     boost::trim_right_if(name_space,boost::is_any_of("/"));
     boost::trim_left_if(name_space,boost::is_any_of("/"));
@@ -130,9 +129,9 @@ class FakeOdomNode
       addNameSpace(nh.getNamespace(), base_frame_id_);
       addNameSpace(nh.getNamespace(), global_frame_id_);
       /// added by Markus Bader for debugging
-      ROS_INFO("%s - odom_frame_id: %s", private_nh.getNamespace().c_str(), odom_frame_id_.c_str());
-      ROS_INFO("%s - odom_frame_id: %s", private_nh.getNamespace().c_str(), base_frame_id_.c_str());  
-      ROS_INFO("%s - global_frame_id_: %s", private_nh.getNamespace().c_str(), global_frame_id_.c_str());
+      ROS_DEBUG("%s - odom_frame_id: %s", private_nh.getNamespace().c_str(), odom_frame_id_.c_str());
+      ROS_DEBUG("%s - odom_frame_id: %s", private_nh.getNamespace().c_str(), base_frame_id_.c_str());  
+      ROS_DEBUG("%s - global_frame_id_: %s", private_nh.getNamespace().c_str(), global_frame_id_.c_str());
       
       private_nh.param("delta_x", delta_x_, 0.0);
       private_nh.param("delta_y", delta_y_, 0.0);
