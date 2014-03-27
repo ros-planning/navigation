@@ -49,6 +49,27 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dwa_local_planner {
+/**
+* Addes the namespace to string if it does not start with a slash
+* @param name_space the namespace (nh_.GetNameSpace()) 
+* @param variable the namespace will be added to this string
+* @param rootSlash on true it adds the slash on the beginning
+* @author Markus Bader <markus.bader@tuwien.ac.at>
+*/
+void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
+  ROS_INFO("addNameSpace(%s, %s)", name_space.c_str(), variable.c_str());
+  if(!variable.empty() && variable.at(0) != '/'){
+    boost::trim_right_if(name_space,boost::is_any_of("/"));
+    boost::trim_left_if(name_space,boost::is_any_of("/"));
+    if(!name_space.empty()) {
+      variable = name_space + "/" + variable;
+      if(rootSlash) {
+        variable = "/" + variable;
+      }
+    }
+  }
+}
+  
   void DWAPlanner::reconfigure(DWAPlannerConfig &config)
   {
 
@@ -122,6 +143,7 @@ namespace dwa_local_planner {
       alignment_costs_(planner_util->getCostmap())
   {
     ros::NodeHandle private_nh("~/" + name);
+    ros::NodeHandle nh;
 
     goal_front_costs_.setStopOnFailure( false );
     alignment_costs_.setStopOnFailure( false );
@@ -156,6 +178,11 @@ namespace dwa_local_planner {
 
     std::string frame_id;
     private_nh.param("global_frame_id", frame_id, std::string("odom"));
+    /// added by Markus Bader to deal with namespaces
+    addNameSpace(nh.getNamespace(),  frame_id);
+    /// added by Markus Bader for debugging
+    ROS_DEBUG("%s - frame_id: %s", private_nh.getNamespace().c_str(), frame_id.c_str());
+    
 
     traj_cloud_ = new pcl::PointCloud<base_local_planner::MapGridCostPoint>;
     traj_cloud_->header.frame_id = frame_id;

@@ -1,3 +1,6 @@
+
+#include <boost/algorithm/string.hpp>
+
 #include<costmap_2d/obstacle_layer.h>
 #include<costmap_2d/costmap_math.h>
 
@@ -13,7 +16,27 @@ using costmap_2d::Observation;
 
 namespace costmap_2d
 {
-
+/**
+* Addes the namespace to string if it does not start with a slash
+* @param name_space the namespace (nh_.GetNameSpace()) 
+* @param variable the namespace will be added to this string
+* @param rootSlash on true it adds the slash on the beginning
+* @author Markus Bader <markus.bader@tuwien.ac.at>
+*/
+void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
+  ROS_INFO("addNameSpace(%s, %s)", name_space.c_str(), variable.c_str());
+  if(!variable.empty() && variable.at(0) != '/'){
+    boost::trim_right_if(name_space,boost::is_any_of("/"));
+    boost::trim_left_if(name_space,boost::is_any_of("/"));
+    if(!name_space.empty()) {
+      variable = name_space + "/" + variable;
+      if(rootSlash) {
+        variable = "/" + variable;
+      }
+    }
+  }
+}
+  
 void ObstacleLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
@@ -54,6 +77,12 @@ void ObstacleLayer::onInitialize()
 
     source_node.param("topic", topic, source);
     source_node.param("sensor_frame", sensor_frame, std::string(""));
+    
+    /// added by Markus Bader to deal with namespaces
+    addNameSpace(g_nh.getNamespace(),  sensor_frame, false);
+    /// added by Markus Bader for debugging
+    ROS_DEBUG("%s - sensor_frame: %s", source_node.getNamespace().c_str(), sensor_frame.c_str());
+    
     source_node.param("observation_persistence", observation_keep_time, 0.0);
     source_node.param("expected_update_rate", expected_update_rate, 0.0);
     source_node.param("data_type", data_type, std::string("PointCloud"));

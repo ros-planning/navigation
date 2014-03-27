@@ -59,8 +59,31 @@
 
 #define NEW_UNIFORM_SAMPLING 1
 
+#include <boost/algorithm/string.hpp>
+
 using namespace amcl;
 
+/**
+* Addes the namespace to string if it does not start with a slash
+* @param name_space the namespace (nh_.GetNameSpace()) 
+* @param variable the namespace will be added to this string
+* @param rootSlash on true it adds the slash on the beginning
+* @author Markus Bader <markus.bader@tuwien.ac.at>
+*/
+void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
+  ROS_INFO("addNameSpace(%s, %s)", name_space.c_str(), variable.c_str());
+  if(!variable.empty() && variable.at(0) != '/'){
+    boost::trim_right_if(name_space,boost::is_any_of("/"));
+    boost::trim_left_if(name_space,boost::is_any_of("/"));
+    if(!name_space.empty()) {
+      variable = name_space + "/" + variable;
+      if(rootSlash) {
+        variable = "/" + variable;
+      }
+    }
+  }
+}  
+  
 // Pose hypothesis
 typedef struct
 {
@@ -230,11 +253,13 @@ class AmclNode
     ros::Time last_laser_received_ts_;
     ros::Duration laser_check_interval_;
     void checkLaserReceived(const ros::TimerEvent& event);
+    
 };
 
 std::vector<std::pair<int,int> > AmclNode::free_space_indices;
 
 #define USAGE "USAGE: amcl"
+
 
 int
 main(int argc, char** argv)
@@ -328,7 +353,17 @@ AmclNode::AmclNode() :
   private_nh_.param("update_min_a", a_thresh_, M_PI/6.0);
   private_nh_.param("odom_frame_id", odom_frame_id_, std::string("odom"));
   private_nh_.param("base_frame_id", base_frame_id_, std::string("base_link"));
-  private_nh_.param("global_frame_id", global_frame_id_, std::string("map"));
+  private_nh_.param("global_frame_id", global_frame_id_, std::string("/map"));
+  
+  /// added by Markus Bader to deal with namespaces
+  addNameSpace(nh_.getNamespace(), odom_frame_id_); 
+  addNameSpace(nh_.getNamespace(), base_frame_id_);
+  addNameSpace(nh_.getNamespace(), global_frame_id_);
+  /// added by Markus Bader for debugging
+  ROS_INFO("%s - odom_frame_id: %s", private_nh_.getNamespace().c_str(), odom_frame_id_.c_str());
+  ROS_INFO("%s - odom_frame_id: %s", private_nh_.getNamespace().c_str(), base_frame_id_.c_str());  
+  ROS_INFO("%s - global_frame_id_: %s", private_nh_.getNamespace().c_str(), global_frame_id_.c_str());
+  
   private_nh_.param("resample_interval", resample_interval_, 2);
   double tmp_tol;
   private_nh_.param("transform_tolerance", tmp_tol, 0.1);
