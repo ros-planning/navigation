@@ -479,7 +479,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
 
   if(config.min_particles > config.max_particles)
   {
-    ROS_WARN("You've set min_particles to be less than max particles, this isn't allowed so they'll be set to be equal.");
+    ROS_WARN("You've set min_particles to be greater than max particles, this isn't allowed so they'll be set to be equal.");
     config.max_particles = config.min_particles;
   }
 
