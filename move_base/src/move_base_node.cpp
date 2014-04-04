@@ -29,14 +29,27 @@
 
 #include <move_base/move_base.h>
 
-int main(int argc, char** argv){
+int main(int argc, char** argv) {
   ros::init(argc, argv, "move_base_node");
   tf::TransformListener tf(ros::Duration(10));
 
-  move_base::MoveBase move_base( tf );
+  move_base::MoveBase move_base(tf);
 
-  //ros::MultiThreadedSpinner s;
-  ros::spin();
+  int num_spinner_threads = 1;
+  ros::NodeHandle private_nh("~");
+  private_nh.param("num_spinner_threads", num_spinner_threads, 1);
+  ROS_INFO("move_base: num_spinner_threads = %d", num_spinner_threads);
+
+  if (num_spinner_threads < 2)
+    {
+      ros::spin();
+    }
+  else
+    {
+      ros::AsyncSpinner spinner(num_spinner_threads);
+      spinner.start();
+      ros::waitForShutdown();
+    }
 
   return(0);
 }
