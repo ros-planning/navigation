@@ -38,7 +38,6 @@
 #include <base_local_planner/simple_trajectory_generator.h>
 
 #include <cmath>
-#include <math.h>
 
 #include <base_local_planner/velocity_iterator.h>
 
@@ -92,9 +91,7 @@ void SimpleTrajectoryGenerator::initialise(
     if ( ! use_dwa_) {
       // there is no point in overshooting the goal, and it also may break the
       // robot behavior, so we limit the velocities to those that do not overshoot in sim_time
-      double dist =
-          sqrt((goal[0] - pos[0]) * (goal[0] - pos[0]) +
-               (goal[1] - pos[1]) * (goal[1] - pos[1]));
+      double dist = ::hypot(goal[0] - pos[0], goal[1] - pos[1]);
       max_vel_x = std::max(std::min(max_vel_x, dist / sim_time_), min_vel_x);
       max_vel_y = std::max(std::min(max_vel_y, dist / sim_time_), min_vel_y);
 
@@ -185,7 +182,7 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
       Eigen::Vector3f vel,
       Eigen::Vector3f sample_target_vel,
       base_local_planner::Trajectory& traj) {
-  double vmag = sqrt(sample_target_vel[0] * sample_target_vel[0] + sample_target_vel[1] * sample_target_vel[1]);
+  double vmag = ::hypot(sample_target_vel[0], sample_target_vel[1]);
   double eps = 1e-4;
   traj.cost_   = -1.0; // placed here in case we return early
   //trajectory might be reused so we'll make sure to reset it
