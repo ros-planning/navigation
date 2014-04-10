@@ -93,11 +93,10 @@ void SimpleTrajectoryGenerator::initialise(
       // there is no point in overshooting the goal, and it also may break the
       // robot behavior, so we limit the velocities to those that do not overshoot in sim_time
       double dist =
-          sqrt((goal[0] - pos[0]) * (goal[0] - pos[0])) +
-               (goal[1] - pos[1]) * (goal[1] - pos[1]);
-      // Factor 2 seems to be necessary, probably a bug somewhere else that I cannot find
-      max_vel_x = std::max(std::min(max_vel_x, 2 * dist / sim_time_), min_vel_x);
-      max_vel_y = std::max(std::min(max_vel_y, 2 * dist / sim_time_), min_vel_y);
+          sqrt((goal[0] - pos[0]) * (goal[0] - pos[0]) +
+               (goal[1] - pos[1]) * (goal[1] - pos[1]));
+      max_vel_x = std::max(std::min(max_vel_x, dist / sim_time_), min_vel_x);
+      max_vel_y = std::max(std::min(max_vel_y, dist / sim_time_), min_vel_y);
 
       // if we use continous acceleration, we can sample the max velocity we can reach in sim_time_
       max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_time_);
