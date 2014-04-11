@@ -70,7 +70,7 @@ namespace base_local_planner {
        * @param y Will be set to the y position of the point
        * @param th Will be set to the theta position of the point
        */
-      void getPoint(unsigned int index, double& x, double& y, double& th);
+      void getPoint(unsigned int index, double& x, double& y, double& th) const;
 
       /**
        * @brief  Set a point within the trajectory
@@ -95,7 +95,7 @@ namespace base_local_planner {
        * @param y Will be set to the y position of the point
        * @param th Will be set to the theta position of the point
        */
-      void getEndpoint(double& x, double& y, double& th);
+      void getEndpoint(double& x, double& y, double& th) const;
 
       /**
        * @brief  Clear the trajectory's points
@@ -106,7 +106,7 @@ namespace base_local_planner {
        * @brief  Return the number of points in the trajectory
        * @return The number of points in the trajectory
        */
-      unsigned int getPointsSize();
+      unsigned int getPointsSize() const;
 
     private:
       std::vector<double> x_pts_; ///< @brief The x points in the trajectory

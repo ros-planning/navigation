@@ -44,7 +44,7 @@ namespace base_local_planner {
   {
   }
 
-  void Trajectory::getPoint(unsigned int index, double& x, double& y, double& th){
+  void Trajectory::getPoint(unsigned int index, double& x, double& y, double& th) const {
     x = x_pts_[index];
     y = y_pts_[index];
     th = th_pts_[index];
@@ -68,13 +68,13 @@ namespace base_local_planner {
     th_pts_.clear();
   }
 
-  void Trajectory::getEndpoint(double& x, double& y, double& th){
+  void Trajectory::getEndpoint(double& x, double& y, double& th) const {
     x = x_pts_.back();
     y = y_pts_.back();
     th = th_pts_.back();
   }
 
-  unsigned int Trajectory::getPointsSize(){
+  unsigned int Trajectory::getPointsSize() const {
     return x_pts_.size();
   }
 };
