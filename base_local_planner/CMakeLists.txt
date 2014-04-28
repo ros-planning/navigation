@@ -3,6 +3,7 @@ project(base_local_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
+            cmake_modules
             roscpp
             tf
             message_generation

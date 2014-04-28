@@ -3,6 +3,7 @@ project(move_base)
 
 find_package(catkin REQUIRED
     COMPONENTS
+        cmake_modules
         roscpp
         pluginlib
         actionlib

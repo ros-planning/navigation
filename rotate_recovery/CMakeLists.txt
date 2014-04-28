@@ -3,6 +3,7 @@ project(rotate_recovery)
 
 find_package(catkin REQUIRED
         COMPONENTS
+            cmake_modules
             roscpp
             tf
             costmap_2d
