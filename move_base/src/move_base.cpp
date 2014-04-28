@@ -472,6 +472,9 @@ namespace move_base {
     delete planner_plan_;
     delete latest_plan_;
     delete controller_plan_;
+
+    planner_.reset();
+    tc_.reset();
   }
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
