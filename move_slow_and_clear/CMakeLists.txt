@@ -3,6 +3,7 @@ project(move_slow_and_clear)
 
 find_package(catkin REQUIRED
     COMPONENTS
+        cmake_modules
         roscpp
         nav_core
         costmap_2d

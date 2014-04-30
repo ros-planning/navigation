@@ -3,7 +3,12 @@
     <version>1.11.6</version>
     <description>
 
-        navfn provides a fast interpolated navigation function that can be used to create plans for a mobile base. The planner assumes a circular robot and operates on a costmap to find a minimum cost plan from a start point to an end point in a grid. The navigation function is computed with Dijkstra's algorithm, but support for an A* heuristic may also be added in the near future. navfn also provides a ROS wrapper for the navfn planner that adheres to the nav_core::BaseGlobalPlanner interface specified in <a href="http://wiki.ros.org/nav_core">nav_core</a>.
+        navfn provides a fast interpolated navigation function that can be used to create plans for
+        a mobile base. The planner assumes a circular robot and operates on a costmap to find a
+        minimum cost plan from a start point to an end point in a grid. The navigation function is
+        computed with Dijkstra's algorithm, but support for an A* heuristic may also be added in the
+        near future. navfn also provides a ROS wrapper for the navfn planner that adheres to the
+        nav_core::BaseGlobalPlanner interface specified in <a href="http://wiki.ros.org/nav_core">nav_core</a>.
 
     </description>
     <author>Kurt Konolige</author>
@@ -15,6 +20,7 @@
 
     <buildtool_depend version_gte="0.5.68">catkin</buildtool_depend>
 
+    <build_depend>cmake_modules</build_depend>
     <build_depend>costmap_2d</build_depend>
     <build_depend>geometry_msgs</build_depend>
     <build_depend>nav_core</build_depend>

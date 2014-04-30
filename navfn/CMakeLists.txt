@@ -3,6 +3,7 @@ project(navfn)
 
 find_package(catkin REQUIRED
     COMPONENTS
+        cmake_modules
         costmap_2d
         geometry_msgs
         nav_core

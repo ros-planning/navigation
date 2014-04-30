@@ -14,6 +14,7 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
+    <build_depend>cmake_modules</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>nav_core</build_depend>
     <build_depend>costmap_2d</build_depend>

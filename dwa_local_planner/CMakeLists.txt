@@ -4,6 +4,7 @@ project(dwa_local_planner)
 find_package(catkin REQUIRED
         COMPONENTS
             base_local_planner
+            cmake_modules
             costmap_2d
             dynamic_reconfigure
             nav_core
