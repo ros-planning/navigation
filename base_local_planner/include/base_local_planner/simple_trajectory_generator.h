@@ -71,7 +71,6 @@ public:
    * @param pos current robot position
    * @param vel current robot velocity
    * @param limits Current velocity limits
-   * @param sim_period distance between points in one trajectory
    * @param vsamples: in how many samples to divide the given dimension
    * @param use_acceleration_limits: if true use physical model, else idealized robot model
    * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from.
@@ -90,7 +89,6 @@ public:
    * @param pos current robot position
    * @param vel current robot velocity
    * @param limits Current velocity limits
-   * @param sim_period distance between points in one trajectory
    * @param vsamples: in how many samples to divide the given dimension
    * @param use_acceleration_limits: if true use physical model, else idealized robot model
    * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
@@ -105,6 +103,11 @@ public:
 
   /**
    * This function is to be called only when parameters change
+   *
+   * @param sim_granularity granularity of collision detection
+   * @param angular_sim_granularity angular granularity of collision detection
+   * @param use_dwa whether to use DWA or trajectory rollout
+   * @param sim_period distance between points in one trajectory
    */
   void setParameters(double sim_time,
       double sim_granularity,
