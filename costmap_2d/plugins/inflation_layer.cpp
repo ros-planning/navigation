@@ -152,13 +152,15 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   {
     //get the highest priority cell and pop it off the priority queue
     const CellData& current_cell = inflation_queue_.top();
-    inflation_queue_.pop();
 
     unsigned int index = current_cell.index_;
     unsigned int mx = current_cell.x_;
     unsigned int my = current_cell.y_;
     unsigned int sx = current_cell.src_x_;
     unsigned int sy = current_cell.src_y_;
+
+    //pop once we have our cell info
+    inflation_queue_.pop();
 
     //attempt to put the neighbors of the current cell onto the queue
     if (mx > 0)
