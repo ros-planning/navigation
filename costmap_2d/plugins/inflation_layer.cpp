@@ -152,6 +152,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   {
     //get the highest priority cell and pop it off the priority queue
     const CellData& current_cell = inflation_queue_.top();
+    inflation_queue_.pop();
 
     unsigned int index = current_cell.index_;
     unsigned int mx = current_cell.x_;
@@ -168,9 +169,6 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
       enqueue(master_array, index + 1, mx + 1, my, sx, sy);
     if (my < size_y - 1)
       enqueue(master_array, index + size_x, mx, my + 1, sx, sy);
-
-    //remove the current cell from the priority queue
-    inflation_queue_.pop();
   }
 }
 
