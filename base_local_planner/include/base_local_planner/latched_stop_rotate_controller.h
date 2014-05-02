@@ -8,6 +8,8 @@
 #ifndef LATCHED_STOP_ROTATE_CONTROLLER_H_
 #define LATCHED_STOP_ROTATE_CONTROLLER_H_
 
+#include <string>
+
 #include <Eigen/Core>
 
 #include <tf/transform_datatypes.h>
@@ -19,7 +21,7 @@ namespace base_local_planner {
 
 class LatchedStopRotateController {
 public:
-  LatchedStopRotateController();
+  LatchedStopRotateController(const std::string& name = "");
   virtual ~LatchedStopRotateController();
 
   bool isPositionReached(LocalPlannerUtil* planner_util,
