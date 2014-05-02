@@ -199,7 +199,7 @@ namespace voxel_grid {
 
   void VoxelGrid::printVoxelGrid(){
     for(unsigned int z = 0; z < size_z_; z++){
-      printf("Layer z = %d:\n",z);
+      printf("Layer z = %u:\n",z);
       for(unsigned int y = 0; y < size_y_; y++){
         for(unsigned int x = 0 ; x < size_x_; x++){
           printf((getVoxel(x, y, z)) == voxel_grid::MARKED? "#" : " ");
