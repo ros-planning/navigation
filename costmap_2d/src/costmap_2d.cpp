@@ -465,7 +465,7 @@ bool Costmap2D::saveMap(std::string file_name)
     return false;
   }
 
-  fprintf(fp, "P2\n%d\n%d\n%d\n", size_x_, size_y_, 0xff);
+  fprintf(fp, "P2\n%u\n%u\n%u\n", size_x_, size_y_, 0xff);
   for (unsigned int iy = 0; iy < size_y_; iy++)
   {
     for (unsigned int ix = 0; ix < size_x_; ix++)
