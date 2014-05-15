@@ -76,7 +76,6 @@ AMCLLaser::SetModelLikelihoodField(double z_hit,
 {
   this->model_type = LASER_MODEL_LIKELIHOOD_FIELD;
   this->z_hit = z_hit;
-  this->z_max = z_max;
   this->z_rand = z_rand;
   this->sigma_hit = sigma_hit;
 
