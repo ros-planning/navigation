@@ -23,7 +23,6 @@ link_directories(${BFL_LIBRARY_DIRS})
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            rostest
             tf
             nav_msgs
             std_msgs
@@ -78,6 +77,8 @@ install(
 include(CMakeDetermineSystem)
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 if(CATKIN_ENABLE_TESTING)
+
+find_package(rostest)
 
 catkin_download_test_data(download_data_ekf_test2_indexed.bag http://download.ros.org/data/robot_pose_ekf/ekf_test2_indexed.bag FILENAME test/ekf_test2.bag MD5 71addef0ed900e05b301e0b4fdca99e2)
 add_executable(test_robot_pose_ekf test/test_robot_pose_ekf.cpp)
