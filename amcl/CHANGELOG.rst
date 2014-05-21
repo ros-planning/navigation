@@ -2,6 +2,12 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* removes useless this->z_max = z_max assignment
+* Fix warning string.
+* Contributors: Jeremiah Via, enriquefernandez
+
 1.11.5 (2014-01-30)
 -------------------
 * Fix for `#160 <https://github.com/ros-planning/navigation/issues/160>`_

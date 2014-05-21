@@ -2,6 +2,11 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update build to find eigen using cmake_modules
+* Contributors: Michael Ferguson
+
 1.11.5 (2014-01-30)
 -------------------
 * navfn: fix parallel build error from missing dep

@@ -2,6 +2,14 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* uses %u instead of %d for unsigned int
+* update build to find eigen using cmake_modules
+* inflation_layer: place .top() & .pop() calls together
+* add parameter to configure whether full costmap is published each time
+* Contributors: Michael Ferguson, Siegfried-A. Gevatter Pujals, agentx3r, enriquefernandez
+
 1.11.5 (2014-01-30)
 -------------------
 * Better threading in inflation layer

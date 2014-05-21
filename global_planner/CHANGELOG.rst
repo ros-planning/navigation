@@ -2,6 +2,9 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.5 (2014-01-30)
 -------------------
 * Global Planner Cleanup

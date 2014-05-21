@@ -2,6 +2,11 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update build to find eigen using cmake_modules
+* Contributors: Michael Ferguson
+
 1.11.5 (2014-01-30)
 -------------------
 * Misc. other commits from Groovy Branch
