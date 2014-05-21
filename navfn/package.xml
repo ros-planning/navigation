@@ -1,6 +1,6 @@
 <package>
     <name>navfn</name>
-    <version>1.11.6</version>
+    <version>1.11.7</version>
     <description>
 
         navfn provides a fast interpolated navigation function that can be used to create plans for

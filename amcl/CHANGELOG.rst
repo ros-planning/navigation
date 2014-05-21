@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.7 (2014-05-21)
+-------------------
 * removes useless this->z_max = z_max assignment
 * Fix warning string.
 * Contributors: Jeremiah Via, enriquefernandez

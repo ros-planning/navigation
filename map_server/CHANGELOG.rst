@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.7 (2014-05-21)
+-------------------
 * make rostest in CMakeLists optional
 * Contributors: Lukas Bulwahn
 
