@@ -10,6 +10,7 @@
     <author>Eric Perko</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
+    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/base_local_planner</url>
 

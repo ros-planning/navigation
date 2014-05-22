@@ -5,6 +5,7 @@
      A path planner library and node.
   </description>
   <maintainer email="davidvlu@gmail.com">David Lu!!</maintainer>
+  <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
   <license>BSD</license>
 
   <author>David Lu!!</author>

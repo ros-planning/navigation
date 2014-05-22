@@ -7,6 +7,7 @@
         to a mobile base.
     </description>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
+    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
     <author>contradict@gmail.com</author>
     <author>Eitan Marder-Eppstein</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  

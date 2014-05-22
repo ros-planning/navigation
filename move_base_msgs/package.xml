@@ -9,6 +9,7 @@
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
+    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/move_base_msgs</url>
 
