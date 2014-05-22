@@ -2,6 +2,9 @@
 Changelog for package move_slow_and_clear
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.7 (2014-05-21)
 -------------------
 * update build to find eigen using cmake_modules

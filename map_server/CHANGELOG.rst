@@ -2,6 +2,11 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix build, was broken by `#175 <https://github.com/ros-planning/navigation/issues/175>`_
+* Contributors: Michael Ferguson
+
 1.11.7 (2014-05-21)
 -------------------
 * make rostest in CMakeLists optional

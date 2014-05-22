@@ -2,6 +2,9 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.7 (2014-05-21)
 -------------------
 * fixes latch_xy_goal_tolerance param not taken
