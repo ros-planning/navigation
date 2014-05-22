@@ -54,7 +54,6 @@ endfunction()
 
 ## Tests
 if(CATKIN_ENABLE_TESTING)
-  find_package(rostest)
   copy_test_data( FILES
       test/testmap.bmp
       test/testmap.png )
@@ -68,6 +67,8 @@ if(CATKIN_ENABLE_TESTING)
   )
   add_dependencies(rtest nav_msgs_gencpp)
 
+  # This has to be done after we've already built targets, or catkin variables get borked
+  find_package(rostest)
   add_rostest(test/rtest.xml)
 endif()
 
