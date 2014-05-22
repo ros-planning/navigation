@@ -13,7 +13,7 @@
     <remap from="imu_data" to="torso_lift_imu/data" />
   </node>
 
-  <node pkg="rosbag" name="rosbag" type="play" args="--clock --hz 100 -d .4 $(find robot_pose_ekf)/../../../build/navigation/robot_pose_ekf/test/ekf_test2.bag" />
+  <node pkg="rosbag" name="rosbag" type="play" args="--clock --hz 100 -d .4 $(find robot_pose_ekf)/test/ekf_test2_indexed.bag" />
 
-  <test test-name="test_robot_pose_ekf" pkg="robot_pose_ekf" type="test_robot_pose_ekf" time-limit="600" />
+  <test test-name="test_robot_pose_ekf" pkg="robot_pose_ekf" type="test_robot_pose_ekf" time-limit="120" />
 </launch>
