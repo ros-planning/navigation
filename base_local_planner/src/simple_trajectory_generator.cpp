@@ -109,8 +109,8 @@ void SimpleTrajectoryGenerator::initialise(
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_period_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
 
-      min_vel[0] = std::max(limits->min_vel_x, vel[0] - acc_lim[0] * sim_period_);
-      min_vel[1] = std::max(limits->min_vel_y, vel[1] - acc_lim[1] * sim_period_);
+      min_vel[0] = std::max(min_vel_x, vel[0] - acc_lim[0] * sim_period_);
+      min_vel[1] = std::max(min_vel_y, vel[1] - acc_lim[1] * sim_period_);
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
     }
 
