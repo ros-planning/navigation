@@ -100,7 +100,7 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
 }
 
 double ObstacleCostFunction::getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor) {
-  double vmag = sqrt(traj.xv_ * traj.xv_ + traj.yv_ * traj.yv_);
+  double vmag = ::hypot(traj.xv_, traj.yv_);
 
   //if we're over a certain speed threshold, we'll scale the robot's
   //footprint to make it either slow down or stay further from walls
