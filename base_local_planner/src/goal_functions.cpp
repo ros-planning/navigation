@@ -39,10 +39,7 @@
 namespace base_local_planner {
 
   double getGoalPositionDistance(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y) {
-    double dist =
-        (goal_x - global_pose.getOrigin().x()) * (goal_x - global_pose.getOrigin().x()) +
-        (goal_y - global_pose.getOrigin().y()) * (goal_y - global_pose.getOrigin().y());
-    return sqrt(dist);
+    return ::hypot(goal_x - global_pose.getOrigin().x(), goal_y - global_pose.getOrigin().y());
   }
 
   double getGoalOrientationAngleDifference(const tf::Stamped<tf::Pose>& global_pose, double goal_th) {

@@ -232,7 +232,7 @@ void InflationLayer::computeCaches()
       cached_distances_[i] = new double[cell_inflation_radius_ + 2];
       for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
       {
-        cached_distances_[i][j] = sqrt(i * i + j * j);
+        cached_distances_[i][j] = ::hypot(i, j);
       }
     }
 

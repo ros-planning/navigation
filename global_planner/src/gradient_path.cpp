@@ -203,7 +203,7 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
             }
 
             // move in the right direction
-            float ss = pathStep_ / sqrt(x * x + y * y);
+            float ss = pathStep_ / ::hypot(x, y);
             dx += x * ss;
             dy += y * ss;
 
@@ -302,7 +302,7 @@ float GradientPath::gradCell(float* potential, int n) {
     }
 
     // normalize
-    float norm = sqrtf(dx * dx + dy * dy);
+    float norm = ::hypot(dx, dy);
     if (norm > 0) {
         norm = 1.0 / norm;
         gradx_[n] = norm * dx;
