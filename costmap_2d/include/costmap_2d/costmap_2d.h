@@ -370,7 +370,7 @@ protected:
       unsigned int offset = y0 * size_x_ + x0;
 
       //we need to chose how much to scale our dominant dimension, based on the maximum length of the line
-      double dist = ::hypot(x0 - x1, y0 - y1);
+      double dist = ::hypot(dx, dy);
       double scale = std::min(1.0, max_length / dist);
 
       //if x is dominant
