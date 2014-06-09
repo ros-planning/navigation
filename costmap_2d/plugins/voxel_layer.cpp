@@ -44,6 +44,7 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   z_resolution_ = config.z_resolution;
   unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
   mark_threshold_ = config.mark_threshold;
+  combination_method_ = config.combination_method;
   matchSize();
 }
 
