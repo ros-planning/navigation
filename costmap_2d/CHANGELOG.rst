@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.9 (2014-06-10)
+-------------------
 * fix hypot issues, add comments to tests from tracking this down
 * dynamically reconfigure the previously uninitialised variable 'combination_method', closes `#187 <https://github.com/ros-planning/navigation/issues/187>`_.
 * uses ::hypot(x, y) instead of sqrt(x*x, y*y)

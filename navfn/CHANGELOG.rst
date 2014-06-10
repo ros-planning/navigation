@@ -2,8 +2,8 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.9 (2014-06-10)
+-------------------
 * uses ::hypot(x, y) instead of sqrt(x*x, y*y)
 * Contributors: Enrique Fernández Perdomo
 

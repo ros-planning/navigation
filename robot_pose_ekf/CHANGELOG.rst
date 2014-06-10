@@ -2,8 +2,8 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.9 (2014-06-10)
+-------------------
 * fix robot_pose_ekf test
 * Contributors: Michael Ferguson
 
