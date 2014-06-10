@@ -2,6 +2,11 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* uses ::hypot(x, y) instead of sqrt(x*x, y*y)
+* Contributors: Enrique Fernández Perdomo
+
 1.11.8 (2014-05-21)
 -------------------
 

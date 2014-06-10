@@ -2,6 +2,11 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix robot_pose_ekf test
+* Contributors: Michael Ferguson
+
 1.11.8 (2014-05-21)
 -------------------
 * fix build, was broken by `#175 <https://github.com/ros-planning/navigation/issues/175>`_

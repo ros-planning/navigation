@@ -2,6 +2,9 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.8 (2014-05-21)
 -------------------
 * fix build, was broken by `#175 <https://github.com/ros-planning/navigation/issues/175>`_
