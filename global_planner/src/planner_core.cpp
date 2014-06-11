@@ -296,7 +296,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
             //make sure the goal we push on has the same timestamp as the rest of the plan
             geometry_msgs::PoseStamped goal_copy = goal;
             goal_copy.header.stamp = ros::Time::now();
-            //plan.push_back(goal_copy);
+            plan.push_back(goal_copy);
         } else {
             ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
         }
