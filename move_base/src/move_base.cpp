@@ -65,6 +65,10 @@ namespace move_base {
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
+    if(!global_planner.compare("SBPLLatticePlanner")){
+      ROS_WARN("Calling SBPL planner");
+    }
+    ROS_WARN("Calling planner : %s ", global_planner.c_str());
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
     private_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
@@ -136,6 +140,8 @@ namespace move_base {
     }
 
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
+
+    ROS_WARN("Creating controller");
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
     controller_costmap_ros_->pause();
 
@@ -430,7 +436,8 @@ namespace move_base {
       while(!found_legal && p.pose.position.x <= req.goal.pose.position.x + req.tolerance){
         if(planner_->makePlan(start, p, global_plan)){
           if(!global_plan.empty()){
-            global_plan.push_back(p);
+            global_plan.push_back(p); //last goal point seems to be inserted (but we still see the weird rotate issue) 
+	    ROS_WARN("Found Plan - MOVE Base");
             found_legal = true;
           }
           else
@@ -499,12 +506,21 @@ namespace move_base {
     geometry_msgs::PoseStamped start;
     tf::poseStampedTFToMsg(global_pose, start);
 
+    ROS_WARN("Looking for Plan - MOVE Base");
+    
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", goal.pose.position.x, goal.pose.position.y);
       return false;
     }
 
+    //Sachi - Fix for the Last goal orientation issue **** 
+    if(!plan.empty()){
+      //insert last point as the goal (with proper orientation) 
+      //maybe pop back the last one?? (since it might not have a proper pose)
+      plan.pop_back();
+      plan.push_back(goal);
+    }
     return true;
   }
 
@@ -597,8 +613,11 @@ namespace move_base {
 
       //run planner
       planner_plan_->clear();
+      ROS_WARN("Plan Thread - Looking for Plan");
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
+      ROS_WARN("Plan Thread - Plan Result : %d", gotPlan);
+      
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
@@ -805,6 +824,8 @@ namespace move_base {
     feedback.base_position = current_position;
     as_->publishFeedback(feedback);
 
+    ROS_WARN("Execute Cycle Called");
+
     //check to see if we've moved far enough to reset our oscillation timeout
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
     {
@@ -898,45 +919,46 @@ namespace move_base {
         }
         
         {
-         boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
+	  boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
         
-        if(tc_->computeVelocityCommands(cmd_vel)){
-          ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
-                           cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
-          last_valid_control_ = ros::Time::now();
-          //make sure that we send the velocity command to the base
-          vel_pub_.publish(cmd_vel);
-          if(recovery_trigger_ == CONTROLLING_R)
-            recovery_index_ = 0;
-        }
-        else {
-          ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
-          ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
+	  ROS_WARN("Computing Velocity");
+	  if(tc_->computeVelocityCommands(cmd_vel)){
+	    ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
+			     cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
+	    last_valid_control_ = ros::Time::now();
+	    //make sure that we send the velocity command to the base
+	    vel_pub_.publish(cmd_vel);
+	    if(recovery_trigger_ == CONTROLLING_R)
+	      recovery_index_ = 0;
+	  }
+	  else {
+	    ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
+	    ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
+	   
+	    //check if we've tried to find a valid control for longer than our time limit
+	    if(ros::Time::now() > attempt_end){
+	      //we'll move into our obstacle clearing mode
+	      publishZeroVelocity();
+	      state_ = CLEARING;
+	      recovery_trigger_ = CONTROLLING_R;
+	    }
+	    else{
+	      //otherwise, if we can't find a valid control, we'll go back to planning
+	      last_valid_plan_ = ros::Time::now();
+	      state_ = PLANNING;
+	      publishZeroVelocity();
 
-          //check if we've tried to find a valid control for longer than our time limit
-          if(ros::Time::now() > attempt_end){
-            //we'll move into our obstacle clearing mode
-            publishZeroVelocity();
-            state_ = CLEARING;
-            recovery_trigger_ = CONTROLLING_R;
-          }
-          else{
-            //otherwise, if we can't find a valid control, we'll go back to planning
-            last_valid_plan_ = ros::Time::now();
-            state_ = PLANNING;
-            publishZeroVelocity();
-
-            //enable the planner thread in case it isn't running on a clock
-            boost::unique_lock<boost::mutex> lock(planner_mutex_);
-            runPlanner_ = true;
-            planner_cond_.notify_one();
-            lock.unlock();
-          }
+	      //enable the planner thread in case it isn't running on a clock
+	      boost::unique_lock<boost::mutex> lock(planner_mutex_);
+	      runPlanner_ = true;
+	      planner_cond_.notify_one();
+	      lock.unlock();
+	    }
+	  }
         }
-        }
-
+	
         break;
-
+	
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
