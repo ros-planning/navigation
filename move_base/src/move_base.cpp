@@ -404,7 +404,6 @@ namespace move_base {
       ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
       return false;
     }
-    
     geometry_msgs::PoseStamped start;
     //if the user does not specify a start pose, identified by an empty frame id, then use the robot's pose
     if(req.start.header.frame_id == "")
