@@ -394,13 +394,11 @@ namespace move_base {
       ROS_ERROR("move_base must be in an inactive state to make a plan for an external user");
       return false;
     }
-    
     //make sure we have a costmap for our planner
     if(planner_costmap_ros_ == NULL){
       ROS_ERROR("move_base cannot make a plan for you because it doesn't have a costmap");
       return false;
     }
-
     tf::Stamped<tf::Pose> global_pose;
     if(!planner_costmap_ros_->getRobotPose(global_pose)){
       ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
@@ -414,14 +412,14 @@ namespace move_base {
     else
       start = req.start;
 
+    //update the copy of the costmap the planner uses
+    clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
+
     //first try to make a plan to the exact desired goal
     std::vector<geometry_msgs::PoseStamped> global_plan;
     if(!planner_->makePlan(start, req.goal, global_plan) || global_plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a plan to exact goal of (%.2f, %.2f), searching for a feasible goal within tolerance", 
           req.goal.pose.position.x, req.goal.pose.position.y);
-      
-      //update the copy of the costmap the planner uses
-      clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
 
       //search outwards for a feasible goal within the specified tolerance
       geometry_msgs::PoseStamped p;
@@ -453,7 +451,7 @@ namespace move_base {
 		  if(!global_plan.empty()){
 
 		    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
-                    //(the reachable goal should have been added by the planner, assuming your local planner uses it)
+                    //(the reachable goal should have been added by the global planner)
 		    global_plan.push_back(req.goal);
 
 		    found_legal = true;
