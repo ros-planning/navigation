@@ -394,19 +394,16 @@ namespace move_base {
       ROS_ERROR("move_base must be in an inactive state to make a plan for an external user");
       return false;
     }
-
     //make sure we have a costmap for our planner
     if(planner_costmap_ros_ == NULL){
       ROS_ERROR("move_base cannot make a plan for you because it doesn't have a costmap");
       return false;
     }
-
     tf::Stamped<tf::Pose> global_pose;
     if(!planner_costmap_ros_->getRobotPose(global_pose)){
       ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
       return false;
     }
-
     geometry_msgs::PoseStamped start;
     //if the user does not specify a start pose, identified by an empty frame id, then use the robot's pose
     if(req.start.header.frame_id == "")
@@ -417,28 +414,58 @@ namespace move_base {
     //update the copy of the costmap the planner uses
     clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
 
-    //if we have a tolerance on the goal point that is greater
-    //than the resolution of the map... compute the full potential function
-    double resolution = planner_costmap_ros_->getCostmap()->getResolution();
+    //first try to make a plan to the exact desired goal
     std::vector<geometry_msgs::PoseStamped> global_plan;
-    geometry_msgs::PoseStamped p;
-    p = req.goal;
-    p.pose.position.y = req.goal.pose.position.y - req.tolerance;
-    bool found_legal = false;
-    while(!found_legal && p.pose.position.y <= req.goal.pose.position.y + req.tolerance){
-      p.pose.position.x = req.goal.pose.position.x - req.tolerance;
-      while(!found_legal && p.pose.position.x <= req.goal.pose.position.x + req.tolerance){
-        if(planner_->makePlan(start, p, global_plan)){
-          if(!global_plan.empty()){
-            global_plan.push_back(p);
-            found_legal = true;
-          }
-          else
-            ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
-        }
-        p.pose.position.x += resolution*3.0;
+    if(!planner_->makePlan(start, req.goal, global_plan) || global_plan.empty()){
+      ROS_DEBUG_NAMED("move_base","Failed to find a plan to exact goal of (%.2f, %.2f), searching for a feasible goal within tolerance", 
+          req.goal.pose.position.x, req.goal.pose.position.y);
+
+      //search outwards for a feasible goal within the specified tolerance
+      geometry_msgs::PoseStamped p;
+      p = req.goal;
+      bool found_legal = false;
+      float resolution = planner_costmap_ros_->getCostmap()->getResolution();
+      float search_increment = resolution*3.0;
+      if(req.tolerance < search_increment) search_increment = req.tolerance;
+      for(float max_offset = search_increment; max_offset <= req.tolerance && !found_legal; max_offset += search_increment) {
+	for(float y_offset = 0; y_offset <= max_offset && !found_legal; y_offset += search_increment) {
+	  for(float x_offset = 0; x_offset <= max_offset && !found_legal; x_offset += search_increment) {
+
+	    //don't search again inside the current outer layer
+	    if(x_offset < max_offset-1e-9 && y_offset < max_offset-1e-9) continue;
+
+	    //search to both sides of the desired goal
+	    for(float y_mult = -1.0; y_mult <= 1.0 + 1e-9 && !found_legal; y_mult += 2.0) {
+
+	      //if one of the offsets is 0, -1*0 is still 0 (so get rid of one of the two)
+	      if(y_offset < 1e-9 && y_mult < -1.0 + 1e-9) continue;
+
+	      for(float x_mult = -1.0; x_mult <= 1.0 + 1e-9 && !found_legal; x_mult += 2.0) {
+		if(x_offset < 1e-9 && x_mult < -1.0 + 1e-9) continue;
+
+		p.pose.position.y = req.goal.pose.position.y + y_offset * y_mult;
+		p.pose.position.x = req.goal.pose.position.x + x_offset * x_mult;
+
+		if(planner_->makePlan(start, p, global_plan)){
+		  if(!global_plan.empty()){
+
+		    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
+                    //(the reachable goal should have been added by the global planner)
+		    global_plan.push_back(req.goal);
+
+		    found_legal = true;
+		    ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+		    break;
+		  }
+		}
+		else{
+		  ROS_DEBUG_NAMED("move_base","Failed to find a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+		}
+	      }
+	    }
+	  }
+	}
       }
-      p.pose.position.y += resolution*3.0;
     }
 
     //copy the plan into a message to send out
@@ -446,8 +473,6 @@ namespace move_base {
     for(unsigned int i = 0; i < global_plan.size(); ++i){
       resp.plan.poses[i] = global_plan[i];
     }
-
-
 
     return true;
   }
