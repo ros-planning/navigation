@@ -53,6 +53,7 @@
 #include <tf/transform_datatypes.h>
 
 #include <nav_msgs/Odometry.h>
+#include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
@@ -159,6 +160,8 @@ namespace base_local_planner {
         return initialized_;
       }
 
+      void publishTest();
+
       /** @brief Return the inner TrajectoryPlanner object.  Only valid after initialize(). */
       TrajectoryPlanner* getPlanner() const { return tc_; }
 
@@ -221,8 +224,9 @@ namespace base_local_planner {
       dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
       base_local_planner::BaseLocalPlannerConfig default_config_;
       bool setup_;
-
-
+      
+      ros::Publisher vis_pub; 
+      
       bool initialized_;
       base_local_planner::OdometryHelperRos odom_helper_;
 

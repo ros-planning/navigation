@@ -49,6 +49,7 @@
 #include <base_local_planner/trajectory.h>
 #include <base_local_planner/Position2DInt.h>
 #include <base_local_planner/BaseLocalPlannerConfig.h>
+#include <visualization_msgs/Marker.h>
 
 //we'll take in a path as a vector of poses
 #include <geometry_msgs/PoseStamped.h>
@@ -143,7 +144,7 @@ namespace base_local_planner {
        * @return The selected path or trajectory
        */
       Trajectory findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel,
-          tf::Stamped<tf::Pose>& drive_velocities);
+			      tf::Stamped<tf::Pose>& drive_velocities, ros::Publisher *vis_pub=NULL);
 
       /**
        * @brief  Update the plan that the controller is following
@@ -225,7 +226,7 @@ namespace base_local_planner {
        * @return 
        */
       Trajectory createTrajectories(double x, double y, double theta, double vx, double vy, double vtheta, 
-          double acc_x, double acc_y, double acc_theta);
+				    double acc_x, double acc_y, double acc_theta, ros::Publisher *vis_pub=NULL);
 
       /**
        * @brief  Generate and score a single trajectory
@@ -245,6 +246,27 @@ namespace base_local_planner {
        * @param traj Will be set to the generated trajectory with its associated score 
        */
       void generateTrajectory(double x, double y, double theta, double vx, double vy, 
+          double vtheta, double vx_samp, double vy_samp, double vtheta_samp, double acc_x, double acc_y,
+			      double acc_theta, double impossible_cost, Trajectory& traj, bool verbose=false);
+
+      /**
+       * @brief  Generate and score a single trajectory
+       * @param x The x position of the robot  
+       * @param y The y position of the robot  
+       * @param theta The orientation of the robot
+       * @param vx The x velocity of the robot
+       * @param vy The y velocity of the robot
+       * @param vtheta The theta velocity of the robot
+       * @param vx_samp The x velocity used to seed the trajectory
+       * @param vy_samp The y velocity used to seed the trajectory
+       * @param vtheta_samp The theta velocity used to seed the trajectory
+       * @param acc_x The x acceleration limit of the robot
+       * @param acc_y The y acceleration limit of the robot
+       * @param acc_theta The theta acceleration limit of the robot
+       * @param impossible_cost The cost value of a cell in the local map grid that is considered impassable
+       * @param traj Will be set to the generated trajectory with its associated score 
+       */
+      void generateTrajectoryOriginal(double x, double y, double theta, double vx, double vy, 
           double vtheta, double vx_samp, double vy_samp, double vtheta_samp, double acc_x, double acc_y,
           double acc_theta, double impossible_cost, Trajectory& traj);
 
@@ -347,6 +369,14 @@ namespace base_local_planner {
       }
 
       /**
+       * @brief  Pubiish out trajectories - to draw in rviz 
+       * @param  publisher
+       * @param  vector of trajectories
+       * @return void
+       */
+      void drawTrajectories(ros::Publisher *vis_pub, std::vector<Trajectory> &traj_list);
+
+      /**
        * @brief  Compute orientation based on velocity
        * @param  thetai The current orientation
        * @param  vth The current theta velocity
@@ -382,6 +412,7 @@ namespace base_local_planner {
       double lineCost(int x0, int x1, int y0, int y1);
       double pointCost(int x, int y);
       double headingDiff(int cell_x, int cell_y, double x, double y, double heading);
+      double headingDiffOriginal(int cell_x, int cell_y, double x, double y, double heading);
   };
 };
 

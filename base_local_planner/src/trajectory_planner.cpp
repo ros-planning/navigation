@@ -56,6 +56,52 @@ using namespace costmap_2d;
 
 namespace base_local_planner{
 
+
+  /********************** PULLED From LIBBOT ****************************/
+#define JET_COLORS_LUT_SIZE 1024
+  static float jet_colors[JET_COLORS_LUT_SIZE][3];
+  static int jet_colors_initialized = 0;
+
+  /** Given an array of colors, a palette is created that linearly interpolates through all the colors. **/
+  static void color_util_build_color_table(double color_palette[][3], int palette_size, float lut[][3], int lut_size)
+  {
+    for (int idx = 0; idx < lut_size; idx++) {
+      double znorm = ((double) idx) / lut_size;
+
+      int color_index = (palette_size - 1) * znorm;
+      double alpha = (palette_size - 1) * znorm - color_index;
+
+      for (int i = 0; i < 3; i++) {
+	lut[idx][i] = color_palette[color_index][i] * (1.0 - alpha) + color_palette[color_index+1][i]*alpha;
+      }
+    }
+  }
+
+  static void init_color_table_jet()
+  {
+    double jet[][3] = {{ 0,   0,   1 },
+                       { 0,  .5,  .5 },
+                       { .8, .8,   0 },
+                       { 1,   0,   0 }};
+
+    color_util_build_color_table(jet, sizeof(jet)/(sizeof(double)*3), jet_colors, JET_COLORS_LUT_SIZE);
+    jet_colors_initialized = 1;
+  }
+
+  float *bot_color_util_jet(double v)
+  {
+    if (!jet_colors_initialized)
+      init_color_table_jet();
+
+    v = fmax(0, v);
+    v = fmin(1, v);
+
+    int idx = (JET_COLORS_LUT_SIZE - 1) * v;
+    return jet_colors[idx];
+  }
+
+  /********************** END of PULLED From LIBBOT ****************************/
+
   void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg)
   {
       BaseLocalPlannerConfig config(cfg);
@@ -216,10 +262,12 @@ namespace base_local_planner{
       double vx_samp, double vy_samp, double vtheta_samp,
       double acc_x, double acc_y, double acc_theta,
       double impossible_cost,
-      Trajectory& traj) {
+      Trajectory& traj, bool verbose) {
 
     // make sure the configuration doesn't change mid run
     boost::mutex::scoped_lock l(configuration_mutex_);
+
+    bool v = verbose;
 
     double x_i = x;
     double y_i = y;
@@ -237,15 +285,24 @@ namespace base_local_planner{
     //compute the number of steps we must take along this trajectory to be "safe"
     int num_steps;
     if(!heading_scoring_) {
-      num_steps = int(max((vmag * sim_time_) / sim_granularity_, fabs(vtheta_samp) / angular_sim_granularity_) + 0.5);
-    } else {
-      num_steps = int(sim_time_ / sim_granularity_ + 0.5);
-    }
 
+      //not sure why this part is necessary?? fabs(vtheta_samp) / angular_sim_granularity_      
+      //this is what it should be 
+      //num_steps = int(max((vmag * sim_time_) / sim_granularity_, fabs(vtheta_samp * sim_time_) / angular_sim_granularity_) + 0.5);
+      //this is fine for circular robots where the foot print and path costs shouldn't change based on heading 
+      num_steps = int((vmag * sim_time_) / sim_granularity_);
+    } else {
+      num_steps = int((vmag * sim_time_) / sim_granularity_);
+      //num_steps = int(sim_time_ / sim_granularity_ + 0.5);
+    }
+ 
     //we at least want to take one step... even if we won't move, we want to score our current position
     if(num_steps == 0) {
       num_steps = 1;
     }
+
+    if(v) 
+      ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f : %d - Num steps : %d Dist: %f - Sim granularity : %f", x, y, theta, vx_samp, vtheta_samp, heading_scoring_, num_steps, vmag * sim_time_, sim_granularity_);
 
     double dt = sim_time_ / num_steps;
     double time = 0.0;
@@ -263,10 +320,13 @@ namespace base_local_planner{
     double occ_cost = 0.0;
     double heading_diff = 0.0;
 
-    for(int i = 0; i < num_steps; ++i){
-      //get map coordinates of a point
-      unsigned int cell_x, cell_y;
+    unsigned int cell_x, cell_y;
 
+    //should loop to the full num_steps (otherwise simulates the trajectory upto step-1)
+
+    for(int i = 0; i <= num_steps; ++i){
+      //get map coordinates of a point
+      
       //we don't want a path that goes off the know map
       if(!costmap_.worldToMap(x_i, y_i, cell_x, cell_y)){
         traj.cost_ = -1.0;
@@ -302,11 +362,197 @@ namespace base_local_planner{
         }
         */
       }
-
+      //occupied cost 
       occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
 
       //do we want to follow blindly
       if (simple_attractor_) {
+	//this is not what we use 
+        goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
+          (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
+          (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
+          (y_i - global_plan_[global_plan_.size() -1].pose.position.y);
+      } else {
+
+        bool update_path_and_goal_distances = true;
+
+        // with heading scoring, we take into account heading diff, and also only score
+        // path and goal distance for one point of the trajectory
+        /*if (heading_scoring_) {
+	  //Not used 
+          if (time >= heading_scoring_timestep_ && time < heading_scoring_timestep_ + dt) {
+            heading_diff = headingDiff(cell_x, cell_y, x_i, y_i, theta_i);
+          } else {
+            update_path_and_goal_distances = false;
+          }
+	  }*/
+
+        if (update_path_and_goal_distances) {
+          //update path and goal distances //get distance to target 
+          path_dist = path_map_(cell_x, cell_y).target_dist;
+          goal_dist = goal_map_(cell_x, cell_y).target_dist;
+	  
+	  //if a point on this trajectory has no clear path to goal it is invalid
+          if(impossible_cost <= goal_dist || impossible_cost <= path_dist){
+//            ROS_DEBUG("No path to goal with goal distance = %f, path_distance = %f and max cost = %f",
+//                goal_dist, path_dist, impossible_cost);
+            traj.cost_ = -2.0;
+            return;
+          }
+        }
+      }
+      
+      heading_diff = headingDiff(cell_x, cell_y, x_i, y_i, theta_i);
+      
+      //ROS_WARN("%f, %f, %f Path Dist : %f, Goal Dist : %f", x_i, y_i, theta_i, path_dist, goal_dist); 
+      //the point is legal... add it to the trajectory
+
+      traj.addPoint(x_i, y_i, theta_i);
+
+      if(i <  num_steps){
+	//calculate velocities
+	vx_i = computeNewVelocity(vx_samp, vx_i, acc_x, dt);
+	vy_i = computeNewVelocity(vy_samp, vy_i, acc_y, dt);
+	vtheta_i = computeNewVelocity(vtheta_samp, vtheta_i, acc_theta, dt);
+
+	//calculate positions
+	x_i = computeNewXPosition(x_i, vx_i, vy_i, theta_i, dt);
+	y_i = computeNewYPosition(y_i, vx_i, vy_i, theta_i, dt);
+	theta_i = computeNewThetaPosition(theta_i, vtheta_i, dt);
+
+	//increment time
+	time += dt;
+      }
+      //might need to break out?? (at maxima??) 
+    } // end for i < numsteps
+
+    double cost = -1.0;
+
+    double clamped_heading_diff = fabs(heading_diff); //fmin(M_PI, fabs(heading_diff)); 
+
+    double heading_gain = 0.0; //0.3
+    /*if (!heading_scoring_) {
+      cost = pdist_scale_ * path_dist + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
+    } else {
+      //cost = occdist_scale_ * occ_cost + pdist_scale_ * path_dist + 0.3 * heading_diff + goal_dist * gdist_scale_;
+      cost = pdist_scale_ * path_dist + 0.3 * heading_diff + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
+      }*/
+    cost = pdist_scale_ * path_dist + heading_gain * clamped_heading_diff + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
+
+    if(v)
+      ROS_WARN("OccCost: %f, Path Dist : %f Goal Dist : %f Heading Diff : %f => Cost : %f", occ_cost, path_dist, goal_dist, heading_diff, cost); 
+    traj.cost_ = cost;
+  }
+
+  /**
+   * create and score a trajectory given the current pose of the robot and selected velocities
+   */
+  void TrajectoryPlanner::generateTrajectoryOriginal(
+      double x, double y, double theta,
+      double vx, double vy, double vtheta,
+      double vx_samp, double vy_samp, double vtheta_samp,
+      double acc_x, double acc_y, double acc_theta,
+      double impossible_cost,
+      Trajectory& traj) {
+
+    // make sure the configuration doesn't change mid run
+    boost::mutex::scoped_lock l(configuration_mutex_);
+
+    double x_i = x;
+    double y_i = y;
+    double theta_i = theta;
+
+    double vx_i, vy_i, vtheta_i;
+
+    vx_i = vx;
+    vy_i = vy;
+    vtheta_i = vtheta;
+
+    //compute the magnitude of the velocities
+    double vmag = ::hypot(vx_samp, vy_samp);
+
+    //compute the number of steps we must take along this trajectory to be "safe"
+    int num_steps;
+    if(!heading_scoring_) {
+
+      //not sure why this part is necessary?? fabs(vtheta_samp) / angular_sim_granularity_      
+      //this is what it should be 
+      num_steps = int(max((vmag * sim_time_) / sim_granularity_, fabs(vtheta_samp * sim_time_) / angular_sim_granularity_) + 0.5);
+      //this is fine for circular robots where the foot print and path costs shouldn't change based on heading 
+      //num_steps = int((vmag * sim_time_) / sim_granularity_);
+    } else {
+      num_steps = int(sim_time_ / sim_granularity_ + 0.5);
+    }
+ 
+    ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f : %d - Num steps : %d Dist: %f - Sim granularity : %f", x, y, theta, vx_samp, vtheta_samp, heading_scoring_, num_steps, vmag * sim_time_, sim_granularity_);
+
+    //we at least want to take one step... even if we won't move, we want to score our current position
+    if(num_steps == 0) {
+      num_steps = 1;
+    }
+
+    double dt = sim_time_ / num_steps;
+    double time = 0.0;
+
+    //create a potential trajectory
+    traj.resetPoints();
+    traj.xv_ = vx_samp; 
+    traj.yv_ = vy_samp; 
+    traj.thetav_ = vtheta_samp;
+    traj.cost_ = -1.0;
+
+    //initialize the costs for the trajectory
+    double path_dist = 0.0;
+    double goal_dist = 0.0;
+    double occ_cost = 0.0;
+    double heading_diff = 0.0;
+
+    unsigned int cell_x, cell_y;
+
+    for(int i = 0; i < num_steps; ++i){
+      //get map coordinates of a point
+      
+      //we don't want a path that goes off the know map
+      if(!costmap_.worldToMap(x_i, y_i, cell_x, cell_y)){
+        traj.cost_ = -1.0;
+        return;
+      }
+
+      //check the point on the trajectory for legality
+      double footprint_cost = footprintCost(x_i, y_i, theta_i);
+
+      //if the footprint hits an obstacle this trajectory is invalid
+      if(footprint_cost < 0){
+        traj.cost_ = -1.0;
+        return;
+        //TODO: Really look at getMaxSpeedToStopInTime... dues to discretization errors and high acceleration limits,
+        //it can actually cause the robot to hit obstacles. There may be something to be done to fix, but I'll have to 
+        //come back to it when I have time. Right now, pulling it out as it'll just make the robot a bit more conservative,
+        //but safe.
+        /*
+        double max_vel_x, max_vel_y, max_vel_th;
+        //we want to compute the max allowable speeds to be able to stop
+        //to be safe... we'll make sure we can stop some time before we actually hit
+        getMaxSpeedToStopInTime(time - stop_time_buffer_ - dt, max_vel_x, max_vel_y, max_vel_th);
+
+        //check if we can stop in time
+        if(fabs(vx_samp) < max_vel_x && fabs(vy_samp) < max_vel_y && fabs(vtheta_samp) < max_vel_th){
+          ROS_ERROR("v: (%.2f, %.2f, %.2f), m: (%.2f, %.2f, %.2f) t:%.2f, st: %.2f, dt: %.2f", vx_samp, vy_samp, vtheta_samp, max_vel_x, max_vel_y, max_vel_th, time, stop_time_buffer_, dt);
+          //if we can stop... we'll just break out of the loop here.. no point in checking future points
+          break;
+        }
+        else{
+          traj.cost_ = -1.0;
+          return;
+        }
+        */
+      }
+      //occupied cost 
+      occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap_.getCost(cell_x, cell_y)));
+
+      //do we want to follow blindly
+      if (simple_attractor_) {
+	//this is not what we use 
         goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
           (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
@@ -318,19 +564,20 @@ namespace base_local_planner{
         // with heading scoring, we take into account heading diff, and also only score
         // path and goal distance for one point of the trajectory
         if (heading_scoring_) {
+	  //Not used 
           if (time >= heading_scoring_timestep_ && time < heading_scoring_timestep_ + dt) {
             heading_diff = headingDiff(cell_x, cell_y, x_i, y_i, theta_i);
           } else {
             update_path_and_goal_distances = false;
           }
-        }
+	}
 
         if (update_path_and_goal_distances) {
-          //update path and goal distances
+          //update path and goal distances //get distance to target 
           path_dist = path_map_(cell_x, cell_y).target_dist;
           goal_dist = goal_map_(cell_x, cell_y).target_dist;
-
-          //if a point on this trajectory has no clear path to goal it is invalid
+	  
+	  //if a point on this trajectory has no clear path to goal it is invalid
           if(impossible_cost <= goal_dist || impossible_cost <= path_dist){
 //            ROS_DEBUG("No path to goal with goal distance = %f, path_distance = %f and max cost = %f",
 //                goal_dist, path_dist, impossible_cost);
@@ -341,6 +588,7 @@ namespace base_local_planner{
       }
 
 
+      //ROS_WARN("%f, %f, %f Path Dist : %f, Goal Dist : %f", x_i, y_i, theta_i, path_dist, goal_dist); 
       //the point is legal... add it to the trajectory
       traj.addPoint(x_i, y_i, theta_i);
 
@@ -356,20 +604,71 @@ namespace base_local_planner{
 
       //increment time
       time += dt;
+
+      //might need to break out?? (at maxima??) 
     } // end for i < numsteps
 
-    //ROS_INFO("OccCost: %f, vx: %.2f, vy: %.2f, vtheta: %.2f", occ_cost, vx_samp, vy_samp, vtheta_samp);
     double cost = -1.0;
     if (!heading_scoring_) {
       cost = pdist_scale_ * path_dist + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
     } else {
       cost = occdist_scale_ * occ_cost + pdist_scale_ * path_dist + 0.3 * heading_diff + goal_dist * gdist_scale_;
     }
+
+    ROS_WARN("OccCost: %f, Path Dist : %f Goal Dist : %f Heading Diff : %f => Cost : %f", occ_cost, path_dist, goal_dist, heading_diff, cost); 
     traj.cost_ = cost;
   }
 
   double TrajectoryPlanner::headingDiff(int cell_x, int cell_y, double x, double y, double heading){
     double heading_diff = DBL_MAX;
+    unsigned int goal_cell_x, goal_cell_y;
+    
+    bool v = false;
+    //find a clear line of sight from the robot's cell to a point on the path
+    for (int i = global_plan_.size() - 1; i >=0; --i) {
+      if (costmap_.worldToMap(global_plan_[i].pose.position.x, global_plan_[i].pose.position.y, goal_cell_x, goal_cell_y)) {
+        if (lineCost(cell_x, goal_cell_x, cell_y, goal_cell_y) >= 0) {
+          double gx, gy;
+          costmap_.mapToWorld(goal_cell_x, goal_cell_y, gx, gy);
+          double v1_x = gx - x;
+          double v1_y = gy - y;
+          double v2_x = cos(heading);
+          double v2_y = sin(heading);
+
+          double perp_dot = v1_x * v2_y - v1_y * v2_x;
+          double dot = v1_x * v2_x + v1_y * v2_y;
+
+	  double goal_angle = atan2(v1_y, v1_x);
+	  
+          //get the signed angle
+          double vector_angle = atan2(perp_dot, dot);
+	  
+	  //heading diff should be based on the turning velocity 
+	  if(v)
+	    ROS_WARN("Found : %d - Angle : %.2f - Bot Angle : %.2f - Diff : %.2f - Reported angle : %.2f", i, goal_angle, 
+		     heading, goal_angle - heading, vector_angle);
+          heading_diff = fabs(vector_angle);
+          return heading_diff;
+        }
+	else{
+	  if(v) 
+	    ROS_WARN("Not visible");
+	}
+      }
+      else{
+	if(v) 
+	  ROS_WARN("Outside Map : %.2f,%.2f", costmap_.getSizeInMetersX(), costmap_.getSizeInMetersX());
+      }
+    }
+    
+    return heading_diff;
+  }
+
+  double TrajectoryPlanner::headingDiffOriginal(int cell_x, int cell_y, double x, double y, double heading){
+    double heading_diff = DBL_MAX;
+
+    bool v = false;
+
     unsigned int goal_cell_x, goal_cell_y;
     //find a clear line of sight from the robot's cell to a point on the path
     for (int i = global_plan_.size() - 1; i >=0; --i) {
@@ -387,13 +686,21 @@ namespace base_local_planner{
 
           //get the signed angle
           double vector_angle = atan2(perp_dot, dot);
-
+	  //ROS_WARN("Found : ");
           heading_diff = fabs(vector_angle);
           return heading_diff;
-
         }
+	else{
+	  if(v) 
+	    ROS_WARN("Not visible");
+	}
+      }
+      else{
+	if(v) 
+	  ROS_WARN("Outside Map : %.2f,%.2f", costmap_.getSizeInMetersX(), costmap_.getSizeInMetersX());
       }
     }
+    
     return heading_diff;
   }
 
@@ -543,11 +850,144 @@ namespace base_local_planner{
   }
 
   /*
+   * Pubiish out trajectories - to draw in rviz 
+   */
+  void TrajectoryPlanner::drawTrajectories(ros::Publisher *vis_pub, vector<Trajectory> &traj_list){
+    if(vis_pub == NULL || traj_list.size() == 0)
+      return;
+
+    static int last_no_traj = 0; 
+    
+    ROS_WARN("Publishing Trajectories : %d", (int) traj_list.size());
+    
+    int new_traj_size = (int) traj_list.size(); 
+    //if(last_no_traj > new_traj_size){
+    //clear the old messages - doesn't seem to work perfectly 
+    for(int i= 0; i < last_no_traj; i++){
+	visualization_msgs::Marker marker;
+	marker.header.frame_id = "map";
+	marker.header.stamp = ros::Time();
+	marker.ns = "cost_score";
+	marker.id = i;
+	marker.type = visualization_msgs::Marker::POINTS;
+	marker.action = visualization_msgs::Marker::DELETE;
+	marker.pose.position.x = 1;
+	marker.pose.position.y = 1;
+	marker.pose.position.z = 1;
+	marker.pose.orientation.x = 0.0;
+	marker.pose.orientation.y = 0.0;
+	marker.pose.orientation.z = 0.0;
+	marker.pose.orientation.w = 1.0;
+	marker.scale.x = 0.05;
+	marker.scale.y = 0.1;
+	marker.scale.z = 0.1;
+	marker.color.a = 1.0;
+	marker.color.r = 0.0;
+	marker.color.g = 1.0;
+	marker.color.b = 0.0;
+
+	vis_pub->publish( marker );
+	//ROS_WARN("Clearing");
+      }
+	  //}
+
+    last_no_traj= new_traj_size;
+      
+    double max_val = DBL_MIN; 
+    double min_val = DBL_MAX; 
+    for(int i=0; i < traj_list.size(); i++){
+      Trajectory &traj = traj_list[i]; 
+      if(traj.cost_ < min_val){
+	min_val = traj.cost_;
+      }
+      if(traj.cost_ > max_val){
+	max_val = traj.cost_;
+      }
+    }
+
+    double delta = max_val - min_val; 
+
+    double scaling_factor = 1.0; 
+
+    if(delta > 0.00001){
+      scaling_factor = 1 / delta; 
+    }
+
+    for(int i=0; i < traj_list.size(); i++){
+      Trajectory &traj = traj_list[i]; 
+      
+      vector<geometry_msgs::Point> pts; 
+      double t; 
+      for(unsigned int j=0; j < traj.getPointsSize(); j++){
+	geometry_msgs::Point pt;
+	traj.getPoint(j, pt.x, pt.y, t);
+	pt.z = 0.0; 
+	pts.push_back(pt);
+      }
+
+      double cost = (traj.cost_ - min_val) * scaling_factor; 
+      
+      float *c = bot_color_util_jet(1 - cost); 
+      visualization_msgs::Marker marker;
+      marker.header.frame_id = "map";
+      marker.header.stamp = ros::Time();
+      marker.ns = "cost_score";
+      marker.id = i;
+      marker.type = visualization_msgs::Marker::LINE_STRIP;
+      marker.action = visualization_msgs::Marker::ADD;
+      marker.pose.position.x = 0;
+      marker.pose.position.y = 0;
+      marker.pose.position.z = 0;
+      marker.pose.orientation.x = 0.0;
+      marker.pose.orientation.y = 0.0;
+      marker.pose.orientation.z = 0.0;
+      marker.pose.orientation.w = 1.0;
+      marker.scale.x = 0.01;
+      marker.scale.y = 0.1;
+      marker.scale.z = 0.1;
+      marker.color.a = 1.0;
+      marker.color.r = c[0];
+      marker.color.g = c[1];
+      marker.color.b = c[2];
+
+      marker.points = pts;
+      vis_pub->publish( marker );
+      
+      //draw text - doesnt draw it in a readble way - damn ROS :p
+      /*visualization_msgs::Marker t_marker;
+      t_marker.header.frame_id = "map";
+      t_marker.header.stamp = ros::Time();
+      t_marker.ns = "cost_score";
+      t_marker.id = i + (int) traj_list.size();
+      t_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+      t_marker.action = visualization_msgs::Marker::ADD;
+      traj.getPoint(traj.getPointsSize() - 1,  t_marker.pose.position.x,  t_marker.pose.position.y, t);
+      t_marker.pose.position.z = 0;
+      t_marker.pose.orientation.x = 0.0;
+      t_marker.pose.orientation.y = 0.0;
+      t_marker.pose.orientation.z = 0.0;
+      t_marker.pose.orientation.w = 1.0;
+      t_marker.scale.x = 0.01;
+      t_marker.scale.y = 0.1;
+      t_marker.scale.z = 0.1;
+      t_marker.color.a = 1.0;
+      t_marker.color.r = 0.0;
+      t_marker.color.g = 1.0;
+      t_marker.color.b = 0.0;
+      char txt[20];
+      sprintf(txt, "%.2f", traj.cost_);
+      t_marker.text = string(txt);
+      vis_pub->publish( t_marker );*/
+    }
+  }
+
+  /*
    * create the trajectories we wish to score
    */
   Trajectory TrajectoryPlanner::createTrajectories(double x, double y, double theta, 
-      double vx, double vy, double vtheta,
-      double acc_x, double acc_y, double acc_theta) {
+						   double vx, double vy, double vtheta,
+						   double acc_x, double acc_y, 
+						   double acc_theta, ros::Publisher *vis_pub) {
     //compute feasible velocity limits in robot space
     double max_vel_x = max_vel_x_, max_vel_theta;
     double min_vel_x, min_vel_theta;
@@ -573,7 +1013,13 @@ namespace base_local_planner{
     }
 
 
+    vector<Trajectory> traj_list; 
+
     //we want to sample the velocity space regularly
+    
+    // See if we could do this based on resolution?? (we don't need such fine grained samples - when the 
+    // delta speed is so low) 
+    //maybe the vx_samples_ and vtheta_samples_ can be used as a max?? 
     double dvx = (max_vel_x - min_vel_x) / (vx_samples_ - 1);
     double dvtheta = (max_vel_theta - min_vel_theta) / (vtheta_samples_ - 1);
 
@@ -593,14 +1039,21 @@ namespace base_local_planner{
     //any cell with a cost greater than the size of the map is impossible
     double impossible_cost = path_map_.obstacleCosts();
 
+    bool print_scores = false;
+
+    ROS_WARN("TV : %f , %f - RV : %f, %f -> Sim Time : %f", min_vel_x, max_vel_x, min_vel_theta, max_vel_theta, sim_time_);
+
     //if we're performing an escape we won't allow moving forward
     if (!escaping_) {
+      //ROS_WARN("NOT ESCAPING");
       //loop through all x velocities
       for(int i = 0; i < vx_samples_; ++i) {
         vtheta_samp = 0;
-        //first sample the straight trajectory
+        //first sample the straight trajectory 
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+
+	traj_list.push_back(*comp_traj);
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -610,17 +1063,25 @@ namespace base_local_planner{
         }
 
         vtheta_samp = min_vel_theta;
-        //next sample all theta trajectories
-        for(int j = 0; j < vtheta_samples_ - 1; ++j){
-          generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-              acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+        //next sample all theta trajectories - why vtheta_samples_ - 1 (missing the highest positive one
+        for(int j = 0; j < vtheta_samples_; ++j){
+	  //straight traj already eval'ed
+	  if(fabs(vtheta_samp) > 0.00001){
+	    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+			       acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
-          //if the new trajectory is better... let's take it
-          if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
-            swap = best_traj;
-            best_traj = comp_traj;
-            comp_traj = swap;
-          }
+	    traj_list.push_back(*comp_traj);
+
+	    if(print_scores)
+	      ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
+	  
+	    //if the new trajectory is better... let's take it
+	    if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
+	      swap = best_traj;
+	      best_traj = comp_traj;
+	      comp_traj = swap;
+	    }
+	  }
           vtheta_samp += dvtheta;
         }
         vx_samp += dvx;
@@ -657,6 +1118,8 @@ namespace base_local_planner{
       }
     } // end if not escaping
 
+    //this is prob a place with the rotate in place issues 
+    
     //next we want to generate trajectories for rotating in place
     vtheta_samp = min_vel_theta;
     vx_samp = 0.0;
@@ -665,13 +1128,19 @@ namespace base_local_planner{
     //let's try to rotate toward open space
     double heading_dist = DBL_MAX;
 
+    ROS_WARN("Min in place ROT Vel : %f", min_in_place_vel_th_);
+
     for(int i = 0; i < vtheta_samples_; ++i) {
       //enforce a minimum rotational velocity because the base can't handle small in-place rotations
       double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_) 
         : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
 
+      //ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
+
       generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited, 
-          acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+			 acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, false);
+
+      traj_list.push_back(*comp_traj);
 
       //if the new trajectory is better... let's take it... 
       //note if we can legally rotate in place we prefer to do that rather than move with y velocity
@@ -707,6 +1176,16 @@ namespace base_local_planner{
       }
 
       vtheta_samp += dvtheta;
+    }
+
+    drawTrajectories(vis_pub, traj_list);
+
+    if(0){
+      ROS_WARN("No of Traj Evaled : %d" , (int) traj_list.size()); 
+      
+      for(int i=0; i < traj_list.size(); i++){
+	ROS_WARN("\t Traj : %d - T: %.2f R: %.2f Cost : %f", i, traj_list[i].xv_, traj_list[i].thetav_, traj_list[i].cost_);
+      }
     }
 
     //do we have a legal trajectory
@@ -918,8 +1397,12 @@ namespace base_local_planner{
   }
 
   //given the current state of the robot, find a good trajectory
-  Trajectory TrajectoryPlanner::findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel, 
-      tf::Stamped<tf::Pose>& drive_velocities){
+  Trajectory TrajectoryPlanner::findBestPath(tf::Stamped<tf::Pose> global_pose, 
+					     tf::Stamped<tf::Pose> global_vel, 
+					     tf::Stamped<tf::Pose>& drive_velocities, 
+					     ros::Publisher *vis_pub){
+
+    ROS_WARN("== Looking for best path");
 
     Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
     Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
@@ -944,13 +1427,13 @@ namespace base_local_planner{
     //make sure that we update our path based on the global plan and compute costs
     path_map_.setTargetCells(costmap_, global_plan_);
     goal_map_.setLocalGoal(costmap_, global_plan_);
-    ROS_DEBUG("Path/Goal distance computed");
+    ROS_WARN("Path/Goal distance computed");
 
     //rollout trajectories and find the minimum cost one
     Trajectory best = createTrajectories(pos[0], pos[1], pos[2],
         vel[0], vel[1], vel[2],
-        acc_lim_x_, acc_lim_y_, acc_lim_theta_);
-    ROS_DEBUG("Trajectories created");
+					 acc_lim_x_, acc_lim_y_, acc_lim_theta_, vis_pub);
+    ROS_WARN("Trajectories created");
 
     /*
     //If we want to print a ppm file to draw goal dist

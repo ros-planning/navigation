@@ -231,10 +231,12 @@ namespace base_local_planner {
           gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
           max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
           dwa, heading_scoring, heading_scoring_timestep, meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
-
+      
       map_viz_.initialize(name, global_frame_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
 
+      vis_pub = private_nh.advertise<visualization_msgs::Marker>( "control_scores", 0 );
+      //publishTest();
       dsrv_ = new dynamic_reconfigure::Server<BaseLocalPlannerConfig>(private_nh);
       dynamic_reconfigure::Server<BaseLocalPlannerConfig>::CallbackType cb = boost::bind(&TrajectoryPlannerROS::reconfigureCB, this, _1, _2);
       dsrv_->setCallback(cb);
@@ -242,6 +244,32 @@ namespace base_local_planner {
     } else {
       ROS_WARN("This planner has already been initialized, doing nothing");
     }
+  }
+
+  void TrajectoryPlannerROS::publishTest(){
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "base_link";
+    marker.header.stamp = ros::Time();
+    marker.ns = "test_namespace";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = 1;
+    marker.pose.position.y = 1;
+    marker.pose.position.z = 1;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = 1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    vis_pub.publish( marker );
+    ROS_WARN("Publishing Test");
   }
 
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
@@ -416,9 +444,11 @@ namespace base_local_planner {
 
     double goal_th = yaw;
 
+    ROS_WARN("Compute Velocity Called");
+
     //check to see if we've reached the goal position
     if (xy_tolerance_latch_ || (getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance_)) {
-
+      ROS_WARN("+++Robot within Goal");
       //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
       //just rotate in place
       if (latch_xy_goal_tolerance_) {
@@ -440,7 +470,7 @@ namespace base_local_planner {
         tc_->updatePlan(transformed_plan);
         Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
         map_viz_.publishCostCloud(costmap_);
-
+	publishTest();
         //copy over the odometry information
         nav_msgs::Odometry base_odom;
         odom_helper_.getOdom(base_odom);
@@ -454,6 +484,7 @@ namespace base_local_planner {
         //if we're stopped... then we want to rotate to goal
         else{
           //set this so that we know its OK to be moving
+	  ROS_WARN("==Rotating to Goal");
           rotating_to_goal_ = true;
           if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
             return false;
@@ -471,9 +502,11 @@ namespace base_local_planner {
 
     tc_->updatePlan(transformed_plan);
 
-    //compute what trajectory to drive along
-    Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
+    ROS_WARN("========== Looking for Path (Controller)");
 
+    //compute what trajectory to drive along
+    Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds, &vis_pub);
+    
     map_viz_.publishCostCloud(costmap_);
     /* For timing uncomment
     gettimeofday(&end, NULL);
@@ -487,6 +520,8 @@ namespace base_local_planner {
     cmd_vel.linear.x = drive_cmds.getOrigin().getX();
     cmd_vel.linear.y = drive_cmds.getOrigin().getY();
     cmd_vel.angular.z = tf::getYaw(drive_cmds.getRotation());
+
+    ROS_WARN("+++++++++++ TV : %f, RV : %f", cmd_vel.linear.x, cmd_vel.angular.z);
 
     //if we cannot move... tell someone
     if (path.cost_ < 0) {
