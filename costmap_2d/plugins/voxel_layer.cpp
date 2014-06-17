@@ -70,18 +70,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   if (!enabled_)
     return;
-  if (has_been_reset_)
-  {
-    *min_x = std::min(reset_min_x_, *min_x);
-    *min_y = std::min(reset_min_y_, *min_y);
-    *max_x = std::max(reset_max_x_, *max_x);
-    *max_y = std::max(reset_max_y_, *max_y);
-    reset_min_x_ = 1e6;
-    reset_min_y_ = 1e6;
-    reset_max_x_ = -1e6;
-    reset_max_y_ = -1e6;
-    has_been_reset_ = false;
-  }
+  useExtraBounds(min_x, min_y, max_x, max_y);
 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;

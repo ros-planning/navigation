@@ -59,7 +59,16 @@ void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* t
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
-    private_nh.param("layer_search_string", layer_search_string_, std::string("obstacle"));
+
+    std::vector<std::string> clearable_layers_default, clearable_layers;
+    clearable_layers_default.push_back( std::string("obstacle") );
+    private_nh.param("layer_names", clearable_layers, clearable_layers_default);
+
+    for(unsigned i=0; i < clearable_layers.size(); i++) {
+        ROS_INFO("Using layer %s", clearable_layers[i].c_str());
+        clearable_layers_.insert(clearable_layers[i]);
+    }
+
 
     initialized_ = true;
   }
@@ -98,16 +107,16 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
   for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
     boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
-    if(plugin->getName().find(layer_search_string_)!=std::string::npos){
-      boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
-      costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
+    if(clearable_layers_.count(plugin->getName())!=0){
+      boost::shared_ptr<costmap_2d::CostmapLayer> costmap;
+      costmap = boost::static_pointer_cast<costmap_2d::CostmapLayer>(plugin);
       clearMap(costmap, x, y);
     }
   }
 }
 
 
-void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::ObstacleLayer> costmap, 
+void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> costmap, 
                                         double pose_x, double pose_y){
   boost::unique_lock< boost::shared_mutex > lock(*(costmap->getLock()));
  
@@ -136,7 +145,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::ObstacleLayer>
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
-  costmap->setResetBounds(ox, ox + width, oy, oy + height);
+  costmap->addExtraBounds(ox, oy, ox + width, oy + height);
   return;
 }
 
