@@ -470,7 +470,6 @@ namespace base_local_planner {
         tc_->updatePlan(transformed_plan);
         Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
         map_viz_.publishCostCloud(costmap_);
-	publishTest();
         //copy over the odometry information
         nav_msgs::Odometry base_odom;
         odom_helper_.getOdom(base_odom);
