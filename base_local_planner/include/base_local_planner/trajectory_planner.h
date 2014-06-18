@@ -246,8 +246,10 @@ namespace base_local_planner {
        * @param traj Will be set to the generated trajectory with its associated score 
        */
       void generateTrajectory(double x, double y, double theta, double vx, double vy, 
-          double vtheta, double vx_samp, double vy_samp, double vtheta_samp, double acc_x, double acc_y,
-			      double acc_theta, double impossible_cost, Trajectory& traj, bool verbose=false);
+			      double vtheta, double vx_samp, double vy_samp, 
+			      double vtheta_samp, double acc_x, double acc_y,
+			      double acc_theta, double impossible_cost, 
+			      Trajectory& traj, bool score_heading=false, bool verbose=false);
 
       /**
        * @brief  Generate and score a single trajectory

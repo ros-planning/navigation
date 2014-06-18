@@ -233,6 +233,8 @@ namespace base_local_planner{
     costmap_2d::calculateMinAndMaxDistances(footprint_spec_, inscribed_radius_, circumscribed_radius_);
   }
 
+
+
   TrajectoryPlanner::~TrajectoryPlanner(){}
 
   bool TrajectoryPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
@@ -257,12 +259,13 @@ namespace base_local_planner{
    * create and score a trajectory given the current pose of the robot and selected velocities
    */
   void TrajectoryPlanner::generateTrajectory(
-      double x, double y, double theta,
-      double vx, double vy, double vtheta,
-      double vx_samp, double vy_samp, double vtheta_samp,
-      double acc_x, double acc_y, double acc_theta,
-      double impossible_cost,
-      Trajectory& traj, bool verbose) {
+					     double x, double y, double theta,
+					     double vx, double vy, double vtheta,
+					     double vx_samp, double vy_samp, double vtheta_samp,
+					     double acc_x, double acc_y, double acc_theta,
+					     double impossible_cost,
+					     Trajectory& traj, bool score_heading, 
+					     bool verbose) {
 
     // make sure the configuration doesn't change mid run
     boost::mutex::scoped_lock l(configuration_mutex_);
@@ -284,7 +287,7 @@ namespace base_local_planner{
 
     //compute the number of steps we must take along this trajectory to be "safe"
     int num_steps;
-    if(!heading_scoring_) {
+    if(!score_heading) {
 
       //not sure why this part is necessary?? fabs(vtheta_samp) / angular_sim_granularity_      
       //this is what it should be 
@@ -431,6 +434,9 @@ namespace base_local_planner{
     double clamped_heading_diff = fabs(heading_diff); //fmin(M_PI, fabs(heading_diff)); 
 
     double heading_gain = 0.0; //0.3
+    if(score_heading){
+      heading_gain = 0.3; 
+    }
     /*if (!heading_scoring_) {
       cost = pdist_scale_ * path_dist + goal_dist * gdist_scale_ + occdist_scale_ * occ_cost;
     } else {
@@ -1044,6 +1050,7 @@ namespace base_local_planner{
     ROS_WARN("TV : %f , %f - RV : %f, %f -> Sim Time : %f", min_vel_x, max_vel_x, min_vel_theta, max_vel_theta, sim_time_);
 
     //if we're performing an escape we won't allow moving forward
+    
     if (!escaping_) {
       //ROS_WARN("NOT ESCAPING");
       //loop through all x velocities
@@ -1051,7 +1058,7 @@ namespace base_local_planner{
         vtheta_samp = 0;
         //first sample the straight trajectory 
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-            acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
 	traj_list.push_back(*comp_traj);
 
@@ -1068,7 +1075,7 @@ namespace base_local_planner{
 	  //straight traj already eval'ed
 	  if(fabs(vtheta_samp) > 0.00001){
 	    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-			       acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+			       acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
 	    traj_list.push_back(*comp_traj);
 
@@ -1094,7 +1101,7 @@ namespace base_local_planner{
         vy_samp = 0.1;
         vtheta_samp = 0.0;
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-            acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -1107,7 +1114,7 @@ namespace base_local_planner{
         vy_samp = -0.1;
         vtheta_samp = 0.0;
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-            acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -1121,6 +1128,109 @@ namespace base_local_planner{
     //this is prob a place with the rotate in place issues 
     
     //next we want to generate trajectories for rotating in place
+   
+    bool check_rotate = true;
+
+    bool trans_failed = false; 
+    bool shorter_time_failed = false;
+
+    bool try_failsafes = true; 
+
+    bool verb = false; 
+    if(best_traj->cost_ < 0){
+	if(verb)
+	  ROS_WARN("========= Error - No trajectory found with translational velocity - Checking rotate"); 
+	//this might mean that the minimum is set too low also?? 
+	//check_rotate = true;
+	trans_failed = true; 
+      }
+      else{
+	if(verb)
+	  ROS_WARN("Best Traj found (with tv) %f, %f - Score : %f", best_traj->xv_, best_traj->thetav_, best_traj->cost_);
+      }
+
+    //if try failsafes - try some more refined checks to see if we can find a path 
+    if(try_failsafes){
+       //if trans_failed - try some slower velocities also (or shorter simulation time) 
+      if(trans_failed && !escaping_){
+	double max_vel_x_l = max_vel_x; 
+	double min_vel_x_l = min_vel_x;
+
+	double dvx = (max_vel_x - min_vel_x) / (vx_samples_ - 1);
+	double dvtheta = (max_vel_theta - min_vel_theta) / (vtheta_samples_ - 1);
+
+	double vx_samp = min_vel_x_l;
+	double vtheta_samp = min_vel_theta;
+	double vy_samp = 0.0;
+
+	bool print_scores = false;
+      
+	//set shorter sim time 
+	sim_time_ = sim_time_ * 0.5; 
+      
+	if(verb)
+	  ROS_WARN("Trying lowered trans vel TV (Setting Lower Sim time) : %f , %f - RV : %f, %f -> Sim Time : %f", min_vel_x_l, max_vel_x_l, min_vel_theta, max_vel_theta, sim_time_);
+
+	//loop through all x velocities
+	for(int i = 0; i < vx_samples_; ++i) {
+	  vtheta_samp = 0;
+	  //first sample the straight trajectory 
+	  generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+			     acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
+
+	  traj_list.push_back(*comp_traj);
+
+	  //if the new trajectory is better... let's take it
+	  if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
+	    swap = best_traj;
+	    best_traj = comp_traj;
+	    comp_traj = swap;
+	  }
+
+	  vtheta_samp = min_vel_theta;
+	  //next sample all theta trajectories - why vtheta_samples_ - 1 (missing the highest positive one
+	  for(int j = 0; j < vtheta_samples_; ++j){
+	    //straight traj already eval'ed
+	    if(fabs(vtheta_samp) > 0.00001){
+	      generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+				 acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
+
+	      traj_list.push_back(*comp_traj);
+
+	      if(print_scores)
+		ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
+	  
+	      //if the new trajectory is better... let's take it
+	      if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
+		swap = best_traj;
+		best_traj = comp_traj;
+		comp_traj = swap;
+	      }
+	    }
+	    vtheta_samp += dvtheta;
+	  }
+	  vx_samp += dvx;
+	}
+    
+	//setting it back to high 
+	sim_time_ = sim_time_ * 2;
+ 
+	if(best_traj->cost_ > 0){
+	  if(verb){
+	    ROS_WARN("++++ Yay - Lower velocities check suceeded - moving forward"); 
+	    //this might mean that the minimum is set too low also?? 
+	    //check_rotate = true;
+	    ROS_WARN("Best Traj found (with tv) %f, %f - Score : %f", best_traj->xv_, best_traj->thetav_, best_traj->cost_);
+	  }
+	}
+	else{
+	  if(verb)
+	    ROS_WARN("Lower Sim time failed");
+	  shorter_time_failed = true; 
+	}
+      }
+    }
+
     vtheta_samp = min_vel_theta;
     vx_samp = 0.0;
     vy_samp = 0.0;
@@ -1128,57 +1238,84 @@ namespace base_local_planner{
     //let's try to rotate toward open space
     double heading_dist = DBL_MAX;
 
-    ROS_WARN("Min in place ROT Vel : %f", min_in_place_vel_th_);
+    bool score_heading = heading_scoring_; 
 
-    for(int i = 0; i < vtheta_samples_; ++i) {
-      //enforce a minimum rotational velocity because the base can't handle small in-place rotations
-      double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_) 
-        : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
-
-      //ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
-
-      generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited, 
-			 acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, false);
-
-      traj_list.push_back(*comp_traj);
-
-      //if the new trajectory is better... let's take it... 
-      //note if we can legally rotate in place we prefer to do that rather than move with y velocity
-      if(comp_traj->cost_ >= 0 
-          && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0 || best_traj->yv_ != 0.0) 
-          && (vtheta_samp > dvtheta || vtheta_samp < -1 * dvtheta)){
-        double x_r, y_r, th_r;
-        comp_traj->getEndpoint(x_r, y_r, th_r);
-        x_r += heading_lookahead_ * cos(th_r);
-        y_r += heading_lookahead_ * sin(th_r);
-        unsigned int cell_x, cell_y;
-
-        //make sure that we'll be looking at a legal cell
-        if (costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
-          double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
-          if (ahead_gdist < heading_dist) {
-            //if we haven't already tried rotating left since we've moved forward
-            if (vtheta_samp < 0 && !stuck_left) {
-              swap = best_traj;
-              best_traj = comp_traj;
-              comp_traj = swap;
-              heading_dist = ahead_gdist;
-            }
-            //if we haven't already tried rotating right since we've moved forward
-            else if(vtheta_samp > 0 && !stuck_right) {
-              swap = best_traj;
-              best_traj = comp_traj;
-              comp_traj = swap;
-              heading_dist = ahead_gdist;
-            }
-          }
-        }
-      }
-
-      vtheta_samp += dvtheta;
+    if(best_traj->cost_ < 0){
+      ROS_WARN("Scoring heading");
+      score_heading = true;
     }
 
-    drawTrajectories(vis_pub, traj_list);
+    if(check_rotate){
+      for(int i = 0; i < vtheta_samples_; ++i) {
+	//enforce a minimum rotational velocity because the base can't handle small in-place rotations
+	double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_) 
+	  : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
+
+	//ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
+
+	generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited, 
+			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, score_heading, 
+			   false);
+
+	traj_list.push_back(*comp_traj);
+
+	//if the new trajectory is better... let's take it... 
+	//note if we can legally rotate in place we prefer to do that rather than move with y velocity
+	if(comp_traj->cost_ >= 0 
+	   && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0 || best_traj->yv_ != 0.0) 
+	   && (vtheta_samp > dvtheta || vtheta_samp < -1 * dvtheta)){
+	  double x_r, y_r, th_r;
+	  comp_traj->getEndpoint(x_r, y_r, th_r);
+	  x_r += heading_lookahead_ * cos(th_r);
+	  y_r += heading_lookahead_ * sin(th_r);
+	  unsigned int cell_x, cell_y;
+
+	  //make sure that we'll be looking at a legal cell
+	  if (costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
+	    double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
+	    if (ahead_gdist < heading_dist) {
+	      //if we haven't already tried rotating left since we've moved forward
+	      if (vtheta_samp < 0 && !stuck_left) {
+		swap = best_traj;
+		best_traj = comp_traj;
+		comp_traj = swap;
+		heading_dist = ahead_gdist;
+	      }
+	      //if we haven't already tried rotating right since we've moved forward
+	      else if(vtheta_samp > 0 && !stuck_right) {
+		swap = best_traj;
+		best_traj = comp_traj;
+		comp_traj = swap;
+		heading_dist = ahead_gdist;
+	      }
+	    }
+	  }
+	}
+
+	vtheta_samp += dvtheta;
+      }
+    }
+
+    if(try_failsafes){
+      if(shorter_time_failed && best_traj->cost_ > 0){
+	if(1){
+	  ROS_WARN("++++ Yay - Rotate in place found a path"); 
+	  //this might mean that the minimum is set too low also?? 
+	  //check_rotate = true;
+	  ROS_WARN("Best Traj found (with tv) %f, %f - Score : %f", best_traj->xv_, best_traj->thetav_, best_traj->cost_);
+	}
+      }
+    }
+
+    if(best_traj->cost_ < 0){
+      if(verb){
+	ROS_WARN("No path found");
+      }
+    }
+    
+    if(0){
+      drawTrajectories(vis_pub, traj_list);
+    }
 
     if(0){
       ROS_WARN("No of Traj Evaled : %d" , (int) traj_list.size()); 
