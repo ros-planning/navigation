@@ -533,7 +533,7 @@ void ObstacleLayer::updateRaytraceBounds(double ox, double oy, double wx, double
 					 double* max_x, double* max_y)
 {
   double dx = wx-ox, dy = wy-oy;
-  double full_distance = ::hypot(dx, dy);
+  double full_distance = hypot(dx, dy);
   double scale = std::min(1.0, range / full_distance);
   double ex = ox + dx * scale, ey = oy + dy * scale;
   touch(ex, ey, min_x, min_y, max_x, max_y);

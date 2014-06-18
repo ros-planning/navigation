@@ -232,7 +232,7 @@ namespace base_local_planner{
     vtheta_i = vtheta;
 
     //compute the magnitude of the velocities
-    double vmag = ::hypot(vx_samp, vy_samp);
+    double vmag = hypot(vx_samp, vy_samp);
 
     //compute the number of steps we must take along this trajectory to be "safe"
     int num_steps;
@@ -553,7 +553,7 @@ namespace base_local_planner{
     double min_vel_x, min_vel_theta;
 
     if( final_goal_position_valid_ ){
-      double final_goal_dist = ::hypot( final_goal_x_ - x, final_goal_y_ - y );
+      double final_goal_dist = hypot( final_goal_x_ - x, final_goal_y_ - y );
       max_vel_x = min( max_vel_x, final_goal_dist / sim_time_ );
     }
 
@@ -740,7 +740,7 @@ namespace base_local_planner{
         prev_y_ = y;
       }
 
-      double dist = ::hypot(x - prev_x_, y - prev_y_);
+      double dist = hypot(x - prev_x_, y - prev_y_);
       if (dist > oscillation_reset_dist_) {
         rotating_left = false;
         rotating_right = false;
@@ -752,7 +752,7 @@ namespace base_local_planner{
         stuck_right_strafe = false;
       }
 
-      dist = ::hypot(x - escape_x_, y - escape_y_);
+      dist = hypot(x - escape_x_, y - escape_y_);
       if(dist > escape_reset_dist_ ||
           fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_){
         escaping_ = false;
@@ -840,7 +840,7 @@ namespace base_local_planner{
 
       }
 
-      double dist = ::hypot(x - prev_x_, y - prev_y_);
+      double dist = hypot(x - prev_x_, y - prev_y_);
       if(dist > oscillation_reset_dist_) {
         rotating_left = false;
         rotating_right = false;
@@ -852,7 +852,7 @@ namespace base_local_planner{
         stuck_right_strafe = false;
       }
 
-      dist = ::hypot(x - escape_x_, y - escape_y_);
+      dist = hypot(x - escape_x_, y - escape_y_);
       if(dist > escape_reset_dist_ || fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_) {
         escaping_ = false;
       }
@@ -881,7 +881,7 @@ namespace base_local_planner{
     best_traj = comp_traj;
     comp_traj = swap;
 
-    double dist = ::hypot(x - prev_x_, y - prev_y_);
+    double dist = hypot(x - prev_x_, y - prev_y_);
     if (dist > oscillation_reset_dist_) {
       rotating_left = false;
       rotating_right = false;
@@ -901,7 +901,7 @@ namespace base_local_planner{
       escaping_ = true;
     }
 
-    dist = ::hypot(x - escape_x_, y - escape_y_);
+    dist = hypot(x - escape_x_, y - escape_y_);
 
     if (dist > escape_reset_dist_ ||
         fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_) {

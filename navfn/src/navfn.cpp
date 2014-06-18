@@ -614,7 +614,7 @@ namespace navfn {
           // calculate distance
           int x = n%nx;
           int y = n/nx;
-          float dist = ::hypot(x-start[0], y-start[1])*(float)COST_NEUTRAL;
+          float dist = hypot(x-start[0], y-start[1])*(float)COST_NEUTRAL;
 
           potarr[n] = pot;
           pot += dist;
@@ -733,7 +733,7 @@ namespace navfn {
       int cycle = 0;		// which cycle we're on
 
       // set initial threshold, based on distance
-      float dist = ::hypot(goal[0]-start[0], goal[1]-start[1])*(float)COST_NEUTRAL;
+      float dist = hypot(goal[0]-start[0], goal[1]-start[1])*(float)COST_NEUTRAL;
       curT = dist + curT;
 
       // set up start cell
@@ -959,7 +959,7 @@ namespace navfn {
           }
 
           // move in the right direction
-          float ss = pathStep/::hypot(x, y);
+          float ss = pathStep/hypot(x, y);
           dx += x*ss;
           dy += y*ss;
 
@@ -1031,7 +1031,7 @@ namespace navfn {
       }
 
       // normalize
-      float norm = ::hypot(dx, dy);
+      float norm = hypot(dx, dy);
       if (norm > 0)
       {
         norm = 1.0/norm;
