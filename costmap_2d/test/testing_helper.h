@@ -84,7 +84,7 @@ void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, doubl
   p.y = oy;
   p.z = oz;
 
-  costmap_2d::Observation obs(p, cloud, 100.0, 100.0);
+  costmap_2d::Observation obs(p, cloud, 100.0, 100.0);  // obstacle range = raytrace range = 100.0
   olayer->addStaticObservation(obs, true, true);
 }
 
