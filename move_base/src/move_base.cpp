@@ -65,10 +65,6 @@ namespace move_base {
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
-    if(!global_planner.compare("SBPLLatticePlanner")){
-      ROS_WARN("Calling SBPL planner");
-    }
-    ROS_WARN("Calling planner : %s ", global_planner.c_str());
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
     private_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
@@ -141,7 +137,6 @@ namespace move_base {
 
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
 
-    ROS_WARN("Creating controller");
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
     controller_costmap_ros_->pause();
 
@@ -534,15 +529,12 @@ namespace move_base {
     geometry_msgs::PoseStamped start;
     tf::poseStampedTFToMsg(global_pose, start);
 
-    ROS_WARN("Looking for Plan - MOVE Base");
-    
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", goal.pose.position.x, goal.pose.position.y);
       return false;
     }
 
-    //Sachi - Fix for the Last goal orientation issue **** 
     if(!plan.empty()){
       //insert last point as the goal (with proper orientation) 
       //maybe pop back the last one?? (since it might not have a proper pose)
@@ -641,11 +633,9 @@ namespace move_base {
 
       //run planner
       planner_plan_->clear();
-      ROS_WARN("Plan Thread - Looking for Plan");
+
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
-      ROS_WARN("Plan Thread - Plan Result : %d", gotPlan);
-      
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
@@ -852,8 +842,6 @@ namespace move_base {
     feedback.base_position = current_position;
     as_->publishFeedback(feedback);
 
-    ROS_WARN("Execute Cycle Called");
-
     //check to see if we've moved far enough to reset our oscillation timeout
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
     {
@@ -949,7 +937,6 @@ namespace move_base {
         {
 	  boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
         
-	  ROS_WARN("Computing Velocity");
 	  if(tc_->computeVelocityCommands(cmd_vel)){
 	    ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
 			     cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
