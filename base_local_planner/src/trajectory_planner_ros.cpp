@@ -253,32 +253,6 @@ namespace base_local_planner {
     }
   }
 
-  void TrajectoryPlannerROS::publishTest(){
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "base_link";
-    marker.header.stamp = ros::Time();
-    marker.ns = "test_namespace";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.pose.position.x = 1;
-    marker.pose.position.y = 1;
-    marker.pose.position.z = 1;
-    marker.pose.orientation.x = 0.0;
-    marker.pose.orientation.y = 0.0;
-    marker.pose.orientation.z = 0.0;
-    marker.pose.orientation.w = 1.0;
-    marker.scale.x = 1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
-    marker.color.a = 1.0;
-    marker.color.r = 0.0;
-    marker.color.g = 1.0;
-    marker.color.b = 0.0;
-    vis_pub.publish( marker );
-    ROS_WARN("Publishing Test");
-  }
-
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
     std::vector<double> y_vels;
 
@@ -451,13 +425,17 @@ namespace base_local_planner {
 
     double goal_th = yaw;
 
-    ROS_WARN("Compute Velocity Called");
+    static bool print_dist_goal = false; 
 
     //check to see if we've reached the goal position
     if (xy_tolerance_latch_ || (getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance_)) {
-      ROS_WARN("+++Robot within Goal");
       //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
       //just rotate in place
+      if(print_dist_goal){
+	ROS_WARN("Turning in place : Dist to Goal : %f", getGoalPositionDistance(global_pose, goal_x, goal_y));
+	print_dist_goal = false;
+      }
+
       if (latch_xy_goal_tolerance_) {
         xy_tolerance_latch_ = true;
       }
@@ -490,7 +468,6 @@ namespace base_local_planner {
         //if we're stopped... then we want to rotate to goal
         else{
           //set this so that we know its OK to be moving
-	  ROS_WARN("==Rotating to Goal");
           rotating_to_goal_ = true;
           if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
             return false;
@@ -505,10 +482,11 @@ namespace base_local_planner {
       //we don't actually want to run the controller when we're just rotating to goal
       return true;
     }
+    else{
+      print_dist_goal = true;
+    }
 
     tc_->updatePlan(transformed_plan);
-
-    ROS_WARN("========== Looking for Path (Controller)");
 
     //compute what trajectory to drive along
     Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds, &vis_pub);
@@ -526,8 +504,6 @@ namespace base_local_planner {
     cmd_vel.linear.x = drive_cmds.getOrigin().getX();
     cmd_vel.linear.y = drive_cmds.getOrigin().getY();
     cmd_vel.angular.z = tf::getYaw(drive_cmds.getRotation());
-
-    ROS_WARN("+++++++++++ TV : %f, RV : %f", cmd_vel.linear.x, cmd_vel.angular.z);
 
     //if we cannot move... tell someone
     if (path.cost_ < 0) {
@@ -636,13 +612,29 @@ namespace base_local_planner {
     odom_helper_.getOdom(base_odom);
     tf::Stamped<tf::Pose> global_pose;
     costmap_ros_->getRobotPose(global_pose);
-    return base_local_planner::isGoalReached(*tf_,
-        global_plan_,
-        *costmap_,
-        global_frame_,
-        global_pose,
-        base_odom,
-        rot_stopped_velocity_, trans_stopped_velocity_,
-        xy_goal_tolerance_, yaw_goal_tolerance_);
+
+    bool goal_reached = base_local_planner::isGoalReached(*tf_,
+							  global_plan_,
+							  *costmap_,
+							  global_frame_,
+							  global_pose,
+							  base_odom,
+							  rot_stopped_velocity_, trans_stopped_velocity_,
+							  xy_goal_tolerance_, yaw_goal_tolerance_);
+
+    /*if(goal_reached){
+      tf::Stamped<tf::Pose> goal_point;
+      tf::poseStampedMsgToTF(transformed_plan.back(), goal_point);
+      //we assume the global goal is the last point in the global plan
+      double goal_x = goal_point.getOrigin().getX();
+      double goal_y = goal_point.getOrigin().getY();
+
+      double yaw = tf::getYaw(goal_point.getRotation());
+
+      double goal_th = yaw;
+      double final_dist_to_goal = getGoalPositionDistance(global_pose, goal_x, goal_y);
+      }*/
+
+    return goal_reached; 
   }
 };

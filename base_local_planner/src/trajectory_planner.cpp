@@ -490,8 +490,6 @@ namespace base_local_planner{
       num_steps = int(sim_time_ / sim_granularity_ + 0.5);
     }
  
-    ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f : %d - Num steps : %d Dist: %f - Sim granularity : %f", x, y, theta, vx_samp, vtheta_samp, heading_scoring_, num_steps, vmag * sim_time_, sim_granularity_);
-
     //we at least want to take one step... even if we won't move, we want to score our current position
     if(num_steps == 0) {
       num_steps = 1;
@@ -621,7 +619,7 @@ namespace base_local_planner{
       cost = occdist_scale_ * occ_cost + pdist_scale_ * path_dist + 0.3 * heading_diff + goal_dist * gdist_scale_;
     }
 
-    ROS_WARN("OccCost: %f, Path Dist : %f Goal Dist : %f Heading Diff : %f => Cost : %f", occ_cost, path_dist, goal_dist, heading_diff, cost); 
+    /*ROS_WARN("OccCost: %f, Path Dist : %f Goal Dist : %f Heading Diff : %f => Cost : %f", occ_cost, path_dist, goal_dist, heading_diff, cost); */
     traj.cost_ = cost;
   }
 
@@ -835,7 +833,7 @@ namespace base_local_planner{
     if(cost >= 0) {
       return true;
     }
-    ROS_WARN("Invalid Trajectory %f, %f, %f, cost: %f", vx_samp, vy_samp, vtheta_samp, cost);
+    //ROS_WARN("Invalid Trajectory %f, %f, %f, cost: %f", vx_samp, vy_samp, vtheta_samp, cost);
 
     //otherwise the check fails
     return false;
@@ -1046,8 +1044,6 @@ namespace base_local_planner{
     double impossible_cost = path_map_.obstacleCosts();
 
     bool print_scores = false;
-
-    ROS_WARN("TV : %f , %f - RV : %f, %f -> Sim Time : %f", min_vel_x, max_vel_x, min_vel_theta, max_vel_theta, sim_time_);
 
     //if we're performing an escape we won't allow moving forward
     
@@ -1539,8 +1535,6 @@ namespace base_local_planner{
 					     tf::Stamped<tf::Pose>& drive_velocities, 
 					     ros::Publisher *vis_pub){
 
-    ROS_WARN("== Looking for best path");
-
     Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
     Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
 
@@ -1564,13 +1558,11 @@ namespace base_local_planner{
     //make sure that we update our path based on the global plan and compute costs
     path_map_.setTargetCells(costmap_, global_plan_);
     goal_map_.setLocalGoal(costmap_, global_plan_);
-    ROS_WARN("Path/Goal distance computed");
 
     //rollout trajectories and find the minimum cost one
     Trajectory best = createTrajectories(pos[0], pos[1], pos[2],
         vel[0], vel[1], vel[2],
 					 acc_lim_x_, acc_lim_y_, acc_lim_theta_, vis_pub);
-    ROS_WARN("Trajectories created");
 
     /*
     //If we want to print a ppm file to draw goal dist
