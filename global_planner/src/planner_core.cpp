@@ -385,7 +385,10 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     bool close_goal = false;
            
     //we can check if the map has a close point within tolerance that we can plan to 
-    if(tolerance_map >= 1){
+    
+    bool orig_goal_occupied =  isPointOccupied(costmap_->getCharMap(), goal_x, goal_y, nx, ny);    
+
+    if(orig_goal_occupied && tolerance_map >= 1){
       ROS_WARN("Checking if there is a close node to the goal");
       // set up start cell
       double new_goal_x, new_goal_y; 
