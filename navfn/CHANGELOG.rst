@@ -2,8 +2,8 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.10 (2014-06-25)
+--------------------
 * Remove unnecessary colons
 * Contributors: David Lu!!
 

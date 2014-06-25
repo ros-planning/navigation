@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.10 (2014-06-25)
+--------------------
 * Remove unnecessary colons
 * move_base planService now searches out from desired goal
 * Contributors: David Lu!!, Kaijen Hsiao

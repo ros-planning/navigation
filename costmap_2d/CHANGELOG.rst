@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.10 (2014-06-25)
+--------------------
 * Remove unnecessary colons
 * Remove unused robot_radius parameter from dynamic_reconfigure
 * Contributors: Daniel Stonier, David Lu!!

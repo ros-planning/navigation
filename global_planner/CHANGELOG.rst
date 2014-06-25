@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.10 (2014-06-25)
+--------------------
 * Remove unnecessary colons
 * global_planner now pushes the goal onto the end of the global path
 * move_base planService now searches out from desired goal

@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.10 (2014-06-25)
+--------------------
 * Remove unnecessary colons
 * renames acc_lim_th to acc_lim_theta, add warning if using acc_lim_th
 * uses odom child_frame_id to set robot_vel frame_id
