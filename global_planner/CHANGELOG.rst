@@ -2,6 +2,13 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove unnecessary colons
+* global_planner now pushes the goal onto the end of the global path
+* move_base planService now searches out from desired goal
+* Contributors: David Lu!!, Kaijen Hsiao
+
 1.11.9 (2014-06-10)
 -------------------
 * uses ::hypot(x, y) instead of sqrt(x*x, y*y)

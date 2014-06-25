@@ -2,6 +2,13 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove unnecessary colons
+* renames acc_lim_th to acc_lim_theta, add warning if using acc_lim_th
+* uses odom child_frame_id to set robot_vel frame_id
+* Contributors: David Lu!!, Michael Ferguson, Enrique Fernández Perdomo
+
 1.11.9 (2014-06-10)
 -------------------
 * uses ::hypot(x, y) instead of sqrt(x*x, y*y)

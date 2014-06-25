@@ -2,6 +2,12 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove unnecessary colons
+* move_base planService now searches out from desired goal
+* Contributors: David Lu!!, Kaijen Hsiao
+
 1.11.9 (2014-06-10)
 -------------------
 * uses ::hypot(x, y) instead of sqrt(x*x, y*y)
