@@ -535,12 +535,6 @@ namespace move_base {
       return false;
     }
 
-    if(!plan.empty()){
-      //insert last point as the goal (with proper orientation) 
-      //maybe pop back the last one?? (since it might not have a proper pose)
-      plan.pop_back();
-      plan.push_back(goal);
-    }
     return true;
   }
 
