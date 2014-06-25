@@ -63,6 +63,11 @@ class Expander {
         void setLethalCost(unsigned char lethal_cost) {
             lethal_cost_ = lethal_cost;
         }
+
+	unsigned char getLethalCost() {
+	  return lethal_cost_;
+        }
+
         void setNeutralCost(unsigned char neutral_cost) {
             neutral_cost_ = neutral_cost;
         }

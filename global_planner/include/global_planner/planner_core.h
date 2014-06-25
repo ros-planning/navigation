@@ -161,7 +161,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
 
-    protected:
+ protected:
 
         /**
          * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
@@ -197,6 +197,20 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         bool old_navfn_behavior_;
         float convert_offset_;
+
+	//returns true when the point on the map has lethal cost 
+	bool isPointOccupied(unsigned char* costs, double goal_x, double goal_y, int nx, int ny);
+
+	//finds closest map point within xy_tolerance that is free 
+	bool findClosestOpenGoal(unsigned char* costs, double goal_x, double goal_y, double &new_goal_x, double &new_goal_y, double xy_tolerance, int nx, int ny);
+
+	inline int getMapIndex(int x, int y, int nx){
+	   return x + nx * y;
+	}
+	
+	inline float getCost(unsigned char* costs, int index){
+	  return costs[index];
+	}
 
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
         void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);

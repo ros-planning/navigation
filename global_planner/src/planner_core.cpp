@@ -47,6 +47,11 @@
 #include <global_planner/gradient_path.h>
 #include <global_planner/quadratic_calculator.h>
 
+#include <vector>
+#include <map>
+
+using namespace std;
+
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
 
@@ -206,6 +211,98 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     return makePlan(start, goal, default_tolerance_, plan);
 }
 
+
+  bool GlobalPlanner::isPointOccupied(unsigned char* costs, double goal_x, double goal_y, int nx, int ny){
+     int goal_index = getMapIndex(goal_x, goal_y, nx);
+
+     float c = getCost(costs, goal_index);
+     
+     double lethal_cost_ = planner_->getLethalCost();
+     if(c == lethal_cost_){
+       return true;
+     }
+     else 
+       return false; //do we want to check here if its in unknown space??
+  }
+
+  bool GlobalPlanner::findClosestOpenGoal(unsigned char* costs, double goal_x, double goal_y, double &new_goal_x, double &new_goal_y, double xy_tolerance, int nx, int ny){
+
+    int goal_index = getMapIndex(goal_x, goal_y, nx);
+
+    float c = getCost(costs, goal_index);
+
+    double lethal_cost_ = planner_->getLethalCost();
+    if(c == lethal_cost_){
+      ROS_INFO("Original goal is in collision - checking neighbors => Tollerance : %f", xy_tolerance);
+	
+      int x_t = xy_tolerance;
+      int y_t = xy_tolerance; 
+
+      bool found = false;
+
+      double n_end_x, n_end_y; 
+      float min_cost = lethal_cost_;
+
+      for(int dx = 0; dx < x_t; dx++){
+	if(found)
+	  break;
+	for(int dy = 0; dy < y_t; dy++){
+	  if(found)
+	    break;
+	  if(dx == 0 && dy == 0){
+	    continue;
+	  }
+
+	  vector<pair<double, double> > points;
+	  if(hypot(dx, dy) < xy_tolerance){
+	    points.push_back(make_pair(goal_x + dx, goal_y + dy));
+	    points.push_back(make_pair(goal_x + dx, goal_y - dy));
+	    points.push_back(make_pair(goal_x - dx, goal_y - dy));
+	    points.push_back(make_pair(goal_x - dx, goal_y + dy));
+
+	    for(int i=0; i < points.size(); i++){
+	      if(points[i].first >= nx || points[i].first < 0)
+		continue;
+	      if(points[i].second >= ny || points[i].second < 0)
+		continue;
+	      int index = getMapIndex(points[i].first, points[i].second, nx);
+
+	      float cost = getCost(costs, index);
+
+	      if(cost < lethal_cost_){
+		found = true;
+		n_end_x = points[i].first;
+		n_end_y = points[i].second;
+		min_cost = cost; 
+		break;
+	      }
+	    }
+	  }    
+	}
+      }
+
+      if(found){
+	ROS_INFO("Found close neighbour with low cost : %f,%f", n_end_x, n_end_y, min_cost);
+	// set up start cell
+	goal_index = getMapIndex(n_end_x, n_end_y, nx);
+	new_goal_x = n_end_x; 
+	new_goal_y = n_end_y;
+	return true;
+      }
+      else{
+	new_goal_x = goal_x;
+	new_goal_y = goal_y;
+	return false;
+      }
+    }
+
+    else{
+      new_goal_x = goal_x;
+      new_goal_y = goal_y;
+      return true;
+    }
+  }
+
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                            double tolerance, std::vector<geometry_msgs::PoseStamped>& plan) {
     boost::mutex::scoped_lock lock(mutex_);
@@ -282,8 +379,45 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
 
-    bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
-                                                    nx * ny * 2, potential_array_);
+    double tolerance_world = tolerance; 
+    double tolerance_map = tolerance_world / costmap_->getResolution();
+
+    bool close_goal = false;
+           
+    //we can check if the map has a close point within tolerance that we can plan to 
+    if(tolerance_map >= 1){
+      ROS_WARN("Checking if there is a close node to the goal");
+      // set up start cell
+      double new_goal_x, new_goal_y; 
+      bool found_goal = findClosestOpenGoal(costmap_->getCharMap(), goal_x, goal_y, new_goal_x, new_goal_y, tolerance_map, nx, ny);
+
+      if(found_goal){
+	if(new_goal_x != goal_x || new_goal_y != goal_y){
+	  ROS_WARN("Found close goal");
+	  close_goal = true;
+	  goal_x = new_goal_x; 
+	  goal_y = new_goal_y;
+	}
+      }
+    }
+
+    //we should always check if the goal is not reachable - will save us some computation 
+    bool goal_occupied =  isPointOccupied(costmap_->getCharMap(), goal_x, goal_y, nx, ny);    
+    
+    if(goal_occupied){
+      ROS_ERROR("Goal location is occupied - unable to find plan");
+    }
+
+    bool found_legal = false; 
+
+    //Goal is in free space - lets see if we can get there (otherwise no point in planning)
+    if(!goal_occupied){
+      found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y, nx * ny * 2, potential_array_);
+    }
+
+    if(found_legal){
+      ROS_INFO("Global planner found path to goal");
+    }
 
     if(!old_navfn_behavior_)
         planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
@@ -293,10 +427,21 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     if (found_legal) {
         //extract the plan
         if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
-            //make sure the goal we push on has the same timestamp as the rest of the plan
+	  //make sure the goal we push on has the same timestamp as the rest of the plan
+	  if(!close_goal){
             geometry_msgs::PoseStamped goal_copy = goal;
             goal_copy.header.stamp = ros::Time::now();
+	    plan.pop_back();
             plan.push_back(goal_copy);
+	  }
+	  else{
+	    geometry_msgs::PoseStamped &last_goal = plan[plan.size() - 1];
+	    //override the orientation of the last goal 
+	    last_goal.pose.orientation.x = goal.pose.orientation.x;
+	    last_goal.pose.orientation.y = goal.pose.orientation.y;
+	    last_goal.pose.orientation.z = goal.pose.orientation.z;
+	    last_goal.pose.orientation.w = goal.pose.orientation.w;
+	  }
         } else {
             ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
         }
