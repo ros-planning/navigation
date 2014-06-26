@@ -50,9 +50,9 @@ namespace base_local_planner {
 
       /**
        * @brief  Constructs a trajectory
-       * @param xv The x velocity used to seed the trajectory 
-       * @param yv The y velocity used to seed the trajectory 
-       * @param thetav The theta velocity used to seed the trajectory 
+       * @param xv The x velocity used to seed the trajectory
+       * @param yv The y velocity used to seed the trajectory
+       * @param thetav The theta velocity used to seed the trajectory
        * @param num_pts The expected number of points for a trajectory
        */
       Trajectory(double xv, double yv, double thetav, double time_delta, unsigned int num_pts);
@@ -65,7 +65,7 @@ namespace base_local_planner {
 
       /**
        * @brief  Get a point within the trajectory
-       * @param index The index of the point to get 
+       * @param index The index of the point to get
        * @param x Will be set to the x position of the point
        * @param y Will be set to the y position of the point
        * @param th Will be set to the theta position of the point
@@ -74,7 +74,7 @@ namespace base_local_planner {
 
       /**
        * @brief  Set a point within the trajectory
-       * @param index The index of the point to set 
+       * @param index The index of the point to set
        * @param x The x position
        * @param y The y position
        * @param th The theta position
@@ -110,7 +110,7 @@ namespace base_local_planner {
 
     private:
       std::vector<double> x_pts_; ///< @brief The x points in the trajectory
-      std::vector<double> y_pts_; ///< @brief The y points in the trajectory 
+      std::vector<double> y_pts_; ///< @brief The y points in the trajectory
       std::vector<double> th_pts_; ///< @brief The theta points in the trajectory
 
   };

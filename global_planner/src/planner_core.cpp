@@ -110,7 +110,6 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             if(!old_navfn_behavior_)
                 de->setPreciseStart(true);
             planner_ = de;
-            
         }
         else
             planner_ = new AStarExpansion(p_calc_, cx, cy);
