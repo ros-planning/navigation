@@ -265,6 +265,8 @@ AmclNode::AmclNode() :
 {
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
+  ROS_WARN("Creating Node");
+
   // Grab params off the param server
   private_nh_.param("use_map_topic", use_map_topic_, false);
   private_nh_.param("first_map_only", first_map_only_, false);
@@ -301,6 +303,10 @@ AmclNode::AmclNode() :
     laser_model_type_ = LASER_MODEL_BEAM;
   else if(tmp_model_type == "likelihood_field")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
+  else if(tmp_model_type == "likelihood_field_actual"){
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL;
+    ROS_WARN("Loading actual model");
+  }
   else
   {
     ROS_WARN("Unknown laser model type \"%s\"; defaulting to likelihood_field model",
@@ -414,6 +420,8 @@ AmclNode::AmclNode() :
   laser_check_interval_ = ros::Duration(15.0);
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
+
+  ROS_WARN("Done Creating Node");
 }
 
 void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
@@ -467,6 +475,8 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_model_type_ = LASER_MODEL_BEAM;
   else if(config.laser_model_type == "likelihood_field")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
+  else if(config.laser_model_type == "likelihood_field_actual")
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL;
 
   if(config.odom_model_type == "diff")
     odom_model_type_ = ODOM_MODEL_DIFF;
@@ -498,6 +508,10 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
 
+  //m_force_update = true;
+
+  ROS_WARN("Initializing the filter - using global localization");
+
   // Initialize the filter
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
   pf_init_pose_mean.v[0] = last_published_pose.pose.pose.position.x;
@@ -523,8 +537,13 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   if(laser_model_type_ == LASER_MODEL_BEAM)
     laser_->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
                          sigma_hit_, lambda_short_, 0.0);
-  else
-  {
+  else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL){
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
+    laser_->SetModelLikelihoodFieldActual(z_hit_, z_rand_, sigma_hit_,
+					  laser_likelihood_max_dist_);
+    ROS_INFO("Done initializing likelihood field model.");
+  }
+  else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD){
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
                                     laser_likelihood_max_dist_);
@@ -621,8 +640,16 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
+  
+  ROS_WARN("Max Particles : %d - Min Particles : %d", max_particles_, min_particles_);
+
+  /*pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
+                (void *)map_);*/
+
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
+
+  ROS_WARN("Initializing the filter - using global localization");
 
   // Initialize the filter
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
@@ -633,7 +660,14 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_init_pose_cov.m[0][0] = init_cov_[0];
   pf_init_pose_cov.m[1][1] = init_cov_[1];
   pf_init_pose_cov.m[2][2] = init_cov_[2];
-  pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
+
+  // Hmm - looks like they start off with the filter being set to mean pose 
+  // kind of wierd
+  /*pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);*/
+  
+  pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
+                (void *)map_);
+
   pf_init_ = false;
 
   // Instantiate the sensor objects
@@ -649,6 +683,12 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   if(laser_model_type_ == LASER_MODEL_BEAM)
     laser_->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
                          sigma_hit_, lambda_short_, 0.0);
+  else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL){
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
+    laser_->SetModelLikelihoodFieldActual(z_hit_, z_rand_, sigma_hit_,
+					  laser_likelihood_max_dist_);
+    ROS_INFO("Done initializing likelihood field model.");
+  }
   else
   {
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
@@ -702,8 +742,9 @@ AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
   {
     if(map_msg.data[i] == 0)
       map->cells[i].occ_state = -1;
-    else if(map_msg.data[i] == 100)
+    else if(map_msg.data[i] == 100){
       map->cells[i].occ_state = +1;
+    }
     else
       map->cells[i].occ_state = 0;
   }
@@ -752,6 +793,7 @@ pf_vector_t
 AmclNode::uniformPoseGenerator(void* arg)
 {
   map_t* map = (map_t*)arg;
+  //samples from free space 
 #if NEW_UNIFORM_SAMPLING
   unsigned int rand_index = drand48() * free_space_indices.size();
   std::pair<int,int> free_point = free_space_indices[rand_index];
@@ -790,6 +832,7 @@ bool
 AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
                                      std_srvs::Empty::Response& res)
 {
+  ROS_WARN("Global Localization Called");
   if( map_ == NULL ) {
     return true;
   }
@@ -819,6 +862,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   if( map_ == NULL ) {
     return;
   }
+
   boost::recursive_mutex::scoped_lock lr(configuration_mutex_);
   int laser_index = -1;
 
@@ -885,6 +929,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     delta.v[1] = pose.v[1] - pf_odom_pose_.v[1];
     delta.v[2] = angle_diff(pose.v[2], pf_odom_pose_.v[2]);
 
+    //ROS_WARN("Delta : %f, %f, %f", delta.v[0], delta.v[1], delta.v[2]);
+
+
     // See if we should update the filter
     bool update = fabs(delta.v[0]) > d_thresh_ ||
                   fabs(delta.v[1]) > d_thresh_ ||
@@ -893,9 +940,11 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     m_force_update=false;
 
     // Set the laser update flags
-    if(update)
+    if(update){
+      ROS_WARN("Setting Updating likelihood - Moved");
       for(unsigned int i=0; i < lasers_update_.size(); i++)
         lasers_update_[i] = true;
+    }
   }
 
   bool force_publication = false;
@@ -907,6 +956,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     // Filter is now initialized
     pf_init_ = true;
 
+    ROS_WARN("Setting Updating likelihood");
     // Should update sensor data
     for(unsigned int i=0; i < lasers_update_.size(); i++)
       lasers_update_[i] = true;
@@ -942,6 +992,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     AMCLLaserData ldata;
     ldata.sensor = lasers_[laser_index];
     ldata.range_count = laser_scan->ranges.size();
+
+    ROS_WARN("Range Count : %d", ldata.range_count);
 
     // To account for lasers that are mounted upside-down, we determine the
     // min, max, and increment angles of the laser in the base frame.
@@ -984,9 +1036,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       range_min = std::max(laser_scan->range_min, (float)laser_min_range_);
     else
       range_min = laser_scan->range_min;
+
     // The AMCLLaserData destructor will free this memory
     ldata.ranges = new double[ldata.range_count][2];
     ROS_ASSERT(ldata.ranges);
+
+    //looks like they do this for each beam - might be worth subsampling the lasers 
     for(int i=0;i<ldata.range_count;i++)
     {
       // amcl doesn't (yet) have a concept of min range.  So we'll map short
@@ -1000,7 +1055,11 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
               (i * angle_increment);
     }
 
+    //looks like this should get called after global localization is called 
+
     lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata);
+
+    ROS_WARN("Updating likelihood");
 
     lasers_update_[laser_index] = false;
 
@@ -1009,6 +1068,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     // Resample the particles
     if(!(++resample_count_ % resample_interval_))
     {
+      ROS_WARN("======= Resampling ==========");
       pf_update_resample(pf_);
       resampled = true;
     }
@@ -1019,6 +1079,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     // Publish the resulting cloud
     // TODO: set maximum rate for publishing
     if (!m_force_update) {
+      ROS_WARN("Publishing Cloud => Number %d", set->sample_count); //we should clear the old cloud - right now its confusing 
       geometry_msgs::PoseArray cloud_msg;
       cloud_msg.header.stamp = ros::Time::now();
       cloud_msg.header.frame_id = global_frame_id_;
@@ -1116,7 +1177,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       pose_pub_.publish(p);
       last_published_pose = p;
 
-      ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",
+      ROS_WARN("New pose: %6.3f %6.3f %6.3f",
                hyps[max_weight_hyp].pf_pose_mean.v[0],
                hyps[max_weight_hyp].pf_pose_mean.v[1],
                hyps[max_weight_hyp].pf_pose_mean.v[2]);
@@ -1230,6 +1291,8 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
              global_frame_id_.c_str());
     return;
   }
+
+  ROS_WARN("Initial Pose received");
 
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.

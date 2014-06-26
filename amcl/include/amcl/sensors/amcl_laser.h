@@ -38,7 +38,8 @@ namespace amcl
 typedef enum
 {
   LASER_MODEL_BEAM,
-  LASER_MODEL_LIKELIHOOD_FIELD
+  LASER_MODEL_LIKELIHOOD_FIELD,
+  LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL
 } laser_model_t;
 
 // Laser sensor data
@@ -72,6 +73,14 @@ class AMCLLaser : public AMCLSensor
                                        double z_rand,
                                        double sigma_hit,
                                        double max_occ_dist);
+
+  public: void SetModelLikelihoodFieldActual(double z_hit,
+					     double z_rand,
+					     double sigma_hit,
+					     double max_occ_dist);
+
+  
+  
   
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
@@ -87,6 +96,12 @@ class AMCLLaser : public AMCLSensor
   // Determine the probability for the given pose
   private: static double LikelihoodFieldModel(AMCLLaserData *data, 
                                               pf_sample_set_t* set);
+
+  // Determine the probability for the given pose - more probablistic model 
+ private: static double LikelihoodFieldModelActual(AMCLLaserData *data, 
+					     pf_sample_set_t* set);
+
+ private: static int64_t timestamp_now();
 
   private: laser_model_t model_type;
 
@@ -109,6 +124,7 @@ class AMCLLaser : public AMCLSensor
   private: double z_short;
   private: double z_max;
   private: double z_rand;
+
   //
   // Stddev of Gaussian model for laser hits.
   private: double sigma_hit;

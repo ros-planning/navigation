@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
-
+#include <sys/time.h>
 #include "amcl_laser.h"
 
 using namespace amcl;
@@ -45,7 +45,6 @@ AMCLLaser::AMCLLaser(size_t max_beams, map_t* map) : AMCLSensor()
 
   this->max_beams = max_beams;
   this->map = map;
-
   return;
 }
 
@@ -82,6 +81,22 @@ AMCLLaser::SetModelLikelihoodField(double z_hit,
   map_update_cspace(this->map, max_occ_dist);
 }
 
+void 
+AMCLLaser::SetModelLikelihoodFieldActual(double z_hit,
+					 double z_rand,
+					 double sigma_hit,
+					 double max_occ_dist)
+{
+  this->model_type = LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL;
+  this->z_hit = z_hit;
+  this->z_rand = z_rand;
+  this->sigma_hit = sigma_hit;
+
+  map_update_cspace(this->map, max_occ_dist);
+
+  map_update_likelihood(this->map, sigma_hit);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the laser sensor model
@@ -91,10 +106,15 @@ bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
     return false;
 
   // Apply the laser sensor model
-  if(this->model_type == LASER_MODEL_BEAM)
+  if(this->model_type == LASER_MODEL_BEAM){
     pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
-  else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD)
+  }
+  else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD){
     pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModel, data);
+  }
+  else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL){
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModelActual, data);
+  }
   else
     pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
 
@@ -244,11 +264,14 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
         z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
       // Gaussian model
       // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
+      
       pz += self->z_hit * exp(-(z * z) / z_hit_denom);
       // Part 2: random measurements
       pz += self->z_rand * z_rand_mult;
 
       // TODO: outlier rejection for short readings
+
+      //*******No outlier rejection (bad for changed maps) (Carmen localizer has outlier rejection) 
 
       assert(pz <= 1.0);
       assert(pz >= 0.0);
@@ -257,10 +280,146 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
       // works well, though...
       p += pz*pz*pz;
     }
-
+    
     sample->weight *= p;
+
     total_weight += sample->weight;
   }
+
+  return(total_weight);
+}
+
+int64_t AMCLLaser::timestamp_now()
+{
+    struct timeval tv;
+    gettimeofday (&tv, NULL);
+    return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_t* set)
+{
+  AMCLLaser *self;
+  int i, j, step;
+  double z, pz;
+  double log_p;
+  double obs_range, obs_bearing;
+  double total_weight;
+  pf_sample_t *sample;
+  pf_vector_t pose;
+  pf_vector_t hit;
+
+  self = (AMCLLaser*) data->sensor;
+
+  total_weight = 0.0;
+
+  fprintf(stderr, "======== Using Correct model +++++++");
+
+  step = (data->range_count - 1) / (self->max_beams - 1);
+
+  // Step size must be at least 1
+  if(step < 1)
+    step = 1;
+
+  // Pre-compute a couple of things
+  double z_hit_denom = 2 * self->sigma_hit * self->sigma_hit;
+  double z_rand_mult = 1.0/data->range_max;
+
+  double max_dist_prob = exp(-(self->map->max_occ_dist * self->map->max_occ_dist) / z_hit_denom);
+
+  bool use_cache = true;
+
+  int64_t start = timestamp_now();
+  
+  // Compute the sample weights
+  for (j = 0; j < set->sample_count; j++)
+  {
+    sample = set->samples + j;
+    pose = sample->pose;
+
+    // Take account of the laser pose relative to the robot
+    pose = pf_vector_coord_add(self->laser_pose, pose);
+
+    log_p = 0;
+
+    for (i = 0; i < data->range_count; i += step)
+    {
+      obs_range = data->ranges[i][0];
+      obs_bearing = data->ranges[i][1];
+
+      // This model ignores max range readings
+      if(obs_range >= data->range_max){
+	//fprintf(stderr, "Range over max\n");
+        continue;
+      }
+
+      // Check for NaN
+      if(obs_range != obs_range){
+	//fprintf(stderr, "Range NaN\n");
+        continue;
+      }
+
+      pz = 0.0;
+
+      // Compute the endpoint of the beam
+      hit.v[0] = pose.v[0] + obs_range * cos(pose.v[2] + obs_bearing);
+      hit.v[1] = pose.v[1] + obs_range * sin(pose.v[2] + obs_bearing);
+
+      // Convert to map grid coords.
+      int mi, mj;
+      mi = MAP_GXWX(self->map, hit.v[0]);
+      mj = MAP_GYWY(self->map, hit.v[1]);
+      
+      // Part 1: Get distance from the hit to closest obstacle.
+      // Off-map penalized as max distance
+      
+      if(!MAP_VALID(self->map, mi, mj)){
+	pz += self->z_hit * max_dist_prob;
+      }
+      else{
+	if(use_cache){
+	  pz += self->z_hit * self->map->cells[MAP_INDEX(self->map,mi,mj)].likelihood;
+	}
+	else{
+	  z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+	  pz += self->z_hit * exp(-(z * z) / z_hit_denom);
+	}
+      }
+        //z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+      // Gaussian model
+      // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
+      
+      //Sachi - why is this not cached???? 
+	//pz += self->z_hit * exp(-(z * z) / z_hit_denom);
+      // Part 2: random measurements
+      pz += self->z_rand * z_rand_mult;
+
+      // TODO: outlier rejection for short readings
+
+      //*******No outlier rejection (bad for changed maps) (Carmen localizer has outlier rejection) 
+
+      //fprintf(stderr, "Dist : %f -> Prob %f\n", z, pz);
+
+      assert(pz <= 1.0); //will this work ?? - since the dist is not normalized 
+      assert(pz >= 0.0);
+      //      p *= pz;
+      // here we have an ad-hoc weighting scheme for combining beam probs
+      // works well, though...
+      log_p += log(pz);
+    }
+
+    //why are we keeping weights as normal values - should be using log (to prevent precision issues)
+    sample->weight *= exp(log_p);
+
+    //fprintf(stderr, "Sample : %d - Weight : %f\n", j, log(sample->weight));
+
+    total_weight += sample->weight;
+  }
+
+  int64_t end = timestamp_now();
+
+  double diff = (end  - start)/ 1.0e6;
+
+  fprintf(stderr, "Time taken : %f\n", diff);
 
   return(total_weight);
 }

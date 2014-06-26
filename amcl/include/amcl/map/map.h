@@ -51,6 +51,8 @@ typedef struct
   // Distance to the nearest occupied cell
   double occ_dist;
 
+  double likelihood; 
+  
   // Wifi levels
   //int wifi_levels[MAP_WIFI_MAX_LEVELS];
 
@@ -79,7 +81,6 @@ typedef struct
 } map_t;
 
 
-
 /**************************************************************************
  * Basic map functions
  **************************************************************************/
@@ -102,6 +103,8 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate);
 // Update the cspace distances
 void map_update_cspace(map_t *map, double max_occ_dist);
 
+  void map_update_likelihood(map_t *map, 
+			     double sigma_hit);
 
 /**************************************************************************
  * Range functions

@@ -186,6 +186,8 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
     sample->weight = 1.0 / pf->max_samples;
     sample->pose = (*init_fn) (init_data);
 
+    //do we have attached laser obs?? - then we can weight them 
+
     // Add sample to histogram
     pf_kdtree_insert(set->kdtree, sample->pose, sample->weight);
   }
