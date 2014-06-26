@@ -175,23 +175,6 @@ void map_update_cspace(map_t *map, double max_occ_dist)
   delete[] marked;
 }
 
-void map_update_likelihood(map_t *map, double sigma_hit){
-
-  double z_hit_denom = 2 * sigma_hit * sigma_hit;
-  double z = 0; 
-  //this should prob be told which model to use 
-   
-  //can prob normalize this 
-
-  for(int i=0; i<map->size_x; i++){
-    for(int j=0; j<map->size_y; j++){
-      //update the likelihoods 
-      z = map->cells[MAP_INDEX(map, i, j)].occ_dist; 
-      map->cells[MAP_INDEX(map, i, j)].likelihood = exp(-(z * z) / z_hit_denom); 
-    }
-  }
-}
-
 #if 0
 // TODO: replace this with a more efficient implementation.  Not crucial,
 // because we only do it once, at startup.

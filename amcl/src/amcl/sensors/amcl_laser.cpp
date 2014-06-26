@@ -93,8 +93,6 @@ AMCLLaser::SetModelLikelihoodFieldActual(double z_hit,
   this->sigma_hit = sigma_hit;
 
   map_update_cspace(this->map, max_occ_dist);
-
-  map_update_likelihood(this->map, sigma_hit);
 }
 
 
@@ -326,10 +324,10 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
 
   double max_dist_prob = exp(-(self->map->max_occ_dist * self->map->max_occ_dist) / z_hit_denom);
 
-  bool use_cache = true;
-
-  int64_t start = timestamp_now();
+  fprintf(stderr, "Max Dist : %f - log Prob : %f - Sigma : %f\n", self->map->max_occ_dist, log(max_dist_prob), self->sigma_hit);
   
+  int64_t start = timestamp_now();
+
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
@@ -376,20 +374,13 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
 	pz += self->z_hit * max_dist_prob;
       }
       else{
-	if(use_cache){
-	  pz += self->z_hit * self->map->cells[MAP_INDEX(self->map,mi,mj)].likelihood;
-	}
-	else{
-	  z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
-	  pz += self->z_hit * exp(-(z * z) / z_hit_denom);
-	}
+	z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+	pz += self->z_hit * exp(-(z * z) / z_hit_denom);
       }
-        //z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+       
       // Gaussian model
       // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
       
-      //Sachi - why is this not cached???? 
-	//pz += self->z_hit * exp(-(z * z) / z_hit_denom);
       // Part 2: random measurements
       pz += self->z_rand * z_rand_mult;
 
@@ -399,7 +390,7 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
 
       //fprintf(stderr, "Dist : %f -> Prob %f\n", z, pz);
 
-      assert(pz <= 1.0); //will this work ?? - since the dist is not normalized 
+      assert(pz <= 1.0); //this will work - but its not normalized 
       assert(pz >= 0.0);
       //      p *= pz;
       // here we have an ad-hoc weighting scheme for combining beam probs
@@ -419,7 +410,7 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
 
   double diff = (end  - start)/ 1.0e6;
 
-  fprintf(stderr, "Time taken : %f\n", diff);
+  //fprintf(stderr, "Time taken : %f - Max Prob : %f\n", diff, max_prob);
 
   return(total_weight);
 }
