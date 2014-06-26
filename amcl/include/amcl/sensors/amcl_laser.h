@@ -39,7 +39,7 @@ typedef enum
 {
   LASER_MODEL_BEAM,
   LASER_MODEL_LIKELIHOOD_FIELD,
-  LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL
+  LASER_MODEL_LIKELIHOOD_FIELD_PROB
 } laser_model_t;
 
 // Laser sensor data
@@ -74,14 +74,12 @@ class AMCLLaser : public AMCLSensor
                                        double sigma_hit,
                                        double max_occ_dist);
 
-  public: void SetModelLikelihoodFieldActual(double z_hit,
-					     double z_rand,
-					     double sigma_hit,
-					     double max_occ_dist);
+  //a more probabilistically correct model 
+  public: void SetModelLikelihoodFieldProb(double z_hit,
+					   double z_rand,
+					   double sigma_hit,
+					   double max_occ_dist);
 
-  
-  
-  
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
   public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data);
@@ -98,10 +96,8 @@ class AMCLLaser : public AMCLSensor
                                               pf_sample_set_t* set);
 
   // Determine the probability for the given pose - more probablistic model 
- private: static double LikelihoodFieldModelActual(AMCLLaserData *data, 
+  private: static double LikelihoodFieldModelProb(AMCLLaserData *data, 
 					     pf_sample_set_t* set);
-
- private: static int64_t timestamp_now();
 
   private: laser_model_t model_type;
 

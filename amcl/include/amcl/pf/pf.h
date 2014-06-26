@@ -63,6 +63,7 @@ typedef struct
 
   // Weight for this pose
   double weight;
+  
 } pf_sample_t;
 
 
@@ -74,6 +75,7 @@ typedef struct
 
   // Total weight of samples in this cluster
   double weight;
+
   // Cluster statistics
   pf_vector_t mean;
   pf_matrix_t cov;

@@ -32,7 +32,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
-#include <sys/time.h>
 #include "amcl_laser.h"
 
 using namespace amcl;
@@ -82,12 +81,12 @@ AMCLLaser::SetModelLikelihoodField(double z_hit,
 }
 
 void 
-AMCLLaser::SetModelLikelihoodFieldActual(double z_hit,
+AMCLLaser::SetModelLikelihoodFieldProb(double z_hit,
 					 double z_rand,
 					 double sigma_hit,
 					 double max_occ_dist)
 {
-  this->model_type = LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL;
+  this->model_type = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
   this->z_hit = z_hit;
   this->z_rand = z_rand;
   this->sigma_hit = sigma_hit;
@@ -110,8 +109,8 @@ bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
   else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD){
     pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModel, data);
   }
-  else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD_ACTUAL){
-    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModelActual, data);
+  else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModelProb, data);
   }
   else
     pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
@@ -287,14 +286,7 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
   return(total_weight);
 }
 
-int64_t AMCLLaser::timestamp_now()
-{
-    struct timeval tv;
-    gettimeofday (&tv, NULL);
-    return (int64_t) tv.tv_sec * 1000000 + tv.tv_usec;
-}
-
-double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_t* set)
+double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t* set)
 {
   AMCLLaser *self;
   int i, j, step;
@@ -310,8 +302,6 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
 
   total_weight = 0.0;
 
-  fprintf(stderr, "======== Using Correct model +++++++");
-
   step = (data->range_count - 1) / (self->max_beams - 1);
 
   // Step size must be at least 1
@@ -323,10 +313,6 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
   double z_rand_mult = 1.0/data->range_max;
 
   double max_dist_prob = exp(-(self->map->max_occ_dist * self->map->max_occ_dist) / z_hit_denom);
-
-  fprintf(stderr, "Max Dist : %f - log Prob : %f - Sigma : %f\n", self->map->max_occ_dist, log(max_dist_prob), self->sigma_hit);
-  
-  int64_t start = timestamp_now();
 
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
@@ -346,13 +332,11 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
 
       // This model ignores max range readings
       if(obs_range >= data->range_max){
-	//fprintf(stderr, "Range over max\n");
         continue;
       }
 
       // Check for NaN
       if(obs_range != obs_range){
-	//fprintf(stderr, "Range NaN\n");
         continue;
       }
 
@@ -386,31 +370,17 @@ double AMCLLaser::LikelihoodFieldModelActual(AMCLLaserData *data, pf_sample_set_
 
       // TODO: outlier rejection for short readings
 
-      //*******No outlier rejection (bad for changed maps) (Carmen localizer has outlier rejection) 
-
-      //fprintf(stderr, "Dist : %f -> Prob %f\n", z, pz);
-
-      assert(pz <= 1.0); //this will work - but its not normalized 
+      assert(pz <= 1.0); 
       assert(pz >= 0.0);
-      //      p *= pz;
-      // here we have an ad-hoc weighting scheme for combining beam probs
-      // works well, though...
+
       log_p += log(pz);
     }
 
     //why are we keeping weights as normal values - should be using log (to prevent precision issues)
     sample->weight *= exp(log_p);
 
-    //fprintf(stderr, "Sample : %d - Weight : %f\n", j, log(sample->weight));
-
     total_weight += sample->weight;
   }
-
-  int64_t end = timestamp_now();
-
-  double diff = (end  - start)/ 1.0e6;
-
-  //fprintf(stderr, "Time taken : %f - Max Prob : %f\n", diff, max_prob);
 
   return(total_weight);
 }

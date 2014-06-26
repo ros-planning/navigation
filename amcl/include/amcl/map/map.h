@@ -79,6 +79,7 @@ typedef struct
 } map_t;
 
 
+
 /**************************************************************************
  * Basic map functions
  **************************************************************************/
@@ -100,6 +101,7 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate);
 
 // Update the cspace distances
 void map_update_cspace(map_t *map, double max_occ_dist);
+
 
 /**************************************************************************
  * Range functions
