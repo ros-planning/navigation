@@ -1334,22 +1334,15 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   pf_init_pose_mean.v[2] = getYaw(pose_new);
   pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
   // Copy in the covariance, converting from 6-D to 3-D
-  fprintf(stdout, "Init Pose : %f,%f, %f \n Covariance\n",  pf_init_pose_mean.v[0],  pf_init_pose_mean.v[1],  pf_init_pose_mean.v[2]);
-
   for(int i=0; i<2; i++)
   {
     for(int j=0; j<2; j++)
     {
       pf_init_pose_cov.m[i][j] = msg->pose.covariance[6*i+j];
-      fprintf(stdout, "%.3f\t", pf_init_pose_cov.m[i][j]);
     }
-    fprintf(stdout, "\n");
   }
-  fprintf(stdout, "\n");
 
   pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*5+5];
-
-  fprintf(stdout, "Theta Cov : %f\n", pf_init_pose_cov.m[2][2]);
 
   delete initial_pose_hyp_;
   initial_pose_hyp_ = new amcl_hyp_t();
