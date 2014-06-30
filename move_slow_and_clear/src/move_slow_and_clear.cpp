@@ -192,8 +192,6 @@ namespace move_slow_and_clear
   void MoveSlowAndClear::setRobotSpeed(double trans_speed, double rot_speed)
   {
 
-    //std::ostringstream trans_command;
-    //trans_command << "rosrun dynamic_reconfigure dynparam set " << planner_nh_.getNamespace() << " max_trans_vel " << trans_speed;
     {
       dynamic_reconfigure::Reconfigure vel_reconfigure;
       dynamic_reconfigure::DoubleParameter new_trans;
@@ -205,11 +203,9 @@ namespace move_slow_and_clear
         ROS_INFO_STREAM("Recovery setting trans vel: " << trans_speed);
       }
       catch(...) {
-        ROS_ERROR("Something went wrong in the system call to dynparam");
+        ROS_ERROR("Something went wrong in the service call to dynamic_reconfigure");
       }
     }
-    // std::ostringstream rot_command;
-    // rot_command << "rosrun dynamic_reconfigure dynparam set " << planner_nh_.getNamespace() << " max_rot_vel " << rot_speed;
     {
       dynamic_reconfigure::Reconfigure rot_reconfigure;
       dynamic_reconfigure::DoubleParameter new_rot;
@@ -221,7 +217,7 @@ namespace move_slow_and_clear
         ROS_INFO_STREAM("Recovery setting rot vel: " << rot_speed);
       }
       catch(...) {
-        ROS_ERROR("Something went wrong in the system call to dynparam");
+        ROS_ERROR("Something went wrong in the service call to dynamic_reconfigure");
       }
     }
   }
