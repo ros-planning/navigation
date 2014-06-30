@@ -11,6 +11,7 @@ using costmap_2d::FREE_SPACE;
 
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;
+using namespace std;
 
 namespace costmap_2d
 {
@@ -66,8 +67,9 @@ void VoxelLayer::reset()
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                        double* min_y, double* max_x, double* max_y)
 {
-  if (rolling_window_)
+  if (rolling_window_){
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
+  }
   if (!enabled_)
     return;
   if (has_been_reset_)
@@ -101,6 +103,9 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
     raytraceFreespace(clearing_observations[i], min_x, min_y, max_x, max_y);
   }
 
+  CostMapList cm_list; 
+  cm_list.obs_timestamp = ros::Time::now();//ros::Timestamp::now();
+  
   //place the new obstacles into a priority queue... each with a priority of zero to begin with
   for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
   {
@@ -141,12 +146,21 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
       if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
       {
         unsigned int index = getIndex(mx, my);
-
-        costmap_[index] = LETHAL_OBSTACLE;
-        touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
+	//these are the ones set as occupied 
+	if(costmap_[index] != LETHAL_OBSTACLE){
+	  cm_list.indices.push_back(index);
+	  costmap_[index] = LETHAL_OBSTACLE;
+	  touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
+	}        
       }
     }
   }
+  
+  /*
+  new_obs_list.clear();
+  new_obs_list.push_back(cm_list);
+
+  fprintf(stderr, "Updated indices : %d", (int) cm_list.indices.size());*/
 
   if (publish_voxel_)
   {
@@ -350,6 +364,11 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
   cell_ox = int((new_origin_x - origin_x_) / resolution_);
   cell_oy = int((new_origin_y - origin_y_) / resolution_);
 
+  if(cell_ox == 0 && cell_oy == 0){
+    return;
+  } 
+
+  fprintf(stdout, "VM : Updating origin\n");
   //compute the associated world coordinates for the origin cell
   //beacuase we want to keep things grid-aligned
   double new_grid_ox, new_grid_oy;

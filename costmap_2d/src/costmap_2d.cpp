@@ -261,6 +261,19 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
   cell_ox = int((new_origin_x - origin_x_) / resolution_);
   cell_oy = int((new_origin_y - origin_y_) / resolution_);
 
+  bool big_jump = false;
+  if(cell_ox == 0 && cell_oy == 0){
+    return;
+  } 
+
+  double map_jump = hypot(new_origin_x - origin_x_, new_origin_y - origin_y_);
+  if(map_jump > 0.5){
+    big_jump = true;
+    fprintf(stdout, "Big Jump (%.3f) in map coordinates - invalidating the old map", map_jump);
+  }
+  
+  fprintf(stdout, "Updating map origin\n");
+
   //compute the associated world coordinates for the origin cell
   //because we want to keep things grid-aligned
   double new_grid_ox, new_grid_oy;
@@ -281,28 +294,40 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
   unsigned int cell_size_x = upper_right_x - lower_left_x;
   unsigned int cell_size_y = upper_right_y - lower_left_y;
 
-  //we need a map to store the obstacles in the window temporarily
-  unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
+  if(!big_jump){  
+    //we need a map to store the obstacles in the window temporarily
+    unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
 
-  //copy the local window in the costmap to the local map
-  copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
+    //copy the local window in the costmap to the local map
 
-  //now we'll set the costmap to be completely unknown if we track unknown space
-  resetMaps();
+    //if there is a big jump - we should not copy the map
+    copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
 
-  //update the origin with the appropriate world coordinates
-  origin_x_ = new_grid_ox;
-  origin_y_ = new_grid_oy;
+    //now we'll set the costmap to be completely unknown if we track unknown space
+    resetMaps();
 
-  //compute the starting cell location for copying data back in
-  int start_x = lower_left_x - cell_ox;
-  int start_y = lower_left_y - cell_oy;
+    //update the origin with the appropriate world coordinates
+    origin_x_ = new_grid_ox;
+    origin_y_ = new_grid_oy;
 
-  //now we want to copy the overlapping information back into the map, but in its new location
-  copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+    //compute the starting cell location for copying data back in
+    int start_x = lower_left_x - cell_ox;
+    int start_y = lower_left_y - cell_oy;
 
-  //make sure to clean up
-  delete[] local_map;
+    //now we want to copy the overlapping information back into the map, but in its new location
+    copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+
+    //make sure to clean up
+    delete[] local_map;
+  }
+  else{
+    //now we'll set the costmap to be completely unknown if we track unknown space
+    resetMaps();
+
+    //update the origin with the appropriate world coordinates
+    origin_x_ = new_grid_ox;
+    origin_y_ = new_grid_oy;
+  }
 }
 
 bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value)

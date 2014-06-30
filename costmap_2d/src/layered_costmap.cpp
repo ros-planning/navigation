@@ -79,12 +79,19 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 {
 
   // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
+  
+  
   if (rolling_window_)
   {
+    double origin_x = costmap_.getOriginX();
+    double origin_y = costmap_.getOriginY();
+
     double new_origin_x = robot_x - costmap_.getSizeInMetersX() / 2;
     double new_origin_y = robot_y - costmap_.getSizeInMetersY() / 2;
     costmap_.updateOrigin(new_origin_x, new_origin_y);
   }
+
+  //if big_jump - we should reset the map?? 
 
   if (plugins_.size() == 0)
     return;

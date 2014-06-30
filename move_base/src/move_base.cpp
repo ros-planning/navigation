@@ -136,10 +136,10 @@ namespace move_base {
     }
 
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
-
+    ROS_WARN("Creating local cost map");
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
     controller_costmap_ros_->pause();
-
+    ROS_WARN("Done creating local cost map");
     //create a local planner
     try {
       //check if a non fully qualified name has potentially been passed in

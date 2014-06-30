@@ -54,8 +54,17 @@
 #include <costmap_2d/VoxelPluginConfig.h>
 #include <costmap_2d/obstacle_layer.h>
 #include <voxel_grid/voxel_grid.h>
+#include <vector>
+
 namespace costmap_2d
 {
+
+  class CostMapList {
+  public:
+    ros::Time obs_timestamp; 
+    
+    std::vector<unsigned int> indices;
+  };
 
 class VoxelLayer : public ObstacleLayer
 {
@@ -89,6 +98,8 @@ private:
                                  double* max_x, double* max_y);
 
   dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *dsrv_;
+
+  std::vector<CostMapList> new_obs_list; 
 
   bool publish_voxel_;
   ros::Publisher voxel_pub_;
