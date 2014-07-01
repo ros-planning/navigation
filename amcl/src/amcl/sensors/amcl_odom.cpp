@@ -159,7 +159,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += (delta_trans_hat * sn_bearing - 
                             delta_strafe_hat * cs_bearing);
       sample->pose.v[2] += delta_rot_hat ;
-      sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -225,7 +224,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += delta_trans_hat * 
           sin(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[2] += delta_rot1_hat + delta_rot2_hat;
-      sample->weight = 1.0 / set->sample_count;  //does this reset the weight??? wtf
     }
   }
   break;
@@ -265,7 +263,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += (delta_trans_hat * sn_bearing - 
                             delta_strafe_hat * cs_bearing);
       sample->pose.v[2] += delta_rot_hat ;
-      sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -318,7 +315,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += delta_trans_hat * 
               sin(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[2] += delta_rot1_hat + delta_rot2_hat;
-      sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
