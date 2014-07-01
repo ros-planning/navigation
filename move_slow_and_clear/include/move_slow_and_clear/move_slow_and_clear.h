@@ -41,6 +41,7 @@
 #include <nav_core/recovery_behavior.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <boost/thread.hpp>
+#include <dynamic_reconfigure/Reconfigure.h>
 
 namespace move_slow_and_clear 
 {
@@ -76,6 +77,7 @@ namespace move_slow_and_clear
       boost::thread* remove_limit_thread_;
       boost::mutex mutex_;
       bool limit_set_;
+      ros::ServiceClient planner_dynamic_reconfigure_service_;
   };
 };
 

@@ -66,9 +66,8 @@ namespace move_slow_and_clear
 
     std::string planner_namespace;
     private_nh_.param("planner_namespace", planner_namespace, std::string("DWAPlannerROS"));
-
     planner_nh_ = ros::NodeHandle("~/" + planner_namespace);
-
+    planner_dynamic_reconfigure_service_ = planner_nh_.serviceClient<dynamic_reconfigure::Reconfigure>("set_parameters", true);
     initialized_ = true;
   }
 
@@ -192,21 +191,34 @@ namespace move_slow_and_clear
 
   void MoveSlowAndClear::setRobotSpeed(double trans_speed, double rot_speed)
   {
-    std::ostringstream trans_command;
-    trans_command << "rosrun dynamic_reconfigure dynparam set " << planner_nh_.getNamespace() << " max_trans_vel " << trans_speed;
-    ROS_INFO("Recovery setting trans vel: %s", trans_command.str().c_str());
-    if(system(trans_command.str().c_str()) < 0)
-    {
-      ROS_ERROR("Something went wrong in the system call to dynparam");
-    }
 
-    std::ostringstream rot_command;
-    rot_command << "rosrun dynamic_reconfigure dynparam set " << planner_nh_.getNamespace() << " max_rot_vel " << rot_speed;
-    ROS_INFO("Recovery setting rot vel: %s", rot_command.str().c_str());
-    if(system(rot_command.str().c_str()) < 0)
     {
-      ROS_INFO("Something went wrong in the system call to dynparam");
+      dynamic_reconfigure::Reconfigure vel_reconfigure;
+      dynamic_reconfigure::DoubleParameter new_trans;
+      new_trans.name = "max_trans_vel";
+      new_trans.value = trans_speed;
+      vel_reconfigure.request.config.doubles.push_back(new_trans);
+      try {
+        planner_dynamic_reconfigure_service_.call(vel_reconfigure);
+        ROS_INFO_STREAM("Recovery setting trans vel: " << trans_speed);
+      }
+      catch(...) {
+        ROS_ERROR("Something went wrong in the service call to dynamic_reconfigure");
+      }
+    }
+    {
+      dynamic_reconfigure::Reconfigure rot_reconfigure;
+      dynamic_reconfigure::DoubleParameter new_rot;
+      new_rot.name = "max_rot_vel";
+      new_rot.value = rot_speed;
+      rot_reconfigure.request.config.doubles.push_back(new_rot);
+      try {
+        planner_dynamic_reconfigure_service_.call(rot_reconfigure);
+        ROS_INFO_STREAM("Recovery setting rot vel: " << rot_speed);
+      }
+      catch(...) {
+        ROS_ERROR("Something went wrong in the service call to dynamic_reconfigure");
+      }
     }
   }
-
 };
