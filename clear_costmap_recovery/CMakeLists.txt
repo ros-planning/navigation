@@ -35,6 +35,28 @@ catkin_package(
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
 target_link_libraries(clear_costmap_recovery ${catkin_LIBRARIES})
 
+
+## Configure Tests
+if(CATKIN_ENABLE_TESTING)
+  # Find package test dependencies
+  find_package(rostest REQUIRED)
+  find_package(gtest)
+
+  # Add the test folder to the include directories
+  include_directories(test)
+
+  include_directories(${GTEST_INCLUDE_DIRS})
+  link_directories(${GTEST_LIBRARY_DIRS})
+
+  # Create targets for test executables
+  catkin_add_gtest(clear_tester test/clear_tester.cpp)
+  add_dependencies(tests clear_tester)
+  target_link_libraries(clear_tester clear_costmap_recovery ${GTEST_LIBRARIES})
+
+  add_rostest(test/clear_tests.launch)
+endif()
+
+
 install(TARGETS clear_costmap_recovery
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
