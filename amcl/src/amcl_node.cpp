@@ -159,6 +159,8 @@ class AmclNode
     char* mapdata;
     int sx, sy;
     double resolution;
+  
+    bool draw_weight_as_height_; 
 
     message_filters::Subscriber<sensor_msgs::LaserScan>* laser_scan_sub_;
     tf::MessageFilter<sensor_msgs::LaserScan>* laser_scan_filter_;
@@ -210,6 +212,12 @@ class AmclNode
     amcl_hyp_t* initial_pose_hyp_;
     bool first_map_received_;
     bool first_reconfigure_call_;
+
+    double std_xx_; 
+    double std_yy_;
+    double std_tt_; 
+
+    bool use_cov_from_params_; 
 
     boost::recursive_mutex configuration_mutex_;
     dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
@@ -278,6 +286,16 @@ AmclNode::AmclNode() :
   save_pose_period = ros::Duration(1.0/tmp);
 
   private_nh_.param("init_global", init_global_, false);
+
+  private_nh_.param("draw_weight_as_height", draw_weight_as_height_, false);
+
+  private_nh_.param("use_cov_from_params", use_cov_from_params_, false);
+
+  if(use_cov_from_params_){
+    private_nh_.param("std_xx", std_xx_, 0.25);
+    private_nh_.param("std_yy", std_yy_, 0.25);
+    private_nh_.param("std_tt", std_tt_, 0.121846); //20 degrees squared
+  }
 
   private_nh_.param("laser_min_range", laser_min_range_, -1.0);
   private_nh_.param("laser_max_range", laser_max_range_, -1.0);
@@ -1050,13 +1068,33 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       cloud_msg.header.stamp = ros::Time::now();
       cloud_msg.header.frame_id = global_frame_id_;
       cloud_msg.poses.resize(set->sample_count);
+
+      double max_weight = 0;       
+      double z = 0;
+
       for(int i=0;i<set->sample_count;i++)
       {
+	if(draw_weight_as_height_){
+	  if(max_weight < set->samples[i].weight){
+	    max_weight = set->samples[i].weight;
+	  }
+	  z = set->samples[i].weight; 
+	}
+	
         tf::poseTFToMsg(tf::Pose(tf::createQuaternionFromYaw(set->samples[i].pose.v[2]),
                                  tf::Vector3(set->samples[i].pose.v[0],
-                                           set->samples[i].pose.v[1], 0)),
+					     set->samples[i].pose.v[1], z)),
                         cloud_msg.poses[i]);
       }
+      
+      if(draw_weight_as_height_){
+	if(max_weight > 0){
+	  for(int i=0;i<set->sample_count;i++){
+	    cloud_msg.poses[i].position.z /= max_weight; 
+	  }	  
+	}
+      }
+
       particlecloud_pub_.publish(cloud_msg);
     }
   }
@@ -1303,6 +1341,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
       pf_init_pose_cov.m[i][j] = msg->pose.covariance[6*i+j];
     }
   }
+
   pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*5+5];
 
   delete initial_pose_hyp_;
@@ -1322,6 +1361,18 @@ AmclNode::applyInitialPose()
 {
   boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
   if( initial_pose_hyp_ != NULL && map_ != NULL ) {
+    if(use_cov_from_params_){
+      //override the cov params 
+      for(int i=0; i < 3; i++){
+	for(int j=0; j < 3; j++){
+	  initial_pose_hyp_->pf_pose_cov.m[i][j] = 0; 
+	}
+      }
+      initial_pose_hyp_->pf_pose_cov.m[0][0] = std_xx_;
+      initial_pose_hyp_->pf_pose_cov.m[1][1] = std_yy_;
+      initial_pose_hyp_->pf_pose_cov.m[2][2] = std_tt_;
+    }
+        
     pf_init(pf_, initial_pose_hyp_->pf_pose_mean, initial_pose_hyp_->pf_pose_cov);
     pf_init_ = false;
 
