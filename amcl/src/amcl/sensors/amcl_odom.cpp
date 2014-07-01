@@ -182,18 +182,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
                        ndata->delta.v[1]*ndata->delta.v[1]);
     delta_rot2 = angle_diff(ndata->delta.v[2], delta_rot1);
 
-    bool backwards = false; 
-
-    double dt = atan2(ndata->delta.v[1], ndata->delta.v[0]);
-
-    double delta_t_s = ndata->delta.v[0] * cos(dt) + ndata->delta.v[1] * sin(dt);
-
-    if(delta_t_s < 0){
-      backwards = true;
-      fprintf(stdout, "Robot moved backwards Dx : %.2f, Dy : %.2f -> Delta (with sign) : %.2f\n", 
-	      ndata->delta.v[0], ndata->delta.v[1], delta_t_s);
-    }
-
     // We want to treat backward and forward motion symmetrically for the
     // noise model to be applied below.  The standard model seems to assume
     // forward motion.
@@ -226,24 +214,16 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       delta_rot1_hat = angle_diff(delta_rot1,
                                   pf_ran_gaussian(std_rot_1));
       delta_trans_hat = delta_trans - 
-	pf_ran_gaussian(std_trans);
+          pf_ran_gaussian(std_trans);
       
       delta_rot2_hat = angle_diff(delta_rot2,
                                   pf_ran_gaussian(std_rot_2));
 
       // Apply sampled update to particle pose
-      if(!backwards){
-	sample->pose.v[0] += delta_trans_hat * 
-	  cos(sample->pose.v[2] + delta_rot1_hat);
-	sample->pose.v[1] += delta_trans_hat * 
-	  sin(sample->pose.v[2] + delta_rot1_hat);
-      }
-      else{
-	sample->pose.v[0] -= delta_trans_hat * 
-	  cos(sample->pose.v[2] + delta_rot1_hat);
-	sample->pose.v[1] -= delta_trans_hat * 
-	  sin(sample->pose.v[2] + delta_rot1_hat);
-      }
+      sample->pose.v[0] += delta_trans_hat * 
+          cos(sample->pose.v[2] + delta_rot1_hat);
+      sample->pose.v[1] += delta_trans_hat * 
+          sin(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[2] += delta_rot1_hat + delta_rot2_hat;
       sample->weight = 1.0 / set->sample_count;  //does this reset the weight??? wtf
     }
