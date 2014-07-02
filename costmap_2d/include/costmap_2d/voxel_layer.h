@@ -73,7 +73,6 @@ namespace costmap_2d
     int size;
 
   GridmapLocations(int size_=0):size(size_), last_utimes(0){
-      fprintf(stdout, "Gridmap timestamp constructor called");
       if(size > 0){
 	last_utimes = new double[size];
 	reset();
@@ -87,7 +86,6 @@ namespace costmap_2d
 	  delete last_utimes;
 	last_utimes = new double[size];
       }
-      fprintf(stdout, "Gridmap timestamp reset called -> size : %d", new_size);
       reset();
     }
     
@@ -143,6 +141,7 @@ private:
 
   bool publish_voxel_;
   bool clear_old_;
+  double max_obstacle_persistance_; 
   ros::Publisher voxel_pub_;
   voxel_grid::VoxelGrid voxel_grid_;
   double z_resolution_, origin_z_;

@@ -261,19 +261,20 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
   cell_ox = int((new_origin_x - origin_x_) / resolution_);
   cell_oy = int((new_origin_y - origin_y_) / resolution_);
 
-  bool big_jump = false;
   if(cell_ox == 0 && cell_oy == 0){
     return;
   } 
 
-  double map_jump = hypot(new_origin_x - origin_x_, new_origin_y - origin_y_);
+  bool big_jump = false;
+  //this is a check to see if the robot has made a big jump - this should invalidate the map and 
+  //we prob should not be copying over the data 
+  //this could happen during a localization init phase 
+  /*double map_jump = hypot(new_origin_x - origin_x_, new_origin_y - origin_y_);
   if(map_jump > 0.5){
     big_jump = true;
     fprintf(stdout, "Big Jump (%.3f) in map coordinates - invalidating the old map", map_jump);
-  }
+    }*/
   
-  fprintf(stdout, "Updating map origin\n");
-
   //compute the associated world coordinates for the origin cell
   //because we want to keep things grid-aligned
   double new_grid_ox, new_grid_oy;

@@ -46,7 +46,10 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
   mark_threshold_ = config.mark_threshold;
   combination_method_ = config.combination_method;
-  clear_old_ = config.clear_old; 
+  clear_old_ = !rolling_window_ && config.clear_old; 
+  if(clear_old_)
+    ROS_INFO("Clearing old obstacles : %d - Rolling %d", config.clear_old, rolling_window_);
+  max_obstacle_persistance_ = config.max_obstacle_persistance; 
   matchSize();
 }
 
@@ -55,7 +58,9 @@ void VoxelLayer::matchSize()
   ObstacleLayer::matchSize();
   voxel_grid_.resize(size_x_, size_y_, size_z_);
   ROS_ASSERT(voxel_grid_.sizeX() == size_x_ && voxel_grid_.sizeY() == size_y_);
-  locations_utime.resize(voxel_grid_.sizeX() * voxel_grid_.sizeY());
+  if(clear_old_){
+    locations_utime.resize(voxel_grid_.sizeX() * voxel_grid_.sizeY());
+  }
 }
 
 void VoxelLayer::reset()
@@ -63,7 +68,9 @@ void VoxelLayer::reset()
   deactivate();
   resetMaps();
   voxel_grid_.reset();
-  locations_utime.reset();
+  if(clear_old_){
+    locations_utime.reset();
+  }
   activate();
 }
 
@@ -71,27 +78,21 @@ void VoxelLayer::reset_old_costs(){
   double current_time = ros::Time::now().toSec();
   for(int i=0; i < new_obs_list.size(); i++){
     CostMapList &list = new_obs_list[i];
-    if((current_time - list.obs_timestamp / 1.0e6) > 3.0){
-      //fprintf(stdout, "Clearing offset : (delay) %f\n", current_time - list.obs_timestamp / 1.0e6); 
-      //but how do we prevent this from over writing an obstacle that was also there at a later time? since we didn't clear it 
+    if((current_time - list.obs_timestamp / 1.0e6) > max_obstacle_persistance_){
       int cleared_count = 0;
 
       for(int j=0; j < list.indices.size(); j++){
 	if(locations_utime[list.indices[j]] == list.obs_timestamp / 1.0e6){
-	  //reset means clear??
-	  /*fprintf(stdout, "Gridmap index : %d last updated %f -> Obs ts : %f\n", 
-		  list.indices[j], locations_utime[list.indices[j]], 
-		  list.obs_timestamp / 1.0e6);*/
-	  //fprintf(stdout, "Clearing : %d\t", list.indices[j]);
 	  costmap_[list.indices[j]] = FREE_SPACE; 
 	  locations_utime[list.indices[j]] = -1;
 	  cleared_count++;
 	}
       }
-
-      fprintf(stdout, "[Removing] Obs Time : %f - time passed : %f - Cleared / (Total) : %d / (%d)\n", 
-	      list.obs_timestamp / 1.0e6, current_time - list.obs_timestamp / 1.0e6, 
-	      cleared_count, (int) list.indices.size());
+      if(0){
+	fprintf(stdout, "[Removing] Obs Time : %f - time passed : %f - Cleared / (Total) : %d / (%d)\n", 
+		list.obs_timestamp / 1.0e6, current_time - list.obs_timestamp / 1.0e6, 
+		cleared_count, (int) list.indices.size());
+      }
     }
     else{
       //remove the costmap_list upto (and not including this)
@@ -101,7 +102,6 @@ void VoxelLayer::reset_old_costs(){
       break;
     }
   }
-
 }
 
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -128,7 +128,9 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
 
-  reset_old_costs();
+  if(clear_old_){
+    reset_old_costs();
+  }
 
   //get the marking observations
   current = current && getMarkingObservations(observations);
@@ -153,9 +155,9 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
     const Observation& obs = *it;
 
     CostMapList cm_list; 
-
+    
     cm_list.obs_timestamp = obs.cloud_->header.stamp; 
-
+    
     //fprintf(stdout, "Time delay: %f\n", current_time - obs.cloud_->header.stamp/1.0e6);
 
     const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
@@ -198,24 +200,26 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
       {
         unsigned int index = getIndex(mx, my);
 	//these are the ones set as occupied 
-	cm_list.indices.push_back(index);
 	costmap_[index] = LETHAL_OBSTACLE;
-	locations_utime[index] = obs_ts; 
-	count++;
+
+	if(clear_old_){
+	  //if rolling window - the indexs will get invalidated 
+	  //we will have to keep the x,y values 
+	  cm_list.indices.push_back(index);
+	  locations_utime[index] = obs_ts; 
+	  count++;
+	}
+
 	touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
       }
     }
-    if(count > 0){
+    if(clear_old_ && count > 0){
       new_obs_list.push_back(cm_list);
-      fprintf(stdout, "[Adding] Obstales - Obs time : %f - added count : %d\n", obs_ts, count);
+      if(0){
+	fprintf(stdout, "[Adding] Obstales - Obs time : %f - added count : %d\n", obs_ts, count);
+      }
     }
   }
-  
-  /*
-  new_obs_list.clear();
-  new_obs_list.push_back(cm_list);
-
-  fprintf(stderr, "Updated indices : %d", (int) cm_list.indices.size());*/
 
   if (publish_voxel_)
   {
@@ -423,7 +427,6 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
     return;
   } 
 
-  fprintf(stdout, "VM : Updating origin\n");
   //compute the associated world coordinates for the origin cell
   //beacuase we want to keep things grid-aligned
   double new_grid_ox, new_grid_oy;
