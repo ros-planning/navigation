@@ -159,7 +159,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += (delta_trans_hat * sn_bearing - 
                             delta_strafe_hat * cs_bearing);
       sample->pose.v[2] += delta_rot_hat ;
-      sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -200,12 +199,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
     double std_rot_2 = this->alpha1*delta_rot2_noise*delta_rot2_noise +
       this->alpha2*delta_trans*delta_trans;
 
-    if(0){
-      fprintf(stdout, "Delta : %f, %f, %f Std R1 : %.4f T : %.4f R2: %.4f\n", 
-	      delta_rot1, delta_trans, delta_rot2, std_rot_1, std_trans, 
-	      std_rot_2);
-    }
-
     for (int i = 0; i < set->sample_count; i++)
     {
       pf_sample_t* sample = set->samples + i;
@@ -214,18 +207,17 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       delta_rot1_hat = angle_diff(delta_rot1,
                                   pf_ran_gaussian(std_rot_1));
       delta_trans_hat = delta_trans - 
-	pf_ran_gaussian(std_trans);
+          pf_ran_gaussian(std_trans);
       
       delta_rot2_hat = angle_diff(delta_rot2,
                                   pf_ran_gaussian(std_rot_2));
 
       // Apply sampled update to particle pose
       sample->pose.v[0] += delta_trans_hat * 
-              cos(sample->pose.v[2] + delta_rot1_hat);
+          cos(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[1] += delta_trans_hat * 
-              sin(sample->pose.v[2] + delta_rot1_hat);
+          sin(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[2] += delta_rot1_hat + delta_rot2_hat;
-      sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -265,7 +257,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += (delta_trans_hat * sn_bearing - 
                             delta_strafe_hat * cs_bearing);
       sample->pose.v[2] += delta_rot_hat ;
-      sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -318,7 +309,6 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += delta_trans_hat * 
               sin(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[2] += delta_rot1_hat + delta_rot2_hat;
-      sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
