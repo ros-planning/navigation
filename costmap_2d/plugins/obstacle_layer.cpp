@@ -208,9 +208,7 @@ void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& mess
   //project the scan into a point cloud
   try
   {
-    //seems to be doing a lot of unnessary work - as I doubt that this uses all the laser scans 
     projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_);
-    //ROS_WARN("Called laser handler");
   }
   catch (tf::TransformException &ex)
   {

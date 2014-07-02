@@ -108,7 +108,6 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   if (!private_nh.hasParam("plugins"))
   {
     resetOldParameters(private_nh);
-    ROS_WARN("No plugin params");
   }
 
   if (private_nh.hasParam("plugins"))
@@ -580,7 +579,6 @@ void Costmap2DROS::updateMap()
     tf::Stamped < tf::Pose > pose;
     if (getRobotPose (pose))
     {
-      //ROS_WARN("Updating map %f", pose.stamp_.toSec());
       layered_costmap_->updateMap(pose.getOrigin().x(), pose.getOrigin().y(), tf::getYaw(pose.getRotation()));
       initialized_ = true;
     }

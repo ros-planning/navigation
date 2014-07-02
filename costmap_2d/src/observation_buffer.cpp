@@ -213,15 +213,11 @@ void ObservationBuffer::purgeStaleObservations()
 {
   if (!observation_list_.empty())
   {
-    int trash_count = 0;
-    
     list<Observation>::iterator obs_it = observation_list_.begin();
     //if we're keeping observations for no time... then we'll only keep one observation
     if (observation_keep_time_ == ros::Duration(0.0))
     {
-      trash_count = observation_list_.size() -1; 
       observation_list_.erase(++obs_it, observation_list_.end());
-      //ROS_WARN("Trashing clouds : %d", trash_count);
       return;
     }
 
@@ -234,8 +230,6 @@ void ObservationBuffer::purgeStaleObservations()
       if ((last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp) > observation_keep_time_)
       {
         observation_list_.erase(obs_it, observation_list_.end());
-	trash_count++;
-	//ROS_WARN("Trashing clouds : %d", trash_count);
         return;
       }
     }
