@@ -58,12 +58,49 @@
 
 namespace costmap_2d
 {
-
   class CostMapList {
   public:
-    ros::Time obs_timestamp; 
-    
+    //ros::Time obs_timestamp; 
+    int64_t obs_timestamp; 
     std::vector<unsigned int> indices;
+  };
+
+  class GridmapLocations {
+  public:
+    //we should keep a second gridmap 
+    //map<unsigned int, int64_t> last_utime; 
+    double *last_utimes;
+    int size;
+
+  GridmapLocations(int size_=0):size(size_), last_utimes(0){
+      fprintf(stdout, "Gridmap timestamp constructor called");
+      if(size > 0){
+	last_utimes = new double[size];
+	reset();
+      }
+    }
+
+    void resize(int new_size){
+      if(size != new_size){
+	size = new_size; 
+	if(last_utimes)
+	  delete last_utimes;
+	last_utimes = new double[size];
+      }
+      fprintf(stdout, "Gridmap timestamp reset called -> size : %d", new_size);
+      reset();
+    }
+    
+    double& operator[](int ind){
+      assert(ind >=0 && ind < size); 
+      return last_utimes[ind]; 
+    } 
+
+    void reset(){
+      for(int i=0; i < size; i++){
+	last_utimes[i] = -1;
+      }
+    }
   };
 
 class VoxelLayer : public ObstacleLayer
@@ -92,6 +129,8 @@ protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
 private:
+  void reset_old_costs(); 
+
   void reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level);
   void clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info);
   virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
@@ -100,8 +139,10 @@ private:
   dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *dsrv_;
 
   std::vector<CostMapList> new_obs_list; 
+  GridmapLocations locations_utime;
 
   bool publish_voxel_;
+  bool clear_old_;
   ros::Publisher voxel_pub_;
   voxel_grid::VoxelGrid voxel_grid_;
   double z_resolution_, origin_z_;
