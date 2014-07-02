@@ -75,6 +75,9 @@ void VoxelLayer::reset()
 }
 
 void VoxelLayer::reset_old_costs(){
+  //removes any obstacles that were put down based on sensor observation when the timer expires 
+  //right now this will clear points that were occupied in the static map 
+  //can we check what the static map had??
   double current_time = ros::Time::now().toSec();
   for(int i=0; i < new_obs_list.size(); i++){
     CostMapList &list = new_obs_list[i];
