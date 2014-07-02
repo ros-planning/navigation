@@ -114,7 +114,6 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   {
     XmlRpc::XmlRpcValue my_list;
     private_nh.getParam("plugins", my_list);
-    
     for (int32_t i = 0; i < my_list.size(); ++i)
     {
       std::string pname = static_cast<std::string>(my_list[i]["name"]);
