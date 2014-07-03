@@ -22,6 +22,9 @@ void VoxelLayer::onInitialize()
   ros::NodeHandle private_nh("~/" + name_);
 
   private_nh.param("publish_voxel_map", publish_voxel_, false);
+
+  private_nh.param("inflation_radius", inflation_radius_, 0.4);
+  ROS_WARN("Inflation radius : %f", inflation_radius_);
   if (publish_voxel_)
     voxel_pub_ = private_nh.advertise < costmap_2d::VoxelGrid > ("voxel_grid", 1);
 
@@ -47,6 +50,10 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   mark_threshold_ = config.mark_threshold;
   combination_method_ = config.combination_method;
   clear_old_ = !rolling_window_ && config.clear_old; 
+
+  inflation_radius_ = config.inflation_radius;
+  ROS_WARN("Inflation radius : %f", inflation_radius_);
+
   if(clear_old_)
     ROS_INFO("Clearing old obstacles : %d - Rolling %d", config.clear_old, rolling_window_);
 
@@ -80,23 +87,43 @@ void VoxelLayer::reset()
 }
 
 void VoxelLayer::resetOldCosts(double* min_x, double* min_y, 
-				 double* max_x, double* max_y){
+			       double* max_x, double* max_y){
   //removes any obstacles that were put down based on sensor observation when the timer expires 
   //right now this will clear points that were occupied in the static map 
   //can we check what the static map had??
   double current_time = ros::Time::now().toSec();
+
+  int total_size = new_obs_list.size();
+  int checked_count = 0; 
+
+  bool trash_all = false; 
+
+  //double buffer = 0.3; 
+
+  int error_count = 0; 
   for(int i=0; i < new_obs_list.size(); i++){
     CostMapList &list = new_obs_list[i];
-    if((current_time - list.obs_timestamp / 1.0e6) > max_obstacle_persistance_){
+    if(trash_all || (current_time - list.obs_timestamp / 1.0e6) > max_obstacle_persistance_){
       int cleared_count = 0;
-
+      checked_count++;
       for(int j=0; j < list.indices.size(); j++){
 	if(locations_utime[list.indices[j].index] == list.obs_timestamp / 1.0e6){
 	  costmap_[list.indices[j].index] = FREE_SPACE; 
 	  locations_utime[list.indices[j].index] = -1;
 	  //increase the map update bounds 
 	  touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
+	  /*touch(list.indices[j].x + buffer, list.indices[j].y, min_x, min_y, max_x, max_y);
+	  touch(list.indices[j].x - buffer, list.indices[j].y, min_x, min_y, max_x, max_y);
+	  touch(list.indices[j].x, list.indices[j].y + buffer, min_x, min_y, max_x, max_y);
+	  touch(list.indices[j].x, list.indices[j].y - buffer, min_x, min_y, max_x, max_y);*/
+	  
 	  cleared_count++;
+	}
+	else{
+	  if(locations_utime[list.indices[j].index] < list.obs_timestamp / 1.0e6 && 
+	     costmap_[list.indices[j].index]!=FREE_SPACE){
+	    error_count++;
+	  }
 	}
       }
       if(0){
@@ -113,6 +140,16 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
       break;
     }
   }
+
+  /*int valid_count = locations_utime.countValid();
+  fprintf(stderr, "Total : %d- Processed : %d -> New : %d => Error count : %d - Valid count : %d\n", 
+	  total_size, checked_count, (int) new_obs_list.size(), error_count, valid_count);
+  */
+  /*if(checked_count){
+    fprintf(stderr, "Bounds : %f,%f,%f,%f - Local : %f,%f,%f,%f\n", 
+	    *max_x, *min_x, *max_y, *min_y, 
+	    l_max_x, l_min_x, l_max_y, l_min_y);
+	    }*/
 }
 
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -223,6 +260,14 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 	fprintf(stdout, "[Adding] Obstales - Obs time : %f - added count : %d\n", obs_ts, count);
       }
     }
+  }
+
+  if(clear_old_){
+    //inflate the bounds - otherwise the inflation layer wont reset the inflated cost 
+    *min_x -= inflation_radius_;
+    *min_y -= inflation_radius_;
+    *max_x += inflation_radius_;
+    *max_y += inflation_radius_;
   }
 
   if (publish_voxel_)

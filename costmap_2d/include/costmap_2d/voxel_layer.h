@@ -92,10 +92,20 @@ namespace costmap_2d
       if(size != new_size){
 	size = new_size; 
 	if(last_utimes)
-	  delete last_utimes;
+	  delete []last_utimes;
 	last_utimes = new double[size];
       }
       reset();
+    }
+
+    int countValid(){
+      int valid_count = 0; 
+      for(int i=0; i < size; i++){
+	if(last_utimes[i] != -1){
+	  valid_count++;
+	}	
+      }
+      return valid_count;
     }
     
     double& operator[](int ind){
@@ -149,6 +159,7 @@ private:
   std::vector<CostMapList> new_obs_list; 
   GridmapLocations locations_utime;
 
+  double inflation_radius_;
   bool publish_voxel_;
   bool clear_old_;
   double max_obstacle_persistance_; 
