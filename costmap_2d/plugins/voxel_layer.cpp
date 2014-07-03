@@ -89,21 +89,15 @@ void VoxelLayer::reset()
 void VoxelLayer::resetOldCosts(double* min_x, double* min_y, 
 			       double* max_x, double* max_y){
   //removes any obstacles that were put down based on sensor observation when the timer expires 
-  //right now this will clear points that were occupied in the static map 
-  //can we check what the static map had??
   double current_time = ros::Time::now().toSec();
 
   int total_size = new_obs_list.size();
   int checked_count = 0; 
 
-  bool trash_all = false; 
-
-  //double buffer = 0.3; 
-
   int error_count = 0; 
   for(int i=0; i < new_obs_list.size(); i++){
     CostMapList &list = new_obs_list[i];
-    if(trash_all || (current_time - list.obs_timestamp / 1.0e6) > max_obstacle_persistance_){
+    if((current_time - list.obs_timestamp / 1.0e6) > max_obstacle_persistance_){
       int cleared_count = 0;
       checked_count++;
       for(int j=0; j < list.indices.size(); j++){
@@ -112,24 +106,7 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
 	  locations_utime[list.indices[j].index] = -1;
 	  //increase the map update bounds 
 	  touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
-	  /*touch(list.indices[j].x + buffer, list.indices[j].y, min_x, min_y, max_x, max_y);
-	  touch(list.indices[j].x - buffer, list.indices[j].y, min_x, min_y, max_x, max_y);
-	  touch(list.indices[j].x, list.indices[j].y + buffer, min_x, min_y, max_x, max_y);
-	  touch(list.indices[j].x, list.indices[j].y - buffer, min_x, min_y, max_x, max_y);*/
-	  
-	  cleared_count++;
 	}
-	else{
-	  if(locations_utime[list.indices[j].index] < list.obs_timestamp / 1.0e6 && 
-	     costmap_[list.indices[j].index]!=FREE_SPACE){
-	    error_count++;
-	  }
-	}
-      }
-      if(0){
-	fprintf(stdout, "[Removing] Obs Time : %f - time passed : %f - Cleared / (Total) : %d / (%d)\n", 
-		list.obs_timestamp / 1.0e6, current_time - list.obs_timestamp / 1.0e6, 
-		cleared_count, (int) list.indices.size());
       }
     }
     else{
@@ -140,16 +117,6 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
       break;
     }
   }
-
-  /*int valid_count = locations_utime.countValid();
-  fprintf(stderr, "Total : %d- Processed : %d -> New : %d => Error count : %d - Valid count : %d\n", 
-	  total_size, checked_count, (int) new_obs_list.size(), error_count, valid_count);
-  */
-  /*if(checked_count){
-    fprintf(stderr, "Bounds : %f,%f,%f,%f - Local : %f,%f,%f,%f\n", 
-	    *max_x, *min_x, *max_y, *min_y, 
-	    l_max_x, l_min_x, l_max_y, l_min_y);
-	    }*/
 }
 
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -256,9 +223,6 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
     }
     if(clear_old_ && count > 0){
       new_obs_list.push_back(cm_list);
-      if(0){
-	fprintf(stdout, "[Adding] Obstales - Obs time : %f - added count : %d\n", obs_ts, count);
-      }
     }
   }
 
