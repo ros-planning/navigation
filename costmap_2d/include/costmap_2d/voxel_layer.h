@@ -58,11 +58,20 @@
 
 namespace costmap_2d
 {
+  class ObstaclePoint {
+  public:
+    unsigned int index;
+    double x; 
+    double y; 
+
+  ObstaclePoint(unsigned int index_, double x_, double y_):index(index_), x(x_), y(y_){}
+  };
+
   //keeps track of the indices updated for each observation
   class CostMapList {
   public:
     int64_t obs_timestamp; 
-    std::vector<unsigned int> indices;
+    std::vector<ObstaclePoint> indices;
   };
 
   //keeps track of the last time each index location was updated 
@@ -127,7 +136,8 @@ protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
 private:
-  void reset_old_costs(); 
+  void resetOldCosts(double* min_x, double* min_y, 
+		     double* max_x, double* max_y); 
 
   void reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level);
   void clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info);

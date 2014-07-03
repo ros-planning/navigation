@@ -79,7 +79,8 @@ void VoxelLayer::reset()
   activate();
 }
 
-void VoxelLayer::reset_old_costs(){
+void VoxelLayer::resetOldCosts(double* min_x, double* min_y, 
+				 double* max_x, double* max_y){
   //removes any obstacles that were put down based on sensor observation when the timer expires 
   //right now this will clear points that were occupied in the static map 
   //can we check what the static map had??
@@ -90,9 +91,11 @@ void VoxelLayer::reset_old_costs(){
       int cleared_count = 0;
 
       for(int j=0; j < list.indices.size(); j++){
-	if(locations_utime[list.indices[j]] == list.obs_timestamp / 1.0e6){
-	  costmap_[list.indices[j]] = FREE_SPACE; 
-	  locations_utime[list.indices[j]] = -1;
+	if(locations_utime[list.indices[j].index] == list.obs_timestamp / 1.0e6){
+	  costmap_[list.indices[j].index] = FREE_SPACE; 
+	  locations_utime[list.indices[j].index] = -1;
+	  //increase the map update bounds 
+	  touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
 	  cleared_count++;
 	}
       }
@@ -136,7 +139,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
   std::vector<Observation> observations, clearing_observations;
 
   if(clear_old_){
-    reset_old_costs();
+    resetOldCosts(min_x, min_y, max_x, max_y);
   }
 
   //get the marking observations
@@ -208,7 +211,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
 	//keep track of which indexs we updated 
 	if(clear_old_){
-	  cm_list.indices.push_back(index);
+	  cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
 	  locations_utime[index] = obs_ts; 
 	  count++;
 	}
