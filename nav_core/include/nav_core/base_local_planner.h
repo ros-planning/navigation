@@ -63,6 +63,12 @@ namespace nav_core {
       virtual bool isGoalReached() = 0;
 
       /**
+       * @brief  Check if the local planner has reached the goal and is rotating in place
+       * @return True if rotating, false otherwise
+       */
+      virtual bool isRotatingToGoal() {return false;}
+
+      /**
        * @brief  Set the plan that the local planner is following
        * @param orig_global_plan The plan to pass to the local planner
        * @return True if the plan was updated successfully, false otherwise

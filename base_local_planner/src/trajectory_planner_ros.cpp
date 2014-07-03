@@ -68,6 +68,7 @@ namespace base_local_planner {
         setup_ = true;
       }
       tc_->reconfigure(config);
+      reached_goal_ = false;
   }
 
   TrajectoryPlannerROS::TrajectoryPlannerROS() :
@@ -202,6 +203,8 @@ namespace base_local_planner {
       max_vel_th_ = max_rotational_vel;
       min_vel_th_ = -1.0 * max_rotational_vel;
       private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
+
+      reached_goal_ = false;
 
       backup_vel = -0.1;
       if(private_nh.getParam("backup_vel", backup_vel))
@@ -348,7 +351,7 @@ namespace base_local_planner {
     bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw, 
         robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), vel_yaw, 0.0, 0.0, v_theta_samp);
 
-    ROS_DEBUG("Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
+    ROS_INFO("Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d -> Angle diff : %.3f", v_theta_samp, valid_cmd, ang_diff);
 
     if(valid_cmd){
       cmd_vel.angular.z = v_theta_samp;
@@ -366,12 +369,17 @@ namespace base_local_planner {
       return false;
     }
 
+    //we could perhaps not update the plan if rotating in place??
+    //esp if the goal is the same 
+
     //reset the global plan
     global_plan_.clear();
     global_plan_ = orig_global_plan;
 
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
     xy_tolerance_latch_ = false;
+
+    reached_goal_ = false;
 
     return true;
   }
@@ -423,7 +431,7 @@ namespace base_local_planner {
 
     double yaw = tf::getYaw(goal_point.getRotation());
 
-    double goal_th = yaw;
+    double goal_th = yaw; 
 
     static bool print_dist_goal = false; 
 
@@ -443,35 +451,51 @@ namespace base_local_planner {
       double angle = getGoalOrientationAngleDifference(global_pose, goal_th);
       //check to see if the goal orientation has been reached
       if (fabs(angle) <= yaw_goal_tolerance_) {
-        //set the velocity command to zero
+        //set the velocity command to zero - reached the goal - setting the reached goal variable true
+	bool base_is_goal_reached = isGoalReached();
+
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
         rotating_to_goal_ = false;
         xy_tolerance_latch_ = false;
-      } else {
+	reached_goal_ = true;
+	ROS_WARN("Reached Goal - Setting rotate in place to zero Base goal reached : %d", base_is_goal_reached);
+      } 
+      else {
         //we need to call the next two lines to make sure that the trajectory
         //planner updates its path distance and goal distance grids
-        tc_->updatePlan(transformed_plan);
-        Trajectory path = tc_->findBestPath(global_pose, robot_vel, drive_cmds);
-        map_viz_.publishCostCloud(costmap_);
-        //copy over the odometry information
-        nav_msgs::Odometry base_odom;
-        odom_helper_.getOdom(base_odom);
+	nav_msgs::Odometry base_odom;
+	odom_helper_.getOdom(base_odom);
+	bool stopped = false; 
+	stopped = base_local_planner::stopped(base_odom, rot_stopped_velocity_, trans_stopped_velocity_);
 
-        //if we're not stopped yet... we want to stop... taking into account the acceleration limits of the robot
-        if ( ! rotating_to_goal_ && !base_local_planner::stopped(base_odom, rot_stopped_velocity_, trans_stopped_velocity_)) {
-          if ( ! stopWithAccLimits(global_pose, robot_vel, cmd_vel)) {
-            return false;
-          }
-        }
+	//we should update the plan if we are not rotating to goal
+	if(!rotating_to_goal_ && !stopped){ 
+	  if ( ! stopWithAccLimits(global_pose, robot_vel, cmd_vel)) {
+	    ROS_WARN("Unable to stop within given time");
+	    return false;
+	  }
+	  else{
+	     ROS_INFO("Within goal xy tollerance and robot still moving - stopping robot");
+	  }
+	}	
         //if we're stopped... then we want to rotate to goal
         else{
           //set this so that we know its OK to be moving
-          rotating_to_goal_ = true;
+          //rotating_to_goal_ = true;
+	  if(!rotating_to_goal_ && stopped){
+	    ROS_INFO("Robot within goal tollerance and stopped - Issuing turning in place");
+	  }
+	  else if(rotating_to_goal_){
+	    ROS_INFO("Continuing to turn in place");
+	  }
+
           if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
+	    ROS_INFO("Failed to rotate to goal");
             return false;
           }
+	  rotating_to_goal_ = true;
         }
       }
 
@@ -483,6 +507,7 @@ namespace base_local_planner {
       return true;
     }
     else{
+      rotating_to_goal_ = false;
       print_dist_goal = true;
     }
 
@@ -607,34 +632,6 @@ namespace base_local_planner {
       return false;
     }
 
-    //copy over the odometry information
-    nav_msgs::Odometry base_odom;
-    odom_helper_.getOdom(base_odom);
-    tf::Stamped<tf::Pose> global_pose;
-    costmap_ros_->getRobotPose(global_pose);
-
-    bool goal_reached = base_local_planner::isGoalReached(*tf_,
-							  global_plan_,
-							  *costmap_,
-							  global_frame_,
-							  global_pose,
-							  base_odom,
-							  rot_stopped_velocity_, trans_stopped_velocity_,
-							  xy_goal_tolerance_, yaw_goal_tolerance_);
-
-    /*if(goal_reached){
-      tf::Stamped<tf::Pose> goal_point;
-      tf::poseStampedMsgToTF(transformed_plan.back(), goal_point);
-      //we assume the global goal is the last point in the global plan
-      double goal_x = goal_point.getOrigin().getX();
-      double goal_y = goal_point.getOrigin().getY();
-
-      double yaw = tf::getYaw(goal_point.getRotation());
-
-      double goal_th = yaw;
-      double final_dist_to_goal = getGoalPositionDistance(global_pose, goal_x, goal_y);
-      }*/
-
-    return goal_reached; 
+    return reached_goal_;   
   }
 };

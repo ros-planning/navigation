@@ -627,7 +627,7 @@ namespace move_base {
 
       //run planner
       planner_plan_->clear();
-
+      ROS_WARN("Looking for global plan");
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
       if(gotPlan){
@@ -907,7 +907,8 @@ namespace move_base {
 
         //check to see if we've reached our goal
         if(tc_->isGoalReached()){
-          ROS_DEBUG_NAMED("move_base","Goal reached!");
+          ROS_DEBUG_NAMED("move_base", "Goal reached!");
+	  ROS_WARN("move_base Goal reached!!!");
           resetState();
 
           //disable the planner thread
@@ -918,6 +919,9 @@ namespace move_base {
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           return true;
         }
+	else{
+	  ROS_WARN("Goal not reached --");
+	}
 
         //check for an oscillation condition
         if(oscillation_timeout_ > 0.0 &&
@@ -936,6 +940,21 @@ namespace move_base {
 			     cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
 	    last_valid_control_ = ros::Time::now();
 	    //make sure that we send the velocity command to the base
+	    
+	    if(tc_->isRotatingToGoal()){
+	      //turn off the global planner - we don't need it anymore 
+	      //disable the planner thread
+	      boost::unique_lock<boost::mutex> lock(planner_mutex_);
+	      if(runPlanner_){
+		ROS_WARN("Robot turning towards goal - stopping global planner thread");
+		runPlanner_ = false;
+	      }
+	      lock.unlock();
+	    }
+
+	    //we should shut down the controller if we are rotating in place
+	    //tc_->isRotatingToGoal - unfortunately this is not in the base_local_planner_interface 
+	    
 	    vel_pub_.publish(cmd_vel);
 	    if(recovery_trigger_ == CONTROLLING_R)
 	      recovery_index_ = 0;
