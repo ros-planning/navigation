@@ -419,7 +419,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     }
 
     if(found_legal){
-      ROS_INFO("Global planner found path to goal");
+      ROS_DEBUG("Global planner found path to goal");
     }
 
     if(!old_navfn_behavior_)
