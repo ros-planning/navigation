@@ -96,7 +96,7 @@ angle_diff(double a, double b)
     return(d2);
 }
 
-static const std::string scan_topic_ = "scan";
+static const std::string scan_topic_default_ = "scan";
 
 class AmclNode
 {
@@ -114,6 +114,7 @@ class AmclNode
 
     tf::Transform latest_tf_;
     bool latest_tf_valid_;
+    std::string scan_topic_;
 
     // Pose-generating function used to uniformly distribute particles over
     // the map
@@ -310,6 +311,8 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha4", alpha4_, 0.2);
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
 
+  private_nh_.param("scan_topic", scan_topic_, scan_topic_default_);
+
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
   private_nh_.param("laser_z_max", z_max_, 0.05);
@@ -412,6 +415,8 @@ AmclNode::AmclNode() :
 					 &AmclNode::globalLocalizationCallback,
                                          this);
   nomotion_update_srv_= nh_.advertiseService("request_nomotion_update", &AmclNode::nomotionUpdateCallback, this);
+
+  ROS_INFO("Scan Topic : %s", scan_topic_.c_str());
 
   laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
   laser_scan_filter_ = 
