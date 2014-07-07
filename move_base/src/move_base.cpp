@@ -136,10 +136,10 @@ namespace move_base {
     }
 
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
-
+    ROS_WARN("Creating local cost map");
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
     controller_costmap_ros_->pause();
-
+    ROS_WARN("Done creating local cost map");
     //create a local planner
     try {
       //check if a non fully qualified name has potentially been passed in
@@ -627,7 +627,6 @@ namespace move_base {
 
       //run planner
       planner_plan_->clear();
-
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
       if(gotPlan){
@@ -907,7 +906,7 @@ namespace move_base {
 
         //check to see if we've reached our goal
         if(tc_->isGoalReached()){
-          ROS_DEBUG_NAMED("move_base","Goal reached!");
+          ROS_DEBUG_NAMED("move_base", "Goal reached!");
           resetState();
 
           //disable the planner thread
@@ -936,6 +935,18 @@ namespace move_base {
 			     cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
 	    last_valid_control_ = ros::Time::now();
 	    //make sure that we send the velocity command to the base
+	    
+	    if(tc_->isRotatingToGoal()){
+	      //turn off the global planner - we don't need it anymore 
+	      //disable the planner thread
+	      boost::unique_lock<boost::mutex> lock(planner_mutex_);
+	      if(runPlanner_){
+		//Robot turning towards goal - stopping global planner thread
+		runPlanner_ = false;
+	      }
+	      lock.unlock();
+	    }
+
 	    vel_pub_.publish(cmd_vel);
 	    if(recovery_trigger_ == CONTROLLING_R)
 	      recovery_index_ = 0;
