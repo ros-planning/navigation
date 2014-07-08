@@ -49,11 +49,9 @@ if(CATKIN_ENABLE_TESTING)
   link_directories(${GTEST_LIBRARY_DIRS})
 
   # Create targets for test executables
-  catkin_add_gtest(clear_tester test/clear_tester.cpp)
+  add_rostest_gtest(clear_tester test/clear_tests.launch test/clear_tester.cpp)
   add_dependencies(tests clear_tester)
   target_link_libraries(clear_tester clear_costmap_recovery ${GTEST_LIBRARIES})
-
-  add_rostest(test/clear_tests.launch)
 endif()
 
 
