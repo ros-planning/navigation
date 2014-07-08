@@ -145,6 +145,7 @@ class AmclNode
     std::string base_frame_id_;
     std::string global_frame_id_;
 
+    bool publish_basic_pose_;
     bool use_map_topic_;
     bool first_map_only_;
   
@@ -204,6 +205,7 @@ class AmclNode
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
     ros::Publisher pose_pub_;
+    ros::Publisher pose_basic_pub_;
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
@@ -311,6 +313,7 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha4", alpha4_, 0.2);
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
 
+  private_nh_.param("publish_basic_pose", publish_basic_pose_, false);
   private_nh_.param("scan_topic", scan_topic_, scan_topic_default_);
 
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
@@ -410,6 +413,7 @@ AmclNode::AmclNode() :
   tf_ = new tf::TransformListener();
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
+  pose_basic_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("amcl_basic_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
@@ -1273,6 +1277,24 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     }
   }
 
+  if(publish_basic_pose_){
+    tf::Pose map_pose = latest_tf_.inverse() * odom_pose;
+    double yaw,pitch,roll;
+    map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
+
+    geometry_msgs::PoseStamped p_basic;
+    // Fill in the header
+    p_basic.header.frame_id = global_frame_id_;
+    p_basic.header.stamp = laser_scan->header.stamp;
+    // Copy in the pose
+    p_basic.pose.position.x = map_pose.getOrigin().x();
+    p_basic.pose.position.y = map_pose.getOrigin().y();
+    tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw),
+			  p_basic.pose.orientation);
+
+    pose_basic_pub_.publish(p_basic);
+  }
+  
 }
 
 double
