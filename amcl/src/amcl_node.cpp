@@ -96,7 +96,7 @@ angle_diff(double a, double b)
     return(d2);
 }
 
-static const std::string scan_topic_default_ = "scan";
+static const std::string scan_topic_ = "scan";
 
 class AmclNode
 {
@@ -114,7 +114,6 @@ class AmclNode
 
     tf::Transform latest_tf_;
     bool latest_tf_valid_;
-    std::string scan_topic_;
 
     // Pose-generating function used to uniformly distribute particles over
     // the map
@@ -314,8 +313,6 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
 
   private_nh_.param("publish_basic_pose", publish_basic_pose_, false);
-  private_nh_.param("scan_topic", scan_topic_, scan_topic_default_);
-
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
   private_nh_.param("laser_z_max", z_max_, 0.05);
@@ -879,7 +876,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   // Do we have the base->base_laser Tx yet?
   if(frame_to_laser_.find(laser_scan->header.frame_id) == frame_to_laser_.end())
   {
-    ROS_DEBUG("Setting up laser %d (frame_id=%s)\n", (int)frame_to_laser_.size(), laser_scan->header.frame_id.c_str());
+    ROS_INFO("Setting up laser %d (frame_id=%s)\n", (int)frame_to_laser_.size(), laser_scan->header.frame_id.c_str());
     lasers_.push_back(new AMCLLaser(*laser_));
     lasers_update_.push_back(true);
     laser_index = frame_to_laser_.size();
