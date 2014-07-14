@@ -38,6 +38,7 @@
 #define TRAJECTORY_ROLLOUT_TRAJECTORY_PLANNER_H_
 
 #include <vector>
+#include <map>
 #include <cmath>
 
 //for obstacle data access
@@ -60,6 +61,9 @@
 //for creating a local cost grid
 #include <base_local_planner/map_cell.h>
 #include <base_local_planner/map_grid.h>
+
+//for visualizing the trajectories
+#include <visualization_msgs/MarkerArray.h>
 
 namespace base_local_planner {
   /**
@@ -123,7 +127,8 @@ namespace base_local_planner {
           bool simple_attractor = false,
           std::vector<double> y_vels = std::vector<double>(0),
           double stop_time_buffer = 0.2,
-          double sim_period = 0.1, double angular_sim_granularity = 0.025);
+          double sim_period = 0.1, double angular_sim_granularity = 0.025,
+          bool publish_trajectories = false);
 
       /**
        * @brief  Destructs a trajectory controller
@@ -258,7 +263,7 @@ namespace base_local_planner {
       double footprintCost(double x_i, double y_i, double theta_i);
 
       base_local_planner::FootprintHelper footprint_helper_;
-    
+
       MapGrid path_map_; ///< @brief The local map grid where we propagate path distance
       MapGrid goal_map_; ///< @brief The local map grid where we propagate goal distance
       const costmap_2d::Costmap2D& costmap_; ///< @brief Provides access to cost map information
@@ -301,7 +306,7 @@ namespace base_local_planner {
       double oscillation_reset_dist_; ///< @brief The distance the robot must travel before it can explore rotational velocities that were unsuccessful in the past
       double escape_reset_dist_, escape_reset_theta_; ///< @brief The distance the robot must travel before it can leave escape mode
       bool holonomic_robot_; ///< @brief Is the robot holonomic or not? 
-      
+
       double max_vel_x_, min_vel_x_, max_vel_th_, min_vel_th_, min_in_place_vel_th_; ///< @brief Velocity limits for the controller
 
       double backup_vel_; ///< @brief The velocity to use while backing up
@@ -318,7 +323,13 @@ namespace base_local_planner {
 
       double inscribed_radius_, circumscribed_radius_;
 
+      bool publish_trajectories_;
+
       boost::mutex configuration_mutex_;
+
+      ros::Publisher trajectory_pub_;
+      typedef std::map<std::string, visualization_msgs::MarkerArray> MarkerCollection;
+      MarkerCollection trajectory_markers_;
 
       /**
        * @brief  Compute x position based on velocity

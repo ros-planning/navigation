@@ -42,7 +42,7 @@
 #include <math.h>
 #include <angles/angles.h>
 
-
+#include <tf/transform_datatypes.h>
 
 #include <boost/algorithm/string.hpp>
 
@@ -56,86 +56,166 @@ using namespace costmap_2d;
 
 namespace base_local_planner{
 
+  visualization_msgs::Marker createTrajectoryMarker(
+      const std::string& ns,
+      unsigned int id,
+      const tf::Point& position, const tf::Quaternion& orientation,
+      double cost)
+  {
+    visualization_msgs::Marker marker;
+
+    marker.header.frame_id = "odom";
+    marker.header.stamp = ros::Time::now();
+
+    marker.ns = ns;
+    marker.id = id;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.type = visualization_msgs::Marker::ARROW;
+
+    marker.pose.position.x = position.x();
+    marker.pose.position.y = position.y();
+    marker.pose.position.z = position.z();
+
+    tf::quaternionTFToMsg(orientation, marker.pose.orientation);
+
+    marker.scale.x = 0.01;
+    marker.scale.y = 0.002;
+    marker.scale.z = 0.002;
+
+    // @todo color from cost (it's not trivial to obtain a cost upper bound)
+    marker.color.r = 1.0;
+    marker.color.g = 1.0;
+    marker.color.b = 1.0;
+    marker.color.a = 1.0;
+
+    return marker;
+  }
+
+  visualization_msgs::Marker createTrajectoryMarker(
+      const std::string& ns,
+      unsigned int id,
+      const Trajectory& trajectory)
+  {
+    double x, y, theta;
+    trajectory.getEndpoint(x, y, theta);
+    return createTrajectoryMarker(
+        ns, id,
+        tf::Point(x, y, 0), tf::createQuaternionFromYaw(theta),
+        trajectory.cost_);
+    // @todo consider including:
+    // - trajectory.vx, vy, vth
+    // - all trajectory points using trajectory.getPoint
+  }
+
+  void deleteTrajectoryMarkers(visualization_msgs::MarkerArray& marker)
+  {
+    for (unsigned int i = 0, n = marker.markers.size(); i != n; ++i)
+    {
+      // Set the frame_id to manage easily markers not ADDed yet
+      marker.markers[i].header.frame_id = "odom";
+      marker.markers[i].action = visualization_msgs::Marker::DELETE;
+    }
+  }
+
   void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg)
   {
-      BaseLocalPlannerConfig config(cfg);
+    BaseLocalPlannerConfig config(cfg);
 
-      boost::mutex::scoped_lock l(configuration_mutex_);
+    boost::mutex::scoped_lock l(configuration_mutex_);
 
-      acc_lim_x_ = config.acc_lim_x;
-      acc_lim_y_ = config.acc_lim_y;
-      acc_lim_theta_ = config.acc_lim_theta;
+    acc_lim_x_ = config.acc_lim_x;
+    acc_lim_y_ = config.acc_lim_y;
+    acc_lim_theta_ = config.acc_lim_theta;
 
-      max_vel_x_ = config.max_vel_x;
-      min_vel_x_ = config.min_vel_x;
-      
-      max_vel_th_ = config.max_vel_theta;
-      min_vel_th_ = config.min_vel_theta;
-      min_in_place_vel_th_ = config.min_in_place_vel_theta;
+    max_vel_x_ = config.max_vel_x;
+    min_vel_x_ = config.min_vel_x;
 
-      sim_time_ = config.sim_time;
-      sim_granularity_ = config.sim_granularity;
-      angular_sim_granularity_ = config.angular_sim_granularity;
+    max_vel_th_ = config.max_vel_theta;
+    min_vel_th_ = config.min_vel_theta;
+    min_in_place_vel_th_ = config.min_in_place_vel_theta;
 
-      pdist_scale_ = config.pdist_scale;
-      gdist_scale_ = config.gdist_scale;
-      occdist_scale_ = config.occdist_scale;
+    sim_time_ = config.sim_time;
+    sim_granularity_ = config.sim_granularity;
+    angular_sim_granularity_ = config.angular_sim_granularity;
 
-      if (meter_scoring_) {
-        //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
-        double resolution = costmap_.getResolution();
-        gdist_scale_ *= resolution;
-        pdist_scale_ *= resolution;
-        occdist_scale_ *= resolution;
-      }
+    pdist_scale_ = config.pdist_scale;
+    gdist_scale_ = config.gdist_scale;
+    occdist_scale_ = config.occdist_scale;
 
-      oscillation_reset_dist_ = config.oscillation_reset_dist;
-      escape_reset_dist_ = config.escape_reset_dist;
-      escape_reset_theta_ = config.escape_reset_theta;
+    if (meter_scoring_) {
+      //if we use meter scoring, then we want to multiply the biases by the resolution of the costmap
+      double resolution = costmap_.getResolution();
+      gdist_scale_ *= resolution;
+      pdist_scale_ *= resolution;
+      occdist_scale_ *= resolution;
+    }
 
+    oscillation_reset_dist_ = config.oscillation_reset_dist;
+    escape_reset_dist_ = config.escape_reset_dist;
+    escape_reset_theta_ = config.escape_reset_theta;
+
+    vx_samples_ = config.vx_samples;
+    vtheta_samples_ = config.vtheta_samples;
+
+    if (vx_samples_ <= 0) {
+      config.vx_samples = 1;
       vx_samples_ = config.vx_samples;
+      ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
+    }
+    if(vtheta_samples_ <= 0) {
+      config.vtheta_samples = 1;
       vtheta_samples_ = config.vtheta_samples;
+      ROS_WARN("You've specified that you don't want any samples in the theta dimension. We'll at least assume that you want to sample one value... so we're going to set vtheta_samples to 1 instead");
+    }
 
-      if (vx_samples_ <= 0) {
-          config.vx_samples = 1;
-          vx_samples_ = config.vx_samples;
-          ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
+    heading_lookahead_ = config.heading_lookahead;
+
+    holonomic_robot_ = config.holonomic_robot;
+
+    backup_vel_ = config.escape_vel;
+
+    dwa_ = config.dwa;
+
+    heading_scoring_ = config.heading_scoring;
+    heading_scoring_timestep_ = config.heading_scoring_timestep;
+
+    simple_attractor_ = config.simple_attractor;
+
+    //y-vels
+    string y_string = config.y_vels;
+    vector<string> y_strs;
+    boost::split(y_strs, y_string, boost::is_any_of(", "), boost::token_compress_on);
+
+    vector<double>y_vels;
+    for(vector<string>::iterator it=y_strs.begin(); it != y_strs.end(); ++it) {
+      istringstream iss(*it);
+      double temp;
+      iss >> temp;
+      y_vels.push_back(temp);
+      //ROS_INFO("Adding y_vel: %e", temp);
+    }
+
+    y_vels_ = y_vels;
+
+    if (publish_trajectories_)
+    {
+      // Delete previous markers
+      for (MarkerCollection::iterator i = trajectory_markers_.begin(), n = trajectory_markers_.end(); i != n; ++i)
+      {
+        deleteTrajectoryMarkers(i->second);
+        trajectory_pub_.publish(i->second);
       }
-      if(vtheta_samples_ <= 0) {
-          config.vtheta_samples = 1;
-          vtheta_samples_ = config.vtheta_samples;
-          ROS_WARN("You've specified that you don't want any samples in the theta dimension. We'll at least assume that you want to sample one value... so we're going to set vtheta_samples to 1 instead");
-      }
+    }
 
-      heading_lookahead_ = config.heading_lookahead;
+    publish_trajectories_ = config.publish_trajectories;
 
-      holonomic_robot_ = config.holonomic_robot;
-      
-      backup_vel_ = config.escape_vel;
-
-      dwa_ = config.dwa;
-
-      heading_scoring_ = config.heading_scoring;
-      heading_scoring_timestep_ = config.heading_scoring_timestep;
-
-      simple_attractor_ = config.simple_attractor;
-
-      //y-vels
-      string y_string = config.y_vels;
-      vector<string> y_strs;
-      boost::split(y_strs, y_string, boost::is_any_of(", "), boost::token_compress_on);
-
-      vector<double>y_vels;
-      for(vector<string>::iterator it=y_strs.begin(); it != y_strs.end(); ++it) {
-          istringstream iss(*it);
-          double temp;
-          iss >> temp;
-          y_vels.push_back(temp);
-          //ROS_INFO("Adding y_vel: %e", temp);
-      }
-
-      y_vels_ = y_vels;
-      
+    if (publish_trajectories_)
+    {
+      trajectory_markers_["forward"].markers.resize(vx_samples_);
+      trajectory_markers_["theta"].markers.resize(vx_samples_ * (vtheta_samples_ - 1));
+      trajectory_markers_["rotate_in_place"].markers.resize(vtheta_samples_);
+      trajectory_markers_["strafe"].markers.resize(y_vels_.size());
+    }
   }
 
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model, 
@@ -152,7 +232,8 @@ namespace base_local_planner{
       double max_vel_th, double min_vel_th, double min_in_place_vel_th,
       double backup_vel,
       bool dwa, bool heading_scoring, double heading_scoring_timestep, bool meter_scoring, bool simple_attractor,
-      vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
+      vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity,
+      bool publish_trajectories)
     : path_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
       goal_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
       costmap_(costmap),
@@ -168,7 +249,8 @@ namespace base_local_planner{
     max_vel_th_(max_vel_th), min_vel_th_(min_vel_th), min_in_place_vel_th_(min_in_place_vel_th),
     backup_vel_(backup_vel),
     dwa_(dwa), heading_scoring_(heading_scoring), heading_scoring_timestep_(heading_scoring_timestep),
-    simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer), sim_period_(sim_period)
+    simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer), sim_period_(sim_period),
+    publish_trajectories_(publish_trajectories)
   {
     //the robot is not stuck to begin with
     stuck_left = false;
@@ -183,8 +265,14 @@ namespace base_local_planner{
     escaping_ = false;
     final_goal_position_valid_ = false;
 
-
     costmap_2d::calculateMinAndMaxDistances(footprint_spec_, inscribed_radius_, circumscribed_radius_);
+
+    ros::NodeHandle nh;
+    trajectory_pub_ = nh.advertise<visualization_msgs::MarkerArray>("trajectories", 1, true);
+
+    trajectory_markers_["strafe_right"].markers.resize(1);
+    trajectory_markers_["strafe_left"].markers.resize(1);
+    trajectory_markers_["backwards"].markers.resize(1);
   }
 
   TrajectoryPlanner::~TrajectoryPlanner(){}
@@ -601,6 +689,9 @@ namespace base_local_planner{
         //first sample the straight trajectory
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+        if (publish_trajectories_) {
+          trajectory_markers_["forward"].markers[i] = createTrajectoryMarker("forward", i, *comp_traj);
+        }
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -614,6 +705,10 @@ namespace base_local_planner{
         for(int j = 0; j < vtheta_samples_ - 1; ++j){
           generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
               acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+          if (publish_trajectories_) {
+            const int idx = i * (vtheta_samples_ - 1) + j;
+            trajectory_markers_["theta"].markers[idx] = createTrajectoryMarker("theta", idx, *comp_traj);
+          }
 
           //if the new trajectory is better... let's take it
           if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -626,6 +721,11 @@ namespace base_local_planner{
         vx_samp += dvx;
       }
 
+      if (publish_trajectories_) {
+         trajectory_pub_.publish(trajectory_markers_["forward"]);
+         trajectory_pub_.publish(trajectory_markers_["theta"]);
+      }
+
       //only explore y velocities with holonomic robots
       if (holonomic_robot_) {
         //explore trajectories that move forward but also strafe slightly
@@ -634,6 +734,10 @@ namespace base_local_planner{
         vtheta_samp = 0.0;
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+        if (publish_trajectories_) {
+          trajectory_markers_["strafe_right"].markers[0] = createTrajectoryMarker("strafe_right", 0, *comp_traj);
+          trajectory_pub_.publish(trajectory_markers_["strafe_right"]);
+        }
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -647,6 +751,10 @@ namespace base_local_planner{
         vtheta_samp = 0.0;
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+        if (publish_trajectories_) {
+          trajectory_markers_["strafe_left"].markers[0] = createTrajectoryMarker("strafe_left", 0, *comp_traj);
+          trajectory_pub_.publish(trajectory_markers_["strafe_left"]);
+        }
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -672,6 +780,9 @@ namespace base_local_planner{
 
       generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited, 
           acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+      if (publish_trajectories_) {
+        trajectory_markers_["rotate_in_place"].markers[i] = createTrajectoryMarker("rotate_in_place", i, *comp_traj);
+      }
 
       //if the new trajectory is better... let's take it... 
       //note if we can legally rotate in place we prefer to do that rather than move with y velocity
@@ -707,6 +818,10 @@ namespace base_local_planner{
       }
 
       vtheta_samp += dvtheta;
+    }
+
+    if (publish_trajectories_) {
+      trajectory_pub_.publish(trajectory_markers_["rotate_in_place"]);
     }
 
     //do we have a legal trajectory
@@ -776,6 +891,9 @@ namespace base_local_planner{
         //sample completely horizontal trajectories
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+        if (publish_trajectories_) {
+          trajectory_markers_["strafe"].markers[i] = createTrajectoryMarker("strafe", i, *comp_traj);
+        }
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0)){
@@ -806,6 +924,9 @@ namespace base_local_planner{
             }
           }
         }
+      }
+      if (publish_trajectories_) {
+        trajectory_pub_.publish(trajectory_markers_["strafe"]);
       }
     }
 
@@ -866,6 +987,10 @@ namespace base_local_planner{
     vy_samp = 0.0;
     generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
         acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
+    if (publish_trajectories_) {
+      trajectory_markers_["backwards"].markers[0] = createTrajectoryMarker("backwards", 0, *comp_traj);
+      trajectory_pub_.publish(trajectory_markers_["backwards"]);
+    }
 
     //if the new trajectory is better... let's take it
     /*
