@@ -76,9 +76,6 @@ namespace navfn {
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
       private_nh.param("default_tolerance", default_tolerance_, 0.0);
-        
-      double costmap_pub_freq;
-      private_nh.param("planner_costmap_publish_frequency", costmap_pub_freq, 0.0);
 
       //get the tf prefix
       ros::NodeHandle prefix_nh;

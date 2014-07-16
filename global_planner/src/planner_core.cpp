@@ -35,7 +35,7 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#include<global_planner/planner_core.h>
+#include <global_planner/planner_core.h>
 #include <pluginlib/class_list_macros.h>
 #include <tf/transform_listener.h>
 #include <costmap_2d/cost_values.h>
@@ -110,7 +110,6 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             if(!old_navfn_behavior_)
                 de->setPreciseStart(true);
             planner_ = de;
-            
         }
         else
             planner_ = new AStarExpansion(p_calc_, cx, cy);

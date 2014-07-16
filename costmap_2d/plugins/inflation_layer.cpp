@@ -32,7 +32,7 @@ void InflationLayer::onInitialize()
 
     dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
         &InflationLayer::reconfigureCB, this, _1, _2);
-  
+
     if(dsrv_ != NULL){
       dsrv_->clearCallback();
       dsrv_->setCallback(cb);
