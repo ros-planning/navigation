@@ -333,7 +333,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
   bool do_beamskip = self->do_beamskip;
   
-  if(do_beamskip && set->sample_count > self->min_particles){
+  if(do_beamskip && !set->converged){//set->sample_count > self->min_particles){
     fprintf(stderr, "Filter not converged %d - not doing beamskip\n", set->sample_count);
     do_beamskip = false;
   }
