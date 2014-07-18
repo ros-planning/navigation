@@ -230,6 +230,9 @@ class AmclNode
     double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
     double alpha_slow_, alpha_fast_;
     double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
+  //beam skip related params
+    bool do_beamskip_;
+    double beam_skip_distance_, beam_skip_threshold_;
     double laser_likelihood_max_dist_;
     odom_model_t odom_model_type_;
     double init_pose_[3];
@@ -311,6 +314,10 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha3", alpha3_, 0.2);
   private_nh_.param("odom_alpha4", alpha4_, 0.2);
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
+
+  private_nh_.param("do_beamskip", do_beamskip_, false);
+  private_nh_.param("beam_skip_distance", beam_skip_distance_, 0.5);
+  private_nh_.param("beam_skip_threshold", beam_skip_threshold_, 0.3);
 
   private_nh_.param("publish_basic_pose", publish_basic_pose_, false);
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
@@ -526,6 +533,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
+  
   pf_err_ = config.kld_err; 
   pf_z_ = config.kld_z; 
   pf_->pop_err = pf_err_;
@@ -541,6 +549,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   pf_init_pose_cov.m[1][1] = last_published_pose.pose.covariance[6*1+1];
   pf_init_pose_cov.m[2][2] = last_published_pose.pose.covariance[6*5+5];
   pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
+
   pf_init_ = false;
 
   // Instantiate the sensor objects
@@ -559,7 +568,10 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
-					  laser_likelihood_max_dist_);
+					laser_likelihood_max_dist_, 
+					do_beamskip_, beam_skip_distance_, 
+					beam_skip_threshold_, max_particles_, 
+					min_particles_);
     ROS_INFO("Done initializing likelihood field model with probabilities.");
   }
   else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD){
@@ -659,6 +671,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
+
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
   
@@ -697,7 +710,9 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
-					  laser_likelihood_max_dist_);
+					laser_likelihood_max_dist_, 
+					do_beamskip_, beam_skip_distance_, 
+					beam_skip_threshold_, max_particles_, min_particles_);
     ROS_INFO("Done initializing likelihood field model.");
   }
   else

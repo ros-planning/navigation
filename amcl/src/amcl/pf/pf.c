@@ -108,7 +108,6 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   return pf;
 }
 
-
 // Free an existing filter
 void pf_free(pf_t *pf)
 {
@@ -124,7 +123,6 @@ void pf_free(pf_t *pf)
   
   return;
 }
-
 
 // Initialize the filter using a guassian
 void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
@@ -251,8 +249,6 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
   }
   else
   {
-    //PLAYER_WARN("pdf has zero probability");
-
     // Handle zero total
     for (i = 0; i < set->sample_count; i++)
     {
@@ -392,6 +388,8 @@ void pf_update_resample(pf_t *pf)
 
   // Use the newly created sample set
   pf->current_set = (pf->current_set + 1) % 2;
+
+  fprintf(stderr, "Current set : %d - Size : %d\n", pf->current_set, (pf->sets + pf->current_set)->sample_count);
 
   free(c);
   return;

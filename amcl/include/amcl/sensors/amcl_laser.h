@@ -78,7 +78,18 @@ class AMCLLaser : public AMCLSensor
   public: void SetModelLikelihoodFieldProb(double z_hit,
 					   double z_rand,
 					   double sigma_hit,
-					   double max_occ_dist);
+					   double max_occ_dist, 
+					   bool do_beamskip, 
+					   double beam_skip_distance, 
+					   double beam_skip_threshold, 
+					   int max_particles, 
+					   int min_particles);
+
+  /*
+    bool do_beamskip=false, 
+    double beam_skip_distance=0.5, 
+    double beam_skip_threshold=0.3);
+   */
 
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
@@ -113,6 +124,11 @@ class AMCLLaser : public AMCLSensor
   // Max beams to consider
   private: int max_beams;
 
+  private: bool do_beamskip; 
+  private: double beam_skip_distance; 
+  private: double beam_skip_threshold; 
+  private: double max_particles; 
+  private: double min_particles; 
   // Laser model params
   //
   // Mixture params for the components of the model; must sum to 1
