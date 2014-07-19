@@ -570,8 +570,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
 					laser_likelihood_max_dist_, 
 					do_beamskip_, beam_skip_distance_, 
-					beam_skip_threshold_, max_particles_, 
-					min_particles_);
+					beam_skip_threshold_);
     ROS_INFO("Done initializing likelihood field model with probabilities.");
   }
   else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD){
@@ -712,7 +711,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
 					laser_likelihood_max_dist_, 
 					do_beamskip_, beam_skip_distance_, 
-					beam_skip_threshold_, max_particles_, min_particles_);
+					beam_skip_threshold_);
     ROS_INFO("Done initializing likelihood field model.");
   }
   else

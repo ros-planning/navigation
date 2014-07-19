@@ -46,12 +46,28 @@ typedef enum
 class AMCLLaserData : public AMCLSensorData
 {
   public:
-    AMCLLaserData () {ranges=NULL;};
-    virtual ~AMCLLaserData() {delete [] ranges;};
+  AMCLLaserData () {
+    ranges=NULL; 
+    max_samples=0;
+    max_obs = 0;
+    temp_obs = NULL;
+  };
+    virtual ~AMCLLaserData() {
+      delete [] ranges;
+      if(temp_obs){
+	for(int k=0; k < max_samples; k++){
+	  delete [] temp_obs[k];
+	}
+	delete []temp_obs; 
+      }
+    };
   // Laser range data (range, bearing tuples)
   public: int range_count;
   public: double range_max;
   public: double (*ranges)[2];
+ public: int max_samples;
+ public: int max_obs;
+ public: double **temp_obs;
 };
 
 
@@ -81,10 +97,7 @@ class AMCLLaser : public AMCLSensor
 					   double max_occ_dist, 
 					   bool do_beamskip, 
 					   double beam_skip_distance, 
-					   double beam_skip_threshold, 
-					   int max_particles, 
-					   int min_particles);
-
+					   double beam_skip_threshold);
   /*
     bool do_beamskip=false, 
     double beam_skip_distance=0.5, 
@@ -127,8 +140,6 @@ class AMCLLaser : public AMCLSensor
   private: bool do_beamskip; 
   private: double beam_skip_distance; 
   private: double beam_skip_threshold; 
-  private: double max_particles; 
-  private: double min_particles; 
   // Laser model params
   //
   // Mixture params for the components of the model; must sum to 1
