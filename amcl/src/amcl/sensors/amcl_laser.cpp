@@ -319,8 +319,8 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
   total_weight = 0.0;
 
-  step = (data->range_count - 1) / (self->max_beams - 1);
-
+  step = ceil((data->range_count) / static_cast<double>(self->max_beams)); 
+  
   // Step size must be at least 1
   if(step < 1)
     step = 1;
@@ -335,7 +335,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
   int *obs_count = new int[self->max_beams]();
   //we also need a mask of which observations to integrate 
   bool *obs_mask = new bool[self->max_beams]();
-
+  
   //these need to be overloaded with the param values 
   int beam_ind = 0;
 
@@ -471,6 +471,17 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     }
     fprintf(stderr, "No Samples : %d -> Skipped beam count : %d\n", set->sample_count, 
 	    skipped_beam_count);
+    
+    //this can lead to issues if the pf converged to a wrong solution 
+    //and all the beams are off - this will just not integrate any observations 
+    //maybe we should set this error condition - and integrate everything 
+
+    bool error = false; 
+
+    if(skipped_beam_count >= (beam_ind + 1) * 0.9){
+      fprintf(stderr, "Over 90%% of the observations were not in the map - looks like pf converged to wrong pose - integrating all observations\n");
+      error = true; 
+    }
 
     for (j = 0; j < set->sample_count; j++)
       {
@@ -480,7 +491,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 	log_p = 0;
 
 	for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
-	  if(obs_mask[beam_ind]){
+	  if(error || obs_mask[beam_ind]){
 	    log_p += log(self->temp_obs[j][beam_ind]);
 	  }
 	}
