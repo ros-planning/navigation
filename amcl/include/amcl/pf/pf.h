@@ -178,11 +178,9 @@ void pf_draw_cep_stats(pf_t *pf, struct _rtk_fig_t *fig);
 // Draw the cluster statistics
 void pf_draw_cluster_stats(pf_t *pf, struct _rtk_fig_t *fig);
 
-//calculate if the particle filter has converged 
+//calculate if the particle filter has converged - 
+//and sets the converged flag in the current set and the pf 
 int pf_update_converged(pf_t *pf);
-
-//update the converged flag
-//void pf_update_converged(pf_t *pf);
 
 #ifdef __cplusplus
 }
