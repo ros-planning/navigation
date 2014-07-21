@@ -38,13 +38,25 @@ using namespace amcl;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLLaser::AMCLLaser(size_t max_beams, map_t* map) : AMCLSensor()
+AMCLLaser::AMCLLaser(size_t max_beams, map_t* map) : AMCLSensor(), 
+						     max_samples(0), max_obs(0), 
+						     temp_obs(NULL)
 {
   this->time = 0.0;
 
   this->max_beams = max_beams;
   this->map = map;
   return;
+}
+
+AMCLLaser::~AMCLLaser()
+{
+  if(temp_obs){
+	for(int k=0; k < max_samples; k++){
+	  delete [] temp_obs[k];
+	}
+	delete []temp_obs; 
+  }
 }
 
 void 
@@ -339,31 +351,33 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
   bool realloc = false; 
 
+  //if there are multiple lasers this temp_obs data structure can screw up 
+
   if(do_beamskip){
-    if(data->max_obs < self->max_beams){
+    if(self->max_obs < self->max_beams){
       realloc = true;
     }
 
-    if(data->max_samples < set->sample_count){
+    if(self->max_samples < set->sample_count){
       realloc = true;
     }
 
     if(realloc){
-      if(data->temp_obs){
-	for(int k=0; k < data->max_samples; k++){
-	  delete [] data->temp_obs[k];
+      if(self->temp_obs){
+	for(int k=0; k < self->max_samples; k++){
+	  delete [] self->temp_obs[k];
 	}
-	delete []data->temp_obs; 
+	delete []self->temp_obs; 
       }
-      data->max_obs = self->max_beams; 
-      data->max_samples = fmax(data->max_samples, set->sample_count); 
+      self->max_obs = self->max_beams; 
+      self->max_samples = fmax(self->max_samples, set->sample_count); 
 
-      data->temp_obs = new double*[data->max_samples]();
-      for(int k=0; k < data->max_samples; k++){
-	data->temp_obs[k] = new double[data->max_obs]();
+      self->temp_obs = new double*[self->max_samples]();
+      for(int k=0; k < self->max_samples; k++){
+	self->temp_obs[k] = new double[self->max_obs]();
       }
       
-      fprintf(stderr, "Reallocing temp weights %d - %d\n", data->max_samples, data->max_obs);
+      fprintf(stderr, "Reallocing temp weights %d - %d\n", self->max_samples, self->max_obs);
     }
   }
 
@@ -435,7 +449,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 	log_p += log(pz);
       }
       else{
-	data->temp_obs[j][beam_ind] = pz; 
+	self->temp_obs[j][beam_ind] = pz; 
       }
     }
     if(!do_beamskip){
@@ -467,7 +481,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
 	for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
 	  if(obs_mask[beam_ind]){
-	    log_p += log(data->temp_obs[j][beam_ind]);
+	    log_p += log(self->temp_obs[j][beam_ind]);
 	  }
 	}
 	

@@ -48,26 +48,14 @@ class AMCLLaserData : public AMCLSensorData
   public:
   AMCLLaserData () {
     ranges=NULL; 
-    max_samples=0;
-    max_obs = 0;
-    temp_obs = NULL;
   };
     virtual ~AMCLLaserData() {
-      delete [] ranges;
-      if(temp_obs){
-	for(int k=0; k < max_samples; k++){
-	  delete [] temp_obs[k];
-	}
-	delete []temp_obs; 
-      }
+      delete [] ranges;      
     };
   // Laser range data (range, bearing tuples)
   public: int range_count;
   public: double range_max;
-  public: double (*ranges)[2];
- public: int max_samples;
- public: int max_obs;
- public: double **temp_obs;
+  public: double (*ranges)[2]; 
 };
 
 
@@ -76,6 +64,8 @@ class AMCLLaser : public AMCLSensor
 {
   // Default constructor
   public: AMCLLaser(size_t max_beams, map_t* map);
+
+ public: virtual ~AMCLLaser(); 
 
   public: void SetModelBeam(double z_hit,
                             double z_short,
@@ -147,6 +137,10 @@ class AMCLLaser : public AMCLSensor
   private: double z_short;
   private: double z_max;
   private: double z_rand;
+
+  public: int max_samples;
+  public: int max_obs;
+  public: double **temp_obs;
 
   //
   // Stddev of Gaussian model for laser hits.
