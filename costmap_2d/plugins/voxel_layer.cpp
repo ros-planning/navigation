@@ -35,6 +35,12 @@ void VoxelLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
   dsrv_->setCallback(cb);
 }
 
+VoxelLayer::~VoxelLayer()
+{
+  if(dsrv_)
+    delete dsrv_;
+}
+
 void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
