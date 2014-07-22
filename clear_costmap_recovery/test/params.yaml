@@ -8,6 +8,6 @@ base:
             track_unknown_space: true
     local:
         plugins: []
-        layers: []
+    robot_radius: .5
 clear:
     clearing_distance: 7.0    
