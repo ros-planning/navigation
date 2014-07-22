@@ -172,6 +172,7 @@ Costmap2DROS::~Costmap2DROS()
     delete publisher_;
 
   delete layered_costmap_;
+  delete dsrv_;
 }
 
 void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)

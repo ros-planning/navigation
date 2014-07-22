@@ -190,6 +190,12 @@ void ObstacleLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
   dsrv_->setCallback(cb);
 }
 
+ObstacleLayer::~ObstacleLayer()
+{
+    if(dsrv_)
+        delete dsrv_;
+}
+
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
