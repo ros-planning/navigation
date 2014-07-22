@@ -59,9 +59,9 @@ void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* t
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
-
+    
     std::vector<std::string> clearable_layers_default, clearable_layers;
-    clearable_layers_default.push_back( std::string("obstacle") );
+    clearable_layers_default.push_back( std::string("obstacles") );
     private_nh.param("layer_names", clearable_layers, clearable_layers_default);
 
     for(unsigned i=0; i < clearable_layers.size(); i++) {
@@ -87,7 +87,7 @@ void ClearCostmapRecovery::runBehavior(){
     ROS_ERROR("The costmaps passed to the ClearCostmapRecovery object cannot be NULL. Doing nothing.");
     return;
   }
-  ROS_WARN("Clearing costmap to unstuck robot.");
+  ROS_WARN("Clearing costmap outside of radius %f.", reset_distance_);
   clear(global_costmap_);
   clear(local_costmap_);
 }
@@ -107,7 +107,13 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
   for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
     boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
-    if(clearable_layers_.count(plugin->getName())!=0){
+    std::string name = plugin->getName();
+    int slash = name.rfind('/');
+    if( slash != std::string::npos ){
+        name = name.substr(slash+1);
+    }
+
+    if(clearable_layers_.count(name)!=0){
       boost::shared_ptr<costmap_2d::CostmapLayer> costmap;
       costmap = boost::static_pointer_cast<costmap_2d::CostmapLayer>(plugin);
       clearMap(costmap, x, y);
@@ -124,11 +130,12 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> 
   double start_point_y = pose_y - reset_distance_ / 2;
   double end_point_x = start_point_x + reset_distance_;
   double end_point_y = start_point_y + reset_distance_;
-
+  
   int start_x, start_y, end_x, end_y;
   costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
   costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
-
+  
+  
   unsigned char* grid = costmap->getCharMap();
   for(int x=0; x<(int)costmap->getSizeInCellsX(); x++){
     bool xrange = x>start_x && x<end_x;
