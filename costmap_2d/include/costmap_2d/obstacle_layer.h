@@ -108,6 +108,7 @@ public:
 
   // for testing purposes
   void addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing);
+  void clearStaticObservations(bool marking, bool clearing);
 
 protected:
 
