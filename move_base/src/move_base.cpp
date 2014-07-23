@@ -646,7 +646,10 @@ namespace move_base {
 	rerun_planner = true; 
       }
       
-      if(got_new_goal || got_new_goal){
+      if(got_new_goal || rerun_planner || replan_goal){
+	
+	replan_goal = false; 
+	
 	ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
       
 	//run planner
@@ -748,6 +751,8 @@ namespace move_base {
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
             return;
           }
+
+	  ROS_INFO("Action server received new goal\n");
 
           goal = goalToGlobalFrame(new_goal.target_pose);
 
@@ -1000,6 +1005,9 @@ namespace move_base {
 	      state_ = PLANNING;
 	      publishZeroVelocity();
 
+	      //we should set a flag 
+	      ROS_WARN("Controller unable to execute the plan - replan called");
+	      replan_goal = true;
 	      //enable the planner thread in case it isn't running on a clock
 	      boost::unique_lock<boost::mutex> lock(planner_mutex_);
 	      runPlanner_ = true;
