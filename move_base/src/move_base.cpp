@@ -428,7 +428,6 @@ namespace move_base {
     //first try to make a plan to the exact desired goal
     std::vector<geometry_msgs::PoseStamped> global_plan;
 
-    fprintf(stdout, "==== Plan service called\n");
     if(!planner_->makePlan(start, req.goal, global_plan) || global_plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a plan to exact goal of (%.2f, %.2f), searching for a feasible goal within tolerance", 
 		      req.goal.pose.position.x, req.goal.pose.position.y);
@@ -516,9 +515,8 @@ namespace move_base {
   }
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
-    fprintf(stdout, "==== Plan function called\n");
     boost::unique_lock< boost::shared_mutex > lock(*(planner_costmap_ros_->getCostmap()->getLock()));
-    fprintf(stdout, "==== Got Lock from costmap\n");
+
     //make sure to set the plan to be empty initially
     plan.clear();
 
@@ -537,7 +535,6 @@ namespace move_base {
 
     geometry_msgs::PoseStamped start;
     tf::poseStampedTFToMsg(global_pose, start);
-
 
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
@@ -632,9 +629,7 @@ namespace move_base {
       while(!runPlanner_){
         //if we should not be running the planner then suspend this thread
         ROS_DEBUG_NAMED("move_base_plan_thread","Planner thread is suspending");
-	fprintf(stdout, "Waiting for condition +++++\n");
         planner_cond_.wait(lock);
-	fprintf(stdout, "Heard condition +++++\n");
       }
       //time to plan! get a copy of the goal and unlock the mutex
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
@@ -652,14 +647,11 @@ namespace move_base {
       }
       
       if(got_new_goal || got_new_goal){
-	fprintf(stdout, "Have new goal - creating new plan\n");
-
 	ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
       
 	//run planner
 	planner_plan_->clear();
 
-	fprintf(stdout, "==== Plan thread called\n");
 	bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
 	if(gotPlan){
@@ -708,8 +700,6 @@ namespace move_base {
 
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
-    fprintf(stdout, "--------- Action server callback ---------\n");
-    
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
@@ -754,8 +744,6 @@ namespace move_base {
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
 
-	  fprintf(stdout, "--------- Action server callback - Preempt requested with new goal ---------\n");
-		  
           if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
             return;
@@ -773,7 +761,6 @@ namespace move_base {
 	  have_new_goal = true; 
           runPlanner_ = true;
           planner_cond_.notify_one();
-	  fprintf(stdout, "--------- Action server callback - Notified ---------\n");
           lock.unlock();
 
 	  //tell the robot to stop - otherwise it can mess up the robot position relative to the plan 
@@ -802,8 +789,6 @@ namespace move_base {
         }
       }
 
-      fprintf(stdout, "--------- Action server callback (1) ---------\n");
-      
       //we also want to check if we've changed global frames because we need to transform our goal pose
       if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
         goal = goalToGlobalFrame(goal);
@@ -850,12 +835,10 @@ namespace move_base {
         ROS_WARN("Control loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", controller_frequency_, r.cycleTime().toSec());
     }
 
-    fprintf(stdout, "--------- Action server callback (2) ---------\n");
     //wake up the planner thread so that it can exit cleanly
     lock.lock();
     runPlanner_ = true;
     planner_cond_.notify_one();
-    fprintf(stdout, "--------- Action server callback - Notified ---------\n");
     lock.unlock();
 
     //if the node is killed then we'll abort and return
@@ -884,9 +867,6 @@ namespace move_base {
     feedback.base_position = current_position;
     as_->publishFeedback(feedback);
 
-
-    fprintf(stdout, "Execute cycle called\n");
-
     //check to see if we've moved far enough to reset our oscillation timeout
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
     {
@@ -905,14 +885,10 @@ namespace move_base {
       return false;
     }
 
-    fprintf(stdout, "Controlling\n");
-
     //if we have a new plan then grab it and give it to the controller
     if(new_global_plan_){
       //make sure to set the new plan flag to false
       new_global_plan_ = false;
-
-      fprintf(stdout, "New Global Plan\n");
 
       ROS_DEBUG_NAMED("move_base","Got a new plan...swap pointers");
 
@@ -953,15 +929,12 @@ namespace move_base {
           runPlanner_ = true;
           planner_cond_.notify_one();
         }
-	fprintf(stdout, "Planner state set ***");
         ROS_DEBUG_NAMED("move_base","Waiting for plan, in the planning state.");
         break;
 
       //if we're controlling, we'll attempt to find valid velocity commands
       case CONTROLLING:
         ROS_DEBUG_NAMED("move_base","In controlling state.");
-
-	fprintf(stdout, "Controlling State ******* \n");
 
         //check to see if we've reached our goal
         if(tc_->isGoalReached()){
