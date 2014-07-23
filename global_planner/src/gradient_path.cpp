@@ -70,7 +70,9 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
     int stc = getIndex(goal_x, goal_y);
 
     //not sure if this is advisable - maybe worth rounding to an int (after multiplying with to a precision)
-    std::set<std::pair<float, float> > position_set; 
+    std::set<std::pair<int, int> > position_set; 
+
+    double precision = 100; 
     // set up offset
     float dx = goal_x - (int)goal_x;
     float dy = goal_y - (int)goal_y;
@@ -106,7 +108,7 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
         bool oscillation_detected = false;
 
 	path.push_back(current);
-	position_set.insert(current);
+	position_set.insert(std::make_pair(precision * current.first, precision * current.second));
 
         int stcnx = stc + xs_;
         int stcpx = stc - xs_;
@@ -221,9 +223,9 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
 		continue; 
 	      }
 
-	      std::pair<float, float> cp;
-	      cp.first = neighbors[k] % xs_;
-	      cp.second = neighbors[k] / xs_;
+	      std::pair<int, int> cp;
+	      cp.first = neighbors[k] % xs_ *precision;
+	      cp.second = neighbors[k] / xs_*precision;
 
 	      if(position_set.find(cp) != position_set.end()){
 		continue; 
@@ -237,7 +239,7 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
            
 	    //just move to the neighbor with the lowest potential //we have to ignore cycles also 
 	    if(minc == stc){
-	      fprintf(stderr, "Grid motion didn't find valid neighbor - declaring failure\n");
+	      ROS_WARN("Grid motion didn't find valid neighbor - declaring failure\n");
 	      return false; 
 	    }
 
