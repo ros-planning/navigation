@@ -13,6 +13,12 @@ namespace costmap_2d
 
 StaticLayer::StaticLayer() : dsrv_(NULL) {}
 
+StaticLayer::~StaticLayer()
+{
+    if(dsrv_)
+        delete dsrv_;
+}
+
 void StaticLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
