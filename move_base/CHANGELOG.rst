@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.11 (2014-07-23)
+--------------------
 * removes trailing spaces and empty lines
 * Contributors: Enrique Fernández Perdomo
 

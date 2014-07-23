@@ -2,8 +2,8 @@
 Changelog for package move_slow_and_clear
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.11 (2014-07-23)
+--------------------
 * Use service call, rather than system call, to call dynamic
   reconfigure when decreasing move_base speed.
 * Contributors: Ryohei Ueda

@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.11 (2014-07-23)
+--------------------
 * Minor code cleanup
 * Update package.xml
 * Contributors: David Lu!!, Enrique Fernández Perdomo
