@@ -473,10 +473,10 @@ void Costmap2DROS::readFootprintFromXMLRPC( XmlRpc::XmlRpcValue& footprint_xmlrp
                  full_param_name.c_str() );
       throw std::runtime_error( "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form" );
     }
-       
+
     pt.x = getNumberFromXMLRPC( point[ 0 ], full_param_name );
     pt.y = getNumberFromXMLRPC( point[ 1 ], full_param_name );
-       
+
     footprint.push_back( pt );
   }
 

@@ -53,7 +53,7 @@ class FootprintLayer : public Layer
 {
 public:
   virtual void onInitialize();
-  ~FootprintLayer();
+  virtual ~FootprintLayer();
 
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
                              double* max_y);

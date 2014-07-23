@@ -138,11 +138,11 @@ namespace base_local_planner{
       
   }
 
-  TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model, 
-      const Costmap2D& costmap, 
+  TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model,
+      const Costmap2D& costmap,
       std::vector<geometry_msgs::Point> footprint_spec,
       double acc_lim_x, double acc_lim_y, double acc_lim_theta,
-      double sim_time, double sim_granularity, 
+      double sim_time, double sim_granularity,
       int vx_samples, int vtheta_samples,
       double pdist_scale, double gdist_scale, double occdist_scale,
       double heading_lookahead, double oscillation_reset_dist,
@@ -161,10 +161,10 @@ namespace base_local_planner{
     vx_samples_(vx_samples), vtheta_samples_(vtheta_samples),
     pdist_scale_(pdist_scale), gdist_scale_(gdist_scale), occdist_scale_(occdist_scale),
     acc_lim_x_(acc_lim_x), acc_lim_y_(acc_lim_y), acc_lim_theta_(acc_lim_theta),
-    prev_x_(0), prev_y_(0), escape_x_(0), escape_y_(0), escape_theta_(0), heading_lookahead_(heading_lookahead), 
-    oscillation_reset_dist_(oscillation_reset_dist), escape_reset_dist_(escape_reset_dist), 
+    prev_x_(0), prev_y_(0), escape_x_(0), escape_y_(0), escape_theta_(0), heading_lookahead_(heading_lookahead),
+    oscillation_reset_dist_(oscillation_reset_dist), escape_reset_dist_(escape_reset_dist),
     escape_reset_theta_(escape_reset_theta), holonomic_robot_(holonomic_robot),
-    max_vel_x_(max_vel_x), min_vel_x_(min_vel_x), 
+    max_vel_x_(max_vel_x), min_vel_x_(min_vel_x),
     max_vel_th_(max_vel_th), min_vel_th_(min_vel_th), min_in_place_vel_th_(min_in_place_vel_th),
     backup_vel_(backup_vel),
     dwa_(dwa), heading_scoring_(heading_scoring), heading_scoring_timestep_(heading_scoring_timestep),
@@ -232,7 +232,7 @@ namespace base_local_planner{
     vtheta_i = vtheta;
 
     //compute the magnitude of the velocities
-    double vmag = ::hypot(vx_samp, vy_samp);
+    double vmag = hypot(vx_samp, vy_samp);
 
     //compute the number of steps we must take along this trajectory to be "safe"
     int num_steps;
@@ -252,8 +252,8 @@ namespace base_local_planner{
 
     //create a potential trajectory
     traj.resetPoints();
-    traj.xv_ = vx_samp; 
-    traj.yv_ = vy_samp; 
+    traj.xv_ = vx_samp;
+    traj.yv_ = vy_samp;
     traj.thetav_ = vtheta_samp;
     traj.cost_ = -1.0;
 
@@ -281,7 +281,7 @@ namespace base_local_planner{
         traj.cost_ = -1.0;
         return;
         //TODO: Really look at getMaxSpeedToStopInTime... dues to discretization errors and high acceleration limits,
-        //it can actually cause the robot to hit obstacles. There may be something to be done to fix, but I'll have to 
+        //it can actually cause the robot to hit obstacles. There may be something to be done to fix, but I'll have to
         //come back to it when I have time. Right now, pulling it out as it'll just make the robot a bit more conservative,
         //but safe.
         /*
@@ -307,9 +307,9 @@ namespace base_local_planner{
 
       //do we want to follow blindly
       if (simple_attractor_) {
-        goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
-          (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
-          (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
+        goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) *
+          (x_i - global_plan_[global_plan_.size() -1].pose.position.x) +
+          (y_i - global_plan_[global_plan_.size() -1].pose.position.y) *
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y);
       } else {
 
@@ -371,6 +371,9 @@ namespace base_local_planner{
   double TrajectoryPlanner::headingDiff(int cell_x, int cell_y, double x, double y, double heading){
     double heading_diff = DBL_MAX;
     unsigned int goal_cell_x, goal_cell_y;
+    const double v2_x = cos(heading);
+    const double v2_y = sin(heading);
+
     //find a clear line of sight from the robot's cell to a point on the path
     for (int i = global_plan_.size() - 1; i >=0; --i) {
       if (costmap_.worldToMap(global_plan_[i].pose.position.x, global_plan_[i].pose.position.y, goal_cell_x, goal_cell_y)) {
@@ -379,8 +382,6 @@ namespace base_local_planner{
           costmap_.mapToWorld(goal_cell_x, goal_cell_y, gx, gy);
           double v1_x = gx - x;
           double v1_y = gy - y;
-          double v2_x = cos(heading);
-          double v2_y = sin(heading);
 
           double perp_dot = v1_x * v2_y - v1_y * v2_x;
           double dot = v1_x * v2_x + v1_y * v2_y;
@@ -390,7 +391,6 @@ namespace base_local_planner{
 
           heading_diff = fabs(vector_angle);
           return heading_diff;
-
         }
       }
     }
@@ -398,7 +398,7 @@ namespace base_local_planner{
   }
 
   //calculate the cost of a ray-traced line
-  double TrajectoryPlanner::lineCost(int x0, int x1, 
+  double TrajectoryPlanner::lineCost(int x0, int x1,
       int y0, int y1){
     //Bresenham Ray-Tracing
     int deltax = abs(x1 - x0);        // The difference between the x's
@@ -512,9 +512,9 @@ namespace base_local_planner{
     }
   }
 
-  bool TrajectoryPlanner::checkTrajectory(double x, double y, double theta, double vx, double vy, 
+  bool TrajectoryPlanner::checkTrajectory(double x, double y, double theta, double vx, double vy,
       double vtheta, double vx_samp, double vy_samp, double vtheta_samp){
-    Trajectory t; 
+    Trajectory t;
 
     double cost = scoreTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp);
 
@@ -528,9 +528,9 @@ namespace base_local_planner{
     return false;
   }
 
-  double TrajectoryPlanner::scoreTrajectory(double x, double y, double theta, double vx, double vy, 
+  double TrajectoryPlanner::scoreTrajectory(double x, double y, double theta, double vx, double vy,
       double vtheta, double vx_samp, double vy_samp, double vtheta_samp) {
-    Trajectory t; 
+    Trajectory t;
     double impossible_cost = path_map_.obstacleCosts();
     generateTrajectory(x, y, theta,
                        vx, vy, vtheta,
@@ -545,7 +545,7 @@ namespace base_local_planner{
   /*
    * create the trajectories we wish to score
    */
-  Trajectory TrajectoryPlanner::createTrajectories(double x, double y, double theta, 
+  Trajectory TrajectoryPlanner::createTrajectories(double x, double y, double theta,
       double vx, double vy, double vtheta,
       double acc_x, double acc_y, double acc_theta) {
     //compute feasible velocity limits in robot space
@@ -553,7 +553,7 @@ namespace base_local_planner{
     double min_vel_x, min_vel_theta;
 
     if( final_goal_position_valid_ ){
-      double final_goal_dist = ::hypot( final_goal_x_ - x, final_goal_y_ - y );
+      double final_goal_dist = hypot( final_goal_x_ - x, final_goal_y_ - y );
       max_vel_x = min( max_vel_x, final_goal_dist / sim_time_ );
     }
 
@@ -599,7 +599,7 @@ namespace base_local_planner{
       for(int i = 0; i < vx_samples_; ++i) {
         vtheta_samp = 0;
         //first sample the straight trajectory
-        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
         //if the new trajectory is better... let's take it
@@ -612,7 +612,7 @@ namespace base_local_planner{
         vtheta_samp = min_vel_theta;
         //next sample all theta trajectories
         for(int j = 0; j < vtheta_samples_ - 1; ++j){
-          generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+          generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
               acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
           //if the new trajectory is better... let's take it
@@ -632,7 +632,7 @@ namespace base_local_planner{
         vx_samp = 0.1;
         vy_samp = 0.1;
         vtheta_samp = 0.0;
-        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
         //if the new trajectory is better... let's take it
@@ -645,7 +645,7 @@ namespace base_local_planner{
         vx_samp = 0.1;
         vy_samp = -0.1;
         vtheta_samp = 0.0;
-        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
         //if the new trajectory is better... let's take it
@@ -667,16 +667,16 @@ namespace base_local_planner{
 
     for(int i = 0; i < vtheta_samples_; ++i) {
       //enforce a minimum rotational velocity because the base can't handle small in-place rotations
-      double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_) 
+      double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_)
         : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
 
-      generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited, 
+      generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited,
           acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
-      //if the new trajectory is better... let's take it... 
+      //if the new trajectory is better... let's take it...
       //note if we can legally rotate in place we prefer to do that rather than move with y velocity
-      if(comp_traj->cost_ >= 0 
-          && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0 || best_traj->yv_ != 0.0) 
+      if(comp_traj->cost_ >= 0
+          && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0 || best_traj->yv_ != 0.0)
           && (vtheta_samp > dvtheta || vtheta_samp < -1 * dvtheta)){
         double x_r, y_r, th_r;
         comp_traj->getEndpoint(x_r, y_r, th_r);
@@ -740,7 +740,7 @@ namespace base_local_planner{
         prev_y_ = y;
       }
 
-      double dist = ::hypot(x - prev_x_, y - prev_y_);
+      double dist = hypot(x - prev_x_, y - prev_y_);
       if (dist > oscillation_reset_dist_) {
         rotating_left = false;
         rotating_right = false;
@@ -752,7 +752,7 @@ namespace base_local_planner{
         stuck_right_strafe = false;
       }
 
-      dist = ::hypot(x - escape_x_, y - escape_y_);
+      dist = hypot(x - escape_x_, y - escape_y_);
       if(dist > escape_reset_dist_ ||
           fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_){
         escaping_ = false;
@@ -774,7 +774,7 @@ namespace base_local_planner{
         vtheta_samp = 0;
         vy_samp = y_vels_[i];
         //sample completely horizontal trajectories
-        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
             acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
         //if the new trajectory is better... let's take it
@@ -840,7 +840,7 @@ namespace base_local_planner{
 
       }
 
-      double dist = ::hypot(x - prev_x_, y - prev_y_);
+      double dist = hypot(x - prev_x_, y - prev_y_);
       if(dist > oscillation_reset_dist_) {
         rotating_left = false;
         rotating_right = false;
@@ -852,7 +852,7 @@ namespace base_local_planner{
         stuck_right_strafe = false;
       }
 
-      dist = ::hypot(x - escape_x_, y - escape_y_);
+      dist = hypot(x - escape_x_, y - escape_y_);
       if(dist > escape_reset_dist_ || fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_) {
         escaping_ = false;
       }
@@ -864,7 +864,7 @@ namespace base_local_planner{
     vtheta_samp = 0.0;
     vx_samp = backup_vel_;
     vy_samp = 0.0;
-    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
         acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);
 
     //if the new trajectory is better... let's take it
@@ -881,7 +881,7 @@ namespace base_local_planner{
     best_traj = comp_traj;
     comp_traj = swap;
 
-    double dist = ::hypot(x - prev_x_, y - prev_y_);
+    double dist = hypot(x - prev_x_, y - prev_y_);
     if (dist > oscillation_reset_dist_) {
       rotating_left = false;
       rotating_right = false;
@@ -901,7 +901,7 @@ namespace base_local_planner{
       escaping_ = true;
     }
 
-    dist = ::hypot(x - escape_x_, y - escape_y_);
+    dist = hypot(x - escape_x_, y - escape_y_);
 
     if (dist > escape_reset_dist_ ||
         fabs(angles::shortest_angular_distance(escape_theta_, theta)) > escape_reset_theta_) {
@@ -918,7 +918,7 @@ namespace base_local_planner{
   }
 
   //given the current state of the robot, find a good trajectory
-  Trajectory TrajectoryPlanner::findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel, 
+  Trajectory TrajectoryPlanner::findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel,
       tf::Stamped<tf::Pose>& drive_velocities){
 
     Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));

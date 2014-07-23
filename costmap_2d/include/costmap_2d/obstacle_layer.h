@@ -67,6 +67,7 @@ public:
   
   ~ObstacleLayer();
 
+  virtual ~ObstacleLayer();
   virtual void onInitialize();
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
                              double* max_y);
