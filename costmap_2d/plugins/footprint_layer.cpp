@@ -22,7 +22,7 @@ namespace costmap_2d
 
     current_ = true;
   }
-  
+
   FootprintLayer::~FootprintLayer()
   {
     if(dsrv_)
