@@ -2,6 +2,11 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* removes unused param planner_costmap_publish_frequency
+* Contributors: Enrique Fernández Perdomo
+
 1.11.10 (2014-06-25)
 --------------------
 * Remove unnecessary colons

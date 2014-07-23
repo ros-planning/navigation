@@ -2,6 +2,11 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Minor code cleanup
+* Contributors: Enrique Fernández Perdomo
+
 1.11.10 (2014-06-25)
 --------------------
 * Remove unnecessary colons

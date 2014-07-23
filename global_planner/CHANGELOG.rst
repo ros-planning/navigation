@@ -2,6 +2,12 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Minor code cleanup
+* Update package.xml
+* Contributors: David Lu!!, Enrique Fernández Perdomo
+
 1.11.10 (2014-06-25)
 --------------------
 * Remove unnecessary colons
