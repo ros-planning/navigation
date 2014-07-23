@@ -122,10 +122,18 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         bool use_grid_path;
         private_nh.param("use_grid_path", use_grid_path, false);
-        if (use_grid_path)
+
+        if (use_grid_path){
             path_maker_ = new GridPath(p_calc_);
-        else
+	    path_maker_backup_ = NULL;
+	}
+        else{
             path_maker_ = new GradientPath(p_calc_);
+	    path_maker_backup_ = new GridPath(p_calc_); 
+	    //we use the grid path as backup as sometimes the gradient path 
+	    //has issues extracting paths 
+	    
+	}
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
@@ -160,6 +168,9 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, uint32_t level) {
     planner_->setLethalCost(config.lethal_cost);
     path_maker_->setLethalCost(config.lethal_cost);
+    if(path_maker_backup_){
+      path_maker_backup_->setLethalCost(config.lethal_cost);
+    }
     planner_->setNeutralCost(config.neutral_cost);
     planner_->setFactor(config.cost_factor);
     publish_potential_ = config.publish_potential;
@@ -375,6 +386,9 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     p_calc_->setSize(nx, ny);
     planner_->setSize(nx, ny);
     path_maker_->setSize(nx, ny);
+    if(path_maker_backup_){
+      path_maker_backup_->setSize(nx, ny);
+    }
     potential_array_ = new float[nx * ny];
 
     outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
@@ -499,8 +513,18 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
     std::vector<std::pair<float, float> > path;
 
     if (!path_maker_->getPath(potential_array_, start_x, start_y, goal_x, goal_y, path)) {
-        ROS_ERROR("NO PATH!");
-        return false;
+      bool backup_failed = false; 
+      if(path_maker_backup_){
+	ROS_WARN("Path extraction failed - trying backup grid extractor"); 
+	backup_failed = !path_maker_backup_->getPath(potential_array_, start_x, start_y, goal_x, goal_y, path); 
+      }
+      if(backup_failed){
+	ROS_ERROR("NO PATH!");
+	return false;
+      }
+      else{
+	ROS_WARN("Backup extractor worked\n");
+      }
     }
 
     ros::Time plan_time = ros::Time::now();
