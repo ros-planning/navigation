@@ -65,7 +65,7 @@ void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* t
     private_nh.param("layer_names", clearable_layers, clearable_layers_default);
 
     for(unsigned i=0; i < clearable_layers.size(); i++) {
-        ROS_INFO("Using layer %s", clearable_layers[i].c_str());
+        ROS_INFO("Recovery behavior will clear layer %s", clearable_layers[i].c_str());
         clearable_layers_.insert(clearable_layers[i]);
     }
 
@@ -87,7 +87,7 @@ void ClearCostmapRecovery::runBehavior(){
     ROS_ERROR("The costmaps passed to the ClearCostmapRecovery object cannot be NULL. Doing nothing.");
     return;
   }
-  ROS_WARN("Clearing costmap outside of radius %f.", reset_distance_);
+  ROS_WARN("Clearing costmap to unstuck robot (%fm).", reset_distance_);
   clear(global_costmap_);
   clear(local_costmap_);
 }
