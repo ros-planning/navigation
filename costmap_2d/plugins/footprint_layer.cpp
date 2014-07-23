@@ -29,12 +29,6 @@ namespace costmap_2d
       delete dsrv_;
   }
 
-  FootprintLayer::~FootprintLayer()
-  {
-    if(dsrv_)
-      delete dsrv_;
-  }
-
   void FootprintLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
   {
     enabled_ = config.enabled;

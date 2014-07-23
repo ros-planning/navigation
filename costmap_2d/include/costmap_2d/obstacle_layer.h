@@ -64,8 +64,6 @@ public:
   {
     costmap_ = NULL; // this is the unsigned char* member of parent class Costmap2D.
   }
-  
-  ~ObstacleLayer();
 
   virtual ~ObstacleLayer();
   virtual void onInitialize();

@@ -65,8 +65,6 @@ public:
   {
     costmap_ = NULL; // this is the unsigned char* member of parent class's parent class Costmap2D.
   }
-  
-  ~VoxelLayer();
 
   virtual ~VoxelLayer();
 
