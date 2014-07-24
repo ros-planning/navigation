@@ -70,6 +70,7 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   // distrubition will be less than [err].
   pf->pop_err = 0.01;
   pf->pop_z = 3;
+  pf->dist_threshold = 0.5; 
   
   pf->current_set = 0;
   for (j = 0; j < 2; j++)
@@ -215,12 +216,10 @@ int pf_update_converged(pf_t *pf)
   mean_x /= set->sample_count;
   mean_y /= set->sample_count;
   
-  double dist_threshold = 0.5; 
-
   for (i = 0; i < set->sample_count; i++){
     sample = set->samples + i;
-    if(fabs(sample->pose.v[0] - mean_x) > dist_threshold || 
-       fabs(sample->pose.v[1] - mean_y) > dist_threshold){
+    if(fabs(sample->pose.v[0] - mean_x) > pf->dist_threshold || 
+       fabs(sample->pose.v[1] - mean_y) > pf->dist_threshold){
       set->converged = 0; 
       pf->converged = 0; 
       return 0;
