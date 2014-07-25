@@ -28,7 +28,6 @@ void ObstacleLayer::onInitialize()
 
   ObstacleLayer::matchSize();
   current_ = true;
-  has_been_reset_ = false;
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
   double transform_tolerance;
@@ -296,18 +295,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   if (!enabled_)
     return;
-  if (has_been_reset_)
-  {
-    *min_x = std::min(reset_min_x_, *min_x);
-    *min_y = std::min(reset_min_y_, *min_y);
-    *max_x = std::max(reset_max_x_, *max_x);
-    *max_y = std::max(reset_max_y_, *max_y);
-    reset_min_x_ = 1e6;
-    reset_min_y_ = 1e6;
-    reset_max_x_ = -1e6;
-    reset_max_y_ = -1e6;
-    has_been_reset_ = false;
-  }
+  useExtraBounds(min_x, min_y, max_x, max_y);
 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
@@ -396,6 +384,13 @@ void ObstacleLayer::addStaticObservation(costmap_2d::Observation& obs, bool mark
     static_marking_observations_.push_back(obs);
   if(clearing)
     static_clearing_observations_.push_back(obs);
+}
+
+void ObstacleLayer::clearStaticObservations(bool marking, bool clearing){
+  if(marking)
+    static_marking_observations_.clear();
+  if(clearing)
+    static_clearing_observations_.clear();
 }
 
 bool ObstacleLayer::getMarkingObservations(std::vector<Observation>& marking_observations) const
@@ -549,7 +544,6 @@ void ObstacleLayer::reset()
     deactivate();
     resetMaps();
     current_ = true;
-    has_been_reset_ = false;
     activate();
 }
 
