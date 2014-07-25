@@ -46,8 +46,9 @@ typedef enum
 class AMCLLaserData : public AMCLSensorData
 {
   public:
-    AMCLLaserData () {ranges=NULL;};
-    virtual ~AMCLLaserData() {delete [] ranges;};
+  AMCLLaserData () {ranges=NULL;};
+  virtual ~AMCLLaserData() {delete [] ranges;};
+
   // Laser range data (range, bearing tuples)
   public: int range_count;
   public: double range_max;
@@ -60,6 +61,8 @@ class AMCLLaser : public AMCLSensor
 {
   // Default constructor
   public: AMCLLaser(size_t max_beams, map_t* map);
+
+ public: virtual ~AMCLLaser(); 
 
   public: void SetModelBeam(double z_hit,
                             double z_short,
@@ -78,7 +81,11 @@ class AMCLLaser : public AMCLSensor
   public: void SetModelLikelihoodFieldProb(double z_hit,
 					   double z_rand,
 					   double sigma_hit,
-					   double max_occ_dist);
+					   double max_occ_dist, 
+					   bool do_beamskip, 
+					   double beam_skip_distance, 
+					   double beam_skip_threshold, 
+					   double beam_skip_error_threshold);
 
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
@@ -113,6 +120,9 @@ class AMCLLaser : public AMCLSensor
   // Max beams to consider
   private: int max_beams;
 
+  private: bool do_beamskip; 
+  private: double beam_skip_distance; 
+  private: double beam_skip_threshold; 
   // Laser model params
   //
   // Mixture params for the components of the model; must sum to 1
@@ -121,6 +131,14 @@ class AMCLLaser : public AMCLSensor
   private: double z_max;
   private: double z_rand;
 
+  //temp data that is kept before observations are integrated to each particle 
+  private: int max_samples;
+  private: int max_obs;
+  private: double **temp_obs;
+
+  //threshold for the ratio of invalid beams - at which all beams are integrated to the likelihoods 
+  //this would be an error condition 
+  private: double beam_skip_error_threshold;
   //
   // Stddev of Gaussian model for laser hits.
   private: double sigma_hit;

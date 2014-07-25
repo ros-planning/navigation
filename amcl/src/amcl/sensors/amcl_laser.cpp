@@ -38,13 +38,25 @@ using namespace amcl;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLLaser::AMCLLaser(size_t max_beams, map_t* map) : AMCLSensor()
+AMCLLaser::AMCLLaser(size_t max_beams, map_t* map) : AMCLSensor(), 
+						     max_samples(0), max_obs(0), 
+						     temp_obs(NULL)
 {
   this->time = 0.0;
 
   this->max_beams = max_beams;
   this->map = map;
   return;
+}
+
+AMCLLaser::~AMCLLaser()
+{
+  if(temp_obs){
+	for(int k=0; k < max_samples; k++){
+	  delete [] temp_obs[k];
+	}
+	delete []temp_obs; 
+  }
 }
 
 void 
@@ -82,15 +94,22 @@ AMCLLaser::SetModelLikelihoodField(double z_hit,
 
 void 
 AMCLLaser::SetModelLikelihoodFieldProb(double z_hit,
-					 double z_rand,
-					 double sigma_hit,
-					 double max_occ_dist)
+				       double z_rand,
+				       double sigma_hit,
+				       double max_occ_dist,
+				       bool do_beamskip,
+				       double beam_skip_distance,
+				       double beam_skip_threshold, 
+				       double beam_skip_error_threshold)
 {
   this->model_type = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
   this->z_hit = z_hit;
   this->z_rand = z_rand;
   this->sigma_hit = sigma_hit;
-
+  this->do_beamskip = do_beamskip;
+  this->beam_skip_distance = beam_skip_distance;
+  this->beam_skip_threshold = beam_skip_threshold;
+  this->beam_skip_error_threshold = beam_skip_error_threshold;
   map_update_cspace(this->map, max_occ_dist);
 }
 
@@ -137,7 +156,7 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
 
   total_weight = 0.0;
 
-  // Compute the sample weights
+   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
     sample = set->samples + j;
@@ -302,8 +321,8 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
   total_weight = 0.0;
 
-  step = (data->range_count - 1) / (self->max_beams - 1);
-
+  step = ceil((data->range_count) / static_cast<double>(self->max_beams)); 
+  
   // Step size must be at least 1
   if(step < 1)
     step = 1;
@@ -313,6 +332,56 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
   double z_rand_mult = 1.0/data->range_max;
 
   double max_dist_prob = exp(-(self->map->max_occ_dist * self->map->max_occ_dist) / z_hit_denom);
+
+  //we need a count of which points hit 
+  int *obs_count = new int[self->max_beams]();
+  //we also need a mask of which observations to integrate 
+  bool *obs_mask = new bool[self->max_beams]();
+  
+  //these need to be overloaded with the param values 
+  int beam_ind = 0;
+
+  bool do_beamskip = self->do_beamskip;
+  
+  if(do_beamskip && !set->converged){//set->sample_count > self->min_particles){
+    fprintf(stderr, "Filter not converged %d - not doing beamskip\n", set->sample_count);
+    do_beamskip = false;
+  }
+
+  double beam_skip_distance = self->beam_skip_distance;
+  double beam_skip_threshold = self->beam_skip_threshold;
+
+  bool realloc = false; 
+
+  //if there are multiple lasers this temp_obs data structure can screw up 
+
+  if(do_beamskip){
+    if(self->max_obs < self->max_beams){
+      realloc = true;
+    }
+
+    if(self->max_samples < set->sample_count){
+      realloc = true;
+    }
+
+    if(realloc){
+      if(self->temp_obs){
+	for(int k=0; k < self->max_samples; k++){
+	  delete [] self->temp_obs[k];
+	}
+	delete []self->temp_obs; 
+      }
+      self->max_obs = self->max_beams; 
+      self->max_samples = fmax(self->max_samples, set->sample_count); 
+
+      self->temp_obs = new double*[self->max_samples]();
+      for(int k=0; k < self->max_samples; k++){
+	self->temp_obs[k] = new double[self->max_obs]();
+      }
+      
+      fprintf(stderr, "Reallocing temp weights %d - %d\n", self->max_samples, self->max_obs);
+    }
+  }
 
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
@@ -324,8 +393,10 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     pose = pf_vector_coord_add(self->laser_pose, pose);
 
     log_p = 0;
-
-    for (i = 0; i < data->range_count; i += step)
+    
+    beam_ind = 0;
+    
+    for (i = 0; i < data->range_count; i += step, beam_ind++)
     {
       obs_range = data->ranges[i][0];
       obs_bearing = data->ranges[i][1];
@@ -359,6 +430,9 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
       }
       else{
 	z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+	if(z < beam_skip_distance){
+	  obs_count[beam_ind] += 1;
+	}
 	pz += self->z_hit * exp(-(z * z) / z_hit_denom);
       }
        
@@ -368,19 +442,69 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
       // Part 2: random measurements
       pz += self->z_rand * z_rand_mult;
 
-      // TODO: outlier rejection for short readings
-
       assert(pz <= 1.0); 
       assert(pz >= 0.0);
 
-      log_p += log(pz);
+      // TODO: outlier rejection for short readings
+            
+      if(!do_beamskip){
+	log_p += log(pz);
+      }
+      else{
+	self->temp_obs[j][beam_ind] = pz; 
+      }
+    }
+    if(!do_beamskip){
+      sample->weight *= exp(log_p);
+      total_weight += sample->weight;
+    }
+  }
+  
+  if(do_beamskip){
+    int skipped_beam_count = 0; 
+    for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
+      if((obs_count[beam_ind] / static_cast<double>(set->sample_count)) > beam_skip_threshold){
+	obs_mask[beam_ind] = true;
+      }
+      else{
+	obs_mask[beam_ind] = false;
+	skipped_beam_count++; 
+      }
+    }
+    fprintf(stderr, "No Samples : %d -> Skipped beam count : %d\n", set->sample_count, 
+	    skipped_beam_count);
+    
+    //this can lead to issues if the pf converged to a wrong solution 
+    //and all the beams are off - this will just not integrate any observations 
+    //maybe we should set this error condition - and integrate everything 
+
+    bool error = false; 
+
+    if(skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold)){
+      fprintf(stderr, "Over 90%% of the observations were not in the map - looks like pf converged to wrong pose - integrating all observations\n");
+      error = true; 
     }
 
-    //why are we keeping weights as normal values - should be using log (to prevent precision issues)
-    sample->weight *= exp(log_p);
+    for (j = 0; j < set->sample_count; j++)
+      {
+	sample = set->samples + j;
+	pose = sample->pose;
 
-    total_weight += sample->weight;
+	log_p = 0;
+
+	for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
+	  if(error || obs_mask[beam_ind]){
+	    log_p += log(self->temp_obs[j][beam_ind]);
+	  }
+	}
+	
+	sample->weight *= exp(log_p);
+	
+	total_weight += sample->weight;
+      }      
   }
 
+  delete [] obs_count; 
+  delete [] obs_mask;
   return(total_weight);
 }
