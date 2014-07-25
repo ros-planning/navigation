@@ -103,7 +103,7 @@ typedef struct _pf_sample_set_t
   // Filter statistics
   pf_vector_t mean;
   pf_matrix_t cov;
-
+  int converged; 
 } pf_sample_set_t;
 
 
@@ -130,6 +130,9 @@ typedef struct _pf_t
   // Function used to draw random pose samples
   pf_init_model_fn_t random_pose_fn;
   void *random_pose_data;
+
+  double dist_threshold; //distance threshold in each axis over which the pf is considered to not be converged
+  int converged; 
 } pf_t;
 
 
@@ -175,6 +178,10 @@ void pf_draw_cep_stats(pf_t *pf, struct _rtk_fig_t *fig);
 
 // Draw the cluster statistics
 void pf_draw_cluster_stats(pf_t *pf, struct _rtk_fig_t *fig);
+
+//calculate if the particle filter has converged - 
+//and sets the converged flag in the current set and the pf 
+int pf_update_converged(pf_t *pf);
 
 #ifdef __cplusplus
 }
