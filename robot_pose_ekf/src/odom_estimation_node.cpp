@@ -75,6 +75,7 @@ namespace estimation
 
     // paramters
     nh_private.param("output_frame", output_frame_, std::string("odom_combined"));
+    nh_private.param("base_footprint_frame", base_footprint_frame_, std::string("base_footprint"));
     nh_private.param("sensor_timeout", timeout_, 1.0);
     nh_private.param("odom_used", odom_used_, true);
     nh_private.param("imu_used",  imu_used_, true);
@@ -87,7 +88,15 @@ namespace estimation
 
     tf_prefix_ = tf::getPrefixParam(nh_private);
     output_frame_ = tf::resolve(tf_prefix_, output_frame_);
-    base_footprint_frame_ = tf::resolve(tf_prefix_, "base_footprint");
+    base_footprint_frame_ = tf::resolve(tf_prefix_, base_footprint_frame_);
+
+    ROS_INFO_STREAM("output frame: " << output_frame_);
+    ROS_INFO_STREAM("base frame: " << base_footprint_frame_);
+
+    // set output frame and base frame names in OdomEstimation filter
+    // so that user-defined tf frames are respected
+    my_filter_.setOutputFrame(output_frame_);
+    my_filter_.setBaseFootprintFrame(base_footprint_frame_);
 
     timer_ = nh_private.createTimer(ros::Duration(1.0/max(freq,1.0)), &OdomEstimationNode::spin, this);
 
@@ -178,7 +187,7 @@ namespace estimation
       for (unsigned int j=0; j<6; j++)
         odom_covariance_(i+1, j+1) = odom->pose.covariance[6*i+j];
 
-    my_filter_.addMeasurement(StampedTransform(odom_meas_.inverse(), odom_stamp_, "base_footprint", "wheelodom"), odom_covariance_);
+    my_filter_.addMeasurement(StampedTransform(odom_meas_.inverse(), odom_stamp_, base_footprint_frame_, "wheelodom"), odom_covariance_);
     
     // activate odom
     if (!odom_active_) {
@@ -249,7 +258,7 @@ namespace estimation
       imu_covariance_ = measNoiseImu_Cov;
     }
 
-    my_filter_.addMeasurement(StampedTransform(imu_meas_.inverse(), imu_stamp_, "base_footprint", "imu"), imu_covariance_);
+    my_filter_.addMeasurement(StampedTransform(imu_meas_.inverse(), imu_stamp_, base_footprint_frame_, "imu"), imu_covariance_);
     
     // activate imu
     if (!imu_active_) {
@@ -292,7 +301,7 @@ namespace estimation
     for (unsigned int i=0; i<6; i++)
       for (unsigned int j=0; j<6; j++)
         vo_covariance_(i+1, j+1) = vo->pose.covariance[6*i+j];
-    my_filter_.addMeasurement(StampedTransform(vo_meas_.inverse(), vo_stamp_, "base_footprint", "vo"), vo_covariance_);
+    my_filter_.addMeasurement(StampedTransform(vo_meas_.inverse(), vo_stamp_, base_footprint_frame_, "vo"), vo_covariance_);
     
     // activate vo
     if (!vo_active_) {
@@ -333,7 +342,7 @@ namespace estimation
     for (unsigned int i=0; i<3; i++)
       for (unsigned int j=0; j<3; j++)
         gps_covariance_(i+1, j+1) = gps->pose.covariance[6*i+j];
-    my_filter_.addMeasurement(StampedTransform(gps_meas_.inverse(), gps_stamp_, "base_footprint", "gps"), gps_covariance_);
+    my_filter_.addMeasurement(StampedTransform(gps_meas_.inverse(), gps_stamp_, base_footprint_frame_, "gps"), gps_covariance_);
     
     // activate gps
     if (!gps_active_) {
