@@ -640,6 +640,8 @@ void Costmap2DROS::resume()
 
 void Costmap2DROS::resetLayers()
 {
+  Costmap2D* top = layered_costmap_->getCostmap();
+  top->resetMap(0, 0, top->getSizeInCellsX(), top->getSizeInCellsY());
   std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
       ++plugin)
