@@ -2,6 +2,17 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.11.11 (2014-07-23)
+--------------------
+* removes trailing spaces and empty lines
+* Contributors: Enrique Fernández Perdomo
+
+1.11.10 (2014-06-25)
+--------------------
+* Remove unnecessary colons
+* Remove unused robot_radius parameter from dynamic_reconfigure
+* Contributors: Daniel Stonier, David Lu!!
+
 1.11.9 (2014-06-10)
 -------------------
 * fix hypot issues, add comments to tests from tracking this down

@@ -88,7 +88,7 @@ void CostmapTester::compareCellToNeighbors(costmap_2d::Costmap2D& costmap, unsig
 
 //for all lethal and inscribed costs, we'll make sure that their neighbors have the cost values we'd expect
 void CostmapTester::compareCells(costmap_2d::Costmap2D& costmap, unsigned int x, unsigned int y, unsigned int nx, unsigned int ny){
-  double cell_distance = ::hypot(static_cast<int>(x-nx), static_cast<int>(y-ny));
+  double cell_distance = hypot(static_cast<int>(x-nx), static_cast<int>(y-ny));
 
   unsigned char cell_cost = costmap.getCost(x, y);
   unsigned char neighbor_cost = costmap.getCost(nx, ny);

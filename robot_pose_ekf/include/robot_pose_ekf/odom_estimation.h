@@ -122,6 +122,16 @@ public:
    */
   void addMeasurement(const tf::StampedTransform& meas, const MatrixWrapper::SymmetricMatrix& covar);
 
+  /** set the output frame used by tf
+   * \param output_frame the desired output frame published on /tf (e.g., odom_combined)
+   */
+  void setOutputFrame(const std::string& output_frame);
+
+  /** set the base_footprint frame of the robot used by tf
+   * \param base_frame the desired base frame from which to transform when publishing the combined odometry frame (e.g., base_footprint)
+   */
+  void setBaseFootprintFrame(const std::string& base_frame);
+
 private:
   /// correct for angle overflow
   void angleOverflowCorrect(double& a, double ref);
@@ -160,6 +170,9 @@ private:
 
   // tf transformer
   tf::Transformer transformer_;
+
+  std::string output_frame_;
+  std::string base_footprint_frame_;
 
 }; // class
 
