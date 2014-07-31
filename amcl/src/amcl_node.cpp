@@ -221,6 +221,7 @@ class AmclNode
     double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
     double laser_likelihood_max_dist_;
     odom_model_t odom_model_type_;
+    bool fix_particle_weight_discarding_;
     double init_pose_[3];
     double init_cov_[3];
     laser_model_t laser_model_type_;
@@ -288,7 +289,9 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha3", alpha3_, 0.2);
   private_nh_.param("odom_alpha4", alpha4_, 0.2);
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
-
+  //the fix should be enabled - especially if the resampling interval is greater than 1
+  private_nh_.param("fix_particle_weight_discarding", fix_particle_weight_discarding_, false);
+  
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
   private_nh_.param("laser_z_max", z_max_, 0.05);
@@ -418,7 +421,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   alpha3_ = config.odom_alpha3;
   alpha4_ = config.odom_alpha4;
   alpha5_ = config.odom_alpha5;
-
+  fix_particle_weight_discarding_ = config.fix_particle_weight_discarding;
   z_hit_ = config.laser_z_hit;
   z_short_ = config.laser_z_short;
   z_max_ = config.laser_z_max;
@@ -479,7 +482,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   delete odom_;
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
-  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
+  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_, !fix_particle_weight_discarding_);
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
@@ -648,7 +651,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   delete odom_;
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
-  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
+  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_, !fix_particle_weight_discarding_);
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
