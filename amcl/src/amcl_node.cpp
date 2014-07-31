@@ -219,6 +219,9 @@ class AmclNode
     double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
     double alpha_slow_, alpha_fast_;
     double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
+  //beam skip related params
+    bool do_beamskip_;
+    double beam_skip_distance_, beam_skip_threshold_, beam_skip_error_threshold_;
     double laser_likelihood_max_dist_;
     odom_model_t odom_model_type_;
     double init_pose_[3];
@@ -288,6 +291,11 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha3", alpha3_, 0.2);
   private_nh_.param("odom_alpha4", alpha4_, 0.2);
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
+  
+  private_nh_.param("do_beamskip", do_beamskip_, false);
+  private_nh_.param("beam_skip_distance", beam_skip_distance_, 0.5);
+  private_nh_.param("beam_skip_threshold", beam_skip_threshold_, 0.3);
+  private_nh_.param("beam_skip_error_threshold_", beam_skip_error_threshold_, 0.9);
 
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
@@ -302,6 +310,9 @@ AmclNode::AmclNode() :
     laser_model_type_ = LASER_MODEL_BEAM;
   else if(tmp_model_type == "likelihood_field")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
+  else if(tmp_model_type == "likelihood_field_prob"){
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
+  }
   else
   {
     ROS_WARN("Unknown laser model type \"%s\"; defaulting to likelihood_field model",
@@ -431,6 +442,8 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_model_type_ = LASER_MODEL_BEAM;
   else if(config.laser_model_type == "likelihood_field")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
+  else if(config.laser_model_type == "likelihood_field_prob")
+    laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
 
   if(config.odom_model_type == "diff")
     odom_model_type_ = ODOM_MODEL_DIFF;
@@ -452,6 +465,10 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   alpha_slow_ = config.recovery_alpha_slow;
   alpha_fast_ = config.recovery_alpha_fast;
   tf_broadcast_ = config.tf_broadcast;
+
+  do_beamskip_= config.do_beamskip; 
+  beam_skip_distance_ = config.beam_skip_distance; 
+  beam_skip_threshold_ = config.beam_skip_threshold; 
 
   pf_ = pf_alloc(min_particles_, max_particles_,
                  alpha_slow_, alpha_fast_,
@@ -487,8 +504,15 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   if(laser_model_type_ == LASER_MODEL_BEAM)
     laser_->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
                          sigma_hit_, lambda_short_, 0.0);
-  else
-  {
+  else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
+    laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
+					laser_likelihood_max_dist_, 
+					do_beamskip_, beam_skip_distance_, 
+					beam_skip_threshold_, beam_skip_error_threshold_);
+    ROS_INFO("Done initializing likelihood field model with probabilities.");
+  }
+  else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD){
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
                                     laser_likelihood_max_dist_);
@@ -656,6 +680,14 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   if(laser_model_type_ == LASER_MODEL_BEAM)
     laser_->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
                          sigma_hit_, lambda_short_, 0.0);
+  else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
+    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
+    laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
+					laser_likelihood_max_dist_, 
+					do_beamskip_, beam_skip_distance_, 
+					beam_skip_threshold_, beam_skip_error_threshold_);
+    ROS_INFO("Done initializing likelihood field model.");
+  }
   else
   {
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
