@@ -68,13 +68,15 @@ void
 AMCLOdom::SetModelDiff(double alpha1, 
                        double alpha2, 
                        double alpha3, 
-                       double alpha4)
+                       double alpha4,
+		       bool discard_weights)
 {
   this->model_type = ODOM_MODEL_DIFF;
   this->alpha1 = alpha1;
   this->alpha2 = alpha2;
   this->alpha3 = alpha3;
   this->alpha4 = alpha4;
+  this->discard_weights = discard_weights;
 }
 
 void
@@ -82,7 +84,8 @@ AMCLOdom::SetModelOmni(double alpha1,
                        double alpha2, 
                        double alpha3, 
                        double alpha4,
-                       double alpha5)
+                       double alpha5, 
+		       bool discard_weights)
 {
   this->model_type = ODOM_MODEL_OMNI;
   this->alpha1 = alpha1;
@@ -90,6 +93,7 @@ AMCLOdom::SetModelOmni(double alpha1,
   this->alpha3 = alpha3;
   this->alpha4 = alpha4;
   this->alpha5 = alpha5;
+  this->discard_weights = discard_weights;
 }
 
 void
@@ -98,7 +102,8 @@ AMCLOdom::SetModel( odom_model_t type,
                     double alpha2,
                     double alpha3,
                     double alpha4,
-                    double alpha5 )
+                    double alpha5, 
+		    bool discard_weights)
 {
   this->model_type = type;
   this->alpha1 = alpha1;
@@ -106,6 +111,7 @@ AMCLOdom::SetModel( odom_model_t type,
   this->alpha3 = alpha3;
   this->alpha4 = alpha4;
   this->alpha5 = alpha5;
+  this->discard_weights = discard_weights;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -159,7 +165,8 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += (delta_trans_hat * sn_bearing - 
                             delta_strafe_hat * cs_bearing);
       sample->pose.v[2] += delta_rot_hat ;
-      sample->weight = 1.0 / set->sample_count;
+      if(discard_weights)
+	sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -212,7 +219,8 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += delta_trans_hat * 
               sin(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[2] += delta_rot1_hat + delta_rot2_hat;
-      sample->weight = 1.0 / set->sample_count;
+      if(discard_weights)
+	sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -252,7 +260,8 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += (delta_trans_hat * sn_bearing - 
                             delta_strafe_hat * cs_bearing);
       sample->pose.v[2] += delta_rot_hat ;
-      sample->weight = 1.0 / set->sample_count;
+      if(discard_weights)
+	sample->weight = 1.0 / set->sample_count;
     }
   }
   break;
@@ -305,7 +314,8 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       sample->pose.v[1] += delta_trans_hat * 
               sin(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[2] += delta_rot1_hat + delta_rot2_hat;
-      sample->weight = 1.0 / set->sample_count;
+      if(discard_weights)
+	sample->weight = 1.0 / set->sample_count;
     }
   }
   break;

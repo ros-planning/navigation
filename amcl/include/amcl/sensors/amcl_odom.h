@@ -63,20 +63,23 @@ class AMCLOdom : public AMCLSensor
   public: void SetModelDiff(double alpha1, 
                             double alpha2, 
                             double alpha3, 
-                            double alpha4);
+                            double alpha4, 
+			    bool discard_weights = true);
 
   public: void SetModelOmni(double alpha1, 
                             double alpha2, 
                             double alpha3, 
                             double alpha4,
-                            double alpha5);
+                            double alpha5, 
+			    bool discard_weights = true);
 
   public: void SetModel( odom_model_t type,
                          double alpha1,
                          double alpha2,
                          double alpha3,
                          double alpha4,
-                         double alpha5 = 0 );
+                         double alpha5 = 0, 
+			 bool discard_weights = true);
 
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.
@@ -88,6 +91,8 @@ class AMCLOdom : public AMCLSensor
   // Model type
   private: odom_model_t model_type;
 
+  //Flag to reset particle weights 
+  private: bool discard_weights; 
   // Drift parameters
   private: double alpha1, alpha2, alpha3, alpha4, alpha5;
 };
