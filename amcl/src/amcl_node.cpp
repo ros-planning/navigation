@@ -134,6 +134,7 @@ class AmclNode
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
     void freeMapDependentMemory();
     map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
+    void updatePoseFromServer();
     void applyInitialPose();
 
     double getYaw(tf::Pose& t);
@@ -338,44 +339,7 @@ AmclNode::AmclNode() :
 
   transform_tolerance_.fromSec(tmp_tol);
 
-  init_pose_[0] = 0.0;
-  init_pose_[1] = 0.0;
-  init_pose_[2] = 0.0;
-  init_cov_[0] = 0.5 * 0.5;
-  init_cov_[1] = 0.5 * 0.5;
-  init_cov_[2] = (M_PI/12.0) * (M_PI/12.0);
-  // Check for NAN on input from param server, #5239
-  double tmp_pos;
-  private_nh_.param("initial_pose_x", tmp_pos, init_pose_[0]);
-  if(!std::isnan(tmp_pos))
-    init_pose_[0] = tmp_pos;
-  else 
-    ROS_WARN("ignoring NAN in initial pose X position");
-  private_nh_.param("initial_pose_y", tmp_pos, init_pose_[1]);
-  if(!std::isnan(tmp_pos))
-    init_pose_[1] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial pose Y position");
-  private_nh_.param("initial_pose_a", tmp_pos, init_pose_[2]);
-  if(!std::isnan(tmp_pos))
-    init_pose_[2] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial pose Yaw");
-  private_nh_.param("initial_cov_xx", tmp_pos, init_cov_[0]);
-  if(!std::isnan(tmp_pos))
-    init_cov_[0] =tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial covariance XX");
-  private_nh_.param("initial_cov_yy", tmp_pos, init_cov_[1]);
-  if(!std::isnan(tmp_pos))
-    init_cov_[1] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial covariance YY");
-  private_nh_.param("initial_cov_aa", tmp_pos, init_cov_[2]);
-  if(!std::isnan(tmp_pos))
-    init_cov_[2] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial covariance AA");
+  updatePoseFromServer();
 
   cloud_pub_interval.fromSec(1.0);
   tfb_ = new tf::TransformBroadcaster();
@@ -547,6 +511,48 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 }
 
+void AmclNode::updatePoseFromServer()
+{
+  init_pose_[0] = 0.0;
+  init_pose_[1] = 0.0;
+  init_pose_[2] = 0.0;
+  init_cov_[0] = 0.5 * 0.5;
+  init_cov_[1] = 0.5 * 0.5;
+  init_cov_[2] = (M_PI/12.0) * (M_PI/12.0);
+  // Check for NAN on input from param server, #5239
+  double tmp_pos;
+  private_nh_.param("initial_pose_x", tmp_pos, init_pose_[0]);
+  if(!std::isnan(tmp_pos))
+    init_pose_[0] = tmp_pos;
+  else 
+    ROS_WARN("ignoring NAN in initial pose X position");
+  private_nh_.param("initial_pose_y", tmp_pos, init_pose_[1]);
+  if(!std::isnan(tmp_pos))
+    init_pose_[1] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial pose Y position");
+  private_nh_.param("initial_pose_a", tmp_pos, init_pose_[2]);
+  if(!std::isnan(tmp_pos))
+    init_pose_[2] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial pose Yaw");
+  private_nh_.param("initial_cov_xx", tmp_pos, init_cov_[0]);
+  if(!std::isnan(tmp_pos))
+    init_cov_[0] =tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial covariance XX");
+  private_nh_.param("initial_cov_yy", tmp_pos, init_cov_[1]);
+  if(!std::isnan(tmp_pos))
+    init_cov_[1] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial covariance YY");
+  private_nh_.param("initial_cov_aa", tmp_pos, init_cov_[2]);
+  if(!std::isnan(tmp_pos))
+    init_cov_[2] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial covariance AA");	
+}
+
 void 
 AmclNode::checkLaserReceived(const ros::TimerEvent& event)
 {
@@ -625,6 +631,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_->pop_z = pf_z_;
 
   // Initialize the filter
+  updatePoseFromServer();
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
   pf_init_pose_mean.v[0] = init_pose_[0];
   pf_init_pose_mean.v[1] = init_pose_[1];
