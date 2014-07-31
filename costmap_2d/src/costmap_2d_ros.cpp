@@ -172,6 +172,7 @@ Costmap2DROS::~Costmap2DROS()
     delete publisher_;
 
   delete layered_costmap_;
+  delete dsrv_;
 }
 
 void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
@@ -472,10 +473,10 @@ void Costmap2DROS::readFootprintFromXMLRPC( XmlRpc::XmlRpcValue& footprint_xmlrp
                  full_param_name.c_str() );
       throw std::runtime_error( "The footprint must be specified as list of lists on the parameter server eg: [[x1, y1], [x2, y2], ..., [xn, yn]], but this spec is not of that form" );
     }
-       
+
     pt.x = getNumberFromXMLRPC( point[ 0 ], full_param_name );
     pt.y = getNumberFromXMLRPC( point[ 1 ], full_param_name );
-       
+
     footprint.push_back( pt );
   }
 
@@ -639,6 +640,8 @@ void Costmap2DROS::resume()
 
 void Costmap2DROS::resetLayers()
 {
+  Costmap2D* top = layered_costmap_->getCostmap();
+  top->resetMap(0, 0, top->getSizeInCellsX(), top->getSizeInCellsY());
   std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
       ++plugin)
