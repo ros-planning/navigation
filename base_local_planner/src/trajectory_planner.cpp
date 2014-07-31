@@ -556,16 +556,10 @@ namespace base_local_planner{
 
       //do we want to follow blindly
       if (simple_attractor_) {
-<<<<<<< HEAD
 	//this is not what we use 
         goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
           (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
-=======
-        goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) *
-          (x_i - global_plan_[global_plan_.size() -1].pose.position.x) +
-          (y_i - global_plan_[global_plan_.size() -1].pose.position.y) *
->>>>>>> e9c3ac822ac4ddb9af2605493fd7c37044cdf2d8
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y);
       } else {
 
