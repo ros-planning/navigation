@@ -74,6 +74,7 @@ namespace move_base {
 
     private_nh.param("planner_patience", planner_patience_, 5.0);
     private_nh.param("controller_patience", controller_patience_, 15.0);
+    private_nh.param("immediately_replan_on_controller_failure", immediately_replan_on_controller_failure_, false);
 
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
@@ -241,6 +242,7 @@ namespace move_base {
 
     planner_patience_ = config.planner_patience;
     controller_patience_ = config.controller_patience;
+    immediately_replan_on_controller_failure_ = config.immediately_replan_on_controller_failure; 
     conservative_reset_dist_ = config.conservative_reset_dist;
 
     recovery_behavior_enabled_ = config.recovery_behavior_enabled;
@@ -1005,9 +1007,11 @@ namespace move_base {
 	      state_ = PLANNING;
 	      publishZeroVelocity();
 
-	      //we should set a flag 
-	      ROS_WARN("Controller unable to execute the plan - replan called");
-	      replan_goal = true;
+	      if(immediately_replan_on_controller_failure_){
+		//we should set a flag - otherwise it will only be handled when the planner gets called again 
+		ROS_WARN("Controller unable to execute the plan - replan called");
+		replan_goal = true;
+	      }
 	      //enable the planner thread in case it isn't running on a clock
 	      boost::unique_lock<boost::mutex> lock(planner_mutex_);
 	      runPlanner_ = true;
