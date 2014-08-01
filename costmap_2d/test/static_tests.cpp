@@ -37,7 +37,7 @@
 #include <costmap_2d/obstacle_layer.h>
 #include <costmap_2d/static_layer.h>
 #include <costmap_2d/observation_buffer.h>
-#include <testing_helper.h>
+#include <costmap_2d/testing_helper.h>
 #include <set>
 #include <gtest/gtest.h>
 #include <tf/transform_listener.h>

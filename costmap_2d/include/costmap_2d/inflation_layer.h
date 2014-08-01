@@ -90,6 +90,8 @@ public:
   virtual ~InflationLayer()
   {
     deleteKernels();
+    if(dsrv_)
+        delete dsrv_;
   }
 
   virtual void onInitialize();

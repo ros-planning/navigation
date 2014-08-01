@@ -52,6 +52,7 @@ class StaticLayer : public CostmapLayer
 {
 public:
   StaticLayer();
+  virtual ~StaticLayer();
   virtual void onInitialize();
   virtual void activate();
   virtual void deactivate();
