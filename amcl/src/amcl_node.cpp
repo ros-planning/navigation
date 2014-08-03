@@ -598,75 +598,103 @@ AmclNode::mapReceived(const nav_msgs::OccupancyGridConstPtr& msg)
 void
 AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
 {
-  boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
 
   ROS_INFO("Received a %d X %d map @ %.3f m/pix\n",
            msg.info.width,
            msg.info.height,
            msg.info.resolution);
 
-  freeMapDependentMemory();
-  // Clear queued laser objects because they hold pointers to the existing
-  // map, #5202.
-  lasers_.clear();
-  lasers_update_.clear();
-  frame_to_laser_.clear();
+  // Create objects in memory for the new map before taking the lock
+  map_t* map_backup = convertMap(msg);
+  AMCLLaser* laser_backup = new AMCLLaser(max_beams_, map_backup);
 
-  map_ = convertMap(msg);
-
-#if NEW_UNIFORM_SAMPLING
-  // Index of free space
-  free_space_indices.resize(0);
-  for(int i = 0; i < map_->size_x; i++)
-    for(int j = 0; j < map_->size_y; j++)
-      if(map_->cells[MAP_INDEX(map_,i,j)].occ_state == -1)
-        free_space_indices.push_back(std::make_pair(i,j));
-#endif
-  // Create the particle filter
-  pf_ = pf_alloc(min_particles_, max_particles_,
-                 alpha_slow_, alpha_fast_,
-                 (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
-                 (void *)map_);
-  pf_->pop_err = pf_err_;
-  pf_->pop_z = pf_z_;
-
-  // Initialize the filter
-  updatePoseFromServer();
-  pf_vector_t pf_init_pose_mean = pf_vector_zero();
-  pf_init_pose_mean.v[0] = init_pose_[0];
-  pf_init_pose_mean.v[1] = init_pose_[1];
-  pf_init_pose_mean.v[2] = init_pose_[2];
-  pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
-  pf_init_pose_cov.m[0][0] = init_cov_[0];
-  pf_init_pose_cov.m[1][1] = init_cov_[1];
-  pf_init_pose_cov.m[2][2] = init_cov_[2];
-  pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
-  pf_init_ = false;
-
-  // Instantiate the sensor objects
-  // Odometry
-  delete odom_;
-  odom_ = new AMCLOdom();
-  ROS_ASSERT(odom_);
-  odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
-  // Laser
-  delete laser_;
-  laser_ = new AMCLLaser(max_beams_, map_);
-  ROS_ASSERT(laser_);
   if(laser_model_type_ == LASER_MODEL_BEAM)
-    laser_->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
-                         sigma_hit_, lambda_short_, 0.0);
+    laser_backup->SetModelBeam(z_hit_, z_short_, z_max_, z_rand_,
+                               sigma_hit_, lambda_short_, 0.0);
   else
   {
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
-    laser_->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
-                                    laser_likelihood_max_dist_);
+    laser_backup->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
+                                          laser_likelihood_max_dist_);
     ROS_INFO("Done initializing likelihood field model.");
   }
 
-  // In case the initial pose message arrived before the first map,
-  // try to apply the initial pose now that the map has arrived.
-  applyInitialPose();
+#if NEW_UNIFORM_SAMPLING
+  // Index of free space
+  static std::vector<std::pair<int,int> > free_space_indices_backup;
+  for(int i = 0; i < map_backup->size_x; i++)
+    for(int j = 0; j < map_backup->size_y; j++)
+      if(map_backup->cells[MAP_INDEX(map_backup,i,j)].occ_state == -1)
+        free_space_indices_backup.push_back(std::make_pair(i,j));
+#endif
+
+  {
+    boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
+
+    freeMapDependentMemory();
+    // Clear queued laser objects because they hold pointers to the existing
+    // map, #5202.
+    lasers_.clear();
+    lasers_update_.clear();
+    frame_to_laser_.clear();
+
+    map_ = map_backup;
+
+    free_space_indices = free_space_indices_backup;
+
+    // Create the particle filter
+    pf_ = pf_alloc(min_particles_, max_particles_,
+                   alpha_slow_, alpha_fast_,
+                   (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
+                   (void *)map_);
+    pf_->pop_err = pf_err_;
+    pf_->pop_z = pf_z_;
+
+    pf_vector_t pf_init_pose_mean = pf_vector_zero();
+    pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
+
+    tf::Stamped<tf::Pose> odom_pose;
+    pf_vector_t pose;
+
+    // Set the initial pose of the new particle filter
+    if (getOdomPose(odom_pose, pose.v[0], pose.v[1], pose.v[2], last_laser_received_ts_, base_frame_id_) && latest_tf_valid_) {
+      // If available, use the last tf and the odom from when the pf was last updated
+      tf::Pose map_pose = latest_tf_.inverse() * odom_pose;
+      double yaw,pitch,roll;
+      map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
+
+      pf_init_pose_mean.v[0] = map_pose.getOrigin().x();
+      pf_init_pose_mean.v[1] = map_pose.getOrigin().y();
+      pf_init_pose_mean.v[2] = yaw;
+    } else {
+      // Otherwise just use the last published position
+      pf_init_pose_mean.v[0] = last_published_pose.pose.pose.position.x;
+      pf_init_pose_mean.v[1] = last_published_pose.pose.pose.position.y;
+      pf_init_pose_mean.v[2] = tf::getYaw(last_published_pose.pose.pose.orientation);
+    }
+
+    // Use the covariance from the last published pose
+    pf_init_pose_cov.m[0][0] = last_published_pose.pose.covariance[6*0+0];
+    pf_init_pose_cov.m[1][1] = last_published_pose.pose.covariance[6*1+1];
+    pf_init_pose_cov.m[2][2] = last_published_pose.pose.covariance[6*5+5];
+    pf_init(pf_, pf_init_pose_mean, pf_init_pose_cov);
+    pf_init_ = false;
+
+    // Instantiate the sensor objects
+    // Odometry
+    delete odom_;
+    odom_ = new AMCLOdom();
+    ROS_ASSERT(odom_);
+    odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
+    // Laser
+    delete laser_;
+    laser_ = laser_backup;
+
+    // In case the initial pose message arrived before the first map,
+    // try to apply the initial pose now that the map has arrived.
+    applyInitialPose();
+
+  }
 
 }
 
