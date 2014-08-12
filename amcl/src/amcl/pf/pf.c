@@ -428,6 +428,19 @@ void pf_update_resample(pf_t *pf)
   return;
 }
 
+void pf_update_current_cluster_stats(pf_t *pf){
+  pf_sample_set_t *c_set = pf->sets + pf->current_set;
+  int i;
+  pf_sample_t *sample;
+  //poses have changed - clear the kd tree and reinsert the nodes 
+  pf_kdtree_clear(c_set->kdtree); 
+  for (i = 0; i < c_set->sample_count; i++){
+    sample = c_set->samples + i;
+    pf_kdtree_insert(c_set->kdtree, sample->pose, sample->weight);
+  }
+  pf_cluster_stats(pf, c_set);
+}
+
 
 // Compute the required number of samples, given that there are k bins
 // with samples in them.  This is taken directly from Fox et al.
@@ -503,8 +516,6 @@ void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set)
   for (i = 0; i < set->sample_count; i++)
   {
     sample = set->samples + i;
-
-    //printf("%d %f %f %f\n", i, sample->pose.v[0], sample->pose.v[1], sample->pose.v[2]);
 
     // Get the cluster label for this sample
     cidx = pf_kdtree_get_cluster(set->kdtree, sample->pose);

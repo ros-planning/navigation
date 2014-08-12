@@ -1118,6 +1118,11 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       pf_update_resample(pf_);
       resampled = true;
     }
+    else{
+      pf_update_current_cluster_stats(pf_);
+      //update the mean?? 
+      force_publication = true;
+    }
 
     pf_sample_set_t* set = pf_->sets + pf_->current_set;
     ROS_DEBUG("Num samples: %d\n", set->sample_count);
