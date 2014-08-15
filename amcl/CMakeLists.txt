@@ -6,6 +6,7 @@ find_package(catkin REQUIRED
             roscpp
             tf
             dynamic_reconfigure
+            laser_geometry
         )
 
 find_package(Boost REQUIRED)
@@ -19,7 +20,7 @@ catkin_package(
     CATKIN_DEPENDS
         roscpp
         dynamic_reconfigure
-        tf
+        tf        
   INCLUDE_DIRS include
   LIBRARIES amcl_sensors amcl_map amcl_pf
 )
