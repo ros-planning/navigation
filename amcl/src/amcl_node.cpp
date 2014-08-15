@@ -232,7 +232,7 @@ class AmclNode
     double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
   //beam skip related params
     bool do_beamskip_;
-    double beam_skip_distance_, beam_skip_threshold_;
+  double beam_skip_distance_, beam_skip_threshold_, beam_skip_error_threshold_;
     double laser_likelihood_max_dist_;
     odom_model_t odom_model_type_;
     double init_pose_[3];
@@ -314,10 +314,11 @@ AmclNode::AmclNode() :
   private_nh_.param("odom_alpha3", alpha3_, 0.2);
   private_nh_.param("odom_alpha4", alpha4_, 0.2);
   private_nh_.param("odom_alpha5", alpha5_, 0.2);
-
+  
   private_nh_.param("do_beamskip", do_beamskip_, false);
   private_nh_.param("beam_skip_distance", beam_skip_distance_, 0.5);
   private_nh_.param("beam_skip_threshold", beam_skip_threshold_, 0.3);
+  private_nh_.param("beam_skip_error_threshold_", beam_skip_error_threshold_, 0.9);
 
   private_nh_.param("publish_basic_pose", publish_basic_pose_, false);
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
@@ -574,7 +575,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
 					laser_likelihood_max_dist_, 
 					do_beamskip_, beam_skip_distance_, 
-					beam_skip_threshold_);
+					beam_skip_threshold_, beam_skip_error_threshold_);
     ROS_INFO("Done initializing likelihood field model with probabilities.");
   }
   else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD){
@@ -715,7 +716,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
     laser_->SetModelLikelihoodFieldProb(z_hit_, z_rand_, sigma_hit_,
 					laser_likelihood_max_dist_, 
 					do_beamskip_, beam_skip_distance_, 
-					beam_skip_threshold_);
+					beam_skip_threshold_, beam_skip_error_threshold_);
     ROS_INFO("Done initializing likelihood field model.");
   }
   else

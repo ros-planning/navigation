@@ -84,7 +84,8 @@ class AMCLLaser : public AMCLSensor
 					   double max_occ_dist, 
 					   bool do_beamskip, 
 					   double beam_skip_distance, 
-					   double beam_skip_threshold);
+					   double beam_skip_threshold, 
+					   double beam_skip_error_threshold);
 
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
@@ -131,10 +132,13 @@ class AMCLLaser : public AMCLSensor
   private: double z_rand;
 
   //temp data that is kept before observations are integrated to each particle 
-  public: int max_samples;
-  public: int max_obs;
-  public: double **temp_obs;
+  private: int max_samples;
+  private: int max_obs;
+  private: double **temp_obs;
 
+  //threshold for the ratio of invalid beams - at which all beams are integrated to the likelihoods 
+  //this would be an error condition 
+  private: double beam_skip_error_threshold;
   //
   // Stddev of Gaussian model for laser hits.
   private: double sigma_hit;

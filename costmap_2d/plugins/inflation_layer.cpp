@@ -32,7 +32,7 @@ void InflationLayer::onInitialize()
 
     dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
         &InflationLayer::reconfigureCB, this, _1, _2);
-  
+
     if(dsrv_ != NULL){
       dsrv_->clearCallback();
       dsrv_->setCallback(cb);
@@ -232,7 +232,7 @@ void InflationLayer::computeCaches()
       cached_distances_[i] = new double[cell_inflation_radius_ + 2];
       for (unsigned int j = 0; j <= cell_inflation_radius_ + 1; ++j)
       {
-        cached_distances_[i][j] = ::hypot(i, j);
+        cached_distances_[i][j] = hypot(i, j);
       }
     }
 

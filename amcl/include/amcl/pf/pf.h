@@ -131,6 +131,7 @@ typedef struct _pf_t
   pf_init_model_fn_t random_pose_fn;
   void *random_pose_data;
 
+  double dist_threshold; //distance threshold in each axis over which the pf is considered to not be converged
   int converged; 
 } pf_t;
 

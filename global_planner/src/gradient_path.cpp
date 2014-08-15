@@ -312,7 +312,7 @@ float GradientPath::gradCell(float* potential, int n) {
     }
 
     // normalize
-    float norm = ::hypot(dx, dy);
+    float norm = hypot(dx, dy);
     if (norm > 0) {
         norm = 1.0 / norm;
         gradx_[n] = norm * dx;

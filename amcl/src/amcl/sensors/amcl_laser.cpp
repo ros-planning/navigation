@@ -99,7 +99,8 @@ AMCLLaser::SetModelLikelihoodFieldProb(double z_hit,
 				       double max_occ_dist,
 				       bool do_beamskip,
 				       double beam_skip_distance,
-				       double beam_skip_threshold)
+				       double beam_skip_threshold, 
+				       double beam_skip_error_threshold)
 {
   this->model_type = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
   this->z_hit = z_hit;
@@ -108,6 +109,7 @@ AMCLLaser::SetModelLikelihoodFieldProb(double z_hit,
   this->do_beamskip = do_beamskip;
   this->beam_skip_distance = beam_skip_distance;
   this->beam_skip_threshold = beam_skip_threshold;
+  this->beam_skip_error_threshold = beam_skip_error_threshold;
   map_update_cspace(this->map, max_occ_dist);
 }
 
@@ -478,7 +480,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
     bool error = false; 
 
-    if(skipped_beam_count >= (beam_ind + 1) * 0.9){
+    if(skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold)){
       fprintf(stderr, "Over 90%% of the observations were not in the map - looks like pf converged to wrong pose - integrating all observations\n");
       error = true; 
     }
