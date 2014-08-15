@@ -1289,24 +1289,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         this->tfb_->sendTransform(tmp_tf_stamped);
         sent_first_transform_ = true;
       }
-      // if(publish_test_frame_){        
-      //   tf::Transform test_base_tf(tf::createQuaternionFromYaw(hyps[max_weight_hyp].pf_pose_mean.v[2]),
-      //                              tf::Vector3(hyps[max_weight_hyp].pf_pose_mean.v[0],
-      //                                          hyps[max_weight_hyp].pf_pose_mean.v[1],
-      //                                               0.0));
-
-      //   fprintf(stdout, "Test Base to Map : %f,%f,%f\n", hyps[max_weight_hyp].pf_pose_mean.v[0], 
-      //           hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
-      //   tf::Stamped<tf::Pose> test_base_to_map(test_base_tf, 
-      //                                          laser_scan->header.stamp,
-      //                                          test_frame_id_);
-      //   ros::Time transform_expiration = (laser_scan->header.stamp +
-      //                                     transform_tolerance_);
-      //   tf::StampedTransform test_base_tf_stamped(test_base_to_map.inverse(), 
-      //                                             transform_expiration,
-      //                                             test_frame_id_, global_frame_id_);
-      //   this->tfb_->sendTransform(test_base_tf_stamped);
-      // }
     }
     else
     {
