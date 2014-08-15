@@ -185,6 +185,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         PotentialCalculator* p_calc_;
         Expander* planner_;
         Traceback* path_maker_;
+	Traceback* path_maker_backup_;
 
         bool publish_potential_;
         ros::Publisher potential_pub_;

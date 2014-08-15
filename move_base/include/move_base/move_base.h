@@ -183,6 +183,7 @@ namespace move_base {
 
       tf::Stamped<tf::Pose> global_pose_;
       double planner_frequency_, controller_frequency_, inscribed_radius_, circumscribed_radius_;
+      int planner_overclock_ratio_;
       double planner_patience_, controller_patience_;
       double conservative_reset_dist_, clearing_radius_;
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
@@ -220,8 +221,10 @@ namespace move_base {
 
       move_base::MoveBaseConfig last_config_;
       move_base::MoveBaseConfig default_config_;
+
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
+      bool have_new_goal, replan_goal, immediately_replan_on_controller_failure_; 
   };
 };
 #endif
