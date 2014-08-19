@@ -120,14 +120,14 @@ protected:
    * @param marking_observations A reference to a vector that will be populated with the observations
    * @return True if all the observation buffers are current, false otherwise
    */
-  bool getMarkingObservations(std::vector<costmap_2d::Observation>& marking_observations) const;
+  virtual bool getMarkingObservations(std::vector<costmap_2d::Observation>& marking_observations) const;
 
   /**
    * @brief  Get the observations used to clear space
    * @param clearing_observations A reference to a vector that will be populated with the observations
    * @return True if all the observation buffers are current, false otherwise
    */
-  bool getClearingObservations(std::vector<costmap_2d::Observation>& clearing_observations) const;
+  virtual bool getClearingObservations(std::vector<costmap_2d::Observation>& clearing_observations) const;
 
   /**
    * @brief  Clear freespace based on one observation
@@ -145,6 +145,8 @@ protected:
 
   /** @brief Overridden from superclass Layer to pass new footprint into footprint_layer_. */
   virtual void onFootprintChanged();
+
+  std::map<std::string, double> observation_timeout;
 
   std::string global_frame_; ///< @brief The global frame for the costmap
   double max_obstacle_height_; ///< @brief Max Obstacle Height
@@ -166,6 +168,9 @@ protected:
   FootprintLayer footprint_layer_; ///< @brief clears the footprint in this obstacle layer.
   
   int combination_method_;
+
+  bool clear_old_;
+  double max_obstacle_persistance_; 
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);

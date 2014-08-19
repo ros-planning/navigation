@@ -55,19 +55,10 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
   mark_threshold_ = config.mark_threshold;
   combination_method_ = config.combination_method;
-  clear_old_ = !rolling_window_ && config.clear_old; 
 
   inflation_radius_ = config.inflation_radius;
   ROS_WARN("Inflation radius : %f", inflation_radius_);
 
-  if(clear_old_)
-    ROS_INFO("Clearing old obstacles : %d - Rolling %d", config.clear_old, rolling_window_);
-
-  if(config.clear_old && rolling_window_){
-    ROS_WARN("Unable to clear old obstacles for maps with a rolling window");
-  }
-
-  max_obstacle_persistance_ = config.max_obstacle_persistance; 
   matchSize();
 }
 
@@ -103,13 +94,28 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
   int error_count = 0; 
   for(int i=0; i < new_obs_list.size(); i++){
     CostMapList &list = new_obs_list[i];
-    if((current_time - list.obs_timestamp / 1.0e6) > max_obstacle_persistance_){
+    std::map<std::string, double>::iterator it; 
+    it = observation_timeout.find(list.topic); 
+
+    double obs_persistance = max_obstacle_persistance_;
+    if(it != observation_timeout.end()){
+      obs_persistance = it->second; 
+      ROS_DEBUG("Topic : %s - Timeout : %f\n", list.topic.c_str(), obs_persistance);
+    }
+    else{
+      ROS_ERROR("Asked to clear cost for non-timeout topic\n");
+    }
+
+    if((current_time - list.obs_timestamp / 1.0e6) > obs_persistance){
+      ROS_DEBUG("Clearing timeout observation : %f\n", (current_time - list.obs_timestamp / 1.0e6));
       int cleared_count = 0;
       checked_count++;
+      double *topic_utime =  locations_utime.get_values(list.topic);
       for(int j=0; j < list.indices.size(); j++){
-	if(locations_utime[list.indices[j].index] == list.obs_timestamp / 1.0e6){
+	if(topic_utime[list.indices[j].index] == list.obs_timestamp / 1.0e6){
+          //right now this clears everything (irrespective of the height) - this is prob bad if the sensors report different heights 
 	  costmap_[list.indices[j].index] = FREE_SPACE; 
-	  locations_utime[list.indices[j].index] = -1;
+	  topic_utime[list.indices[j].index] = -1;
 	  //increase the map update bounds 
 	  touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
 	}
@@ -125,6 +131,44 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
   }
 }
 
+  //we need to get observations for each sensor - to figure out which ones have timeouts 
+  bool VoxelLayer::getMarkingObservations(std::vector<ObservationSet>& observations_set) const
+{
+  bool current = true;
+  //get the marking observations
+  for (unsigned int i = 0; i < marking_buffers_.size(); ++i)
+  {
+    marking_buffers_[i]->lock();
+    ObservationSet obs(marking_buffers_[i]->getTopic());
+    marking_buffers_[i]->getObservations(obs.marking_observations);//marking_observations);
+    current = marking_buffers_[i]->isCurrent() && current;
+    observations_set.push_back(obs);
+    marking_buffers_[i]->unlock();
+  }
+
+  //what the heck is the static marking observations?? 
+  ObservationSet obs("static");
+  obs.marking_observations.insert(obs.marking_observations.end(), static_marking_observations_.begin(), static_marking_observations_.end());
+  observations_set.push_back(obs);
+  return current;
+}
+
+bool VoxelLayer::getClearingObservations(std::vector<Observation>& clearing_observations) const
+{
+  bool current = true;
+  //get the clearing observations
+  for (unsigned int i = 0; i < clearing_buffers_.size(); ++i)
+  {
+    clearing_buffers_[i]->lock();
+    clearing_buffers_[i]->getObservations(clearing_observations);
+    current = clearing_buffers_[i]->isCurrent() && current;
+    clearing_buffers_[i]->unlock();
+  }
+  clearing_observations.insert(clearing_observations.end(), 
+                              static_clearing_observations_.begin(), static_clearing_observations_.end());
+  return current;
+}
+
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                        double* min_y, double* max_x, double* max_y)
 {
@@ -135,7 +179,8 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
   useExtraBounds(min_x, min_y, max_x, max_y);
 
   bool current = true;
-  std::vector<Observation> observations, clearing_observations;
+  std::vector<ObservationSet> observations;
+  std::vector<Observation> clearing_observations;
 
   if(clear_old_){
     resetOldCosts(min_x, min_y, max_x, max_y);
@@ -157,67 +202,84 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
   }
    
   //place the new obstacles into a priority queue... each with a priority of zero to begin with
-  for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
+  for (std::vector<ObservationSet>::const_iterator it = observations.begin(); it != observations.end(); ++it)
   {
-    const Observation& obs = *it;
+    const ObservationSet& obs_set = *it; 
 
-    //we should throw out stale observations also 
-
-    CostMapList cm_list; 
-    cm_list.obs_timestamp = obs.cloud_->header.stamp; 
-    double obs_ts = cm_list.obs_timestamp / 1.0e6; 
-
-    const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
-
-    double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
-
-    int count = 0; 
+    //check if this is in the max_timeout list 
+    bool max_timeout = false; 
     
-    for (unsigned int i = 0; i < cloud.points.size(); ++i)
-    {
-      //if the obstacle is too high or too far away from the robot we won't add it
-      if (cloud.points[i].z > max_obstacle_height_)
-        continue;
-
-      //compute the squared distance from the hitpoint to the pointcloud's origin
-      double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
-          + (cloud.points[i].y - obs.origin_.y) * (cloud.points[i].y - obs.origin_.y)
-          + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
-
-      //if the point is far enough away... we won't consider it
-      if (sq_dist >= sq_obstacle_range)
-        continue;
-
-      //now we need to compute the map coordinates for the observation
-      unsigned int mx, my, mz;
-      if (cloud.points[i].z < origin_z_)
-      {
-        if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, origin_z_, mx, my, mz))
-          continue;
-      }
-      else if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z, mx, my, mz))
-      {
-        continue;
-      }
-
-      //mark the cell in the voxel grid and check if we should also mark it in the costmap
-      if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
-      {
-        unsigned int index = getIndex(mx, my);
-	//these are the ones set as occupied 
-	costmap_[index] = LETHAL_OBSTACLE;
-	touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
-
-	//keep track of which indexs we updated 
-	if(clear_old_){
-	  cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
-	  locations_utime[index] = obs_ts; 
-	  count++;
-	}
-      }
+    if(observation_timeout.find(obs_set.topic)!= observation_timeout.end()){
+      max_timeout = true;
+      ROS_DEBUG("Observation set for topic %s - clearing\n", obs_set.topic.c_str());
     }
-    if(clear_old_ && count > 0){
-      new_obs_list.push_back(cm_list);
+
+    for(std::vector<Observation>::const_iterator it_o = obs_set.marking_observations.begin(); 
+        it_o != obs_set.marking_observations.end(); it_o++){
+      const Observation& obs = *it_o;
+
+      //we should throw out stale observations also 
+
+      CostMapList cm_list; 
+      cm_list.topic = obs_set.topic;
+      cm_list.obs_timestamp = obs.cloud_->header.stamp; 
+      
+      double obs_ts = cm_list.obs_timestamp / 1.0e6; 
+
+      const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
+
+      double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
+
+      int count = 0; 
+
+      double *topic_utime =  locations_utime.get_values(obs_set.topic);
+    
+      for (unsigned int i = 0; i < cloud.points.size(); ++i)
+        {
+          //if the obstacle is too high or too far away from the robot we won't add it
+          if (cloud.points[i].z > max_obstacle_height_)
+            continue;
+
+          //compute the squared distance from the hitpoint to the pointcloud's origin
+          double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
+            + (cloud.points[i].y - obs.origin_.y) * (cloud.points[i].y - obs.origin_.y)
+            + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
+
+          //if the point is far enough away... we won't consider it
+          if (sq_dist >= sq_obstacle_range)
+            continue;
+
+          //now we need to compute the map coordinates for the observation
+          unsigned int mx, my, mz;
+          if (cloud.points[i].z < origin_z_)
+            {
+              if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, origin_z_, mx, my, mz))
+                continue;
+            }
+          else if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z, mx, my, mz))
+            {
+              continue;
+            }
+
+          //mark the cell in the voxel grid and check if we should also mark it in the costmap
+          if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
+            {
+              unsigned int index = getIndex(mx, my);
+              //these are the ones set as occupied 
+              costmap_[index] = LETHAL_OBSTACLE;
+              touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
+
+              //keep track of which indexs we updated 
+              if(max_timeout){
+                cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
+                topic_utime[index] = obs_ts; 
+                count++;
+              }
+            }
+        }
+      if(max_timeout && count > 0){
+        new_obs_list.push_back(cm_list);
+      }
     }
   }
 

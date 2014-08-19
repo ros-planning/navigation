@@ -71,53 +71,87 @@ namespace costmap_2d
   class CostMapList {
   public:
     int64_t obs_timestamp; 
+    std::string topic;
     std::vector<ObstaclePoint> indices;
   };
+
+  /* class LastUtime { */
+
+
+  /* };  */
 
   //keeps track of the last time each index location was updated 
   class GridmapLocations {
   public:
-
-    double *last_utimes;
+    std::map<std::string, double *> last_utimes; 
+    //double *last_utimes;
     int size;
 
-  GridmapLocations(int size_=0):size(size_), last_utimes(0){
-      if(size > 0){
-	last_utimes = new double[size];
-	reset();
+  GridmapLocations(int size_=0):size(size_){
+      assert(size>=0); 
+    }
+
+    ~GridmapLocations(){
+      std::map<std::string, double *>::iterator it; 
+      for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+        delete []it->second;
+      }
+    }
+
+    void addTopic(std::string topic){
+      if(last_utimes.find(topic) == last_utimes.end()){
+        double *utimes = new double[size];
+        last_utimes.insert(std::make_pair(topic, utimes));
+      }
+      else{
+        fprintf(stdout, "Topic already present\n");
       }
     }
 
     void resize(int new_size){
       if(size != new_size){
 	size = new_size; 
-	if(last_utimes)
-	  delete []last_utimes;
-	last_utimes = new double[size];
+        std::map<std::string, double *>::iterator it; 
+        for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+          delete []it->second;
+          it->second = new double[size];
+        }
       }
       reset();
     }
-
-    int countValid(){
-      int valid_count = 0; 
-      for(int i=0; i < size; i++){
-	if(last_utimes[i] != -1){
-	  valid_count++;
-	}	
-      }
-      return valid_count;
-    }
     
-    double& operator[](int ind){
-      assert(ind >=0 && ind < size); 
-      return last_utimes[ind]; 
-    } 
+    double *get_values(std::string topic){
+      if(last_utimes.find(topic) == last_utimes.end()){
+        addTopic(topic); 
+      }
+      
+      std::map<std::string, double *>::iterator it = last_utimes.find(topic); 
+      assert(it != last_utimes.end());
+      assert(it->second != NULL);
+      return it->second; 
+    }
+
+    /* double& value(string topic, int ind){ */
+    /*   assert(ind >=0 && ind < size);  */
+    /*   return last_utimes[ind];  */
+    /* }  */
 
     void reset(){
-      for(int i=0; i < size; i++){
-	last_utimes[i] = -1;
+      std::map<std::string, double *>::iterator it; 
+      for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+        for(int i=0; i < size; i++){
+          it->second[i] = -1;
+        }
       }
     }
+  };
+
+  class ObservationSet{
+  public:
+  ObservationSet(std::string topic_):topic(topic_){
+    }
+    std::vector<Observation> marking_observations; 
+    std::string topic; 
   };
 
 class VoxelLayer : public ObstacleLayer
@@ -143,8 +177,22 @@ public:
   virtual void matchSize();
   virtual void reset();
 
-
 protected:
+  /**
+   * @brief  Get the observations used to mark space
+   * @param marking_observations A reference to a vector that will be populated with the observations
+   * @return True if all the observation buffers are current, false otherwise
+   */
+  bool getMarkingObservations(std::vector<costmap_2d::ObservationSet>& marking_observations) const;
+
+  /**
+   * @brief  Get the observations used to clear space
+   * @param clearing_observations A reference to a vector that will be populated with the observations
+   * @return True if all the observation buffers are current, false otherwise
+   */
+  bool getClearingObservations(std::vector<costmap_2d::Observation>& clearing_observations) const;
+
+
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
 private:
@@ -159,12 +207,13 @@ private:
   dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *dsrv_;
 
   std::vector<CostMapList> new_obs_list; 
+  //this needs to be maintained for each topic - since they can have different timeouts 
   GridmapLocations locations_utime;
 
   double inflation_radius_;
   bool publish_voxel_;
-  bool clear_old_;
-  double max_obstacle_persistance_; 
+  /* bool clear_old_; */
+  /* double max_obstacle_persistance_;  */
   ros::Publisher voxel_pub_;
   voxel_grid::VoxelGrid voxel_grid_;
   double z_resolution_, origin_z_;

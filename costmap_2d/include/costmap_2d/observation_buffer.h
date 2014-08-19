@@ -141,6 +141,10 @@ public:
    */
   void resetLastUpdated();
 
+  std::string getTopic(){
+    return topic_name_;
+  }
+
 private:
   /**
    * @brief  Removes any stale observations from the buffer list

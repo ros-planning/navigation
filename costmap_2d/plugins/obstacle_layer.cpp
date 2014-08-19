@@ -41,16 +41,20 @@ void ObstacleLayer::onInitialize()
   //now we need to split the topics based on whitespace which we can use a stringstream for
   std::stringstream ss(topics_string);
 
+  max_obstacle_persistance_ = 2.0; //default persistance values 
+  
   std::string source;
   while (ss >> source)
   {
     ros::NodeHandle source_node(nh, source);
 
     //get the parameters for the specific topic
-    double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
+    double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height, 
+      max_obstacle_persistance;
     std::string topic, sensor_frame, data_type;
     bool inf_is_valid, clearing, marking;
-
+    bool clear_old; 
+    
     source_node.param("topic", topic, source);
     source_node.param("sensor_frame", sensor_frame, std::string(""));
     source_node.param("observation_persistence", observation_keep_time, 0.0);
@@ -58,10 +62,25 @@ void ObstacleLayer::onInitialize()
     source_node.param("data_type", data_type, std::string("PointCloud"));
     source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
     source_node.param("max_obstacle_height", max_obstacle_height, 2.0);
+    source_node.param("clear_old", clear_old, false);
+    source_node.param("max_obstacle_persistance", max_obstacle_persistance, 2.0);
     source_node.param("inf_is_valid", inf_is_valid, false);
     source_node.param("clearing", clearing, false);
     source_node.param("marking", marking, true);
 
+    //update the clearing parameters for this layer 
+    if(clear_old){
+      if(!rolling_window_){
+        clear_old_ = true; 
+        ROS_INFO("Clearing old observations for topic %s - time out : %f\n", topic.c_str(),
+                max_obstacle_persistance);
+        observation_timeout.insert(std::make_pair(topic, max_obstacle_persistance)); 
+      }
+      else{
+        ROS_ERROR("Param asks to clear old observations - not supported for rolling window costmaps\n");
+      }
+    }
+      
     if (!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan"))
     {
       ROS_FATAL("Only topics that use point clouds or laser scans are currently supported");
