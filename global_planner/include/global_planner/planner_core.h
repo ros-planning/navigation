@@ -178,6 +178,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         void publishPotential(float* potential);
 
         double planner_window_x_, planner_window_y_, default_tolerance_;
+        double clear_goal_tolerance_; //search within this tolerance to find a goal away from the obstacle (recomend a small values)
         std::string tf_prefix_;
         boost::mutex mutex_;
         ros::ServiceServer make_plan_srv_;
@@ -195,7 +196,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         unsigned char* cost_array_;
         float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
-
+        
         bool old_navfn_behavior_;
         float convert_offset_;
 
@@ -204,6 +205,8 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
 	//finds closest map point within xy_tolerance that is free 
 	bool findClosestOpenGoal(unsigned char* costs, double goal_x, double goal_y, double &new_goal_x, double &new_goal_y, double xy_tolerance, int nx, int ny);
+
+        bool findClearGoal(unsigned char* costs, double goal_x, double goal_y, double &new_goal_x, double &new_goal_y, double xy_tolerance, int nx, int ny);
 
 	inline int getMapIndex(int x, int y, int nx){
 	   return x + nx * y;

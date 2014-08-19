@@ -142,6 +142,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         private_nh.param("planner_window_x", planner_window_x_, 0.0);
         private_nh.param("planner_window_y", planner_window_y_, 0.0);
         private_nh.param("default_tolerance", default_tolerance_, 0.0);
+        private_nh.param("clear_goal_tolerance", clear_goal_tolerance_, 0.0);
         private_nh.param("publish_scale", publish_scale_, 100);
 
         double costmap_pub_freq;
@@ -233,6 +234,56 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
      }
      else 
        return false; //do we want to check here if its in unknown space??
+  }
+
+  bool GlobalPlanner::findClearGoal(unsigned char* costs, double goal_x, double goal_y, double &new_goal_x, double &new_goal_y, double xy_tolerance, int nx, int ny){
+    //do a local search in the neighborhood - and find the x,y location with the lowest obstacle cost 
+    int goal_index = getMapIndex(goal_x, goal_y, nx);
+
+    float min_cost = getCost(costs, goal_index);
+
+    double lethal_cost_ = planner_->getLethalCost();
+    
+    double distance_from_obstacle = 0.5; 
+
+    bool found = false; 
+
+    new_goal_x = goal_x; 
+    new_goal_y = goal_y; 
+    
+    int x_t = xy_tolerance;
+    int y_t = xy_tolerance; 
+
+    for(int dx = -x_t; dx <= x_t; dx++){
+      for(int dy = -y_t; dy <= y_t; dy++){
+        if(dx == 0 && dy == 0){
+          continue;
+        }
+        
+        //Note : No gurantee that it will not go through a wall if set a high enough value (DON'T SET high value :)
+        if(hypot(dx, dy) < xy_tolerance){
+          double n_goal_x = goal_x + dx; 
+          double n_goal_y = goal_y + dy;
+
+          if(n_goal_x >= nx || n_goal_x < 0)
+            continue;
+          if(n_goal_y >= ny || n_goal_y < 0)
+            continue;
+          
+          int index = getMapIndex(n_goal_x, n_goal_y, nx);
+
+          float cost = getCost(costs, index);
+
+          if(cost < min_cost){
+            min_cost= cost; 
+            new_goal_x = n_goal_x; 
+            new_goal_y = n_goal_y; 
+            found = true;
+          }
+        }
+      }
+    }
+    return found; 
   }
 
   bool GlobalPlanner::findClosestOpenGoal(unsigned char* costs, double goal_x, double goal_y, double &new_goal_x, double &new_goal_y, double xy_tolerance, int nx, int ny){
@@ -395,25 +446,38 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     double tolerance_world = tolerance; 
     double tolerance_map = tolerance_world / costmap_->getResolution();
 
-    bool close_goal = false;
+    bool original_goal_valid = true;
            
     //we can check if the map has a close point within tolerance that we can plan to 
     
-    bool orig_goal_occupied =  isPointOccupied(costmap_->getCharMap(), goal_x, goal_y, nx, ny);    
+    bool orig_goal_occupied = isPointOccupied(costmap_->getCharMap(), goal_x, goal_y, nx, ny);    
 
     if(orig_goal_occupied && tolerance_map >= 1){
       ROS_WARN("Checking if there is a close node to the goal");
       // set up start cell
       double new_goal_x, new_goal_y; 
+      
       bool found_goal = findClosestOpenGoal(costmap_->getCharMap(), goal_x, goal_y, new_goal_x, new_goal_y, tolerance_map, nx, ny);
 
       if(found_goal){
 	if(new_goal_x != goal_x || new_goal_y != goal_y){
 	  ROS_WARN("Found close goal");
-	  close_goal = true;
+	  original_goal_valid = false;
 	  goal_x = new_goal_x; 
 	  goal_y = new_goal_y;
 	}
+      }
+    }
+
+    if(clear_goal_tolerance_ > 0){
+      double tolerance_world_clear = clear_goal_tolerance_;
+      double tolerance_map_clear = tolerance_world_clear / costmap_->getResolution();
+      double new_goal_x, new_goal_y; 
+      if(findClearGoal(costmap_->getCharMap(), goal_x, goal_y, new_goal_x, new_goal_y, tolerance_map_clear, nx, ny)){
+        ROS_DEBUG("Found Clear Goal => Original Goal : %f,%f -> New Goal : %f, %f\n", goal_x, goal_y, new_goal_x, new_goal_y);
+        original_goal_valid = false; //so that it wont push the last point 
+        goal_x = new_goal_x; 
+        goal_y = new_goal_y;
       }
     }
 
@@ -444,7 +508,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         //extract the plan
         if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
 	  //make sure the goal we push on has the same timestamp as the rest of the plan
-	  if(!close_goal){
+	  if(original_goal_valid){
             geometry_msgs::PoseStamped goal_copy = goal;
             goal_copy.header.stamp = ros::Time::now();
 	    plan.pop_back();
