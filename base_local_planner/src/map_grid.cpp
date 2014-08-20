@@ -253,7 +253,6 @@ namespace base_local_planner{
       ROS_ERROR("Failed to find valid waypoint\n");
       return;
     }
-    fprintf(stdout, "Done with adding\n");
     computeTargetDistance(path_dist_queue, costmap);
   }
 
