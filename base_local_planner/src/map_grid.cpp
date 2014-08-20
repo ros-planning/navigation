@@ -176,6 +176,7 @@ namespace base_local_planner{
   void MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
                                const std::vector<geometry_msgs::PoseStamped>& global_plan, 
                                const tf::Stamped<tf::Pose> *global_pose) {
+    fprintf(stdout, "Setting target cells\n");
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 
     bool started_path = false;
@@ -217,12 +218,8 @@ namespace base_local_planner{
           //fprintf(stdout, "Found a valid waypoint outside the goal threshold - breaking\n");
           break;
         }
-        MapCell& current = getCell(map_x, map_y);
-        current.target_dist = 0.0;
-        current.target_mark = true;
         started_path = true;
-        
-       
+               
         valid_waypoint = i; 
       } else if (started_path) {
           break;
@@ -230,6 +227,9 @@ namespace base_local_planner{
     }
     
     started_path = false;
+    
+    fprintf(stdout,"Valid waypoint : %d\n", valid_waypoint);
+
     if(valid_waypoint >=0){
       // put global path points into local map until we reach the border of the local map
       for (i = 0; i <= valid_waypoint; ++i) {
@@ -253,7 +253,12 @@ namespace base_local_planner{
         return;
       }
     }
-
+    else{
+      ROS_ERROR("None of the %d first of %zu (%zu) points of the global plan were in the local costmap and free",
+                i, adjusted_global_plan.size(), global_plan.size());
+      return;
+    }
+    fprintf(stdout, "Done with adding\n");
     computeTargetDistance(path_dist_queue, costmap);
   }
 
@@ -280,7 +285,7 @@ namespace base_local_planner{
 
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
     adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
-
+    
     // skip global path points until we reach the border of the local map
     for (unsigned int i = adjusted_global_plan.size() - 1; i>=0; --i) {
       double g_x = adjusted_global_plan[i].pose.position.x;
@@ -293,6 +298,8 @@ namespace base_local_planner{
       }
       
       unsigned int map_x, map_y;
+      
+      //logic is a bit different here 
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
         if(started_path && (dist_from_robot < goal_dist_threshold_)){
           fprintf(stdout, "Found a valid waypoint %d outside the goal threshold - %f (%f) breaking\n", (int) i, dist_from_robot, goal_dist_threshold_);
@@ -321,7 +328,7 @@ namespace base_local_planner{
       current.target_mark = true;
       path_dist_queue.push(&current);
     }
-
+    fprintf(stdout, "Done with Setting local goal\n");
     computeTargetDistance(path_dist_queue, costmap);
   }
 

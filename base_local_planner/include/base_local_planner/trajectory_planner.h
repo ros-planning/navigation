@@ -314,6 +314,8 @@ namespace base_local_planner {
       int vx_samples_; ///< @brief The number of samples we'll take in the x dimenstion of the control space
       int vtheta_samples_; ///< @brief The number of samples we'll take in the theta dimension of the control space
 
+      double goal_prune_distance_; ///< @brief The local controller selects the first valid waypoint in the global planner more than this distance from the robot 
+
       double pdist_scale_, gdist_scale_, occdist_scale_; ///< @brief Scaling factors for the controller's cost function
       double acc_lim_x_, acc_lim_y_, acc_lim_theta_; ///< @brief The acceleration limits of the robot
 
@@ -370,14 +372,6 @@ namespace base_local_planner {
       inline double computeNewYPosition(double yi, double vx, double vy, double theta, double dt){
         return yi + (vx * sin(theta) + vy * sin(M_PI_2 + theta)) * dt;
       }
-
-      /**
-       * @brief  Pubiish out trajectories - to draw in rviz 
-       * @param  publisher
-       * @param  vector of trajectories
-       * @return void
-       */
-      void drawTrajectories(ros::Publisher *vis_pub, std::vector<Trajectory> &traj_list);
 
       /**
        * @brief  Compute orientation based on velocity
