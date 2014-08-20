@@ -54,6 +54,8 @@
 using namespace std;
 using namespace costmap_2d;
 
+#define GOAL_PRUNE_DIST 0.4
+
 namespace base_local_planner{
 
 
@@ -797,7 +799,7 @@ namespace base_local_planner{
     return cost;
   }
 
-  void TrajectoryPlanner::updatePlan(const vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists){
+  void TrajectoryPlanner::updatePlan(const vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists, const tf::Stamped<tf::Pose> *global_pose){
     global_plan_.resize(new_plan.size());
     for(unsigned int i = 0; i < new_plan.size(); ++i){
       global_plan_[i] = new_plan[i];
@@ -818,9 +820,15 @@ namespace base_local_planner{
       goal_map_.resetPathDist();
 
       //make sure that we update our path based on the global plan and compute costs
-      path_map_.setTargetCells(costmap_, global_plan_);
-      goal_map_.setLocalGoal(costmap_, global_plan_);
+      path_map_.setGoalDistanceThreshold(GOAL_PRUNE_DIST); //break after you have atleast one valid goal past this distance 
+      goal_map_.setGoalDistanceThreshold(GOAL_PRUNE_DIST); //break after you have atleast one valid goal past this distance 
+
+      path_map_.setTargetCells(costmap_, global_plan_, global_pose);
+      goal_map_.setLocalGoal(costmap_, global_plan_, global_pose);
       ROS_DEBUG("Path/Goal distance computed");
+      if(!global_pose){
+        ROS_WARN("Compute distance called without robot pose - using default\n");
+      }
     }
   }
 
@@ -1558,9 +1566,12 @@ namespace base_local_planner{
       path_map_(footprint_list[i].x, footprint_list[i].y).within_robot = true;
     }
 
+    path_map_.setGoalDistanceThreshold(GOAL_PRUNE_DIST); //break after you have atleast one valid goal past this distance 
+    goal_map_.setGoalDistanceThreshold(GOAL_PRUNE_DIST); //break after you have atleast one valid goal past this distance 
+
     //make sure that we update our path based on the global plan and compute costs
-    path_map_.setTargetCells(costmap_, global_plan_);
-    goal_map_.setLocalGoal(costmap_, global_plan_);
+    path_map_.setTargetCells(costmap_, global_plan_, &global_pose);
+    goal_map_.setLocalGoal(costmap_, global_plan_, &global_pose);
 
     //rollout trajectories and find the minimum cost one
     Trajectory best = createTrajectories(pos[0], pos[1], pos[2],

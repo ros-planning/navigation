@@ -151,7 +151,8 @@ namespace base_local_planner {
        * @param new_plan A new plan for the controller to follow 
        * @param compute_dists Wheter or not to compute path/goal distances when a plan is updated
        */
-      void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists = false);
+      void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists = false, 
+                      const tf::Stamped<tf::Pose> *global_pose=NULL);
 
       /**
        * @brief  Accessor for the goal the robot is currently pursuing in world corrdinates
