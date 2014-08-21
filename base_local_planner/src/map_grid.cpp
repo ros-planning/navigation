@@ -38,12 +38,12 @@ using namespace std;
 namespace base_local_planner{
 
   MapGrid::MapGrid()
-    : size_x_(0), size_y_(0)
+    : size_x_(0), size_y_(0), waypoint_dist_threshold_(-1)
   {
   }
 
   MapGrid::MapGrid(unsigned int size_x, unsigned int size_y) 
-    : size_x_(size_x), size_y_(size_y)
+    : size_x_(size_x), size_y_(size_y), waypoint_dist_threshold_(-1)
   {
     commonInit();
   }
@@ -54,8 +54,8 @@ namespace base_local_planner{
     map_ = mg.map_;
   }
 
-  void MapGrid::setGoalDistanceThreshold(double goal_dist_threshold){
-    goal_dist_threshold_ = goal_dist_threshold; 
+  void MapGrid::setWaypointDistanceThreshold(double waypoint_dist_threshold){
+    waypoint_dist_threshold_ = waypoint_dist_threshold; 
   }
 
   void MapGrid::commonInit(){
@@ -172,6 +172,88 @@ namespace base_local_planner{
     }
   }
 
+  void MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan) {
+    sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
+
+    bool started_path = false;
+
+    queue<MapCell*> path_dist_queue;
+
+    std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
+    adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
+    if (adjusted_global_plan.size() != global_plan.size()) {
+      ROS_DEBUG("Adjusted global plan resolution, added %zu points", adjusted_global_plan.size() - global_plan.size());
+    }
+    unsigned int i;
+    // put global path points into local map until we reach the border of the local map
+    for (i = 0; i < adjusted_global_plan.size(); ++i) {
+      double g_x = adjusted_global_plan[i].pose.position.x;
+      double g_y = adjusted_global_plan[i].pose.position.y;
+      unsigned int map_x, map_y;
+      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+        MapCell& current = getCell(map_x, map_y);
+        current.target_dist = 0.0;
+        current.target_mark = true;
+        path_dist_queue.push(&current);
+        started_path = true;
+      } else if (started_path) {
+          break;
+      }
+    }
+    if (!started_path) {
+      ROS_ERROR("None of the %d first of %zu (%zu) points of the global plan were in the local costmap and free",
+          i, adjusted_global_plan.size(), global_plan.size());
+      return;
+    }
+
+    computeTargetDistance(path_dist_queue, costmap);
+  }
+
+  //mark the point of the costmap as local goal where global_plan first leaves the area (or its last point)
+  void MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
+      const std::vector<geometry_msgs::PoseStamped>& global_plan) {
+    sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
+
+    int local_goal_x = -1;
+    int local_goal_y = -1;
+    bool started_path = false;
+
+    std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
+    adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
+
+    // skip global path points until we reach the border of the local map
+    for (unsigned int i = 0; i < adjusted_global_plan.size(); ++i) {
+      double g_x = adjusted_global_plan[i].pose.position.x;
+      double g_y = adjusted_global_plan[i].pose.position.y;
+      unsigned int map_x, map_y;
+      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+        local_goal_x = map_x;
+        local_goal_y = map_y;
+        started_path = true;
+      } else {
+        if (started_path) {
+          break;
+        }// else we might have a non pruned path, so we just continue
+      }
+    }
+    if (!started_path) {
+      ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");
+      return;
+    }
+
+    queue<MapCell*> path_dist_queue;
+    if (local_goal_x >= 0 && local_goal_y >= 0) {
+      MapCell& current = getCell(local_goal_x, local_goal_y);
+      costmap.mapToWorld(local_goal_x, local_goal_y, goal_x_, goal_y_);
+      current.target_dist = 0.0;
+      current.target_mark = true;
+      path_dist_queue.push(&current);
+    }
+
+    computeTargetDistance(path_dist_queue, costmap);
+  }
+
   //update what map cells are considered path based on the global_plan
   void MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
                                const std::vector<geometry_msgs::PoseStamped>& global_plan, 
@@ -190,9 +272,9 @@ namespace base_local_planner{
     unsigned int i;
 
     bool prune_from_robot = false; 
-    double robot_x, robot_y; 
+    double robot_x=0.0, robot_y=0.0; 
     
-    if(global_pose){
+    if(global_pose && waypoint_dist_threshold_ > 0){
       robot_x = global_pose->getOrigin().getX();
       robot_y = global_pose->getOrigin().getY(); 
       prune_from_robot = true;
@@ -206,22 +288,14 @@ namespace base_local_planner{
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
       
-      double dist_from_robot = 0; 
-
-      if(prune_from_robot){
-        dist_from_robot = hypot(g_x - robot_x, g_y - robot_y); 
-      }
-                  
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
-        if(started_path && (dist_from_robot < goal_dist_threshold_)){          
+        //only break out when we are within the threshold 
+        if(started_path && ( prune_from_robot && hypot(g_x - robot_x, g_y - robot_y) < waypoint_dist_threshold_)){          
           break;
         }
-        started_path = true;
-               
+        started_path = true;               
         valid_waypoint = i; 
-      } else if (started_path) {
-          break;
-      }
+      } 
     }
     
     started_path = false;
@@ -270,7 +344,7 @@ namespace base_local_planner{
     bool prune_from_robot = false; 
     double robot_x, robot_y; 
     
-    if(global_pose){
+    if(global_pose && waypoint_dist_threshold_ > 0){
       robot_x = global_pose->getOrigin().getX();
       robot_y = global_pose->getOrigin().getY(); 
       prune_from_robot = true;
@@ -284,27 +358,17 @@ namespace base_local_planner{
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
 
-      double dist_from_robot = 0; 
-      bool distance_increasing = false; 
-      if(prune_from_robot){
-        dist_from_robot = hypot(g_x - robot_x, g_y - robot_y); 
-      }
-      
       unsigned int map_x, map_y;
       
       //logic is a bit different here 
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
-        if(started_path && (dist_from_robot < goal_dist_threshold_)){
+        if(started_path && (prune_from_robot &&  hypot(g_x - robot_x, g_y - robot_y) < waypoint_dist_threshold_)){
           break;
         }
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
-      } else {
-        if (started_path) {
-          break;
-        }// else we might have a non pruned path, so we just continue
-      }
+      } 
     }
     if (!started_path) {
       ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");

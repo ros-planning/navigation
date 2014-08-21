@@ -69,7 +69,7 @@ namespace base_local_planner{
        * @brief Set the goal distance threshold (will stop considering waypoints after the first valid one over this threshold 
        * @param goal_dist_threshold threshold
        */
-      void setGoalDistanceThreshold(double goal_dist_threshold); 
+      void setWaypointDistanceThreshold(double waypoint_dist_threshold); 
 
       /**
        * @brief  Returns a map cell accessed by (col, row)
@@ -185,21 +185,33 @@ namespace base_local_planner{
       /**
        * @brief Update what cells are considered path based on the global plan 
        */
-      void setTargetCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-                          const tf::Stamped<tf::Pose> *global_pose=NULL);
+      void setTargetCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan);
+
+      /**
+       * @brief Update what cells are considered path based on the global plan 
+       */
+      void setTargetCells(const costmap_2d::Costmap2D& costmap, 
+                          const std::vector<geometry_msgs::PoseStamped>& global_plan, 
+                          const tf::Stamped<tf::Pose> *global_pose);
+
+      /**
+       * @brief Update what cell is considered the next local goal 
+       */
+      void setLocalGoal(const costmap_2d::Costmap2D& costmap,
+                        const std::vector<geometry_msgs::PoseStamped>& global_plan);
 
       /**
        * @brief Update what cell is considered the next local goal
        */
       void setLocalGoal(const costmap_2d::Costmap2D& costmap,
                         const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-                        const tf::Stamped<tf::Pose> *global_pose=NULL);
+                        const tf::Stamped<tf::Pose> *global_pose);
 
       double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
 
       unsigned int size_x_, size_y_; ///< @brief The dimensions of the grid
 
-      double goal_dist_threshold_; //if we find a waypoint beyond this threshold - stop considering the rest 
+      double waypoint_dist_threshold_; //if we find a waypoint beyond this threshold - stop considering the rest 
 
     private:
 

@@ -314,7 +314,8 @@ namespace base_local_planner {
       int vx_samples_; ///< @brief The number of samples we'll take in the x dimenstion of the control space
       int vtheta_samples_; ///< @brief The number of samples we'll take in the theta dimension of the control space
 
-      double goal_prune_distance_; ///< @brief The local controller selects the first valid waypoint in the global planner more than this distance from the robot 
+      bool prune_waypoints_; 
+      double waypoint_prune_distance_; ///< @brief The local controller selects the first valid waypoint in the global planner more than this distance from the robot 
 
       double pdist_scale_, gdist_scale_, occdist_scale_; ///< @brief Scaling factors for the controller's cost function
       double acc_lim_x_, acc_lim_y_, acc_lim_theta_; ///< @brief The acceleration limits of the robot

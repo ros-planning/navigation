@@ -69,9 +69,18 @@ namespace base_local_planner{
 
       max_vel_x_ = config.max_vel_x;
       min_vel_x_ = config.min_vel_x;
-
-      goal_prune_distance_ = config.goal_prune_distance;
       
+      prune_waypoints_ = config.prune_waypoints;
+
+      if(prune_waypoints_){
+        //will select the first waypoint longer than the threshold
+        ROS_INFO("Pruning waypoints => Threshold %f\n", config.waypoint_prune_distance);
+        waypoint_prune_distance_ = config.waypoint_prune_distance;
+
+        path_map_.setWaypointDistanceThreshold(waypoint_prune_distance_); //break after you have atleast one valid goal past this distance 
+        goal_map_.setWaypointDistanceThreshold(waypoint_prune_distance_); //break after you have atleast one valid goal past this distance 
+      }
+            
       max_vel_th_ = config.max_vel_theta;
       min_vel_th_ = config.min_vel_theta;
       min_in_place_vel_th_ = config.min_in_place_vel_theta;
@@ -773,14 +782,18 @@ namespace base_local_planner{
       //reset the map for new operations
       path_map_.resetPathDist();
       goal_map_.resetPathDist();
-
-      //make sure that we update our path based on the global plan and compute costs
-      path_map_.setGoalDistanceThreshold(goal_prune_distance_); //break after you have atleast one valid goal past this distance 
-      goal_map_.setGoalDistanceThreshold(goal_prune_distance_); //break after you have atleast one valid goal past this distance 
-
-      path_map_.setTargetCells(costmap_, global_plan_, global_pose);
-      goal_map_.setLocalGoal(costmap_, global_plan_, global_pose);
-      ROS_DEBUG("Path/Goal distance computed");
+      
+      if(prune_waypoints_){
+        //make sure that we update our path based on the global plan and compute costs
+ 
+        path_map_.setTargetCells(costmap_, global_plan_, global_pose);
+        goal_map_.setLocalGoal(costmap_, global_plan_, global_pose);
+      }
+      else{
+        path_map_.setTargetCells(costmap_, global_plan_);
+        goal_map_.setLocalGoal(costmap_, global_plan_);
+      }
+        ROS_DEBUG("Path/Goal distance computed");
       if(!global_pose){
         ROS_WARN("Compute distance called without robot pose - using default\n");
       }
@@ -1385,12 +1398,15 @@ namespace base_local_planner{
       path_map_(footprint_list[i].x, footprint_list[i].y).within_robot = true;
     }
 
-    path_map_.setGoalDistanceThreshold(goal_prune_distance_); //break after you have atleast one valid goal past this distance 
-    goal_map_.setGoalDistanceThreshold(goal_prune_distance_); //break after you have atleast one valid goal past this distance 
-
     //make sure that we update our path based on the global plan and compute costs
-    path_map_.setTargetCells(costmap_, global_plan_, &global_pose);
-    goal_map_.setLocalGoal(costmap_, global_plan_, &global_pose);
+    if(prune_waypoints_){
+      path_map_.setTargetCells(costmap_, global_plan_, &global_pose);
+      goal_map_.setLocalGoal(costmap_, global_plan_, &global_pose);
+    }
+    else{
+      path_map_.setTargetCells(costmap_, global_plan_);
+      goal_map_.setLocalGoal(costmap_, global_plan_);
+    }
 
     //rollout trajectories and find the minimum cost one
     Trajectory best = createTrajectories(pos[0], pos[1], pos[2],
