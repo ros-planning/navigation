@@ -260,8 +260,6 @@ namespace base_local_planner{
                                const tf::Stamped<tf::Pose> *global_pose) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 
-    bool started_path = false;
-
     queue<MapCell*> path_dist_queue;
 
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
@@ -290,15 +288,12 @@ namespace base_local_planner{
       
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
         //only break out when we are within the threshold 
-        if(started_path && ( prune_from_robot && hypot(g_x - robot_x, g_y - robot_y) < waypoint_dist_threshold_)){          
+        valid_waypoint = i; 
+        if(prune_from_robot && hypot(g_x - robot_x, g_y - robot_y) < waypoint_dist_threshold_){     
           break;
         }
-        started_path = true;               
-        valid_waypoint = i; 
       } 
     }
-    
-    started_path = false;
     
     if(valid_waypoint >=0){
       // put global path points into local map until we reach the border of the local map
@@ -312,15 +307,7 @@ namespace base_local_planner{
           current.target_dist = 0.0;
           current.target_mark = true;
           path_dist_queue.push(&current);
-          started_path = true;
-        } else if (started_path) {
-          break;
-        }
-      }
-      if (!started_path) {
-        ROS_ERROR("None of the %d first of %zu (%zu) points of the global plan were in the local costmap and free",
-                  i, adjusted_global_plan.size(), global_plan.size());
-        return;
+        } 
       }
     }
     else{
@@ -362,12 +349,12 @@ namespace base_local_planner{
       
       //logic is a bit different here 
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
-        if(started_path && (prune_from_robot &&  hypot(g_x - robot_x, g_y - robot_y) < waypoint_dist_threshold_)){
-          break;
-        }
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
+        if(started_path && (prune_from_robot &&  hypot(g_x - robot_x, g_y - robot_y) < waypoint_dist_threshold_)){
+          break;
+        }        
       } 
     }
     if (!started_path) {

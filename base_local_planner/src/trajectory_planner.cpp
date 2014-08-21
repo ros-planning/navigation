@@ -73,7 +73,8 @@ namespace base_local_planner{
       prune_waypoints_ = config.prune_waypoints;
 
       if(prune_waypoints_){
-        //will select the first waypoint longer than the threshold
+        //will select the first waypoint within the threshold (if one could be found in unoccupied space within the local map)
+        //otherwise it will select the closest one which is not occupied and within the local map
         ROS_INFO("Pruning waypoints => Threshold %f\n", config.waypoint_prune_distance);
         waypoint_prune_distance_ = config.waypoint_prune_distance;
 
