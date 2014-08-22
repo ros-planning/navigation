@@ -75,16 +75,10 @@ namespace costmap_2d
     std::vector<ObstaclePoint> indices;
   };
 
-  /* class LastUtime { */
-
-
-  /* };  */
-
   //keeps track of the last time each index location was updated 
   class GridmapLocations {
   public:
     std::map<std::string, double *> last_utimes; 
-    //double *last_utimes;
     int size;
 
   GridmapLocations(int size_=0):size(size_){
@@ -130,11 +124,6 @@ namespace costmap_2d
       assert(it->second != NULL);
       return it->second; 
     }
-
-    /* double& value(string topic, int ind){ */
-    /*   assert(ind >=0 && ind < size);  */
-    /*   return last_utimes[ind];  */
-    /* }  */
 
     void reset(){
       std::map<std::string, double *>::iterator it; 
@@ -212,8 +201,6 @@ private:
 
   double inflation_radius_;
   bool publish_voxel_;
-  /* bool clear_old_; */
-  /* double max_obstacle_persistance_;  */
   ros::Publisher voxel_pub_;
   voxel_grid::VoxelGrid voxel_grid_;
   double z_resolution_, origin_z_;
