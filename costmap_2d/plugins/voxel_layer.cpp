@@ -605,9 +605,16 @@ inline std::vector<std::string> GridmapLocations::getOtherTopicsAtHeight(std::st
     }
   }
   else{
-    fprintf(stderr, "Error - topic height not found\n");
+    ROS_WARN("Topic %s height not found", topic.c_str());
   }
   return other_topics;
+}
+
+void GridmapLocations::setHeightCheckBeforeClearing(bool check_height_before_clearing){
+  check_height_before_clearing_ = check_height_before_clearing;
+  if(check_height_before_clearing){
+    ROS_INFO("Checking height before clearing old observations\n");
+  }
 }
 
 inline std::vector<double *> GridmapLocations::getOtherValuesAtSameHeight(std::string topic){
@@ -626,9 +633,12 @@ void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char*
   double *topic_utime =  get_values(list.topic);
   double list_time_sec = list.obs_timestamp / 1.0e6;
       
-  std::vector<double *> other_layer_values = getOtherValuesAtSameHeight(list.topic);
-  if(other_layer_values.size() > 0){
-    fprintf(stdout, "[%d] topics found at same height\n", (int) other_layer_values.size());
+  std::vector<double *> other_layer_values;
+  if(check_height_before_clearing_){
+    other_layer_values = getOtherValuesAtSameHeight(list.topic);
+    if(other_layer_values.size() > 0){
+      ROS_DEBUG("[%d] topics found at same height", (int) other_layer_values.size());
+    }
   }
 
   for(int j=0; j < list.indices.size(); j++){
@@ -639,7 +649,8 @@ void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char*
       topic_utime[list.indices[j].index] = -1;
       if(other_layer_values.size() > 0){
         for(int i=0; i < other_layer_values.size(); i++){
-          if(other_layer_values[i][list.indices[j].index] > list_time_sec){ //check if this has timed out on other layers at the same height
+          //check if this has timed out on other layers at the same height
+          if(other_layer_values[i][list.indices[j].index] > list_time_sec){ 
             clear = false; 
           }
         }
@@ -661,11 +672,11 @@ void GridmapLocations::updateHeightMap(std::string topic, unsigned int height){
       std::set<std::string>::iterator it_tp = it->second.find(topic); 
       if(it_tp == it->second.end()){//we havent added it 
         it->second.insert(topic); 
-        fprintf(stdout, "Adding Topic : %s - height : %d\n", topic.c_str(), height);
+        ROS_INFO("Adding Topic : %s - height : %d", topic.c_str(), height);
       }
     }
     else{
-      fprintf(stdout, "Adding Topic : %s - height : %d\n", topic.c_str(), height);
+      ROS_INFO("Adding Topic : %s - height : %d", topic.c_str(), height);
       std::set<std::string> height_set; 
       height_set.insert(topic);
       height_map.insert(make_pair(height, height_set));
@@ -680,10 +691,10 @@ void GridmapLocations::addTopic(std::string topic){
       utimes[i] = -1;
     }
     last_obs_times.insert(std::make_pair(topic, utimes));
-    fprintf(stdout, "Adding Topic %s to location timeout map size : %d\n", topic.c_str(), (int) last_obs_times.size());
+    ROS_INFO("Adding Topic %s to location timeout map size : %d", topic.c_str(), (int) last_obs_times.size());
   }
   else{
-    fprintf(stdout, "Topic already present\n");
+    ROS_INFO("Topic %s already present", topic.c_str());
   }
 }
 

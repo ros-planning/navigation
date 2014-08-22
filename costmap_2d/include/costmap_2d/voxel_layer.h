@@ -80,27 +80,14 @@ namespace costmap_2d
 
   class GridmapLocations {
   public:
-    std::map<std::string, double *> last_obs_times; 
-    //the topics at the same height 
-    std::map<unsigned int, std::set<std::string> > height_map;
-    //height of each topic 
-    std::map<std::string, unsigned int> topic_height; 
-    int size;
-
     GridmapLocations(int size_=0);
     ~GridmapLocations();
 
+    //set height check for clearing 
+    void setHeightCheckBeforeClearing(bool check_height_before_clearing);
+
     //update the utimes at the indexs for the particular layer 
     void updateObstacleTime(const CostMapList &cm_list);
-
-    //update the bounds of the map (reimplementation of the touch function in the costmap_layer
-    inline void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
-
-    //get the other topics at the same height 
-    inline std::vector<std::string> getOtherTopicsAtHeight(std::string topic);
-
-    //get the utime values 
-    inline std::vector<double *> getOtherValuesAtSameHeight(std::string topic);
     
     //clear the timed out observations 
     void clearObstacleTime(const CostMapList &list, unsigned char* costmap_, 
@@ -116,10 +103,29 @@ namespace costmap_2d
     //resize (if the map size has changed)
     void resize(int new_size);
     
-    //get the double array for the give topic
-    inline double *get_values(std::string topic);
-    
+    //reset the values to be negative 
     void reset();
+  private:
+     //get the double array for the give topic
+    inline double *get_values(std::string topic);
+
+    //update the bounds of the map (reimplementation of the touch function in the costmap_layer
+    inline void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
+
+    //get the other topics at the same height 
+    inline std::vector<std::string> getOtherTopicsAtHeight(std::string topic);
+
+    //get the utime values 
+    inline std::vector<double *> getOtherValuesAtSameHeight(std::string topic);
+    
+    std::map<std::string, double *> last_obs_times; 
+    //the topics at the same height 
+    std::map<unsigned int, std::set<std::string> > height_map;
+    //height of each topic 
+    std::map<std::string, unsigned int> topic_height; 
+    
+    bool check_height_before_clearing_; 
+    int size;
   };
 
   class ObservationSet{
