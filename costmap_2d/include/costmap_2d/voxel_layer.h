@@ -84,7 +84,7 @@ namespace costmap_2d
     ~GridmapLocations();
 
     //set height check for clearing 
-    void setHeightCheckBeforeClearing(bool check_height_before_clearing);
+    void setCheckOtherTopicsBeforeClearing(bool check_other_topics_before_clearing);
 
     //update the utimes at the indexs for the particular layer 
     void updateObstacleTime(const CostMapList &cm_list);
@@ -93,9 +93,6 @@ namespace costmap_2d
     void clearObstacleTime(const CostMapList &list, unsigned char* costmap_, 
                            double* min_x, double* min_y, 
                            double* max_x, double* max_y);
-
-    //add the height for the topic 
-    void updateHeightMap(std::string topic, unsigned int height);
 
     //add the topic (and keep track of the observations
     void addTopic(std::string topic);
@@ -112,19 +109,12 @@ namespace costmap_2d
     //update the bounds of the map (reimplementation of the touch function in the costmap_layer
     inline void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
 
-    //get the other topics at the same height 
-    inline std::vector<std::string> getOtherTopicsAtHeight(std::string topic);
-
     //get the utime values 
-    inline std::vector<double *> getOtherValuesAtSameHeight(std::string topic);
+    inline std::vector<double *> getOtherTopicValues(std::string topic);
     
     std::map<std::string, double *> last_obs_times; 
-    //the topics at the same height 
-    std::map<unsigned int, std::set<std::string> > height_map;
-    //height of each topic 
-    std::map<std::string, unsigned int> topic_height; 
     
-    bool check_height_before_clearing_; 
+    bool check_other_topics_before_clearing_; 
     int size;
   };
 

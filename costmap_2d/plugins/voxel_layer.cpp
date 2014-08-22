@@ -56,7 +56,7 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   mark_threshold_ = config.mark_threshold;
   combination_method_ = config.combination_method;
   if(clear_old_){
-    locations_utime.setHeightCheckBeforeClearing(config.check_height_before_clearing);
+    locations_utime.setCheckOtherTopicsBeforeClearing(config.check_other_topics_before_clearing);
   }
   inflation_radius_ = config.inflation_radius;
   ROS_WARN("Inflation radius : %f", inflation_radius_);
@@ -112,18 +112,7 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
       ROS_DEBUG("Clearing timeout observation : %f\n", (current_time - list.obs_timestamp / 1.0e6));
       int cleared_count = 0;
       checked_count++;
-      locations_utime.clearObstacleTime(list, costmap_, min_x, min_y, max_x, max_y);
-      /*double *topic_utime =  locations_utime.get_values(list.topic);
-      double list_time_sec = list.obs_timestamp / 1.0e6;
-      for(int j=0; j < list.indices.size(); j++){
-	if(topic_utime[list.indices[j].index] == list_time_sec){
-          //right now this clears everything (irrespective of the height) - this is prob bad if the sensors report different heights 
-	  costmap_[list.indices[j].index] = FREE_SPACE; 
-	  topic_utime[list.indices[j].index] = -1;
-	  //increase the map update bounds 
-	  touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
-	}
-        }*/
+      locations_utime.clearObstacleTime(list, costmap_, min_x, min_y, max_x, max_y);      
     }
     else{
       //remove the costmap_list upto (and not including this)
@@ -135,8 +124,8 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
   }
 }
 
-  //we need to get observations for each sensor - to figure out which ones have timeouts 
-  bool VoxelLayer::getMarkingObservations(std::vector<ObservationSet>& observations_set) const
+//we need to get observations for each sensor - to figure out which ones have timeouts 
+bool VoxelLayer::getMarkingObservations(std::vector<ObservationSet>& observations_set) const
 {
   bool current = true;
   //get the marking observations
@@ -236,18 +225,11 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
       int count = 0; 
 
-      //double *topic_utime =  NULL;
-      //if(max_timeout){
-      //   topic_utime = locations_utime.get_values(obs_set.topic);
-      //}
-    
-      bool updated_height = false;
       for (unsigned int i = 0; i < cloud.points.size(); ++i)
         {
           //if the obstacle is too high or too far away from the robot we won't add it
           if (cloud.points[i].z > max_obstacle_height_)
-            continue;
-          
+            continue;          
 
           //compute the squared distance from the hitpoint to the pointcloud's origin
           double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
@@ -270,11 +252,6 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
               continue;
             }
 
-          if(max_timeout && !updated_height){
-            locations_utime.updateHeightMap(obs_set.topic, mz);
-            updated_height = true;
-          }
-
           //mark the cell in the voxel grid and check if we should also mark it in the costmap
           if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
             {
@@ -286,7 +263,6 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
               //keep track of which indexs we updated 
               if(max_timeout){
                 cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
-                //topic_utime[index] = obs_ts; 
                 count++;
               }
             }
@@ -591,40 +567,20 @@ inline void GridmapLocations::touch(double x, double y, double* min_x, double* m
   *max_y = std::max(y, *max_y);
 }
 
-inline std::vector<std::string> GridmapLocations::getOtherTopicsAtHeight(std::string topic){
-  std::vector<std::string> other_topics; 
-  if(topic_height.find(topic) != topic_height.end()){
-    unsigned int height =  topic_height.find(topic)->second; 
-
-    std::map<unsigned int, std::set<std::string> >::iterator it = height_map.find(height); 
-    if(it != height_map.end()){
-      std::set<std::string>::iterator it_tp; 
-      for(it_tp = it->second.begin(); it_tp != it->second.end(); it_tp++){
-        if(topic.compare(*it_tp)){ //not the same topic
-          other_topics.push_back(*it_tp);
-        }
-      }
-    }
-  }
-  else{
-    ROS_WARN("Topic %s height not found", topic.c_str());
-  }
-  return other_topics;
-}
-
-void GridmapLocations::setHeightCheckBeforeClearing(bool check_height_before_clearing){
-  check_height_before_clearing_ = check_height_before_clearing;
-  if(check_height_before_clearing){
-    ROS_INFO("Checking height before clearing old observations\n");
+void GridmapLocations::setCheckOtherTopicsBeforeClearing(bool check_other_topics_before_clearing){
+  check_other_topics_before_clearing_ = check_other_topics_before_clearing;
+  if(check_other_topics_before_clearing){
+    ROS_INFO("Checking other topics before clearing timed-out observations\n");
   }
 }
 
-inline std::vector<double *> GridmapLocations::getOtherValuesAtSameHeight(std::string topic){
-      
-  std::vector<std::string> other_topics = getOtherTopicsAtHeight(topic);
+inline std::vector<double *> GridmapLocations::getOtherTopicValues(std::string topic){
   std::vector<double *> values;
-  for(int i=0; i < other_topics.size(); i++){
-    values.push_back(get_values(other_topics[i]));
+  std::map<std::string, double *>::iterator it; 
+  for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
+    if(topic.compare(it->first)){
+      values.push_back(it->second);
+    }
   }
   return values;
 }
@@ -636,19 +592,20 @@ void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char*
   double list_time_sec = list.obs_timestamp / 1.0e6;
       
   std::vector<double *> other_layer_values;
-  if(check_height_before_clearing_){
-    other_layer_values = getOtherValuesAtSameHeight(list.topic);
+  if(check_other_topics_before_clearing_){
+    other_layer_values = getOtherTopicValues(list.topic);
     if(other_layer_values.size() > 0){
       ROS_DEBUG("[%d] topics found at same height", (int) other_layer_values.size());
     }
   }
 
   for(int j=0; j < list.indices.size(); j++){
-    if(topic_utime[list.indices[j].index] == list_time_sec){ //we have to check if there are other layers at the same height 
-      //and if so make sure to timeout only if the other is timedout
-      //right now this clears everything (irrespective of the height) - this is prob bad if the sensors report different heights 
+    if(topic_utime[list.indices[j].index] == list_time_sec){ 
+      //we have to check if there are non-timed out observations in the other layers 
+      //and if so make sure to timeout only if the others are timed out
       bool clear = true;
       topic_utime[list.indices[j].index] = -1;
+      
       if(other_layer_values.size() > 0){
         for(int i=0; i < other_layer_values.size(); i++){
           //check if this has timed out on other layers at the same height
@@ -662,26 +619,6 @@ void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char*
         //increase the map update bounds 
         touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
       }
-    }
-  }
-}
-
-void GridmapLocations::updateHeightMap(std::string topic, unsigned int height){
-  if(topic_height.find(topic) == topic_height.end()){
-    topic_height.insert(make_pair(topic, height));
-    std::map<unsigned int, std::set<std::string> >::iterator it = height_map.find(height); 
-    if(it != height_map.end()){
-      std::set<std::string>::iterator it_tp = it->second.find(topic); 
-      if(it_tp == it->second.end()){//we havent added it 
-        it->second.insert(topic); 
-        ROS_INFO("Adding Topic : %s - height : %d", topic.c_str(), height);
-      }
-    }
-    else{
-      ROS_INFO("Adding Topic : %s - height : %d", topic.c_str(), height);
-      std::set<std::string> height_set; 
-      height_set.insert(topic);
-      height_map.insert(make_pair(height, height_set));
     }
   }
 }
