@@ -22,7 +22,7 @@ void VoxelLayer::onInitialize()
   ros::NodeHandle private_nh("~/" + name_);
 
   private_nh.param("publish_voxel_map", publish_voxel_, false);
-
+  
   private_nh.param("inflation_radius", inflation_radius_, 0.4);
   ROS_WARN("Inflation radius : %f", inflation_radius_);
   if (publish_voxel_)
@@ -55,7 +55,9 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
   mark_threshold_ = config.mark_threshold;
   combination_method_ = config.combination_method;
-
+  if(clear_old_){
+    locations_utime.setHeightCheckBeforeClearing(config.check_height_before_clearing);
+  }
   inflation_radius_ = config.inflation_radius;
   ROS_WARN("Inflation radius : %f", inflation_radius_);
 
@@ -691,7 +693,7 @@ void GridmapLocations::addTopic(std::string topic){
       utimes[i] = -1;
     }
     last_obs_times.insert(std::make_pair(topic, utimes));
-    ROS_INFO("Adding Topic %s to location timeout map size : %d", topic.c_str(), (int) last_obs_times.size());
+    ROS_INFO("Adding Topic %s to location timeout map", topic.c_str());
   }
   else{
     ROS_INFO("Topic %s already present", topic.c_str());
