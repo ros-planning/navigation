@@ -232,13 +232,19 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
       int count = 0; 
 
-      double *topic_utime =  locations_utime.get_values(obs_set.topic);
+      double *topic_utime =  NULL;
+      if(clear_old_){
+        topic_utime = locations_utime.get_values(obs_set.topic);
+      }
     
       for (unsigned int i = 0; i < cloud.points.size(); ++i)
         {
           //if the obstacle is too high or too far away from the robot we won't add it
           if (cloud.points[i].z > max_obstacle_height_)
             continue;
+          /*if(i== 0){
+            fprintf(stdout, "Topic : %s - Cloud Height : %f\n", obs_set.topic.c_str(), cloud.points[i].z);
+            }*/
 
           //compute the squared distance from the hitpoint to the pointcloud's origin
           double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)

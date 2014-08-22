@@ -87,6 +87,7 @@ namespace costmap_2d
     }
 
     ~GridmapLocations(){
+      fprintf(stdout, "Destructor called\n");
       std::map<std::string, double *>::iterator it; 
       for(it = last_utimes.begin(); it != last_utimes.end(); it++){
         delete []it->second;
@@ -100,6 +101,7 @@ namespace costmap_2d
           utimes[i] = -1;
         }
         last_utimes.insert(std::make_pair(topic, utimes));
+        fprintf(stdout, "Adding Topic %s to location timeout map - size %d\n", topic.c_str(), (int) last_utimes.size());
       }
       else{
         fprintf(stdout, "Topic already present\n");
@@ -120,6 +122,7 @@ namespace costmap_2d
     
     double *get_values(std::string topic){
       if(last_utimes.find(topic) == last_utimes.end()){
+        fprintf(stdout, "Topic not found - adding topic\n");
         addTopic(topic); 
       }
       
