@@ -242,9 +242,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
           //if the obstacle is too high or too far away from the robot we won't add it
           if (cloud.points[i].z > max_obstacle_height_)
             continue;
-          /*if(i== 0){
-            fprintf(stdout, "Topic : %s - Cloud Height : %f\n", obs_set.topic.c_str(), cloud.points[i].z);
-            }*/
+          
 
           //compute the squared distance from the hitpoint to the pointcloud's origin
           double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
@@ -266,6 +264,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
             {
               continue;
             }
+
 
           //mark the cell in the voxel grid and check if we should also mark it in the costmap
           if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))

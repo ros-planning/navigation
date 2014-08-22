@@ -87,7 +87,6 @@ namespace costmap_2d
     }
 
     ~GridmapLocations(){
-      fprintf(stdout, "Destructor called\n");
       std::map<std::string, double *>::iterator it; 
       for(it = last_utimes.begin(); it != last_utimes.end(); it++){
         delete []it->second;
