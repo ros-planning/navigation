@@ -142,7 +142,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         private_nh.param("planner_window_x", planner_window_x_, 0.0);
         private_nh.param("planner_window_y", planner_window_y_, 0.0);
         private_nh.param("default_tolerance", default_tolerance_, 0.0);
-        private_nh.param("clear_goal_tolerance", clear_goal_tolerance_, 0.0);
+        private_nh.param("goal_obstacle_clearance", goal_obstacle_clearance_, 0.0);
         private_nh.param("publish_scale", publish_scale_, 100);
 
         double costmap_pub_freq;
@@ -242,10 +242,6 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     float min_cost = getCost(costs, goal_index);
 
-    double lethal_cost_ = planner_->getLethalCost();
-    
-    double distance_from_obstacle = 0.5; 
-
     bool found = false; 
 
     new_goal_x = goal_x; 
@@ -260,7 +256,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
           continue;
         }
         
-        //Note : No gurantee that it will not go through a wall if set a high enough value (DON'T SET high value :)
+        //Note : No guarantee that it will not go through a wall if set a high enough value (DON'T SET high value :)
         if(hypot(dx, dy) < xy_tolerance){
           double n_goal_x = goal_x + dx; 
           double n_goal_y = goal_y + dy;
@@ -469,8 +465,8 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
       }
     }
 
-    if(clear_goal_tolerance_ > 0){
-      double tolerance_world_clear = clear_goal_tolerance_;
+    if(goal_obstacle_clearance_ > 0){
+      double tolerance_world_clear = goal_obstacle_clearance_;
       double tolerance_map_clear = tolerance_world_clear / costmap_->getResolution();
       double new_goal_x, new_goal_y; 
       if(findClearGoal(costmap_->getCharMap(), goal_x, goal_y, new_goal_x, new_goal_y, tolerance_map_clear, nx, ny)){

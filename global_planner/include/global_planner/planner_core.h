@@ -178,7 +178,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         void publishPotential(float* potential);
 
         double planner_window_x_, planner_window_y_, default_tolerance_;
-        double clear_goal_tolerance_; //search within this tolerance to find a goal away from the obstacle (recomend a small values)
+        double goal_obstacle_clearance_; //search within this tolerance to find a goal away from the obstacle (recomend a small values)
         std::string tf_prefix_;
         boost::mutex mutex_;
         ros::ServiceServer make_plan_srv_;
