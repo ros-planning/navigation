@@ -79,6 +79,7 @@ namespace costmap_2d
   class GridmapLocations {
   public:
     std::map<std::string, double *> last_utimes; 
+    //we also need to keep track of the height of these guys 
     int size;
 
   GridmapLocations(int size_=0):size(size_){
@@ -95,6 +96,9 @@ namespace costmap_2d
     void addTopic(std::string topic){
       if(last_utimes.find(topic) == last_utimes.end()){
         double *utimes = new double[size];
+        for(int i=0; i < size; i++){
+          utimes[i] = -1;
+        }
         last_utimes.insert(std::make_pair(topic, utimes));
       }
       else{
