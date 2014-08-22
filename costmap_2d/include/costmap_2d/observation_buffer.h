@@ -64,7 +64,7 @@ public:
   /**
    * @brief  Constructs an observation buffer
    * @param  topic_name The topic of the observations, used as an identifier for error and warning messages
-   * @param  observation_keep_time Defines the persistence of observations in seconds, 0 means only keep the latest
+   * @param  observation_keep_time Defines the persistence of observations in seconds from the newest msg time, 0 means only keep the latest
    * @param  expected_update_rate How often this buffer is expected to be updated, 0 means there is no limit
    * @param  min_obstacle_height The minimum height of a hitpoint to be considered legal
    * @param  max_obstacle_height The minimum height of a hitpoint to be considered legal
@@ -74,11 +74,12 @@ public:
    * @param  global_frame The frame to transform PointClouds into
    * @param  sensor_frame The frame of the origin of the sensor, can be left blank to be read from the messages
    * @param  tf_tolerance The amount of time to wait for a transform to be available when setting a new global frame
+   * @param  observation_timeout_from_now Defines the persistence of observations in seconds from current time, 0 means only keep the latest
    */
   ObservationBuffer(std::string topic_name, double observation_keep_time, double expected_update_rate,
                     double min_obstacle_height, double max_obstacle_height, double obstacle_range,
                     double raytrace_range, tf::TransformListener& tf, std::string global_frame,
-                    std::string sensor_frame, double tf_tolerance);
+                    std::string sensor_frame, double tf_tolerance, double observation_timeout_from_now = 0);
 
   /**
    * @brief  Destructor... cleans up
@@ -149,6 +150,7 @@ private:
 
   tf::TransformListener& tf_;
   const ros::Duration observation_keep_time_;
+  const ros::Duration observation_timeout_from_now_;
   const ros::Duration expected_update_rate_;
   ros::Time last_updated_;
   std::string global_frame_;

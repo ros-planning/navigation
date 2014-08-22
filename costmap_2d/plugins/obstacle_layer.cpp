@@ -48,13 +48,15 @@ void ObstacleLayer::onInitialize()
     ros::NodeHandle source_node(nh, source);
 
     //get the parameters for the specific topic
-    double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
+    double observation_keep_time, observation_timeout_from_now;
+    double expected_update_rate, min_obstacle_height, max_obstacle_height;
     std::string topic, sensor_frame, data_type;
     bool inf_is_valid, clearing, marking;
 
     source_node.param("topic", topic, source);
     source_node.param("sensor_frame", sensor_frame, std::string(""));
     source_node.param("observation_persistence", observation_keep_time, 0.0);
+    source_node.param("observation_timeout_from_now", observation_timeout_from_now, 0.0);
     source_node.param("expected_update_rate", expected_update_rate, 0.0);
     source_node.param("data_type", data_type, std::string("PointCloud"));
     source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
@@ -93,7 +95,7 @@ void ObstacleLayer::onInitialize()
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
                                      max_obstacle_height, obstacle_range, raytrace_range, *tf_, global_frame_,
-                                     sensor_frame, transform_tolerance)));
+                                     sensor_frame, transform_tolerance, observation_timeout_from_now)));
 
     //check if we'll add this buffer to our marking observation buffers
     if (marking)

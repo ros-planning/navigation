@@ -51,11 +51,11 @@ namespace costmap_2d
 ObservationBuffer::ObservationBuffer(string topic_name, double observation_keep_time, double expected_update_rate,
                                      double min_obstacle_height, double max_obstacle_height, double obstacle_range,
                                      double raytrace_range, TransformListener& tf, string global_frame,
-                                     string sensor_frame, double tf_tolerance) :
+                                     string sensor_frame, double tf_tolerance, double observation_timeout_from_now) :
     tf_(tf), observation_keep_time_(observation_keep_time), expected_update_rate_(expected_update_rate), last_updated_(
         ros::Time::now()), global_frame_(global_frame), sensor_frame_(sensor_frame), topic_name_(topic_name), min_obstacle_height_(
         min_obstacle_height), max_obstacle_height_(max_obstacle_height), obstacle_range_(obstacle_range), raytrace_range_(
-        raytrace_range), tf_tolerance_(tf_tolerance)
+	raytrace_range), tf_tolerance_(tf_tolerance), observation_timeout_from_now_(observation_timeout_from_now)
 {
 }
 
@@ -215,7 +215,7 @@ void ObservationBuffer::purgeStaleObservations()
   {
     list<Observation>::iterator obs_it = observation_list_.begin();
     //if we're keeping observations for no time... then we'll only keep one observation
-    if (observation_keep_time_ == ros::Duration(0.0))
+    if (observation_keep_time_ == ros::Duration(0.0) && observation_timeout_from_now_ == ros::Duration(0.0))
     {
       observation_list_.erase(++obs_it, observation_list_.end());
       return;
@@ -226,8 +226,10 @@ void ObservationBuffer::purgeStaleObservations()
     {
       Observation& obs = *obs_it;
       //check if the observation is out of date... and if it is, remove it and those that follow from the list
-      ros::Duration time_diff = last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp;
-      if ((last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp) > observation_keep_time_)
+      ros::Duration time_diff_from_latest_msg = last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp;
+      ros::Duration time_diff_from_current = ros::Time::now() - pcl_conversions::fromPCL(obs.cloud_->header).stamp;
+      if (time_diff_from_latest_msg > observation_keep_time_ ||
+          (observation_timeout_from_now_ > ros::Duration(1e-10) && time_diff_from_current > observation_timeout_from_now_))
       {
         observation_list_.erase(obs_it, observation_list_.end());
         return;
