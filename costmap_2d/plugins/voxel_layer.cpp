@@ -110,16 +110,18 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
       ROS_DEBUG("Clearing timeout observation : %f\n", (current_time - list.obs_timestamp / 1.0e6));
       int cleared_count = 0;
       checked_count++;
-      double *topic_utime =  locations_utime.get_values(list.topic);
+      locations_utime.clearObstacleTime(list, costmap_, min_x, min_y, max_x, max_y);
+      /*double *topic_utime =  locations_utime.get_values(list.topic);
+      double list_time_sec = list.obs_timestamp / 1.0e6;
       for(int j=0; j < list.indices.size(); j++){
-	if(topic_utime[list.indices[j].index] == list.obs_timestamp / 1.0e6){
+	if(topic_utime[list.indices[j].index] == list_time_sec){
           //right now this clears everything (irrespective of the height) - this is prob bad if the sensors report different heights 
 	  costmap_[list.indices[j].index] = FREE_SPACE; 
 	  topic_utime[list.indices[j].index] = -1;
 	  //increase the map update bounds 
 	  touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
 	}
-      }
+        }*/
     }
     else{
       //remove the costmap_list upto (and not including this)
@@ -232,10 +234,10 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
       int count = 0; 
 
-      double *topic_utime =  NULL;
-      if(max_timeout){
-        topic_utime = locations_utime.get_values(obs_set.topic);
-      }
+      //double *topic_utime =  NULL;
+      //if(max_timeout){
+      //   topic_utime = locations_utime.get_values(obs_set.topic);
+      //}
     
       bool updated_height = false;
       for (unsigned int i = 0; i < cloud.points.size(); ++i)
@@ -282,12 +284,13 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
               //keep track of which indexs we updated 
               if(max_timeout){
                 cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
-                topic_utime[index] = obs_ts; 
+                //topic_utime[index] = obs_ts; 
                 count++;
               }
             }
         }
       if(max_timeout && count > 0){
+        locations_utime.updateObstacleTime(cm_list);
         new_obs_list.push_back(cm_list);
       }
     }

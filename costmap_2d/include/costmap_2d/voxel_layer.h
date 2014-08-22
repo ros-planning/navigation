@@ -76,6 +76,8 @@ namespace costmap_2d
   };
 
   //keeps track of the last time each index location was updated 
+  //we should move this out probably to a cpp file - lot of implemetation in the header
+
   class GridmapLocations {
   public:
     std::map<std::string, double *> last_utimes; 
@@ -92,6 +94,87 @@ namespace costmap_2d
       std::map<std::string, double *>::iterator it; 
       for(it = last_utimes.begin(); it != last_utimes.end(); it++){
         delete []it->second;
+      }
+    }
+
+    void updateObstacleTime(const CostMapList &cm_list){
+      double obs_ts = cm_list.obs_timestamp / 1.0e6;
+      double *topic_utime = get_values(cm_list.topic);
+
+      for(int j=0; j < cm_list.indices.size(); j++){
+        topic_utime[cm_list.indices[j].index] = obs_ts;         
+      }
+    }
+
+    void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y)
+    {
+      *min_x = std::min(x, *min_x);
+      *min_y = std::min(y, *min_y);
+      *max_x = std::max(x, *max_x);
+      *max_y = std::max(y, *max_y);
+    }
+
+    std::vector<std::string> getOtherLayersAtHeight(std::string topic){
+      std::vector<std::string> other_topics; 
+      if(topic_height.find(topic) != topic_height.end()){
+        unsigned int height =  topic_height.find(topic)->second; 
+
+        std::map<unsigned int, std::set<std::string> >::iterator it = height_map.find(height); 
+        if(it != height_map.end()){
+          std::set<std::string>::iterator it_tp; 
+          for(it_tp = it->second.begin(); it_tp != it->second.end(); it_tp++){
+            if(topic.compare(*it_tp)){ //not the same topic
+              other_topics.push_back(*it_tp);
+            }
+          }
+        }
+      }
+      else{
+        fprintf(stderr, "Error - topic height not found\n");
+      }
+      return other_topics;
+    }
+
+    std::vector<double *> getOtherValuesAtSameHeight(std::string topic){
+      
+      std::vector<std::string> other_topics = getOtherLayersAtHeight(topic);
+      std::vector<double *> values;
+      for(int i=0; i < other_topics.size(); i++){
+        values.push_back(get_values(other_topics[i]));
+      }
+      return values;
+    }
+    
+    void clearObstacleTime(const CostMapList &list, unsigned char* costmap_, 
+                           double* min_x, double* min_y, 
+                           double* max_x, double* max_y){
+      double *topic_utime =  get_values(list.topic);
+      double list_time_sec = list.obs_timestamp / 1.0e6;
+      
+      std::vector<double *> other_layer_values = getOtherValuesAtSameHeight(list.topic);
+      if(other_layer_values.size() > 0){
+        fprintf(stdout, "[%d] topics found at same height\n", (int) other_layer_values.size());
+      }
+
+      for(int j=0; j < list.indices.size(); j++){
+	if(topic_utime[list.indices[j].index] == list_time_sec){ //we have to check if there are other layers at the same height 
+          //and if so make sure to timeout only if the other is timedout
+          //right now this clears everything (irrespective of the height) - this is prob bad if the sensors report different heights 
+          bool clear = true;
+          topic_utime[list.indices[j].index] = -1;
+          if(other_layer_values.size() > 0){
+            for(int i=0; i < other_layer_values.size(); i++){
+              if(other_layer_values[i][list.indices[j].index] > list_time_sec){ //check if this has timed out on other layers at the same height
+                clear = false; 
+              }
+            }
+          }
+          if(clear){
+            costmap_[list.indices[j].index] = FREE_SPACE; 
+            //increase the map update bounds 
+            touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
+          }
+	}
       }
     }
 
