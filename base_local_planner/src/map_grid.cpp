@@ -38,12 +38,12 @@ using namespace std;
 namespace base_local_planner{
 
   MapGrid::MapGrid()
-    : size_x_(0), size_y_(0), waypoint_dist_threshold_(-1)
+    : size_x_(0), size_y_(0), waypoint_dist_threshold_(0), check_waypoints_for_obstacles_(false)
   {
   }
 
   MapGrid::MapGrid(unsigned int size_x, unsigned int size_y) 
-    : size_x_(size_x), size_y_(size_y), waypoint_dist_threshold_(-1)
+    : size_x_(size_x), size_y_(size_y), waypoint_dist_threshold_(0), check_waypoints_for_obstacles_(false)
   {
     commonInit();
   }
@@ -56,6 +56,10 @@ namespace base_local_planner{
 
   void MapGrid::setWaypointDistanceThreshold(double waypoint_dist_threshold){
     waypoint_dist_threshold_ = waypoint_dist_threshold; 
+  }
+
+  void MapGrid::setObstacleCheckingForWaypoints(bool check_obstacles_for_waypoints){
+    check_waypoints_for_obstacles_ = check_obstacles_for_waypoints;
   }
 
   void MapGrid::commonInit(){
@@ -101,6 +105,22 @@ namespace base_local_planner{
         }
       }
     }
+  }
+
+  inline bool MapGrid::pointValid(double g_x, double g_y, const costmap_2d::Costmap2D& costmap, 
+                                  unsigned int &map_x,  unsigned int &map_y){    
+    map_x = -1; 
+    map_y = -1;
+    if(costmap.worldToMap(g_x, g_y, map_x, map_y)){
+      unsigned char cost = costmap.getCost(map_x, map_y);
+      if(cost == costmap_2d::NO_INFORMATION ||
+         (check_waypoints_for_obstacles_ && (cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
+                                             cost == costmap_2d::LETHAL_OBSTACLE))){
+        return false;
+      }
+      return true;
+    }
+    return false;
   }
 
 
@@ -191,7 +211,7 @@ namespace base_local_planner{
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+      if(pointValid(g_x, g_y, costmap, map_x, map_y)){
         MapCell& current = getCell(map_x, map_y);
         current.target_dist = 0.0;
         current.target_mark = true;
@@ -227,7 +247,7 @@ namespace base_local_planner{
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+      if(pointValid(g_x, g_y, costmap, map_x, map_y)){
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
@@ -272,10 +292,15 @@ namespace base_local_planner{
     bool prune_from_robot = false; 
     double robot_x=0.0, robot_y=0.0; 
     
-    if(global_pose && waypoint_dist_threshold_ > 0){
+    if(global_pose && waypoint_dist_threshold_ > 1.0e-6){
       robot_x = global_pose->getOrigin().getX();
       robot_y = global_pose->getOrigin().getY(); 
       prune_from_robot = true;
+    }
+
+    if(!prune_from_robot){
+      ROS_WARN("Unable to prune waypoints - calling basic function");
+      return setTargetCells(costmap, global_plan);
     }
 
     int valid_waypoint = -1; 
@@ -285,8 +310,7 @@ namespace base_local_planner{
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      
-      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+      if(pointValid(g_x, g_y, costmap, map_x, map_y)){
         //only break out when we are within the threshold 
         valid_waypoint = i; 
         if(prune_from_robot && hypot(g_x - robot_x, g_y - robot_y) < waypoint_dist_threshold_){     
@@ -301,8 +325,7 @@ namespace base_local_planner{
         double g_x = adjusted_global_plan[i].pose.position.x;
         double g_y = adjusted_global_plan[i].pose.position.y;
         unsigned int map_x, map_y;
-      
-        if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+        if(pointValid(g_x, g_y, costmap, map_x, map_y)){
           MapCell& current = getCell(map_x, map_y);
           current.target_dist = 0.0;
           current.target_mark = true;
@@ -331,10 +354,15 @@ namespace base_local_planner{
     bool prune_from_robot = false; 
     double robot_x, robot_y; 
     
-    if(global_pose && waypoint_dist_threshold_ > 0){
+    if(global_pose && waypoint_dist_threshold_ > 1.0e-6){
       robot_x = global_pose->getOrigin().getX();
       robot_y = global_pose->getOrigin().getY(); 
       prune_from_robot = true;
+    }
+
+    if(!prune_from_robot){
+      ROS_WARN("Unable to prune waypoints - calling basic function");
+      return setLocalGoal(costmap, global_plan);
     }
 
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
@@ -346,9 +374,7 @@ namespace base_local_planner{
       double g_y = adjusted_global_plan[i].pose.position.y;
 
       unsigned int map_x, map_y;
-      
-      //logic is a bit different here 
-      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+      if(pointValid(g_x, g_y, costmap, map_x, map_y)){
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;

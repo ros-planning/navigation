@@ -71,6 +71,12 @@ namespace base_local_planner{
       min_vel_x_ = config.min_vel_x;
       
       prune_waypoints_ = config.prune_waypoints;
+      
+      //if set to true - this will do proper obstacle checking for waypoints and skip them 
+      path_map_.setObstacleCheckingForWaypoints(config.check_waypoints_for_obstacles); 
+      goal_map_.setObstacleCheckingForWaypoints(config.check_waypoints_for_obstacles);
+
+      ROS_WARN("Waypoint skipping on obstacles : %d\n", config.check_waypoints_for_obstacles);
 
       if(prune_waypoints_){
         //will select the first waypoint within the threshold (if one could be found in unoccupied space within the local map)
@@ -794,7 +800,7 @@ namespace base_local_planner{
         path_map_.setTargetCells(costmap_, global_plan_);
         goal_map_.setLocalGoal(costmap_, global_plan_);
       }
-        ROS_DEBUG("Path/Goal distance computed");
+      ROS_DEBUG("Path/Goal distance computed");
       if(!global_pose){
         ROS_WARN("Compute distance called without robot pose - using default\n");
       }
