@@ -567,7 +567,7 @@ GridmapLocations::GridmapLocations(int size_):size(size_){
 
 GridmapLocations::~GridmapLocations(){
   std::map<std::string, double *>::iterator it; 
-  for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+  for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
     delete []it->second;
   }
 }
@@ -589,7 +589,7 @@ inline void GridmapLocations::touch(double x, double y, double* min_x, double* m
   *max_y = std::max(y, *max_y);
 }
 
-inline std::vector<std::string> GridmapLocations::getOtherLayersAtHeight(std::string topic){
+inline std::vector<std::string> GridmapLocations::getOtherTopicsAtHeight(std::string topic){
   std::vector<std::string> other_topics; 
   if(topic_height.find(topic) != topic_height.end()){
     unsigned int height =  topic_height.find(topic)->second; 
@@ -612,7 +612,7 @@ inline std::vector<std::string> GridmapLocations::getOtherLayersAtHeight(std::st
 
 inline std::vector<double *> GridmapLocations::getOtherValuesAtSameHeight(std::string topic){
       
-  std::vector<std::string> other_topics = getOtherLayersAtHeight(topic);
+  std::vector<std::string> other_topics = getOtherTopicsAtHeight(topic);
   std::vector<double *> values;
   for(int i=0; i < other_topics.size(); i++){
     values.push_back(get_values(other_topics[i]));
@@ -674,13 +674,13 @@ void GridmapLocations::updateHeightMap(std::string topic, unsigned int height){
 }
 
 void GridmapLocations::addTopic(std::string topic){
-  if(last_utimes.find(topic) == last_utimes.end()){
+  if(last_obs_times.find(topic) == last_obs_times.end()){
     double *utimes = new double[size];
     for(int i=0; i < size; i++){
       utimes[i] = -1;
     }
-    last_utimes.insert(std::make_pair(topic, utimes));
-    fprintf(stdout, "Adding Topic %s to location timeout map size : %d\n", topic.c_str(), (int) last_utimes.size());
+    last_obs_times.insert(std::make_pair(topic, utimes));
+    fprintf(stdout, "Adding Topic %s to location timeout map size : %d\n", topic.c_str(), (int) last_obs_times.size());
   }
   else{
     fprintf(stdout, "Topic already present\n");
@@ -691,7 +691,7 @@ void GridmapLocations::resize(int new_size){
   if(size != new_size){
     size = new_size; 
     std::map<std::string, double *>::iterator it; 
-    for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+    for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
       delete []it->second;
       it->second = new double[size];
     }
@@ -699,20 +699,20 @@ void GridmapLocations::resize(int new_size){
   reset();
 }
     
-double *GridmapLocations::get_values(std::string topic){
-  if(last_utimes.find(topic) == last_utimes.end()){
+inline double *GridmapLocations::get_values(std::string topic){
+  if(last_obs_times.find(topic) == last_obs_times.end()){
     addTopic(topic); 
   }
       
-  std::map<std::string, double *>::iterator it = last_utimes.find(topic); 
-  assert(it != last_utimes.end());
+  std::map<std::string, double *>::iterator it = last_obs_times.find(topic); 
+  assert(it != last_obs_times.end());
   assert(it->second != NULL);
   return it->second; 
 }
 
 void GridmapLocations::reset(){
   std::map<std::string, double *>::iterator it; 
-  for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+  for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
     for(int i=0; i < size; i++){
       it->second[i] = -1;
     }

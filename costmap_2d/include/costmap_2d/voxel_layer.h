@@ -80,7 +80,7 @@ namespace costmap_2d
 
   class GridmapLocations {
   public:
-    std::map<std::string, double *> last_utimes; 
+    std::map<std::string, double *> last_obs_times; 
     //the topics at the same height 
     std::map<unsigned int, std::set<std::string> > height_map;
     //height of each topic 
@@ -90,26 +90,35 @@ namespace costmap_2d
     GridmapLocations(int size_=0);
     ~GridmapLocations();
 
+    //update the utimes at the indexs for the particular layer 
     void updateObstacleTime(const CostMapList &cm_list);
 
+    //update the bounds of the map (reimplementation of the touch function in the costmap_layer
     inline void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
 
-    inline std::vector<std::string> getOtherLayersAtHeight(std::string topic);
+    //get the other topics at the same height 
+    inline std::vector<std::string> getOtherTopicsAtHeight(std::string topic);
 
+    //get the utime values 
     inline std::vector<double *> getOtherValuesAtSameHeight(std::string topic);
     
+    //clear the timed out observations 
     void clearObstacleTime(const CostMapList &list, unsigned char* costmap_, 
                            double* min_x, double* min_y, 
                            double* max_x, double* max_y);
 
+    //add the height for the topic 
     void updateHeightMap(std::string topic, unsigned int height);
 
+    //add the topic (and keep track of the observations
     void addTopic(std::string topic);
 
+    //resize (if the map size has changed)
     void resize(int new_size);
     
-    double *get_values(std::string topic);
-
+    //get the double array for the give topic
+    inline double *get_values(std::string topic);
+    
     void reset();
   };
 
