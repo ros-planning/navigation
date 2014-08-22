@@ -561,4 +561,162 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
 
 }
 
+GridmapLocations::GridmapLocations(int size_):size(size_){
+  assert(size>=0); 
+}
+
+GridmapLocations::~GridmapLocations(){
+  std::map<std::string, double *>::iterator it; 
+  for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+    delete []it->second;
+  }
+}
+
+void GridmapLocations::updateObstacleTime(const CostMapList &cm_list){
+  double obs_ts = cm_list.obs_timestamp / 1.0e6;
+  double *topic_utime = get_values(cm_list.topic);
+
+  for(int j=0; j < cm_list.indices.size(); j++){
+    topic_utime[cm_list.indices[j].index] = obs_ts;         
+  }
+}
+
+void GridmapLocations::touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y)
+{
+  *min_x = std::min(x, *min_x);
+  *min_y = std::min(y, *min_y);
+  *max_x = std::max(x, *max_x);
+  *max_y = std::max(y, *max_y);
+}
+
+inline std::vector<std::string> GridmapLocations::getOtherLayersAtHeight(std::string topic){
+  std::vector<std::string> other_topics; 
+  if(topic_height.find(topic) != topic_height.end()){
+    unsigned int height =  topic_height.find(topic)->second; 
+
+    std::map<unsigned int, std::set<std::string> >::iterator it = height_map.find(height); 
+    if(it != height_map.end()){
+      std::set<std::string>::iterator it_tp; 
+      for(it_tp = it->second.begin(); it_tp != it->second.end(); it_tp++){
+        if(topic.compare(*it_tp)){ //not the same topic
+          other_topics.push_back(*it_tp);
+        }
+      }
+    }
+  }
+  else{
+    fprintf(stderr, "Error - topic height not found\n");
+  }
+  return other_topics;
+}
+
+inline std::vector<double *> GridmapLocations::getOtherValuesAtSameHeight(std::string topic){
+      
+  std::vector<std::string> other_topics = getOtherLayersAtHeight(topic);
+  std::vector<double *> values;
+  for(int i=0; i < other_topics.size(); i++){
+    values.push_back(get_values(other_topics[i]));
+  }
+  return values;
+}
+    
+void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char* costmap_, 
+                                         double* min_x, double* min_y, 
+                                         double* max_x, double* max_y){
+  double *topic_utime =  get_values(list.topic);
+  double list_time_sec = list.obs_timestamp / 1.0e6;
+      
+  std::vector<double *> other_layer_values = getOtherValuesAtSameHeight(list.topic);
+  if(other_layer_values.size() > 0){
+    fprintf(stdout, "[%d] topics found at same height\n", (int) other_layer_values.size());
+  }
+
+  for(int j=0; j < list.indices.size(); j++){
+    if(topic_utime[list.indices[j].index] == list_time_sec){ //we have to check if there are other layers at the same height 
+      //and if so make sure to timeout only if the other is timedout
+      //right now this clears everything (irrespective of the height) - this is prob bad if the sensors report different heights 
+      bool clear = true;
+      topic_utime[list.indices[j].index] = -1;
+      if(other_layer_values.size() > 0){
+        for(int i=0; i < other_layer_values.size(); i++){
+          if(other_layer_values[i][list.indices[j].index] > list_time_sec){ //check if this has timed out on other layers at the same height
+            clear = false; 
+          }
+        }
+      }
+      if(clear){
+        costmap_[list.indices[j].index] = FREE_SPACE; 
+        //increase the map update bounds 
+        touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
+      }
+    }
+  }
+}
+
+void GridmapLocations::updateHeightMap(std::string topic, unsigned int height){
+  if(topic_height.find(topic) == topic_height.end()){
+    topic_height.insert(make_pair(topic, height));
+    std::map<unsigned int, std::set<std::string> >::iterator it = height_map.find(height); 
+    if(it != height_map.end()){
+      std::set<std::string>::iterator it_tp = it->second.find(topic); 
+      if(it_tp == it->second.end()){//we havent added it 
+        it->second.insert(topic); 
+        fprintf(stdout, "Adding Topic : %s - height : %d\n", topic.c_str(), height);
+      }
+    }
+    else{
+      fprintf(stdout, "Adding Topic : %s - height : %d\n", topic.c_str(), height);
+      std::set<std::string> height_set; 
+      height_set.insert(topic);
+      height_map.insert(make_pair(height, height_set));
+    }
+  }
+}
+
+void GridmapLocations::addTopic(std::string topic){
+  if(last_utimes.find(topic) == last_utimes.end()){
+    double *utimes = new double[size];
+    for(int i=0; i < size; i++){
+      utimes[i] = -1;
+    }
+    last_utimes.insert(std::make_pair(topic, utimes));
+    fprintf(stdout, "Adding Topic %s to location timeout map size : %d\n", topic.c_str(), (int) last_utimes.size());
+  }
+  else{
+    fprintf(stdout, "Topic already present\n");
+  }
+}
+
+void GridmapLocations::resize(int new_size){
+  if(size != new_size){
+    size = new_size; 
+    std::map<std::string, double *>::iterator it; 
+    for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+      delete []it->second;
+      it->second = new double[size];
+    }
+  }
+  reset();
+}
+    
+double *GridmapLocations::get_values(std::string topic){
+  if(last_utimes.find(topic) == last_utimes.end()){
+    addTopic(topic); 
+  }
+      
+  std::map<std::string, double *>::iterator it = last_utimes.find(topic); 
+  assert(it != last_utimes.end());
+  assert(it->second != NULL);
+  return it->second; 
+}
+
+void GridmapLocations::reset(){
+  std::map<std::string, double *>::iterator it; 
+  for(it = last_utimes.begin(); it != last_utimes.end(); it++){
+    for(int i=0; i < size; i++){
+      it->second[i] = -1;
+    }
+  }
+}
+
 }
