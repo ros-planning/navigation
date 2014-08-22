@@ -581,7 +581,7 @@ void GridmapLocations::updateObstacleTime(const CostMapList &cm_list){
   }
 }
 
-void GridmapLocations::touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y)
+inline void GridmapLocations::touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y)
 {
   *min_x = std::min(x, *min_x);
   *min_y = std::min(y, *min_y);

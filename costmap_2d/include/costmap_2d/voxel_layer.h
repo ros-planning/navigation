@@ -81,8 +81,9 @@ namespace costmap_2d
   class GridmapLocations {
   public:
     std::map<std::string, double *> last_utimes; 
-    //we also need to keep track of the height of these guys 
+    //the topics at the same height 
     std::map<unsigned int, std::set<std::string> > height_map;
+    //height of each topic 
     std::map<std::string, unsigned int> topic_height; 
     int size;
 
@@ -91,7 +92,7 @@ namespace costmap_2d
 
     void updateObstacleTime(const CostMapList &cm_list);
 
-    void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
+    inline void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
 
     inline std::vector<std::string> getOtherLayersAtHeight(std::string topic);
 
@@ -114,8 +115,8 @@ namespace costmap_2d
 
   class ObservationSet{
   public:
-  ObservationSet(std::string topic_):topic(topic_){
-    }
+  ObservationSet(std::string topic_):topic(topic_)
+    {}
     std::vector<Observation> marking_observations; 
     std::string topic; 
   };
