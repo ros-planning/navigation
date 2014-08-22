@@ -42,7 +42,8 @@ void ObstacleLayer::onInitialize()
   std::stringstream ss(topics_string);
 
   max_obstacle_persistance_ = 2.0; //default persistance values 
-  
+  clear_old_ = false; 
+
   std::string source;
   while (ss >> source)
   {

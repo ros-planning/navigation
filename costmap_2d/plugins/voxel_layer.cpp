@@ -233,10 +233,11 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
       int count = 0; 
 
       double *topic_utime =  NULL;
-      if(clear_old_){
+      if(max_timeout){
         topic_utime = locations_utime.get_values(obs_set.topic);
       }
     
+      bool updated_height = false;
       for (unsigned int i = 0; i < cloud.points.size(); ++i)
         {
           //if the obstacle is too high or too far away from the robot we won't add it
@@ -265,6 +266,10 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
               continue;
             }
 
+          if(max_timeout && !updated_height){
+            locations_utime.updateHeightMap(obs_set.topic, mz);
+            updated_height = true;
+          }
 
           //mark the cell in the voxel grid and check if we should also mark it in the costmap
           if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))

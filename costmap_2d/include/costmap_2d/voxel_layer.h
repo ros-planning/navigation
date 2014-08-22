@@ -80,6 +80,8 @@ namespace costmap_2d
   public:
     std::map<std::string, double *> last_utimes; 
     //we also need to keep track of the height of these guys 
+    std::map<unsigned int, std::set<std::string> > height_map;
+    std::map<std::string, unsigned int> topic_height; 
     int size;
 
   GridmapLocations(int size_=0):size(size_){
@@ -93,6 +95,26 @@ namespace costmap_2d
       }
     }
 
+    void updateHeightMap(std::string topic, unsigned int height){
+      if(topic_height.find(topic) == topic_height.end()){
+        topic_height.insert(make_pair(topic, height));
+        std::map<unsigned int, std::set<std::string> >::iterator it = height_map.find(height); 
+        if(it != height_map.end()){
+          std::set<std::string>::iterator it_tp = it->second.find(topic); 
+          if(it_tp == it->second.end()){//we havent added it 
+            it->second.insert(topic); 
+            fprintf(stdout, "Adding Topic : %s - height : %d\n", topic.c_str(), height);
+          }
+        }
+        else{
+          fprintf(stdout, "Adding Topic : %s - height : %d\n", topic.c_str(), height);
+          std::set<std::string> height_set; 
+          height_set.insert(topic);
+          height_map.insert(make_pair(height, height_set));
+        }
+      }
+    }
+
     void addTopic(std::string topic){
       if(last_utimes.find(topic) == last_utimes.end()){
         double *utimes = new double[size];
@@ -100,7 +122,7 @@ namespace costmap_2d
           utimes[i] = -1;
         }
         last_utimes.insert(std::make_pair(topic, utimes));
-        fprintf(stdout, "Adding Topic %s to location timeout map\n", topic.c_str());
+        fprintf(stdout, "Adding Topic %s to location timeout map size : %d\n", topic.c_str(), (int) last_utimes.size());
       }
       else{
         fprintf(stdout, "Topic already present\n");
