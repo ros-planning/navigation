@@ -407,6 +407,7 @@ AmclNode::AmclNode() :
   private_nh_.param("recovery_alpha_slow", alpha_slow_, 0.001);
   private_nh_.param("recovery_alpha_fast", alpha_fast_, 0.1);
   private_nh_.param("tf_broadcast", tf_broadcast_, true);
+  private_nh_.param("odom_only", odom_only_, false);
 
   transform_tolerance_.fromSec(tmp_tol);
 
