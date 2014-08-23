@@ -70,6 +70,7 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   // distrubition will be less than [err].
   pf->pop_err = 0.01;
   pf->pop_z = 3;
+  pf->dist_threshold = 0.5; 
   
   pf->current_set = 0;
   for (j = 0; j < 2; j++)
@@ -105,9 +106,11 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   pf->alpha_slow = alpha_slow;
   pf->alpha_fast = alpha_fast;
 
+  //set converged to 0
+  pf_init_converged(pf);
+
   return pf;
 }
-
 
 // Free an existing filter
 void pf_free(pf_t *pf)
@@ -124,7 +127,6 @@ void pf_free(pf_t *pf)
   
   return;
 }
-
 
 // Initialize the filter using a guassian
 void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
@@ -159,7 +161,10 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
   pf_pdf_gaussian_free(pdf);
     
   // Re-compute cluster statistics
-  pf_cluster_stats(pf, set);
+  pf_cluster_stats(pf, set); 
+
+  //set converged to 0
+  pf_init_converged(pf);
 
   return;
 }
@@ -195,9 +200,51 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set);
   
+  //set converged to 0
+  pf_init_converged(pf);
+
   return;
 }
 
+void pf_init_converged(pf_t *pf){
+  pf_sample_set_t *set;
+  set = pf->sets + pf->current_set;
+  set->converged = 0; 
+  pf->converged = 0; 
+}
+
+int pf_update_converged(pf_t *pf)
+{
+  int i;
+  pf_sample_set_t *set;
+  pf_sample_t *sample;
+  double total;
+
+  set = pf->sets + pf->current_set;
+  double mean_x = 0, mean_y = 0;
+
+  for (i = 0; i < set->sample_count; i++){
+    sample = set->samples + i;
+
+    mean_x += sample->pose.v[0];
+    mean_y += sample->pose.v[1];
+  }
+  mean_x /= set->sample_count;
+  mean_y /= set->sample_count;
+  
+  for (i = 0; i < set->sample_count; i++){
+    sample = set->samples + i;
+    if(fabs(sample->pose.v[0] - mean_x) > pf->dist_threshold || 
+       fabs(sample->pose.v[1] - mean_y) > pf->dist_threshold){
+      set->converged = 0; 
+      pf->converged = 0; 
+      return 0;
+    }
+  }
+  set->converged = 1; 
+  pf->converged = 1; 
+  return 1; 
+}
 
 // Update the filter with some new action
 void pf_update_action(pf_t *pf, pf_action_model_fn_t action_fn, void *action_data)
@@ -251,8 +298,6 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
   }
   else
   {
-    //PLAYER_WARN("pdf has zero probability");
-
     // Handle zero total
     for (i = 0; i < set->sample_count; i++)
     {
@@ -391,7 +436,9 @@ void pf_update_resample(pf_t *pf)
   pf_cluster_stats(pf, set_b);
 
   // Use the newly created sample set
-  pf->current_set = (pf->current_set + 1) % 2;
+  pf->current_set = (pf->current_set + 1) % 2; 
+
+  pf_update_converged(pf);
 
   free(c);
   return;
