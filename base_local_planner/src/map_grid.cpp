@@ -109,8 +109,8 @@ namespace base_local_planner{
 
   inline bool MapGrid::pointValid(double g_x, double g_y, const costmap_2d::Costmap2D& costmap, 
                                   unsigned int &map_x,  unsigned int &map_y){    
-    map_x = -1; 
-    map_y = -1;
+    map_x = 0; 
+    map_y = 0;
     if(costmap.worldToMap(g_x, g_y, map_x, map_y)){
       unsigned char cost = costmap.getCost(map_x, map_y);
       if(cost == costmap_2d::NO_INFORMATION ||
@@ -287,7 +287,7 @@ namespace base_local_planner{
     if (adjusted_global_plan.size() != global_plan.size()) {
       ROS_DEBUG("Adjusted global plan resolution, added %zu points", adjusted_global_plan.size() - global_plan.size());
     }
-    unsigned int i;
+    int i;
 
     bool prune_from_robot = false; 
     double robot_x=0.0, robot_y=0.0; 
@@ -369,7 +369,7 @@ namespace base_local_planner{
     adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
     
     // skip global path points until we reach the border of the local map
-    for (unsigned int i = adjusted_global_plan.size() - 1; i>=0; --i) {
+    for (int i = adjusted_global_plan.size() - 1; i>=0; --i) {
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
 
@@ -404,8 +404,8 @@ namespace base_local_planner{
   void MapGrid::computeTargetDistance(queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap){
     MapCell* current_cell;
     MapCell* check_cell;
-    unsigned int last_col = size_x_ - 1;
-    unsigned int last_row = size_y_ - 1;
+    int last_col = size_x_ - 1;
+    int last_row = size_y_ - 1;
     while(!dist_queue.empty()){
       current_cell = dist_queue.front();
 
