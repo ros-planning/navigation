@@ -151,7 +151,8 @@ namespace base_local_planner {
        * @param new_plan A new plan for the controller to follow 
        * @param compute_dists Wheter or not to compute path/goal distances when a plan is updated
        */
-      void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists = false);
+      void updatePlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists = false, 
+                      const tf::Stamped<tf::Pose> *global_pose=NULL);
 
       /**
        * @brief  Accessor for the goal the robot is currently pursuing in world corrdinates
@@ -313,6 +314,9 @@ namespace base_local_planner {
       int vx_samples_; ///< @brief The number of samples we'll take in the x dimenstion of the control space
       int vtheta_samples_; ///< @brief The number of samples we'll take in the theta dimension of the control space
 
+      bool prune_waypoints_; 
+      double waypoint_prune_distance_; ///< @brief The local controller selects the first valid waypoint in the global planner more than this distance from the robot 
+
       double pdist_scale_, gdist_scale_, occdist_scale_; ///< @brief Scaling factors for the controller's cost function
       double acc_lim_x_, acc_lim_y_, acc_lim_theta_; ///< @brief The acceleration limits of the robot
 
@@ -369,14 +373,6 @@ namespace base_local_planner {
       inline double computeNewYPosition(double yi, double vx, double vy, double theta, double dt){
         return yi + (vx * sin(theta) + vy * sin(M_PI_2 + theta)) * dt;
       }
-
-      /**
-       * @brief  Pubiish out trajectories - to draw in rviz 
-       * @param  publisher
-       * @param  vector of trajectories
-       * @return void
-       */
-      void drawTrajectories(ros::Publisher *vis_pub, std::vector<Trajectory> &traj_list);
 
       /**
        * @brief  Compute orientation based on velocity

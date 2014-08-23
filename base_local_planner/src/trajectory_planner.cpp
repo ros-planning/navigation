@@ -57,51 +57,6 @@ using namespace costmap_2d;
 namespace base_local_planner{
 
 
-  /********************** PULLED From LIBBOT ****************************/
-#define JET_COLORS_LUT_SIZE 1024
-  static float jet_colors[JET_COLORS_LUT_SIZE][3];
-  static int jet_colors_initialized = 0;
-
-  /** Given an array of colors, a palette is created that linearly interpolates through all the colors. **/
-  static void color_util_build_color_table(double color_palette[][3], int palette_size, float lut[][3], int lut_size)
-  {
-    for (int idx = 0; idx < lut_size; idx++) {
-      double znorm = ((double) idx) / lut_size;
-
-      int color_index = (palette_size - 1) * znorm;
-      double alpha = (palette_size - 1) * znorm - color_index;
-
-      for (int i = 0; i < 3; i++) {
-	lut[idx][i] = color_palette[color_index][i] * (1.0 - alpha) + color_palette[color_index+1][i]*alpha;
-      }
-    }
-  }
-
-  static void init_color_table_jet()
-  {
-    double jet[][3] = {{ 0,   0,   1 },
-                       { 0,  .5,  .5 },
-                       { .8, .8,   0 },
-                       { 1,   0,   0 }};
-
-    color_util_build_color_table(jet, sizeof(jet)/(sizeof(double)*3), jet_colors, JET_COLORS_LUT_SIZE);
-    jet_colors_initialized = 1;
-  }
-
-  float *bot_color_util_jet(double v)
-  {
-    if (!jet_colors_initialized)
-      init_color_table_jet();
-
-    v = fmax(0, v);
-    v = fmin(1, v);
-
-    int idx = (JET_COLORS_LUT_SIZE - 1) * v;
-    return jet_colors[idx];
-  }
-
-  /********************** END of PULLED From LIBBOT ****************************/
-
   void TrajectoryPlanner::reconfigure(BaseLocalPlannerConfig &cfg)
   {
       BaseLocalPlannerConfig config(cfg);
@@ -115,6 +70,24 @@ namespace base_local_planner{
       max_vel_x_ = config.max_vel_x;
       min_vel_x_ = config.min_vel_x;
       
+      prune_waypoints_ = config.prune_waypoints;
+      
+      //if set to true - this will do proper obstacle checking for waypoints and skip them 
+      path_map_.setObstacleCheckingForWaypoints(config.check_waypoints_for_obstacles); 
+      goal_map_.setObstacleCheckingForWaypoints(config.check_waypoints_for_obstacles);
+
+      ROS_WARN("Waypoint skipping on obstacles : %d\n", config.check_waypoints_for_obstacles);
+
+      if(prune_waypoints_){
+        //will select the first waypoint within the threshold (if one could be found in unoccupied space within the local map)
+        //otherwise it will select the closest one which is not occupied and within the local map
+        ROS_INFO("Pruning waypoints => Threshold %f\n", config.waypoint_prune_distance);
+        waypoint_prune_distance_ = config.waypoint_prune_distance;
+
+        path_map_.setWaypointDistanceThreshold(waypoint_prune_distance_); //break after you have atleast one valid goal past this distance 
+        goal_map_.setWaypointDistanceThreshold(waypoint_prune_distance_); //break after you have atleast one valid goal past this distance 
+      }
+            
       max_vel_th_ = config.max_vel_theta;
       min_vel_th_ = config.min_vel_theta;
       min_in_place_vel_th_ = config.min_in_place_vel_theta;
@@ -797,7 +770,7 @@ namespace base_local_planner{
     return cost;
   }
 
-  void TrajectoryPlanner::updatePlan(const vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists){
+  void TrajectoryPlanner::updatePlan(const vector<geometry_msgs::PoseStamped>& new_plan, bool compute_dists, const tf::Stamped<tf::Pose> *global_pose){
     global_plan_.resize(new_plan.size());
     for(unsigned int i = 0; i < new_plan.size(); ++i){
       global_plan_[i] = new_plan[i];
@@ -816,11 +789,21 @@ namespace base_local_planner{
       //reset the map for new operations
       path_map_.resetPathDist();
       goal_map_.resetPathDist();
-
-      //make sure that we update our path based on the global plan and compute costs
-      path_map_.setTargetCells(costmap_, global_plan_);
-      goal_map_.setLocalGoal(costmap_, global_plan_);
+      
+      if(prune_waypoints_){
+        //make sure that we update our path based on the global plan and compute costs
+ 
+        path_map_.setTargetCells(costmap_, global_plan_, global_pose);
+        goal_map_.setLocalGoal(costmap_, global_plan_, global_pose);
+      }
+      else{
+        path_map_.setTargetCells(costmap_, global_plan_);
+        goal_map_.setLocalGoal(costmap_, global_plan_);
+      }
       ROS_DEBUG("Path/Goal distance computed");
+      if(!global_pose){
+        ROS_WARN("Compute distance called without robot pose - using default\n");
+      }
     }
   }
 
@@ -852,138 +835,6 @@ namespace base_local_planner{
 
     // return the cost.
     return double( t.cost_ );
-  }
-
-  /*
-   * Pubiish out trajectories - to draw in rviz 
-   */
-  void TrajectoryPlanner::drawTrajectories(ros::Publisher *vis_pub, vector<Trajectory> &traj_list){
-    if(vis_pub == NULL || traj_list.size() == 0)
-      return;
-
-    static int last_no_traj = 0; 
-    
-    ROS_WARN("Publishing Trajectories : %d", (int) traj_list.size());
-    
-    int new_traj_size = (int) traj_list.size(); 
-    //if(last_no_traj > new_traj_size){
-    //clear the old messages - doesn't seem to work perfectly 
-    for(int i= 0; i < last_no_traj; i++){
-	visualization_msgs::Marker marker;
-	marker.header.frame_id = "map";
-	marker.header.stamp = ros::Time();
-	marker.ns = "cost_score";
-	marker.id = i;
-	marker.type = visualization_msgs::Marker::POINTS;
-	marker.action = visualization_msgs::Marker::DELETE;
-	marker.pose.position.x = 1;
-	marker.pose.position.y = 1;
-	marker.pose.position.z = 1;
-	marker.pose.orientation.x = 0.0;
-	marker.pose.orientation.y = 0.0;
-	marker.pose.orientation.z = 0.0;
-	marker.pose.orientation.w = 1.0;
-	marker.scale.x = 0.05;
-	marker.scale.y = 0.1;
-	marker.scale.z = 0.1;
-	marker.color.a = 1.0;
-	marker.color.r = 0.0;
-	marker.color.g = 1.0;
-	marker.color.b = 0.0;
-
-	vis_pub->publish( marker );
-	//ROS_WARN("Clearing");
-      }
-	  //}
-
-    last_no_traj= new_traj_size;
-      
-    double max_val = DBL_MIN; 
-    double min_val = DBL_MAX; 
-    for(int i=0; i < traj_list.size(); i++){
-      Trajectory &traj = traj_list[i]; 
-      if(traj.cost_ < min_val){
-	min_val = traj.cost_;
-      }
-      if(traj.cost_ > max_val){
-	max_val = traj.cost_;
-      }
-    }
-
-    double delta = max_val - min_val; 
-
-    double scaling_factor = 1.0; 
-
-    if(delta > 0.00001){
-      scaling_factor = 1 / delta; 
-    }
-
-    for(int i=0; i < traj_list.size(); i++){
-      Trajectory &traj = traj_list[i]; 
-      
-      vector<geometry_msgs::Point> pts; 
-      double t; 
-      for(unsigned int j=0; j < traj.getPointsSize(); j++){
-	geometry_msgs::Point pt;
-	traj.getPoint(j, pt.x, pt.y, t);
-	pt.z = 0.0; 
-	pts.push_back(pt);
-      }
-
-      double cost = (traj.cost_ - min_val) * scaling_factor; 
-      
-      float *c = bot_color_util_jet(1 - cost); 
-      visualization_msgs::Marker marker;
-      marker.header.frame_id = "map";
-      marker.header.stamp = ros::Time();
-      marker.ns = "cost_score";
-      marker.id = i;
-      marker.type = visualization_msgs::Marker::LINE_STRIP;
-      marker.action = visualization_msgs::Marker::ADD;
-      marker.pose.position.x = 0;
-      marker.pose.position.y = 0;
-      marker.pose.position.z = 0;
-      marker.pose.orientation.x = 0.0;
-      marker.pose.orientation.y = 0.0;
-      marker.pose.orientation.z = 0.0;
-      marker.pose.orientation.w = 1.0;
-      marker.scale.x = 0.01;
-      marker.scale.y = 0.1;
-      marker.scale.z = 0.1;
-      marker.color.a = 1.0;
-      marker.color.r = c[0];
-      marker.color.g = c[1];
-      marker.color.b = c[2];
-
-      marker.points = pts;
-      vis_pub->publish( marker );
-      
-      //draw text - doesnt draw it in a readble way - damn ROS :p
-      /*visualization_msgs::Marker t_marker;
-      t_marker.header.frame_id = "map";
-      t_marker.header.stamp = ros::Time();
-      t_marker.ns = "cost_score";
-      t_marker.id = i + (int) traj_list.size();
-      t_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-      t_marker.action = visualization_msgs::Marker::ADD;
-      traj.getPoint(traj.getPointsSize() - 1,  t_marker.pose.position.x,  t_marker.pose.position.y, t);
-      t_marker.pose.position.z = 0;
-      t_marker.pose.orientation.x = 0.0;
-      t_marker.pose.orientation.y = 0.0;
-      t_marker.pose.orientation.z = 0.0;
-      t_marker.pose.orientation.w = 1.0;
-      t_marker.scale.x = 0.01;
-      t_marker.scale.y = 0.1;
-      t_marker.scale.z = 0.1;
-      t_marker.color.a = 1.0;
-      t_marker.color.r = 0.0;
-      t_marker.color.g = 1.0;
-      t_marker.color.b = 0.0;
-      char txt[20];
-      sprintf(txt, "%.2f", traj.cost_);
-      t_marker.text = string(txt);
-      vis_pub->publish( t_marker );*/
-    }
   }
 
   /*
@@ -1313,10 +1164,6 @@ namespace base_local_planner{
     }
     
     if(0){
-      drawTrajectories(vis_pub, traj_list);
-    }
-
-    if(0){
       ROS_WARN("No of Traj Evaled : %d" , (int) traj_list.size()); 
       
       for(int i=0; i < traj_list.size(); i++){
@@ -1559,8 +1406,14 @@ namespace base_local_planner{
     }
 
     //make sure that we update our path based on the global plan and compute costs
-    path_map_.setTargetCells(costmap_, global_plan_);
-    goal_map_.setLocalGoal(costmap_, global_plan_);
+    if(prune_waypoints_){
+      path_map_.setTargetCells(costmap_, global_plan_, &global_pose);
+      goal_map_.setLocalGoal(costmap_, global_plan_, &global_pose);
+    }
+    else{
+      path_map_.setTargetCells(costmap_, global_plan_);
+      goal_map_.setLocalGoal(costmap_, global_plan_);
+    }
 
     //rollout trajectories and find the minimum cost one
     Trajectory best = createTrajectories(pos[0], pos[1], pos[2],
