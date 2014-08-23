@@ -44,6 +44,8 @@
 #include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/PoseStamped.h>
 
+#include <tf/transform_datatypes.h>
+
 namespace base_local_planner{
   /**
    * @class MapGrid
@@ -63,6 +65,17 @@ namespace base_local_planner{
        */
       MapGrid(unsigned int size_x, unsigned int size_y);
 
+      /**
+       * @brief Set the goal distance threshold (will stop considering waypoints after the first valid one over this threshold 
+       * @param goal_dist_threshold threshold
+       */
+      void setWaypointDistanceThreshold(double waypoint_dist_threshold); 
+
+      /**
+       * @brief Set if we should check the waypoints for obstacles
+       * @param bool to set obstacle checking on waypoints 
+       */
+      void setObstacleCheckingForWaypoints(bool check_obstacles_for_waypoints);
 
       /**
        * @brief  Returns a map cell accessed by (col, row)
@@ -146,6 +159,15 @@ namespace base_local_planner{
       }
 
       /**
+       * @brief  Used to check if a waypoint is valid (not on unknown of if flag set occupied cell
+       * @param  global x,y of the waypoint
+       * @param  costmap 
+       */
+
+      inline bool pointValid(double gx, double gy, const costmap_2d::Costmap2D& costmap, 
+                             unsigned int &map_x,  unsigned int &map_y); 
+
+      /**
        * @brief  Used to update the distance of a cell in path distance computation
        * @param  current_cell The cell we're currently in 
        * @param  check_cell The cell to be updated
@@ -181,15 +203,31 @@ namespace base_local_planner{
       void setTargetCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan);
 
       /**
+       * @brief Update what cells are considered path based on the global plan 
+       */
+      void setTargetCells(const costmap_2d::Costmap2D& costmap, 
+                          const std::vector<geometry_msgs::PoseStamped>& global_plan, 
+                          const tf::Stamped<tf::Pose> *global_pose);
+
+      /**
+       * @brief Update what cell is considered the next local goal 
+       */
+      void setLocalGoal(const costmap_2d::Costmap2D& costmap,
+                        const std::vector<geometry_msgs::PoseStamped>& global_plan);
+
+      /**
        * @brief Update what cell is considered the next local goal
        */
       void setLocalGoal(const costmap_2d::Costmap2D& costmap,
-            const std::vector<geometry_msgs::PoseStamped>& global_plan);
+                        const std::vector<geometry_msgs::PoseStamped>& global_plan, 
+                        const tf::Stamped<tf::Pose> *global_pose);
 
       double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
 
       unsigned int size_x_, size_y_; ///< @brief The dimensions of the grid
 
+      double waypoint_dist_threshold_; //if we find a waypoint beyond this threshold - stop considering the rest 
+      bool check_waypoints_for_obstacles_;
     private:
 
       std::vector<MapCell> map_; ///< @brief Storage for the MapCells
