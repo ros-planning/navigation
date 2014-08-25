@@ -471,8 +471,6 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 	skipped_beam_count++; 
       }
     }
-    fprintf(stderr, "No Samples : %d -> Skipped beam count : %d\n", set->sample_count, 
-	    skipped_beam_count);
     
     //this can lead to issues if the pf converged to a wrong solution 
     //and all the beams are off - this will just not integrate any observations 

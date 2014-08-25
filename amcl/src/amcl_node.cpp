@@ -114,9 +114,9 @@ class AmclNode
     tf::TransformBroadcaster* tfb_;
     tf::TransformListener* tf_;
 
-    bool sent_first_transform_;
+    bool sent_first_transform_, odom_only_;
 
-    tf::Transform latest_tf_;
+    tf::Transform latest_tf_, latest_tf_for_odom_;
     bool latest_tf_valid_;
 
     // Pose-generating function used to uniformly distribute particles over
@@ -288,7 +288,8 @@ AmclNode::AmclNode() :
 	      private_nh_("~"),
         initial_pose_hyp_(NULL),
         first_map_received_(false),
-        first_reconfigure_call_(true)
+        first_reconfigure_call_(true),
+	odom_only_(false)
 {
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
@@ -406,6 +407,7 @@ AmclNode::AmclNode() :
   private_nh_.param("recovery_alpha_slow", alpha_slow_, 0.001);
   private_nh_.param("recovery_alpha_fast", alpha_fast_, 0.1);
   private_nh_.param("tf_broadcast", tf_broadcast_, true);
+  private_nh_.param("odom_only", odom_only_, false);
 
   transform_tolerance_.fromSec(tmp_tol);
 
@@ -1277,7 +1279,13 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                  tf::Point(odom_to_map.getOrigin()));
       latest_tf_valid_ = true;
 
-      if (tf_broadcast_ == true)
+      private_nh_.getParam("odom_only", odom_only_);
+      if (!odom_only_)
+      {
+	  latest_tf_for_odom_ = latest_tf_;
+      }
+      
+      if (tf_broadcast_ == true && !odom_only_)
       {
         // We want to send a transform that is good up until a
         // tolerance time so that odom can be used
@@ -1289,6 +1297,15 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         this->tfb_->sendTransform(tmp_tf_stamped);
         sent_first_transform_ = true;
       }
+      else if (odom_only_)
+      {
+	  ros::Time transform_expiration = (laser_scan->header.stamp +
+					    transform_tolerance_);
+	  tf::StampedTransform tmp_tf_stamped(latest_tf_for_odom_.inverse(),
+                                            transform_expiration,
+                                            global_frame_id_, odom_frame_id_);
+	  this->tfb_->sendTransform(tmp_tf_stamped);
+      }
     }
     else
     {
@@ -1297,7 +1314,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
   else if(latest_tf_valid_)
   {
-    if (tf_broadcast_ == true)
+    if (tf_broadcast_ == true && !odom_only_)
     {
       // Nothing changed, so we'll just republish the last transform, to keep
       // everybody happy.
@@ -1307,6 +1324,15 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                           transform_expiration,
                                           global_frame_id_, odom_frame_id_);
       this->tfb_->sendTransform(tmp_tf_stamped);
+    }
+    else if (odom_only_)
+    {
+	ros::Time transform_expiration = (laser_scan->header.stamp +
+					  transform_tolerance_);
+	tf::StampedTransform tmp_tf_stamped(latest_tf_for_odom_.inverse(),
+                                            transform_expiration,
+                                            global_frame_id_, odom_frame_id_);
+	this->tfb_->sendTransform(tmp_tf_stamped);
     }
 
     // Is it time to save our last pose to the param server
