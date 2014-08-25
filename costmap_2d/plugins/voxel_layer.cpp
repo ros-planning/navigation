@@ -99,16 +99,16 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
     std::map<std::string, double>::iterator it; 
     it = observation_timeout.find(list.topic); 
 
-    double obs_persistance = max_obstacle_persistance_;
+    double obs_persistence = max_obstacle_persistence_;
     if(it != observation_timeout.end()){
-      obs_persistance = it->second; 
-      ROS_DEBUG("Topic : %s - Timeout : %f\n", list.topic.c_str(), obs_persistance);
+      obs_persistence = it->second; 
+      ROS_DEBUG("Topic : %s - Timeout : %f\n", list.topic.c_str(), obs_persistence);
     }
     else{
       ROS_ERROR("Asked to clear cost for non-timeout topic\n");
     }
 
-    if((current_time - list.obs_timestamp / 1.0e6) > obs_persistance){
+    if((current_time - list.obs_timestamp / 1.0e6) > obs_persistence){
       ROS_DEBUG("Clearing timeout observation : %f\n", (current_time - list.obs_timestamp / 1.0e6));
       int cleared_count = 0;
       checked_count++;
@@ -226,7 +226,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
       int count = 0; 
 
       for (unsigned int i = 0; i < cloud.points.size(); ++i)
-        {
+      {
           //if the obstacle is too high or too far away from the robot we won't add it
           if (cloud.points[i].z > max_obstacle_height_)
             continue;          
@@ -243,30 +243,30 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
           //now we need to compute the map coordinates for the observation
           unsigned int mx, my, mz;
           if (cloud.points[i].z < origin_z_)
-            {
+          {
               if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, origin_z_, mx, my, mz))
                 continue;
-            }
+          }
           else if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z, mx, my, mz))
-            {
+          {
               continue;
-            }
+          }
 
           //mark the cell in the voxel grid and check if we should also mark it in the costmap
           if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
-            {
+          {
               unsigned int index = getIndex(mx, my);
               //these are the ones set as occupied 
               costmap_[index] = LETHAL_OBSTACLE;
               touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
 
-              //keep track of which indexs we updated 
+              //keep track of which indices we updated 
               if(max_timeout){
                 cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
                 count++;
               }
-            }
-        }
+          }
+      }
       if(max_timeout && count > 0){
         locations_utime.updateObstacleTime(cm_list);
         new_obs_list.push_back(cm_list);

@@ -70,14 +70,12 @@ namespace costmap_2d
   //keeps track of the indices updated for each observation
   class CostMapList {
   public:
-    int64_t obs_timestamp; 
+    int64_t obs_timestamp; //in usecs
     std::string topic;
     std::vector<ObstaclePoint> indices;
   };
 
   //keeps track of the last time each index location was updated 
-  //we should move this out probably to a cpp file - lot of implemetation in the header
-
   class GridmapLocations {
   public:
     GridmapLocations(int size_=0);
@@ -86,7 +84,7 @@ namespace costmap_2d
     //set height check for clearing 
     void setCheckOtherTopicsBeforeClearing(bool check_other_topics_before_clearing);
 
-    //update the utimes at the indexs for the particular layer 
+    //update the utimes at the indices for the particular layer 
     void updateObstacleTime(const CostMapList &cm_list);
     
     //clear the timed out observations 
@@ -106,7 +104,7 @@ namespace costmap_2d
      //get the double array for the give topic
     inline double *get_values(std::string topic);
 
-    //update the bounds of the map (reimplementation of the touch function in the costmap_layer
+    //update the bounds of the map (reimplementation of the touch function in the costmap_layer)
     inline void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
 
     //get the utime values 

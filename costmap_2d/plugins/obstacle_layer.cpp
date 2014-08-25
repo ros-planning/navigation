@@ -40,8 +40,8 @@ void ObstacleLayer::onInitialize()
 
   //now we need to split the topics based on whitespace which we can use a stringstream for
   std::stringstream ss(topics_string);
-
-  max_obstacle_persistance_ = 2.0; //default persistance values 
+  
+  max_obstacle_persistence_ = 2.0; //default persistence values 
   clear_old_ = false; 
 
   std::string source;
@@ -50,7 +50,7 @@ void ObstacleLayer::onInitialize()
     ros::NodeHandle source_node(nh, source);
 
     //get the parameters for the specific topic
-    double observation_keep_time, observation_timeout_from_now, expected_update_rate, min_obstacle_height, max_obstacle_height, max_obstacle_persistance;
+    double observation_keep_time, observation_timeout_from_now, expected_update_rate, min_obstacle_height, max_obstacle_height, max_obstacle_persistence;
     std::string topic, sensor_frame, data_type;
     bool inf_is_valid, clearing, marking;
     bool clear_old; 
@@ -64,7 +64,7 @@ void ObstacleLayer::onInitialize()
     source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
     source_node.param("max_obstacle_height", max_obstacle_height, 2.0);
     source_node.param("clear_old", clear_old, false);
-    source_node.param("max_obstacle_persistance", max_obstacle_persistance, 2.0);
+    source_node.param("max_obstacle_persistence", max_obstacle_persistence, 2.0);
     source_node.param("inf_is_valid", inf_is_valid, false);
     source_node.param("clearing", clearing, false);
     source_node.param("marking", marking, true);
@@ -74,8 +74,8 @@ void ObstacleLayer::onInitialize()
       if(!rolling_window_){
         clear_old_ = true; 
         ROS_INFO("Clearing old observations for topic %s - time out : %f\n", topic.c_str(),
-                max_obstacle_persistance);
-        observation_timeout.insert(std::make_pair(topic, max_obstacle_persistance)); 
+                max_obstacle_persistence);
+        observation_timeout.insert(std::make_pair(topic, max_obstacle_persistence)); 
       }
       else{
         ROS_ERROR("Param asks to clear old observations - not supported for rolling window costmaps\n");
