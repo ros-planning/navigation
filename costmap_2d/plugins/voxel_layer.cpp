@@ -106,6 +106,7 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
     }
     else{
       ROS_ERROR("Asked to clear cost for non-timeout topic\n");
+      continue;
     }
 
     if((current_time - list.obs_timestamp / 1.0e6) > obs_persistence){
@@ -117,7 +118,7 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
     else{
       //remove the costmap_list upto (and not including this)
       if(i > 0){
-	new_obs_list.erase(new_obs_list.begin(), new_obs_list.begin() + (i-1));
+          new_obs_list.erase(new_obs_list.begin(), new_obs_list.begin() + (i-1));
       }
       break;
     }
@@ -595,7 +596,7 @@ void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char*
   if(check_other_topics_before_clearing_){
     other_layer_values = getOtherTopicValues(list.topic);
     if(other_layer_values.size() > 0){
-      ROS_DEBUG("[%d] topics found at same height", (int) other_layer_values.size());
+      ROS_DEBUG("[%d] topics found", (int) other_layer_values.size());
     }
   }
 
