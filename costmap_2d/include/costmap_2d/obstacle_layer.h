@@ -170,7 +170,7 @@ protected:
   int combination_method_;
 
   bool clear_old_;
-  double max_obstacle_persistance_; 
+  double max_obstacle_persistence_; 
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
