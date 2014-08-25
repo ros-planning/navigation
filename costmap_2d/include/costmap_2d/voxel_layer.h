@@ -81,10 +81,10 @@ namespace costmap_2d
     GridmapLocations(int size_=0);
     ~GridmapLocations();
 
-    //set height check for clearing 
+    //set checking other topics for clearing 
     void setCheckOtherTopicsBeforeClearing(bool check_other_topics_before_clearing);
 
-    //update the utimes at the indices for the particular layer 
+    //update the times at the indices for the particular layer 
     void updateObstacleTime(const CostMapList &cm_list);
     
     //clear the timed out observations 
@@ -92,7 +92,7 @@ namespace costmap_2d
                            double* min_x, double* min_y, 
                            double* max_x, double* max_y);
 
-    //add the topic (and keep track of the observations
+    //add the topic (and keep track of the observations)
     void addTopic(std::string topic);
 
     //resize (if the map size has changed)
@@ -101,15 +101,16 @@ namespace costmap_2d
     //reset the values to be negative 
     void reset();
   private:
-     //get the double array for the give topic
+     //get the double array (of time in secs) for the given topic
     inline double *get_values(std::string topic);
 
     //update the bounds of the map (reimplementation of the touch function in the costmap_layer)
     inline void touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y);
 
-    //get the utime values 
+    //get the utime values (contents of last_obs_times) for all topics but the given topic
     inline std::vector<double *> getOtherTopicValues(std::string topic);
     
+    //keeps track of the latest marking observation time (sec) at each index for each topic
     std::map<std::string, double *> last_obs_times; 
     
     bool check_other_topics_before_clearing_; 

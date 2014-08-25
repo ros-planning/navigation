@@ -140,7 +140,7 @@ bool VoxelLayer::getMarkingObservations(std::vector<ObservationSet>& observation
     marking_buffers_[i]->unlock();
   }
 
-  //what the heck is the static marking observations?? 
+  //appear to be unused
   ObservationSet obs("static");
   obs.marking_observations.insert(obs.marking_observations.end(), static_marking_observations_.begin(), static_marking_observations_.end());
   observations_set.push_back(obs);
@@ -552,7 +552,7 @@ GridmapLocations::~GridmapLocations(){
 }
 
 void GridmapLocations::updateObstacleTime(const CostMapList &cm_list){
-  double obs_ts = cm_list.obs_timestamp / 1.0e6;
+  double obs_ts = cm_list.obs_timestamp / 1.0e6; //kept as seconds 
   double *topic_utime = get_values(cm_list.topic);
 
   for(int j=0; j < cm_list.indices.size(); j++){
@@ -609,7 +609,7 @@ void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char*
       
       if(other_layer_values.size() > 0){
         for(int i=0; i < other_layer_values.size(); i++){
-          //check if this has timed out on other layers at the same height
+          //check if this has timed out on other layers 
           if(other_layer_values[i][list.indices[j].index] > list_time_sec){ 
             clear = false; 
           }
