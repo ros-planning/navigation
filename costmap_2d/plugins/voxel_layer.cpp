@@ -22,7 +22,7 @@ void VoxelLayer::onInitialize()
   ros::NodeHandle private_nh("~/" + name_);
 
   private_nh.param("publish_voxel_map", publish_voxel_, false);
-
+  
   private_nh.param("inflation_radius", inflation_radius_, 0.4);
   ROS_WARN("Inflation radius : %f", inflation_radius_);
   if (publish_voxel_)
@@ -55,19 +55,12 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
   mark_threshold_ = config.mark_threshold;
   combination_method_ = config.combination_method;
-  clear_old_ = !rolling_window_ && config.clear_old; 
-
+  if(clear_old_){
+    locations_utime.setCheckOtherTopicsBeforeClearing(config.check_other_topics_before_clearing);
+  }
   inflation_radius_ = config.inflation_radius;
   ROS_WARN("Inflation radius : %f", inflation_radius_);
 
-  if(clear_old_)
-    ROS_INFO("Clearing old obstacles : %d - Rolling %d", config.clear_old, rolling_window_);
-
-  if(config.clear_old && rolling_window_){
-    ROS_WARN("Unable to clear old obstacles for maps with a rolling window");
-  }
-
-  max_obstacle_persistance_ = config.max_obstacle_persistance; 
   matchSize();
 }
 
@@ -103,26 +96,71 @@ void VoxelLayer::resetOldCosts(double* min_x, double* min_y,
   int error_count = 0; 
   for(int i=0; i < new_obs_list.size(); i++){
     CostMapList &list = new_obs_list[i];
-    if((current_time - list.obs_timestamp / 1.0e6) > max_obstacle_persistance_){
+    std::map<std::string, double>::iterator it; 
+    it = observation_timeout.find(list.topic); 
+
+    double obs_persistence = max_obstacle_persistence_;
+    if(it != observation_timeout.end()){
+      obs_persistence = it->second; 
+      ROS_DEBUG("Topic : %s - Timeout : %f\n", list.topic.c_str(), obs_persistence);
+    }
+    else{
+      ROS_ERROR("Asked to clear cost for non-timeout topic\n");
+      continue;
+    }
+
+    if((current_time - list.obs_timestamp / 1.0e6) > obs_persistence){
+      ROS_DEBUG("Clearing timeout observation : %f\n", (current_time - list.obs_timestamp / 1.0e6));
       int cleared_count = 0;
       checked_count++;
-      for(int j=0; j < list.indices.size(); j++){
-	if(locations_utime[list.indices[j].index] == list.obs_timestamp / 1.0e6){
-	  costmap_[list.indices[j].index] = FREE_SPACE; 
-	  locations_utime[list.indices[j].index] = -1;
-	  //increase the map update bounds 
-	  touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
-	}
-      }
+      locations_utime.clearObstacleTime(list, costmap_, min_x, min_y, max_x, max_y);      
     }
     else{
       //remove the costmap_list upto (and not including this)
       if(i > 0){
-	new_obs_list.erase(new_obs_list.begin(), new_obs_list.begin() + (i-1));
+          new_obs_list.erase(new_obs_list.begin(), new_obs_list.begin() + (i-1));
       }
       break;
     }
   }
+}
+
+//we need to get observations for each sensor - to figure out which ones have timeouts 
+bool VoxelLayer::getMarkingObservations(std::vector<ObservationSet>& observations_set) const
+{
+  bool current = true;
+  //get the marking observations
+  for (unsigned int i = 0; i < marking_buffers_.size(); ++i)
+  {
+    marking_buffers_[i]->lock();
+    ObservationSet obs(marking_buffers_[i]->getTopic());
+    marking_buffers_[i]->getObservations(obs.marking_observations);//marking_observations);
+    current = marking_buffers_[i]->isCurrent() && current;
+    observations_set.push_back(obs);
+    marking_buffers_[i]->unlock();
+  }
+
+  //appear to be unused
+  ObservationSet obs("static");
+  obs.marking_observations.insert(obs.marking_observations.end(), static_marking_observations_.begin(), static_marking_observations_.end());
+  observations_set.push_back(obs);
+  return current;
+}
+
+bool VoxelLayer::getClearingObservations(std::vector<Observation>& clearing_observations) const
+{
+  bool current = true;
+  //get the clearing observations
+  for (unsigned int i = 0; i < clearing_buffers_.size(); ++i)
+  {
+    clearing_buffers_[i]->lock();
+    clearing_buffers_[i]->getObservations(clearing_observations);
+    current = clearing_buffers_[i]->isCurrent() && current;
+    clearing_buffers_[i]->unlock();
+  }
+  clearing_observations.insert(clearing_observations.end(), 
+                              static_clearing_observations_.begin(), static_clearing_observations_.end());
+  return current;
 }
 
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -135,7 +173,8 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
   useExtraBounds(min_x, min_y, max_x, max_y);
 
   bool current = true;
-  std::vector<Observation> observations, clearing_observations;
+  std::vector<ObservationSet> observations;
+  std::vector<Observation> clearing_observations;
 
   if(clear_old_){
     resetOldCosts(min_x, min_y, max_x, max_y);
@@ -157,67 +196,82 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
   }
    
   //place the new obstacles into a priority queue... each with a priority of zero to begin with
-  for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
+  for (std::vector<ObservationSet>::const_iterator it = observations.begin(); it != observations.end(); ++it)
   {
-    const Observation& obs = *it;
+    const ObservationSet& obs_set = *it; 
 
-    //we should throw out stale observations also 
-
-    CostMapList cm_list; 
-    cm_list.obs_timestamp = obs.cloud_->header.stamp; 
-    double obs_ts = cm_list.obs_timestamp / 1.0e6; 
-
-    const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
-
-    double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
-
-    int count = 0; 
+    //check if this is in the max_timeout list 
+    bool max_timeout = false; 
     
-    for (unsigned int i = 0; i < cloud.points.size(); ++i)
-    {
-      //if the obstacle is too high or too far away from the robot we won't add it
-      if (cloud.points[i].z > max_obstacle_height_)
-        continue;
-
-      //compute the squared distance from the hitpoint to the pointcloud's origin
-      double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
-          + (cloud.points[i].y - obs.origin_.y) * (cloud.points[i].y - obs.origin_.y)
-          + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
-
-      //if the point is far enough away... we won't consider it
-      if (sq_dist >= sq_obstacle_range)
-        continue;
-
-      //now we need to compute the map coordinates for the observation
-      unsigned int mx, my, mz;
-      if (cloud.points[i].z < origin_z_)
-      {
-        if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, origin_z_, mx, my, mz))
-          continue;
-      }
-      else if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z, mx, my, mz))
-      {
-        continue;
-      }
-
-      //mark the cell in the voxel grid and check if we should also mark it in the costmap
-      if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
-      {
-        unsigned int index = getIndex(mx, my);
-	//these are the ones set as occupied 
-	costmap_[index] = LETHAL_OBSTACLE;
-	touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
-
-	//keep track of which indexs we updated 
-	if(clear_old_){
-	  cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
-	  locations_utime[index] = obs_ts; 
-	  count++;
-	}
-      }
+    if(observation_timeout.find(obs_set.topic)!= observation_timeout.end()){
+      max_timeout = true;
+      ROS_DEBUG("Observation set for topic %s - clearing\n", obs_set.topic.c_str());
     }
-    if(clear_old_ && count > 0){
-      new_obs_list.push_back(cm_list);
+
+    for(std::vector<Observation>::const_iterator it_o = obs_set.marking_observations.begin(); 
+        it_o != obs_set.marking_observations.end(); it_o++){
+      const Observation& obs = *it_o;
+
+      //we should throw out stale observations also 
+
+      CostMapList cm_list; 
+      cm_list.topic = obs_set.topic;
+      cm_list.obs_timestamp = obs.cloud_->header.stamp; 
+      
+      double obs_ts = cm_list.obs_timestamp / 1.0e6; 
+
+      const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
+
+      double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
+
+      int count = 0; 
+
+      for (unsigned int i = 0; i < cloud.points.size(); ++i)
+      {
+          //if the obstacle is too high or too far away from the robot we won't add it
+          if (cloud.points[i].z > max_obstacle_height_)
+            continue;          
+
+          //compute the squared distance from the hitpoint to the pointcloud's origin
+          double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
+            + (cloud.points[i].y - obs.origin_.y) * (cloud.points[i].y - obs.origin_.y)
+            + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
+
+          //if the point is far enough away... we won't consider it
+          if (sq_dist >= sq_obstacle_range)
+            continue;
+
+          //now we need to compute the map coordinates for the observation
+          unsigned int mx, my, mz;
+          if (cloud.points[i].z < origin_z_)
+          {
+              if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, origin_z_, mx, my, mz))
+                continue;
+          }
+          else if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z, mx, my, mz))
+          {
+              continue;
+          }
+
+          //mark the cell in the voxel grid and check if we should also mark it in the costmap
+          if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
+          {
+              unsigned int index = getIndex(mx, my);
+              //these are the ones set as occupied 
+              costmap_[index] = LETHAL_OBSTACLE;
+              touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
+
+              //keep track of which indices we updated 
+              if(max_timeout){
+                cm_list.indices.push_back(ObstaclePoint(index, (double)cloud.points[i].x, (double)cloud.points[i].y));
+                count++;
+              }
+          }
+      }
+      if(max_timeout && count > 0){
+        locations_utime.updateObstacleTime(cm_list);
+        new_obs_list.push_back(cm_list);
+      }
     }
   }
 
@@ -484,6 +538,136 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
   delete[] local_map;
   delete[] local_voxel_map;
 
+}
+
+GridmapLocations::GridmapLocations(int size_):size(size_){
+  assert(size>=0); 
+}
+
+GridmapLocations::~GridmapLocations(){
+  std::map<std::string, double *>::iterator it; 
+  for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
+    delete []it->second;
+  }
+}
+
+void GridmapLocations::updateObstacleTime(const CostMapList &cm_list){
+  double obs_ts = cm_list.obs_timestamp / 1.0e6; //kept as seconds 
+  double *topic_utime = get_values(cm_list.topic);
+
+  for(int j=0; j < cm_list.indices.size(); j++){
+    topic_utime[cm_list.indices[j].index] = obs_ts;         
+  }
+}
+
+inline void GridmapLocations::touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y)
+{
+  *min_x = std::min(x, *min_x);
+  *min_y = std::min(y, *min_y);
+  *max_x = std::max(x, *max_x);
+  *max_y = std::max(y, *max_y);
+}
+
+void GridmapLocations::setCheckOtherTopicsBeforeClearing(bool check_other_topics_before_clearing){
+  check_other_topics_before_clearing_ = check_other_topics_before_clearing;
+  if(check_other_topics_before_clearing){
+    ROS_INFO("Checking other topics before clearing timed-out observations\n");
+  }
+}
+
+inline std::vector<double *> GridmapLocations::getOtherTopicValues(std::string topic){
+  std::vector<double *> values;
+  std::map<std::string, double *>::iterator it; 
+  for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
+    if(topic.compare(it->first)){
+      values.push_back(it->second);
+    }
+  }
+  return values;
+}
+    
+void GridmapLocations::clearObstacleTime(const CostMapList &list, unsigned char* costmap_, 
+                                         double* min_x, double* min_y, 
+                                         double* max_x, double* max_y){
+  double *topic_utime =  get_values(list.topic);
+  double list_time_sec = list.obs_timestamp / 1.0e6;
+      
+  std::vector<double *> other_layer_values;
+  if(check_other_topics_before_clearing_){
+    other_layer_values = getOtherTopicValues(list.topic);
+    if(other_layer_values.size() > 0){
+      ROS_DEBUG("[%d] topics found", (int) other_layer_values.size());
+    }
+  }
+
+  for(int j=0; j < list.indices.size(); j++){
+    if(topic_utime[list.indices[j].index] == list_time_sec){ 
+      //we have to check if there are non-timed out observations in the other layers 
+      //and if so make sure to timeout only if the others are timed out
+      bool clear = true;
+      topic_utime[list.indices[j].index] = -1;
+      
+      if(other_layer_values.size() > 0){
+        for(int i=0; i < other_layer_values.size(); i++){
+          //check if this has timed out on other layers 
+          if(other_layer_values[i][list.indices[j].index] > list_time_sec){ 
+            clear = false; 
+          }
+        }
+      }
+      if(clear){
+        costmap_[list.indices[j].index] = FREE_SPACE; 
+        //increase the map update bounds 
+        touch(list.indices[j].x, list.indices[j].y, min_x, min_y, max_x, max_y);
+      }
+    }
+  }
+}
+
+void GridmapLocations::addTopic(std::string topic){
+  if(last_obs_times.find(topic) == last_obs_times.end()){
+    double *utimes = new double[size];
+    for(int i=0; i < size; i++){
+      utimes[i] = -1;
+    }
+    last_obs_times.insert(std::make_pair(topic, utimes));
+    ROS_INFO("Adding Topic %s to location timeout map", topic.c_str());
+  }
+  else{
+    ROS_INFO("Topic %s already present", topic.c_str());
+  }
+}
+
+void GridmapLocations::resize(int new_size){
+  if(size != new_size){
+    size = new_size; 
+    std::map<std::string, double *>::iterator it; 
+    for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
+      delete []it->second;
+      it->second = new double[size];
+    }
+  }
+  reset();
+}
+    
+inline double *GridmapLocations::get_values(std::string topic){
+  if(last_obs_times.find(topic) == last_obs_times.end()){
+    addTopic(topic); 
+  }
+      
+  std::map<std::string, double *>::iterator it = last_obs_times.find(topic); 
+  assert(it != last_obs_times.end());
+  assert(it->second != NULL);
+  return it->second; 
+}
+
+void GridmapLocations::reset(){
+  std::map<std::string, double *>::iterator it; 
+  for(it = last_obs_times.begin(); it != last_obs_times.end(); it++){
+    for(int i=0; i < size; i++){
+      it->second[i] = -1;
+    }
+  }
 }
 
 }
