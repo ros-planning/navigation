@@ -68,6 +68,7 @@ namespace base_local_planner {
         setup_ = true;
       }
       tc_->reconfigure(config);
+      reached_goal_ = false;
   }
 
   TrajectoryPlannerROS::TrajectoryPlannerROS() :
@@ -202,7 +203,7 @@ namespace base_local_planner {
       max_vel_th_ = max_rotational_vel;
       min_vel_th_ = -1.0 * max_rotational_vel;
       private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
-
+      reached_goal_ = false;
       backup_vel = -0.1;
       if(private_nh.getParam("backup_vel", backup_vel))
         ROS_WARN("The backup_vel parameter has been deprecated in favor of the escape_vel parameter. To switch, just change the parameter name in your configuration files.");
@@ -367,10 +368,11 @@ namespace base_local_planner {
     //reset the global plan
     global_plan_.clear();
     global_plan_ = orig_global_plan;
-
+    
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
     xy_tolerance_latch_ = false;
-
+    //reset the at goal flag
+    reached_goal_ = false;
     return true;
   }
 
@@ -441,6 +443,7 @@ namespace base_local_planner {
         cmd_vel.angular.z = 0.0;
         rotating_to_goal_ = false;
         xy_tolerance_latch_ = false;
+        reached_goal_ = true;
       } else {
         //we need to call the next two lines to make sure that the trajectory
         //planner updates its path distance and goal distance grids
@@ -596,19 +599,7 @@ namespace base_local_planner {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-
-    //copy over the odometry information
-    nav_msgs::Odometry base_odom;
-    odom_helper_.getOdom(base_odom);
-    tf::Stamped<tf::Pose> global_pose;
-    costmap_ros_->getRobotPose(global_pose);
-    return base_local_planner::isGoalReached(*tf_,
-        global_plan_,
-        *costmap_,
-        global_frame_,
-        global_pose,
-        base_odom,
-        rot_stopped_velocity_, trans_stopped_velocity_,
-        xy_goal_tolerance_, yaw_goal_tolerance_);
+    //return flag set in controller
+    return reached_goal_; 
   }
 };
