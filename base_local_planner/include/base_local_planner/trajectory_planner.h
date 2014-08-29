@@ -100,6 +100,8 @@ namespace base_local_planner {
        * @param backup_vel The velocity to use while backing up
        * @param dwa Set this to true to use the Dynamic Window Approach, false to use acceleration limits
        * @param heading_scoring Set this to true to score trajectories based on the robot's heading after 1 timestep
+       * @param heading_scoring_on_rotate Set this to true to score rotate-in-place trajectories
+       * @param heading_scale - gain for heading difference
        * @param heading_scoring_timestep How far to look ahead in time when we score heading based trajectories
        * @param meter_scoring adapt parameters to costmap resolution
        * @param simple_attractor Set this to true to allow simple attraction to a goal point instead of intelligent cost propagation
@@ -120,6 +122,7 @@ namespace base_local_planner {
           double max_vel_th = 1.0, double min_vel_th = -1.0, double min_in_place_vel_th = 0.4,
           double backup_vel = -0.1,
           bool dwa = false, bool heading_scoring = false, double heading_scoring_timestep = 0.1,
+          bool heading_scoring_on_rotate=false, double heading_scale=0.001, 
           bool meter_scoring = true,
           bool simple_attractor = false,
           std::vector<double> y_vels = std::vector<double>(0),
@@ -337,6 +340,9 @@ namespace base_local_planner {
       bool dwa_;  ///< @brief Should we use the dynamic window approach?
       bool heading_scoring_; ///< @brief Should we score based on the rollout approach or the heading approach
       double heading_scoring_timestep_; ///< @brief How far to look ahead in time when we score a heading
+
+      bool heading_scoring_on_rotate_;
+      double heading_scale_;
       bool simple_attractor_;  ///< @brief Enables simple attraction to a goal point
 
       std::vector<double> y_vels_; ///< @brief Y velocities to explore
@@ -410,7 +416,6 @@ namespace base_local_planner {
       double lineCost(int x0, int x1, int y0, int y1);
       double pointCost(int x, int y);
       double headingDiff(int cell_x, int cell_y, double x, double y, double heading);
-      double headingDiffOriginal(int cell_x, int cell_y, double x, double y, double heading);
   };
 };
 

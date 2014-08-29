@@ -98,8 +98,8 @@ namespace base_local_planner {
       trans_stopped_velocity_ = 1e-2;
       double sim_time, sim_granularity, angular_sim_granularity;
       int vx_samples, vtheta_samples;
-      double pdist_scale, gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta;
-      bool holonomic_robot, dwa, simple_attractor, heading_scoring;
+      double pdist_scale, gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, heading_scale;
+      bool holonomic_robot, dwa, simple_attractor, heading_scoring, heading_scoring_on_rotate;
       double heading_scoring_timestep;
       double max_vel_x, min_vel_x;
       double backup_vel;
@@ -170,6 +170,7 @@ namespace base_local_planner {
       private_nh.param("vtheta_samples", vtheta_samples, 20);
 
       private_nh.param("path_distance_bias", pdist_scale, 0.6);
+      private_nh.param("heading_scale", heading_scale, 0.001);
       private_nh.param("goal_distance_bias", gdist_scale, 0.8);
       private_nh.param("occdist_scale", occdist_scale, 0.01);
 
@@ -219,6 +220,7 @@ namespace base_local_planner {
       private_nh.param("world_model", world_model_type, std::string("costmap"));
       private_nh.param("dwa", dwa, true);
       private_nh.param("heading_scoring", heading_scoring, false);
+      private_nh.param("heading_scoring_on_rotate", heading_scoring_on_rotate, false);
       private_nh.param("heading_scoring_timestep", heading_scoring_timestep, 0.8);
 
       simple_attractor = false;
@@ -237,10 +239,13 @@ namespace base_local_planner {
       footprint_spec_ = costmap_ros_->getRobotFootprint();
 
       tc_ = new TrajectoryPlanner(*world_model_, *costmap_, footprint_spec_,
-          acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
-          gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
-          max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
-          dwa, heading_scoring, heading_scoring_timestep, meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
+                                  acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, 
+                                  vx_samples, vtheta_samples, pdist_scale, gdist_scale, 
+                                  occdist_scale, heading_lookahead, oscillation_reset_dist, 
+                                  escape_reset_dist, escape_reset_theta, holonomic_robot,
+                                  max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
+                                  dwa, heading_scoring, heading_scoring_timestep, heading_scoring_on_rotate, heading_scale, 
+                                  meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
       
       map_viz_.initialize(name, global_frame_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
