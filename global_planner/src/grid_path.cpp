@@ -48,6 +48,9 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
     int start_index = getIndex(start_x, start_y);
 
     path.push_back(current);
+    int c = 0;
+    int ns = xs_ * ys_;
+    
     while (getIndex(current.first, current.second) != start_index) {
         float min_val = 1e10;
         int min_x = 0, min_y = 0;
@@ -69,6 +72,10 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
         current.first = min_x;
         current.second = min_y;
         path.push_back(current);
+        
+        if(c++>ns*4){
+            return false;
+        }
 
     }
     return true;
