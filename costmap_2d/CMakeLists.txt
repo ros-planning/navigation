@@ -23,6 +23,7 @@ find_package(catkin REQUIRED
 
 find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
     include
@@ -30,6 +31,7 @@ include_directories(
     ${EIGEN_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
 )
 
 add_definitions(${EIGEN_DEFINITIONS})
@@ -102,6 +104,7 @@ target_link_libraries(costmap_2d
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 add_library(layers
