@@ -116,6 +116,14 @@ public:
   unsigned char getCost(unsigned int mx, unsigned int my) const;
 
   /**
+   * @brief  Get the last update timestamp of the cell
+   * @param mx The x coordinate of the cell
+   * @param my The y coordinate of the cell
+   * @return The last update timestamp of the cell (seconds)
+   */
+  double getTimeStamp(unsigned int mx, unsigned int my) const;
+
+  /**
    * @brief  Set the cost of a cell in the costmap
    * @param mx The x coordinate of the cell
    * @param my The y coordinate of the cell
@@ -426,20 +434,25 @@ protected:
   unsigned char* costmap_;
   unsigned char default_value_;
 
+  double* timestamps_; // Timestamp last update
+
   class MarkCell
   {
   public:
-    MarkCell(unsigned char* costmap, unsigned char value) :
-        costmap_(costmap), value_(value)
+    MarkCell(unsigned char* costmap, double* timestamps, unsigned char value, double time) :
+        costmap_(costmap), timestamps_(timestamps), value_(value), time_(time)
     {
     }
     inline void operator()(unsigned int offset)
     {
       costmap_[offset] = value_;
+      timestamps_[offset] = time_;
     }
   private:
     unsigned char* costmap_;
+    double* timestamps_;
     unsigned char value_;
+    double time_;
   };
 
   class PolygonOutlineCells

@@ -45,7 +45,7 @@ namespace costmap_2d
 Costmap2D::Costmap2D(unsigned int cells_size_x, unsigned int cells_size_y, double resolution,
                      double origin_x, double origin_y, unsigned char default_value) :
     size_x_(cells_size_x), size_y_(cells_size_y), resolution_(resolution), origin_x_(origin_x),
-    origin_y_(origin_y), costmap_(NULL), default_value_(default_value)
+    origin_y_(origin_y), costmap_(NULL), timestamps_(NULL), default_value_(default_value)
 {
   access_ = new mutex_t();
 
@@ -60,6 +60,8 @@ void Costmap2D::deleteMaps()
   boost::unique_lock<mutex_t> lock(*access_);
   delete[] costmap_;
   costmap_ = NULL;
+  delete[] timestamps_;
+  timestamps_ = NULL;
 }
 
 void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y)
@@ -67,6 +69,7 @@ void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y)
   boost::unique_lock<mutex_t> lock(*access_);
   delete[] costmap_;
   costmap_ = new unsigned char[size_x * size_y];
+  timestamps_ = new double[size_x * size_y];
 }
 
 void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resolution,
@@ -88,6 +91,7 @@ void Costmap2D::resetMaps()
 {
   boost::unique_lock<mutex_t> lock(*access_);
   memset(costmap_, default_value_, size_x_ * size_y_ * sizeof(unsigned char));
+  memset(timestamps_, -1.0, size_x_ * size_y_ * sizeof(double));
 }
 
 void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn)
@@ -95,7 +99,10 @@ void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsi
   boost::unique_lock<mutex_t> lock(*(access_));
   unsigned int len = xn - x0;
   for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
+  {
     memset(costmap_ + y, default_value_, len * sizeof(unsigned char));
+    memset(timestamps_ + y, -1.0, len * sizeof(double));
+  }
 }
 
 bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x,
@@ -131,6 +138,7 @@ bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, dou
 
   // copy the window of the static map and the costmap that we're taking
   copyMapRegion(map.costmap_, lower_left_x, lower_left_y, map.size_x_, costmap_, 0, 0, size_x_, size_x_, size_y_);
+  copyMapRegion(map.timestamps_, lower_left_x, lower_left_y, map.size_x_, timestamps_, 0, 0, size_x_, size_x_, size_y_);
   return true;
 }
 
@@ -154,12 +162,14 @@ Costmap2D& Costmap2D::operator=(const Costmap2D& map)
 
   // copy the cost map
   memcpy(costmap_, map.costmap_, size_x_ * size_y_ * sizeof(unsigned char));
+  memcpy(timestamps_, map.timestamps_, size_x_ * size_y_ * sizeof(double));
 
   return *this;
 }
 
 Costmap2D::Costmap2D(const Costmap2D& map) :
-    costmap_(NULL)
+    costmap_(NULL),
+    timestamps_(NULL)
 {
   access_ = new mutex_t();
   *this = map;
@@ -167,7 +177,7 @@ Costmap2D::Costmap2D(const Costmap2D& map) :
 
 // just initialize everything to NULL by default
 Costmap2D::Costmap2D() :
-    size_x_(0), size_y_(0), resolution_(0.0), origin_x_(0.0), origin_y_(0.0), costmap_(NULL)
+    size_x_(0), size_y_(0), resolution_(0.0), origin_x_(0.0), origin_y_(0.0), costmap_(NULL), timestamps_(NULL)
 {
   access_ = new mutex_t();
 }
@@ -194,9 +204,15 @@ unsigned char Costmap2D::getCost(unsigned int mx, unsigned int my) const
   return costmap_[getIndex(mx, my)];
 }
 
+double Costmap2D::getTimeStamp(unsigned int mx, unsigned int my) const
+{
+  return timestamps_[getIndex(mx, my)];
+}
+
 void Costmap2D::setCost(unsigned int mx, unsigned int my, unsigned char cost)
 {
   costmap_[getIndex(mx, my)] = cost;
+  timestamps_[getIndex(mx, my)] = ros::Time::now().toSec();
 }
 
 void Costmap2D::mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy) const
@@ -290,9 +306,11 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
 
   // we need a map to store the obstacles in the window temporarily
   unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
+  double* local_map_timestamps = new double[cell_size_x * cell_size_y];
 
   // copy the local window in the costmap to the local map
   copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
+  copyMapRegion(timestamps_, lower_left_x, lower_left_y, size_x_, local_map_timestamps, 0, 0, cell_size_x, cell_size_x, cell_size_y);
 
   // now we'll set the costmap to be completely unknown if we track unknown space
   resetMaps();
@@ -307,6 +325,7 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
 
   // now we want to copy the overlapping information back into the map, but in its new location
   copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+  copyMapRegion(local_map_timestamps, 0, 0, cell_size_x, timestamps_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
 
   // make sure to clean up
   delete[] local_map;
@@ -337,6 +356,7 @@ bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& po
   {
     unsigned int index = getIndex(polygon_cells[i].x, polygon_cells[i].y);
     costmap_[index] = cost_value;
+    timestamps_[index] = ros::Time::now().toSec();
   }
   return true;
 }

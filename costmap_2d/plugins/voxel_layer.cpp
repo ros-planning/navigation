@@ -181,9 +181,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
       // mark the cell in the voxel grid and check if we should also mark it in the costmap
       if (voxel_grid_.markVoxelInMap(mx, my, mz, mark_threshold_))
       {
-        unsigned int index = getIndex(mx, my);
-
-        costmap_[index] = LETHAL_OBSTACLE;
+        setCost(mx, my, LETHAL_OBSTACLE);
         touch(double(*iter_x), double(*iter_y), min_x, min_y, max_x, max_y);
       }
     }

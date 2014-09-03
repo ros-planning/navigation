@@ -114,6 +114,11 @@ public:
   void clearStaticObservations(bool marking, bool clearing);
 
 protected:
+
+  void checkTimeStamps(double* min_x, double* min_y, double* max_x, double* max_y);
+  double free_to_default_time_;
+  double occupied_to_default_time_;
+
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
   /**
