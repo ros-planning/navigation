@@ -321,6 +321,7 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
 
   //make sure to clean up
   delete[] local_map;
+  delete[] local_map_timestamps;
 }
 
 bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value)
