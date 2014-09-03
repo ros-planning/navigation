@@ -54,6 +54,10 @@ namespace costmap_2d
 InflationLayer::InflationLayer()
   : resolution_(0)
   , inflation_radius_(0)
+  , dilation_radius_(0)
+  , target_cell_value_(0)
+  , dilation_cell_value_ (0)
+  , use_footprint_(true)
   , inscribed_radius_(0)
   , weight_(0)
   , inflate_unknown_(false)
@@ -103,6 +107,18 @@ void InflationLayer::onInitialize()
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
   setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
+
+  use_footprint_ = config.use_footprint;
+  if (!use_footprint_)
+    dilation_radius_ = config.dilation_radius;
+
+  target_cell_value_ = config.target_cell_value;
+  dilation_cell_value_ = config.dilation_cell_value;
+
+  inflation_radius_ = config.inflation_radius;
+  cell_inflation_radius_ = cellDistance(inflation_radius_);
+  need_reinflation_ = true;
+  computeCaches();
 
   if (enabled_ != config.enabled || inflate_unknown_ != config.inflate_unknown) {
     enabled_ = config.enabled;
@@ -163,14 +179,17 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
 
 void InflationLayer::onFootprintChanged()
 {
-  inscribed_radius_ = layered_costmap_->getInscribedRadius();
-  cell_inflation_radius_ = cellDistance(inflation_radius_);
-  computeCaches();
-  need_reinflation_ = true;
+  if (use_footprint_)
+  {
+    dilation_radius_ = layered_costmap_->getInscribedRadius();
+    cell_inflation_radius_ = cellDistance(inflation_radius_ );
+    computeCaches();
+    need_reinflation_ = true;
 
-  ROS_DEBUG("InflationLayer::onFootprintChanged(): num footprint points: %lu,"
+    ROS_DEBUG("InflationLayer::onFootprintChanged(): num footprint points: %lu,"
             " inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_);
+  }
 }
 
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -224,7 +243,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
     {
       int index = master_grid.getIndex(i, j);
       unsigned char cost = master_array[index];
-      if (cost == LETHAL_OBSTACLE)
+      if (cost == target_cell_value_)
       {
         obs_bin.push_back(CellData(index, i, j, i, j));
       }
@@ -259,10 +278,16 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
       // assign the cost associated with the distance from an obstacle to the cell
       unsigned char cost = costLookup(mx, my, sx, sy);
       unsigned char old_cost = master_array[index];
-      if (old_cost == NO_INFORMATION && (inflate_unknown_ ? (cost > FREE_SPACE) : (cost >= INSCRIBED_INFLATED_OBSTACLE)))
-        master_array[index] = cost;
-      else
-        master_array[index] = std::max(old_cost, cost);
+      if (old_cost != target_cell_value_ && old_cost == LETHAL_OBSTACLE && (inflate_unknown_ ? (cost > FREE_SPACE) : (cost >= INSCRIBED_INFLATED_OBSTACLE)))
+        return;
+
+      if (old_cost != target_cell_value_)
+      {
+        if (old_cost == costmap_2d::NO_INFORMATION && cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+          master_grid.setCost(mx, my, cost);
+        else
+          master_grid.setCost(mx, my, std::max(old_cost, cost));
+      }
 
       // attempt to put the neighbors of the current cell onto the inflation list
       if (mx > 0)

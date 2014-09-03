@@ -105,15 +105,15 @@ public:
   {
     unsigned char cost = 0;
     if (distance == 0)
-      cost = LETHAL_OBSTACLE;
-    else if (distance * resolution_ <= inscribed_radius_)
-      cost = INSCRIBED_INFLATED_OBSTACLE;
+      cost = target_cell_value_;
+    else if (distance * resolution_ <= dilation_radius_)
+      cost = dilation_cell_value_;
     else
     {
       // make sure cost falls off by Euclidean distance
       double euclidean_distance = distance * resolution_;
-      double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
-      cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
+      double factor = exp(-1.0 * weight_ * (euclidean_distance - dilation_radius_));
+      cost = (unsigned char)((dilation_cell_value_ - 1) * factor);
     }
     return cost;
   }
@@ -177,6 +177,10 @@ private:
 
   inline void enqueue(unsigned int index, unsigned int mx, unsigned int my,
                       unsigned int src_x, unsigned int src_y);
+
+  double dilation_radius_;
+  unsigned char target_cell_value_, dilation_cell_value_;
+  bool use_footprint_;
 
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
