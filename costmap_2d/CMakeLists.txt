@@ -54,6 +54,7 @@ generate_dynamic_reconfigure_options(
   cfg/ObstaclePlugin.cfg
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
+  cfg/InflationPluginFull.cfg
   cfg/VoxelPlugin.cfg
 )
 
@@ -106,6 +107,7 @@ target_link_libraries(costmap_2d
 add_library(layers
   plugins/footprint_layer.cpp
   plugins/inflation_layer.cpp
+  plugins/inflation_layer_full.cpp
   plugins/obstacle_layer.cpp
   plugins/static_layer.cpp
   plugins/voxel_layer.cpp
