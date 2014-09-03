@@ -4,16 +4,17 @@
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
-using costmap_2d::LETHAL_OBSTACLE;
-using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
-using costmap_2d::NO_INFORMATION;
 
 namespace costmap_2d
 {
 
 InflationLayer::InflationLayer()
-  : inflation_radius_( 0 )
-  , weight_( 0 )
+  : inflation_radius_(0)
+  , dilation_radius_(0)
+  , cost_scaling_factor_(0)
+  , target_cell_value_(0)
+  , dilation_cell_value_ (0)
+  , use_footprint_(true)
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
@@ -50,14 +51,18 @@ void InflationLayer::onInitialize()
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
-  if (weight_ != config.cost_scaling_factor || inflation_radius_ != config.inflation_radius)
-  {
-    inflation_radius_ = config.inflation_radius;
-    cell_inflation_radius_ = cellDistance(inflation_radius_);
-    weight_ = config.cost_scaling_factor;
-    need_reinflation_ = true;
-    computeCaches();
-  }
+  use_footprint_ = config.use_footprint;
+  if (!use_footprint_)
+    dilation_radius_ = config.dilation_radius;
+
+  target_cell_value_ = config.target_cell_value;
+  dilation_cell_value_ = config.dilation_cell_value;
+
+  inflation_radius_ = config.inflation_radius;
+  cell_inflation_radius_ = cellDistance(inflation_radius_);
+  cost_scaling_factor_ = config.cost_scaling_factor;
+  need_reinflation_ = true;
+  computeCaches();
 
   if (enabled_ != config.enabled) {
     enabled_ = config.enabled;
@@ -97,13 +102,16 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
 
 void InflationLayer::onFootprintChanged()
 {
-  inscribed_radius_ = layered_costmap_->getInscribedRadius();
-  cell_inflation_radius_ = cellDistance( inflation_radius_ );
-  computeCaches();
-  need_reinflation_ = true;
+  if (use_footprint_)
+  {
+    dilation_radius_ = layered_costmap_->getInscribedRadius();
+    cell_inflation_radius_ = cellDistance( inflation_radius_ );
+    computeCaches();
+    need_reinflation_ = true;
 
-  ROS_DEBUG( "InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
-             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_ );
+    ROS_DEBUG( "InflationLayer::onFootprintChanged(): num footprint points: %lu, inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
+             layered_costmap_->getFootprint().size(), dilation_radius_, inflation_radius_ );
+  }
 }
 
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
@@ -141,7 +149,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
     {
       int index = master_grid.getIndex(i, j);
       unsigned char cost = master_array[index];
-      if (cost == LETHAL_OBSTACLE)
+      if (cost == target_cell_value_)
       {
         enqueue(master_array, index, i, j, i, j);
       }
@@ -190,6 +198,8 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
   //set the cost of the cell being inserted
   if (!seen_[index])
   {
+    seen_[index] = true;
+
     //we compute our distance table one cell further than the inflation radius dictates so we can make the check below
     double distance = distanceLookup(mx, my, src_x, src_y);
 
@@ -201,12 +211,18 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
     unsigned char cost = costLookup(mx, my, src_x, src_y);
     unsigned char old_cost = grid[index];
 
-    if (old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
-      grid[index] = cost;
-    else
-      grid[index] = std::max(old_cost, cost);
+    if (old_cost != target_cell_value_ && old_cost >= INSCRIBED_INFLATED_OBSTACLE && old_cost < NO_INFORMATION)
+      return;
+
+    if (old_cost != target_cell_value_)
+    {
+      if (old_cost == costmap_2d::NO_INFORMATION)
+        grid[index] = cost;
+      else
+        grid[index] = std::max(old_cost, cost);
+    }
+
     //push the cell data onto the queue and mark
-    seen_[index] = true;
     CellData data(distance, index, mx, my, src_x, src_y);
     inflation_queue_.push(data);
   }
