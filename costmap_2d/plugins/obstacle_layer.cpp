@@ -200,6 +200,8 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
   enabled_ = config.enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
+  occupied_to_default_time_ = config.occupied_to_default_time;
+  free_to_default_time_ = config.free_to_default_time;
 }
 
 void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
@@ -288,6 +290,34 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
   buffer->unlock();
 }
 
+void ObstacleLayer::checkTimeStamps(double* min_x, double* min_y, double* max_x, double* max_y)
+{
+    if (free_to_default_time_ < 0 && occupied_to_default_time_ < 0)
+        return;
+
+    double wx, wy;
+    for (unsigned int mx = 0; mx < getSizeInCellsX(); ++mx)
+    {
+        for (unsigned int my = 0; my < getSizeInCellsY(); ++my)
+        {
+            unsigned char value = getCost(mx, my);
+
+            if (value == FREE_SPACE || value == LETHAL_OBSTACLE)
+            {
+                double dt = ros::Time::now().toSec() - getTimeStamp(mx, my);
+
+                if ( (dt > free_to_default_time_ && value == FREE_SPACE) ||
+                     (dt > occupied_to_default_time_ && value == LETHAL_OBSTACLE) )
+                {
+                    setCost(mx, my, NO_INFORMATION);
+                    mapToWorld(mx, my, wx, wy);
+                    touch(wx, wy, min_x, min_y, max_x, max_y);
+                }
+            }
+        }
+    }
+}
+
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
@@ -296,6 +326,8 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   if (!enabled_)
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);
+
+  checkTimeStamps(min_x, min_y, max_x, max_y);
 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
@@ -354,8 +386,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
         continue;
       }
 
-      unsigned int index = getIndex(mx, my);
-      costmap_[index] = LETHAL_OBSTACLE;
+      setCost(mx, my, LETHAL_OBSTACLE);
       touch(px, py, min_x, min_y, max_x, max_y);
     }
   }
@@ -497,7 +528,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
       continue;
 
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
-    MarkCell marker(costmap_, FREE_SPACE);
+    MarkCell marker(costmap_, timestamps_, FREE_SPACE, ros::Time::now().toSec());
     //and finally... we can execute our trace to clear obstacles along that line
     raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
 

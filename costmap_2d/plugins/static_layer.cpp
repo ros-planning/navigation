@@ -138,7 +138,7 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
     for (unsigned int j = 0; j < size_x; ++j)
     {
       unsigned char value = new_map->data[index];
-      costmap_[index] = interpretValue(value);
+      setCost(j, i, interpretValue(value));
       ++index;
     }
   }
@@ -157,8 +157,7 @@ void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& up
         unsigned int index_base = (update->y + y) * update->width;
         for (unsigned int x = 0; x < update->width ; x++)
         {
-            unsigned int index = index_base + x + update->x;
-            costmap_[index] = interpretValue( update->data[di++] );
+            setCost(x, y, update->data[di++]);
         }
     }
     x_ = update->x;
