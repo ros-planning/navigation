@@ -329,7 +329,7 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
     map_update_thread_ = NULL;
   }
   map_update_thread_shutdown_ = false;
-  double map_update_frequency = config.update_frequency;
+  map_update_frequency_ = config.update_frequency;
 
   double map_publish_frequency = config.publish_frequency;
   if (map_publish_frequency > 0)
@@ -361,8 +361,8 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
   old_config_ = config;
 
   // only construct the thread if the frequency is positive
-  if(map_update_frequency > 0.0)
-    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+  if(map_update_frequency_ > 0.0)
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency_));
 }
 
 void Costmap2DROS::readFootprintFromConfig(const costmap_2d::Costmap2DConfig &new_config,
@@ -447,7 +447,7 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
     double start_t, end_t, t_diff;
     gettimeofday(&start, NULL);
     #endif
-    
+
     updateMap();
 
     #ifdef HAVE_SYS_TIME_H
@@ -457,7 +457,7 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
     t_diff = end_t - start_t;
     ROS_DEBUG("Map update time: %.9f", t_diff);
     #endif
-    
+
     if (publish_cycle.toSec() > 0 && layered_costmap_->isInitialized())
     {
       unsigned int x0, y0, xn, yn;
