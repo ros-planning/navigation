@@ -260,7 +260,7 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
     delete map_update_thread_;
   }
   map_update_thread_shutdown_ = false;
-  double map_update_frequency = config.update_frequency;
+  map_update_frequency_ = config.update_frequency;
 
   double map_publish_frequency = config.publish_frequency;
   if (map_publish_frequency > 0)
@@ -291,7 +291,7 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
 
   old_config_ = config;
 
-  map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+  map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency_));
 }
 
 void Costmap2DROS::readFootprintFromConfig( const costmap_2d::Costmap2DConfig &new_config,

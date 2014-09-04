@@ -183,6 +183,16 @@ public:
   }
 
   /**
+   * @brief  Returns the costmap 2d pblisher
+   */
+  Costmap2DPublisher* getPublisher() { return publisher_; }
+
+  /**
+   * @brief  Returns the map update frequency
+   */
+  double getMapUpdateFrequency() { return map_update_frequency_; }
+
+  /**
    * @brief  Given a pose, build the oriented footprint of the robot
    * @param  x The x position of the robot
    * @param  y The y position of the robot
@@ -293,6 +303,7 @@ private:
   std::vector<geometry_msgs::Point> padded_footprint_;
   float footprint_padding_;
   costmap_2d::Costmap2DConfig old_config_;
+  double map_update_frequency_;
 };
 // class Costmap2DROS
 }// namespace costmap_2d
