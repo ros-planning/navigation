@@ -46,6 +46,8 @@
 
 #include <ros/ros.h>
 
+#define PI 3.14159
+
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dwa_local_planner {
@@ -69,16 +71,28 @@ namespace dwa_local_planner {
 
     gdist_scale_ = config.goal_distance_bias;
     goal_costs_.setScale(resolution * gdist_scale_ * 0.5);
-    goal_front_costs_.setScale(resolution * gdist_scale_ * 0.5);
+//    goal_front_costs_.setScale(resolution * gdist_scale_ * 0.5);
 
     occdist_scale_ = config.occdist_scale;
     obstacle_costs_.setScale(resolution * occdist_scale_);
 
     stop_time_buffer_ = config.stop_time_buffer;
-    oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist, config.oscillation_reset_angle);
-    forward_point_distance_ = config.forward_point_distance;
-    goal_front_costs_.setXShift(forward_point_distance_);
-    alignment_costs_.setXShift(forward_point_distance_);
+//    oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist, config.oscillation_reset_angle);
+//    forward_point_distance_ = config.forward_point_distance;
+//    goal_front_costs_.setXShift(forward_point_distance_);
+//    alignment_costs_.setXShift(forward_point_distance_);
+
+    alignment_costs_.setScale(config.orientation_bias);
+    cmd_vel_costs_.setCoefficients(config.pen_pos_x, config.pen_neg_x,
+                                   config.pen_pos_y, config.pen_neg_y,
+                                   config.pen_pos_theta, config.pen_neg_theta);
+    cmd_vel_costs_.setScale(1.0);
+
+    /// Lookahead distance is the maximum that can be obtained in one simulation, the 'ideal' situation
+    lookahead_dist_ = config.max_trans_vel * config.sim_time;
+
+    /// Switch distance
+    switch_dist_ = config.switch_distance;
  
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
@@ -117,14 +131,15 @@ namespace dwa_local_planner {
       planner_util_(planner_util),
       obstacle_costs_(planner_util->getCostmap()),
       path_costs_(planner_util->getCostmap()),
-      goal_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
-      goal_front_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
-      alignment_costs_(planner_util->getCostmap())
+      goal_costs_(planner_util->getCostmap(), 0.0, 0.0, true)
+//    ,
+//      goal_front_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
+//      alignment_costs_(planner_util->getCostmap())
   {
     ros::NodeHandle private_nh("~/" + name);
 
-    goal_front_costs_.setStopOnFailure( false );
-    alignment_costs_.setStopOnFailure( false );
+//    goal_front_costs_.setStopOnFailure( false );
+//    alignment_costs_.setStopOnFailure( false );
 
     //Assuming this planner is being run within the navigation stack, we can
     //just do an upward search for the frequency at which its being run. This
@@ -144,7 +159,7 @@ namespace dwa_local_planner {
     }
     ROS_INFO("Sim period is set to %.2f", sim_period_);
 
-    oscillation_costs_.resetOscillationFlags();
+//    oscillation_costs_.resetOscillationFlags();
 
     bool sum_scores;
     private_nh.param("sum_scores", sum_scores, false);
@@ -165,9 +180,9 @@ namespace dwa_local_planner {
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
-    critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
+//    critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
     critics.push_back(&obstacle_costs_); // discards trajectories that move into obstacles
-    critics.push_back(&goal_front_costs_); // prefers trajectories that make the nose go towards (local) nose goal
+//    critics.push_back(&goal_front_costs_); // prefers trajectories that make the nose go towards (local) nose goal
     critics.push_back(&alignment_costs_); // prefers trajectories that keep the robot nose on nose path
     critics.push_back(&path_costs_); // prefers trajectories on global path
     critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
@@ -202,7 +217,7 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
-    oscillation_costs_.resetOscillationFlags();
+//    oscillation_costs_.resetOscillationFlags();
     return planner_util_->setPlan(orig_global_plan);
   }
 
@@ -214,7 +229,7 @@ namespace dwa_local_planner {
       Eigen::Vector3f pos,
       Eigen::Vector3f vel,
       Eigen::Vector3f vel_samples){
-    oscillation_costs_.resetOscillationFlags();
+//    oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
     Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
@@ -245,44 +260,167 @@ namespace dwa_local_planner {
       global_plan_[i] = new_plan[i];
     }
 
-    // costs for going away from path
-    path_costs_.setTargetPoses(global_plan_);
+//    // costs for going away from path
+//    path_costs_.setTargetPoses(global_plan_);
 
-    // costs for not going towards the local goal as much as possible
-    goal_costs_.setTargetPoses(global_plan_);
+//    // costs for not going towards the local goal as much as possible
+//    goal_costs_.setTargetPoses(global_plan_);
 
-    // alignment costs
-    geometry_msgs::PoseStamped goal_pose = global_plan_.back();
+//    // alignment costs
+//    geometry_msgs::PoseStamped goal_pose = global_plan_.back();
 
-    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
-    double sq_dist =
-        (pos[0] - goal_pose.pose.position.x) * (pos[0] - goal_pose.pose.position.x) +
-        (pos[1] - goal_pose.pose.position.y) * (pos[1] - goal_pose.pose.position.y);
+//    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
+//    double sq_dist =
+//        (pos[0] - goal_pose.pose.position.x) * (pos[0] - goal_pose.pose.position.x) +
+//        (pos[1] - goal_pose.pose.position.y) * (pos[1] - goal_pose.pose.position.y);
 
-    // we want the robot nose to be drawn to its final position
-    // (before robot turns towards goal orientation), not the end of the
-    // path for the robot center. Choosing the final position after
-    // turning towards goal orientation causes instability when the
-    // robot needs to make a 180 degree turn at the end
-    std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
-    double angle_to_goal = atan2(goal_pose.pose.position.y - pos[1], goal_pose.pose.position.x - pos[0]);
-    front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x +
-      forward_point_distance_ * cos(angle_to_goal);
-    front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + forward_point_distance_ *
-      sin(angle_to_goal);
+//    // we want the robot nose to be drawn to its final position
+//    // (before robot turns towards goal orientation), not the end of the
+//    // path for the robot center. Choosing the final position after
+//    // turning towards goal orientation causes instability when the
+//    // robot needs to make a 180 degree turn at the end
+//    std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
+//    double angle_to_goal = atan2(goal_pose.pose.position.y - pos[1], goal_pose.pose.position.x - pos[0]);
+//    front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x +
+//      forward_point_distance_ * cos(angle_to_goal);
+//    front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + forward_point_distance_ *
+//      sin(angle_to_goal);
 
-    goal_front_costs_.setTargetPoses(front_global_plan);
+//    goal_front_costs_.setTargetPoses(front_global_plan);
     
-    // keeping the nose on the path
-    if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
-      double resolution = planner_util_->getCostmap()->getResolution();
-      alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
-      // costs for robot being aligned with path (nose on path, not ju
-      alignment_costs_.setTargetPoses(global_plan_);
-    } else {
-      // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
-      alignment_costs_.setScale(0.0);
-    }
+//    // keeping the nose on the path
+//    if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
+//      double resolution = planner_util_->getCostmap()->getResolution();
+//      alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
+//      // costs for robot being aligned with path (nose on path, not ju
+//      alignment_costs_.setTargetPoses(global_plan_);
+//    } else {
+//      // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
+//      alignment_costs_.setScale(0.0);
+//    }
+
+    global_plan_.resize(new_plan.size());
+        for (unsigned int i = 0; i < new_plan.size(); ++i) {
+            global_plan_[i] = new_plan[i];
+        }
+
+        // ToDo: don't hardcode
+        double max_yaw_error = 1.6;
+
+        /// Find current index of global plan
+        //ROS_INFO("Finding current waypoint index");
+        Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
+        double MAX_PATH_DISTANCE_SQ = 1.0; // ToDo: don't hardcode?
+        double min_sq_dist = MAX_PATH_DISTANCE_SQ;
+        double orientation_error = 0.0;
+        int current_waypoint_index = -1;
+        for(unsigned int i = 0; i < global_plan_.size(); ++i) {
+
+            double sq_dist =
+                    (pos[0] - global_plan_[i].pose.position.x) * (pos[0] - global_plan_[i].pose.position.x) +
+                    (pos[1] - global_plan_[i].pose.position.y) * (pos[1] - global_plan_[i].pose.position.y);
+
+            if (sq_dist < min_sq_dist) {
+                current_waypoint_index = i;
+                min_sq_dist = sq_dist;
+            }
+        }
+
+        if (current_waypoint_index < 0) {
+            ROS_WARN("Global path is too far!");
+            return;
+        } else if (current_waypoint_index >= 0 && global_plan_.size() > 1){
+            double path_angle = atan2(global_plan_[current_waypoint_index+1].pose.position.y - global_plan_[current_waypoint_index].pose.position.y,
+                                 global_plan_[current_waypoint_index+1].pose.position.x - global_plan_[current_waypoint_index].pose.position.x);
+            orientation_error = path_angle - pos[2];
+            /// Limit between -PI and + PI
+            if (orientation_error < -PI) {orientation_error += 2*PI; }
+            else if (orientation_error >  PI) {orientation_error -= 2*PI; }
+            //ROS_INFO_COND(fabs(orientation_error) > max_yaw_error, "Path angle = %f, robot angle = %f, error = %f", path_angle, pos[2], orientation_error);
+        }
+        //ROS_INFO("Current waypoint = %u", current_waypoint_index);
+
+        /// Find index at lookahead distance
+        //ROS_INFO("Finding target waypoint index");
+        double waypoint_dist = 0.0;
+        unsigned int target_waypoint_index = current_waypoint_index+1;
+        for (unsigned int i = current_waypoint_index+1; i < global_plan_.size() && waypoint_dist < lookahead_dist_; i++) {
+            double sq_c_waypoint_dist =
+                    (global_plan_[i].pose.position.x - global_plan_[i-1].pose.position.x) * (global_plan_[i].pose.position.x - global_plan_[i-1].pose.position.x) +
+                    (global_plan_[i].pose.position.y - global_plan_[i-1].pose.position.y) * (global_plan_[i].pose.position.y - global_plan_[i-1].pose.position.y);
+            waypoint_dist += sqrt(sq_c_waypoint_dist);
+            target_waypoint_index = i;
+            //ROS_INFO("Target waypoint = %u, waypoint_dist = %f", target_waypoint_index, waypoint_dist);
+        }
+        //ROS_INFO("Target waypoint final = %u, waypoint_dist = %f", target_waypoint_index, waypoint_dist);
+
+        /// Determine state of the controller
+        static LocalPlannerState prev_state = Default;
+        // ToDo: can we make this more generic???
+        if (waypoint_dist < switch_dist_) {
+            state_ = Arrive;
+        } else if (fabs(orientation_error) > max_yaw_error || ( prev_state == Align && fabs(orientation_error) > (max_yaw_error/2) ) ) {
+            state_ = Align;
+        } else {
+            state_ = Default;
+        }
+        // To print state
+        if (prev_state != state_) {
+            ROS_INFO("State = %i", state_);
+            prev_state = state_;
+        }
+
+        /// Set path costs, goal costs, orientation costs, etc. accordingly
+        //ROS_INFO("Copying plan");
+        std::vector<geometry_msgs::PoseStamped> global_plan_cpart; // Part of the global plan that is currently relevant
+        global_plan_cpart.resize(target_waypoint_index-current_waypoint_index+1);
+        for (unsigned int i = 0; i < target_waypoint_index-current_waypoint_index+1; ++i) {
+            //ROS_INFO("Glength = %lu, Clength = %lu, index = %u", global_plan_.size(), global_plan_cpart.size(), i);
+            global_plan_cpart[i] = global_plan_[i+current_waypoint_index];
+        }
+
+        //ROS_INFO("Set path costs");
+
+        // costs for going away from path
+        path_costs_.setTargetPoses(global_plan_cpart);
+
+        // costs for not going towards the local goal as much as possible
+        goal_costs_.setTargetPoses(global_plan_cpart);
+
+        double theta_desired = 0.0;
+        switch (state_ ) {
+        case Default:
+            path_costs_.setScale(pdist_scale_);
+            goal_costs_.setScale(gdist_scale_);
+            cmd_vel_costs_.setScale(1.0);
+
+            /// Set desired orientation to global plan
+            theta_desired = atan2(global_plan_[target_waypoint_index].pose.position.y - global_plan_[target_waypoint_index-1].pose.position.y,
+                                  global_plan_[target_waypoint_index].pose.position.x - global_plan_[target_waypoint_index-1].pose.position.x);
+            break;
+
+        case Arrive:
+            /// Don't penalize sideways or backwards motion, don't care about path costs
+            path_costs_.setScale(0.0);
+            goal_costs_.setScale(0.1*gdist_scale_);
+            cmd_vel_costs_.setScale(0.0);
+
+            /// Set desired orientation to final goal
+            theta_desired = tf::getYaw(global_plan_[target_waypoint_index].pose.orientation);
+
+            break;
+
+        case Align:
+            path_costs_.setScale(0.0);
+            goal_costs_.setScale(0.0);
+            cmd_vel_costs_.setScale(0.0);
+
+            /// Set desired orientation to current index of global plan
+            theta_desired = orientation_error + pos[2];
+            break;
+        }
+
+        alignment_costs_.setDesiredOrientation(theta_desired);
   }
 
 
@@ -354,7 +492,7 @@ namespace dwa_local_planner {
     }
 
     // debrief stateful scoring functions
-    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_->getCurrentLimits().min_trans_vel);
+//    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_->getCurrentLimits().min_trans_vel);
 
     //if we don't have a legal trajectory, we'll just command zero
     if (result_traj_.cost_ < 0) {
