@@ -73,6 +73,11 @@ install(
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+install(
+    FILES robot_pose_ekf.launch example_with_gps.launch
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
 ## Tests are failing on OSX for an unknown reason
 include(CMakeDetermineSystem)
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
