@@ -41,7 +41,8 @@ catkin_package(
         roscpp
 )
 
-add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)
+file(GLOB_RECURSE HEADER_FILES include/*.h)
+add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp ${HEADER_FILES})
 target_link_libraries(dwa_local_planner base_local_planner ${catkin_LIBRARIES})
 add_dependencies(dwa_local_planner dwa_local_planner_gencfg)
 add_dependencies(dwa_local_planner nav_msgs_gencpp)

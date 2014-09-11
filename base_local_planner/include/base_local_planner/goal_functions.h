@@ -151,5 +151,8 @@ namespace base_local_planner {
   bool stopped(const nav_msgs::Odometry& base_odom, 
       const double& rot_stopped_velocity,
       const double& trans_stopped_velocity);
+  bool stopped(const tf::Stamped<tf::Pose>& robot_vel,
+      const double& rot_stopped_velocity,
+      const double& trans_stopped_velocity);
 };
 #endif

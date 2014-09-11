@@ -247,4 +247,14 @@ namespace base_local_planner {
       && fabs(base_odom.twist.twist.linear.x) <= trans_stopped_velocity
       && fabs(base_odom.twist.twist.linear.y) <= trans_stopped_velocity;
   }
+
+  bool stopped(const tf::Stamped<tf::Pose>& robot_vel, const double& rot_stopped_velocity, const double& trans_stopped_velocity){
+    nav_msgs::Odometry base_odom;
+    base_odom.twist.twist.linear.x = robot_vel.getOrigin().getX();
+    base_odom.twist.twist.linear.y = robot_vel.getOrigin().getY();
+    base_odom.twist.twist.angular.z = tf::getYaw(robot_vel.getRotation());
+    return fabs(base_odom.twist.twist.angular.z) <= rot_stopped_velocity
+      && fabs(base_odom.twist.twist.linear.x) <= trans_stopped_velocity
+      && fabs(base_odom.twist.twist.linear.y) <= trans_stopped_velocity;
+  }
 };
