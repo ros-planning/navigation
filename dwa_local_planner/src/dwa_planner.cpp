@@ -144,6 +144,8 @@ namespace dwa_local_planner {
         vsamples_[0] = vx_samp;
         vsamples_[1] = vy_samp;
         vsamples_[2] = vth_samp;
+
+        ROS_INFO("Samples: [x,y,th] , [%d,%d,%d]", vx_samp, vy_samp, vth_samp);
     }
 
     DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util) :
@@ -192,12 +194,8 @@ namespace dwa_local_planner {
         private_nh.param("sum_scores", sum_scores, false);
         obstacle_costs_.setSumScores(sum_scores);
 
-        private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
-
         std::string frame_id;
         private_nh.param("global_frame_id", frame_id, std::string("odom"));
-
-        traj_cloud_pub_.advertise(private_nh, "trajectory_cloud", 1);
 
         // set up all the cost functions that will be applied in order
         // (any function returning negative values will abort scoring, so the order can improve performance)
@@ -214,8 +212,6 @@ namespace dwa_local_planner {
         generator_list.push_back(&generator_);
 
         scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
-
-        private_nh.param("cheat_factor", cheat_factor_, 1.0);
     }
 
     geometry_msgs::PoseStamped getCurrentPlanPose(const tf::Stamped<tf::Pose>& robot_pose, const std::vector<geometry_msgs::PoseStamped>& plan)

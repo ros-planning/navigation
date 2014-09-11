@@ -145,9 +145,6 @@ namespace dwa_local_planner {
 
       pcl_ros::Publisher<base_local_planner::MapGridCostPoint> traj_cloud_pub_;
       void publishTrajectoryCloud(const std::vector<base_local_planner::Trajectory>& trajectories);
-      bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud
-
-      double cheat_factor_;
 
       LocalPlannerState determineState(double angle_error, double path_distance, double goal_distance);
 
