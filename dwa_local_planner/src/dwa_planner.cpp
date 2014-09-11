@@ -267,7 +267,7 @@ namespace dwa_local_planner {
         // To print state
         if (prev_state != state)
         {
-            ROS_INFO("State = %i", state);
+            ROS_INFO_STREAM("State = " << StateName[state]);
             prev_state = state;
         }
 
