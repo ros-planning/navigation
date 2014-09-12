@@ -20,6 +20,7 @@ public:
   bool prepare() {return true;}
 
   void setDesiredOrientation(double theta) {theta_desired_ = theta;}
+  double getDesiredOrientation() { return theta_desired_; }
 
 private:
 

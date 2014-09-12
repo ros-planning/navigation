@@ -105,41 +105,34 @@ namespace dwa_local_planner {
         */
         bool isGoalReached();
 
-        bool isInitialized() {
-            return initialized_;
-        }
-
     private:
-        /**
-        * @brief Callback to update the local planner's parameters based on dynamic reconfigure
-        */
+        ///< @brief Callback to update the local planner's parameters based on dynamic reconfigure
         void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
+        /// Helper functions
         bool getRobotState(tf::Stamped<tf::Pose>& robot_pose, tf::Stamped<tf::Pose>& robot_vel);
         bool getRobotStateAndLocalPlan(tf::Stamped<tf::Pose>& robot_pose, tf::Stamped<tf::Pose>& robot_vel, std::vector<geometry_msgs::PoseStamped>& local_plan);
 
-        void publishLocalPlan(const base_local_planner::Trajectory& path);
-        void publishLocalPlan();
+        /// for visualisation, publishers of the local plan and chosen trajectory
+        ros::Publisher l_plan_pub_, l_traj_pub_;
+        void publishTrajectory(const base_local_planner::Trajectory& traj); ///< @brief Converts the traj into a vector of stampedposes and publishes
 
-        tf::TransformListener* tf_; ///< @brief Used for transforming point clouds
-
-        // for visualisation, publishers of the local plan
-        ros::Publisher l_plan_pub_;
-
+        /// Planner utility
         base_local_planner::LocalPlannerUtil planner_util_;
 
-        boost::shared_ptr<DWAPlanner> dp_; ///< @brief The trajectory controller
+        boost::shared_ptr<DWAPlanner> dp_; ///< @brief The DWA Planner
 
+        /// Pointer to the environment representation
         costmap_2d::Costmap2DROS* costmap_ros_;
 
+        /// Reconfiguration
         dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
         dwa_local_planner::DWAPlannerConfig default_config_;
         bool setup_;
-
         bool initialized_;
 
+        /// To read the odometry
         base_local_planner::OdometryHelperRos odom_helper_;
-        std::string odom_topic_;
     };
 };
 #endif

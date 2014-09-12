@@ -67,22 +67,38 @@ namespace base_local_planner {
   }
 
   void prunePlan(const tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan){
-    ROS_ASSERT(global_plan.size() >= plan.size());
-    std::vector<geometry_msgs::PoseStamped>::iterator it = plan.begin();
-    std::vector<geometry_msgs::PoseStamped>::iterator global_it = global_plan.begin();
-    while(it != plan.end()){
-      const geometry_msgs::PoseStamped& w = *it;
-      // Fixed error bound of 2 meters for now. Can reduce to a portion of the map size or based on the resolution
-      double x_diff = global_pose.getOrigin().x() - w.pose.position.x;
-      double y_diff = global_pose.getOrigin().y() - w.pose.position.y;
-      double distance_sq = x_diff * x_diff + y_diff * y_diff;
-      if(distance_sq < 1){
-        ROS_DEBUG("Nearest waypoint to <%f, %f> is <%f, %f>\n", global_pose.getOrigin().x(), global_pose.getOrigin().y(), w.pose.position.x, w.pose.position.y);
-        break;
-      }
-      it = plan.erase(it);
-      global_it = global_plan.erase(global_it);
+    double min_plan_sq_dist = 1e6;
+    int current_waypoint_index = -1;
+
+    for(unsigned int i = 0; i < plan.size(); ++i) {
+        double sq_plan_dist = (global_pose.getOrigin().getX() - plan[i].pose.position.x) * (global_pose.getOrigin().getX() - plan[i].pose.position.x) + (global_pose.getOrigin().getY() - plan[i].pose.position.y) * (global_pose.getOrigin().getY() - plan[i].pose.position.y);
+
+        if (sq_plan_dist < min_plan_sq_dist) {
+            current_waypoint_index = i;
+            min_plan_sq_dist = sq_plan_dist;
+        }
     }
+
+    //! Prune the plan
+    plan = std::vector<geometry_msgs::PoseStamped>(plan.begin()+current_waypoint_index, plan.end());
+    global_plan = std::vector<geometry_msgs::PoseStamped>(global_plan.begin()+current_waypoint_index, global_plan.end());
+  }
+
+  void planUntilLookahead(std::vector<geometry_msgs::PoseStamped>& plan, double lookahead)
+  {
+      if (plan.size() < 2)
+          return;
+
+      double waypoint_dist = 0.0;
+      int target_waypoint_index = 0;
+      for (unsigned int i = 1; i < plan.size() && waypoint_dist < lookahead; ++i) {
+          double waypoint_dist_sq = (plan[i].pose.position.x - plan[i-1].pose.position.x) * (plan[i].pose.position.x - plan[i-1].pose.position.x) +
+                  (plan[i].pose.position.y - plan[i-1].pose.position.y) * (plan[i].pose.position.y - plan[i-1].pose.position.y);
+          waypoint_dist += sqrt(waypoint_dist_sq);
+          target_waypoint_index = i;
+      }
+
+      plan = std::vector<geometry_msgs::PoseStamped>(plan.begin(), plan.begin()+target_waypoint_index+1);
   }
 
   bool transformGlobalPlan(

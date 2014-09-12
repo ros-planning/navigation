@@ -40,7 +40,6 @@
 #include <vector>
 #include <Eigen/Core>
 
-
 #include <dwa_local_planner/DWAPlannerConfig.h>
 
 //for creating a local cost grid
@@ -95,70 +94,54 @@ namespace dwa_local_planner {
       /**
        * @brief Reconfigures the trajectory planner
        */
+      boost::mutex configuration_mutex_;
       void reconfigure(DWAPlannerConfig &cfg);
 
       /**
        * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
        * @param  new_plan The new global plan
        */
-      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> robot_pose, const std::vector<geometry_msgs::PoseStamped>& new_plan, const std::vector<geometry_msgs::Point>& footprint_spec);
+      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> robot_pose, const std::vector<geometry_msgs::PoseStamped>& local_plan, const std::vector<geometry_msgs::Point>& footprint_spec);
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
        * @param robot_pose The current position of the robot
        * @param robot_vel The current velocity of the robot
-       * @param drive_velocities The velocities to send to the robot base
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
-      base_local_planner::Trajectory findBestPath(
-          tf::Stamped<tf::Pose> robot_pose,
-          tf::Stamped<tf::Pose> robot_vel,
-          tf::Stamped<tf::Pose>& drive_velocities);
-
-      /**
-       * @brief Get the period at which the local planner is expected to run
-       * @return The simulation period
-       */
-      double getSimPeriod() { return sim_period_; }
+      base_local_planner::Trajectory findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel);
 
     private:
 
+      //! Pointer to planner util
       base_local_planner::LocalPlannerUtil *planner_util_;
 
-      double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
-      double pdist_scale_, gdist_scale_, occdist_scale_;
-      Eigen::Vector3f vsamples_;
+      //! Switches which determine the state of the DWA Planner
+      LocalPlannerState determineState(double yaw_error, double plan_distance, double goal_distance);
+      double switch_yaw_error_;
+      double switch_plan_distance_;
+      double switch_goal_distance_;
 
-      double sim_period_;///< @brief The number of seconds to use to compute max/min vels for dwa
-      base_local_planner::Trajectory result_traj_;
-
-      //double forward_point_distance_;
-      /** Distance along the global plan where the local goal is place */
-      double lookahead_dist_;
-
-      /** If the distance along the global path is smaller than the switch distance, different parameters are selected */
-      double switch_dist_;
-
-      std::vector<geometry_msgs::PoseStamped> plan_;
-
-      boost::mutex configuration_mutex_;
-
+      //! Visualization generated trajectories
       pcl_ros::Publisher<base_local_planner::MapGridCostPoint> traj_cloud_pub_;
       void publishTrajectoryCloud(const std::vector<base_local_planner::Trajectory>& trajectories);
 
-      LocalPlannerState determineState(double angle_error, double path_distance, double goal_distance);
-
-      // see constructor body for explanations
+      //! Trajectory generation
       base_local_planner::SimpleTrajectoryGenerator generator_;
-//      base_local_planner::OscillationCostFunction oscillation_costs_;
-      base_local_planner::ObstacleCostFunction obstacle_costs_;
-      base_local_planner::MapGridCostFunction path_costs_;
-      base_local_planner::MapGridCostFunction goal_costs_;
-//      base_local_planner::MapGridCostFunction goal_front_costs_;
-//      base_local_planner::MapGridCostFunction alignment_costs_;
-      base_local_planner::AlignmentCostFunction alignment_costs_;
-      base_local_planner::CmdVelCostFunction cmd_vel_costs_;
+      Eigen::Vector3f vsamples_;
 
+      //! Cost functions with parameters
+      base_local_planner::ObstacleCostFunction obstacle_costs_; /// <@brief discards trajectories that move into obstacles
+
+      base_local_planner::MapGridCostFunction plan_costs_; /// <@brief prefers trajectories on plan
+
+      base_local_planner::MapGridCostFunction goal_costs_; /// <@brief prefers trajectories that go towards (local) goal, based on wave propagation
+
+      base_local_planner::AlignmentCostFunction alignment_costs_;  /// <@brief prefers trajectories that align with plan
+
+      base_local_planner::CmdVelCostFunction cmd_vel_costs_; /// <@brief prefers trajectories based on their cmd vel
+
+      //! Scored sampling planner which evaluates the trajectories generation by the SimpleTrajectoryGenerator with use of costfunctions
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;
   };
 }

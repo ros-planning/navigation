@@ -90,6 +90,13 @@ namespace base_local_planner {
   void prunePlan(const tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
   /**
+   * @brief Filters the plan up until lookahead distance
+   * @param plan The plan to be filtered up until lookahead
+   * @param lookahead The lookahead distance
+   */
+  void planUntilLookahead(std::vector<geometry_msgs::PoseStamped>& plan, double lookahead);
+
+  /**
    * @brief  Transforms the global plan of the robot from the planner frame to the frame of the costmap,
    * selects only the (first) part of the plan that is within the costmap area.
    * @param tf A reference to a transform listener
