@@ -138,4 +138,4 @@ namespace base_local_planner {
     return cost;
   }
 
-};
+}

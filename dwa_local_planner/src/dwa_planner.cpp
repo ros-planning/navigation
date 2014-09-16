@@ -39,6 +39,8 @@
 #include <base_local_planner/map_grid_cost_point.h>
 #include <cmath>
 
+#include <visualization_msgs/Marker.h>
+
 //for computing path distance
 #include <queue>
 
@@ -52,37 +54,6 @@
 
 namespace dwa_local_planner {
 
-    void DWAPlanner::publishTrajectoryCloud(const std::vector<base_local_planner::Trajectory>& trajectories)
-    {
-        pcl::PointCloud<base_local_planner::MapGridCostPoint> traj_cloud;
-        traj_cloud.header.frame_id = planner_util_->getGlobalFrame();
-
-        base_local_planner::MapGridCostPoint pt;
-        traj_cloud.width = 0;
-        traj_cloud.height = 0;
-        std_msgs::Header header;
-        pcl_conversions::fromPCL(traj_cloud.header, header);
-        header.stamp = ros::Time::now();
-        traj_cloud.header = pcl_conversions::toPCL(header);
-        for(std::vector<base_local_planner::Trajectory>::const_iterator t=trajectories.begin(); t != trajectories.end(); ++t)
-        {
-            if(t->cost_<0)
-                continue;
-            // Fill out the plan
-            for(unsigned int i = 0; i < t->getPointsSize(); ++i) {
-                double p_x, p_y, p_th;
-                t->getPoint(i, p_x, p_y, p_th);
-                pt.x=p_x;
-                pt.y=p_y;
-                pt.z=0;
-                pt.path_cost=p_th;
-                pt.total_cost=t->cost_;
-                traj_cloud.push_back(pt);
-            }
-        }
-        traj_cloud_pub_.publish(traj_cloud);
-    }
-
     void DWAPlanner::reconfigure(DWAPlannerConfig &config)
     {
         boost::mutex::scoped_lock l(configuration_mutex_);
@@ -91,12 +62,13 @@ namespace dwa_local_planner {
         vsamples_[0] = config.vx_samples;
         vsamples_[1] = config.vy_samples;
         vsamples_[2] = config.vth_samples;
-        generator_.setParameters(config.sim_time, config.sim_granularity, config.angular_sim_granularity, true, config.sim_period);
+        generator_.setParameters(config.sim_time, config.sim_granularity, config.angular_sim_granularity, config.use_dwa, config.sim_period);
 
         ROS_INFO_STREAM("Trajectory Generator configured:\n"
                         << "    - Samples [x,y,th] : [" << (int)vsamples_[0] << "," << (int)vsamples_[1] << "," << (int)vsamples_[2] << "]\n"
                         << "    - Simulation time : " << config.sim_time << " [seconds]\n"
                         << "    - Simulation period : " << config.sim_period << " [seconds]\n"
+                        << "    - Use DWA : " << config.use_dwa << " [-]\n"
                         << "    - Granularity : " << config.sim_granularity << " [m]\n"
                         << "    - Angular granularity : " << config.angular_sim_granularity << " [rad]\n");
 
@@ -110,46 +82,29 @@ namespace dwa_local_planner {
                         << "    - Goal distance : " << config.switch_goal_distance << " [m]\n"
                         << "    - Plan distance : " << config.switch_plan_distance << " [m]\n");
 
-        //! Configure cost functions
-        double resolution = planner_util_->getCostmap()->getResolution();
-
-        /// Plan and goal
-        plan_costs_.setScale(resolution * config.path_distance_bias * 0.5);
-        goal_costs_.setScale(resolution * config.goal_distance_bias * 0.5);
-
-        /// Alignment
-        alignment_costs_.setScale(config.orientation_bias);
-
-        /// Command vel
-        cmd_vel_costs_.setCoefficients(config.pen_pos_x, config.pen_neg_x, config.pen_pos_y, config.pen_neg_y, config.pen_pos_theta, config.pen_neg_theta);
-        cmd_vel_costs_.setScale(1.0);
-
-        /// Obstacle
-        obstacle_costs_.setScale(resolution * config.occdist_scale);
-        obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
+        //! Set parameters for occupancy velocity costfunction
+        occ_vel_costs_.setParams(config.max_trans_vel);
     }
 
     DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util) :
         planner_util_(planner_util),
-        obstacle_costs_(planner_util->getCostmap()),
+        occ_vel_costs_(planner_util->getCostmap()),
         plan_costs_(planner_util->getCostmap()),
-        goal_costs_(planner_util->getCostmap(), 0.0, 0.0, true)
+        goal_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
+        vis_(planner_util->getCostmap(), goal_costs_, plan_costs_, planner_util->getGlobalFrame())
     {
-        ros::NodeHandle private_nh("~/" + name);
-
+        // Costfunctions
         std::vector<base_local_planner::TrajectoryCostFunction*> critics;
-        critics.push_back(&obstacle_costs_);
-        critics.push_back(&alignment_costs_);
+        critics.push_back(&occ_vel_costs_);
         critics.push_back(&plan_costs_);
         critics.push_back(&goal_costs_);
+        critics.push_back(&alignment_costs_);
+//        critics.push_back(&cmd_vel_costs_);
 
-        // trajectory generators
+        // trajectory generator
         std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
         generator_list.push_back(&generator_);
-
         scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
-
-        traj_cloud_pub_.advertise(private_nh, "trajectory_cloud", 1);
     }
 
     LocalPlannerState DWAPlanner::determineState(double yaw_error, double plan_distance, double goal_distance)
@@ -191,42 +146,36 @@ namespace dwa_local_planner {
         switch (state)
         {
         case Default:
-//            plan_costs_.setScale(1.0);
-//            goal_costs_.setScale(1.0);
-            cmd_vel_costs_.setScale(1.0);
-
+            plan_costs_.setScale(1.0);
+            goal_costs_.setScale(1.0);
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.front().pose.orientation));
 
             break;
 
         case Arrive:
-//            plan_costs_.setScale(0.0);
-//            goal_costs_.setScale(1.0);
-            cmd_vel_costs_.setScale(0.0);
-
+            plan_costs_.setScale(0.0);
+            goal_costs_.setScale(1.0);
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.back().pose.orientation));
 
             break;
 
         case Align:
-//            plan_costs_.setScale(0.0);
-//            goal_costs_.setScale(0.0);
-            cmd_vel_costs_.setScale(0.0);
-
+            plan_costs_.setScale(1.0);
+            goal_costs_.setScale(0.0);
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.front().pose.orientation));
 
             break;
         }
 
-        /// Set goal / plan poses
-        plan_costs_.setTargetPoses(local_plan);
+        //! Optimization data (Set local plan)
         goal_costs_.setTargetPoses(local_plan);
+        plan_costs_.setTargetPoses(local_plan);
 
-        /// Set obstacle settings
-        obstacle_costs_.setFootprint(footprint_spec);
+        //! Update footprint if changed
+        occ_vel_costs_.setFootprint(footprint_spec);
     }
 
-    base_local_planner::Trajectory DWAPlanner::findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel)
+    base_local_planner::Trajectory DWAPlanner::findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel, tf::Stamped<tf::Pose> goal_pose)
     {
         //make sure that our configuration doesn't change mid-run
         boost::mutex::scoped_lock l(configuration_mutex_);
@@ -234,7 +183,7 @@ namespace dwa_local_planner {
         // Setup the variables for traj generation
         Eigen::Vector3f pos(robot_pose.getOrigin().getX(), robot_pose.getOrigin().getY(), tf::getYaw(robot_pose.getRotation()));
         Eigen::Vector3f vel(robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), tf::getYaw(robot_vel.getRotation()));
-        Eigen::Vector3f goal(-1e6, -1e6, 0); // not used in dwa but required by generator
+        Eigen::Vector3f goal(goal_pose.getOrigin().getX(), goal_pose.getOrigin().getY(), tf::getYaw(goal_pose.getRotation()));
         base_local_planner::LocalPlannerLimits limits = planner_util_->getCurrentLimits();
 
         // prepare cost functions and generators for this run
@@ -245,8 +194,10 @@ namespace dwa_local_planner {
         std::vector<base_local_planner::Trajectory> all_explored;
         scored_sampling_planner_.findBestTrajectory(result_traj, &all_explored);
 
-        // Publish the trajectory grid
-        publishTrajectoryCloud(all_explored);
+        //! Visualization
+        vis_.publishDesiredOrientation(alignment_costs_.getDesiredOrientation(), robot_pose);
+        vis_.publishCostGrid();
+        vis_.publishTrajectoryCloud(all_explored);
 
         return result_traj;
     }

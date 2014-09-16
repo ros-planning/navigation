@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
             pcl_conversions
             roscpp
             tf
+            visualization_msgs
         )
 
 find_package(Eigen REQUIRED)
@@ -42,10 +43,11 @@ catkin_package(
 )
 
 file(GLOB_RECURSE HEADER_FILES include/*.h)
-add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp ${HEADER_FILES})
+add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp src/visualization.cpp ${HEADER_FILES})
 target_link_libraries(dwa_local_planner base_local_planner ${catkin_LIBRARIES})
 add_dependencies(dwa_local_planner dwa_local_planner_gencfg)
 add_dependencies(dwa_local_planner nav_msgs_gencpp)
+add_dependencies(dwa_local_planner visualization_msgs_gencpp)
 
 install(TARGETS dwa_local_planner
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

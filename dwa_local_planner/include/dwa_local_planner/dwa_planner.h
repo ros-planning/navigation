@@ -40,11 +40,8 @@
 #include <vector>
 #include <Eigen/Core>
 
-#include <dwa_local_planner/DWAPlannerConfig.h>
-
-//for creating a local cost grid
-#include <base_local_planner/map_grid_visualizer.h>
-#include <pcl_ros/publisher.h>
+#include "dwa_local_planner/DWAPlannerConfig.h"
+#include "dwa_local_planner/visualization.h"
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
@@ -57,6 +54,7 @@
 #include <base_local_planner/oscillation_cost_function.h>
 #include <base_local_planner/map_grid_cost_function.h>
 #include <base_local_planner/obstacle_cost_function.h>
+#include <base_local_planner/occupancy_velocity_cost_function.h>
 #include <base_local_planner/alignment_cost_function.h>
 #include <base_local_planner/cmd_vel_cost_function.h>
 #include <base_local_planner/simple_scored_sampling_planner.h>
@@ -109,7 +107,7 @@ namespace dwa_local_planner {
        * @param robot_vel The current velocity of the robot
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
-      base_local_planner::Trajectory findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel);
+      base_local_planner::Trajectory findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel, tf::Stamped<tf::Pose> goal_pose);
 
     private:
 
@@ -122,16 +120,13 @@ namespace dwa_local_planner {
       double switch_plan_distance_;
       double switch_goal_distance_;
 
-      //! Visualization generated trajectories
-      pcl_ros::Publisher<base_local_planner::MapGridCostPoint> traj_cloud_pub_;
-      void publishTrajectoryCloud(const std::vector<base_local_planner::Trajectory>& trajectories);
-
       //! Trajectory generation
       base_local_planner::SimpleTrajectoryGenerator generator_;
       Eigen::Vector3f vsamples_;
 
       //! Cost functions with parameters
-      base_local_planner::ObstacleCostFunction obstacle_costs_; /// <@brief discards trajectories that move into obstacles
+      //base_local_planner::ObstacleCostFunction obstacle_costs_; /// <@brief discards trajectories that move into obstacles
+      base_local_planner::OccupancyVelocityCostFunction occ_vel_costs_; /// <@brief discards trajectories that on which the velocity is not allowed
 
       base_local_planner::MapGridCostFunction plan_costs_; /// <@brief prefers trajectories on plan
 
@@ -143,6 +138,9 @@ namespace dwa_local_planner {
 
       //! Scored sampling planner which evaluates the trajectories generation by the SimpleTrajectoryGenerator with use of costfunctions
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;
+
+      //! Visualization
+      Visualization vis_;
   };
 }
 #endif

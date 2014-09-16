@@ -127,8 +127,6 @@ namespace dwa_local_planner {
 
         /// Reconfiguration
         dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
-        dwa_local_planner::DWAPlannerConfig default_config_;
-        bool setup_;
         bool initialized_;
 
         /// To read the odometry

@@ -86,41 +86,39 @@ namespace dwa_local_planner {
     }
 
     void DWAPlannerROS::reconfigureCB(DWAPlannerConfig &config, uint32_t level) {
-        if (setup_ && config.restore_defaults)
-        {
-            config = default_config_;
-            config.restore_defaults = false;
-        }
-        if (!setup_)
-        {
-            default_config_ = config;
-            setup_ = true;
-        }
-
         // update generic local planner params
         base_local_planner::LocalPlannerLimits limits;
+
+        // Velocity
         limits.max_trans_vel = config.max_trans_vel;
         limits.min_trans_vel = config.min_trans_vel;
+
         limits.max_vel_x = config.max_vel_x;
         limits.min_vel_x = config.min_vel_x;
+
         limits.max_vel_y = config.max_vel_y;
         limits.min_vel_y = config.min_vel_y;
+
         limits.max_rot_vel = config.max_rot_vel;
         limits.min_rot_vel = config.min_rot_vel;
+
+        // Acceleration
         limits.acc_lim_x = config.acc_lim_x;
         limits.acc_lim_y = config.acc_lim_y;
         limits.acc_lim_theta = config.acc_lim_theta;
         limits.acc_limit_trans = config.acc_limit_trans;
+
+        // Goal
         limits.xy_goal_tolerance = config.xy_goal_tolerance;
         limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
         limits.trans_stopped_vel = config.trans_stopped_vel;
         limits.rot_stopped_vel = config.rot_stopped_vel;
 
-        // We want to prune the plan that we send to the local planner
+        // Global plan modification
         limits.prune_plan = config.prune_plan;
         limits.lookahead_distance = limits.max_trans_vel * config.sim_time;
 
-        planner_util_.reconfigureCB(limits, config.restore_defaults);
+        planner_util_.reconfigureCB(limits, false);
 
         // update dwa specific configuration
         dp_->reconfigure(config);
@@ -128,8 +126,7 @@ namespace dwa_local_planner {
 
     DWAPlannerROS::DWAPlannerROS() :
         initialized_(false),
-        odom_helper_("odom"),
-        setup_(false)
+        odom_helper_("odom")
     {
 
     }
@@ -156,6 +153,8 @@ namespace dwa_local_planner {
 
         // Get the velocity of the robot
         odom_helper_.getRobotVel(robot_vel);
+
+        return true;
     }
 
     bool DWAPlannerROS::getRobotStateAndLocalPlan(tf::Stamped<tf::Pose>& robot_pose, tf::Stamped<tf::Pose>& robot_vel, std::vector<geometry_msgs::PoseStamped>& local_plan)
@@ -173,6 +172,8 @@ namespace dwa_local_planner {
             ROS_WARN_NAMED("dwa_local_planner", "Received an empty transformed plan.");
             return false;
         }
+
+        return true;
     }
 
     void DWAPlannerROS::initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros)
@@ -211,7 +212,6 @@ namespace dwa_local_planner {
             return false;
         }
 
-        ROS_INFO("Got new plan");
         return planner_util_.setPlan(orig_global_plan);
     }
 
@@ -238,8 +238,10 @@ namespace dwa_local_planner {
 
     bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     {
+        ROS_DEBUG_NAMED("DWAPlannerROS","computeVelocityCommands");
+
         std::vector<geometry_msgs::PoseStamped> local_plan;
-        tf::Stamped<tf::Pose> robot_pose, robot_vel;
+        tf::Stamped<tf::Pose> robot_pose, robot_vel, goal_pose;
 
         if (!getRobotStateAndLocalPlan(robot_pose, robot_vel, local_plan))
             return false;
@@ -247,11 +249,14 @@ namespace dwa_local_planner {
         // Publish the local plan
         base_local_planner::publishPlan(local_plan, l_plan_pub_);
 
+        // Get the local goal
+        tf::poseStampedMsgToTF(local_plan.back(), goal_pose);
+
         // update plan in dwa planner to calculate cost grid
         dp_->updatePlanAndLocalCosts(robot_pose, local_plan, costmap_ros_->getRobotFootprint());
 
         // call with updated footprint
-        base_local_planner::Trajectory traj = dp_->findBestPath(robot_pose, robot_vel);
+        base_local_planner::Trajectory traj = dp_->findBestPath(robot_pose, robot_vel, goal_pose);
 
         // Set the command velocity
         setCmdVel(traj, cmd_vel);

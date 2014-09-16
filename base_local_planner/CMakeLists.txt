@@ -84,6 +84,7 @@ add_library(base_local_planner
 	src/odometry_helper_ros.cpp
 
 	src/obstacle_cost_function.cpp
+	src/occupancy_velocity_cost_function.cpp
 	src/oscillation_cost_function.cpp
 	src/prefer_forward_cost_function.cpp
   src/alignment_cost_function.cpp
