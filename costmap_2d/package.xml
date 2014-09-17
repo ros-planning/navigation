@@ -39,7 +39,6 @@
     <build_depend>tf</build_depend>
     <build_depend>visualization_msgs</build_depend>
     <build_depend>voxel_grid</build_depend>
-    <build_depend>cv_bridge</build_depend>
 
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>geometry_msgs</run_depend>
@@ -59,7 +58,6 @@
     <run_depend>tf</run_depend>
     <run_depend>visualization_msgs</run_depend>
     <run_depend>voxel_grid</run_depend>
-    <run_depend>cv_bridge</run_depend>
 
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>

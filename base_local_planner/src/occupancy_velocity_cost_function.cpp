@@ -52,7 +52,7 @@ double OccupancyVelocityCostFunction::scoreTrajectory(Trajectory &traj)
         double center_cost = costmap_->getCost(cell_x, cell_y);
         double max_vel = (1 - center_cost / 255.0) * max_trans_vel_;
 
-        if (hypot(traj.xv_, traj.yv_) > max_vel)
+        if (hypot(traj.xv_, traj.yv_) > max_vel && i == traj.getPointsSize() - 1) // Only last point
             return -5.0;
     }
 

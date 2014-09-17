@@ -23,7 +23,6 @@ find_package(catkin REQUIRED
 
 find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
-find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
     include
@@ -110,7 +109,6 @@ target_link_libraries(costmap_2d
 add_library(layers
   plugins/footprint_layer.cpp
   plugins/inflation_layer.cpp
-  plugins/inflation_layer_full.cpp
   plugins/obstacle_layer.cpp
   plugins/static_layer.cpp
   plugins/voxel_layer.cpp
