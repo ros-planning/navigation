@@ -46,8 +46,8 @@ namespace costmap_2d
     for(unsigned int i = 0; i < footprint_spec.size(); ++i)
     {
       geometry_msgs::Point32 new_pt;
-      new_pt.x = robot_x + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
-      new_pt.y = robot_y + (footprint_spec[i].x * sin_th + footprint_spec[i].y * cos_th);
+      new_pt.x = robot_x + (scale_*footprint_spec[i].x * cos_th - scale_*footprint_spec[i].y * sin_th);
+      new_pt.y = robot_y + (scale_*footprint_spec[i].x * sin_th + scale_*footprint_spec[i].y * cos_th);
       footprint_.polygon.points.push_back(new_pt);
     }
 

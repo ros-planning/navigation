@@ -202,6 +202,7 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
   combination_method_ = config.combination_method;
   occupied_to_default_time_ = config.occupied_to_default_time;
   free_to_default_time_ = config.free_to_default_time;
+  footprint_layer_.setScale(config.footprint_scale);
 }
 
 void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,

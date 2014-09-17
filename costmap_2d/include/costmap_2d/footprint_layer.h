@@ -52,6 +52,9 @@ namespace costmap_2d
 class FootprintLayer : public Layer
 {
 public:
+  FootprintLayer() : scale_(1.0) {}
+  void setScale(double scale) { scale_ = scale; }
+
   virtual void onInitialize();
   virtual ~FootprintLayer();
 
@@ -65,6 +68,7 @@ private:
   void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
   ros::Publisher footprint_pub_;
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
+  double scale_;
 };
 }
 #endif
