@@ -123,6 +123,10 @@ namespace dwa_local_planner {
       //! Trajectory generation
       base_local_planner::SimpleTrajectoryGenerator generator_;
       Eigen::Vector3f vsamples_;
+      double sim_period_;
+
+      //! Check valid
+      void checkValid(const Eigen::Vector3f& vel, const base_local_planner::LocalPlannerLimits& limits, base_local_planner::Trajectory& traj);
 
       //! Cost functions with parameters
       //base_local_planner::ObstacleCostFunction obstacle_costs_; /// <@brief discards trajectories that move into obstacles

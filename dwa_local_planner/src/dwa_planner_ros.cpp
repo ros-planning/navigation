@@ -53,17 +53,9 @@ namespace dwa_local_planner {
 
     void setCmdVel(const base_local_planner::Trajectory& traj, geometry_msgs::Twist& c)
     {
-        if (traj.cost_ >= 0)
-        {
-            c.linear.x = traj.xv_;
-            c.linear.y = traj.yv_;
-            c.angular.z = traj.thetav_;
-        }
-        else
-        {
-            ROS_WARN_STREAM("DWA PLANNER DISCARDED ALL TRAJECTORIES, COST: " << traj.cost_);
-            c.linear.x = c.linear.y = c.angular.z = 0;
-        }
+        c.linear.x = traj.xv_;
+        c.linear.y = traj.yv_;
+        c.angular.z = traj.thetav_;
     }
 
     void DWAPlannerROS::publishTrajectory(const base_local_planner::Trajectory& traj)
