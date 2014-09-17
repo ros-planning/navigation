@@ -225,10 +225,20 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
         layered_costmap_->getCostmap()->mapToWorld(i, j, wx, wy);
         if (worldToMap(wx, wy, mx, my))
         {
+          unsigned char cost = getCost(mx, my);
+          if (cost == NO_INFORMATION)
+              continue;
+
           if(!use_maximum_)
-            master_grid.setCost(i, j, getCost(mx, my));
+            master_grid.setCost(i, j, cost);
           else
-            master_grid.setCost(i, j, std::max(getCost(mx, my), master_grid.getCost(i, j)));
+          {
+            unsigned char old_cost = master_grid.getCost(i, j);
+            if (old_cost == NO_INFORMATION)
+              master_grid.setCost(i, j, cost);
+            else
+              master_grid.setCost(i, j, std::max(cost, old_cost));
+          }
         }
       }
     }

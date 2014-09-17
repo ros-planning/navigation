@@ -87,6 +87,12 @@ void InflationLayer::matchSize()
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
+  if (layered_costmap_->isRolling())
+  {
+      *min_x = *min_y = -1e6;
+      *max_x = *max_y = 1e6;
+  }
+
   if( need_reinflation_ )
   {
     // For some reason when I make these -<double>::max() it does not
@@ -211,7 +217,7 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
     unsigned char cost = costLookup(mx, my, src_x, src_y);
     unsigned char old_cost = grid[index];
 
-    if (old_cost != target_cell_value_ && old_cost >= INSCRIBED_INFLATED_OBSTACLE && old_cost < NO_INFORMATION)
+    if (old_cost != target_cell_value_ && old_cost == LETHAL_OBSTACLE)
       return;
 
     if (old_cost != target_cell_value_)
