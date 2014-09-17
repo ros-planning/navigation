@@ -133,12 +133,19 @@ namespace dwa_local_planner {
       base_local_planner::OccupancyVelocityCostFunction occ_vel_costs_; /// <@brief discards trajectories that on which the velocity is not allowed
 
       base_local_planner::MapGridCostFunction plan_costs_; /// <@brief prefers trajectories on plan
+      double align_plan_scale_;
+      double default_plan_scale_;
+      double arrive_plan_scale_;
 
       base_local_planner::MapGridCostFunction goal_costs_; /// <@brief prefers trajectories that go towards (local) goal, based on wave propagation
+      double align_goal_scale_;
+      double default_goal_scale_;
+      double arrive_goal_scale_;
 
       base_local_planner::AlignmentCostFunction alignment_costs_;  /// <@brief prefers trajectories that align with plan
-
-      base_local_planner::CmdVelCostFunction cmd_vel_costs_; /// <@brief prefers trajectories based on their cmd vel
+      double align_align_scale_;
+      double default_align_scale_;
+      double arrive_align_scale_;
 
       //! Scored sampling planner which evaluates the trajectories generation by the SimpleTrajectoryGenerator with use of costfunctions
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;

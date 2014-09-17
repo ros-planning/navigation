@@ -61,20 +61,23 @@ namespace dwa_local_planner {
 
         double v0 = fabs(vel[0]);
         double v1 = fabs(vel[1]);
+        double v0frac = (v0/(v0+v1));
+        double v1frac = (v1/(v0+v1));
 
-        if (vel[0] > 0) traj.xv_ = std::max(0.0, vel[0] - (v0/(v0+v1)) * limits.acc_limit_trans * sim_period_);
-        if (vel[0] < 0) traj.xv_ = std::min(0.0, vel[0] + (v0/(v0+v1)) * limits.acc_limit_trans * sim_period_);
+        if (vel[0] > 0) traj.xv_ = std::max(0.0, vel[0] - v0frac * limits.acc_limit_trans * sim_period_);
+        if (vel[0] < 0) traj.xv_ = std::min(0.0, vel[0] + v0frac * limits.acc_limit_trans * sim_period_);
 
-        if (vel[1] > 0) traj.yv_ = std::max(0.0, vel[1] - (v1/(v0+v1)) * limits.acc_limit_trans * sim_period_);
-        if (vel[1] < 0) traj.yv_ = std::min(0.0, vel[1] + (v1/(v0+v1)) * limits.acc_limit_trans * sim_period_);
+        if (vel[1] > 0) traj.yv_ = std::max(0.0, vel[1] - v1frac * limits.acc_limit_trans * sim_period_);
+        if (vel[1] < 0) traj.yv_ = std::min(0.0, vel[1] + v1frac * limits.acc_limit_trans * sim_period_);
 
         if (vel[2] > 0) traj.thetav_ = std::max(0.0, vel[2] - limits.acc_lim_theta * sim_period_);
         if (vel[2] < 0) traj.thetav_ = std::min(0.0, vel[2] + limits.acc_lim_theta * sim_period_);
 
         ROS_WARN_STREAM("DWA PLANNER DISCARDED ALL TRAJECTORIES, DEACCELERATING WITH MAX; COST: " << traj.cost_ << "\n"
-                        << "     vx: " << vel[0] << " --> " << traj.xv_ << "\n"
-                        << "     vy: " << vel[1] << " --> " << traj.yv_ << "\n"
-                        << "     vth: " << vel[2] << " --> " <<  traj.thetav_ );
+                        << "     vx: " << vel[0] << " --> " << traj.xv_ << "-- frac: " << v0frac << "\n"
+                        << "     vy: " << vel[1] << " --> " << traj.yv_ << "-- frac: " << v1frac << "\n"
+                        << "     vth: " << vel[2] << " --> " <<  traj.thetav_ << "\n"
+                        << "     acc_lim_trans: " << limits.acc_limit_trans);
     }
 
     void DWAPlanner::reconfigure(DWAPlannerConfig &config)
@@ -106,6 +109,34 @@ namespace dwa_local_planner {
                         << "    - Goal distance : " << config.switch_goal_distance << " [m]\n"
                         << "    - Plan distance : " << config.switch_plan_distance << " [m]\n");
 
+        //! Set scales
+        align_align_scale_ = config.align_align_scale;
+        align_plan_scale_ = config.align_plan_scale;
+        align_goal_scale_ = config.align_goal_scale;
+
+        default_align_scale_ = config.default_align_scale;
+        default_plan_scale_ = config.default_plan_scale;
+        default_goal_scale_ = config.default_goal_scale;
+
+        arrive_align_scale_ = config.arrive_align_scale;
+        arrive_plan_scale_ = config.arrive_plan_scale;
+        arrive_goal_scale_ = config.arrive_goal_scale;
+
+        ROS_INFO_STREAM("Scales configured:\n"
+                        << "    - Align:\n"
+                        << "        - align scale : " << config.align_align_scale << " [-]\n"
+                        << "        - plan scale : " << config.align_plan_scale << " [-]\n"
+                        << "        - goal scale : " << config.align_goal_scale << " [-]\n"
+                        << "    - Default:\n"
+                        << "        - align scale : " << config.default_align_scale << " [-]\n"
+                        << "        - plan scale : " << config.default_plan_scale << " [-]\n"
+                        << "        - goal scale : " << config.default_goal_scale << " [-]\n"
+                        << "    - Arrive:\n"
+                        << "        - align scale : " << config.arrive_align_scale << " [-]\n"
+                        << "        - plan scale : " << config.arrive_plan_scale << " [-]\n"
+                        << "        - goal scale : " << config.arrive_goal_scale << " [-]\n"
+                        );
+
         //! Set parameters for occupancy velocity costfunction
         occ_vel_costs_.setParams(config.max_trans_vel);
     }
@@ -123,7 +154,6 @@ namespace dwa_local_planner {
         critics.push_back(&plan_costs_);
         critics.push_back(&goal_costs_);
         critics.push_back(&alignment_costs_);
-//        critics.push_back(&cmd_vel_costs_);
 
         // trajectory generator
         std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
@@ -169,24 +199,30 @@ namespace dwa_local_planner {
         /// Update the cost functions depending on the state we are in
         switch (state)
         {
+        case Align:
+            alignment_costs_.setScale(align_align_scale_);
+            plan_costs_.setScale(align_plan_scale_);
+            goal_costs_.setScale(align_goal_scale_);
+
+            alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.front().pose.orientation));
+
+            break;
+
         case Default:
-            goal_costs_.setScale(1.0);
-            plan_costs_.setScale(0.0);
+            alignment_costs_.setScale(default_align_scale_);
+            plan_costs_.setScale(default_plan_scale_);
+            goal_costs_.setScale(default_goal_scale_);
+
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.front().pose.orientation));
 
             break;
 
         case Arrive:
-            goal_costs_.setScale(1.0);
-            plan_costs_.setScale(0.0);
+            alignment_costs_.setScale(arrive_align_scale_);
+            plan_costs_.setScale(arrive_plan_scale_);
+            goal_costs_.setScale(arrive_goal_scale_);
+
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.back().pose.orientation));
-
-            break;
-
-        case Align:
-            goal_costs_.setScale(0.0);
-            plan_costs_.setScale(1.0);
-            alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.front().pose.orientation));
 
             break;
         }
