@@ -62,14 +62,14 @@ namespace dwa_local_planner {
         double v0 = fabs(vel[0]);
         double v1 = fabs(vel[1]);
 
-        if (vel[0] > 0) traj.xv_ = vel[0] - (v0/(v0+v1)) * limits.acc_limit_trans * sim_period_;
-        if (vel[0] < 0) traj.xv_ = vel[0] + (v0/(v0+v1)) * limits.acc_limit_trans * sim_period_;
+        if (vel[0] > 0) traj.xv_ = std::max(0.0, vel[0] - (v0/(v0+v1)) * limits.acc_limit_trans * sim_period_);
+        if (vel[0] < 0) traj.xv_ = std::min(0.0, vel[0] + (v0/(v0+v1)) * limits.acc_limit_trans * sim_period_);
 
-        if (vel[1] > 0) traj.yv_ = vel[1] - (v1/(v0+v1)) * limits.acc_limit_trans * sim_period_;
-        if (vel[1] < 0) traj.yv_ = vel[1] + (v1/(v0+v1)) * limits.acc_limit_trans * sim_period_;
+        if (vel[1] > 0) traj.yv_ = std::max(0.0, vel[1] - (v1/(v0+v1)) * limits.acc_limit_trans * sim_period_);
+        if (vel[1] < 0) traj.yv_ = std::min(0.0, vel[1] + (v1/(v0+v1)) * limits.acc_limit_trans * sim_period_);
 
-        if (vel[2] > 0) traj.thetav_ = vel[2] - limits.acc_lim_theta * sim_period_;
-        if (vel[2] < 0) traj.thetav_ = vel[2] + limits.acc_lim_theta * sim_period_;
+        if (vel[2] > 0) traj.thetav_ = std::max(0.0, vel[2] - limits.acc_lim_theta * sim_period_);
+        if (vel[2] < 0) traj.thetav_ = std::min(0.0, vel[2] + limits.acc_lim_theta * sim_period_);
 
         ROS_WARN_STREAM("DWA PLANNER DISCARDED ALL TRAJECTORIES, DEACCELERATING WITH MAX; COST: " << traj.cost_ << "\n"
                         << "     vx: " << vel[0] << " --> " << traj.xv_ << "\n"
