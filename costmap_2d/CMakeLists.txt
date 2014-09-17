@@ -55,7 +55,6 @@ generate_dynamic_reconfigure_options(
   cfg/ObstaclePlugin.cfg
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
-  cfg/InflationPluginFull.cfg
   cfg/VoxelPlugin.cfg
 )
 
