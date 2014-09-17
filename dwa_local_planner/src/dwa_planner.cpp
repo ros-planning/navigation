@@ -109,7 +109,7 @@ namespace dwa_local_planner {
 
     LocalPlannerState DWAPlanner::determineState(double yaw_error, double plan_distance, double goal_distance)
     {
-        static LocalPlannerState prev_state = Default;
+        static LocalPlannerState prev_state = None;
         LocalPlannerState state = Default;
 
         // todo: optional path_distance state
@@ -187,7 +187,7 @@ namespace dwa_local_planner {
         base_local_planner::LocalPlannerLimits limits = planner_util_->getCurrentLimits();
 
         // prepare cost functions and generators for this run
-        generator_.initialise(pos, vel, goal, &limits, vsamples_);
+        generator_.initialise(pos, vel, goal, &limits, vsamples_, false);
 
         // find best trajectory by sampling and scoring the samples
         base_local_planner::Trajectory result_traj;

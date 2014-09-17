@@ -67,7 +67,7 @@ namespace dwa_local_planner {
   * Default:  normal operating conditions
   * Arrive:   the robot is close (with switch dist) of its goal
   * Align:    there is a large orientation error between robot and path */
-  enum LocalPlannerState {Default, Arrive, Align};
+  enum LocalPlannerState {Default, Arrive, Align, None};
   static const char * StateName[] = { "Default", "Arrive", "Align" };
 
   /**
