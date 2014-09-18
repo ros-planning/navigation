@@ -222,7 +222,7 @@ inline void InflationLayer::enqueue(unsigned char* grid, unsigned int index, uns
 
     if (old_cost != target_cell_value_)
     {
-      if (old_cost == costmap_2d::NO_INFORMATION)
+      if (old_cost == costmap_2d::NO_INFORMATION && cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
         grid[index] = cost;
       else
         grid[index] = std::max(old_cost, cost);
