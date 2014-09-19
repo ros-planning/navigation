@@ -54,32 +54,6 @@
 
 namespace dwa_local_planner {
 
-    void DWAPlanner::checkValid(const Eigen::Vector3f& vel, const base_local_planner::LocalPlannerLimits& limits, base_local_planner::Trajectory& traj)
-    {
-        if (traj.cost_ >= 0)
-            return;
-
-        double v0 = fabs(vel[0]);
-        double v1 = fabs(vel[1]);
-        double v0frac = (v0/(v0+v1));
-        double v1frac = (v1/(v0+v1));
-
-        if (vel[0] > 0) traj.xv_ = std::max(0.0, vel[0] - v0frac * limits.acc_limit_trans * sim_period_);
-        if (vel[0] < 0) traj.xv_ = std::min(0.0, vel[0] + v0frac * limits.acc_limit_trans * sim_period_);
-
-        if (vel[1] > 0) traj.yv_ = std::max(0.0, vel[1] - v1frac * limits.acc_limit_trans * sim_period_);
-        if (vel[1] < 0) traj.yv_ = std::min(0.0, vel[1] + v1frac * limits.acc_limit_trans * sim_period_);
-
-        if (vel[2] > 0) traj.thetav_ = std::max(0.0, vel[2] - limits.acc_lim_theta * sim_period_);
-        if (vel[2] < 0) traj.thetav_ = std::min(0.0, vel[2] + limits.acc_lim_theta * sim_period_);
-
-        ROS_WARN_STREAM("DWA PLANNER DISCARDED ALL TRAJECTORIES, DEACCELERATING WITH MAX; COST: " << traj.cost_ << "\n"
-                        << "     vx: " << vel[0] << " --> " << traj.xv_ << "-- frac: " << v0frac << "\n"
-                        << "     vy: " << vel[1] << " --> " << traj.yv_ << "-- frac: " << v1frac << "\n"
-                        << "     vth: " << vel[2] << " --> " <<  traj.thetav_ << "\n"
-                        << "     acc_lim_trans: " << limits.acc_limit_trans);
-    }
-
     void DWAPlanner::reconfigure(DWAPlannerConfig &config)
     {
         boost::mutex::scoped_lock l(configuration_mutex_);
@@ -258,9 +232,6 @@ namespace dwa_local_planner {
         vis_.publishDesiredOrientation(alignment_costs_.getDesiredOrientation(), robot_pose);
         vis_.publishCostGrid();
         vis_.publishTrajectoryCloud(all_explored);
-
-        //! Check valid, otherwise deaccelerate with max
-        checkValid(vel, limits, result_traj);
 
         return result_traj;
     }

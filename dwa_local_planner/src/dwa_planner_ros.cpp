@@ -51,11 +51,44 @@ PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlan
 
 namespace dwa_local_planner {
 
-    void setCmdVel(const base_local_planner::Trajectory& traj, geometry_msgs::Twist& c)
+    void setCmdVel(const base_local_planner::Trajectory& traj,
+                   const tf::Stamped<tf::Pose>& robot_vel,
+                   const base_local_planner::LocalPlannerLimits& limits,
+                   double sim_period,
+                   geometry_msgs::Twist& c)
     {
-        c.linear.x = traj.xv_;
-        c.linear.y = traj.yv_;
-        c.angular.z = traj.thetav_;
+        Eigen::Vector3f vel(robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), tf::getYaw(robot_vel.getRotation()));
+
+        double vx = traj.xv_;
+        double vy = traj.yv_;
+        double vth = traj.thetav_;
+
+        if (traj.cost_ < 0)
+        {
+            double v0 = fabs(vel[0]);
+            double v1 = fabs(vel[1]);
+            double v0frac = (v0/(v0+v1));
+            double v1frac = (v1/(v0+v1));
+
+            if (vel[0] > 0) vx = std::max(0.0, vel[0] - v0frac * limits.deacc_limit_trans * sim_period);
+            if (vel[0] < 0) vx = std::min(0.0, vel[0] + v0frac * limits.deacc_limit_trans * sim_period);
+
+            if (vel[1] > 0) vy = std::max(0.0, vel[1] - v1frac * limits.deacc_limit_trans * sim_period);
+            if (vel[1] < 0) vy = std::min(0.0, vel[1] + v1frac * limits.deacc_limit_trans * sim_period);
+
+            if (vel[2] > 0) vth = std::max(0.0, vel[2] - limits.acc_lim_theta * sim_period);
+            if (vel[2] < 0) vth = std::min(0.0, vel[2] + limits.acc_lim_theta * sim_period);
+
+            ROS_WARN_STREAM("DWA PLANNER DISCARDED ALL TRAJECTORIES, DEACCELERATING WITH MAX; COST: " << traj.cost_ << "\n"
+                            << "     vx: " << vel[0] << " --> " << vx << "-- frac: " << v0frac << "\n"
+                            << "     vy: " << vel[1] << " --> " << vy << "-- frac: " << v1frac << "\n"
+                            << "     vth: " << vel[2] << " --> " <<  vth << "\n"
+                            << "     deacc_lim_trans: " << limits.deacc_limit_trans);
+        }
+
+        c.linear.x = vx;
+        c.linear.y = vy;
+        c.angular.z = vth;
     }
 
     void DWAPlannerROS::publishTrajectory(const base_local_planner::Trajectory& traj)
@@ -99,6 +132,7 @@ namespace dwa_local_planner {
         limits.acc_lim_y = config.acc_lim_y;
         limits.acc_lim_theta = config.acc_lim_theta;
         limits.acc_limit_trans = config.acc_limit_trans;
+        limits.deacc_limit_trans = config.deacc_limit_trans;
 
         // Goal
         limits.xy_goal_tolerance = config.xy_goal_tolerance;
@@ -137,14 +171,14 @@ namespace dwa_local_planner {
             return false;
         }
 
+        // Get the velocity of the robot
+        odom_helper_.getRobotVel(robot_vel);
+
         if (!costmap_ros_->getRobotPose(robot_pose))
         {
             ROS_ERROR("Could not get robot pose");
             return false;
         }
-
-        // Get the velocity of the robot
-        odom_helper_.getRobotVel(robot_vel);
 
         return true;
     }
@@ -235,23 +269,24 @@ namespace dwa_local_planner {
         std::vector<geometry_msgs::PoseStamped> local_plan;
         tf::Stamped<tf::Pose> robot_pose, robot_vel, goal_pose;
 
-        if (!getRobotStateAndLocalPlan(robot_pose, robot_vel, local_plan))
-            return false;
+        base_local_planner::Trajectory traj;
+        if (getRobotStateAndLocalPlan(robot_pose, robot_vel, local_plan))
+        {
+            // Publish the local plan
+            base_local_planner::publishPlan(local_plan, l_plan_pub_);
 
-        // Publish the local plan
-        base_local_planner::publishPlan(local_plan, l_plan_pub_);
+            // Get the local goal
+            tf::poseStampedMsgToTF(local_plan.back(), goal_pose);
 
-        // Get the local goal
-        tf::poseStampedMsgToTF(local_plan.back(), goal_pose);
+            // update plan in dwa planner to calculate cost grid
+            dp_->updatePlanAndLocalCosts(robot_pose, local_plan, costmap_ros_->getRobotFootprint());
 
-        // update plan in dwa planner to calculate cost grid
-        dp_->updatePlanAndLocalCosts(robot_pose, local_plan, costmap_ros_->getRobotFootprint());
-
-        // call with updated footprint
-        base_local_planner::Trajectory traj = dp_->findBestPath(robot_pose, robot_vel, goal_pose);
+            // call with updated footprint
+            traj = dp_->findBestPath(robot_pose, robot_vel, goal_pose);
+        }
 
         // Set the command velocity
-        setCmdVel(traj, cmd_vel);
+        setCmdVel(traj, robot_vel, planner_util_.getCurrentLimits(), dp_->getSimPeriod(), cmd_vel);
 
         // Publish the local plan
         publishTrajectory(traj);
