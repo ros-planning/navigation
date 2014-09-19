@@ -56,6 +56,7 @@ public:
   double acc_lim_y;
   double acc_lim_theta;
   double acc_lim_trans;
+  double deacc_lim_trans;
   bool   prune_plan;
   double xy_goal_tolerance;
   double yaw_goal_tolerance;
@@ -78,6 +79,7 @@ public:
       double nacc_lim_y,
       double nacc_lim_theta,
       double nacc_lim_trans,
+      double ndeacc_lim_trans,
       double nxy_goal_tolerance,
       double nyaw_goal_tolerance,
       bool   nprune_plan = true,
@@ -95,6 +97,7 @@ public:
         acc_lim_y(nacc_lim_y),
         acc_lim_theta(nacc_lim_theta),
         acc_lim_trans(nacc_lim_trans),
+        deacc_lim_trans(ndeacc_lim_trans),
         prune_plan(nprune_plan),
         xy_goal_tolerance(nxy_goal_tolerance),
         yaw_goal_tolerance(nyaw_goal_tolerance),
