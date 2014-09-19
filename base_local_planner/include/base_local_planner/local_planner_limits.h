@@ -56,6 +56,7 @@ public:
   double acc_lim_y;
   double acc_lim_theta;
   double acc_limit_trans;
+  double deacc_limit_trans;
 //  double jerk_lim_trans;
 //  double jerk_lim_rot;
   bool   prune_plan;
@@ -81,6 +82,7 @@ public:
       double nacc_lim_y,
       double nacc_lim_theta,
       double nacc_limit_trans,
+      double ndeacc_limit_trans,
       double nxy_goal_tolerance,
       double nyaw_goal_tolerance,
 //      double njerk_lim_trans = -1,
@@ -101,6 +103,7 @@ public:
         acc_lim_y(nacc_lim_y),
         acc_lim_theta(nacc_lim_theta),
         acc_limit_trans(nacc_limit_trans),
+        deacc_limit_trans(ndeacc_limit_trans),
 //        jerk_lim_trans(njerk_lim_trans),
 //        jerk_lim_rot(njerk_lim_rot),
         prune_plan(nprune_plan),

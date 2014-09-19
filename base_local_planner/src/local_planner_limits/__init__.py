@@ -31,6 +31,7 @@ def add_generic_localplanner_params(gen):
     gen.add("acc_lim_y", double_t, 0, "The acceleration limit of the robot in the y direction", 2.5, 0, 20.0)
     gen.add("acc_lim_theta", double_t, 0, "The acceleration limit of the robot in the theta direction", 3.2, 0, 20.0)
     gen.add("acc_limit_trans", double_t, 0, "The absolute value of the maximum translational acceleration for the robot in m/s^2", 0.1, 0)
+    gen.add("deacc_limit_trans", double_t, 0, "The absolute value of the maximum translational deacceleration for the robot in m/s^2", 0.5, 0)
 
     #  # jerk
     #  gen.add("jerk_lim_trans", double_t, 0, "The absolute value of the maximum translational jerk for the robot in m/s^3", 0.1, 0)
