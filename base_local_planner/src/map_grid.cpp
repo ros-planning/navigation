@@ -107,8 +107,7 @@ namespace base_local_planner{
     unsigned char cost = costmap.getCost(check_cell->cx, check_cell->cy);
     if(! getCell(check_cell->cx, check_cell->cy).within_robot &&
         (cost == costmap_2d::LETHAL_OBSTACLE ||
-         cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
-         cost == costmap_2d::NO_INFORMATION)){
+         cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)){
       check_cell->target_dist = obstacleCosts();
       return false;
     }
