@@ -240,10 +240,16 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
           else
           {
             unsigned char old_cost = master_grid.getCost(i, j);
-            if (old_cost == NO_INFORMATION)
-              master_grid.setCost(i, j, cost);
-            else
-              master_grid.setCost(i, j, std::max(cost, old_cost));
+			if (track_unknown_space_)
+			  if (cost == LETHAL_OBSTACLE)
+			    master_grid.setCost(i, j, cost);
+		      else
+			    master_grid.setCost(i, j, std::max(cost, old_cost));
+			else
+			  if (old_cost == NO_INFORMATION)
+			    master_grid.setCost(i, j, cost);
+		      else
+			    master_grid.setCost(i, j, std::max(cost, old_cost));
           }
         }
       }
