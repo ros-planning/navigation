@@ -142,7 +142,7 @@ namespace dwa_local_planner {
 
         // Global plan modification
         limits.prune_plan = config.prune_plan;
-        limits.lookahead_distance = limits.max_trans_vel * config.sim_time;
+        limits.lookahead_distance = -1;
 
         planner_util_.reconfigureCB(limits, false);
 
