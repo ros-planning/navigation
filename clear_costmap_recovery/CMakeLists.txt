@@ -40,7 +40,6 @@ target_link_libraries(clear_costmap_recovery layers ${catkin_LIBRARIES})
 if(CATKIN_ENABLE_TESTING)
   # Find package test dependencies
   find_package(rostest REQUIRED)
-  find_package(gtest)
 
   # Add the test folder to the include directories
   include_directories(test)
