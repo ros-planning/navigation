@@ -187,8 +187,7 @@ namespace base_local_planner{
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      if (costmap.worldToMap(g_x, g_y, map_x, map_y) &&
-              (costmap.getCost(map_x, map_y) < costmap_2d::INSCRIBED_INFLATED_OBSTACLE || costmap.getCost(map_x, map_y) == costmap_2d::NO_INFORMATION)) {
+      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) < costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         MapCell& current = getCell(map_x, map_y);
         current.target_dist = 0.0;
         current.target_mark = true;
@@ -224,8 +223,7 @@ namespace base_local_planner{
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      if (costmap.worldToMap(g_x, g_y, map_x, map_y) &&
-              (costmap.getCost(map_x, map_y) < costmap_2d::INSCRIBED_INFLATED_OBSTACLE || costmap.getCost(map_x, map_y) == costmap_2d::NO_INFORMATION)) {
+      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) < costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
