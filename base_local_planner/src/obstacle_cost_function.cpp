@@ -136,7 +136,7 @@ double ObstacleCostFunction::footprintCost (
     return -7.0;
   }
 
-  double occ_cost = std::max(std::max(occ_cost, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
+  double occ_cost = std::max(std::max(0.0, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
 
   return occ_cost;
 }
