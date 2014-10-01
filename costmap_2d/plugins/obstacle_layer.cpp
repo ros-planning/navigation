@@ -38,6 +38,10 @@ void ObstacleLayer::onInitialize()
   nh.param("observation_sources", topics_string, std::string(""));
   ROS_INFO("    Subscribed to Topics: %s", topics_string.c_str());
 
+  // get our tf prefix
+  ros::NodeHandle prefix_nh;
+  const std::string tf_prefix = tf::getPrefixParam(prefix_nh);
+
   //now we need to split the topics based on whitespace which we can use a stringstream for
   std::stringstream ss(topics_string);
 
@@ -61,6 +65,8 @@ void ObstacleLayer::onInitialize()
     source_node.param("inf_is_valid", inf_is_valid, false);
     source_node.param("clearing", clearing, false);
     source_node.param("marking", marking, true);
+
+    sensor_frame = tf::resolve(tf_prefix, sensor_frame);
 
     if (!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan"))
     {
