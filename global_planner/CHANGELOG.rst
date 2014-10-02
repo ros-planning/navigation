@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.12 (2014-10-01)
+--------------------
 * Add Gradient Path's cycle limit to GridPath
 * When clearing endpoint, do not overwrite potentials
 * Consolidate usage of POT_HIGH

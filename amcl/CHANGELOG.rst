@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.12 (2014-10-01)
+--------------------
 * Bug fix to remove particle weights being reset when motion model is updated
 * Integrated new sensor model which calculates the observation likelihood in a probabilistic manner
   Also includes the option to do beam-skipping (to better handle observations from dynamic obstacles)

@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.12 (2014-10-01)
+--------------------
 * Bugfix uninitialised occ_cost variable usage
   This fixes `#256 <https://github.com/ros-planning/navigation/issues/256>`_.
 * base_local_planner: adds waitForTransform
