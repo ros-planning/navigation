@@ -2,6 +2,9 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.12 (2014-10-01)
 --------------------
 * map_server: [style] alphabetize dependencies

@@ -2,6 +2,9 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.12 (2014-10-01)
 --------------------
 * costmap_2d: export library layers

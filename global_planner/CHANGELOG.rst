@@ -2,6 +2,9 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.12 (2014-10-01)
 --------------------
 * Add Gradient Path's cycle limit to GridPath

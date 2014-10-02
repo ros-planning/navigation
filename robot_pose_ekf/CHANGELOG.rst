@@ -2,6 +2,9 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.12 (2014-10-01)
 --------------------
 * Fix EKF topic name so that it is unaffected by tf_prefix
