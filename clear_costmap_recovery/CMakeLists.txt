@@ -33,7 +33,7 @@ catkin_package(
 )
 
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
-target_link_libraries(clear_costmap_recovery layers ${catkin_LIBRARIES})
+target_link_libraries(clear_costmap_recovery ${catkin_LIBRARIES})
 
 
 ## Configure Tests
@@ -49,7 +49,7 @@ if(CATKIN_ENABLE_TESTING)
 
   # Create targets for test executables
   add_rostest_gtest(clear_tester test/clear_tests.launch test/clear_tester.cpp)
-  add_dependencies(tests clear_tester ${catkin_LIBRARIES} layers)
+  add_dependencies(tests clear_tester ${catkin_LIBRARIES})
   target_link_libraries(clear_tester clear_costmap_recovery ${GTEST_LIBRARIES})
 endif()
 
