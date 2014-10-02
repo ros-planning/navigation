@@ -2,6 +2,14 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix EKF topic name so that it is unaffected by tf_prefix
+* Install launch files, closes `#249 <https://github.com/ros-planning/navigation/issues/249>`_
+* Fixed hardcoded tf frames issue by fetching base_footprint_frame_ value from param server and using it in OdomEstimation filter
+* Fixed hardcoded tf frames issue by adding variables for output and base_footprint frames along with mutator methods
+* Contributors: Jochen Sprickerhof, Michael Ferguson, Murilo FM
+
 1.11.11 (2014-07-23)
 --------------------
 

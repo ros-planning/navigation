@@ -2,6 +2,14 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Bug fix to remove particle weights being reset when motion model is updated
+* Integrated new sensor model which calculates the observation likelihood in a probabilistic manner
+  Also includes the option to do beam-skipping (to better handle observations from dynamic obstacles)
+* Pose pulled from parameter server when new map received
+* Contributors: Steven Kordell, hes3pal
+
 1.11.11 (2014-07-23)
 --------------------
 

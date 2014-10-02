@@ -2,6 +2,19 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* costmap_2d: export library layers
+* Merge pull request `#198 <https://github.com/ros-planning/navigation/issues/198>`_ from kmhallen/hydro-devel
+  Fixed costmap_2d clearing from service /move_base/clear_costmaps
+* Costmap Layer comments
+* Add destructors for all of the layers to remove the dynamic parameter clients
+* Add method for removing static observations (for testing)
+* Move testing_helper
+* Initial Clearing Costmap parameter change
+* Fixed costmap_2d clearing from service /move_base/clear_costmaps
+* Contributors: David Lu!!, Kevin Hallenbeck, Michael Ferguson
+
 1.11.11 (2014-07-23)
 --------------------
 * removes trailing spaces and empty lines
