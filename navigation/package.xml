@@ -24,6 +24,7 @@
     <run_depend>base_local_planner</run_depend>
     <run_depend>clear_costmap_recovery</run_depend>
     <run_depend>fake_localization</run_depend>
+    <run_depend>global_planner</run_depend>
     <run_depend>move_base_msgs</run_depend>
     <run_depend>navfn</run_depend>
     <run_depend>rotate_recovery</run_depend>
