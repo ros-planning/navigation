@@ -66,7 +66,10 @@ void ObstacleLayer::onInitialize()
     source_node.param("clearing", clearing, false);
     source_node.param("marking", marking, true);
 
-    sensor_frame = tf::resolve(tf_prefix, sensor_frame);
+    if (!sensor_frame.empty())
+    {
+      sensor_frame = tf::resolve(tf_prefix, sensor_frame);
+    }
 
     if (!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan"))
     {
