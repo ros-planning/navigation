@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <stdio.h>
 
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
@@ -247,11 +248,60 @@ main(int argc, char** argv)
   ros::NodeHandle nh;
 
   AmclNode an;
-
   ros::spin();
 
   // To quote Morgan, Hooray!
   return(0);
+}
+
+bool readPoseFromFile(geometry_msgs::PoseWithCovarianceStampedPtr pose)
+{
+    const char * home_dir = ::getenv("HOME");
+    if (!home_dir)
+        return false;
+
+    FILE* file = fopen ((std::string(home_dir) + "/.amcl_pose").c_str() ,"w");
+    if (file == NULL)
+    {
+        ROS_WARN("Failed to read pose from file: ~/.amcl_pose");
+        return false;
+    }
+
+    float x,y,yaw;
+    fscanf (file, "%f %f %f", &x, &y, &yaw);
+    fclose(file);
+
+    pose->header.frame_id = "/map";
+    pose->header.stamp = ros::Time::now();
+
+    pose->pose.pose.position.x = x;
+    pose->pose.pose.position.y = y;
+    pose->pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+
+    ROS_INFO("Succesfuly read pose from file: ~/.amcl_pose");
+    return true;
+}
+
+void writePoseToFile(const geometry_msgs::PoseWithCovarianceStamped& pose)
+{
+    const char * home_dir = ::getenv("HOME");
+    if (home_dir)
+    {
+        FILE* file = fopen ((std::string(home_dir) + "/.amcl_pose").c_str() ,"w");
+
+        if (file != NULL)
+        {
+            ROS_INFO("Writing pose to file: ~/.amcl_pose");
+            fprintf (file, "%f %f %f",
+                     pose.pose.pose.position.x,
+                     pose.pose.pose.position.y,
+                     tf::getYaw(pose.pose.pose.orientation));
+
+            fclose (file);
+        }
+        else
+            ROS_WARN("Failed to write pose to file: ~/.amcl_pose");
+    }
 }
 
 AmclNode::AmclNode() :
@@ -389,6 +439,11 @@ AmclNode::AmclNode() :
   laser_check_interval_ = ros::Duration(15.0);
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
+
+  // Grab the initial pose from file
+  geometry_msgs::PoseWithCovarianceStampedPtr ipff(new geometry_msgs::PoseWithCovarianceStamped);
+  if (readPoseFromFile(ipff))
+      initialPoseReceived(ipff);
 }
 
 void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
@@ -1120,6 +1175,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // Fill in the header
       p.header.frame_id = global_frame_id_;
       p.header.stamp = laser_scan->header.stamp;
+
       // Copy in the pose
       p.pose.pose.position.x = hyps[max_weight_hyp].pf_pose_mean.v[0];
       p.pose.pose.position.y = hyps[max_weight_hyp].pf_pose_mean.v[1];
@@ -1154,6 +1210,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
       pose_pub_.publish(p);
       last_published_pose = p;
+      writePoseToFile(last_published_pose);
 
       ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",
                hyps[max_weight_hyp].pf_pose_mean.v[0],
