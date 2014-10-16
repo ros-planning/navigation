@@ -260,15 +260,19 @@ bool readPoseFromFile(geometry_msgs::PoseWithCovarianceStampedPtr pose)
     if (!home_dir)
         return false;
 
-    FILE* file = fopen ((std::string(home_dir) + "/.amcl_pose").c_str() ,"w");
+    FILE* file = fopen ((std::string(home_dir) + "/.amcl_pose").c_str() ,"r");
     if (file == NULL)
     {
-        ROS_WARN("Failed to read pose from file: ~/.amcl_pose");
+        ROS_WARN("Failed to open file: ~/.amcl_pose");
         return false;
     }
 
     float x,y,yaw;
-    fscanf (file, "%f %f %f", &x, &y, &yaw);
+    if (fscanf (file, "%f %f %f", &x, &y, &yaw) != 3)
+    {
+        ROS_WARN("Failed to read pose from file: ~/.amcl_pose");
+        return false;
+    }
     fclose(file);
 
     pose->header.frame_id = "/map";
@@ -279,6 +283,7 @@ bool readPoseFromFile(geometry_msgs::PoseWithCovarianceStampedPtr pose)
     pose->pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
 
     ROS_INFO("Succesfuly read pose from file: ~/.amcl_pose");
+
     return true;
 }
 
@@ -291,7 +296,7 @@ void writePoseToFile(const geometry_msgs::PoseWithCovarianceStamped& pose)
 
         if (file != NULL)
         {
-            ROS_INFO("Writing pose to file: ~/.amcl_pose");
+            ROS_DEBUG("Writing pose to file: ~/.amcl_pose");
             fprintf (file, "%f %f %f",
                      pose.pose.pose.position.x,
                      pose.pose.pose.position.y,
