@@ -80,8 +80,11 @@ namespace base_local_planner {
     }
 
     //! Prune the plan
-    plan = std::vector<geometry_msgs::PoseStamped>(plan.begin()+current_waypoint_index, plan.end());
-    global_plan = std::vector<geometry_msgs::PoseStamped>(global_plan.begin()+current_waypoint_index, global_plan.end());
+    if (current_waypoint_index >= 0)
+    {
+        plan = std::vector<geometry_msgs::PoseStamped>(plan.begin()+current_waypoint_index, plan.end());
+        global_plan = std::vector<geometry_msgs::PoseStamped>(global_plan.begin()+current_waypoint_index, global_plan.end());
+    }
   }
 
   void planUntilLookahead(std::vector<geometry_msgs::PoseStamped>& plan, double lookahead)
