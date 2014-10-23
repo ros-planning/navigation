@@ -65,7 +65,7 @@ public:
   double trans_stopped_vel;
   double rot_stopped_vel;
   bool   restore_defaults;
-  double lookahead_distance;
+  double min_lookahead_distance;
 
   LocalPlannerLimits() {}
 
@@ -90,7 +90,7 @@ public:
       bool   nprune_plan = true,
       double ntrans_stopped_vel = 0.1,
       double nrot_stopped_vel = 0.1,
-      double nlookahead_distance = -1.0):
+      double nmin_lookahead_distance = 1.0):
         max_trans_vel(nmax_trans_vel),
         min_trans_vel(nmin_trans_vel),
         max_vel_x(nmax_vel_x),
@@ -111,7 +111,7 @@ public:
         yaw_goal_tolerance(nyaw_goal_tolerance),
         trans_stopped_vel(ntrans_stopped_vel),
         rot_stopped_vel(nrot_stopped_vel),
-        lookahead_distance(nlookahead_distance) {}
+        min_lookahead_distance(nmin_lookahead_distance) {}
 
   ~LocalPlannerLimits() {}
 

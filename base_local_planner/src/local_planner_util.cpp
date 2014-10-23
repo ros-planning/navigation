@@ -116,14 +116,8 @@ bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vec
   }
 
   //now we'll prune the plan based on the position of the robot
-  if(limits_.prune_plan) {
+  if(limits_.prune_plan)
     base_local_planner::prunePlan(global_pose, transformed_plan, global_plan_);
-
-    if(limits_.lookahead_distance > 0.0)
-    {
-        base_local_planner::planUntilLookahead(transformed_plan, limits_.lookahead_distance);
-    }
-  }
 
   return true;
 }

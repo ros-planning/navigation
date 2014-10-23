@@ -110,6 +110,7 @@ namespace dwa_local_planner {
       base_local_planner::Trajectory findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel, tf::Stamped<tf::Pose> goal_pose);
 
       inline double getSimPeriod() { return sim_period_; }
+      inline double getSimTime() { return sim_time_; }
 
     private:
 
@@ -125,7 +126,7 @@ namespace dwa_local_planner {
       //! Trajectory generation
       base_local_planner::SimpleTrajectoryGenerator generator_;
       Eigen::Vector3f vsamples_;
-      double sim_period_;
+      double sim_period_, sim_time_;
 
       //! Cost functions with parameters
       //base_local_planner::ObstacleCostFunction obstacle_costs_; /// <@brief discards trajectories that move into obstacles

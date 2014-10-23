@@ -142,7 +142,7 @@ namespace dwa_local_planner {
 
         // Global plan modification
         limits.prune_plan = config.prune_plan;
-        limits.lookahead_distance = -1;
+        limits.min_lookahead_distance = 1;
 
         planner_util_.reconfigureCB(limits, false);
 
@@ -192,6 +192,12 @@ namespace dwa_local_planner {
             ROS_ERROR("Could not get local plan");
             return false;
         }
+
+        double trans_vel = hypot(robot_vel.getOrigin().getY(), robot_vel.getOrigin().getX());
+        double max_distance = dp_->getSimTime() * (trans_vel + planner_util_.getCurrentLimits().acc_limit_trans * dp_->getSimPeriod());
+        max_distance = std::max(planner_util_.getCurrentLimits().min_lookahead_distance, max_distance);
+
+        base_local_planner::planUntilLookahead(local_plan, max_distance);
 
         if (local_plan.empty())
         {

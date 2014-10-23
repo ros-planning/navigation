@@ -63,6 +63,7 @@ namespace dwa_local_planner {
         vsamples_[1] = config.vy_samples;
         vsamples_[2] = config.vth_samples;
         sim_period_ = config.sim_period;
+        sim_time_ = config.sim_time;
         generator_.setParameters(config.sim_time, config.sim_granularity, config.angular_sim_granularity, config.use_dwa, config.sim_period);
 
         ROS_INFO_STREAM("Trajectory Generator configured:\n"
@@ -124,9 +125,9 @@ namespace dwa_local_planner {
     {
         // Costfunctions
         std::vector<base_local_planner::TrajectoryCostFunction*> critics;
+        critics.push_back(&goal_costs_);
         critics.push_back(&occ_vel_costs_);
         critics.push_back(&plan_costs_);
-        critics.push_back(&goal_costs_);
         critics.push_back(&alignment_costs_);
 
         // trajectory generator
