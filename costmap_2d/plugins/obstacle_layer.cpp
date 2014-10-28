@@ -1,6 +1,14 @@
 #include<costmap_2d/obstacle_layer.h>
 #include<costmap_2d/costmap_math.h>
 
+#include <sensor_msgs/image_encodings.h>
+#include <image_transport/camera_common.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+#include <pcl/point_types.h>
+
+#include <limits>
+
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
 
@@ -10,6 +18,78 @@ using costmap_2d::FREE_SPACE;
 
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;
+
+// Encapsulate differences between processing float and uint16_t depths
+template<typename T> struct DepthTraits {};
+
+template<>
+struct DepthTraits<uint16_t>
+{
+  static inline bool valid(uint16_t depth) { return depth != 0; }
+  static inline float toMeters(uint16_t depth) { return depth * 0.001f; } // originally mm
+  static inline uint16_t fromMeters(float depth) { return (depth * 1000.0f) + 0.5f; }
+  static inline void initializeBuffer(std::vector<uint8_t>& buffer) {} // Do nothing - already zero-filled
+};
+
+template<>
+struct DepthTraits<float>
+{
+  static inline bool valid(float depth) { return std::isfinite(depth); }
+  static inline float toMeters(float depth) { return depth; }
+  static inline float fromMeters(float depth) { return depth; }
+
+  static inline void initializeBuffer(std::vector<uint8_t>& buffer)
+  {
+    float* start = reinterpret_cast<float*>(&buffer[0]);
+    float* end = reinterpret_cast<float*>(&buffer[0] + buffer.size());
+    std::fill(start, end, std::numeric_limits<float>::quiet_NaN());
+  }
+};
+
+template<typename T>
+void convert(const sensor_msgs::ImageConstPtr& depth_msg, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_msg, const image_geometry::PinholeCameraModel& model, double range_max = 0.0)
+{
+  // Use correct principal point from calibration
+  float center_x = model.cx();
+  float center_y = model.cy();
+
+  // Combine unit conversion (if necessary) with scaling by focal length for computing (X,Y)
+  double unit_scaling = DepthTraits<T>::toMeters( T(1) );
+  float constant_x = unit_scaling / model.fx();
+  float constant_y = unit_scaling / model.fy();
+  float bad_point = std::numeric_limits<float>::quiet_NaN();
+
+  pcl::PointCloud<pcl::PointXYZ>::iterator pt_iter = cloud_msg->begin();
+  const T* depth_row = reinterpret_cast<const T*>(&depth_msg->data[0]);
+  int row_step = depth_msg->step / sizeof(T);
+  for (int v = 0; v < (int)cloud_msg->height; ++v, depth_row += row_step)
+  {
+    for (int u = 0; u < (int)cloud_msg->width; ++u)
+    {
+      pcl::PointXYZ& pt = *pt_iter++;
+      T depth = depth_row[u];
+
+      // Missing points denoted by NaNs
+      if (!DepthTraits<T>::valid(depth))
+      {
+        if (range_max != 0.0)
+        {
+          depth = DepthTraits<T>::fromMeters(range_max);
+        }
+        else
+        {
+          pt.x = pt.y = pt.z = bad_point;
+          continue;
+        }
+      }
+
+      // Fill in XYZ
+      pt.x = (u - center_x) * depth * constant_x;
+      pt.y = (v - center_y) * depth * constant_y;
+      pt.z = DepthTraits<T>::toMeters(depth);
+    }
+  }
+}
 
 namespace costmap_2d
 {
@@ -71,10 +151,10 @@ void ObstacleLayer::onInitialize()
       sensor_frame = tf::resolve(tf_prefix, sensor_frame);
     }
 
-    if (!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan"))
+    if (!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan" || data_type == "DepthImage"))
     {
-      ROS_FATAL("Only topics that use point clouds or laser scans are currently supported");
-      throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
+      ROS_FATAL("Only topics that use point clouds, laser scans or depth images (with camera info) are currently supported");
+      throw std::runtime_error("Only topics that use point clouds, laser scans or depth images (with camera info) are currently supported");
     }
 
     std::string raytrace_range_param_name, obstacle_range_param_name;
@@ -147,7 +227,7 @@ void ObstacleLayer::onInitialize()
 
       if( inf_is_valid )
       {
-       ROS_WARN("obstacle_layer: inf_is_valid option is not applicable to PointCloud observations.");
+        ROS_WARN("obstacle_layer: inf_is_valid option is not applicable to PointCloud observations.");
       }
 
       boost::shared_ptr < tf::MessageFilter<sensor_msgs::PointCloud>
@@ -158,14 +238,14 @@ void ObstacleLayer::onInitialize()
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
     }
-    else
+    else if (data_type == "PointCloud2")
     {
       boost::shared_ptr < message_filters::Subscriber<sensor_msgs::PointCloud2>
           > sub(new message_filters::Subscriber<sensor_msgs::PointCloud2>(g_nh, topic, 50));
 
       if( inf_is_valid )
       {
-       ROS_WARN("obstacle_layer: inf_is_valid option is not applicable to PointCloud observations.");
+        ROS_WARN("obstacle_layer: inf_is_valid option is not applicable to PointCloud2 observations.");
       }
 
       boost::shared_ptr < tf::MessageFilter<sensor_msgs::PointCloud2>
@@ -175,6 +255,37 @@ void ObstacleLayer::onInitialize()
 
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
+    }
+    else // if (data_type == "DepthImage")
+    {
+      const std::string image_topic = g_nh.resolveName(topic);
+      const std::string info_topic  = image_transport::getCameraInfoTopic(topic);
+
+      boost::shared_ptr<image_geometry::PinholeCameraModel>
+          model(new image_geometry::PinholeCameraModel());
+
+      boost::shared_ptr <message_filters::Subscriber<sensor_msgs::Image>
+          > depth_sub(new message_filters::Subscriber<sensor_msgs::Image>(g_nh, image_topic, 50));
+
+      boost::shared_ptr < message_filters::Subscriber<sensor_msgs::CameraInfo>
+          > info_sub(new message_filters::Subscriber<sensor_msgs::CameraInfo>(g_nh, info_topic, 50));
+      info_sub->registerCallback(
+          boost::bind(&ObstacleLayer::cameraInfoCallback, this, _1, model));
+
+      if (inf_is_valid)
+      {
+        ROS_WARN("obstacle_layer: inf_is_valid option is not applicable to DepthImage observations.");
+      }
+
+      boost::shared_ptr < tf::MessageFilter<sensor_msgs::Image>
+          > depth_filter(new tf::MessageFilter<sensor_msgs::Image>(*depth_sub, *tf_, global_frame_, 50));
+      depth_filter->registerCallback(
+          boost::bind(&ObstacleLayer::depthImageCallback, this, _1, model, raytrace_range, observation_buffers_.back()));
+
+      observation_subscribers_.push_back(depth_sub);
+      observation_notifiers_.push_back(depth_filter);
+
+      observation_subscribers_.push_back(info_sub);
     }
 
     if (sensor_frame != "")
@@ -236,7 +347,7 @@ void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& mess
   buffer->unlock();
 }
 
-void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstPtr& raw_message, 
+void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstPtr& raw_message,
                                               const boost::shared_ptr<ObservationBuffer>& buffer){
   // Filter positive infinities ("Inf"s) to max_range.
   float epsilon = 0.0001; // a tenth of a millimeter
@@ -295,6 +406,45 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
   buffer->lock();
   buffer->bufferCloud(*message);
   buffer->unlock();
+}
+
+void ObstacleLayer::depthImageCallback(
+    const sensor_msgs::ImageConstPtr& message,
+    const boost::shared_ptr<image_geometry::PinholeCameraModel>& model,
+    double range_max,
+    const boost::shared_ptr<ObservationBuffer>& buffer)
+{
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_msg(new pcl::PointCloud<pcl::PointXYZ>);
+  cloud_msg->header = pcl_conversions::toPCL(message->header);
+  cloud_msg->height = message->height;
+  cloud_msg->width  = message->width;
+  cloud_msg->is_dense = false;
+  cloud_msg->points.resize(cloud_msg->height * cloud_msg->width);
+
+  if (message->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+  {
+    convert<uint16_t>(message, cloud_msg, *model, range_max);
+  }
+  else if (message->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
+  {
+    convert<float>(message, cloud_msg, *model, range_max);
+  }
+  else
+  {
+    ROS_ERROR_THROTTLE(5, "Depth image has unsupported encoding [%s]", message->encoding.c_str());
+    return;
+  }
+
+  buffer->lock();
+  buffer->bufferCloud(*cloud_msg);
+  buffer->unlock();
+}
+
+void ObstacleLayer::cameraInfoCallback(
+    const sensor_msgs::CameraInfoConstPtr& message,
+    boost::shared_ptr<image_geometry::PinholeCameraModel>& model)
+{
+  model->fromCameraInfo(message);
 }
 
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,

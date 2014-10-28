@@ -19,6 +19,8 @@ find_package(catkin REQUIRED
             std_msgs
             tf
             voxel_grid
+            image_transport
+            image_geometry
         )
 
 find_package(PCL REQUIRED)
@@ -78,6 +80,8 @@ catkin_package(
         std_msgs
         tf
         voxel_grid
+        image_transport
+        image_geometry
     DEPENDS
         PCL
         Eigen
