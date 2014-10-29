@@ -41,6 +41,7 @@
     <build_depend>voxel_grid</build_depend>
     <build_depend>image_transport</build_depend>
     <build_depend>image_geometry</build_depend>
+    <build_depend>depth_image_proc</build_depend>
 
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>geometry_msgs</run_depend>
@@ -62,6 +63,7 @@
     <run_depend>voxel_grid</run_depend>
     <run_depend>image_transport</run_depend>
     <run_depend>image_geometry</run_depend>
+    <run_depend>depth_image_proc</run_depend>
 
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>

@@ -4,6 +4,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <image_transport/camera_common.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <depth_image_proc/depth_conversions.h>
 
 #include <pcl/point_types.h>
 
@@ -18,78 +19,6 @@ using costmap_2d::FREE_SPACE;
 
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;
-
-// Encapsulate differences between processing float and uint16_t depths
-template<typename T> struct DepthTraits {};
-
-template<>
-struct DepthTraits<uint16_t>
-{
-  static inline bool valid(uint16_t depth) { return depth != 0; }
-  static inline float toMeters(uint16_t depth) { return depth * 0.001f; } // originally mm
-  static inline uint16_t fromMeters(float depth) { return (depth * 1000.0f) + 0.5f; }
-  static inline void initializeBuffer(std::vector<uint8_t>& buffer) {} // Do nothing - already zero-filled
-};
-
-template<>
-struct DepthTraits<float>
-{
-  static inline bool valid(float depth) { return std::isfinite(depth); }
-  static inline float toMeters(float depth) { return depth; }
-  static inline float fromMeters(float depth) { return depth; }
-
-  static inline void initializeBuffer(std::vector<uint8_t>& buffer)
-  {
-    float* start = reinterpret_cast<float*>(&buffer[0]);
-    float* end = reinterpret_cast<float*>(&buffer[0] + buffer.size());
-    std::fill(start, end, std::numeric_limits<float>::quiet_NaN());
-  }
-};
-
-template<typename T>
-void convert(const sensor_msgs::ImageConstPtr& depth_msg, pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud_msg, const image_geometry::PinholeCameraModel& model, double range_max = 0.0)
-{
-  // Use correct principal point from calibration
-  float center_x = model.cx();
-  float center_y = model.cy();
-
-  // Combine unit conversion (if necessary) with scaling by focal length for computing (X,Y)
-  double unit_scaling = DepthTraits<T>::toMeters( T(1) );
-  float constant_x = unit_scaling / model.fx();
-  float constant_y = unit_scaling / model.fy();
-  float bad_point = std::numeric_limits<float>::quiet_NaN();
-
-  pcl::PointCloud<pcl::PointXYZ>::iterator pt_iter = cloud_msg->begin();
-  const T* depth_row = reinterpret_cast<const T*>(&depth_msg->data[0]);
-  int row_step = depth_msg->step / sizeof(T);
-  for (int v = 0; v < (int)cloud_msg->height; ++v, depth_row += row_step)
-  {
-    for (int u = 0; u < (int)cloud_msg->width; ++u)
-    {
-      pcl::PointXYZ& pt = *pt_iter++;
-      T depth = depth_row[u];
-
-      // Missing points denoted by NaNs
-      if (!DepthTraits<T>::valid(depth))
-      {
-        if (range_max != 0.0)
-        {
-          depth = DepthTraits<T>::fromMeters(range_max);
-        }
-        else
-        {
-          pt.x = pt.y = pt.z = bad_point;
-          continue;
-        }
-      }
-
-      // Fill in XYZ
-      pt.x = (u - center_x) * depth * constant_x;
-      pt.y = (v - center_y) * depth * constant_y;
-      pt.z = DepthTraits<T>::toMeters(depth);
-    }
-  }
-}
 
 namespace costmap_2d
 {
@@ -414,6 +343,12 @@ void ObstacleLayer::depthImageCallback(
     double range_max,
     const boost::shared_ptr<ObservationBuffer>& buffer)
 {
+  if (!model->initialized())
+  {
+    ROS_WARN_THROTTLE(5, "Pinholde camera model not initialized yet");
+    return;
+  }
+
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_msg(new pcl::PointCloud<pcl::PointXYZ>);
   cloud_msg->header = pcl_conversions::toPCL(message->header);
   cloud_msg->height = message->height;
@@ -423,11 +358,11 @@ void ObstacleLayer::depthImageCallback(
 
   if (message->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
   {
-    convert<uint16_t>(message, cloud_msg, *model, range_max);
+    depth_image_proc::convert<uint16_t>(message, cloud_msg, *model, range_max);
   }
   else if (message->encoding == sensor_msgs::image_encodings::TYPE_32FC1)
   {
-    convert<float>(message, cloud_msg, *model, range_max);
+    depth_image_proc::convert<float>(message, cloud_msg, *model, range_max);
   }
   else
   {

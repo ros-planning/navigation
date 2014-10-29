@@ -21,11 +21,13 @@ find_package(catkin REQUIRED
             voxel_grid
             image_transport
             image_geometry
+            depth_image_proc
         )
 
 find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
+
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
@@ -82,6 +84,7 @@ catkin_package(
         voxel_grid
         image_transport
         image_geometry
+        depth_image_proc
     DEPENDS
         PCL
         Eigen
