@@ -47,7 +47,7 @@ void ObstacleLayer::onInitialize()
     ros::NodeHandle source_node(nh, source);
 
     //get the parameters for the specific topic
-    double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
+    double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height, obstacle_range, raytrace_range;
     std::string topic, sensor_frame, data_type;
     bool inf_is_valid, clearing, marking;
 
@@ -61,27 +61,13 @@ void ObstacleLayer::onInitialize()
     source_node.param("inf_is_valid", inf_is_valid, false);
     source_node.param("clearing", clearing, false);
     source_node.param("marking", marking, true);
+    source_node.param("obstacle_range", obstacle_range, 2.5);
+    source_node.param("raytrace_range", raytrace_range, 3.0);
 
     if (!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan"))
     {
       ROS_FATAL("Only topics that use point clouds or laser scans are currently supported");
       throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
-    }
-
-    std::string raytrace_range_param_name, obstacle_range_param_name;
-
-    //get the obstacle range for the sensor
-    double obstacle_range = 2.5;
-    if (source_node.searchParam("obstacle_range", obstacle_range_param_name))
-    {
-      source_node.getParam(obstacle_range_param_name, obstacle_range);
-    }
-
-    //get the raytrace range for the sensor
-    double raytrace_range = 3.0;
-    if (source_node.searchParam("raytrace_range", raytrace_range_param_name))
-    {
-      source_node.getParam(raytrace_range_param_name, raytrace_range);
     }
 
     ROS_DEBUG("Creating an observation buffer for source %s, topic %s, frame %s", source.c_str(), topic.c_str(),
