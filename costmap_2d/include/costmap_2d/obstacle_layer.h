@@ -48,12 +48,15 @@
 #include <laser_geometry/laser_geometry.h>
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <tf/message_filter.h>
 #include <message_filters/subscriber.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
 #include <costmap_2d/footprint_layer.h>
+#include <image_geometry/pinhole_camera_model.h>
 
 namespace costmap_2d
 {
@@ -107,6 +110,26 @@ public:
   void pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& message,
                            const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
 
+  /**
+   * @brief  A callback to handle buffering depth Image messages
+   * @param message The message returned from a message notifier
+   * @param model The pinhole camera model
+   * @param range_max The maximum range of the depth sensor, for filling in empty readings
+   * @param buffer A pointer to the observation buffer to update
+   */
+  void depthImageCallback(const sensor_msgs::ImageConstPtr& message,
+                          const boost::shared_ptr<image_geometry::PinholeCameraModel>& model,
+                          double range_max,
+                          const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
+
+  /**
+   * @brief  A callback to retrieve the camera info messages
+   * @param message The camera info message
+   * @param model The pinhole camera model
+   */
+  void cameraInfoCallback(const sensor_msgs::CameraInfoConstPtr& message,
+                          boost::shared_ptr<image_geometry::PinholeCameraModel>& model);
+
   // for testing purposes
   void addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing);
   void clearStaticObservations(bool marking, bool clearing);
@@ -141,7 +164,7 @@ protected:
                                  double* max_x, double* max_y);
 
   void updateRaytraceBounds(double ox, double oy, double wx, double wy, double range, double* min_x, double* min_y,
-			    double* max_x, double* max_y);
+                            double* max_x, double* max_y);
 
   /** @brief Overridden from superclass Layer to pass new footprint into footprint_layer_. */
   virtual void onFootprintChanged();
@@ -164,7 +187,7 @@ protected:
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
 
   FootprintLayer footprint_layer_; ///< @brief clears the footprint in this obstacle layer.
-  
+
   int combination_method_;
 
 private:
