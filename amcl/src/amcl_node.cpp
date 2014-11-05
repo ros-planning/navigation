@@ -1504,7 +1504,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
     // transformation for on-the-move pose-setting, so ignoring this
     // startup condition doesn't really cost us anything.
     if(sent_first_transform_)
-      ROS_WARN("Failed to transform initial pose in time (%s)", e.what());
+      ROS_WARN("Failed to transform initial pose in time (%s), using identity transform for the tiny odometric change since initial pose was broadcast", e.what());
     tx_odom.setIdentity();
   }
 
