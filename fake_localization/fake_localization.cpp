@@ -72,6 +72,7 @@
 
 #include <ros/ros.h>
 #include <ros/time.h>
+#include <boost/algorithm/string.hpp>
 
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseArray.h>
@@ -86,6 +87,25 @@
 #include "tf/message_filter.h"
 #include "message_filters/subscriber.h"
 
+/**
+* Addes the namespace to string if it does not start with a slash
+* @param name_space the namespace (nh_.GetNameSpace()) 
+* @param variable the namespace will be added to this string
+* @param rootSlash on true it adds the slash on the beginning
+* @author Markus Bader <markus.bader@tuwien.ac.at>
+*/
+void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
+  if(!variable.empty() && variable.at(0) != '/'){
+    boost::trim_right_if(name_space,boost::is_any_of("/"));
+    boost::trim_left_if(name_space,boost::is_any_of("/"));
+    if(!name_space.empty()) {
+      variable = name_space + "/" + variable;
+      if(rootSlash) {
+        variable = "/" + variable;
+      }
+    }
+  }
+}
 
 class FakeOdomNode
 {
@@ -99,10 +119,20 @@ class FakeOdomNode
 
       m_base_pos_received = false;
 
-      ros::NodeHandle private_nh("~");
+      ros::NodeHandle private_nh("~"), nh;
       private_nh.param("odom_frame_id", odom_frame_id_, std::string("odom"));
       private_nh.param("base_frame_id", base_frame_id_, std::string("base_link")); 
       private_nh.param("global_frame_id", global_frame_id_, std::string("/map"));
+      
+      /// added by Markus Bader to deal with namespaces
+      addNameSpace(nh.getNamespace(), odom_frame_id_); 
+      addNameSpace(nh.getNamespace(), base_frame_id_);
+      addNameSpace(nh.getNamespace(), global_frame_id_);
+      /// added by Markus Bader for debugging
+      ROS_DEBUG("%s - odom_frame_id: %s", private_nh.getNamespace().c_str(), odom_frame_id_.c_str());
+      ROS_DEBUG("%s - odom_frame_id: %s", private_nh.getNamespace().c_str(), base_frame_id_.c_str());  
+      ROS_DEBUG("%s - global_frame_id_: %s", private_nh.getNamespace().c_str(), global_frame_id_.c_str());
+      
       private_nh.param("delta_x", delta_x_, 0.0);
       private_nh.param("delta_y", delta_y_, 0.0);
       private_nh.param("delta_yaw", delta_yaw_, 0.0);      
@@ -110,7 +140,6 @@ class FakeOdomNode
       m_particleCloud.header.stamp = ros::Time::now();
       m_particleCloud.header.frame_id = global_frame_id_;
       m_particleCloud.poses.resize(1);
-      ros::NodeHandle nh;
 
       m_offsetTf = tf::Transform(tf::createQuaternionFromRPY(0, 0, -delta_yaw_ ), tf::Point(-delta_x_, -delta_y_, 0.0));
 

@@ -45,6 +45,26 @@
 
 namespace move_base {
 
+/**
+* Addes the namespace to string if it does not start with a slash
+* @param name_space the namespace (nh_.GetNameSpace()) 
+* @param variable the namespace will be added to this string
+* @param rootSlash on true it adds the slash on the beginning
+* @author Markus Bader <markus.bader@tuwien.ac.at>
+*/
+void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
+  if(!variable.empty() && variable.at(0) != '/'){
+    boost::trim_right_if(name_space,boost::is_any_of("/"));
+    boost::trim_left_if(name_space,boost::is_any_of("/"));
+    if(!name_space.empty()) {
+      variable = name_space + "/" + variable;
+      if(rootSlash) {
+        variable = "/" + variable;
+      }
+    }
+  }
+}
+  
   MoveBase::MoveBase(tf::TransformListener& tf) :
     tf_(tf),
     as_(NULL),
@@ -68,6 +88,14 @@ namespace move_base {
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
     private_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
+    
+    /// added by Markus Bader to deal with namespaces
+    addNameSpace(nh.getNamespace(),  robot_base_frame_);
+    addNameSpace(nh.getNamespace(),  global_frame_);
+    /// added by Markus Bader for debugging
+    ROS_DEBUG("%s - global_costmap/robot_base_frame: %s", private_nh.getNamespace().c_str(), robot_base_frame_.c_str());
+    ROS_DEBUG("%s - global_costmap/global_frame: %s", private_nh.getNamespace().c_str(), global_frame_.c_str());  
+    
     private_nh.param("planner_frequency", planner_frequency_, 0.0);
     private_nh.param("controller_frequency", controller_frequency_, 20.0);
     private_nh.param("planner_patience", planner_patience_, 5.0);

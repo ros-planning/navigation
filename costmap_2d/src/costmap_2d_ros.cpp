@@ -49,6 +49,26 @@ using namespace std;
 namespace costmap_2d
 {
 
+/**
+* Addes the namespace to string if it does not start with a slash
+* @param name_space the namespace (nh_.GetNameSpace()) 
+* @param variable the namespace will be added to this string
+* @param rootSlash on true it adds the slash on the beginning
+* @author Markus Bader <markus.bader@tuwien.ac.at>
+*/
+void addNameSpace(std::string name_space, std::string &variable, bool rootSlash = true){
+  if(!variable.empty() && variable.at(0) != '/'){
+    boost::trim_right_if(name_space,boost::is_any_of("/"));
+    boost::trim_left_if(name_space,boost::is_any_of("/"));
+    if(!name_space.empty()) {
+      variable = name_space + "/" + variable;
+      if(rootSlash) {
+        variable = "/" + variable;
+      }
+    }
+  }
+}
+  
 void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string name, bool should_delete=true)
 {
   if (!old_h.hasParam(name))
@@ -76,6 +96,14 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   // get two frames
   private_nh.param("global_frame", global_frame_, std::string("/map"));
   private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
+  
+  /// added by Markus Bader to deal with namespaces
+  addNameSpace(g_nh.getNamespace(),  global_frame_);
+  addNameSpace(g_nh.getNamespace(),  robot_base_frame_);
+  /// added by Markus Bader for debugging
+  ROS_DEBUG("%s - global_frame: %s", private_nh.getNamespace().c_str(), global_frame_.c_str());
+  ROS_DEBUG("%s - robot_base_frame: %s", private_nh.getNamespace().c_str(), robot_base_frame_.c_str());
+    
 
   // make sure that we set the frames appropriately based on the tf_prefix
   global_frame_ = tf::resolve(tf_prefix, global_frame_);
