@@ -155,8 +155,6 @@ public:
   double getInscribedRadius() { return inscribed_radius_; }
 
 private:
-  void updateUsingPlugins(std::vector<boost::shared_ptr<Layer> > &plugins);
-
   Costmap2D costmap_;
   std::string global_frame_;
 
