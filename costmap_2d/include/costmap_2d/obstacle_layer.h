@@ -35,8 +35,9 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef OBSTACLE_COSTMAP_PLUGIN_H_
-#define OBSTACLE_COSTMAP_PLUGIN_H_
+#ifndef COSTMAP_2D_OBSTACLE_LAYER_H_
+#define COSTMAP_2D_OBSTACLE_LAYER_H_
+
 #include <ros/ros.h>
 #include <costmap_2d/costmap_layer.h>
 #include <costmap_2d/layered_costmap.h>
@@ -57,6 +58,7 @@
 
 namespace costmap_2d
 {
+
 class ObstacleLayer : public CostmapLayer
 {
 public:
@@ -170,6 +172,7 @@ protected:
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
 };
-}
-#endif
 
+}  // namespace costmap_2d
+
+#endif  // COSTMAP_2D_OBSTACLE_LAYER_H_

@@ -1,5 +1,5 @@
-#include<costmap_2d/static_layer.h>
-#include<costmap_2d/costmap_math.h>
+#include <costmap_2d/static_layer.h>
+#include <costmap_2d/costmap_math.h>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayer, costmap_2d::Layer)
@@ -187,7 +187,7 @@ void StaticLayer::reset()
 }
 
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
-                                        double* max_x, double* max_y)
+                               double* max_x, double* max_y)
 {
   if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
     return;
@@ -205,17 +205,16 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
   *max_y = std::max(my, *max_y);
   
   has_updated_data_ = false;
-
 }
 
 void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!map_received_)
     return;
-  if(!use_maximum_)
-      updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
+  if (!use_maximum_)
+    updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
   else
-      updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+    updateWithMax(master_grid, min_i, min_j, max_i, max_j);
 }
 
-}
+}  // namespace costmap_2d

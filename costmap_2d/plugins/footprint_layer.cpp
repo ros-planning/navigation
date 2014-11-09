@@ -1,8 +1,9 @@
-#include<costmap_2d/footprint_layer.h>
-#include<costmap_2d/footprint.h>
-#include<string>
-#include<sstream>
+#include <costmap_2d/footprint_layer.h>
+#include <costmap_2d/footprint.h>
+#include <string>
+#include <sstream>
 #include <pluginlib/class_list_macros.h>
+
 PLUGINLIB_EXPORT_CLASS(costmap_2d::FootprintLayer, costmap_2d::Layer)
 
 namespace costmap_2d
@@ -68,5 +69,5 @@ namespace costmap_2d
     std::vector<geometry_msgs::Point> footprint_points = costmap_2d::toPointVector(footprint_.polygon);
     master_grid.setConvexPolygonCost(footprint_points, costmap_2d::FREE_SPACE);
   }
-}
 
+}  // namespace costmap_2d

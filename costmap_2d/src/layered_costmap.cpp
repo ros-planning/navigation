@@ -42,11 +42,12 @@
 #include <algorithm>
 #include <vector>
 
-using namespace std;
+using std::vector;
 
 namespace costmap_2d
 {
-LayeredCostmap::LayeredCostmap(string global_frame, bool rolling_window, bool track_unknown) :
+
+LayeredCostmap::LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown) :
     costmap_(), global_frame_(global_frame), rolling_window_(rolling_window), initialized_(false), size_locked_(false)
 {
   if (track_unknown)
@@ -77,7 +78,6 @@ void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double 
 
 void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 {
-
   // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
   if (rolling_window_)
   {
@@ -129,7 +129,6 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   byn_ = yn;
 
   initialized_ = true;
-
 }
 
 bool LayeredCostmap::isCurrent()
@@ -143,7 +142,6 @@ bool LayeredCostmap::isCurrent()
   return current_;
 }
 
-/** @brief Call setFootprint() on all plugins. */
 void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
   footprint_ = footprint_spec;
@@ -156,4 +154,4 @@ void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footp
   }
 }
 
-} // namespace layered_costmap
+}  // namespace costmap_2d
