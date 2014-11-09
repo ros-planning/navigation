@@ -69,6 +69,12 @@ void VoxelLayer::reset()
   activate();
 }
 
+void VoxelLayer::resetMaps()
+{
+  Costmap2D::resetMaps();
+  voxel_grid_.reset();
+}
+
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                        double* min_y, double* max_x, double* max_y)
 {
