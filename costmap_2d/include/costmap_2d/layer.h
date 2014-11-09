@@ -54,12 +54,28 @@ public:
 
   void initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf );
 
+  /**
+   * @brief This is called by the LayeredCostmap to poll this plugin as to how
+   *        much of the costmap it needs to update. Each layer can increase
+   *        the size of this bounds.
+   *
+   * For more details, see "Layered Costmaps for Context-Sensitive Navigation",
+   * by Lu et. Al, IROS 2014.
+   */
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
-                             double* max_x, double* max_y) {}
+                            double* max_x, double* max_y) {}
+
+  /**
+   * @brief Actually update the underlying costmap, only within the bounds
+   *        calculated during UpdateBounds().
+   */
   virtual void updateCosts(Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
 
-  virtual void deactivate() {}   // stop publishers
-  virtual void activate() {}     // restart publishers if they've been stopped
+  /** @brief Stop publishers. */
+  virtual void deactivate() {}
+
+  /** @brief Restart publishers if they've been stopped. */
+  virtual void activate() {}
 
   virtual void reset() {}
 
