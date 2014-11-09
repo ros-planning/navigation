@@ -34,8 +34,9 @@
  *
  * Author: David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_PLUGIN_BASE_H_
-#define COSTMAP_PLUGIN_BASE_H_
+#ifndef COSTMAP_2D_COSTMAP_2D_LAYER_H_
+#define COSTMAP_2D_COSTMAP_2D_LAYER_H_
+
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/layered_costmap.h>
 #include <string>
@@ -102,5 +103,6 @@ private:
   std::vector<geometry_msgs::Point> footprint_spec_;
 };
 
-} // namespace costmap_2d
-#endif
+}  // namespace costmap_2d
+
+#endif  // COSTMAP_2D_COSTMAP_2D_LAYER_H_

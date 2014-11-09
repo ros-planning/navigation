@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef LAYERED_COSTMAP_H_
-#define LAYERED_COSTMAP_H_
+#ifndef COSTMAP_2D_LAYERED_COSTMAP_H_
+#define COSTMAP_2D_LAYERED_COSTMAP_H_
 
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/layer.h>
@@ -171,8 +171,7 @@ private:
   double circumscribed_radius_, inscribed_radius_;
   std::vector<geometry_msgs::Point> footprint_;
 };
-}
-;
-// namespace layered_costmap
 
-#endif
+}  // namespace costmap_2d
+
+#endif  // COSTMAP_2D_LAYERED_COSTMAP_H_
