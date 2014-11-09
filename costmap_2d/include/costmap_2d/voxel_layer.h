@@ -86,6 +86,8 @@ public:
 protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
+  virtual void resetMaps();
+
 private:
   void reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level);
   void clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info);
