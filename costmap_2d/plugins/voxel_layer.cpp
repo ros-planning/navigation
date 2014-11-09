@@ -396,4 +396,4 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
 
 }
 
-}
+}  // namespace costmap_2d
