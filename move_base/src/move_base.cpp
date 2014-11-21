@@ -649,12 +649,14 @@ namespace move_base {
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
 
         //check if we've tried to make a plan for over our time limit
-        if(ros::Time::now() > attempt_end){
+	lock.lock();
+        if(ros::Time::now() > attempt_end && runPlanner_){
           //we'll move into our obstacle clearing mode
           state_ = CLEARING;
           publishZeroVelocity();
           recovery_trigger_ = PLANNING_R;
         }
+	lock.unlock();
       }
 
       if(!p_freq_change_ && planner_frequency_ > 0)
