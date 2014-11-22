@@ -592,7 +592,6 @@ namespace move_base {
     geometry_msgs::PoseStamped global_pose_msg;
     tf::poseStampedTFToMsg(global_pose, global_pose_msg);
     return global_pose_msg;
-
   }
 
   void MoveBase::planThread(){
@@ -649,14 +648,14 @@ namespace move_base {
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
 
         //check if we've tried to make a plan for over our time limit
-	 lock.lock();
+        lock.lock();
         if(ros::Time::now() > attempt_end && runPlanner_){
           //we'll move into our obstacle clearing mode
           state_ = CLEARING;
           publishZeroVelocity();
           recovery_trigger_ = PLANNING_R;
         }
-	 lock.unlock();
+        lock.unlock();
       }
 
       if(!p_freq_change_ && planner_frequency_ > 0)
