@@ -594,25 +594,28 @@ namespace move_base {
     return global_pose_msg;
   }
 
+  void MoveBase::wakePlanner(const ros::TimerEvent& event)
+  {
+    // we have slept long enough for rate
+    planner_cond_.notify_one();
+  }
+
   void MoveBase::planThread(){
     ROS_DEBUG_NAMED("move_base_plan_thread","Starting planner thread...");
     ros::NodeHandle n;
-    ros::Rate r(planner_frequency_);
+    ros::Timer timer;
+    bool wait_for_wake = false;
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
     while(n.ok()){
-      if(p_freq_change_)
-      {
-        ROS_INFO("Setting planner frequency to %.2f", planner_frequency_);
-        r = ros::Rate(planner_frequency_);
-        p_freq_change_ = false;
-      }
-
       //check if we should run the planner (the mutex is locked)
-      while(!runPlanner_){
+      while(wait_for_wake || !runPlanner_){
         //if we should not be running the planner then suspend this thread
         ROS_DEBUG_NAMED("move_base_plan_thread","Planner thread is suspending");
         planner_cond_.wait(lock);
+        wait_for_wake = false;
       }
+      ros::Time start_time = ros::Time::now();
+
       //time to plan! get a copy of the goal and unlock the mutex
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
       lock.unlock();
@@ -658,11 +661,17 @@ namespace move_base {
         lock.unlock();
       }
 
-      if(!p_freq_change_ && planner_frequency_ > 0)
-        r.sleep();
-
       //take the mutex for the next iteration
       lock.lock();
+
+      //setup sleep interface if needed
+      if(planner_frequency_ > 0){
+        ros::Duration sleep_time = (start_time + ros::Duration(1.0/planner_frequency_)) - ros::Time::now();
+        if (sleep_time > ros::Duration(0.0)){
+          wait_for_wake = true;
+          timer = n.createTimer(sleep_time, &MoveBase::wakePlanner, this);
+        }
+      }
     }
   }
 
