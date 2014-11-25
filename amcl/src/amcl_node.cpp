@@ -233,6 +233,7 @@ class AmclNode
     double std_tt_; 
 
     bool use_cov_from_params_; 
+    bool use_tf_to_update_initial_pose_;
 
     boost::recursive_mutex configuration_mutex_;
     dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
@@ -310,6 +311,8 @@ AmclNode::AmclNode() :
   private_nh_.param("draw_weight_as_height", draw_weight_as_height_, false);
 
   private_nh_.param("use_cov_from_params", use_cov_from_params_, false);
+
+  private_nh_.param("use_tf_to_update_initial_pose", use_tf_to_update_initial_pose_, true);
 
   if(use_cov_from_params_){
     private_nh_.param("std_xx", std_xx_, 0.25);
@@ -1491,21 +1494,27 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
   tf::StampedTransform tx_odom;
-  try
-  {
-    tf_->lookupTransform(base_frame_id_, ros::Time::now(),
-                         base_frame_id_, msg->header.stamp,
-                         global_frame_id_, tx_odom);
-  }
-  catch(tf::TransformException e)
-  {
-    // If we've never sent a transform, then this is normal, because the
-    // global_frame_id_ frame doesn't exist.  We only care about in-time
-    // transformation for on-the-move pose-setting, so ignoring this
-    // startup condition doesn't really cost us anything.
-    if(sent_first_transform_)
-      ROS_WARN("Failed to transform initial pose in time (%s), using identity transform for the tiny odometric change since initial pose was broadcast", e.what());
+  if (!use_tf_to_update_initial_pose_){
     tx_odom.setIdentity();
+  }
+  else
+  {
+    try
+    {
+      tf_->lookupTransform(base_frame_id_, ros::Time::now(),
+			   base_frame_id_, msg->header.stamp,
+			   global_frame_id_, tx_odom);
+    }
+    catch(tf::TransformException e)
+    {
+      // If we've never sent a transform, then this is normal, because the
+      // global_frame_id_ frame doesn't exist.  We only care about in-time
+      // transformation for on-the-move pose-setting, so ignoring this
+      // startup condition doesn't really cost us anything.
+      if(sent_first_transform_)
+	ROS_WARN("Failed to transform initial pose in time (%s), using identity transform for the hopefully-tiny odometric change since initial pose was broadcast", e.what());
+      tx_odom.setIdentity();
+    }
   }
 
   tf::Pose pose_old, pose_new;

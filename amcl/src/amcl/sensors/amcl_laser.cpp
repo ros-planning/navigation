@@ -479,7 +479,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     bool error = false; 
 
     if(skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold)){
-      fprintf(stderr, "Over 90%% of the observations were not in the map - looks like pf converged to wrong pose - integrating all observations\n");
+      fprintf(stderr, "Over %d%% of the observations were not in the map - looks like pf converged to wrong pose - integrating all observations\n", (int)(self->beam_skip_error_threshold*100));
       error = true; 
     }
 

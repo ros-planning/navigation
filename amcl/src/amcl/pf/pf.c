@@ -159,6 +159,7 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
     
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set);
+  pf_update_converged(pf);
 
   return;
 }
@@ -193,7 +194,8 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set);
-  
+  pf_update_converged(pf); 
+ 
   return;
 }
 
