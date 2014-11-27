@@ -126,7 +126,18 @@ TEST(voxel_grid, basicMarkingAndClearing){
 
   mark_count = 0;
 
+  //Visualize the output
+  /*
+     v->printVoxelGrid();
+     v->printColumnGrid();
 
+     printf("CostMap:\n===========\n");
+     for(int y = 0; y < size_y; y++){
+     for(int x = 0; x < size_x; x++){
+     printf((costMap[y * size_x + x] > 0 ? "#" : " "));
+     }printf("|\n");
+     }
+     */
 }
 
 int main(int argc, char** argv){
