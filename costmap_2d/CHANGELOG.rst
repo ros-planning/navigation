@@ -2,6 +2,18 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* added waitForTransform to bufferCloud to solve extrapolation into the future exception
+* deallocate costmap_ before reallocating
+* prevent div by zero in raytraceLine
+* only prefix sensor_frame when it's not empty
+* tf_prefix support in obstacle_layer
+* remove undefined function updateUsingPlugins
+* remove unused cell_data.h
+* numerous style fixes
+* Contributors: Andrzej Pronobis, David Lu, Jeremie Deray, Mani Monajjemi, Michael Ferguson, enriquefernandez
+
 1.11.13 (2014-10-02)
 --------------------
 

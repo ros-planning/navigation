@@ -2,6 +2,12 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* use timer rather than rate for immediate wakeup
+* adding lock to planner makePlan fail case
+* Contributors: Michael Ferguson, phil0stine
+
 1.11.13 (2014-10-02)
 --------------------
 
