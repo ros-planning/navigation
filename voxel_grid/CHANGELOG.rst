@@ -2,8 +2,8 @@
 Changelog for package voxel_grid
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.14 (2014-12-05)
+--------------------
 * remove old test code
 * fixup voxel_grid.h formatting (whitespace changes ONLY)
 * Contributors: Michael Ferguson
