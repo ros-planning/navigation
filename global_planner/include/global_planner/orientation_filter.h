@@ -11,6 +11,9 @@ class OrientationFilter {
     public:
         virtual void processPath(const geometry_msgs::PoseStamped& start,
                                  std::vector<geometry_msgs::PoseStamped>& path);
+                                 
+        void pointToNext(std::vector<geometry_msgs::PoseStamped>& path, int index);
+        
 };
 
 } //end namespace global_planner
