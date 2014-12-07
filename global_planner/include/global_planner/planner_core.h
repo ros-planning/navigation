@@ -51,6 +51,7 @@
 #include <global_planner/potential_calculator.h>
 #include <global_planner/expander.h>
 #include <global_planner/traceback.h>
+#include <global_planner/orientation_filter.h>
 #include <global_planner/GlobalPlannerConfig.h>
 
 namespace global_planner {
@@ -185,6 +186,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         PotentialCalculator* p_calc_;
         Expander* planner_;
         Traceback* path_maker_;
+        OrientationFilter* o_filter_;
 
         bool publish_potential_;
         ros::Publisher potential_pub_;

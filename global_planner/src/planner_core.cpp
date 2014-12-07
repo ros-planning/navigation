@@ -120,6 +120,8 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             path_maker_ = new GridPath(p_calc_);
         else
             path_maker_ = new GradientPath(p_calc_);
+            
+        o_filter_ = new OrientationFilter();
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
@@ -303,6 +305,9 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         ROS_ERROR("Failed to get a plan.");
     }
 
+    // add orientations if needed
+    o_filter_->processPath(plan);
+    
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete potential_array_;
