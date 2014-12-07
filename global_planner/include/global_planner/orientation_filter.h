@@ -9,7 +9,8 @@ namespace global_planner {
 
 class OrientationFilter {
     public:
-        virtual void processPath(std::vector<geometry_msgs::PoseStamped>& path){}
+        virtual void processPath(const geometry_msgs::PoseStamped& start,
+                                 std::vector<geometry_msgs::PoseStamped>& path);
 };
 
 } //end namespace global_planner
