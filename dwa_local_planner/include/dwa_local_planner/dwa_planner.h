@@ -99,7 +99,7 @@ namespace dwa_local_planner {
        * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
        * @param  new_plan The new global plan
        */
-      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> robot_pose, const std::vector<geometry_msgs::PoseStamped>& local_plan, const std::vector<geometry_msgs::Point>& footprint_spec);
+      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> robot_pose, const std::vector<geometry_msgs::PoseStamped>& local_plan, double lookahead, const std::vector<geometry_msgs::Point>& footprint_spec);
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
@@ -146,6 +146,14 @@ namespace dwa_local_planner {
       double align_align_scale_;
       double default_align_scale_;
       double arrive_align_scale_;
+
+      base_local_planner::CmdVelCostFunction cmd_vel_costs_; /// <@brief penalizes directions to achieve certain behaviors
+      double align_cmd_scale_;
+      double default_cmd_scale_;
+      double arrive_cmd_scale_;
+      double align_cmd_px_, align_cmd_nx_, align_cmd_py_, align_cmd_ny_, align_cmd_pth_, align_cmd_nth_;
+      double default_cmd_px_, default_cmd_nx_, default_cmd_py_, default_cmd_ny_, default_cmd_pth_, default_cmd_nth_;
+      double arrive_cmd_px_, arrive_cmd_nx_, arrive_cmd_py_, arrive_cmd_ny_, arrive_cmd_pth_, arrive_cmd_nth_;
 
       //! Scored sampling planner which evaluates the trajectories generation by the SimpleTrajectoryGenerator with use of costfunctions
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;

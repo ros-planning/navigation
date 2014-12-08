@@ -88,14 +88,18 @@ namespace dwa_local_planner {
         align_align_scale_ = config.align_align_scale;
         align_plan_scale_ = config.align_plan_scale;
         align_goal_scale_ = config.align_goal_scale;
+        align_cmd_scale_  = config.align_cmd_scale;
 
         default_align_scale_ = config.default_align_scale;
         default_plan_scale_ = config.default_plan_scale;
         default_goal_scale_ = config.default_goal_scale;
+        default_cmd_scale_  = config.default_cmd_scale;
 
         arrive_align_scale_ = config.arrive_align_scale;
         arrive_plan_scale_ = config.arrive_plan_scale;
         arrive_goal_scale_ = config.arrive_goal_scale;
+        arrive_cmd_scale_  = config.arrive_cmd_scale;
+
 
         ROS_INFO_STREAM("Scales configured:\n"
                         << "    - Align:\n"
@@ -112,6 +116,29 @@ namespace dwa_local_planner {
                         << "        - goal scale : " << config.arrive_goal_scale << " [-]\n"
                         );
 
+        //! Set cmd_vel costs
+        align_cmd_px_  = config.align_cmd_px;
+        align_cmd_nx_  = config.align_cmd_nx;
+        align_cmd_py_  = config.align_cmd_py;
+        align_cmd_ny_  = config.align_cmd_ny;
+        align_cmd_pth_ = config.align_cmd_pth;
+        align_cmd_nth_ = config.align_cmd_nth;
+
+        default_cmd_px_  = config.default_cmd_px;
+        default_cmd_nx_  = config.default_cmd_nx;
+        default_cmd_py_  = config.default_cmd_py;
+        default_cmd_ny_  = config.default_cmd_ny;
+        default_cmd_pth_ = config.default_cmd_pth;
+        default_cmd_nth_ = config.default_cmd_nth;
+
+        arrive_cmd_px_  = config.arrive_cmd_px;
+        arrive_cmd_nx_  = config.arrive_cmd_nx;
+        arrive_cmd_py_  = config.arrive_cmd_py;
+        arrive_cmd_ny_  = config.arrive_cmd_ny;
+        arrive_cmd_pth_ = config.arrive_cmd_pth;
+        arrive_cmd_nth_ = config.arrive_cmd_nth;
+
+
         //! Set parameters for occupancy velocity costfunction
         occ_vel_costs_.setParams(config.max_trans_vel);
     }
@@ -120,7 +147,7 @@ namespace dwa_local_planner {
         planner_util_(planner_util),
         occ_vel_costs_(planner_util->getCostmap()),
         plan_costs_(planner_util->getCostmap()),
-        goal_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
+        goal_costs_(planner_util->getCostmap()),
         vis_(planner_util->getCostmap(), goal_costs_, plan_costs_, planner_util->getGlobalFrame())
     {
         // Costfunctions
@@ -129,6 +156,7 @@ namespace dwa_local_planner {
         critics.push_back(&occ_vel_costs_);
         critics.push_back(&plan_costs_);
         critics.push_back(&alignment_costs_);
+        critics.push_back(&cmd_vel_costs_);
 
         // trajectory generator
         std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
@@ -161,7 +189,7 @@ namespace dwa_local_planner {
         return state;
     }
 
-    void DWAPlanner::updatePlanAndLocalCosts(tf::Stamped<tf::Pose> robot_pose, const std::vector<geometry_msgs::PoseStamped>& local_plan, const std::vector<geometry_msgs::Point>& footprint_spec)
+    void DWAPlanner::updatePlanAndLocalCosts(tf::Stamped<tf::Pose> robot_pose, const std::vector<geometry_msgs::PoseStamped>& local_plan, double lookahead, const std::vector<geometry_msgs::Point>& footprint_spec)
     {
         /// Determine the errors
         double yaw_error     = base_local_planner::getGoalOrientationAngleDifference(robot_pose, tf::getYaw(local_plan.front().pose.orientation));
@@ -181,6 +209,8 @@ namespace dwa_local_planner {
 
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.front().pose.orientation));
 
+            cmd_vel_costs_.setCoefficients(align_cmd_px_, align_cmd_nx_, align_cmd_py_, align_cmd_ny_, align_cmd_pth_, align_cmd_nth_);
+
             break;
 
         case Default:
@@ -189,6 +219,8 @@ namespace dwa_local_planner {
             goal_costs_.setScale(default_goal_scale_);
 
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.front().pose.orientation));
+
+            cmd_vel_costs_.setCoefficients(default_cmd_px_, default_cmd_nx_, default_cmd_py_, default_cmd_ny_, default_cmd_pth_, default_cmd_nth_);
 
             break;
 
@@ -199,11 +231,16 @@ namespace dwa_local_planner {
 
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.back().pose.orientation));
 
+            cmd_vel_costs_.setCoefficients(arrive_cmd_px_, arrive_cmd_nx_, arrive_cmd_py_, arrive_cmd_ny_, arrive_cmd_pth_, arrive_cmd_nth_);
+
             break;
         }
 
         //! Optimization data (Set local plan)
-        goal_costs_.setTargetPoses(local_plan);
+        std::vector<geometry_msgs::PoseStamped> local_plan_from_lookahead;
+        base_local_planner::planFromLookahead(local_plan, lookahead, local_plan_from_lookahead);
+
+        goal_costs_.setTargetPoses(local_plan_from_lookahead);
         plan_costs_.setTargetPoses(local_plan);
 
         //! Update footprint if changed

@@ -193,12 +193,6 @@ namespace dwa_local_planner {
             return false;
         }
 
-        double trans_vel = hypot(robot_vel.getOrigin().getY(), robot_vel.getOrigin().getX());
-        double max_distance = dp_->getSimTime() * (trans_vel + planner_util_.getCurrentLimits().acc_limit_trans * dp_->getSimPeriod());
-        max_distance = std::max(planner_util_.getCurrentLimits().min_lookahead_distance, max_distance);
-
-        base_local_planner::planUntilLookahead(local_plan, max_distance);
-
         if (local_plan.empty())
         {
             ROS_WARN_NAMED("dwa_local_planner", "Received an empty transformed plan.");
@@ -278,6 +272,11 @@ namespace dwa_local_planner {
         base_local_planner::Trajectory traj;
         if (getRobotStateAndLocalPlan(robot_pose, robot_vel, local_plan))
         {
+            // Calculate lookahead
+            double trans_vel = hypot(robot_vel.getOrigin().getY(), robot_vel.getOrigin().getX());
+            double lookahead = dp_->getSimTime() * (trans_vel + planner_util_.getCurrentLimits().acc_limit_trans * dp_->getSimPeriod());
+            lookahead = std::max(planner_util_.getCurrentLimits().min_lookahead_distance, lookahead);
+
             // Publish the local plan
             base_local_planner::publishPlan(local_plan, l_plan_pub_);
 
@@ -285,7 +284,7 @@ namespace dwa_local_planner {
             tf::poseStampedMsgToTF(local_plan.back(), goal_pose);
 
             // update plan in dwa planner to calculate cost grid
-            dp_->updatePlanAndLocalCosts(robot_pose, local_plan, costmap_ros_->getRobotFootprint());
+            dp_->updatePlanAndLocalCosts(robot_pose, local_plan, lookahead, costmap_ros_->getRobotFootprint());
 
             // call with updated footprint
             traj = dp_->findBestPath(robot_pose, robot_vel, goal_pose);
