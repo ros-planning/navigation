@@ -87,21 +87,24 @@ namespace base_local_planner {
     }
   }
 
-  void planUntilLookahead(std::vector<geometry_msgs::PoseStamped>& plan, double lookahead)
+  void planFromLookahead(const std::vector<geometry_msgs::PoseStamped>& plan, double lookahead, std::vector<geometry_msgs::PoseStamped>& new_plan)
   {
-      if (plan.size() < 2)
-          return;
 
       double waypoint_dist = 0.0;
-      int target_waypoint_index = 0;
-      for (unsigned int i = 1; i < plan.size() && waypoint_dist < lookahead; ++i) {
+      int target_waypoint_index = plan.size()-1;
+      for (unsigned int i = 1; i < plan.size(); ++i) {
           double waypoint_dist_sq = (plan[i].pose.position.x - plan[i-1].pose.position.x) * (plan[i].pose.position.x - plan[i-1].pose.position.x) +
                   (plan[i].pose.position.y - plan[i-1].pose.position.y) * (plan[i].pose.position.y - plan[i-1].pose.position.y);
           waypoint_dist += sqrt(waypoint_dist_sq);
-          target_waypoint_index = i;
+          if (waypoint_dist > lookahead)
+          {
+            target_waypoint_index = i;
+            break;
+          }
       }
 
-      plan = std::vector<geometry_msgs::PoseStamped>(plan.begin(), plan.begin()+target_waypoint_index+1);
+      new_plan = std::vector<geometry_msgs::PoseStamped>(plan.begin()+target_waypoint_index, plan.end());
+
   }
 
   bool transformGlobalPlan(
