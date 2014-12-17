@@ -86,6 +86,27 @@ public:
   void reset();
   uint32_t* getData() { return data_; }
 
+  /**
+   * @brief Sets the multiplier which determines accuracy
+   * @param Number of bits which should be used for accuracy
+   *
+   * Number of bits should be less than:
+   * (bits representing the max of an integer) minus
+   * (bits needed to represent the maximum raytrace distance (= maximum sensor range) in cells)
+   *
+   * E. g.:
+   * 32 Bit machine -> INT_MAX is 2147483647 = 2^31 => 31 bits (1 bit for the sign)
+   * Max raytrace range is 3 meters, cell resolution is 0.01 meters -> 3 / 0.01 => 300 cells
+   * 300 can be represented by 9 bits (300 <= 2^9)
+   *
+   * Number of maximum accuracy multiplier bits: 31 - 9 = 22
+   *
+   */
+  void setAccuracyMultiplierBits(unsigned int number_of_bits)
+  {
+    accuracy_multiplier_ = pow(2, number_of_bits);
+  };
+
   inline void markVoxel(unsigned int x, unsigned int y, unsigned int z)
   {
     if (x >= size_x_ || y >= size_y_ || z >= size_z_)
@@ -209,7 +230,8 @@ public:
   void clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length = UINT_MAX);
   void clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1, unsigned char *map_2d,
                            unsigned int unknown_threshold, unsigned int mark_threshold,
-                           unsigned char free_cost = 0, unsigned char unknown_cost = 255, unsigned int max_length = UINT_MAX);
+                           unsigned char free_cost = 0, unsigned char unknown_cost = 255, unsigned int max_length = UINT_MAX,
+                           bool include_corner_cases = false);
 
   VoxelStatus getVoxel(unsigned int x, unsigned int y, unsigned int z);
 
@@ -223,18 +245,31 @@ public:
   unsigned int sizeY();
   unsigned int sizeZ();
 
+
+  /**
+   * @brief Raytrace a line with the integer Bresenham algorithm
+   *
+   * See also:
+   * http://graphics.idav.ucdavis.edu/education/GraphicsNotes/CAGDNotes/Bresenhams-Algorithm.pdf
+   *
+  **/
   template <class ActionType>
   inline void raytraceLine(
     ActionType at, double x0, double y0, double z0,
-    double x1, double y1, double z1, unsigned int max_length = UINT_MAX)
+    double x1, double y1, double z1, unsigned int max_length = UINT_MAX, bool include_corner_cases = false)
   {
-    int dx = int(x1) - int(x0);
-    int dy = int(y1) - int(y0);
-    int dz = int(z1) - int(z0);
+    double dx = x1 - x0;
+    double dy = y1 - y0;
+    double dz = z1 - z0;
 
-    unsigned int abs_dx = abs(dx);
-    unsigned int abs_dy = abs(dy);
-    unsigned int abs_dz = abs(dz);
+    double abs_dx = fabs(accuracy_multiplier_ * dx);
+    double abs_dy = fabs(accuracy_multiplier_ * dy);
+    double abs_dz = fabs(accuracy_multiplier_ * dz);
+
+    if(abs_dx > INT_MAX || abs_dy > INT_MAX || abs_dz > INT_MAX)
+    {
+      ROS_ERROR_THROTTLE(1.0, "Voxel grid: Accuracy multiplier is set too high. Possible integer overflow while clearing.");
+    }
 
     int offset_dx = sign(dx);
     int offset_dy = sign(dy) * size_x_;
@@ -243,38 +278,72 @@ public:
     unsigned int z_mask = ((1 << 16) | 1) << (unsigned int)z0;
     unsigned int offset = (unsigned int)y0 * size_x_ + (unsigned int)x0;
 
-    GridOffset grid_off(offset);
-    ZOffset z_off(z_mask);
+    GridOffset index_updater_xy(offset);
+    ZOffset index_updater_z(z_mask);
 
-    //we need to chose how much to scale our dominant dimension, based on the maximum length of the line
+    double temp = 0;
+    double x_lost_rounding = dx > 0 ? 1.0 - fabs(modf(x0, &temp)) : fabs(modf(x0, &temp));
+    double y_lost_rounding = dy > 0 ? 1.0 - fabs(modf(y0, &temp)) : fabs(modf(y0, &temp));
+    double z_lost_rounding = dz > 0 ? 1.0 - fabs(modf(z0, &temp)) : fabs(modf(z0, &temp));
+
     double dist = sqrt((x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1) + (z0 - z1) * (z0 - z1));
-    double scale = std::min(1.0,  max_length / dist);
+    double scale = std::min(1.0, max_length / dist);
 
-    //is x dominant
     if (abs_dx >= max(abs_dy, abs_dz))
     {
-      int error_y = abs_dx / 2;
-      int error_z = abs_dx / 2;
+      int error_y = (int)(abs_dy * x_lost_rounding - abs_dx * y_lost_rounding);
+      int error_z = (int)(abs_dz * x_lost_rounding - abs_dx * z_lost_rounding);
+      unsigned int number_of_steps = scale * abs(int(x0) - int(x1));
 
-      bresenham3D(at, grid_off, grid_off, z_off, abs_dx, abs_dy, abs_dz, error_y, error_z, offset_dx, offset_dy, offset_dz, offset, z_mask, (unsigned int)(scale * abs_dx));
+      if(include_corner_cases)
+      {
+        bresenham3DIncludingCorners(at, index_updater_xy, index_updater_xy, index_updater_z,
+                             abs_dx, abs_dy, abs_dz, error_y, error_z, offset_dx, offset_dy, offset_dz, offset, z_mask,
+                             number_of_steps);
+        return;
+      }
+
+      bresenham3D(at, index_updater_xy, index_updater_xy, index_updater_z,
+                     abs_dx, abs_dy, abs_dz, error_y, error_z, offset_dx, offset_dy, offset_dz, offset, z_mask,
+                     number_of_steps);
       return;
     }
 
-    //y is dominant
     if (abs_dy >= abs_dz)
     {
-      int error_x = abs_dy / 2;
-      int error_z = abs_dy / 2;
+      int error_x = (int)(abs_dx * y_lost_rounding - abs_dy * x_lost_rounding);
+      int error_z = (int)(abs_dz * y_lost_rounding - abs_dy * z_lost_rounding);
+      unsigned int number_of_steps = scale * abs(int(x0) - int(x1));
 
-      bresenham3D(at, grid_off, grid_off, z_off, abs_dy, abs_dx, abs_dz, error_x, error_z, offset_dy, offset_dx, offset_dz, offset, z_mask, (unsigned int)(scale * abs_dy));
+      if(include_corner_cases)
+      {
+        bresenham3DIncludingCorners(at, index_updater_xy, index_updater_xy, index_updater_z,
+                             abs_dy, abs_dx, abs_dz, error_x, error_z, offset_dy, offset_dx, offset_dz, offset, z_mask,
+                             number_of_steps);
+        return;
+      }
+
+      bresenham3D(at, index_updater_xy, index_updater_xy, index_updater_z,
+                     abs_dy, abs_dx, abs_dz, error_x, error_z, offset_dy, offset_dx, offset_dz, offset, z_mask,
+                     number_of_steps);
       return;
     }
 
-    //otherwise, z is dominant
-    int error_x = abs_dz / 2;
-    int error_y = abs_dz / 2;
+    int error_x = (int)(abs_dx * z_lost_rounding - abs_dz * x_lost_rounding);
+    int error_y = (int)(abs_dy * z_lost_rounding - abs_dz * y_lost_rounding);
+    unsigned int number_of_steps = scale * abs(int(x0) - int(x1));
 
-    bresenham3D(at, z_off, grid_off, grid_off, abs_dz, abs_dx, abs_dy, error_x, error_y, offset_dz, offset_dx, offset_dy, offset, z_mask, (unsigned int)(scale * abs_dz));
+    if(include_corner_cases)
+    {
+      bresenham3DIncludingCorners(at, index_updater_z, index_updater_xy, index_updater_xy,
+                         abs_dz, abs_dx, abs_dy, error_x, error_y, offset_dz, offset_dx, offset_dy, offset, z_mask,
+                         number_of_steps);
+      return;
+    }
+
+    bresenham3D(at, index_updater_z, index_updater_xy, index_updater_xy,
+                   abs_dz, abs_dx, abs_dy, error_x, error_y, offset_dz, offset_dx, offset_dy, offset, z_mask,
+                   number_of_steps);
   }
 
 private:
@@ -284,32 +353,96 @@ private:
     ActionType at, OffA off_a, OffB off_b, OffC off_c,
     unsigned int abs_da, unsigned int abs_db, unsigned int abs_dc,
     int error_b, int error_c, int offset_a, int offset_b, int offset_c, unsigned int &offset,
-    unsigned int &z_mask, unsigned int max_length = UINT_MAX)
+    unsigned int &z_mask, unsigned int number_of_steps)
   {
-    unsigned int end = std::min(max_length, abs_da);
-    for (unsigned int i = 0; i < end; ++i)
+
+    for (unsigned int i = 0; i < number_of_steps; ++i)
     {
       at(offset, z_mask);
       off_a(offset_a);
-      error_b += abs_db;
-      error_c += abs_dc;
-      if ((unsigned int)error_b >= abs_da)
+
+      if (error_b >= 0)
       {
         off_b(offset_b);
         error_b -= abs_da;
       }
-      if ((unsigned int)error_c >= abs_da)
+
+      if (error_c >= 0)
       {
         off_c(offset_c);
         error_c -= abs_da;
       }
+
+      error_b += abs_db;
+      error_c += abs_dc;
     }
-    at(offset, z_mask);
+  }
+
+  /**
+   * @brief Bresenham raytracing algorithm including corner cases.
+   *
+   * The raytracing on discrete cells. Includes corner cases.
+   *
+   * |   |   |   |   |
+   * -----------------  Legend:
+   * |   | # | = | = |          = : Cells added by original Bresenham
+   * -----------------          # : Additional corner case cells which are added
+   * | = | = | # |   |
+   * -----------------
+  **/
+  template<class ActionType, class OffA, class OffB, class OffC>
+  inline void bresenham3DIncludingCorners(ActionType at, OffA off_a, OffB off_b, OffC off_c, unsigned int abs_da,
+                                          unsigned int abs_db, unsigned int abs_dc, int error_b, int error_c,
+                                          int offset_a, int offset_b, int offset_c, unsigned int &offset,
+                                          unsigned int &z_mask, unsigned int number_of_steps)
+  {
+
+    //-1 because we don't want to clear the corners _after_ the last cell
+    //last cell is cleared after the loop
+    for (unsigned int i = 0; i < number_of_steps - 1; ++i)
+    {
+      at(offset, z_mask);
+      off_a(offset_a);
+
+      if (error_b >= 0)
+      {
+        //adjusted not original Bresenham
+        at(offset, z_mask); //set voxel on the same row
+
+        off_b(offset_b); //go one row up
+        off_a(-offset_a); //go one column back
+        at(offset, z_mask); //set voxel
+
+        off_a(offset_a); //go back to next column
+
+        error_b -= abs_da;
+      }
+
+      if (error_c >= 0)
+      {
+        //adjusted not original Bresenham
+        at(offset, z_mask); //set voxel on the same row
+
+        off_c(offset_c); //go one row up
+        off_a(-offset_a); //go one column back
+        at(offset, z_mask); //set voxel
+
+        off_a(offset_a); //go back to next column
+
+        error_c -= abs_da;
+      }
+
+      error_b += abs_db;
+      error_c += abs_dc;
+    }
+
+    //clearing of last cell because loop only goes to number_of_steps - 1
+    off_a(offset_a);
   }
 
   inline int sign(int i)
   {
-    return i > 0 ? 1 : -1;
+    return i >= 0 ? 1 : -1;
   }
 
   inline unsigned int max(unsigned int x, unsigned int y)
@@ -320,6 +453,16 @@ private:
   unsigned int size_x_, size_y_, size_z_;
   uint32_t *data_;
   unsigned char *costmap;
+
+  /**
+   * @brief Used for Bresenham raytracing, increases accuracy
+   *
+   * Because we use integers to be fast we lose the floating point precision.
+   * By multiplying our values before converting to integers we can get higher accuracy.
+   * There is a maximum for this as we don't want to overflow our integers.
+   *
+   **/
+  unsigned int accuracy_multiplier_;
 
   //Aren't functors so much fun... used to recreate the Bresenham macro Eric wrote in the original version, but in "proper" c++
   class MarkVoxel

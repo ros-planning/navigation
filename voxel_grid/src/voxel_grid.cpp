@@ -46,9 +46,11 @@ namespace voxel_grid {
     size_z_ = size_z; 
 
     if(size_z_ > 16){
-      ROS_INFO("Error, this implementation can only support up to 16 z values (%d)", size_z_); 
+      ROS_ERROR("Error, this implementation can only support up to 16 z values (%d)", size_z_);
       size_z_ = 16;
     }
+
+    accuracy_multiplier_ = 1;
 
     data_ = new uint32_t[size_x_ * size_y_];
     uint32_t unknown_col = ~((uint32_t)0)>>16;
@@ -122,8 +124,11 @@ namespace voxel_grid {
     raytraceLine(cv, x0, y0, z0, x1, y1, z1, max_length);
   }
 
-  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1, unsigned char *map_2d, 
-      unsigned int unknown_threshold, unsigned int mark_threshold, unsigned char free_cost, unsigned char unknown_cost, unsigned int max_length){
+  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1,
+                                      unsigned char *map_2d, unsigned int unknown_threshold, unsigned int mark_threshold,
+                                      unsigned char free_cost, unsigned char unknown_cost, unsigned int max_length,
+                                      bool include_corner_cases)
+  {
     costmap = map_2d;
     if(map_2d == NULL){
       clearVoxelLine(x0, y0, z0, x1, y1, z1, max_length);
@@ -137,7 +142,7 @@ namespace voxel_grid {
     }
 
     ClearVoxelInMap cvm(data_, costmap, unknown_threshold, mark_threshold, free_cost, unknown_cost);
-    raytraceLine(cvm, x0, y0, z0, x1, y1, z1, max_length);
+    raytraceLine(cvm, x0, y0, z0, x1, y1, z1, max_length, include_corner_cases);
   }
 
   VoxelStatus VoxelGrid::getVoxel(unsigned int x, unsigned int y, unsigned int z)
