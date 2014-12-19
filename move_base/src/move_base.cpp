@@ -428,43 +428,43 @@ namespace move_base {
       float search_increment = resolution*3.0;
       if(req.tolerance < search_increment) search_increment = req.tolerance;
       for(float max_offset = search_increment; max_offset <= req.tolerance && !found_legal; max_offset += search_increment) {
-	for(float y_offset = 0; y_offset <= max_offset && !found_legal; y_offset += search_increment) {
-	  for(float x_offset = 0; x_offset <= max_offset && !found_legal; x_offset += search_increment) {
+        for(float y_offset = 0; y_offset <= max_offset && !found_legal; y_offset += search_increment) {
+          for(float x_offset = 0; x_offset <= max_offset && !found_legal; x_offset += search_increment) {
 
-	    //don't search again inside the current outer layer
-	    if(x_offset < max_offset-1e-9 && y_offset < max_offset-1e-9) continue;
+            //don't search again inside the current outer layer
+            if(x_offset < max_offset-1e-9 && y_offset < max_offset-1e-9) continue;
 
-	    //search to both sides of the desired goal
-	    for(float y_mult = -1.0; y_mult <= 1.0 + 1e-9 && !found_legal; y_mult += 2.0) {
+            //search to both sides of the desired goal
+            for(float y_mult = -1.0; y_mult <= 1.0 + 1e-9 && !found_legal; y_mult += 2.0) {
 
-	      //if one of the offsets is 0, -1*0 is still 0 (so get rid of one of the two)
-	      if(y_offset < 1e-9 && y_mult < -1.0 + 1e-9) continue;
+              //if one of the offsets is 0, -1*0 is still 0 (so get rid of one of the two)
+              if(y_offset < 1e-9 && y_mult < -1.0 + 1e-9) continue;
 
-	      for(float x_mult = -1.0; x_mult <= 1.0 + 1e-9 && !found_legal; x_mult += 2.0) {
-		if(x_offset < 1e-9 && x_mult < -1.0 + 1e-9) continue;
+              for(float x_mult = -1.0; x_mult <= 1.0 + 1e-9 && !found_legal; x_mult += 2.0) {
+                if(x_offset < 1e-9 && x_mult < -1.0 + 1e-9) continue;
 
-		p.pose.position.y = req.goal.pose.position.y + y_offset * y_mult;
-		p.pose.position.x = req.goal.pose.position.x + x_offset * x_mult;
+                p.pose.position.y = req.goal.pose.position.y + y_offset * y_mult;
+                p.pose.position.x = req.goal.pose.position.x + x_offset * x_mult;
 
-		if(planner_->makePlan(start, p, global_plan)){
-		  if(!global_plan.empty()){
+                if(planner_->makePlan(start, p, global_plan)){
+                  if(!global_plan.empty()){
 
-		    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
+                    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
                     //(the reachable goal should have been added by the global planner)
-		    global_plan.push_back(req.goal);
+                    global_plan.push_back(req.goal);
 
-		    found_legal = true;
-		    ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
-		    break;
-		  }
-		}
-		else{
-		  ROS_DEBUG_NAMED("move_base","Failed to find a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
-		}
-	      }
-	    }
-	  }
-	}
+                    found_legal = true;
+                    ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+                    break;
+                  }
+                }
+                else{
+                  ROS_DEBUG_NAMED("move_base","Failed to find a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+                }
+              }
+            }
+          }
+        }
       }
     }
 
