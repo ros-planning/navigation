@@ -1,6 +1,8 @@
 ROS Navigation Stack
 ====================
 
+[![Build Status](http://jenkins.ros.org/buildStatus/icon?job=devel-indigo-navigation)](http://jenkins.ros.org/job/devel-indigo-navigation/)
+
 A 2D navigation stack that takes in information from odometry, sensor
 streams, and a goal pose and outputs safe velocity commands that are sent
 to a mobile base.
