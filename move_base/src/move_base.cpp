@@ -426,7 +426,7 @@ namespace move_base {
       bool found_legal = false;
       float resolution = planner_costmap_ros_->getCostmap()->getResolution();
       float search_increment = resolution*3.0;
-      if(req.tolerance < search_increment) search_increment = req.tolerance;
+      if(req.tolerance > 0.0 && req.tolerance < search_increment) search_increment = req.tolerance;
       for(float max_offset = search_increment; max_offset <= req.tolerance && !found_legal; max_offset += search_increment) {
         for(float y_offset = 0; y_offset <= max_offset && !found_legal; y_offset += search_increment) {
           for(float x_offset = 0; x_offset <= max_offset && !found_legal; x_offset += search_increment) {
