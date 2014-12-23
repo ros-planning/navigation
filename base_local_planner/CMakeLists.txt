@@ -114,6 +114,7 @@ target_link_libraries(point_grid ${catkin_LIBRARIES})
 install(TARGETS
             base_local_planner
             trajectory_planner_ros
+       ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
