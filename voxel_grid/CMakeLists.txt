@@ -21,6 +21,7 @@ add_library(voxel_grid src/voxel_grid.cpp)
 target_link_libraries(voxel_grid ${catkin_LIBRARIES})
 
 install(TARGETS voxel_grid
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
