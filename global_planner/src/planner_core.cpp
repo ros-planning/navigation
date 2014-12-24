@@ -77,6 +77,18 @@ GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, s
     initialize(name, costmap, frame_id);
 }
 
+GlobalPlanner::~GlobalPlanner() {
+    printf("Deconstruct GlobalPlanner \n");
+    if (p_calc_)
+        delete p_calc_;
+    if (planner_)
+        delete planner_;
+    if (path_maker_)
+        delete path_maker_;
+    if (dsrv_)
+        delete dsrv_;
+}
+
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
     initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
 }

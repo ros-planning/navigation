@@ -494,6 +494,8 @@ namespace move_base {
     planner_thread_->interrupt();
     planner_thread_->join();
 
+    delete planner_thread_;
+
     delete planner_plan_;
     delete latest_plan_;
     delete controller_plan_;
