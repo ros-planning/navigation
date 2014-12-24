@@ -79,6 +79,11 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
+         * @brief  Default deconstructor for the PlannerCore object
+         */
+        ~GlobalPlanner();
+
+        /**
          * @brief  Initialization function for the PlannerCore object
          * @param  name The name of this planner
          * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
@@ -155,9 +160,6 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
          * @brief  Publish a path for visualization purposes
          */
         void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
-
-        ~GlobalPlanner() {
-        }
 
         bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
 

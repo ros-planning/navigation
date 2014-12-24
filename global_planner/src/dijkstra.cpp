@@ -49,6 +49,15 @@ DijkstraExpansion::DijkstraExpansion(PotentialCalculator* p_calc, int nx, int ny
     priorityIncrement_ = 2 * neutral_cost_;
 }
 
+DijkstraExpansion::~DijkstraExpansion() {
+  printf("Dijkstra deconstruct \n");
+  delete[] buffer1_;
+  delete[] buffer2_;
+  delete[] buffer3_;
+  if (pending_)
+      delete[] pending_;
+}
+
 //
 // Set/Reset map size
 //
