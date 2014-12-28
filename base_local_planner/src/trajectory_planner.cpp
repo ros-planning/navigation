@@ -342,7 +342,7 @@ namespace base_local_planner{
 
       //do we want to follow blindly
       if (simple_attractor_) {
-	//this is not what we use 
+        //this is not what we use
         goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
           (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
@@ -377,18 +377,18 @@ namespace base_local_planner{
       traj.addPoint(x_i, y_i, theta_i);
 
       if(i <  num_steps){
-	//calculate velocities
-	vx_i = computeNewVelocity(vx_samp, vx_i, acc_x, dt);
-	vy_i = computeNewVelocity(vy_samp, vy_i, acc_y, dt);
-	vtheta_i = computeNewVelocity(vtheta_samp, vtheta_i, acc_theta, dt);
+        //calculate velocities
+        vx_i = computeNewVelocity(vx_samp, vx_i, acc_x, dt);
+        vy_i = computeNewVelocity(vy_samp, vy_i, acc_y, dt);
+        vtheta_i = computeNewVelocity(vtheta_samp, vtheta_i, acc_theta, dt);
 
-	//calculate positions
-	x_i = computeNewXPosition(x_i, vx_i, vy_i, theta_i, dt);
-	y_i = computeNewYPosition(y_i, vx_i, vy_i, theta_i, dt);
-	theta_i = computeNewThetaPosition(theta_i, vtheta_i, dt);
+        //calculate positions
+        x_i = computeNewXPosition(x_i, vx_i, vy_i, theta_i, dt);
+        y_i = computeNewYPosition(y_i, vx_i, vy_i, theta_i, dt);
+        theta_i = computeNewThetaPosition(theta_i, vtheta_i, dt);
 
-	//increment time
-	time += dt;
+        //increment time
+        time += dt;
       }
       //might need to break out?? (at maxima??) 
     } // end for i < numsteps
@@ -516,10 +516,10 @@ namespace base_local_planner{
 
       //do we want to follow blindly
       if (simple_attractor_) {
-	//this is not what we use 
-        goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) * 
-          (x_i - global_plan_[global_plan_.size() -1].pose.position.x) + 
-          (y_i - global_plan_[global_plan_.size() -1].pose.position.y) * 
+        //this is not what we use
+        goal_dist = (x_i - global_plan_[global_plan_.size() -1].pose.position.x) *
+          (x_i - global_plan_[global_plan_.size() -1].pose.position.x) +
+          (y_i - global_plan_[global_plan_.size() -1].pose.position.y) *
           (y_i - global_plan_[global_plan_.size() -1].pose.position.y);
       } else {
 
@@ -585,9 +585,8 @@ namespace base_local_planner{
 
   double TrajectoryPlanner::headingDiff(int cell_x, int cell_y, double x, double y, double heading){
     double heading_diff = DBL_MAX;
-    unsigned int goal_cell_x, goal_cell_y;    
     bool v = false;
-
+    unsigned int goal_cell_x, goal_cell_y;
     const double v2_x = cos(heading);
     const double v2_y = sin(heading);
 
@@ -792,8 +791,6 @@ namespace base_local_planner{
 						   double acc_x, double acc_y, 
 						   double acc_theta, ros::Publisher *vis_pub) {
 
-    
-
     //compute feasible velocity limits in robot space
     double max_vel_x = max_vel_x_, max_vel_theta;
     double min_vel_x, min_vel_theta;
@@ -859,7 +856,7 @@ namespace base_local_planner{
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
 			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
-	traj_list.push_back(*comp_traj);
+        traj_list.push_back(*comp_traj);
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -872,23 +869,23 @@ namespace base_local_planner{
 
         //next sample all theta trajectories - why vtheta_samples_ - 1 (missing the highest positive one
         for(int j = 0; j < vtheta_samples_; ++j){
-	  //straight traj already eval'ed
-	  if(fabs(vtheta_samp) > 0.00001){
-	    generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
+          //straight traj already eval'ed
+          if(fabs(vtheta_samp) > 0.00001){
+            generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp,
 			       acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
-	    traj_list.push_back(*comp_traj);
+            traj_list.push_back(*comp_traj);
 
-	    if(print_scores)
-	      ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
-	  
-	    //if the new trajectory is better... let's take it
-	    if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
-	      swap = best_traj;
-	      best_traj = comp_traj;
-	      comp_traj = swap;
-	    }
-	  }
+            if(print_scores)
+              ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
+
+            //if the new trajectory is better... let's take it
+            if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
+              swap = best_traj;
+              best_traj = comp_traj;
+              comp_traj = swap;
+            }
+          }
           vtheta_samp += dvtheta;
         }
         vx_samp += dvx;
@@ -901,7 +898,7 @@ namespace base_local_planner{
         vy_samp = 0.1;
         vtheta_samp = 0.0;
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
+            acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -914,7 +911,7 @@ namespace base_local_planner{
         vy_samp = -0.1;
         vtheta_samp = 0.0;
         generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp, 
-			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
+            acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_);
 
         //if the new trajectory is better... let's take it
         if(comp_traj->cost_ >= 0 && (comp_traj->cost_ < best_traj->cost_ || best_traj->cost_ < 0)){
@@ -1045,68 +1042,66 @@ namespace base_local_planner{
     //check rotate in place trajectories 
     if(check_rotate){
       for(int i = 0; i < vtheta_samples_; ++i) {
-	//enforce a minimum rotational velocity because the base can't handle small in-place rotations
-	double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_) 
-	  : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
+        //enforce a minimum rotational velocity because the base can't handle small in-place rotations
+        double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_)
+                                                     : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
 
-	//ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
+        //ROS_WARN("Trajectory rollout : %f,%f,%f - delta : %f, %f -> %.3f", x, y, theta, vx_samp, vtheta_samp, comp_traj->cost_);
 
-        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited, 
-			   acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_on_rotate_, 
-			   false);
+        generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited,
+                           acc_x, acc_y, acc_theta, impossible_cost, *comp_traj, heading_scoring_on_rotate_,
+                           false);
+        traj_list.push_back(*comp_traj);
 
-	traj_list.push_back(*comp_traj);
+        //if the new trajectory is better... let's take it...
+        //note if we can legally rotate in place we prefer to do that rather than move with y velocity
+        if(comp_traj->cost_ >= 0
+           && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0 || best_traj->yv_ != 0.0)
+           && (vtheta_samp > dvtheta || vtheta_samp < -1 * dvtheta)){
+          double x_r, y_r, th_r;
+          comp_traj->getEndpoint(x_r, y_r, th_r);
+          x_r += heading_lookahead_ * cos(th_r);
+          y_r += heading_lookahead_ * sin(th_r);
+          unsigned int cell_x, cell_y;
 
-	//if the new trajectory is better... let's take it... 
-	//note if we can legally rotate in place we prefer to do that rather than move with y velocity
-	if(comp_traj->cost_ >= 0 
-	   && (comp_traj->cost_ <= best_traj->cost_ || best_traj->cost_ < 0 || best_traj->yv_ != 0.0) 
-	   && (vtheta_samp > dvtheta || vtheta_samp < -1 * dvtheta)){
-	  double x_r, y_r, th_r;
-	  comp_traj->getEndpoint(x_r, y_r, th_r);
-	  x_r += heading_lookahead_ * cos(th_r);
-	  y_r += heading_lookahead_ * sin(th_r);
-	  unsigned int cell_x, cell_y;
-
-	  //make sure that we'll be looking at a legal cell
-	  if (costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
-	    double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
-	    if (ahead_gdist < heading_dist) {
-	      //if we haven't already tried rotating left since we've moved forward
-	      if (vtheta_samp < 0 && !stuck_left) {
-		swap = best_traj;
-		best_traj = comp_traj;
-		comp_traj = swap;
-		heading_dist = ahead_gdist;
-	      }
-	      //if we haven't already tried rotating right since we've moved forward
-	      else if(vtheta_samp > 0 && !stuck_right) {
-		swap = best_traj;
-		best_traj = comp_traj;
-		comp_traj = swap;
-		heading_dist = ahead_gdist;
-	      }
-	    }
-	  }
-	}
-
-	vtheta_samp += dvtheta;
+          //make sure that we'll be looking at a legal cell
+          if (costmap_.worldToMap(x_r, y_r, cell_x, cell_y)) {
+            double ahead_gdist = goal_map_(cell_x, cell_y).target_dist;
+            if (ahead_gdist < heading_dist) {
+              //if we haven't already tried rotating left since we've moved forward
+              if (vtheta_samp < 0 && !stuck_left) {
+                swap = best_traj;
+                best_traj = comp_traj;
+                comp_traj = swap;
+                heading_dist = ahead_gdist;
+              }
+              //if we haven't already tried rotating right since we've moved forward
+              else if(vtheta_samp > 0 && !stuck_right) {
+                swap = best_traj;
+                best_traj = comp_traj;
+                comp_traj = swap;
+                heading_dist = ahead_gdist;
+              }
+            }
+          }
+        }
+        vtheta_samp += dvtheta;
       }
     }
 
     if(try_failsafes){
       if(shorter_time_failed && best_traj->cost_ > 0){
-        //we tried failsafes and failed to find a path (with short timestep) - however we found a valid rotate in place path 
-	if(verb){
-	  ROS_INFO("Rotate in place found a path"); 
-	  ROS_WARN("Best Traj found (with tv) %f, %f - Score : %f", best_traj->xv_, best_traj->thetav_, best_traj->cost_);
-	}
+        //we tried failsafes and failed to find a path (with short timestep) - however we found a valid rotate in place path
+        if(verb){
+          ROS_INFO("Rotate in place found a path");
+          ROS_WARN("Best Traj found (with tv) %f, %f - Score : %f", best_traj->xv_, best_traj->thetav_, best_traj->cost_);
+        }
       }
     }
 
     if(best_traj->cost_ < 0){
       if(verb){
-	ROS_WARN("No path found");
+        ROS_WARN("No path found");
       }
     }
     

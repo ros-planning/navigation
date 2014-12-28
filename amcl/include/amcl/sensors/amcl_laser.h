@@ -62,7 +62,7 @@ class AMCLLaser : public AMCLSensor
   // Default constructor
   public: AMCLLaser(size_t max_beams, map_t* map);
 
- public: virtual ~AMCLLaser(); 
+  public: virtual ~AMCLLaser(); 
 
   public: void SetModelBeam(double z_hit,
                             double z_short,
@@ -77,7 +77,7 @@ class AMCLLaser : public AMCLSensor
                                        double sigma_hit,
                                        double max_occ_dist);
 
-  //a more probabilistically correct model 
+  //a more probabilistically correct model - also with the option to do beam skipping
   public: void SetModelLikelihoodFieldProb(double z_hit,
 					   double z_rand,
 					   double sigma_hit,
@@ -106,6 +106,8 @@ class AMCLLaser : public AMCLSensor
   private: static double LikelihoodFieldModelProb(AMCLLaserData *data, 
 					     pf_sample_set_t* set);
 
+  private: void reallocTempData(int max_samples, int max_obs);
+
   private: laser_model_t model_type;
 
   // Current data timestamp
@@ -120,9 +122,19 @@ class AMCLLaser : public AMCLSensor
   // Max beams to consider
   private: int max_beams;
 
+  // Beam skipping parameters (used by LikelihoodFieldModelProb model)
   private: bool do_beamskip; 
   private: double beam_skip_distance; 
   private: double beam_skip_threshold; 
+  //threshold for the ratio of invalid beams - at which all beams are integrated to the likelihoods 
+  //this would be an error condition 
+  private: double beam_skip_error_threshold;
+
+  //temp data that is kept before observations are integrated to each particle (requried for beam skipping)
+  private: int max_samples;
+  private: int max_obs;
+  private: double **temp_obs;
+
   // Laser model params
   //
   // Mixture params for the components of the model; must sum to 1
@@ -131,15 +143,6 @@ class AMCLLaser : public AMCLSensor
   private: double z_max;
   private: double z_rand;
 
-  //temp data that is kept before observations are integrated to each particle 
-  private: int max_samples;
-  private: int max_obs;
-  private: double **temp_obs;
-
-  //threshold for the ratio of invalid beams - at which all beams are integrated to the likelihoods 
-  //this would be an error condition 
-  private: double beam_skip_error_threshold;
-  //
   // Stddev of Gaussian model for laser hits.
   private: double sigma_hit;
   // Decay rate of exponential model for short readings.
