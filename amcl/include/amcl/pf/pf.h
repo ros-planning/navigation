@@ -187,6 +187,10 @@ void pf_draw_cluster_stats(pf_t *pf, struct _rtk_fig_t *fig);
 //and sets the converged flag in the current set and the pf 
 int pf_update_converged(pf_t *pf);
 
+
+//sets the current set and pf converged values to zero
+void pf_init_converged(pf_t *pf);
+
 #ifdef __cplusplus
 }
 #endif
