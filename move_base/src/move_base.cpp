@@ -384,9 +384,15 @@ namespace move_base {
   }
 
   bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
+    boost::unique_lock<boost::recursive_mutex> lock(clear_costmap_mutex_);
+
     //clear the costmaps
     planner_costmap_ros_->resetLayers();
     controller_costmap_ros_->resetLayers();
+
+    // Call one update on the maps to reinitialize data
+    planner_costmap_ros_->updateMap();
+    controller_costmap_ros_->updateMap();
     return true;
   }
 
@@ -517,7 +523,15 @@ namespace move_base {
   }
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
+    boost::unique_lock< boost::recursive_mutex > cm_lock(clear_costmap_mutex_);
     boost::unique_lock< boost::shared_mutex > lock(*(planner_costmap_ros_->getCostmap()->getLock()));
+
+    //check if the costmap is current before planning on it
+    if (!planner_costmap_ros_->isCurrent())
+    {
+      ROS_DEBUG_NAMED("move_base", "Planner costmap ROS is not current, unable to create global plan");
+      return false;
+    }
 
     //make sure to set the plan to be empty initially
     plan.clear();
@@ -946,7 +960,9 @@ namespace move_base {
         }
 
         {
-         boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
+
+        boost::unique_lock<boost::recursive_mutex> cm_lock(clear_costmap_mutex_);
+        boost::unique_lock< boost::shared_mutex > lock(*(controller_costmap_ros_->getCostmap()->getLock()));
 
         if(tc_->computeVelocityCommands(cmd_vel)){
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",

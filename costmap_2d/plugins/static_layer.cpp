@@ -59,7 +59,9 @@ StaticLayer::~StaticLayer()
 void StaticLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
-  current_ = true;
+
+  // Map is not current until it has been updated with static map
+  current_ = false;
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
 
@@ -252,6 +254,7 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
     updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
   else
     updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+  current_ = true;
 }
 
 }  // namespace costmap_2d
