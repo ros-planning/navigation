@@ -753,7 +753,7 @@ namespace move_base {
             return;
           }
 
-	  ROS_INFO("Action server received new goal\n");
+	  ROS_INFO("Action server received new goal");
 
           goal = goalToGlobalFrame(new_goal.target_pose);
 

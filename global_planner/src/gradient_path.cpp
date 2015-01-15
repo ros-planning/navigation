@@ -87,7 +87,7 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
         // check if near goal
         double nx = stc % xs_ + dx, ny = stc / xs_ + dy;
 
-	//this smoothens the path - but will map to the same index 
+        //this smoothens the path - but will map to the same index
 
         if (fabs(nx - start_x) < .5 && fabs(ny - start_y) < .5) {
             current.first = start_x;
@@ -107,37 +107,37 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
 
         bool oscillation_detected = false;
 
-	path.push_back(current);
-	position_set.insert(std::make_pair(precision * current.first, precision * current.second));
+        path.push_back(current);
+        position_set.insert(std::make_pair(precision * current.first, precision * current.second));
 
         int stcnx = stc + xs_;
         int stcpx = stc - xs_;
 
-	//why is all 8 neighbours valid?? 
-	//this has wrap around - maybe its the POT_HIGH?? 
-	//check gradiant first 
-	bool check_gradient = true; 
-	bool zero_gradient = false; 
+        //why are all 8 neighbours valid??
+        //this has wrap around - maybe its the POT_HIGH??
+        //check gradient first
+        bool check_gradient = true;
+        bool zero_gradient = false;
 
-	// check for potentials at eight positions near cell
+        // check for potentials at eight positions near cell
         if (potential[stc] >= POT_HIGH || potential[stc + 1] >= POT_HIGH || potential[stc - 1] >= POT_HIGH
-	    || potential[stcnx] >= POT_HIGH || potential[stcnx + 1] >= POT_HIGH || potential[stcnx - 1] >= POT_HIGH
-	    || potential[stcpx] >= POT_HIGH || potential[stcpx + 1] >= POT_HIGH || potential[stcpx - 1] >= POT_HIGH){
-	  check_gradient = false; 
-	}
+              || potential[stcnx] >= POT_HIGH || potential[stcnx + 1] >= POT_HIGH || potential[stcnx - 1] >= POT_HIGH
+              || potential[stcpx] >= POT_HIGH || potential[stcpx + 1] >= POT_HIGH || potential[stcpx - 1] >= POT_HIGH){
+            check_gradient = false;
+        }
 
-	//set the neighbors 
-	neighbors[0] = stcpx - 1; 
-	neighbors[1] = stcpx; 
-	neighbors[2] = stcpx + 1; 
-	neighbors[3] = stc - 1;
-	neighbors[4] = stc + 1;
-	neighbors[5] = stcnx - 1; 
-	neighbors[6] = stcnx; 
-	neighbors[7] = stcnx+1; 
+        //set the neighbors
+        neighbors[0] = stcpx - 1;
+        neighbors[1] = stcpx;
+        neighbors[2] = stcpx + 1;
+        neighbors[3] = stc - 1;
+        neighbors[4] = stc + 1;
+        neighbors[5] = stcnx - 1;
+        neighbors[6] = stcnx;
+        neighbors[7] = stcnx+1;
 
-	if(check_gradient){
-	    gradCell(potential, stc);
+        if(check_gradient){
+            gradCell(potential, stc);
             gradCell(potential, stc + 1);
             gradCell(potential, stcnx);
             gradCell(potential, stcnx + 1);
@@ -151,97 +151,97 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
             float y = (1.0 - dy) * y1 + dy * y2; // interpolated y
 
             // show gradients
-            ROS_DEBUG("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n", 
-		     gradx_[stc], grady_[stc], gradx_[stc+1], grady_[stc+1], 
-		     gradx_[stcnx], grady_[stcnx], gradx_[stcnx+1], grady_[stcnx+1], x, y);
+            ROS_DEBUG("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n",
+                   gradx_[stc], grady_[stc], gradx_[stc+1], grady_[stc+1],
+                   gradx_[stcnx], grady_[stcnx], gradx_[stcnx+1], grady_[stcnx+1], x, y);
 
             // check for zero gradient, failed
             if (x == 0.0 && y == 0.0) {
-	      //hitting here 
-	      ROS_ERROR("[PathCalc] Zero gradient - Distance from goal : %f, %f\n", 
-			fabs(nx - start_x), fabs(ny - start_y));
-	      zero_gradient = true; 
-                //return false;		
+                //hitting here
+                ROS_ERROR("[PathCalc] Zero gradient - Distance from goal : %f, %f\n",
+                      fabs(nx - start_x), fabs(ny - start_y));
+                zero_gradient = true;
+                //return false;
             }
 
-	    if(!zero_gradient){
-	      // move in the right direction
-	      float ss = pathStep_ / ::hypot(x, y);
-	      dx += x * ss;
-	      dy += y * ss;
+            if(!zero_gradient){
+                // move in the right direction
+                float ss = pathStep_ / ::hypot(x, y);
+                dx += x * ss;
+                dy += y * ss;
 
-	      //should we clamp this to some resolution?? - so that we can use the hash set? 
+                //should we clamp this to some resolution?? - so that we can use the hash set?
 
-	      int stc_new = stc; 
-	    
-	      // check for overflow
-	      if (dx > 1.0) {
-                stc_new++;
-                dx -= 1.0;
-	      }
-	      if (dx < -1.0) {
-                stc_new--;
-                dx += 1.0;
-	      }
-	      if (dy > 1.0) {
-                stc_new += xs_;
-                dy -= 1.0;
-	      }
-	      if (dy < -1.0) {
-                stc_new -= xs_;
-                dy += 1.0;
-	      }
+                int stc_new = stc;
 
-	      double nx_next = stc_new % xs_ + dx, ny_next = stc_new / xs_ + dy;
-	      
-	      int npath = path.size();
+                // check for overflow
+                if (dx > 1.0) {
+                    stc_new++;
+                    dx -= 1.0;
+                }
+                if (dx < -1.0) {
+                    stc_new--;
+                    dx += 1.0;
+                }
+                if (dy > 1.0) {
+                    stc_new += xs_;
+                    dy -= 1.0;
+                }
+                if (dy < -1.0) {
+                    stc_new -= xs_;
+                    dy += 1.0;
+                }
 
-	      if (npath > 1 && path[npath - 2].first == nx_next 
-		  && path[npath - 2].second == ny_next) {
-		oscillation_detected = true;
-	      }
+                double nx_next = stc_new % xs_ + dx, ny_next = stc_new / xs_ + dy;
 
-	      if(!oscillation_detected){
-		stc = stc_new; 
-	      }
-	    }
-	}
+                int npath = path.size();
+
+                if (npath > 1 && path[npath - 2].first == nx_next
+                      && path[npath - 2].second == ny_next) {
+                    oscillation_detected = true;
+                }
+
+                if(!oscillation_detected){
+                    stc = stc_new;
+                }
+            }
+        }
 
         
-	if( !check_gradient || oscillation_detected || zero_gradient) {
-	  ROS_DEBUG("[Path] Pot fn boundary, following grid (%0.1f/%d)", potential[stc], (int) path.size());
+        if( !check_gradient || oscillation_detected || zero_gradient) {
+            ROS_DEBUG("[Path] Pot fn boundary, following grid (%0.1f/%d)", potential[stc], (int) path.size());
             // check eight neighbors to find the lowest
             int minc = stc;
             float minp = 1e10;
-	    
-	    int npath = path.size();
-	    int previous_1 = getIndex(path[npath - 2].first, path[npath - 2].second);
-	    int previous = getIndex(path[npath - 1].first, path[npath - 1].second);
 
-	    for(int k=0; k < 8; k++){
-	      if(neighbors[k] == previous || neighbors[k] == previous_1){
-		continue; 
-	      }
+            int npath = path.size();
+            int previous_1 = getIndex(path[npath - 2].first, path[npath - 2].second);
+            int previous = getIndex(path[npath - 1].first, path[npath - 1].second);
 
-	      std::pair<int, int> cp;
-	      cp.first = neighbors[k] % xs_ *precision;
-	      cp.second = neighbors[k] / xs_*precision;
+            for(int k=0; k < 8; k++){
+                if(neighbors[k] == previous || neighbors[k] == previous_1){
+                    continue;
+                }
 
-	      if(position_set.find(cp) != position_set.end()){
-		continue; 
-	      }
+                std::pair<int, int> cp;
+                cp.first = neighbors[k] % xs_ *precision;
+                cp.second = neighbors[k] / xs_*precision;
 
-	      if(potential[neighbors[k]] < minp){
-		minp = potential[neighbors[k]]; 
-		minc = neighbors[k]; 
-	      }
-	    }
+                if(position_set.find(cp) != position_set.end()){
+                    continue;
+                }
+
+                if(potential[neighbors[k]] < minp){
+                    minp = potential[neighbors[k]];
+                    minc = neighbors[k];
+                }
+            }
            
-	    //just move to the neighbor with the lowest potential //we have to ignore cycles also 
-	    if(minc == stc){
-	      ROS_WARN("Grid motion didn't find valid neighbor - declaring failure\n");
-	      return false; 
-	    }
+            //just move to the neighbor with the lowest potential //we have to ignore cycles also
+            if(minc == stc){
+                ROS_WARN("Grid motion didn't find valid neighbor - declaring failure\n");
+                return false;
+            }
 
             stc = minc;
             dx = 0;
@@ -255,7 +255,7 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
                 //savemap("navfn_highpot");
                 return 0;
             }
-        }       
+        }
     }
 
     return false;

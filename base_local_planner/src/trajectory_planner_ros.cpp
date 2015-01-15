@@ -98,8 +98,8 @@ namespace base_local_planner {
       trans_stopped_velocity_ = 1e-2;
       double sim_time, sim_granularity, angular_sim_granularity;
       int vx_samples, vtheta_samples;
-      double pdist_scale, gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta;
-      bool holonomic_robot, dwa, simple_attractor, heading_scoring;
+      double pdist_scale, gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, heading_scale;
+      bool holonomic_robot, dwa, simple_attractor, heading_scoring, heading_scoring_on_rotate;
       double heading_scoring_timestep;
       double max_vel_x, min_vel_x;
       double backup_vel;
@@ -170,6 +170,7 @@ namespace base_local_planner {
       private_nh.param("vtheta_samples", vtheta_samples, 20);
 
       private_nh.param("path_distance_bias", pdist_scale, 0.6);
+      private_nh.param("heading_scale", heading_scale, 0.001);
       private_nh.param("goal_distance_bias", gdist_scale, 0.8);
       private_nh.param("occdist_scale", occdist_scale, 0.01);
 
@@ -203,9 +204,7 @@ namespace base_local_planner {
       max_vel_th_ = max_rotational_vel;
       min_vel_th_ = -1.0 * max_rotational_vel;
       private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
-
       reached_goal_ = false;
-
       backup_vel = -0.1;
       if(private_nh.getParam("backup_vel", backup_vel))
         ROS_WARN("The backup_vel parameter has been deprecated in favor of the escape_vel parameter. To switch, just change the parameter name in your configuration files.");
@@ -219,6 +218,7 @@ namespace base_local_planner {
       private_nh.param("world_model", world_model_type, std::string("costmap"));
       private_nh.param("dwa", dwa, true);
       private_nh.param("heading_scoring", heading_scoring, false);
+      private_nh.param("heading_scoring_on_rotate", heading_scoring_on_rotate, false);
       private_nh.param("heading_scoring_timestep", heading_scoring_timestep, 0.8);
 
       simple_attractor = false;
@@ -237,10 +237,13 @@ namespace base_local_planner {
       footprint_spec_ = costmap_ros_->getRobotFootprint();
 
       tc_ = new TrajectoryPlanner(*world_model_, *costmap_, footprint_spec_,
-          acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, pdist_scale,
-          gdist_scale, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
-          max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
-          dwa, heading_scoring, heading_scoring_timestep, meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
+                                  acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, 
+                                  vx_samples, vtheta_samples, pdist_scale, gdist_scale, 
+                                  occdist_scale, heading_lookahead, oscillation_reset_dist, 
+                                  escape_reset_dist, escape_reset_theta, holonomic_robot,
+                                  max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
+                                  dwa, heading_scoring, heading_scoring_timestep, heading_scoring_on_rotate, heading_scale, 
+                                  meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
       
       map_viz_.initialize(name, global_frame_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
@@ -375,12 +378,11 @@ namespace base_local_planner {
     //reset the global plan
     global_plan_.clear();
     global_plan_ = orig_global_plan;
-
+    
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
     xy_tolerance_latch_ = false;
-
+    //reset the at goal flag
     reached_goal_ = false;
-
     return true;
   }
 
@@ -447,44 +449,43 @@ namespace base_local_planner {
       //check to see if the goal orientation has been reached
       if (fabs(angle) <= yaw_goal_tolerance_) {
         //set the velocity command to zero - reached the goal - setting the reached goal variable true
-	bool base_is_goal_reached = isGoalReached();
+        bool base_is_goal_reached = isGoalReached();
 
         cmd_vel.linear.x = 0.0;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
         rotating_to_goal_ = false;
         xy_tolerance_latch_ = false;
-	reached_goal_ = true;
-      } 
-      else {
+        reached_goal_ = true;
+      } else {
         //we need to call the next two lines to make sure that the trajectory
         //planner updates its path distance and goal distance grids
-	nav_msgs::Odometry base_odom;
-	odom_helper_.getOdom(base_odom);
-	bool stopped = false; 
-	stopped = base_local_planner::stopped(base_odom, rot_stopped_velocity_, trans_stopped_velocity_);
+        nav_msgs::Odometry base_odom;
+        odom_helper_.getOdom(base_odom);
+        bool stopped = false;
+        stopped = base_local_planner::stopped(base_odom, rot_stopped_velocity_, trans_stopped_velocity_);
 
-	//we should update the plan if we are not rotating to goal
-	if(!rotating_to_goal_ && !stopped){ 
-	  //calculate command to stop the robot
-	  if ( ! stopWithAccLimits(global_pose, robot_vel, cmd_vel)) {
-	    //unable to stop within the given time 
-	    ROS_WARN("Local Planner : Unable to stop within given time");
-	    return false;
-	  }
-	}	
+        //we should update the plan if we are not rotating to goal
+        if(!rotating_to_goal_ && !stopped){
+          //calculate command to stop the robot
+          if ( ! stopWithAccLimits(global_pose, robot_vel, cmd_vel)) {
+            //unable to stop within the given time
+            ROS_WARN("Local Planner : Unable to stop within given time");
+            return false;
+          }
+        }
         //if we're stopped... then we want to rotate to goal
         else{
           //once we have stoped moving in xy or if we are already rotating in place 
-	  //keep issuing rotate in place commands 
-	  if(rotating_to_goal_ || (!rotating_to_goal_ && stopped)){
-	    if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
-	      ROS_WARN("Failed to rotate to goal");
-	      return false;
-	    }
-	    rotating_to_goal_ = true;
-	  }
-	}
+          //keep issuing rotate in place commands
+          if(rotating_to_goal_ || (!rotating_to_goal_ && stopped)){
+            if(!rotateToGoal(global_pose, robot_vel, goal_th, cmd_vel)) {
+              ROS_WARN("Failed to rotate to goal");
+              return false;
+            }
+            rotating_to_goal_ = true;
+          }
+        }
       }
 
       //publish an empty plan because we've reached our goal position
@@ -618,7 +619,7 @@ namespace base_local_planner {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-
-    return reached_goal_;   
+    //return flag set in controller
+    return reached_goal_; 
   }
 };

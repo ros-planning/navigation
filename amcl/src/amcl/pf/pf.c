@@ -106,6 +106,9 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   pf->alpha_slow = alpha_slow;
   pf->alpha_fast = alpha_fast;
 
+  //set converged to 0
+  pf_init_converged(pf);
+
   return pf;
 }
 
@@ -159,6 +162,9 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
     
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set);
+
+  //set converged to 0
+  pf_init_converged(pf);
   pf_update_converged(pf);
 
   return;
@@ -194,9 +200,23 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set);
+<<<<<<< HEAD
   pf_update_converged(pf); 
  
+=======
+  
+  //set converged to 0
+  pf_init_converged(pf);
+
+>>>>>>> a250a51100edcf5c1edd493c1282a7dad7b1d7fb
   return;
+}
+
+void pf_init_converged(pf_t *pf){
+  pf_sample_set_t *set;
+  set = pf->sets + pf->current_set;
+  set->converged = 0; 
+  pf->converged = 0; 
 }
 
 int pf_update_converged(pf_t *pf)
@@ -208,7 +228,7 @@ int pf_update_converged(pf_t *pf)
 
   set = pf->sets + pf->current_set;
   double mean_x = 0, mean_y = 0;
-  
+
   for (i = 0; i < set->sample_count; i++){
     sample = set->samples + i;
 
@@ -422,7 +442,9 @@ void pf_update_resample(pf_t *pf)
   pf_cluster_stats(pf, set_b);
 
   // Use the newly created sample set
-  pf->current_set = (pf->current_set + 1) % 2;
+  pf->current_set = (pf->current_set + 1) % 2; 
+
+  pf_update_converged(pf);
 
   pf_update_converged(pf);
 

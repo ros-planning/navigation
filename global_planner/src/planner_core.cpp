@@ -124,15 +124,14 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         if (use_grid_path){
             path_maker_ = new GridPath(p_calc_);
-	    path_maker_backup_ = NULL;
-	}
+            path_maker_backup_ = NULL;
+        }
         else{
             path_maker_ = new GradientPath(p_calc_);
-	    path_maker_backup_ = new GridPath(p_calc_); 
-	    //we use the grid path as backup as sometimes the gradient path 
-	    //has issues extracting paths 
-	    
-	}
+            path_maker_backup_ = new GridPath(p_calc_);
+            //we use the grid path as backup as sometimes the gradient path
+            //has issues extracting paths
+        }
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
@@ -227,12 +226,12 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
      int goal_index = getMapIndex(goal_x, goal_y, nx);
 
      float c = getCost(costs, goal_index);
-     
+
      double lethal_cost_ = planner_->getLethalCost();
      if(c == lethal_cost_){
        return true;
      }
-     else 
+     else
        return false; //do we want to check here if its in unknown space??
   }
 
@@ -255,25 +254,25 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         if(dx == 0 && dy == 0){
           continue;
         }
-        
+
         //Note : No guarantee that it will not go through a wall if set a high enough value (DON'T SET high value :)
         if(hypot(dx, dy) < xy_tolerance){
-          double n_goal_x = goal_x + dx; 
+          double n_goal_x = goal_x + dx;
           double n_goal_y = goal_y + dy;
 
           if(n_goal_x >= nx || n_goal_x < 0)
             continue;
           if(n_goal_y >= ny || n_goal_y < 0)
             continue;
-          
+
           int index = getMapIndex(n_goal_x, n_goal_y, nx);
 
           float cost = getCost(costs, index);
 
           if(cost < min_cost){
-            min_cost= cost; 
-            new_goal_x = n_goal_x; 
-            new_goal_y = n_goal_y; 
+            min_cost= cost;
+            new_goal_x = n_goal_x;
+            new_goal_y = n_goal_y;
             found = true;
           }
         }
@@ -291,65 +290,65 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     double lethal_cost_ = planner_->getLethalCost();
     if(c == lethal_cost_){
       ROS_INFO("Original goal is in collision - checking neighbors => Tollerance : %f", xy_tolerance);
-	
+
       int x_t = xy_tolerance;
-      int y_t = xy_tolerance; 
+      int y_t = xy_tolerance;
 
       bool found = false;
 
-      double n_end_x, n_end_y; 
+      double n_end_x, n_end_y;
       float min_cost = lethal_cost_;
 
       for(int dx = 0; dx < x_t; dx++){
-	if(found)
-	  break;
-	for(int dy = 0; dy < y_t; dy++){
-	  if(found)
-	    break;
-	  if(dx == 0 && dy == 0){
-	    continue;
-	  }
+        if(found)
+          break;
+        for(int dy = 0; dy < y_t; dy++){
+          if(found)
+            break;
+          if(dx == 0 && dy == 0){
+            continue;
+          }
 
-	  vector<pair<double, double> > points;
-	  if(hypot(dx, dy) < xy_tolerance){
-	    points.push_back(make_pair(goal_x + dx, goal_y + dy));
-	    points.push_back(make_pair(goal_x + dx, goal_y - dy));
-	    points.push_back(make_pair(goal_x - dx, goal_y - dy));
-	    points.push_back(make_pair(goal_x - dx, goal_y + dy));
+          vector<pair<double, double> > points;
+          if(hypot(dx, dy) < xy_tolerance){
+            points.push_back(make_pair(goal_x + dx, goal_y + dy));
+            points.push_back(make_pair(goal_x + dx, goal_y - dy));
+            points.push_back(make_pair(goal_x - dx, goal_y - dy));
+            points.push_back(make_pair(goal_x - dx, goal_y + dy));
 
-	    for(int i=0; i < points.size(); i++){
-	      if(points[i].first >= nx || points[i].first < 0)
-		continue;
-	      if(points[i].second >= ny || points[i].second < 0)
-		continue;
-	      int index = getMapIndex(points[i].first, points[i].second, nx);
+            for(int i=0; i < points.size(); i++){
+              if(points[i].first >= nx || points[i].first < 0)
+                continue;
+              if(points[i].second >= ny || points[i].second < 0)
+                continue;
+              int index = getMapIndex(points[i].first, points[i].second, nx);
 
-	      float cost = getCost(costs, index);
+              float cost = getCost(costs, index);
 
-	      if(cost < lethal_cost_){
-		found = true;
-		n_end_x = points[i].first;
-		n_end_y = points[i].second;
-		min_cost = cost; 
-		break;
-	      }
-	    }
-	  }    
-	}
+              if(cost < lethal_cost_){
+                found = true;
+                n_end_x = points[i].first;
+                n_end_y = points[i].second;
+                min_cost = cost;
+                break;
+              }
+            }
+          }
+        }
       }
 
       if(found){
-	ROS_INFO("Found close neighbour with low cost : %f,%f", n_end_x, n_end_y, min_cost);
-	// set up start cell
-	goal_index = getMapIndex(n_end_x, n_end_y, nx);
-	new_goal_x = n_end_x; 
-	new_goal_y = n_end_y;
-	return true;
+        ROS_INFO("Found close neighbour with low cost : %f, %f, min_cost %f", n_end_x, n_end_y, min_cost);
+        // set up start cell
+        goal_index = getMapIndex(n_end_x, n_end_y, nx);
+        new_goal_x = n_end_x;
+        new_goal_y = n_end_y;
+        return true;
       }
       else{
-	new_goal_x = goal_x;
-	new_goal_y = goal_y;
-	return false;
+        new_goal_x = goal_x;
+        new_goal_y = goal_y;
+        return false;
       }
     }
 
@@ -456,12 +455,12 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
       bool found_goal = findClosestOpenGoal(costmap_->getCharMap(), goal_x, goal_y, new_goal_x, new_goal_y, tolerance_map, nx, ny);
 
       if(found_goal){
-	if(new_goal_x != goal_x || new_goal_y != goal_y){
-	  ROS_WARN("Found close goal");
-	  original_goal_valid = false;
-	  goal_x = new_goal_x; 
-	  goal_y = new_goal_y;
-	}
+        if(new_goal_x != goal_x || new_goal_y != goal_y){
+          ROS_WARN("Found close goal");
+          original_goal_valid = false;
+          goal_x = new_goal_x;
+          goal_y = new_goal_y;
+        }
       }
     }
 
