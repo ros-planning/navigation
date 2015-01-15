@@ -1155,7 +1155,6 @@ namespace move_base {
   void MoveBase::resetState(){
     // Disable the planner thread
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
-    lock.lock();
     runPlanner_ = false;
     lock.unlock();
 
