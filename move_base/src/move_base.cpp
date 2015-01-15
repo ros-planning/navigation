@@ -181,8 +181,6 @@ namespace move_base {
       controller_costmap_ros_->stop();
     }
 
-    ROS_ERROR_NAMED("move_base","Okke changed this mothafuckas");
-
     //load any user specified recovery behaviors, and if that fails load the defaults
     if(!loadRecoveryBehaviors(private_nh)){
       loadDefaultRecoveryBehaviors();
