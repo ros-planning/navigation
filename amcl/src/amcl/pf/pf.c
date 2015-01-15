@@ -200,15 +200,11 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set);
-<<<<<<< HEAD
-  pf_update_converged(pf); 
  
-=======
-  
   //set converged to 0
   pf_init_converged(pf);
+  pf_update_converged(pf); 
 
->>>>>>> a250a51100edcf5c1edd493c1282a7dad7b1d7fb
   return;
 }
 
