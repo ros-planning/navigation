@@ -1321,7 +1321,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                             global_frame_id_, odom_frame_id_);
         this->tfb_->sendTransform(tmp_tf_stamped);
         sent_first_transform_ = true;
-        ROS_INFO("tf_broadcast_ was true, broadcasting");
       }
     }
     else
