@@ -181,6 +181,8 @@ namespace move_base {
       controller_costmap_ros_->stop();
     }
 
+    ROS_ERROR_NAMED("move_base","Okke changed this mothafuckas");
+
     //load any user specified recovery behaviors, and if that fails load the defaults
     if(!loadRecoveryBehaviors(private_nh)){
       loadDefaultRecoveryBehaviors();
@@ -1151,6 +1153,13 @@ namespace move_base {
   }
 
   void MoveBase::resetState(){
+    // Disable the planner thread
+    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    lock.lock();
+    runPlanner_ = false;
+    lock.unlock();
+
+    // Reset statemachine
     state_ = PLANNING;
     recovery_index_ = 0;
     recovery_trigger_ = PLANNING_R;
