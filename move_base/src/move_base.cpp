@@ -1151,6 +1151,12 @@ namespace move_base {
   }
 
   void MoveBase::resetState(){
+    // Disable the planner thread
+    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    runPlanner_ = false;
+    lock.unlock();
+
+    // Reset statemachine
     state_ = PLANNING;
     recovery_index_ = 0;
     recovery_trigger_ = PLANNING_R;
