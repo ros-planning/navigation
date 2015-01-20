@@ -22,8 +22,16 @@ Visualization::Visualization(costmap_2d::Costmap2D* costmap,
 
 bool Visualization::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
 
+    path_cost = plan_cost_.getCellCosts(cx, cy);
+    goal_cost = goal_cost_.getCellCosts(cx, cy);
+    if (goal_cost > 300.0) {
+        goal_cost = 255.0;
+    }
+    if (path_cost > 300.0) {
+        path_cost = 255.0;
+    }
     occ_cost = costmap_->getCost(cx, cy);
-
+    total_cost = goal_cost + path_cost + occ_cost;
     if (occ_cost == 0)
     {
         path_cost = plan_cost_.getCellCosts(cx, cy);
