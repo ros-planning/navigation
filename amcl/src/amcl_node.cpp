@@ -57,6 +57,9 @@
 #include "dynamic_reconfigure/server.h"
 #include "amcl/AMCLConfig.h"
 
+// Services
+#include "amcl/SwapMap.h"
+
 #define NEW_UNIFORM_SAMPLING 1
 
 using namespace amcl;
@@ -139,6 +142,8 @@ class AmclNode
 
     double getYaw(tf::Pose& t);
 
+    bool swapMapCallback(amcl::SwapMapRequest &request, amcl::SwapMapResponse& response);
+
     //parameter for what odom to use
     std::string odom_frame_id_;
     //parameter for what base to use
@@ -203,6 +208,7 @@ class AmclNode
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
+    ros::ServiceServer swap_map_srv_;
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
 
@@ -362,7 +368,7 @@ AmclNode::AmclNode() :
 					 &AmclNode::globalLocalizationCallback,
                                          this);
   nomotion_update_srv_= nh_.advertiseService("request_nomotion_update", &AmclNode::nomotionUpdateCallback, this);
-
+  swap_map_srv_ = nh_.advertiseService("swap_map", &AmclNode::swapMapCallback, this);
   laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
   laser_scan_filter_ = 
           new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
@@ -1341,3 +1347,41 @@ AmclNode::applyInitialPose()
     initial_pose_hyp_ = NULL;
   }
 }
+
+bool AmclNode::swapMapCallback(amcl::SwapMapRequest &request, amcl::SwapMapResponse& response)
+{
+  if(request.map_msg.info.width == 0 || request.map_msg.info.height == 0)
+  {
+    ROS_ERROR("Map dimensions cannot be zero");
+    response.success = false;
+    return false;
+  } 
+  handleMapMessage(request.map_msg);
+
+  double x = request.initial_pose.position.x;
+  double y = request.initial_pose.position.y;
+  double yaw = tf::getYaw(request.initial_pose.orientation);
+  ROS_INFO("Setting pose (%.6f): %.3f %.3f %.3f",
+    ros::Time::now().toSec(),x,y,yaw);
+  
+  // Re-initialize the filter
+  pf_vector_t pf_init_pose_mean = pf_vector_zero();
+  pf_init_pose_mean.v[0] = x;
+  pf_init_pose_mean.v[1] = y;
+  pf_init_pose_mean.v[2] = yaw;
+  pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
+
+  pf_init_pose_cov.m[0][0] = 0.5*0.5;
+  pf_init_pose_cov.m[1][1] = 0.5*0.5;
+  pf_init_pose_cov.m[2][2] = (M_PI/12.0) * (M_PI/12.0);
+  
+  delete initial_pose_hyp_;
+  initial_pose_hyp_ = new amcl_hyp_t();
+  initial_pose_hyp_->pf_pose_mean = pf_init_pose_mean;
+  initial_pose_hyp_->pf_pose_cov = pf_init_pose_cov;
+  
+  applyInitialPose();
+
+  response.success = true;
+}
+
