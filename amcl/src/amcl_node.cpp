@@ -118,6 +118,7 @@ class AmclNode
 
     tf::Transform latest_tf_, latest_tf_for_odom_;
     bool latest_tf_valid_;
+    bool new_initial_pose_received_;
 
     // Pose-generating function used to uniformly distribute particles over
     // the map
@@ -233,6 +234,7 @@ class AmclNode
     double std_tt_; 
 
     bool use_cov_from_params_; 
+    bool use_tf_to_update_initial_pose_;
 
     boost::recursive_mutex configuration_mutex_;
     dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
@@ -290,7 +292,8 @@ AmclNode::AmclNode() :
         initial_pose_hyp_(NULL),
         first_map_received_(false),
         first_reconfigure_call_(true),
-	odom_only_(false)
+	odom_only_(false),
+	new_initial_pose_received_(false)
 {
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
@@ -309,6 +312,8 @@ AmclNode::AmclNode() :
   private_nh_.param("draw_weight_as_height", draw_weight_as_height_, false);
 
   private_nh_.param("use_cov_from_params", use_cov_from_params_, false);
+
+  private_nh_.param("use_tf_to_update_initial_pose", use_tf_to_update_initial_pose_, true);
 
   if(use_cov_from_params_){
     private_nh_.param("std_xx", std_xx_, 0.25);
@@ -1286,9 +1291,13 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       latest_tf_valid_ = true;
 
       private_nh_.getParam("odom_only", odom_only_);
-      if (!odom_only_)
+      if (!odom_only_ || new_initial_pose_received_)
       {
-	  latest_tf_for_odom_ = latest_tf_;
+        latest_tf_for_odom_ = latest_tf_;
+        if (new_initial_pose_received_) {
+          new_initial_pose_received_ = false;
+          ROS_INFO("got new initial pose, setting latest_tf_for_odom to latest_tf");
+        }
       }
       
       if (tf_broadcast_ == true && !odom_only_)
@@ -1303,14 +1312,15 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         this->tfb_->sendTransform(tmp_tf_stamped);
         sent_first_transform_ = true;
       }
-      else if (odom_only_)
+      else if (tf_broadcast_ == true && odom_only_)
       {
-	  ros::Time transform_expiration = (laser_scan->header.stamp +
-					    transform_tolerance_);
-	  tf::StampedTransform tmp_tf_stamped(latest_tf_for_odom_.inverse(),
+        ros::Time transform_expiration = (laser_scan->header.stamp +
+       				    transform_tolerance_);
+        tf::StampedTransform tmp_tf_stamped(latest_tf_for_odom_.inverse(),
                                             transform_expiration,
                                             global_frame_id_, odom_frame_id_);
-	  this->tfb_->sendTransform(tmp_tf_stamped);
+        this->tfb_->sendTransform(tmp_tf_stamped);
+        sent_first_transform_ = true;
       }
     }
     else
@@ -1331,7 +1341,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                           global_frame_id_, odom_frame_id_);
       this->tfb_->sendTransform(tmp_tf_stamped);
     }
-    else if (odom_only_)
+    else if (tf_broadcast_ == true && odom_only_)
     {
 	ros::Time transform_expiration = (laser_scan->header.stamp +
 					  transform_tolerance_);
@@ -1368,7 +1378,14 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
   if((publish_basic_pose_ && (!publish_basic_pose_on_convergence_ || pf_->converged)) || 
      publish_test_frame_ || draw_laser_points_){
-    tf::Pose map_pose = latest_tf_.inverse() * odom_pose;
+    tf::Pose map_pose;
+    if (!odom_only_) {
+      map_pose = latest_tf_.inverse() * odom_pose;
+    }
+    else {
+      map_pose = latest_tf_for_odom_.inverse() * odom_pose;
+    }
+
     double yaw,pitch,roll;
     map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
       
@@ -1381,19 +1398,19 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     p_basic.pose.position.y = map_pose.getOrigin().y();
     tf::quaternionTFToMsg(tf::createQuaternionFromYaw(yaw),
                           p_basic.pose.orientation);
-      
     if(publish_basic_pose_ && (!publish_basic_pose_on_convergence_ || pf_->converged)){
       pose_basic_pub_.publish(p_basic);
     }
 
     if(publish_test_frame_){        
       //looks like some issue with the timestamps here 
+      boost::shared_ptr<tf::Transform> test_base_tf_ptr;
       tf::Transform test_base_tf(tf::createQuaternionFromYaw(yaw), 
-                                 tf::Vector3(map_pose.getOrigin().x(), 
-                                             map_pose.getOrigin().y(), 
-                                             0.0));
-        
-      tf::Stamped<tf::Pose> test_base_to_map(test_base_tf, 
+				 tf::Vector3(map_pose.getOrigin().x(), 
+					     map_pose.getOrigin().y(), 
+					     0.0));
+      test_base_tf_ptr = boost::make_shared<tf::Transform>(test_base_tf);
+      tf::Stamped<tf::Pose> test_base_to_map(*test_base_tf_ptr, 
                                              laser_scan->header.stamp,
                                              test_frame_id_);
       ros::Duration test_transform_tolerance_(0.01);
@@ -1403,6 +1420,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                                 transform_expiration,
                                                 global_frame_id_, test_frame_id_);
       this->tfb_->sendTransform(test_base_tf_stamped);
+      sent_first_transform_ = true;
     }
     if(draw_laser_points_){ //draw the laser points adjutsed for pose correction 
       sensor_msgs::PointCloud cloud;
@@ -1481,21 +1499,27 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   // In case the client sent us a pose estimate in the past, integrate the
   // intervening odometric change.
   tf::StampedTransform tx_odom;
-  try
-  {
-    tf_->lookupTransform(base_frame_id_, ros::Time::now(),
-                         base_frame_id_, msg->header.stamp,
-                         global_frame_id_, tx_odom);
-  }
-  catch(tf::TransformException e)
-  {
-    // If we've never sent a transform, then this is normal, because the
-    // global_frame_id_ frame doesn't exist.  We only care about in-time
-    // transformation for on-the-move pose-setting, so ignoring this
-    // startup condition doesn't really cost us anything.
-    if(sent_first_transform_)
-      ROS_WARN("Failed to transform initial pose in time (%s)", e.what());
+  if (!use_tf_to_update_initial_pose_){
     tx_odom.setIdentity();
+  }
+  else
+  {
+    try
+    {
+      tf_->lookupTransform(base_frame_id_, ros::Time::now(),
+			   base_frame_id_, msg->header.stamp,
+			   global_frame_id_, tx_odom);
+    }
+    catch(tf::TransformException e)
+    {
+      // If we've never sent a transform, then this is normal, because the
+      // global_frame_id_ frame doesn't exist.  We only care about in-time
+      // transformation for on-the-move pose-setting, so ignoring this
+      // startup condition doesn't really cost us anything.
+      if(sent_first_transform_)
+	ROS_WARN("Failed to transform initial pose in time (%s), using identity transform for the hopefully-tiny odometric change since initial pose was broadcast", e.what());
+      tx_odom.setIdentity();
+    }
   }
 
   tf::Pose pose_old, pose_new;
@@ -1515,6 +1539,11 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
           pose_new.getOrigin().x(),
           pose_new.getOrigin().y(),
           getYaw(pose_new));
+
+  // If we're in odom-only mode, we want to update the map to odom transform to the new initialpose
+  if(odom_only_) {
+    new_initial_pose_received_ = true;
+  }
   
   // Re-initialize the filter
   pf_vector_t pf_init_pose_mean = pf_vector_zero();

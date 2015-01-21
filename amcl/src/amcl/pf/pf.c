@@ -161,10 +161,13 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
   pf_pdf_gaussian_free(pdf);
     
   // Re-compute cluster statistics
-  pf_cluster_stats(pf, set); 
+  pf_cluster_stats(pf, set);
 
   //set converged to 0
   pf_init_converged(pf);
+
+  //allow converged to be 1 if we actually start out converged
+  pf_update_converged(pf);
 
   return;
 }
@@ -199,9 +202,12 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set);
-  
+ 
   //set converged to 0
   pf_init_converged(pf);
+
+  //allow converged to be 1 if we are actually converged from the start
+  pf_update_converged(pf); 
 
   return;
 }
