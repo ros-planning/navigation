@@ -1350,6 +1350,8 @@ AmclNode::applyInitialPose()
 
 bool AmclNode::swapMapCallback(amcl::SwapMapRequest &request, amcl::SwapMapResponse& response)
 {
+  boost::recursive_mutex::scoped_lock l(configuration_mutex_);
+  
   if(request.map_msg.info.width == 0 || request.map_msg.info.height == 0)
   {
     ROS_ERROR("Map dimensions cannot be zero");
@@ -1371,6 +1373,7 @@ bool AmclNode::swapMapCallback(amcl::SwapMapRequest &request, amcl::SwapMapRespo
   pf_init_pose_mean.v[2] = yaw;
   pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
 
+  // These are the same default values used in updatePoseFromServer() above
   pf_init_pose_cov.m[0][0] = 0.5*0.5;
   pf_init_pose_cov.m[1][1] = 0.5*0.5;
   pf_init_pose_cov.m[2][2] = (M_PI/12.0) * (M_PI/12.0);
@@ -1383,5 +1386,7 @@ bool AmclNode::swapMapCallback(amcl::SwapMapRequest &request, amcl::SwapMapRespo
   applyInitialPose();
 
   response.success = true;
+
+  return true;
 }
 
