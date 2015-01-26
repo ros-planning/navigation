@@ -35,15 +35,18 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <base_local_planner/goal_functions.h>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 namespace base_local_planner {
 
-  double getGoalPositionDistance(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y) {
-    return hypot(goal_x - global_pose.getOrigin().x(), goal_y - global_pose.getOrigin().y());
+  double getGoalPositionDistance(const geometry_msgs::PoseStamped& global_pose, double goal_x, double goal_y) {
+    return hypot(goal_x - global_pose.pose.position.x, goal_y - global_pose.pose.position.y);
   }
 
-  double getGoalOrientationAngleDifference(const tf::Stamped<tf::Pose>& global_pose, double goal_th) {
-    double yaw = tf::getYaw(global_pose.getRotation());
+  double getGoalOrientationAngleDifference(const geometry_msgs::PoseStamped& global_pose, double goal_th) {
+    double yaw, pitch, roll;
+    tf2::Matrix3x3(tf2::Quaternion(global_pose.pose.orientation.x, global_pose.pose.orientation.y,
+                                   global_pose.pose.orientation.z, global_pose.pose.orientation.w)).getEulerYPR(yaw, pitch, roll);
     return angles::shortest_angular_distance(yaw, goal_th);
   }
 
@@ -66,18 +69,18 @@ namespace base_local_planner {
     pub.publish(gui_path);
   }
 
-  void prunePlan(const tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan){
+  void prunePlan(const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan){
     ROS_ASSERT(global_plan.size() >= plan.size());
     std::vector<geometry_msgs::PoseStamped>::iterator it = plan.begin();
     std::vector<geometry_msgs::PoseStamped>::iterator global_it = global_plan.begin();
     while(it != plan.end()){
       const geometry_msgs::PoseStamped& w = *it;
       // Fixed error bound of 2 meters for now. Can reduce to a portion of the map size or based on the resolution
-      double x_diff = global_pose.getOrigin().x() - w.pose.position.x;
-      double y_diff = global_pose.getOrigin().y() - w.pose.position.y;
+      double x_diff = global_pose.pose.position.x - w.pose.position.x;
+      double y_diff = global_pose.pose.position.y - w.pose.position.y;
       double distance_sq = x_diff * x_diff + y_diff * y_diff;
       if(distance_sq < 1){
-        ROS_DEBUG("Nearest waypoint to <%f, %f> is <%f, %f>\n", global_pose.getOrigin().x(), global_pose.getOrigin().y(), w.pose.position.x, w.pose.position.y);
+        ROS_DEBUG("Nearest waypoint to <%f, %f> is <%f, %f>\n", global_pose.pose.position.x, global_pose.pose.position.y, w.pose.position.x, w.pose.position.y);
         break;
       }
       it = plan.erase(it);
@@ -86,9 +89,9 @@ namespace base_local_planner {
   }
 
   bool transformGlobalPlan(
-      const tf::TransformListener& tf,
+      const tf2_ros::Buffer& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const tf::Stamped<tf::Pose>& global_pose,
+      const geometry_msgs::PoseStamped& global_pose,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan){
@@ -103,17 +106,12 @@ namespace base_local_planner {
       }
 
       // get plan_to_global_transform from plan frame to global_frame
-      tf::StampedTransform plan_to_global_transform;
-      tf.waitForTransform(global_frame, ros::Time::now(),
-                          plan_pose.header.frame_id, plan_pose.header.stamp,
-                          plan_pose.header.frame_id, ros::Duration(0.5));
-      tf.lookupTransform(global_frame, ros::Time(),
-                         plan_pose.header.frame_id, plan_pose.header.stamp, 
-                         plan_pose.header.frame_id, plan_to_global_transform);
+      geometry_msgs::TransformStamped plan_to_global_transform = tf.lookupTransform(global_frame, ros::Time(),
+          plan_pose.header.frame_id, plan_pose.header.stamp, plan_pose.header.frame_id, ros::Duration(0.5));
 
       //let's get the pose of the robot in the frame of the plan
-      tf::Stamped<tf::Pose> robot_pose;
-      tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
+      geometry_msgs::PoseStamped robot_pose;
+      tf.transform(global_pose, robot_pose, plan_pose.header.frame_id);
 
       //we'll discard points on the plan that are outside the local costmap
       double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
@@ -125,8 +123,8 @@ namespace base_local_planner {
 
       //we need to loop to a point on the plan that is within a certain distance of the robot
       while(i < (unsigned int)global_plan.size()) {
-        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+        double x_diff = robot_pose.pose.position.x - global_plan[i].pose.position.x;
+        double y_diff = robot_pose.pose.position.y - global_plan[i].pose.position.y;
         sq_dist = x_diff * x_diff + y_diff * y_diff;
         if (sq_dist <= sq_dist_threshold) {
           break;
@@ -134,36 +132,31 @@ namespace base_local_planner {
         ++i;
       }
 
-      tf::Stamped<tf::Pose> tf_pose;
       geometry_msgs::PoseStamped newer_pose;
 
       //now we'll transform until points are outside of our distance threshold
       while(i < (unsigned int)global_plan.size() && sq_dist <= sq_dist_threshold) {
         const geometry_msgs::PoseStamped& pose = global_plan[i];
-        poseStampedMsgToTF(pose, tf_pose);
-        tf_pose.setData(plan_to_global_transform * tf_pose);
-        tf_pose.stamp_ = plan_to_global_transform.stamp_;
-        tf_pose.frame_id_ = global_frame;
-        poseStampedTFToMsg(tf_pose, newer_pose);
+        tf2::doTransform(pose, newer_pose, plan_to_global_transform);
 
         transformed_plan.push_back(newer_pose);
 
-        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+        double x_diff = robot_pose.pose.position.x - global_plan[i].pose.position.x;
+        double y_diff = robot_pose.pose.position.y - global_plan[i].pose.position.y;
         sq_dist = x_diff * x_diff + y_diff * y_diff;
 
         ++i;
       }
     }
-    catch(tf::LookupException& ex) {
+    catch(tf2::LookupException& ex) {
       ROS_ERROR("No Transform available Error: %s\n", ex.what());
       return false;
     }
-    catch(tf::ConnectivityException& ex) {
+    catch(tf2::ConnectivityException& ex) {
       ROS_ERROR("Connectivity Error: %s\n", ex.what());
       return false;
     }
-    catch(tf::ExtrapolationException& ex) {
+    catch(tf2::ExtrapolationException& ex) {
       ROS_ERROR("Extrapolation Error: %s\n", ex.what());
       if (global_plan.size() > 0)
         ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
@@ -174,9 +167,9 @@ namespace base_local_planner {
     return true;
   }
 
-  bool getGoalPose(const tf::TransformListener& tf,
+  bool getGoalPose(const tf2_ros::Buffer& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const std::string& global_frame, tf::Stamped<tf::Pose> &goal_pose) {
+      const std::string& global_frame, geometry_msgs::PoseStamped &goal_pose) {
     const geometry_msgs::PoseStamped& plan_goal_pose = global_plan.back();
     try{
       if (!global_plan.size() > 0)
@@ -185,29 +178,21 @@ namespace base_local_planner {
         return false;
       }
 
-      tf::StampedTransform transform;
-      tf.waitForTransform(global_frame, ros::Time::now(),
-                          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
-                          plan_goal_pose.header.frame_id, ros::Duration(0.5));
-      tf.lookupTransform(global_frame, ros::Time(),
+      geometry_msgs::TransformStamped transform = tf.lookupTransform(global_frame, ros::Time(),
                          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
-                         plan_goal_pose.header.frame_id, transform);
+                         plan_goal_pose.header.frame_id, ros::Duration(0.5));
 
-      poseStampedMsgToTF(plan_goal_pose, goal_pose);
-      goal_pose.setData(transform * goal_pose);
-      goal_pose.stamp_ = transform.stamp_;
-      goal_pose.frame_id_ = global_frame;
-
+      tf2::doTransform(plan_goal_pose, goal_pose, transform);
     }
-    catch(tf::LookupException& ex) {
+    catch(tf2::LookupException& ex) {
       ROS_ERROR("No Transform available Error: %s\n", ex.what());
       return false;
     }
-    catch(tf::ConnectivityException& ex) {
+    catch(tf2::ConnectivityException& ex) {
       ROS_ERROR("Connectivity Error: %s\n", ex.what());
       return false;
     }
-    catch(tf::ExtrapolationException& ex) {
+    catch(tf2::ExtrapolationException& ex) {
       ROS_ERROR("Extrapolation Error: %s\n", ex.what());
       if (global_plan.size() > 0)
         ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
@@ -217,22 +202,25 @@ namespace base_local_planner {
     return true;
   }
 
-  bool isGoalReached(const tf::TransformListener& tf,
+  bool isGoalReached(const tf2_ros::Buffer& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
-      tf::Stamped<tf::Pose>& global_pose,
+      geometry_msgs::PoseStamped& global_pose,
       const nav_msgs::Odometry& base_odom,
       double rot_stopped_vel, double trans_stopped_vel,
       double xy_goal_tolerance, double yaw_goal_tolerance){
 
 	//we assume the global goal is the last point in the global plan
-    tf::Stamped<tf::Pose> goal_pose;
+    geometry_msgs::PoseStamped goal_pose;
     getGoalPose(tf, global_plan, global_frame, goal_pose);
 
-    double goal_x = goal_pose.getOrigin().getX();
-    double goal_y = goal_pose.getOrigin().getY();
-    double goal_th = tf::getYaw(goal_pose.getRotation());
+    double goal_x = goal_pose.pose.position.x;
+    double goal_y = goal_pose.pose.position.y;
+    double goal_th, _goal_pitch, _goal_roll;
+    tf2::Matrix3x3(tf2::Quaternion(goal_pose.pose.orientation.x, goal_pose.pose.orientation.y,
+                                   goal_pose.pose.orientation.z, goal_pose.pose.orientation.w)).getEulerYPR(goal_th,
+                                     _goal_pitch, _goal_roll);
 
     //check to see if we've reached the goal position
     if(getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance) {

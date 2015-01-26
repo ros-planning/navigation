@@ -40,7 +40,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <dwa_local_planner/DWAPlannerConfig.h>
@@ -76,7 +76,7 @@ namespace dwa_local_planner {
        * @param tf A pointer to a transform listener
        * @param costmap The cost map to use for assigning costs to trajectories
        */
-      void initialize(std::string name, tf::TransformListener* tf,
+      void initialize(std::string name, tf2_ros::Buffer* tf,
           costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
@@ -99,7 +99,7 @@ namespace dwa_local_planner {
        * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
        * @return True if a valid trajectory was found, false otherwise
        */
-      bool dwaComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
+      bool dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose, geometry_msgs::Twist& cmd_vel);
 
       /**
        * @brief  Set the plan that the controller is following
@@ -130,7 +130,7 @@ namespace dwa_local_planner {
 
       void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
-      tf::TransformListener* tf_; ///< @brief Used for transforming point clouds
+      tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
 
       // for visualisation, publishers of global and local plan
       ros::Publisher g_plan_pub_, l_plan_pub_;
@@ -144,7 +144,7 @@ namespace dwa_local_planner {
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
-      tf::Stamped<tf::Pose> current_pose_;
+      geometry_msgs::PoseStamped current_pose_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 

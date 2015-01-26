@@ -40,7 +40,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <costmap_2d/costmap_2d_ros.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
 
 namespace nav_core {
   /**
@@ -75,7 +75,7 @@ namespace nav_core {
        * @param tf A pointer to a transform listener
        * @param costmap The cost map to use for assigning costs to local plans
        */
-      virtual void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) = 0;
+      virtual void initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 
       /**
        * @brief  Virtual destructor for the interface

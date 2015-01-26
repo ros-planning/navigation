@@ -54,9 +54,6 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
 
-//for some datatypes
-#include <tf/transform_datatypes.h>
-
 //for creating a local cost grid
 #include <base_local_planner/map_cell.h>
 #include <base_local_planner/map_grid.h>
@@ -142,8 +139,8 @@ namespace base_local_planner {
        * @param drive_velocities Will be set to velocities to send to the robot base
        * @return The selected path or trajectory
        */
-      Trajectory findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel,
-          tf::Stamped<tf::Pose>& drive_velocities);
+      Trajectory findBestPath(const geometry_msgs::PoseStamped& global_pose,
+                              geometry_msgs::PoseStamped& global_vel, geometry_msgs::PoseStamped& drive_velocities);
 
       /**
        * @brief  Update the plan that the controller is following

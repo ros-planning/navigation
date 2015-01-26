@@ -47,7 +47,7 @@ namespace clear_costmap_recovery {
 ClearCostmapRecovery::ClearCostmapRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
   tf_(NULL), initialized_(false) {} 
 
-void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* tf,
+void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
   if(!initialized_){
     name_ = name;
@@ -95,15 +95,15 @@ void ClearCostmapRecovery::runBehavior(){
 void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
   std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = costmap->getLayeredCostmap()->getPlugins();
 
-  tf::Stamped<tf::Pose> pose;
+  geometry_msgs::PoseStamped pose;
 
   if(!costmap->getRobotPose(pose)){
     ROS_ERROR("Cannot clear map because pose cannot be retrieved");
     return;
   }
 
-  double x = pose.getOrigin().x();
-  double y = pose.getOrigin().y();
+  double x = pose.pose.position.x;
+  double y = pose.pose.position.y;
 
   for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
     boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;

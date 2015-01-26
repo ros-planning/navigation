@@ -12,7 +12,7 @@ find_package(catkin REQUIRED
         pcl_ros
         pluginlib
         roscpp
-        tf
+        tf2_ros
         visualization_msgs
         )
 
