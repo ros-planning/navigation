@@ -38,11 +38,11 @@
 
 // ros stuff
 #include <ros/ros.h>
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_broadcaster.h>
 #include "odom_estimation.h"
 #include <robot_pose_ekf/GetStatus.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2/LinearMath/Transform.h>
 
 // messages
 #include "nav_msgs/Odometry.h"
@@ -116,14 +116,15 @@ private:
   geometry_msgs::PoseWithCovarianceStamped  output_; 
 
   // robot state
-  tf::TransformListener    robot_state_;
-  tf::TransformBroadcaster odom_broadcaster_;
+  tf2_ros::Buffer    robot_state_;
+  boost::shared_ptr<tf2_ros::TransformListener> odom_listener_;
+  tf2_ros::TransformBroadcaster odom_broadcaster_;
 
   // vectors
-  tf::Transform odom_meas_, imu_meas_, vo_meas_, gps_meas_;
-  tf::Transform base_vo_init_;
-  tf::Transform base_gps_init_;
-  tf::StampedTransform camera_base_;
+  tf2::Transform odom_meas_, imu_meas_, vo_meas_, gps_meas_;
+  geometry_msgs::Transform base_vo_init_;
+  geometry_msgs::Transform base_gps_init_;
+  geometry_msgs::TransformStamped camera_base_;
   ros::Time odom_time_, imu_time_, vo_time_, gps_time_;
   ros::Time odom_stamp_, imu_stamp_, vo_stamp_, gps_stamp_, filter_stamp_;
   ros::Time odom_init_stamp_, imu_init_stamp_, vo_init_stamp_, gps_init_stamp_;
@@ -133,7 +134,7 @@ private:
   double timeout_;
   MatrixWrapper::SymmetricMatrix odom_covariance_, imu_covariance_, vo_covariance_, gps_covariance_;
   bool debug_, self_diagnose_;
-  std::string output_frame_, base_footprint_frame_, tf_prefix_;
+  std::string output_frame_, base_footprint_frame_;
 
   // log files for debugging
   std::ofstream odom_file_, imu_file_, vo_file_, gps_file_, corr_file_, time_file_, extra_file_;

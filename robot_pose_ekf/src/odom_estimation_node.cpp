@@ -35,12 +35,11 @@
 /* Author: Wim Meeussen */
 
 #include <robot_pose_ekf/odom_estimation_node.h>
-
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 using namespace MatrixWrapper;
 using namespace std;
 using namespace ros;
-using namespace tf;
 
 
 static const double EPS = 1e-5;
@@ -85,10 +84,6 @@ namespace estimation
     nh_private.param("self_diagnose",  self_diagnose_, false);
     double freq;
     nh_private.param("freq", freq, 30.0);
-
-    tf_prefix_ = tf::getPrefixParam(nh_private);
-    output_frame_ = tf::resolve(tf_prefix_, output_frame_);
-    base_footprint_frame_ = tf::resolve(tf_prefix_, base_footprint_frame_);
 
     ROS_INFO_STREAM("output frame: " << output_frame_);
     ROS_INFO_STREAM("base frame: " << base_footprint_frame_);
@@ -144,9 +139,9 @@ namespace estimation
       vo_file_.open("/tmp/vo_file.txt");
       gps_file_.open("/tmp/gps_file.txt");
       corr_file_.open("/tmp/corr_file.txt");
-
-  
     }
+
+    odom_listener_.reset(new tf2_ros::TransformListener(robot_state_));
   };
 
 
@@ -180,14 +175,20 @@ namespace estimation
     // receive data 
     odom_stamp_ = odom->header.stamp;
     odom_time_  = Time::now();
-    Quaternion q;
-    tf::quaternionMsgToTF(odom->pose.pose.orientation, q);
-    odom_meas_  = Transform(q, Vector3(odom->pose.pose.position.x, odom->pose.pose.position.y, 0));
+    tf2::Quaternion q(odom->pose.pose.orientation.x, odom->pose.pose.orientation.y, odom->pose.pose.orientation.z,
+                      odom->pose.pose.orientation.w);
+    odom_meas_  = tf2::Transform(q, tf2::Vector3(odom->pose.pose.position.x, odom->pose.pose.position.y, 0));
     for (unsigned int i=0; i<6; i++)
       for (unsigned int j=0; j<6; j++)
         odom_covariance_(i+1, j+1) = odom->pose.covariance[6*i+j];
 
-    my_filter_.addMeasurement(StampedTransform(odom_meas_.inverse(), odom_stamp_, base_footprint_frame_, "wheelodom"), odom_covariance_);
+    geometry_msgs::TransformStamped meas;
+    meas.header.stamp = odom_stamp_;
+    meas.header.frame_id = base_footprint_frame_;
+    meas.child_frame_id = "wheelodom";
+    meas.transform = tf2::toMsg(odom_meas_.inverse());
+
+    my_filter_.addMeasurement(meas, odom_covariance_);
     
     // activate odom
     if (!odom_active_) {
@@ -225,15 +226,20 @@ namespace estimation
 
     // receive data 
     imu_stamp_ = imu->header.stamp;
-    tf::Quaternion orientation;
-    quaternionMsgToTF(imu->orientation, orientation);
-    imu_meas_ = tf::Transform(orientation, tf::Vector3(0,0,0));
+    tf2::Quaternion orientation;
+    tf2::fromMsg(imu->orientation, orientation);
+    imu_meas_ = tf2::Transform(orientation, tf2::Vector3(0,0,0));
     for (unsigned int i=0; i<3; i++)
       for (unsigned int j=0; j<3; j++)
         imu_covariance_(i+1, j+1) = imu->orientation_covariance[3*i+j];
 
     // Transforms imu data to base_footprint frame
-    if (!robot_state_.waitForTransform(base_footprint_frame_, imu->header.frame_id, imu_stamp_, ros::Duration(0.5))){
+    geometry_msgs::TransformStamped base_imu_offset;
+    try{
+      base_imu_offset = robot_state_.lookupTransform(base_footprint_frame_, imu->header.frame_id, imu_stamp_, ros::Duration(0.5));
+    }
+    catch(...)
+    {
       // warn when imu was already activated, not when imu is not active yet
       if (imu_active_)
         ROS_ERROR("Could not transform imu message from %s to %s", imu->header.frame_id.c_str(), base_footprint_frame_.c_str());
@@ -243,9 +249,9 @@ namespace estimation
         ROS_DEBUG("Could not transform imu message from %s to %s. Imu will not be activated yet.", imu->header.frame_id.c_str(), base_footprint_frame_.c_str());
       return;
     }
-    StampedTransform base_imu_offset;
-    robot_state_.lookupTransform(base_footprint_frame_, imu->header.frame_id, imu_stamp_, base_imu_offset);
-    imu_meas_ = imu_meas_ * base_imu_offset;
+    tf2::Transform base_imu_offset_tf2;
+    tf2::fromMsg(base_imu_offset.transform, base_imu_offset_tf2);
+    imu_meas_ = imu_meas_ * base_imu_offset_tf2;
 
     imu_time_  = Time::now();
 
@@ -258,7 +264,13 @@ namespace estimation
       imu_covariance_ = measNoiseImu_Cov;
     }
 
-    my_filter_.addMeasurement(StampedTransform(imu_meas_.inverse(), imu_stamp_, base_footprint_frame_, "imu"), imu_covariance_);
+    geometry_msgs::TransformStamped meas;
+    meas.header.stamp = imu_stamp_;
+    meas.header.frame_id = base_footprint_frame_;
+    meas.child_frame_id = "imu";
+    meas.transform = tf2::toMsg(imu_meas_.inverse());
+
+    my_filter_.addMeasurement(meas, imu_covariance_);
     
     // activate imu
     if (!imu_active_) {
@@ -297,11 +309,18 @@ namespace estimation
     // get data
     vo_stamp_ = vo->header.stamp;
     vo_time_  = Time::now();
-    poseMsgToTF(vo->pose.pose, vo_meas_);
+    tf2::fromMsg(vo->pose.pose, vo_meas_);
     for (unsigned int i=0; i<6; i++)
       for (unsigned int j=0; j<6; j++)
         vo_covariance_(i+1, j+1) = vo->pose.covariance[6*i+j];
-    my_filter_.addMeasurement(StampedTransform(vo_meas_.inverse(), vo_stamp_, base_footprint_frame_, "vo"), vo_covariance_);
+
+    geometry_msgs::TransformStamped meas;
+    meas.header.stamp = vo_stamp_;
+    meas.header.frame_id = base_footprint_frame_;
+    meas.child_frame_id = "vo";
+    meas.transform = tf2::toMsg(vo_meas_.inverse());
+
+    my_filter_.addMeasurement(meas, vo_covariance_);
     
     // activate vo
     if (!vo_active_) {
@@ -323,7 +342,7 @@ namespace estimation
       // write to file
       double Rx, Ry, Rz;
       vo_meas_.getBasis().getEulerYPR(Rz, Ry, Rx);
-      vo_file_ <<fixed<<setprecision(5)<<ros::Time::now().toSec()<<" "<< vo_meas_.getOrigin().x() << " " << vo_meas_.getOrigin().y() << " " << vo_meas_.getOrigin().z() << " "
+      vo_file_ <<fixed<<setprecision(5)<<ros::Time::now().toSec()<<" "<< vo_meas_.getOrigin().getX() << " " << vo_meas_.getOrigin().getY() << " " << vo_meas_.getOrigin().getZ() << " "
                << Rx << " " << Ry << " " << Rz << endl;
     }
   };
@@ -338,11 +357,18 @@ namespace estimation
     // get data
     gps_stamp_ = gps->header.stamp;
     gps_time_  = Time::now();
-    poseMsgToTF(gps->pose.pose, gps_meas_);
+    tf2::fromMsg(gps->pose.pose, gps_meas_);
     for (unsigned int i=0; i<3; i++)
       for (unsigned int j=0; j<3; j++)
         gps_covariance_(i+1, j+1) = gps->pose.covariance[6*i+j];
-    my_filter_.addMeasurement(StampedTransform(gps_meas_.inverse(), gps_stamp_, base_footprint_frame_, "gps"), gps_covariance_);
+
+    geometry_msgs::TransformStamped meas;
+    meas.header.stamp = gps_stamp_;
+    meas.header.frame_id = base_footprint_frame_;
+    meas.child_frame_id = "gps";
+    meas.transform = tf2::toMsg(gps_meas_.inverse());
+
+    my_filter_.addMeasurement(meas, gps_covariance_);
     
     // activate gps
     if (!gps_active_) {
@@ -427,11 +453,13 @@ namespace estimation
           ekf_sent_counter_++;
           
           // broadcast most recent estimate to TransformArray
-          StampedTransform tmp;
+          geometry_msgs::TransformStamped tmp;
           my_filter_.getEstimate(ros::Time(), tmp);
           if(!vo_active_ && !gps_active_)
-            tmp.getOrigin().setZ(0.0);
-          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, base_footprint_frame_));
+            tmp.transform.translation.z = 0;
+          tmp.header.frame_id = output_frame_;
+          tmp.child_frame_id = base_footprint_frame_;
+          odom_broadcaster_.sendTransform(tmp);
           
           if (debug_){
             // write to file
@@ -451,9 +479,9 @@ namespace estimation
 
       // initialize filer with odometry frame
       if (imu_active_ && gps_active_ && !my_filter_.isInitialized()) {
-	Quaternion q = imu_meas_.getRotation();
-        Vector3 p = gps_meas_.getOrigin();
-        Transform init_meas_ = Transform(q, p);
+        tf2::Quaternion q = imu_meas_.getRotation();
+        tf2::Vector3 p = gps_meas_.getOrigin();
+        tf2::Transform init_meas_(q, p);
         my_filter_.initialize(init_meas_, gps_stamp_);
         ROS_INFO("Kalman filter initialized with gps and imu measurement");
       }	

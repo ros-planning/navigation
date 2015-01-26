@@ -35,19 +35,25 @@
  * Author: David V. Lu!!
  *********************************************************************/
 #include <global_planner/orientation_filter.h>
-#include <tf/tf.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <angles/angles.h>
 
 namespace global_planner {
 
 void set_angle(geometry_msgs::PoseStamped* pose, double angle)
 {
-    pose->pose.orientation = tf::createQuaternionMsgFromYaw(angle); 
+  tf2::Quaternion q;
+  q.setEuler( angle, 0, 0 );
+  pose->pose.orientation = tf2::toMsg( q );
 }
 
 double getYaw(geometry_msgs::PoseStamped pose)
 {
-    return tf::getYaw(pose.pose.orientation);
+  double yaw, _pitch, _roll;
+  tf2::Matrix3x3(tf2::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y,
+                                 pose.pose.orientation.z, pose.pose.orientation.w)).getEulerYPR(yaw, _pitch, _roll);
+  return yaw;
 }
 
 void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start, 

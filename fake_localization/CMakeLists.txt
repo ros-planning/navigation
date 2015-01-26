@@ -8,7 +8,7 @@ find_package(catkin REQUIRED
             rosconsole
             nav_msgs
             geometry_msgs
-            tf
+            tf2_geometry_msgs
             message_filters
         )
 

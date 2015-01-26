@@ -10,7 +10,8 @@ find_package(catkin REQUIRED
         dynamic_reconfigure
         message_generation
         nav_core
-        tf
+        tf2_geometry_msgs
+        tf2_ros
 )
 find_package(Eigen REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})

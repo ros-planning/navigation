@@ -5,7 +5,7 @@ find_package(catkin REQUIRED
         COMPONENTS
             cmake_modules
             roscpp
-            tf
+            tf2_ros
             costmap_2d
             nav_core
             pluginlib

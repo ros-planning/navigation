@@ -52,7 +52,7 @@ namespace move_slow_and_clear
       ~MoveSlowAndClear();
 
       /// Initialize the parameters of the behavior
-      void initialize (std::string n, tf::TransformListener* tf,
+      void initialize (std::string n, tf2_ros::Buffer* tf,
           costmap_2d::Costmap2DROS* global_costmap,
           costmap_2d::Costmap2DROS* local_costmap);
 
@@ -73,7 +73,7 @@ namespace move_slow_and_clear
       double clearing_distance_, limited_distance_;
       double limited_trans_speed_, limited_rot_speed_, old_trans_speed_, old_rot_speed_;
       ros::Timer distance_check_timer_;
-      tf::Stamped<tf::Pose> speed_limit_pose_;
+      geometry_msgs::PoseStamped speed_limit_pose_;
       boost::thread* remove_limit_thread_;
       boost::mutex mutex_;
       bool limit_set_;

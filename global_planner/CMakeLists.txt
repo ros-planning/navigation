@@ -11,7 +11,8 @@ find_package(catkin REQUIRED
     nav_msgs
     pluginlib
     roscpp
-    tf
+    tf2_geometry_msgs
+    tf2_ros
 )
 
 generate_dynamic_reconfigure_options(
@@ -30,7 +31,7 @@ catkin_package(
     nav_msgs
     pluginlib
     roscpp
-    tf
+    tf2_ros
 )
 
 include_directories(
