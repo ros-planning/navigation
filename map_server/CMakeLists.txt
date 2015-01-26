@@ -4,7 +4,7 @@ project(map_server)
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            tf
+            tf2_ros
             nav_msgs
         )
 
@@ -23,7 +23,7 @@ catkin_package(
         map_server_image_loader
     CATKIN_DEPENDS
         roscpp
-        tf
+        tf2_ros
         nav_msgs
 )
 

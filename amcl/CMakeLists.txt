@@ -4,7 +4,9 @@ project(amcl)
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            tf
+            tf2
+            tf2_geometry_msgs
+            tf2_ros
             dynamic_reconfigure
             nav_msgs
         )
@@ -20,7 +22,7 @@ catkin_package(
     CATKIN_DEPENDS
         roscpp
         dynamic_reconfigure
-        tf
+        tf2_ros
   INCLUDE_DIRS include
   LIBRARIES amcl_sensors amcl_map amcl_pf
 )
