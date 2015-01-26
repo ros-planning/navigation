@@ -45,6 +45,7 @@
 
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
+#include <tf2/utils.h>
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
@@ -93,7 +94,7 @@ namespace dwa_local_planner {
 
   void DWAPlannerROS::initialize(
       std::string name,
-      tf::TransformListener* tf,
+      tf2_ros::Buffer* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
     if (! isInitialized()) {
 
@@ -174,14 +175,14 @@ namespace dwa_local_planner {
 
 
 
-  bool DWAPlannerROS::dwaComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, geometry_msgs::Twist& cmd_vel) {
+  bool DWAPlannerROS::dwaComputeVelocityCommands(geometry_msgs::PoseStamped &global_pose, geometry_msgs::Twist& cmd_vel) {
     // dynamic window sampling approach to get useful velocity commands
     if(! isInitialized()){
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
 
-    tf::Stamped<tf::Pose> robot_vel;
+    geometry_msgs::PoseStamped robot_vel;
     odom_helper_.getRobotVel(robot_vel);
 
     /* For timing uncomment
@@ -191,8 +192,8 @@ namespace dwa_local_planner {
     */
 
     //compute what trajectory to drive along
-    tf::Stamped<tf::Pose> drive_cmds;
-    drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
+    geometry_msgs::PoseStamped drive_cmds;
+    drive_cmds.header.frame_id = costmap_ros_->getBaseFrameID();
     
     // call with updated footprint
     base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, costmap_ros_->getRobotFootprint());
@@ -207,9 +208,9 @@ namespace dwa_local_planner {
     */
 
     //pass along drive commands
-    cmd_vel.linear.x = drive_cmds.getOrigin().getX();
-    cmd_vel.linear.y = drive_cmds.getOrigin().getY();
-    cmd_vel.angular.z = tf::getYaw(drive_cmds.getRotation());
+    cmd_vel.linear.x = drive_cmds.pose.position.x;
+    cmd_vel.linear.y = drive_cmds.pose.position.y;
+    cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
     //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
@@ -229,15 +230,16 @@ namespace dwa_local_planner {
       double p_x, p_y, p_th;
       path.getPoint(i, p_x, p_y, p_th);
 
-      tf::Stamped<tf::Pose> p =
-              tf::Stamped<tf::Pose>(tf::Pose(
-                      tf::createQuaternionFromYaw(p_th),
-                      tf::Point(p_x, p_y, 0.0)),
-                      ros::Time::now(),
-                      costmap_ros_->getGlobalFrameID());
-      geometry_msgs::PoseStamped pose;
-      tf::poseStampedTFToMsg(p, pose);
-      local_plan.push_back(pose);
+      geometry_msgs::PoseStamped p;
+      p.header.frame_id = costmap_ros_->getGlobalFrameID();
+      p.header.stamp = ros::Time::now();
+      p.pose.position.x = p_x;
+      p.pose.position.y = p_y;
+      p.pose.position.z = 0.0;
+      tf2::Quaternion q;
+      q.setEuler(p_th, 0, 0);
+      tf2::convert(q, p.pose.orientation);
+      local_plan.push_back(p);
     }
 
     //publish information to the visualizer

@@ -10,7 +10,7 @@ find_package(catkin REQUIRED
             rosconsole
             roscpp
             rospy
-            tf
+            tf2_geometry_msgs
         )
 
 

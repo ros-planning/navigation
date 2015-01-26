@@ -45,7 +45,7 @@
 #include <angles/angles.h>
 
 #include <ros/ros.h>
-
+#include <tf2/utils.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dwa_local_planner {
@@ -220,7 +220,7 @@ namespace dwa_local_planner {
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
-    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
+    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf2::getYaw(goal_pose.pose.orientation));
     base_local_planner::LocalPlannerLimits limits = planner_util_->getCurrentLimits();
     generator_.initialise(pos,
         vel,
@@ -241,7 +241,7 @@ namespace dwa_local_planner {
 
 
   void DWAPlanner::updatePlanAndLocalCosts(
-      tf::Stamped<tf::Pose> global_pose,
+      const geometry_msgs::PoseStamped& global_pose,
       const std::vector<geometry_msgs::PoseStamped>& new_plan) {
     global_plan_.resize(new_plan.size());
     for (unsigned int i = 0; i < new_plan.size(); ++i) {
@@ -257,7 +257,7 @@ namespace dwa_local_planner {
     // alignment costs
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
 
-    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
+    Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation));
     double sq_dist =
         (pos[0] - goal_pose.pose.position.x) * (pos[0] - goal_pose.pose.position.x) +
         (pos[1] - goal_pose.pose.position.y) * (pos[1] - goal_pose.pose.position.y);
@@ -293,9 +293,9 @@ namespace dwa_local_planner {
    * given the current state of the robot, find a good trajectory
    */
   base_local_planner::Trajectory DWAPlanner::findBestPath(
-      tf::Stamped<tf::Pose> global_pose,
-      tf::Stamped<tf::Pose> global_vel,
-      tf::Stamped<tf::Pose>& drive_velocities,
+      const geometry_msgs::PoseStamped& global_pose,
+      const geometry_msgs::PoseStamped& global_vel,
+      geometry_msgs::PoseStamped& drive_velocities,
       std::vector<geometry_msgs::Point> footprint_spec) {
 
     obstacle_costs_.setFootprint(footprint_spec);
@@ -303,10 +303,10 @@ namespace dwa_local_planner {
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
 
-    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
-    Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
+    Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation));
+    Eigen::Vector3f vel(global_vel.pose.position.x, global_vel.pose.position.y, tf2::getYaw(global_vel.pose.orientation));
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
-    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
+    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf2::getYaw(goal_pose.pose.orientation));
     base_local_planner::LocalPlannerLimits limits = planner_util_->getCurrentLimits();
 
     // prepare cost functions and generators for this run
@@ -361,13 +361,20 @@ namespace dwa_local_planner {
 
     //if we don't have a legal trajectory, we'll just command zero
     if (result_traj_.cost_ < 0) {
-      drive_velocities.setIdentity();
+      drive_velocities.pose.position.x = 0;
+      drive_velocities.pose.position.y = 0;
+      drive_velocities.pose.position.z = 0;
+      drive_velocities.pose.orientation.w = 1;
+      drive_velocities.pose.orientation.x = 0;
+      drive_velocities.pose.orientation.y = 0;
+      drive_velocities.pose.orientation.z = 0;
     } else {
-      tf::Vector3 start(result_traj_.xv_, result_traj_.yv_, 0);
-      drive_velocities.setOrigin(start);
-      tf::Matrix3x3 matrix;
-      matrix.setRotation(tf::createQuaternionFromYaw(result_traj_.thetav_));
-      drive_velocities.setBasis(matrix);
+      drive_velocities.pose.position.x = result_traj_.xv_;
+      drive_velocities.pose.position.y = result_traj_.yv_;
+      drive_velocities.pose.position.z = 0;
+      tf2::Quaternion q;
+      q.setEuler(result_traj_.thetav_, 0, 0);
+      tf2::convert(q, drive_velocities.pose.orientation);
     }
 
     return result_traj_;
