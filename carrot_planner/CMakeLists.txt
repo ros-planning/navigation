@@ -8,7 +8,8 @@ find_package(catkin REQUIRED
             costmap_2d
             base_local_planner
             pluginlib
-            tf2
+            tf2_geometry_msgs
+            tf2_ros
         )
 
 include_directories(

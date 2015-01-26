@@ -38,14 +38,12 @@
 #define BASE_LOCAL_PLANNER_GOAL_FUNCTIONS_H_
 
 #include <ros/ros.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/buffer.h>
 
 #include <string>
 #include <cmath>
@@ -62,7 +60,7 @@ namespace base_local_planner {
    * @param  goal_y The desired y value for the goal
    * @return distance to goal
    */
-  double getGoalPositionDistance(const tf::Stamped<tf::Pose>& global_pose, double goal_x, double goal_y);
+  double getGoalPositionDistance(const geometry_msgs::PoseStamped& global_pose, double goal_x, double goal_y);
 
   /**
    * @brief  return angle difference to goal to check if the goal orientation has been achieved
@@ -71,7 +69,7 @@ namespace base_local_planner {
    * @param  goal_y The desired y value for the goal
    * @return angular difference
    */
-  double getGoalOrientationAngleDifference(const tf::Stamped<tf::Pose>& global_pose, double goal_th);
+  double getGoalOrientationAngleDifference(const geometry_msgs::PoseStamped& global_pose, double goal_th);
 
   /**
    * @brief  Publish a plan for visualization purposes
@@ -87,7 +85,7 @@ namespace base_local_planner {
    * @param plan The plan to be pruned
    * @param global_plan The plan to be pruned in the frame of the planner
    */
-  void prunePlan(const tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan);
+  void prunePlan(const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
   /**
    * @brief  Transforms the global plan of the robot from the planner frame to the frame of the costmap,
@@ -99,9 +97,9 @@ namespace base_local_planner {
    * @param global_frame The frame to transform the plan to
    * @param transformed_plan Populated with the transformed plan
    */
-  bool transformGlobalPlan(const tf::TransformListener& tf,
+  bool transformGlobalPlan(const tf2_ros::Buffer& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const tf::Stamped<tf::Pose>& global_robot_pose,
+      const geometry_msgs::PoseStamped& global_robot_pose,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan);
@@ -114,10 +112,10 @@ namespace base_local_planner {
      * @param goal_pose the pose to copy into
      * @return True if achieved, false otherwise
      */
-  bool getGoalPose(const tf::TransformListener& tf,
+  bool getGoalPose(const tf2_ros::Buffer& tf,
   		  const std::vector<geometry_msgs::PoseStamped>& global_plan,
   		  const std::string& global_frame,
-  		  tf::Stamped<tf::Pose> &goal_pose);
+          geometry_msgs::PoseStamped &goal_pose);
 
   /**
    * @brief  Check if the goal pose has been achieved
@@ -132,11 +130,11 @@ namespace base_local_planner {
    * @param yaw_goal_tolerance The rotational tolerance on reaching the goal
    * @return True if achieved, false otherwise
    */
-  bool isGoalReached(const tf::TransformListener& tf,
+  bool isGoalReached(const tf2_ros::Buffer& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
-      tf::Stamped<tf::Pose>& global_pose,
+      geometry_msgs::PoseStamped& global_pose,
       const nav_msgs::Odometry& base_odom,
       double rot_stopped_vel, double trans_stopped_vel,
       double xy_goal_tolerance, double yaw_goal_tolerance);

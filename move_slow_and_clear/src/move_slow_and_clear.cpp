@@ -50,7 +50,7 @@ namespace move_slow_and_clear
     delete remove_limit_thread_;
   }
 
-  void MoveSlowAndClear::initialize (std::string n, tf::TransformListener* tf,
+  void MoveSlowAndClear::initialize (std::string n, tf2_ros::Buffer* tf,
       costmap_2d::Costmap2DROS* global_costmap,
       costmap_2d::Costmap2DROS* local_costmap)
   {
@@ -78,7 +78,7 @@ namespace move_slow_and_clear
       return;
     }
     ROS_WARN("Move slow and clear recovery behavior started.");
-    tf::Stamped<tf::Pose> global_pose, local_pose;
+    geometry_msgs::PoseStamped global_pose, local_pose;
     global_costmap_->getRobotPose(global_pose);
     local_costmap_->getRobotPose(local_pose);
 
@@ -87,20 +87,20 @@ namespace move_slow_and_clear
 
     for(int i = -1; i <= 1; i+=2)
     {
-      pt.x = global_pose.getOrigin().x() + i * clearing_distance_;
-      pt.y = global_pose.getOrigin().y() + i * clearing_distance_;
+      pt.x = global_pose.pose.position.x + i * clearing_distance_;
+      pt.y = global_pose.pose.position.y + i * clearing_distance_;
       global_poly.push_back(pt);
 
-      pt.x = global_pose.getOrigin().x() + i * clearing_distance_;
-      pt.y = global_pose.getOrigin().y() + -1.0 * i * clearing_distance_;
+      pt.x = global_pose.pose.position.x + i * clearing_distance_;
+      pt.y = global_pose.pose.position.y + -1.0 * i * clearing_distance_;
       global_poly.push_back(pt);
 
-      pt.x = local_pose.getOrigin().x() + i * clearing_distance_;
-      pt.y = local_pose.getOrigin().y() + i * clearing_distance_;
+      pt.x = local_pose.pose.position.x + i * clearing_distance_;
+      pt.y = local_pose.pose.position.y + i * clearing_distance_;
       local_poly.push_back(pt);
 
-      pt.x = local_pose.getOrigin().x() + i * clearing_distance_;
-      pt.y = local_pose.getOrigin().y() + -1.0 * i * clearing_distance_;
+      pt.x = local_pose.pose.position.x + i * clearing_distance_;
+      pt.y = local_pose.pose.position.y + -1.0 * i * clearing_distance_;
       local_poly.push_back(pt);
     }
 
@@ -153,13 +153,13 @@ namespace move_slow_and_clear
 
   double MoveSlowAndClear::getSqDistance()
   {
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     global_costmap_->getRobotPose(global_pose);
-    double x1 = global_pose.getOrigin().x();
-    double y1 = global_pose.getOrigin().y();
+    double x1 = global_pose.pose.position.x;
+    double y1 = global_pose.pose.position.y;
 
-    double x2 = speed_limit_pose_.getOrigin().x();
-    double y2 = speed_limit_pose_.getOrigin().y();
+    double x2 = speed_limit_pose_.pose.position.x;
+    double y2 = speed_limit_pose_.pose.position.y;
 
     return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
   }

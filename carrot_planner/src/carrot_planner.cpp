@@ -36,7 +36,9 @@
 *********************************************************************/
 #include <carrot_planner/carrot_planner.h>
 #include <pluginlib/class_list_macros.h>
+#include <tf2/convert.h>
 #include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(carrot_planner::CarrotPlanner, nav_core::BaseGlobalPlanner)

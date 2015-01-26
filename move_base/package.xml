@@ -20,6 +20,7 @@
 
     <build_depend>cmake_modules</build_depend>
     <build_depend>message_generation</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
 
     <depend>actionlib</depend>
     <depend>costmap_2d</depend>
@@ -32,7 +33,7 @@
     <depend>roscpp</depend>
     <depend>rospy</depend>
     <depend>std_srvs</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
 
     <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->

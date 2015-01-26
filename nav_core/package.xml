@@ -21,6 +21,6 @@
     <depend>costmap_2d</depend>
     <depend>geometry_msgs</depend>
     <depend>std_msgs</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
 
 </package>

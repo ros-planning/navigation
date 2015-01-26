@@ -984,6 +984,7 @@ AmclNode::getOdomPose(geometry_msgs::PoseStamped& odom_pose,
   x = odom_pose.pose.position.x;
   y = odom_pose.pose.position.y;
   yaw = tf2::getYaw(odom_pose.pose.orientation);
+
   return true;
 }
 
@@ -1342,6 +1343,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // Copy in the pose
       p.pose.pose.position.x = hyps[max_weight_hyp].pf_pose_mean.v[0];
       p.pose.pose.position.y = hyps[max_weight_hyp].pf_pose_mean.v[1];
+
       tf2::Quaternion q;
       q.setRPY(0, 0, hyps[max_weight_hyp].pf_pose_mean.v[2]);
       tf2::convert(q, p.pose.pose.orientation);
@@ -1417,6 +1419,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         tmp_tf_stamped.header.stamp = transform_expiration;
         tmp_tf_stamped.child_frame_id = odom_frame_id_;
         tf2::convert(latest_tf_.inverse(), tmp_tf_stamped.transform);
+
         this->tfb_->sendTransform(tmp_tf_stamped);
         sent_first_transform_ = true;
       }
@@ -1512,7 +1515,7 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
            ros::Time::now().toSec(),
            pose_new.getOrigin().x(),
            pose_new.getOrigin().y(),
-            tf2::getYaw(pose_new.getRotation()));
+           tf2::getYaw(pose_new.getRotation()));
   // Re-initialize the filter
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
   pf_init_pose_mean.v[0] = pose_new.getOrigin().x();

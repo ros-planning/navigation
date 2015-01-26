@@ -26,7 +26,7 @@
     <depend>nav_core</depend>
     <depend>pluginlib</depend>
     <depend>roscpp</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
 
     <export>
         <nav_core plugin="${prefix}/rotate_plugin.xml" />

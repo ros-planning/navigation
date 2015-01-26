@@ -8,7 +8,7 @@ find_package(catkin REQUIRED
             nav_core
             pluginlib
             roscpp
-            tf
+            tf2_ros
         )
 
 find_package(Eigen3 REQUIRED)
@@ -28,7 +28,7 @@ catkin_package(
         nav_core
         pluginlib
         roscpp
-        tf
+        tf2_ros
 )
 
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
