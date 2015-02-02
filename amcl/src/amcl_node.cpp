@@ -1096,7 +1096,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     {
       ROS_ERROR("Couldn't transform from %s to %s, "
                 "even though the message notifier is in use",
-                laser_scan->header.frame_id.c_str(),
+                laser_scan_frame_id.c_str(),
                 base_frame_id_.c_str());
       return;
     }
@@ -1112,10 +1112,10 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
               laser_pose_v.v[1],
               laser_pose_v.v[2]);
 
-    frame_to_laser_[laser_scan->header.frame_id] = laser_index;
+    frame_to_laser_[laser_scan_frame_id] = laser_index;
   } else {
     // we have the laser pose, retrieve laser index
-    laser_index = frame_to_laser_[laser_scan->header.frame_id];
+    laser_index = frame_to_laser_[laser_scan_frame_id];
   }
 
   // Where was the robot when this scan was taken?
