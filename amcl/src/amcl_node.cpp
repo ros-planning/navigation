@@ -112,6 +112,18 @@ angle_diff(double a, double b)
 
 static const std::string scan_topic_ = "scan";
 
+/* This function is only useful to have the whole code work
+ * with old rosbags that have trailing slashes for their frames
+ */
+inline
+std::string stripSlash(const std::string& in)
+{
+  std::string out = in;
+  if ( ( !in.empty() ) && (in[0] == '/') )
+    out.erase(0,1);
+  return out;
+}
+
 class AmclNode
 {
   public:
@@ -409,6 +421,9 @@ AmclNode::AmclNode() :
     private_nh_.param("bag_scan_period", bag_scan_period, -1.0);
     bag_scan_period_.fromSec(bag_scan_period);
   }
+  odom_frame_id_ = stripSlash(odom_frame_id_);
+  base_frame_id_ = stripSlash(base_frame_id_);
+  global_frame_id_ = stripSlash(global_frame_id_);
 
   updatePoseFromServer();
 
@@ -582,9 +597,9 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     ROS_INFO("Done initializing likelihood field model.");
   }
 
-  odom_frame_id_ = config.odom_frame_id;
-  base_frame_id_ = config.base_frame_id;
-  global_frame_id_ = config.global_frame_id;
+  odom_frame_id_ = stripSlash(config.odom_frame_id);
+  base_frame_id_ = stripSlash(config.base_frame_id);
+  global_frame_id_ = stripSlash(config.global_frame_id);
 
   delete laser_scan_filter_;
   laser_scan_filter_ = new tf2_ros::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_,
@@ -941,7 +956,7 @@ AmclNode::getOdomPose(geometry_msgs::PoseStamped& odom_pose,
 {
   // Get the robot's pose
   geometry_msgs::PoseStamped ident;
-  ident.header.frame_id = f;
+  ident.header.frame_id = stripSlash(f);
   ident.header.stamp = t;
   tf2::toMsg(tf2::Transform::getIdentity(), ident.pose);
   try
@@ -1038,6 +1053,7 @@ AmclNode::setMapCallback(nav_msgs::SetMap::Request& req,
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
+  std::string laser_scan_frame_id = stripSlash(laser_scan->header.frame_id);
   last_laser_received_ts_ = ros::Time::now();
   if( map_ == NULL ) {
     return;
@@ -1046,15 +1062,15 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   int laser_index = -1;
 
   // Do we have the base->base_laser Tx yet?
-  if(frame_to_laser_.find(laser_scan->header.frame_id) == frame_to_laser_.end())
+  if(frame_to_laser_.find(laser_scan_frame_id) == frame_to_laser_.end())
   {
-    ROS_DEBUG("Setting up laser %d (frame_id=%s)\n", (int)frame_to_laser_.size(), laser_scan->header.frame_id.c_str());
+    ROS_DEBUG("Setting up laser %d (frame_id=%s)\n", (int)frame_to_laser_.size(), laser_scan_frame_id.c_str());
     lasers_.push_back(new AMCLLaser(*laser_));
     lasers_update_.push_back(true);
     laser_index = frame_to_laser_.size();
 
     geometry_msgs::PoseStamped ident;
-    ident.header.frame_id = laser_scan->header.frame_id;
+    ident.header.frame_id = stripSlash(laser_scan_frame_id);
     ident.header.stamp = ros::Time();
     tf2::toMsg(tf2::Transform::getIdentity(), ident.pose);
 
@@ -1067,7 +1083,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     {
       ROS_ERROR("Couldn't transform from %s to %s, "
                 "even though the message notifier is in use",
-                laser_scan->header.frame_id.c_str(),
+                laser_scan_frame_id.c_str(),
                 base_frame_id_.c_str());
       return;
     }
@@ -1083,10 +1099,10 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
               laser_pose_v.v[1],
               laser_pose_v.v[2]);
 
-    frame_to_laser_[laser_scan->header.frame_id] = laser_index;
+    frame_to_laser_[laser_scan_frame_id] = laser_index;
   } else {
     // we have the laser pose, retrieve laser index
-    laser_index = frame_to_laser_[laser_scan->header.frame_id];
+    laser_index = frame_to_laser_[laser_scan_frame_id];
   }
 
   // Where was the robot when this scan was taken?
@@ -1174,7 +1190,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     tf2::Quaternion q;
     q.setRPY(0.0, 0.0, laser_scan->angle_min);
     geometry_msgs::QuaternionStamped min_q, inc_q;
-    min_q.header = laser_scan->header;
+    min_q.header.stamp = laser_scan->header.stamp;
+    min_q.header.frame_id = stripSlash(laser_scan->header.frame_id);
     tf2::convert(q, min_q.quaternion);
 
     q.setRPY(0.0, 0.0, laser_scan->angle_min + laser_scan->angle_increment);
@@ -1441,10 +1458,10 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
     ROS_WARN("Received initial pose with empty frame_id.  You should always supply a frame_id.");
   }
   // We only accept initial pose estimates in the global frame, #5148.
-  else if(msg.header.frame_id != global_frame_id_)
+  else if(stripSlash(msg.header.frame_id) != global_frame_id_)
   {
     ROS_WARN("Ignoring initial pose in frame \"%s\"; initial poses must be in the global frame, \"%s\"",
-             msg.header.frame_id.c_str(),
+             stripSlash(msg.header.frame_id).c_str(),
              global_frame_id_.c_str());
     return;
   }
