@@ -2,6 +2,11 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix bfl includes in robot_pose_ekf
+* Contributors: Jochen Sprickerhof
+
 1.11.14 (2014-12-05)
 --------------------
 

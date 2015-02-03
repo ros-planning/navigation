@@ -2,6 +2,11 @@
 Changelog for package voxel_grid
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add ARCHIVE_DESTINATION for static builds
+* Contributors: Gary Servin
+
 1.11.14 (2014-12-05)
 --------------------
 * remove old test code

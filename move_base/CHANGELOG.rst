@@ -2,6 +2,15 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Disable global planner when resetting state.
+* Mark move_base headers for installation
+* Add ARCHIVE DESTINATION for move_base
+* Break infinite loop when tolerance 0 is used
+* remove partial usage of <tab> in the code
+* Contributors: Gary Servin, Michael Ferguson, ohendriks, v4hn
+
 1.11.14 (2014-12-05)
 --------------------
 * use timer rather than rate for immediate wakeup

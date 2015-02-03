@@ -2,6 +2,11 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add ARCHIVE_DESTINATION for static builds
+* Contributors: Gary Servin
+
 1.11.14 (2014-12-05)
 --------------------
 
