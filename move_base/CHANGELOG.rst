@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.15 (2015-02-03)
+--------------------
 * Disable global planner when resetting state.
 * Mark move_base headers for installation
 * Add ARCHIVE DESTINATION for move_base

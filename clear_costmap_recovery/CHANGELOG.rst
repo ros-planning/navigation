@@ -2,8 +2,8 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.15 (2015-02-03)
+--------------------
 * Add ARCHIVE_DESTINATION for static builds
 * Contributors: Gary Servin
 
