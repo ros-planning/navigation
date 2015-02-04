@@ -15,7 +15,7 @@
     <author>Dave Hershberger</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/costmap_2d</url>
 
