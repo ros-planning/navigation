@@ -37,6 +37,8 @@
 #include <voxel_grid/voxel_grid.h>
 #include <sys/time.h>
 #include <ros/console.h>
+#include <voxel_grid/plain_clearer.h>
+#include <voxel_grid/plain_marker.h>
 
 namespace voxel_grid {
   VoxelGrid::VoxelGrid(unsigned int size_x, unsigned int size_y, unsigned int size_z)
@@ -104,45 +106,31 @@ namespace voxel_grid {
 
   void VoxelGrid::markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
+      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
           size_x_, size_y_, size_z_);
       return;
     }
 
-    MarkVoxel mv(data_);
-    raytraceLine(mv, x0, y0, z0, x1, y1, z1, max_length);
+    PlainMarker plain_marker(data_);
+    raytraceLine(&plain_marker, x0, y0, z0, x1, y1, z1, size_x_, max_length, false);
   }
 
   void VoxelGrid::clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
+      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
           size_x_, size_y_, size_z_);
       return;
     }
 
-    ClearVoxel cv(data_);
-    raytraceLine(cv, x0, y0, z0, x1, y1, z1, max_length);
+    PlainClearer plain_clearer(data_);
+    raytraceLine(&plain_clearer, x0, y0, z0, x1, y1, z1, size_x_, max_length, false);
   }
 
   void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1,
-                                      unsigned char *map_2d, unsigned int unknown_threshold, unsigned int mark_threshold,
-                                      unsigned char free_cost, unsigned char unknown_cost, unsigned int max_length,
-                                      bool include_corner_cases)
+                                      unsigned char *map_2d, AbstractGridUpdater* clearer,
+                                      unsigned int area_width, unsigned int max_length, bool include_corner_cases)
   {
-    costmap = map_2d;
-    if(map_2d == NULL){
-      clearVoxelLine(x0, y0, z0, x1, y1, z1, max_length);
-      return;
-    }
-
-    if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
-          size_x_, size_y_, size_z_);
-      return;
-    }
-
-    ClearVoxelInMap cvm(data_, costmap, unknown_threshold, mark_threshold, free_cost, unknown_cost);
-    raytraceLine(cvm, x0, y0, z0, x1, y1, z1, max_length, include_corner_cases);
+    raytraceLine(clearer, x0, y0, z0, x1, y1, z1, area_width, max_length, include_corner_cases);
   }
 
   VoxelStatus VoxelGrid::getVoxel(unsigned int x, unsigned int y, unsigned int z)
