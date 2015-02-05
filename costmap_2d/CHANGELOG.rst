@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.0 (2015-02-04)
+-------------------
 * update maintainer email
 * Contributors: Michael Ferguson
 

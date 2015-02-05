@@ -1,6 +1,6 @@
 <package>
     <name>move_base_msgs</name>
-    <version>1.11.15</version>
+    <version>1.12.0</version>
     <description>
 
         Holds the action description and relevant messages for the move_base package
