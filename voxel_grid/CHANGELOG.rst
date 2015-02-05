@@ -2,6 +2,11 @@
 Changelog for package voxel_grid
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update maintainer email
+* Contributors: Michael Ferguson
+
 1.11.15 (2015-02-03)
 --------------------
 * Add ARCHIVE_DESTINATION for static builds
