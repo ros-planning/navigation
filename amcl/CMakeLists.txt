@@ -7,21 +7,14 @@ find_package(catkin REQUIRED
             tf
             dynamic_reconfigure
             nav_msgs
-            geometry_msgs
         )
 
 find_package(Boost REQUIRED)
-
-# add service files
-add_service_files(FILES
-  SwapMap.srv)
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/AMCL.cfg
 )
-
-generate_messages(DEPENDENCIES nav_msgs geometry_msgs)
 
 catkin_package(
     CATKIN_DEPENDS

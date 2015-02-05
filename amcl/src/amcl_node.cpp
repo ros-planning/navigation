@@ -58,7 +58,7 @@
 #include "amcl/AMCLConfig.h"
 
 // Services
-#include "amcl/SwapMap.h"
+#include "nav_msgs/SetMap.h"
 
 #define NEW_UNIFORM_SAMPLING 1
 
@@ -142,7 +142,7 @@ class AmclNode
 
     double getYaw(tf::Pose& t);
 
-    bool swapMapCallback(amcl::SwapMapRequest &request, amcl::SwapMapResponse& response);
+    bool swapMapCallback(nav_msgs::SetMapRequest &request, nav_msgs::SetMapResponse& response);
 
     //parameter for what odom to use
     std::string odom_frame_id_;
@@ -1348,17 +1348,17 @@ AmclNode::applyInitialPose()
   }
 }
 
-bool AmclNode::swapMapCallback(amcl::SwapMapRequest &request, amcl::SwapMapResponse& response)
+bool AmclNode::swapMapCallback(nav_msgs::SetMapRequest &request, nav_msgs::SetMapResponse& response)
 {
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
   
-  if(request.map_msg.info.width == 0 || request.map_msg.info.height == 0)
+  if(request.map.info.width == 0 || request.map.info.height == 0)
   {
     ROS_ERROR("Map dimensions cannot be zero");
     response.success = false;
     return false;
   } 
-  handleMapMessage(request.map_msg);
+  handleMapMessage(request.map);
 
   double x = request.initial_pose.position.x;
   double y = request.initial_pose.position.y;

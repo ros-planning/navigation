@@ -1,5 +1,0 @@
- nav_msgs/OccupancyGrid map_msg
- geometry_msgs/Pose initial_pose
- ---
- bool success
-
