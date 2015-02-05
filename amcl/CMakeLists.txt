@@ -21,7 +21,6 @@ catkin_package(
         roscpp
         dynamic_reconfigure
         tf
-        message_runtime
   INCLUDE_DIRS include
   LIBRARIES amcl_sensors amcl_map amcl_pf
 )

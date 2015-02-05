@@ -142,7 +142,7 @@ class AmclNode
 
     double getYaw(tf::Pose& t);
 
-    bool swapMapCallback(nav_msgs::SetMapRequest &request, nav_msgs::SetMapResponse& response);
+    bool setMapCallback(nav_msgs::SetMapRequest &request, nav_msgs::SetMapResponse& response);
 
     //parameter for what odom to use
     std::string odom_frame_id_;
@@ -208,7 +208,7 @@ class AmclNode
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
-    ros::ServiceServer swap_map_srv_;
+    ros::ServiceServer set_map_srv_;
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
 
@@ -368,7 +368,7 @@ AmclNode::AmclNode() :
 					 &AmclNode::globalLocalizationCallback,
                                          this);
   nomotion_update_srv_= nh_.advertiseService("request_nomotion_update", &AmclNode::nomotionUpdateCallback, this);
-  swap_map_srv_ = nh_.advertiseService("swap_map", &AmclNode::swapMapCallback, this);
+  set_map_srv_ = nh_.advertiseService("set_map", &AmclNode::setMapCallback, this);
   laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
   laser_scan_filter_ = 
           new tf::MessageFilter<sensor_msgs::LaserScan>(*laser_scan_sub_, 
@@ -1348,7 +1348,7 @@ AmclNode::applyInitialPose()
   }
 }
 
-bool AmclNode::swapMapCallback(nav_msgs::SetMapRequest &request, nav_msgs::SetMapResponse& response)
+bool AmclNode::setMapCallback(nav_msgs::SetMapRequest &request, nav_msgs::SetMapResponse& response)
 {
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
   
