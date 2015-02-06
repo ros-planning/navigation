@@ -28,6 +28,9 @@
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
 
+// Signal handling
+#include <signal.h>
+
 #include "map/map.h"
 #include "pf/pf.h"
 #include "sensors/amcl_odom.h"
@@ -105,6 +108,7 @@ class AmclNode
     ~AmclNode();
 
     int process();
+    void savePoseToServer();
 
   private:
     tf::TransformBroadcaster* tfb_;
@@ -141,6 +145,10 @@ class AmclNode
 
     //parameter for what odom to use
     std::string odom_frame_id_;
+
+    //paramater to store latest odom pose
+    tf::Stamped<tf::Pose> latest_odom_pose_;
+
     //parameter for what base to use
     std::string base_frame_id_;
     std::string global_frame_id_;
@@ -240,13 +248,26 @@ std::vector<std::pair<int,int> > AmclNode::free_space_indices;
 
 #define USAGE "USAGE: amcl"
 
+boost::shared_ptr<AmclNode> amcl_node_ptr;
+
+void sigintHandler(int sig)
+{
+  // Save latest pose as we're shutting down.
+  amcl_node_ptr->savePoseToServer();
+  ros::shutdown();
+}
+
 int
 main(int argc, char** argv)
 {
   ros::init(argc, argv, "amcl");
   ros::NodeHandle nh;
 
-  AmclNode an;
+  // Override default sigint handler
+  signal(SIGINT, sigintHandler);
+
+  // Make our node available to sigintHandler
+  amcl_node_ptr.reset(new AmclNode());
 
   ros::spin();
 
@@ -533,6 +554,28 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
                                                    this, _1));
 
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
+}
+
+void AmclNode::savePoseToServer()
+{
+  // We need to apply the last transform to the latest odom pose to get
+  // the latest map pose to store.  We'll take the covariance from
+  // last_published_pose.
+  tf::Pose map_pose = latest_tf_.inverse() * latest_odom_pose_;
+  double yaw,pitch,roll;
+  map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
+
+  ROS_DEBUG("Saving pose to server. x: %.3f, y: %.3f", map_pose.getOrigin().x(), map_pose.getOrigin().y() );
+
+  private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
+  private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
+  private_nh_.setParam("initial_pose_a", yaw);
+  private_nh_.setParam("initial_cov_xx", 
+                                  last_published_pose.pose.covariance[6*0+0]);
+  private_nh_.setParam("initial_cov_yy", 
+                                  last_published_pose.pose.covariance[6*1+1]);
+  private_nh_.setParam("initial_cov_aa", 
+                                  last_published_pose.pose.covariance[6*5+5]);
 }
 
 void AmclNode::updatePoseFromServer()
@@ -904,9 +947,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
 
   // Where was the robot when this scan was taken?
-  tf::Stamped<tf::Pose> odom_pose;
   pf_vector_t pose;
-  if(!getOdomPose(odom_pose, pose.v[0], pose.v[1], pose.v[2],
+  if(!getOdomPose(latest_odom_pose_, pose.v[0], pose.v[1], pose.v[2],
                   laser_scan->header.stamp, base_frame_id_))
   {
     ROS_ERROR("Couldn't determine robot's pose associated with laser scan");
@@ -1222,22 +1264,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     if((save_pose_period.toSec() > 0.0) &&
        (now - save_pose_last_time) >= save_pose_period)
     {
-      // We need to apply the last transform to the latest odom pose to get
-      // the latest map pose to store.  We'll take the covariance from
-      // last_published_pose.
-      tf::Pose map_pose = latest_tf_.inverse() * odom_pose;
-      double yaw,pitch,roll;
-      map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
-
-      private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
-      private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
-      private_nh_.setParam("initial_pose_a", yaw);
-      private_nh_.setParam("initial_cov_xx", 
-                                      last_published_pose.pose.covariance[6*0+0]);
-      private_nh_.setParam("initial_cov_yy", 
-                                      last_published_pose.pose.covariance[6*1+1]);
-      private_nh_.setParam("initial_cov_aa", 
-                                      last_published_pose.pose.covariance[6*5+5]);
+      this->savePoseToServer();
       save_pose_last_time = now;
     }
   }
