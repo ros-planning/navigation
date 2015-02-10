@@ -418,7 +418,7 @@ void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, i
   // before we merge this obstacle layer into the master_grid.
   footprint_layer_.updateCosts(*this, min_i, min_j, max_i, max_j);
 
-  switch(combination_method){
+  switch(combination_method_){
     case 0: // Overwrite
       updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
       break;
