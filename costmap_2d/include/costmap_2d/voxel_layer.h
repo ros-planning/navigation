@@ -96,6 +96,21 @@ private:
 
   dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *dsrv_;
 
+  /**
+   * @brief Include corner cases or not.
+   *
+   * The raytracing works with the Bresenham algorithm on discrete cells.
+   * raytrace_corner_cases_ includes additional cells at the transition of one row / column to the next:
+   *
+   * |   |   |   |   |
+   * -----------------  Legend:
+   * |   | # | = | = |          = : Cells added by original Bresenham
+   * -----------------          # : Additional cells added with raytrace_corner_cases_
+   * | = | = | # |   |
+   * -----------------
+  **/
+  bool clear_corner_cases_;
+
   bool publish_voxel_;
   ros::Publisher voxel_pub_;
   voxel_grid::VoxelGrid voxel_grid_;
