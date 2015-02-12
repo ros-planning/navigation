@@ -46,6 +46,7 @@
 #include <algorithm>
 #include <ros/console.h>
 #include <ros/assert.h>
+#include <voxel_grid/abstract_grid_updater.h>
 
 /**
  * @class VoxelGrid
@@ -229,9 +230,8 @@ public:
   void markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length = UINT_MAX);
   void clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length = UINT_MAX);
   void clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1, unsigned char *map_2d,
-                           unsigned int unknown_threshold, unsigned int mark_threshold,
-                           unsigned char free_cost = 0, unsigned char unknown_cost = 255, unsigned int max_length = UINT_MAX,
-                           bool include_corner_cases = false);
+                           AbstractGridUpdater* clearer, unsigned int area_width,
+                           unsigned int max_length = UINT_MAX, bool include_corner_cases = false);
 
   VoxelStatus getVoxel(unsigned int x, unsigned int y, unsigned int z);
 
@@ -253,10 +253,8 @@ public:
    * http://graphics.idav.ucdavis.edu/education/GraphicsNotes/CAGDNotes/Bresenhams-Algorithm.pdf
    *
   **/
-  template <class ActionType>
-  inline void raytraceLine(
-    ActionType at, double x0, double y0, double z0,
-    double x1, double y1, double z1, unsigned int max_length = UINT_MAX, bool include_corner_cases = false)
+  inline void raytraceLine(AbstractGridUpdater* clearer, double x0, double y0, double z0, double x1,
+                           double y1, double z1, unsigned int width, unsigned int max_length = UINT_MAX, bool include_corner_cases = false)
   {
     double dx = x1 - x0;
     double dy = y1 - y0;
@@ -266,17 +264,21 @@ public:
     double abs_dy = fabs(accuracy_multiplier_ * dy);
     double abs_dz = fabs(accuracy_multiplier_ * dz);
 
-    if(abs_dx > INT_MAX || abs_dy > INT_MAX || abs_dz > INT_MAX)
+    if (abs_dx > INT_MAX || abs_dy > INT_MAX || abs_dz > INT_MAX)
     {
-      ROS_ERROR_THROTTLE(1.0, "Voxel grid: Accuracy multiplier is set too high. Possible integer overflow while clearing.");
+      ROS_ERROR_THROTTLE(1.0,
+                         "Voxel grid: Accuracy multiplier is set too high. Possible integer overflow while clearing.");
     }
 
     int offset_dx = sign(dx);
-    int offset_dy = sign(dy) * size_x_;
+    int offset_dy = sign(dy) * width;
     int offset_dz = sign(dz);
 
     unsigned int z_mask = ((1 << 16) | 1) << (unsigned int)z0;
-    unsigned int offset = (unsigned int)y0 * size_x_ + (unsigned int)x0;
+    if(include_corner_cases)
+      z_mask <<= 1; //to prevent underflows, is undone later
+
+    unsigned int offset = (unsigned int)y0 * width + (unsigned int)x0;
 
     GridOffset index_updater_xy(offset);
     ZOffset index_updater_z(z_mask);
@@ -293,19 +295,18 @@ public:
     {
       int error_y = (int)(abs_dy * x_lost_rounding - abs_dx * y_lost_rounding);
       int error_z = (int)(abs_dz * x_lost_rounding - abs_dx * z_lost_rounding);
-      unsigned int number_of_steps = scale * abs(int(x0) - int(x1));
+      int number_of_steps = scale * abs(int(x0) - int(x1));
 
-      if(include_corner_cases)
+      if (include_corner_cases)
       {
-        bresenham3DIncludingCorners(at, index_updater_xy, index_updater_xy, index_updater_z,
-                             abs_dx, abs_dy, abs_dz, error_y, error_z, offset_dx, offset_dy, offset_dz, offset, z_mask,
-                             number_of_steps);
+        bresenham3DIncludingCorners(clearer, index_updater_xy, index_updater_xy, index_updater_z, abs_dx, abs_dy, abs_dz,
+                                    error_y, error_z, offset_dx, offset_dy, offset_dz, offset, z_mask,
+                                    number_of_steps);
         return;
       }
 
-      bresenham3D(at, index_updater_xy, index_updater_xy, index_updater_z,
-                     abs_dx, abs_dy, abs_dz, error_y, error_z, offset_dx, offset_dy, offset_dz, offset, z_mask,
-                     number_of_steps);
+      bresenham3D(clearer, index_updater_xy, index_updater_xy, index_updater_z, abs_dx, abs_dy, abs_dz, error_y, error_z,
+                  offset_dx, offset_dy, offset_dz, offset, z_mask, number_of_steps);
       return;
     }
 
@@ -313,52 +314,48 @@ public:
     {
       int error_x = (int)(abs_dx * y_lost_rounding - abs_dy * x_lost_rounding);
       int error_z = (int)(abs_dz * y_lost_rounding - abs_dy * z_lost_rounding);
-      unsigned int number_of_steps = scale * abs(int(x0) - int(x1));
+      int number_of_steps = scale * abs(int(y0) - int(y1));
 
-      if(include_corner_cases)
+      if (include_corner_cases)
       {
-        bresenham3DIncludingCorners(at, index_updater_xy, index_updater_xy, index_updater_z,
-                             abs_dy, abs_dx, abs_dz, error_x, error_z, offset_dy, offset_dx, offset_dz, offset, z_mask,
-                             number_of_steps);
+        bresenham3DIncludingCorners(clearer, index_updater_xy, index_updater_xy, index_updater_z, abs_dy, abs_dx, abs_dz,
+                                    error_x, error_z, offset_dy, offset_dx, offset_dz, offset, z_mask,
+                                    number_of_steps);
         return;
       }
 
-      bresenham3D(at, index_updater_xy, index_updater_xy, index_updater_z,
-                     abs_dy, abs_dx, abs_dz, error_x, error_z, offset_dy, offset_dx, offset_dz, offset, z_mask,
-                     number_of_steps);
+      bresenham3D(clearer, index_updater_xy, index_updater_xy, index_updater_z, abs_dy, abs_dx, abs_dz, error_x, error_z,
+                  offset_dy, offset_dx, offset_dz, offset,  z_mask, number_of_steps);
       return;
     }
 
     int error_x = (int)(abs_dx * z_lost_rounding - abs_dz * x_lost_rounding);
     int error_y = (int)(abs_dy * z_lost_rounding - abs_dz * y_lost_rounding);
-    unsigned int number_of_steps = scale * abs(int(x0) - int(x1));
+    int number_of_steps = scale * abs(int(z0) - int(z1));
 
-    if(include_corner_cases)
+    if (include_corner_cases)
     {
-      bresenham3DIncludingCorners(at, index_updater_z, index_updater_xy, index_updater_xy,
-                         abs_dz, abs_dx, abs_dy, error_x, error_y, offset_dz, offset_dx, offset_dy, offset, z_mask,
-                         number_of_steps);
+      bresenham3DIncludingCorners(clearer, index_updater_z, index_updater_xy, index_updater_xy, abs_dz, abs_dx, abs_dy,
+                                  error_x, error_y, offset_dz, offset_dx, offset_dy, offset, z_mask,
+                                  number_of_steps);
       return;
     }
 
-    bresenham3D(at, index_updater_z, index_updater_xy, index_updater_xy,
-                   abs_dz, abs_dx, abs_dy, error_x, error_y, offset_dz, offset_dx, offset_dy, offset, z_mask,
-                   number_of_steps);
+    bresenham3D(clearer, index_updater_z, index_updater_xy, index_updater_xy, abs_dz, abs_dx, abs_dy, error_x, error_y,
+                offset_dz, offset_dx, offset_dy, offset,  z_mask, number_of_steps);
   }
 
 private:
   //the real work is done here... 3D bresenham implementation
-  template <class ActionType, class OffA, class OffB, class OffC>
-  inline void bresenham3D(
-    ActionType at, OffA off_a, OffB off_b, OffC off_c,
-    unsigned int abs_da, unsigned int abs_db, unsigned int abs_dc,
-    int error_b, int error_c, int offset_a, int offset_b, int offset_c, unsigned int &offset,
-    unsigned int &z_mask, unsigned int number_of_steps)
+  template<class OffA, class OffB, class OffC>
+  inline void bresenham3D(AbstractGridUpdater* clearer, OffA off_a, OffB off_b, OffC off_c,
+                          unsigned int abs_da, unsigned int abs_db, unsigned int abs_dc, int error_b, int error_c,
+                          int offset_a, int offset_b, int offset_c, unsigned int &offset,
+                          unsigned int &z_mask, int number_of_steps)
   {
-
-    for (unsigned int i = 0; i < number_of_steps; ++i)
+    for (int i = 0; i < number_of_steps; ++i)
     {
-      at(offset, z_mask);
+      (*clearer)(offset, z_mask);
       off_a(offset_a);
 
       if (error_b >= 0)
@@ -390,28 +387,27 @@ private:
    * | = | = | # |   |
    * -----------------
   **/
-  template<class ActionType, class OffA, class OffB, class OffC>
-  inline void bresenham3DIncludingCorners(ActionType at, OffA off_a, OffB off_b, OffC off_c, unsigned int abs_da,
-                                          unsigned int abs_db, unsigned int abs_dc, int error_b, int error_c,
-                                          int offset_a, int offset_b, int offset_c, unsigned int &offset,
-                                          unsigned int &z_mask, unsigned int number_of_steps)
+  template<class OffA, class OffB, class OffC>
+  inline void bresenham3DIncludingCorners(AbstractGridUpdater* clearer, OffA off_a, OffB off_b,
+                                          OffC off_c, unsigned int abs_da, unsigned int abs_db, unsigned int abs_dc,
+                                          int error_b, int error_c, int offset_a, int offset_b, int offset_c,
+                                          unsigned int &offset, unsigned int &z_mask, int number_of_steps)
   {
-
     //-1 because we don't want to clear the corners _after_ the last cell
     //last cell is cleared after the loop
-    for (unsigned int i = 0; i < number_of_steps - 1; ++i)
+    for (int i = 0; i < number_of_steps - 1; ++i)
     {
-      at(offset, z_mask);
+      (*clearer)(offset, z_mask);
       off_a(offset_a);
 
       if (error_b >= 0)
       {
         //adjusted not original Bresenham
-        at(offset, z_mask); //set voxel on the same row
+        (*clearer)(offset, z_mask); //set voxel on the same row
 
         off_b(offset_b); //go one row up
         off_a(-offset_a); //go one column back
-        at(offset, z_mask); //set voxel
+        (*clearer)(offset, z_mask); //set voxel
 
         off_a(offset_a); //go back to next column
 
@@ -421,11 +417,11 @@ private:
       if (error_c >= 0)
       {
         //adjusted not original Bresenham
-        at(offset, z_mask); //set voxel on the same row
+        (*clearer)(offset, z_mask); //set voxel on the same row
 
         off_c(offset_c); //go one row up
         off_a(-offset_a); //go one column back
-        at(offset, z_mask); //set voxel
+        (*clearer)(offset, z_mask); //set voxel
 
         off_a(offset_a); //go back to next column
 
@@ -463,86 +459,6 @@ private:
    *
    **/
   unsigned int accuracy_multiplier_;
-
-  //Aren't functors so much fun... used to recreate the Bresenham macro Eric wrote in the original version, but in "proper" c++
-  class MarkVoxel
-  {
-  public:
-    MarkVoxel(uint32_t* data): data_(data){}
-    inline void operator()(unsigned int offset, unsigned int z_mask)
-    {
-      data_[offset] |= z_mask; //clear unknown and mark cell
-    }
-  private:
-    uint32_t* data_;
-  };
-
-  class ClearVoxel
-  {
-  public:
-    ClearVoxel(uint32_t* data): data_(data){}
-    inline void operator()(unsigned int offset, unsigned int z_mask)
-    {
-      data_[offset] &= ~(z_mask); //clear unknown and clear cell
-    }
-  private:
-    uint32_t* data_;
-  };
-
-  class ClearVoxelInMap
-  {
-  public:
-    ClearVoxelInMap(
-      uint32_t* data, unsigned char *costmap,
-      unsigned int unknown_clear_threshold, unsigned int marked_clear_threshold,
-      unsigned char free_cost = 0, unsigned char unknown_cost = 255): data_(data), costmap_(costmap),
-      unknown_clear_threshold_(unknown_clear_threshold), marked_clear_threshold_(marked_clear_threshold),
-      free_cost_(free_cost), unknown_cost_(unknown_cost)
-    {
-    }
-
-    inline void operator()(unsigned int offset, unsigned int z_mask)
-    {
-      uint32_t* col = &data_[offset];
-      *col &= ~(z_mask); //clear unknown and clear cell
-
-      unsigned int unknown_bits = uint16_t(*col>>16) ^ uint16_t(*col);
-      unsigned int marked_bits = *col>>16;
-
-      //make sure the number of bits in each is below our thesholds
-      if (bitsBelowThreshold(marked_bits, marked_clear_threshold_))
-      {
-        if (bitsBelowThreshold(unknown_bits, unknown_clear_threshold_))
-        {
-          costmap_[offset] = free_cost_;
-        }
-        else
-        {
-          costmap_[offset] = unknown_cost_;
-        }
-      }
-    }
-  private:
-    inline bool bitsBelowThreshold(unsigned int n, unsigned int bit_threshold)
-    {
-      unsigned int bit_count;
-      for (bit_count = 0; n;)
-      {
-        ++bit_count;
-        if (bit_count > bit_threshold)
-        {
-          return false;
-        }
-        n &= n - 1; //clear the least significant bit set
-      }
-      return true;
-    }
-
-    uint32_t* data_;
-    unsigned char *costmap_;
-    unsigned int unknown_clear_threshold_, marked_clear_threshold_;
-    unsigned char free_cost_, unknown_cost_;
-  };
 
   class GridOffset
   {
