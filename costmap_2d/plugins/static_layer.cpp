@@ -191,7 +191,7 @@ void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& up
     unsigned int di = 0;
     for (unsigned int y = 0; y < update->height ; y++)
     {
-        unsigned int index_base = (update->y + y) * update->width;
+        unsigned int index_base = (update->y + y) * size_x_;
         for (unsigned int x = 0; x < update->width ; x++)
         {
             unsigned int index = index_base + x + update->x;
