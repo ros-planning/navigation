@@ -326,8 +326,7 @@ void InflationLayer::deleteKernels()
       if (cached_costs_[i])
         delete[] cached_costs_[i];
     }
-    if (cached_costs_)
-      delete[] cached_costs_;
+    delete[] cached_costs_;
     cached_costs_ = NULL;
   }
 }

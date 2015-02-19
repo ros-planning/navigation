@@ -50,7 +50,6 @@ DijkstraExpansion::DijkstraExpansion(PotentialCalculator* p_calc, int nx, int ny
 }
 
 DijkstraExpansion::~DijkstraExpansion() {
-  printf("Dijkstra deconstruct \n");
   delete[] buffer1_;
   delete[] buffer2_;
   delete[] buffer3_;
