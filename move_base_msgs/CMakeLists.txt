@@ -3,11 +3,9 @@ project(move_base_msgs)
 
 find_package(catkin REQUIRED
     COMPONENTS
-        roscpp
         message_generation
         actionlib_msgs
         geometry_msgs
-        std_msgs
         )
 
 
@@ -21,7 +19,6 @@ add_action_files(
 generate_messages(
     DEPENDENCIES
         actionlib_msgs
-        std_msgs
         geometry_msgs
 )
 
