@@ -77,6 +77,17 @@ GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, s
     initialize(name, costmap, frame_id);
 }
 
+GlobalPlanner::~GlobalPlanner() {
+    if (p_calc_)
+        delete p_calc_;
+    if (planner_)
+        delete planner_;
+    if (path_maker_)
+        delete path_maker_;
+    if (dsrv_)
+        delete dsrv_;
+}
+
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
     initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
 }
@@ -322,7 +333,7 @@ void GlobalPlanner::publishPlan(const std::vector<geometry_msgs::PoseStamped>& p
         return;
     }
 
-    //create a message for the plan 
+    //create a message for the plan
     nav_msgs::Path gui_path;
     gui_path.poses.resize(path.size());
 
@@ -420,7 +431,7 @@ void GlobalPlanner::publishPotential(float* potential)
     for (unsigned int i = 0; i < grid.data.size(); i++) {
         if (potential_array_[i] >= POT_HIGH) {
             grid.data[i] = -1;
-        } else 
+        } else
             grid.data[i] = potential_array_[i] * publish_scale_ / max;
     }
     potential_pub_.publish(grid);
