@@ -41,4 +41,4 @@ after_success:
   - sed 's|/tmp/ws/src/package/||g' < coverage.info > /tmp/ws/src/package/coverage.info
   - cd /tmp/ws/src/package
   - lcov --list coverage.info
-  - coveralls-lcov --repo-token 
+  - coveralls-lcov --repo-token Xr3TC04oOi4uutrkcRw5Zv9wyUzlPnkbQ coverage.info
