@@ -1,0 +1,35 @@
+language:
+  - cpp
+  - python
+python:
+  - "2.7"
+compiler:
+  - gcc
+
+notifications:
+  email:
+    recipients:
+      - kaijen@mayfieldrobotics.com
+    on_success: change #[always|never|change] # default: change
+    on_failure: change #[always|never|change] # default: always
+
+install:
+  - export ROS_DISTRO=hydro
+  - export CI_SOURCE_PATH=$(pwd)
+  - export REPOSITORY_NAME=${PWD##*/}
+  - echo "Testing branch $TRAVIS_BRANCH of $REPOSITORY_NAME"
+  - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
+  - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
+  - sudo apt-get update -qq
+  - sudo apt-get install python-catkin-pkg python-rosdep ros-$ROS_DISTRO-catkin -qq
+  - sudo rosdep init
+  - rosdep update 
+  - mkdir -p /tmp/ws/src
+  - ln -s $CI_SOURCE_PATH /tmp/ws/src/navigation
+  - cd /tmp/ws
+  - rosdep install --from-paths src --ignore-src --rosdistro $ROS_DISTRO -y
+
+script:
+  - source /opt/ros/$ROS_DISTRO/setup.bash
+  - catkin_make -j2
+  - catkin_make run_tests
