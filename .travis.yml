@@ -9,7 +9,7 @@ compiler:
 notifications:
   email:
     recipients:
-      - kaijen@mayfieldrobotics.com
+      - dev@mayfieldrobotics.com
     on_success: change #[always|never|change] # default: change
     on_failure: change #[always|never|change] # default: always
 
