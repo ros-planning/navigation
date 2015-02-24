@@ -42,3 +42,4 @@ after_success:
   - cd /tmp/ws/src/package
   - lcov --list coverage.info
   - coveralls-lcov --repo-token Xr3TC04oOi4uutrkcRw5Zv9wyUzlPnkbQ coverage.info
+
