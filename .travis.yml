@@ -38,8 +38,8 @@ script:
 after_success:
   - lcov --path . --directory . --capture --output-file coverage.info
   - lcov --remove coverage.info 'tests/*' '/usr/*' '/opt/*' --output-file coverage.info
-  - sed 's|/tmp/ws/src/package/||g' < coverage.info > /tmp/ws/src/package/coverage.info
-  - cd /tmp/ws/src/package
+  - sed 's|/tmp/ws/src/navigation/||g' < coverage.info > /tmp/ws/src/navigation/coverage.info
+  - cd /tmp/ws/src/navigation
   - lcov --list coverage.info
   - coveralls-lcov --repo-token Xr3TC04oOi4uutrkcRw5Zv9wyUzlPnkbQ coverage.info
 
