@@ -26,6 +26,18 @@ catkin_package(
         dynamic_reconfigure
 )
 
+#################
+##   Coverage  ##
+#################
+
+set(COVERAGE "OFF" CACHE STRING "Enable coverage generation.")
+
+message(Status "Using COVERAGE: ${COVERAGE}")
+if("${COVERAGE}" STREQUAL "ON")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+endif()
+
+
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}

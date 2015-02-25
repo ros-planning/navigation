@@ -27,6 +27,18 @@ catkin_package(
         nav_msgs
 )
 
+#################
+##   Coverage  ##
+#################
+
+set(COVERAGE "OFF" CACHE STRING "Enable coverage generation.")
+
+message(Status "Using COVERAGE: ${COVERAGE}")
+if("${COVERAGE}" STREQUAL "ON")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+endif()
+
+
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 add_library(image_loader src/image_loader.cpp)
 target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
