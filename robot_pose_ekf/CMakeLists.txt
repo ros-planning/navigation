@@ -5,6 +5,18 @@ project(robot_pose_ekf)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
 
+#################
+##   Coverage  ##
+#################
+
+set(COVERAGE "OFF" CACHE STRING "Enable coverage generation.")
+
+message(Status "Using COVERAGE: ${COVERAGE}")
+if("${COVERAGE}" STREQUAL "ON")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+endif()
+
+
 # People building this branch of nav within groovy will need this version:
 include_directories(${BFL_INCLUDE_DIRS})
 # People building this branch of nav within hydro will need this version:

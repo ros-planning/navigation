@@ -9,6 +9,18 @@ find_package(catkin REQUIRED
             costmap_2d
         )
 
+#################
+##   Coverage  ##
+#################
+
+set(COVERAGE "OFF" CACHE STRING "Enable coverage generation.")
+
+message(Status "Using COVERAGE: ${COVERAGE}")
+if("${COVERAGE}" STREQUAL "ON")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+endif()
+
+
 catkin_package(
     INCLUDE_DIRS
         include
