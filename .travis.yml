@@ -21,7 +21,7 @@ install:
   - sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu precise main" > /etc/apt/sources.list.d/ros-latest.list'
   - wget http://packages.ros.org/ros.key -O - | sudo apt-key add -
   - sudo apt-get update -qq
-  - sudo apt-get install python-catkin-pkg python-rosdep ros-$ROS_DISTRO-catkin -qq
+  - sudo apt-get install python-catkin-pkg python-rosdep lcov ros-$ROS_DISTRO-catkin -qq
   - sudo rosdep init
   - rosdep update 
   - mkdir -p /tmp/ws/src
@@ -32,7 +32,7 @@ install:
 
 script:
   - source /opt/ros/$ROS_DISTRO/setup.bash
-  - catkin_make -j2
+  - catkin_make -j2 -DCOVERAGE=ON
   - catkin_make run_tests
 
 after_success:
