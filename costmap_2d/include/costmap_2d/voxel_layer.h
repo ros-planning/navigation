@@ -94,7 +94,7 @@ private:
   virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
                                  double* max_x, double* max_y);
 
-  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *dsrv_;
+  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *voxel_dsrv_;
 
   bool publish_voxel_;
   ros::Publisher voxel_pub_;
