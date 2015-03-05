@@ -224,6 +224,7 @@ void ObstacleLayer::onInitialize()
 
   }
 
+  dsrv_ = NULL;
   setupDynamicReconfigure(nh);
   footprint_layer_.initialize( layered_costmap_, name_ + "_footprint", tf_);
 }
