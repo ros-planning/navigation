@@ -1,13 +1,13 @@
 <package>
     <name>navigation</name>
-    <version>1.11.11</version>
+    <version>1.12.0</version>
     <description>
         A 2D navigation stack that takes in information from odometry, sensor
         streams, and a goal pose and outputs safe velocity commands that are sent
         to a mobile base.
     </description>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
     <author>contradict@gmail.com</author>
     <author>Eitan Marder-Eppstein</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  
@@ -24,6 +24,7 @@
     <run_depend>base_local_planner</run_depend>
     <run_depend>clear_costmap_recovery</run_depend>
     <run_depend>fake_localization</run_depend>
+    <run_depend>global_planner</run_depend>
     <run_depend>move_base_msgs</run_depend>
     <run_depend>navfn</run_depend>
     <run_depend>rotate_recovery</run_depend>

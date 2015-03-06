@@ -82,6 +82,17 @@ GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, s
     initialize(name, costmap, frame_id);
 }
 
+GlobalPlanner::~GlobalPlanner() {
+    if (p_calc_)
+        delete p_calc_;
+    if (planner_)
+        delete planner_;
+    if (path_maker_)
+        delete path_maker_;
+    if (dsrv_)
+        delete dsrv_;
+}
+
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
     initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
 }
@@ -133,6 +144,10 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             //has issues extracting paths
         }
 
+            
+        orientation_filter_ = new OrientationFilter();
+
+
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
 
@@ -173,6 +188,7 @@ void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, u
     planner_->setNeutralCost(config.neutral_cost);
     planner_->setFactor(config.cost_factor);
     publish_potential_ = config.publish_potential;
+    orientation_filter_->setMode(config.orientation_mode);
 }
 
 void GlobalPlanner::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my) {
@@ -524,6 +540,9 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         ROS_ERROR("Failed to get a plan.");
     }
 
+    // add orientations if needed
+    orientation_filter_->processPath(start, plan);
+    
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete potential_array_;
@@ -537,7 +556,7 @@ void GlobalPlanner::publishPlan(const std::vector<geometry_msgs::PoseStamped>& p
         return;
     }
 
-    //create a message for the plan 
+    //create a message for the plan
     nav_msgs::Path gui_path;
     gui_path.poses.resize(path.size());
 
@@ -645,7 +664,7 @@ void GlobalPlanner::publishPotential(float* potential)
     for (unsigned int i = 0; i < grid.data.size(); i++) {
         if (potential_array_[i] >= POT_HIGH) {
             grid.data[i] = -1;
-        } else 
+        } else
             grid.data[i] = potential_array_[i] * publish_scale_ / max;
     }
     potential_pub_.publish(grid);

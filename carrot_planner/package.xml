@@ -1,6 +1,6 @@
 <package>
     <name>carrot_planner</name>
-    <version>1.11.11</version>
+    <version>1.12.0</version>
     <description>
 
         This planner attempts to find a legal place to put a carrot for the robot to follow. It does this by moving back along the vector between the robot and the goal point.
@@ -10,7 +10,7 @@
     <author>Sachin Chitta</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/carrot_planner</url>
 

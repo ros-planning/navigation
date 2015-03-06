@@ -35,8 +35,9 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef STATIC_COSTMAP_PLUGIN_H_
-#define STATIC_COSTMAP_PLUGIN_H_
+#ifndef COSTMAP_2D_STATIC_LAYER_H_
+#define COSTMAP_2D_STATIC_LAYER_H_
+
 #include <ros/ros.h>
 #include <costmap_2d/costmap_layer.h>
 #include <costmap_2d/layered_costmap.h>
@@ -48,6 +49,7 @@
 
 namespace costmap_2d
 {
+
 class StaticLayer : public CostmapLayer
 {
 public:
@@ -92,6 +94,7 @@ private:
   mutable boost::recursive_mutex lock_;
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 };
-}
-#endif
 
+}  // namespace costmap_2d
+
+#endif  // COSTMAP_2D_STATIC_LAYER_H_

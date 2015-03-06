@@ -2,6 +2,32 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.0 (2015-02-04)
+-------------------
+* update maintainer email
+* Contributors: Michael Ferguson
+
+1.11.15 (2015-02-03)
+--------------------
+* Disable global planner when resetting state.
+* Mark move_base headers for installation
+* Add ARCHIVE DESTINATION for move_base
+* Break infinite loop when tolerance 0 is used
+* remove partial usage of <tab> in the code
+* Contributors: Gary Servin, Michael Ferguson, ohendriks, v4hn
+
+1.11.14 (2014-12-05)
+--------------------
+* use timer rather than rate for immediate wakeup
+* adding lock to planner makePlan fail case
+* Contributors: Michael Ferguson, phil0stine
+
+1.11.13 (2014-10-02)
+--------------------
+
+1.11.12 (2014-10-01)
+--------------------
+
 1.11.11 (2014-07-23)
 --------------------
 * removes trailing spaces and empty lines

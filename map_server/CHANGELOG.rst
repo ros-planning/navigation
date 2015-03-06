@@ -2,6 +2,29 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.0 (2015-02-04)
+-------------------
+* update maintainer email
+* Contributors: Michael Ferguson
+
+1.11.15 (2015-02-03)
+--------------------
+
+1.11.14 (2014-12-05)
+--------------------
+* prevent inf loop
+* Contributors: Jeremie Deray
+
+1.11.13 (2014-10-02)
+--------------------
+
+1.11.12 (2014-10-01)
+--------------------
+* map_server: [style] alphabetize dependencies
+* map_server: remove vestigial export line
+  the removed line does not do anything in catkin
+* Contributors: William Woodall
+
 1.11.11 (2014-07-23)
 --------------------
 

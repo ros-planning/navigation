@@ -440,45 +440,45 @@ namespace move_base {
       bool found_legal = false;
       float resolution = planner_costmap_ros_->getCostmap()->getResolution();
       float search_increment = resolution*3.0;
-      if(req.tolerance < search_increment) search_increment = req.tolerance;
+      if(req.tolerance > 0.0 && req.tolerance < search_increment) search_increment = req.tolerance;
       for(float max_offset = search_increment; max_offset <= req.tolerance && !found_legal; max_offset += search_increment) {
-	for(float y_offset = 0; y_offset <= max_offset && !found_legal; y_offset += search_increment) {
-	  for(float x_offset = 0; x_offset <= max_offset && !found_legal; x_offset += search_increment) {
+        for(float y_offset = 0; y_offset <= max_offset && !found_legal; y_offset += search_increment) {
+          for(float x_offset = 0; x_offset <= max_offset && !found_legal; x_offset += search_increment) {
 
-	    //don't search again inside the current outer layer
-	    if(x_offset < max_offset-1e-9 && y_offset < max_offset-1e-9) continue;
+            //don't search again inside the current outer layer
+            if(x_offset < max_offset-1e-9 && y_offset < max_offset-1e-9) continue;
 
-	    //search to both sides of the desired goal
-	    for(float y_mult = -1.0; y_mult <= 1.0 + 1e-9 && !found_legal; y_mult += 2.0) {
+            //search to both sides of the desired goal
+            for(float y_mult = -1.0; y_mult <= 1.0 + 1e-9 && !found_legal; y_mult += 2.0) {
 
-	      //if one of the offsets is 0, -1*0 is still 0 (so get rid of one of the two)
-	      if(y_offset < 1e-9 && y_mult < -1.0 + 1e-9) continue;
+              //if one of the offsets is 0, -1*0 is still 0 (so get rid of one of the two)
+              if(y_offset < 1e-9 && y_mult < -1.0 + 1e-9) continue;
 
-	      for(float x_mult = -1.0; x_mult <= 1.0 + 1e-9 && !found_legal; x_mult += 2.0) {
-		if(x_offset < 1e-9 && x_mult < -1.0 + 1e-9) continue;
+              for(float x_mult = -1.0; x_mult <= 1.0 + 1e-9 && !found_legal; x_mult += 2.0) {
+                if(x_offset < 1e-9 && x_mult < -1.0 + 1e-9) continue;
 
-		p.pose.position.y = req.goal.pose.position.y + y_offset * y_mult;
-		p.pose.position.x = req.goal.pose.position.x + x_offset * x_mult;
+                p.pose.position.y = req.goal.pose.position.y + y_offset * y_mult;
+                p.pose.position.x = req.goal.pose.position.x + x_offset * x_mult;
 
-		if(planner_->makePlan(start, p, global_plan)){
-		  if(!global_plan.empty()){
+                if(planner_->makePlan(start, p, global_plan)){
+                  if(!global_plan.empty()){
 
-		    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
+                    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
                     //(the reachable goal should have been added by the global planner)
-		    global_plan.push_back(req.goal);
+                    global_plan.push_back(req.goal);
 
-		    found_legal = true;
-		    ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
-		    break;
-		  }
-		}
-		else{
-		  ROS_DEBUG_NAMED("move_base","Failed to find a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
-		}
-	      }
-	    }
-	  }
-	}
+                    found_legal = true;
+                    ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+                    break;
+                  }
+                }
+                else{
+                  ROS_DEBUG_NAMED("move_base","Failed to find a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+                }
+              }
+            }
+          }
+        }
       }
     }
 
@@ -507,6 +507,8 @@ namespace move_base {
 
     planner_thread_->interrupt();
     planner_thread_->join();
+
+    delete planner_thread_;
 
     delete planner_plan_;
     delete latest_plan_;
@@ -606,13 +608,20 @@ namespace move_base {
     geometry_msgs::PoseStamped global_pose_msg;
     tf::poseStampedTFToMsg(global_pose, global_pose_msg);
     return global_pose_msg;
+  }
 
+  void MoveBase::wakePlanner(const ros::TimerEvent& event)
+  {
+    // we have slept long enough for rate
+    planner_cond_.notify_one();
   }
 
   void MoveBase::planThread(){
     ROS_DEBUG_NAMED("move_base_plan_thread","Starting planner thread...");
     ros::NodeHandle n;
     ros::Rate r(planner_frequency_ * planner_overclock_ratio_);
+    ros::Timer timer;
+    bool wait_for_wake = false;
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
     static int count = 0; 
 
@@ -626,12 +635,16 @@ namespace move_base {
         p_freq_change_ = false;
       }
 
+
       //check if we should run the planner (the mutex is locked)
-      while(!runPlanner_){
+      while(wait_for_wake || !runPlanner_){
         //if we should not be running the planner then suspend this thread
         ROS_DEBUG_NAMED("move_base_plan_thread","Planner thread is suspending");
         planner_cond_.wait(lock);
+        wait_for_wake = false;
       }
+      ros::Time start_time = ros::Time::now();
+
       //time to plan! get a copy of the goal and unlock the mutex
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
       
@@ -691,16 +704,39 @@ namespace move_base {
 	    recovery_trigger_ = PLANNING_R;
 	  }
 	}
-      }
 
-      if(!p_freq_change_ && planner_frequency_ > 0)
-        r.sleep();
+      //if we didn't get a plan and we are in the planning state (the robot isn't moving)
+      else if(state_==PLANNING){
+        ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
+        ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
+
+        //check if we've tried to make a plan for over our time limit
+        lock.lock();
+        if(ros::Time::now() > attempt_end && runPlanner_){
+          //we'll move into our obstacle clearing mode
+          state_ = CLEARING;
+          publishZeroVelocity();
+          recovery_trigger_ = PLANNING_R;
+        }
+        lock.unlock();
+
+      }
 
       //take the mutex for the next iteration
       lock.lock();
+
+      //setup sleep interface if needed
+      if(planner_frequency_ > 0){
+        ros::Duration sleep_time = (start_time + ros::Duration(1.0/planner_frequency_)) - ros::Time::now();
+        if (sleep_time > ros::Duration(0.0)){
+          wait_for_wake = true;
+          timer = n.createTimer(sleep_time, &MoveBase::wakePlanner, this);
+        }
+      }
     }
     
-  }
+    }
+}
 
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
@@ -1202,6 +1238,12 @@ namespace move_base {
   }
 
   void MoveBase::resetState(){
+    // Disable the planner thread
+    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    runPlanner_ = false;
+    lock.unlock();
+
+    // Reset statemachine
     state_ = PLANNING;
     recovery_index_ = 0;
     recovery_trigger_ = PLANNING_R;

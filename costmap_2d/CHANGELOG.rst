@@ -2,6 +2,44 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.0 (2015-02-04)
+-------------------
+* update maintainer email
+* Contributors: Michael Ferguson
+
+1.11.15 (2015-02-03)
+--------------------
+* Add ARCHIVE_DESTINATION for static builds
+* Contributors: Gary Servin
+
+1.11.14 (2014-12-05)
+--------------------
+* added waitForTransform to bufferCloud to solve extrapolation into the future exception
+* deallocate costmap_ before reallocating
+* prevent div by zero in raytraceLine
+* only prefix sensor_frame when it's not empty
+* tf_prefix support in obstacle_layer
+* remove undefined function updateUsingPlugins
+* remove unused cell_data.h
+* numerous style fixes
+* Contributors: Andrzej Pronobis, David Lu, Jeremie Deray, Mani Monajjemi, Michael Ferguson, enriquefernandez
+
+1.11.13 (2014-10-02)
+--------------------
+
+1.11.12 (2014-10-01)
+--------------------
+* costmap_2d: export library layers
+* Merge pull request `#198 <https://github.com/ros-planning/navigation/issues/198>`_ from kmhallen/hydro-devel
+  Fixed costmap_2d clearing from service /move_base/clear_costmaps
+* Costmap Layer comments
+* Add destructors for all of the layers to remove the dynamic parameter clients
+* Add method for removing static observations (for testing)
+* Move testing_helper
+* Initial Clearing Costmap parameter change
+* Fixed costmap_2d clearing from service /move_base/clear_costmaps
+* Contributors: David Lu!!, Kevin Hallenbeck, Michael Ferguson
+
 1.11.11 (2014-07-23)
 --------------------
 * removes trailing spaces and empty lines

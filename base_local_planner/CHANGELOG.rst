@@ -2,6 +2,32 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.0 (2015-02-04)
+-------------------
+* update maintainer email
+* Contributors: Michael Ferguson
+
+1.11.15 (2015-02-03)
+--------------------
+* Add ARCHIVE_DESTINATION for static builds
+* Contributors: Gary Servin
+
+1.11.14 (2014-12-05)
+--------------------
+* Fixed setting child_frame_id in base_local_planner::OdometryHelperRos
+* Contributors: Mani Monajjemi
+
+1.11.13 (2014-10-02)
+--------------------
+
+1.11.12 (2014-10-01)
+--------------------
+* Bugfix uninitialised occ_cost variable usage
+  This fixes `#256 <https://github.com/ros-planning/navigation/issues/256>`_.
+* base_local_planner: adds waitForTransform
+* Fixed issue causing trajectory planner returning false to isGoalReach ed even when it's control thread finishes executing
+* Contributors: Daniel Stonier, Marcus Liebhardt, hes3pal
+
 1.11.11 (2014-07-23)
 --------------------
 * Minor code cleanup

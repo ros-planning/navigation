@@ -35,8 +35,9 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef VOXEL_COSTMAP_PLUGIN_H_
-#define VOXEL_COSTMAP_PLUGIN_H_
+#ifndef COSTMAP_2D_VOXEL_LAYER_H_
+#define COSTMAP_2D_VOXEL_LAYER_H_
+
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
@@ -166,6 +167,8 @@ protected:
 
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
+  virtual void resetMaps();
+
 private:
   void resetOldCosts(double* min_x, double* min_y, 
 		     double* max_x, double* max_y); 
@@ -175,7 +178,7 @@ private:
   virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
                                  double* max_x, double* max_y);
 
-  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *dsrv_;
+  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *voxel_dsrv_;
 
   std::vector<CostMapList> new_obs_list; 
   //this needs to be maintained for each topic - since they can have different timeouts 
@@ -230,8 +233,8 @@ private:
   {
     return sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0) + (z1 - z0) * (z1 - z0));
   }
-
 };
-}
-#endif
 
+}  // namespace costmap_2d
+
+#endif  // COSTMAP_2D_VOXEL_LAYER_H_

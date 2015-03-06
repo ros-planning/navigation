@@ -38,6 +38,7 @@
 #ifndef _EXPANDER_H
 #define _EXPANDER_H
 #include <global_planner/potential_calculator.h>
+#include <global_planner/planner_core.h>
 
 namespace global_planner {
 
@@ -83,6 +84,8 @@ class Expander {
             for(int i=-s;i<=s;i++){
             for(int j=-s;j<=s;j++){
                 int n = startCell+i+nx_*j;
+                if(potential[n]<POT_HIGH)
+                    continue;
                 float c = costs[n]+neutral_cost_;
                 float pot = p_calc_->calculatePotential(potential, c, n);
                 potential[n] = pot;

@@ -156,7 +156,7 @@ int main(int argc, char** argv)
   
   MapGenerator mg(mapname);
 
-  while(!mg.saved_map_)
+  while(!mg.saved_map_ && ros::ok())
     ros::spinOnce();
 
   return 0;

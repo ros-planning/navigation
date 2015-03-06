@@ -5,6 +5,7 @@ project(robot_pose_ekf)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
 
+
 #################
 ##   Coverage  ##
 #################
@@ -19,17 +20,6 @@ endif()
 
 # People building this branch of nav within groovy will need this version:
 include_directories(${BFL_INCLUDE_DIRS})
-# People building this branch of nav within hydro will need this version:
-include_directories(${BFL_INCLUDE_DIRS}/bfl)
-
-# when no one is building this branch in groovy anymore, the .../bfl
-# version should be removed and the
-# #include <filter/extendedkalmanfilter.h>
-# line in src/odom_estimation.h should become
-# #include <bfl/filter/extendedkalmanfilter.h>
-
-message("BFL include dirs:" ${BFL_INCLUDE_DIRS})
-message("BFL library dirs:" ${BFL_LIBRARY_DIRS})
 link_directories(${BFL_LIBRARY_DIRS})
 
 find_package(catkin REQUIRED
@@ -83,6 +73,11 @@ install(
     TARGETS
         robot_pose_ekf
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(
+    FILES robot_pose_ekf.launch example_with_gps.launch
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
 ## Tests are failing on OSX for an unknown reason

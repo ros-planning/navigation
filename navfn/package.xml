@@ -1,6 +1,6 @@
 <package>
     <name>navfn</name>
-    <version>1.11.11</version>
+    <version>1.12.0</version>
     <description>
 
         navfn provides a fast interpolated navigation function that can be used to create plans for
@@ -15,7 +15,7 @@
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/navfn</url>
 
