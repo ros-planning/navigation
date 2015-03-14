@@ -2,6 +2,9 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.12.0 (2015-02-04)
 -------------------
 * update maintainer email
