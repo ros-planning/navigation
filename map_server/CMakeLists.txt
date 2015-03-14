@@ -20,7 +20,7 @@ catkin_package(
     INCLUDE_DIRS
         include
     LIBRARIES
-        image_loader
+        map_server_image_loader
     CATKIN_DEPENDS
         roscpp
         tf
@@ -28,12 +28,12 @@ catkin_package(
 )
 
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
-add_library(image_loader src/image_loader.cpp)
-target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
+add_library(map_server_image_loader src/image_loader.cpp)
+target_link_libraries(map_server_image_loader SDL SDL_image ${Boost_LIBRARIES})
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server
-    image_loader
+    map_server_image_loader
     yaml-cpp
     ${catkin_LIBRARIES}
 )
@@ -58,7 +58,7 @@ if(CATKIN_ENABLE_TESTING)
       test/testmap.bmp
       test/testmap.png )
   catkin_add_gtest(${PROJECT_NAME}_utest test/utest.cpp test/test_constants.cpp)
-  target_link_libraries(${PROJECT_NAME}_utest image_loader SDL SDL_image)
+  target_link_libraries(${PROJECT_NAME}_utest map_server_image_loader SDL SDL_image)
 
   add_executable(rtest test/rtest.cpp test/test_constants.cpp)
   target_link_libraries( rtest
@@ -73,7 +73,7 @@ if(CATKIN_ENABLE_TESTING)
 endif()
 
 ## Install executables and/or libraries
-install(TARGETS map_server-map_saver map_server image_loader
+install(TARGETS map_server-map_saver map_server map_server_image_loader
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
