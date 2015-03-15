@@ -1407,10 +1407,10 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
      publish_test_frame_ || draw_laser_points_){
     tf::Pose map_pose;
     if (!odom_only_) {
-      map_pose = latest_tf_.inverse() * odom_pose;
+      map_pose = latest_tf_.inverse() * latest_odom_pose_;
     }
     else {
-      map_pose = latest_tf_for_odom_.inverse() * odom_pose;
+      map_pose = latest_tf_for_odom_.inverse() * latest_odom_pose_;
     }
 
     double yaw,pitch,roll;
