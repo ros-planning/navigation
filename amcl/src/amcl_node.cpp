@@ -1195,25 +1195,25 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
       for(int i=0;i<set->sample_count;i++)
       {
-	if(draw_weight_as_height_){
-	  if(max_weight < set->samples[i].weight){
-	    max_weight = set->samples[i].weight;
-	  }
-	  z = set->samples[i].weight; 
-	}
+        if(draw_weight_as_height_){
+          if(max_weight < set->samples[i].weight){
+            max_weight = set->samples[i].weight;
+          }
+          z = set->samples[i].weight; 
+        }
 	
         tf::poseTFToMsg(tf::Pose(tf::createQuaternionFromYaw(set->samples[i].pose.v[2]),
                                  tf::Vector3(set->samples[i].pose.v[0],
-					     set->samples[i].pose.v[1], z)),
-                        cloud_msg.poses[i]);
+                                 set->samples[i].pose.v[1], z)),
+                                 cloud_msg.poses[i]);
       }
       
       if(draw_weight_as_height_){
-	if(max_weight > 0){
-	  for(int i=0;i<set->sample_count;i++){
-	    cloud_msg.poses[i].position.z /= max_weight; 
-	  }	  
-	}
+        if(max_weight > 0){
+          for(int i=0;i<set->sample_count;i++){
+            cloud_msg.poses[i].position.z /= max_weight; 
+          }	  
+        }
       }
 
       particlecloud_pub_.publish(cloud_msg);
@@ -1303,9 +1303,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       last_published_pose = p;
 
       ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",
-		hyps[max_weight_hyp].pf_pose_mean.v[0],
-		hyps[max_weight_hyp].pf_pose_mean.v[1],
-		hyps[max_weight_hyp].pf_pose_mean.v[2]);
+                 hyps[max_weight_hyp].pf_pose_mean.v[0],
+                 hyps[max_weight_hyp].pf_pose_mean.v[1],
+                 hyps[max_weight_hyp].pf_pose_mean.v[2]);
 
       // subtracting base to odom from map to base and send map to odom instead
       tf::Stamped<tf::Pose> odom_to_map;
@@ -1357,7 +1357,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       else if (tf_broadcast_ == true && odom_only_)
       {
         ros::Time transform_expiration = (laser_scan->header.stamp +
-       				    transform_tolerance_);
+                                          transform_tolerance_);
         tf::StampedTransform tmp_tf_stamped(latest_tf_for_odom_.inverse(),
                                             transform_expiration,
                                             global_frame_id_, odom_frame_id_);
@@ -1385,12 +1385,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     }
     else if (tf_broadcast_ == true && odom_only_)
     {
-	ros::Time transform_expiration = (laser_scan->header.stamp +
+      ros::Time transform_expiration = (laser_scan->header.stamp +
 					  transform_tolerance_);
-	tf::StampedTransform tmp_tf_stamped(latest_tf_for_odom_.inverse(),
-                                            transform_expiration,
-                                            global_frame_id_, odom_frame_id_);
-	this->tfb_->sendTransform(tmp_tf_stamped);
+      tf::StampedTransform tmp_tf_stamped(latest_tf_for_odom_.inverse(),
+                                          transform_expiration,
+                                          global_frame_id_, odom_frame_id_);
+      this->tfb_->sendTransform(tmp_tf_stamped);
     }
 
     // Is it time to save our last pose to the param server
