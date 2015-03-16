@@ -168,6 +168,11 @@ namespace move_base {
 
       geometry_msgs::PoseStamped goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg);
 
+      /**
+       * @brief This is used to wake the planner at periodic intervals.
+       */
+      void wakePlanner(const ros::TimerEvent& event);
+
       tf::TransformListener& tf_;
 
       MoveBaseActionServer* as_;

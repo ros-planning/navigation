@@ -37,13 +37,12 @@
 #define __ODOM_ESTIMATION__
 
 // bayesian filtering
-// #include <bfl/filter/extendedkalmanfilter.h> // should all become like this eventually, see comments in CMakeLists.txt.
-#include <filter/extendedkalmanfilter.h>
-#include <wrappers/matrix/matrix_wrapper.h>
-#include <model/linearanalyticsystemmodel_gaussianuncertainty.h>
-#include <model/linearanalyticmeasurementmodel_gaussianuncertainty.h>
-#include <pdf/analyticconditionalgaussian.h>
-#include <pdf/linearanalyticconditionalgaussian.h>
+#include <bfl/filter/extendedkalmanfilter.h>
+#include <bfl/wrappers/matrix/matrix_wrapper.h>
+#include <bfl/model/linearanalyticsystemmodel_gaussianuncertainty.h>
+#include <bfl/model/linearanalyticmeasurementmodel_gaussianuncertainty.h>
+#include <bfl/pdf/analyticconditionalgaussian.h>
+#include <bfl/pdf/linearanalyticconditionalgaussian.h>
 #include "nonlinearanalyticconditionalgaussianodo.h"
 
 // TF

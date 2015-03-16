@@ -104,9 +104,12 @@ namespace base_local_planner {
 
       // get plan_to_global_transform from plan frame to global_frame
       tf::StampedTransform plan_to_global_transform;
-      tf.lookupTransform(global_frame, ros::Time(), 
-          plan_pose.header.frame_id, plan_pose.header.stamp, 
-          plan_pose.header.frame_id, plan_to_global_transform);
+      tf.waitForTransform(global_frame, ros::Time::now(),
+                          plan_pose.header.frame_id, plan_pose.header.stamp,
+                          plan_pose.header.frame_id, ros::Duration(0.5));
+      tf.lookupTransform(global_frame, ros::Time(),
+                         plan_pose.header.frame_id, plan_pose.header.stamp, 
+                         plan_pose.header.frame_id, plan_to_global_transform);
 
       //let's get the pose of the robot in the frame of the plan
       tf::Stamped<tf::Pose> robot_pose;
@@ -183,9 +186,12 @@ namespace base_local_planner {
       }
 
       tf::StampedTransform transform;
+      tf.waitForTransform(global_frame, ros::Time::now(),
+                          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
+                          plan_goal_pose.header.frame_id, ros::Duration(0.5));
       tf.lookupTransform(global_frame, ros::Time(),
-          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
-          plan_goal_pose.header.frame_id, transform);
+                         plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
+                         plan_goal_pose.header.frame_id, transform);
 
       poseStampedMsgToTF(plan_goal_pose, goal_pose);
       goal_pose.setData(transform * goal_pose);

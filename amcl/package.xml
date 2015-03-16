@@ -1,6 +1,6 @@
 <package>
     <name>amcl</name>
-    <version>1.11.11</version>
+    <version>1.12.0</version>
     <description>
         <p>
             amcl is a probabilistic localization system for a robot moving in
@@ -17,7 +17,7 @@
     <author>Brian P. Gerkey</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
     <license>LGPL</license>
 
     <buildtool_depend>catkin</buildtool_depend>

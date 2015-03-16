@@ -34,8 +34,9 @@
  *
  * Author: David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_PLUGIN_BASE_H_
-#define COSTMAP_PLUGIN_BASE_H_
+#ifndef COSTMAP_2D_COSTMAP_2D_LAYER_H_
+#define COSTMAP_2D_COSTMAP_2D_LAYER_H_
+
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/layered_costmap.h>
 #include <string>
@@ -53,17 +54,43 @@ public:
 
   void initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf );
 
+  /**
+   * @brief This is called by the LayeredCostmap to poll this plugin as to how
+   *        much of the costmap it needs to update. Each layer can increase
+   *        the size of this bounds.
+   *
+   * For more details, see "Layered Costmaps for Context-Sensitive Navigation",
+   * by Lu et. Al, IROS 2014.
+   */
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
-                             double* max_x, double* max_y) {}
+                            double* max_x, double* max_y) {}
+
+  /**
+   * @brief Actually update the underlying costmap, only within the bounds
+   *        calculated during UpdateBounds().
+   */
   virtual void updateCosts(Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
 
-  virtual void deactivate() {}   // stop publishers
-  virtual void activate() {}     // restart publishers if they've been stopped
+  /** @brief Stop publishers. */
+  virtual void deactivate() {}
+
+  /** @brief Restart publishers if they've been stopped. */
+  virtual void activate() {}
 
   virtual void reset() {}
 
   virtual ~Layer() {}
 
+  /** 
+   * @brief Check to make sure all the data in the layer is up to date. 
+   *        If the layer is not up to date, then it may be unsafe to 
+   *        plan using the data from this layer, and the planner may 
+   *        need to know. 
+   *
+   *        A layer's current state should be managed by the protected
+   *        variable current_.
+   * @return Whether the data in the layer is up to date. 
+   */
   bool isCurrent() const
   {
     return current_;
@@ -102,5 +129,6 @@ private:
   std::vector<geometry_msgs::Point> footprint_spec_;
 };
 
-} // namespace costmap_2d
-#endif
+}  // namespace costmap_2d
+
+#endif  // COSTMAP_2D_COSTMAP_2D_LAYER_H_

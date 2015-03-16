@@ -1,9 +1,47 @@
-#include<costmap_2d/inflation_layer.h>
-#include<costmap_2d/costmap_math.h>
-#include<costmap_2d/footprint.h>
+/*********************************************************************
+ *
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2008, 2013, Willow Garage, Inc.
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Author: Eitan Marder-Eppstein
+ *         David V. Lu!!
+ *********************************************************************/
+#include <costmap_2d/inflation_layer.h>
+#include <costmap_2d/costmap_math.h>
+#include <costmap_2d/footprint.h>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
+
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 using costmap_2d::NO_INFORMATION;
@@ -17,6 +55,9 @@ InflationLayer::InflationLayer()
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
+  , seen_(NULL)
+  , cached_costs_(NULL)
+  , cached_distances_(NULL)
 {
   access_ = new boost::shared_mutex();
 }
@@ -27,7 +68,10 @@ void InflationLayer::onInitialize()
     boost::unique_lock < boost::shared_mutex > lock(*access_);
     ros::NodeHandle nh("~/" + name_), g_nh;
     current_ = true;
+    if (seen_)
+      delete[] seen_;
     seen_ = NULL;
+    seen_size_ = 0;
     need_reinflation_ = false;
 
     dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
@@ -75,8 +119,9 @@ void InflationLayer::matchSize()
 
   unsigned int size_x = costmap->getSizeInCellsX(), size_y = costmap->getSizeInCellsY();
   if (seen_)
-    delete seen_;
-  seen_ = new bool[size_x * size_y];
+    delete[] seen_;
+  seen_size_ = size_x * size_y;
+  seen_ = new bool[seen_size_];
 }
 
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -119,6 +164,18 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   unsigned char* master_array = master_grid.getCharMap();
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
+  if (seen_ == NULL) {
+    ROS_WARN("InflationLayer::updateCosts(): seen_ array is NULL");
+    seen_size_ = size_x * size_y;
+    seen_ = new bool[seen_size_];
+  }
+  else if (seen_size_ != size_x * size_y)
+  {
+    ROS_WARN("InflationLayer::updateCosts(): seen_ array size is wrong");
+    delete[] seen_;
+    seen_size_ = size_x * size_y;
+    seen_ = new bool[seen_size_];
+  }
   memset(seen_, false, size_x * size_y * sizeof(bool));
 
   // We need to include in the inflation cells outside the bounding
@@ -172,6 +229,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
     if (my < size_y - 1)
       enqueue(master_array, index + size_x, mx, my + 1, sx, sy);
   }
+
 }
 
 /**
@@ -220,8 +278,7 @@ void InflationLayer::computeCaches()
   //based on the inflation radius... compute distance and cost caches
   if(cell_inflation_radius_ != cached_cell_inflation_radius_)
   {
-    if(cached_cell_inflation_radius_ > 0)
-      deleteKernels();
+    deleteKernels();
 
     cached_costs_ = new unsigned char*[cell_inflation_radius_ + 2];
     cached_distances_ = new double*[cell_inflation_radius_ + 2];
@@ -254,19 +311,24 @@ void InflationLayer::deleteKernels()
   {
     for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 1; ++i)
     {
-      delete[] cached_distances_[i];
+      if (cached_distances_[i])
+        delete[] cached_distances_[i];
     }
-    delete[] cached_distances_;
+    if (cached_distances_)
+      delete[] cached_distances_;
+    cached_distances_ = NULL;
   }
 
   if (cached_costs_ != NULL)
   {
     for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 1; ++i)
     {
-      delete[] cached_costs_[i];
+      if (cached_costs_[i])
+        delete[] cached_costs_[i];
     }
     delete[] cached_costs_;
+    cached_costs_ = NULL;
   }
 }
 
-} // end namespace costmap_2d
+}  // namespace costmap_2d

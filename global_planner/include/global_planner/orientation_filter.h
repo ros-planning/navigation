@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, 2013, Willow Garage, Inc.
+ *  Copyright (c) 2015, David V. Lu!!
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -15,7 +15,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *   * Neither the name of David V. Lu nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,46 +32,33 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Eitan Marder-Eppstein
+ * Author: David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_CELL_DATA_H_
-#define COSTMAP_CELL_DATA_H_
-namespace costmap_2d
-{
-/**
- * @class CellData
- * @brief Storage for cell information used during obstacle inflation
- */
-class CellData
-{
-public:
-  /**
-   * @brief  Constructor for a CellData object
-   * @param  d The distance to the nearest obstacle, used for ordering in the priority queue
-   * @param  i The index of the cell in the cost map
-   * @param  x The x coordinate of the cell in the cost map
-   * @param  y The y coordinate of the cell in the cost map
-   * @param  sx The x coordinate of the closest obstacle cell in the costmap
-   * @param  sy The y coordinate of the closest obstacle cell in the costmap
-   * @return
-   */
-  CellData(double d, double i, unsigned int x, unsigned int y, unsigned int sx, unsigned int sy) :
-      distance_(d), index_(i), x_(x), y_(y), src_x_(sx), src_y_(sy)
-  {
-  }
-  double distance_;
-  unsigned int index_;
-  unsigned int x_, y_;
-  unsigned int src_x_, src_y_;
+#ifndef GLOBAL_PLANNER_ORIENTATION_FILTER_H
+#define GLOBAL_PLANNER_ORIENTATION_FILTER_H
+#include <nav_msgs/Path.h>
+
+namespace global_planner {
+
+enum OrientationMode { NONE, FORWARD, INTERPOLATE, FORWARDTHENINTERPOLATE };
+
+class OrientationFilter {
+    public:
+        OrientationFilter() : omode_(NONE) {}
+    
+    
+        virtual void processPath(const geometry_msgs::PoseStamped& start,
+                                 std::vector<geometry_msgs::PoseStamped>& path);
+                                 
+        void pointToNext(std::vector<geometry_msgs::PoseStamped>& path, int index);
+        void interpolate(std::vector<geometry_msgs::PoseStamped>& path, 
+                         int start_index, int end_index);
+                         
+        void setMode(OrientationMode new_mode){ omode_ = new_mode; }
+        void setMode(int new_mode){ setMode((OrientationMode) new_mode); }
+    protected:
+        OrientationMode omode_;        
 };
 
-/**
- * @brief Provide an ordering between CellData objects in the priority queue
- * @return We want the lowest distance to have the highest priority... so this returns true if a has higher priority than b
- */
-inline bool operator<(const CellData &a, const CellData &b)
-{
-  return a.distance_ > b.distance_;
-}
-} // end namespace costmap_2d
+} //end namespace global_planner
 #endif
