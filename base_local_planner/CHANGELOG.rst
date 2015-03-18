@@ -2,6 +2,11 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove previously deprecated param
+* Contributors: Michael Ferguson
+
 1.12.0 (2015-02-04)
 -------------------
 * update maintainer email
