@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.0 (2015-03-17)
+-------------------
 * Fixing various memory freeing operations
 * Add Orientation Filter to Global Planner
 * Contributors: Alex Bencz, David V. Lu!!, James Servos, Michael Ferguson

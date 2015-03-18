@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.0 (2015-03-17)
+-------------------
 * fixed issue with voxel_layer and obstacle_layer both deleting the same dynamic_reconfigure::Server and causing segfaults
 * Fixing various memory freeing operations
 * static_layer: Fix indexing error in OccupancyGridUpdate callback function.
