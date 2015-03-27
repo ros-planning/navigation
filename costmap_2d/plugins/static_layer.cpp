@@ -121,6 +121,17 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
   }
 }
 
+void StaticLayer::matchSize()
+{
+  // If we are using rolling costmap, the static map should not match
+  if (!layered_costmap_->isRolling())
+  {
+    Costmap2D* master = layered_costmap_->getCostmap();
+    resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
+              master->getOriginX(), master->getOriginY());
+  }
+}
+
 unsigned char StaticLayer::interpretValue(unsigned char value)
 {
   //check if the static value is above the unknown or lethal thresholds
@@ -159,6 +170,7 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       resolution_ != new_map->info.resolution ||
       origin_x_ != new_map->info.origin.position.x ||
       origin_y_ != new_map->info.origin.position.y){
+    ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x, new_map->info.origin.position.y);
   }
 
