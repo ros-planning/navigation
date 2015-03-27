@@ -271,6 +271,9 @@ main(int argc, char** argv)
 
   ros::spin();
 
+  // Without this, our boost locks are not shut down nicely
+  amcl_node_ptr.reset();
+
   // To quote Morgan, Hooray!
   return(0);
 }
