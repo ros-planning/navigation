@@ -52,8 +52,8 @@ StaticLayer::StaticLayer() : dsrv_(NULL) {}
 
 StaticLayer::~StaticLayer()
 {
-    if(dsrv_)
-        delete dsrv_;
+  if(dsrv_)
+    delete dsrv_;
 }
 
 void StaticLayer::onInitialize()
@@ -166,10 +166,12 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
                                 new_map->info.origin.position.y, true);
-  }else if(size_x_ != size_x || size_y_ != size_y ||
-      resolution_ != new_map->info.resolution ||
-      origin_x_ != new_map->info.origin.position.x ||
-      origin_y_ != new_map->info.origin.position.y){
+  }
+  else if (size_x_ != size_x || size_y_ != size_y ||
+           resolution_ != new_map->info.resolution ||
+           origin_x_ != new_map->info.origin.position.x ||
+           origin_y_ != new_map->info.origin.position.y)
+  {
     ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x, new_map->info.origin.position.y);
   }
@@ -195,39 +197,39 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 
 void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update)
 {
-    unsigned int di = 0;
-    for (unsigned int y = 0; y < update->height ; y++)
+  unsigned int di = 0;
+  for (unsigned int y = 0; y < update->height ; y++)
+  {
+    unsigned int index_base = (update->y + y) * size_x_;
+    for (unsigned int x = 0; x < update->width ; x++)
     {
-        unsigned int index_base = (update->y + y) * size_x_;
-        for (unsigned int x = 0; x < update->width ; x++)
-        {
-            unsigned int index = index_base + x + update->x;
-            costmap_[index] = interpretValue( update->data[di++] );
-        }
+      unsigned int index = index_base + x + update->x;
+      costmap_[index] = interpretValue( update->data[di++] );
     }
-    x_ = update->x;
-    y_ = update->y;
-    width_ = update->width;
-    height_ = update->height;
-    has_updated_data_ = true;
+  }
+  x_ = update->x;
+  y_ = update->y;
+  width_ = update->width;
+  height_ = update->height;
+  has_updated_data_ = true;
 }
 
 void StaticLayer::activate()
 {
-    onInitialize();
+  onInitialize();
 }
 
 void StaticLayer::deactivate()
 {
-    map_sub_.shutdown();
-    if (subscribe_to_updates_)
-        map_update_sub_.shutdown();
+  map_sub_.shutdown();
+  if (subscribe_to_updates_)
+    map_update_sub_.shutdown();
 }
 
 void StaticLayer::reset()
 {
-    deactivate();
-    activate();
+  deactivate();
+  activate();
 }
 
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
@@ -274,7 +276,7 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
         layered_costmap_->getCostmap()->mapToWorld(i, j, wx, wy);
         if (worldToMap(wx, wy, mx, my))
         {
-          if(!use_maximum_)
+          if (!use_maximum_)
             master_grid.setCost(i, j, getCost(mx, my));
           else
             master_grid.setCost(i, j, std::max(getCost(mx, my), master_grid.getCost(i, j)));
