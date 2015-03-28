@@ -91,10 +91,15 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
         return f_cost;
     }
 
+    // Count cell costs instead of footprint costs for optimization
+    unsigned int cell_x, cell_y;
+    costmap_->worldToMap(px, py, cell_x, cell_y);
+    double c_cost = double(costmap_->getCost(cell_x, cell_y));
+
     if(sum_scores_)
-        cost +=  f_cost;
+        cost +=  c_cost;
     else
-        cost = std::max(cost, f_cost);
+        cost = std::max(cost, c_cost);
   }
   return cost;
 }
