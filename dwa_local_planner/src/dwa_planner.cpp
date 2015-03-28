@@ -106,14 +106,17 @@ namespace dwa_local_planner {
                         << "        - align scale : " << config.align_align_scale << " [-]\n"
                         << "        - plan scale : " << config.align_plan_scale << " [-]\n"
                         << "        - goal scale : " << config.align_goal_scale << " [-]\n"
+                        << "        - obstacle scale : " << config.align_obstacle_scale << " [-]\n"
                         << "    - Default:\n"
                         << "        - align scale : " << config.default_align_scale << " [-]\n"
                         << "        - plan scale : " << config.default_plan_scale << " [-]\n"
                         << "        - goal scale : " << config.default_goal_scale << " [-]\n"
+                        << "        - obstacle scale : " << config.default_obstacle_scale << " [-]\n"
                         << "    - Arrive:\n"
                         << "        - align scale : " << config.arrive_align_scale << " [-]\n"
                         << "        - plan scale : " << config.arrive_plan_scale << " [-]\n"
                         << "        - goal scale : " << config.arrive_goal_scale << " [-]\n"
+                        << "        - obstacle scale : " << config.arrive_obstacle_scale << " [-]\n"
                         );
 
         //! Set cmd_vel costs
@@ -149,7 +152,7 @@ namespace dwa_local_planner {
         obstacle_costs_.setParams(config.max_trans_vel, 0.0, 1.0);
 
         // Sums scores by default
-        obstacle_costs_.setSumScores(true);
+        obstacle_costs_.setSumScores(false);
 
         //! Set parameters for occupancy velocity costfunction
         occ_vel_costs_.setParams(config.max_trans_vel);
