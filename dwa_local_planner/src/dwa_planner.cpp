@@ -138,6 +138,18 @@ namespace dwa_local_planner {
         arrive_cmd_pth_ = config.arrive_cmd_pth;
         arrive_cmd_nth_ = config.arrive_cmd_nth;
 
+        //! Set obstacle costs
+        align_obstacle_scale_ = config.align_obstacle_scale;
+        default_obstacle_scale_ = config.default_obstacle_scale;
+        arrive_obstacle_scale_ = config.arrive_obstacle_scale;
+
+        // obstacle costs can vary due to scaling footprint feature
+        // Don't do scaling yet
+        // obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
+        obstacle_costs_.setParams(config.max_trans_vel, 0.0, 1.0);
+
+        // Sums scores by default
+        obstacle_costs_.setSumScores(true);
 
         //! Set parameters for occupancy velocity costfunction
         occ_vel_costs_.setParams(config.max_trans_vel);
@@ -148,6 +160,7 @@ namespace dwa_local_planner {
         occ_vel_costs_(planner_util->getCostmap()),
         plan_costs_(planner_util->getCostmap()),
         goal_costs_(planner_util->getCostmap()),
+        obstacle_costs_(planner_util->getCostmap()),
         vis_(planner_util->getCostmap(), goal_costs_, plan_costs_, planner_util->getGlobalFrame())
     {
         // Costfunctions
@@ -157,6 +170,7 @@ namespace dwa_local_planner {
         critics.push_back(&plan_costs_);
         critics.push_back(&alignment_costs_);
         critics.push_back(&cmd_vel_costs_);
+        critics.push_back(&obstacle_costs_);
 
         // trajectory generator
         std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
@@ -211,6 +225,8 @@ namespace dwa_local_planner {
 
             cmd_vel_costs_.setCoefficients(align_cmd_px_, align_cmd_nx_, align_cmd_py_, align_cmd_ny_, align_cmd_pth_, align_cmd_nth_);
 
+            obstacle_costs_.setScale(align_obstacle_scale_);
+
             break;
 
         case Default:
@@ -222,6 +238,8 @@ namespace dwa_local_planner {
 
             cmd_vel_costs_.setCoefficients(default_cmd_px_, default_cmd_nx_, default_cmd_py_, default_cmd_ny_, default_cmd_pth_, default_cmd_nth_);
 
+            obstacle_costs_.setScale(default_obstacle_scale_);
+
             break;
 
         case Arrive:
@@ -232,6 +250,8 @@ namespace dwa_local_planner {
             alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.back().pose.orientation));
 
             cmd_vel_costs_.setCoefficients(arrive_cmd_px_, arrive_cmd_nx_, arrive_cmd_py_, arrive_cmd_ny_, arrive_cmd_pth_, arrive_cmd_nth_);
+
+            obstacle_costs_.setScale(arrive_obstacle_scale_);
 
             break;
         }
@@ -247,8 +267,12 @@ namespace dwa_local_planner {
         occ_vel_costs_.setFootprint(footprint_spec);
     }
 
-    base_local_planner::Trajectory DWAPlanner::findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel, tf::Stamped<tf::Pose> goal_pose)
+    base_local_planner::Trajectory DWAPlanner::findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel, tf::Stamped<tf::Pose> goal_pose,
+                                                            std::vector<geometry_msgs::Point> footprint_spec)
     {
+
+        obstacle_costs_.setFootprint(footprint_spec);
+
         //make sure that our configuration doesn't change mid-run
         boost::mutex::scoped_lock l(configuration_mutex_);
 

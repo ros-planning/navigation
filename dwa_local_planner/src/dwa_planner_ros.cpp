@@ -287,7 +287,7 @@ namespace dwa_local_planner {
             dp_->updatePlanAndLocalCosts(robot_pose, local_plan, lookahead, costmap_ros_->getRobotFootprint());
 
             // call with updated footprint
-            traj = dp_->findBestPath(robot_pose, robot_vel, goal_pose);
+            traj = dp_->findBestPath(robot_pose, robot_vel, goal_pose, costmap_ros_->getRobotFootprint());
         }
 
         // Set the command velocity

@@ -107,7 +107,7 @@ namespace dwa_local_planner {
        * @param robot_vel The current velocity of the robot
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
-      base_local_planner::Trajectory findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel, tf::Stamped<tf::Pose> goal_pose);
+      base_local_planner::Trajectory findBestPath(tf::Stamped<tf::Pose> robot_pose, tf::Stamped<tf::Pose> robot_vel, tf::Stamped<tf::Pose> goal_pose, std::vector<geometry_msgs::Point> footprint_spec);
 
       inline double getSimPeriod() { return sim_period_; }
       inline double getSimTime() { return sim_time_; }
@@ -154,6 +154,11 @@ namespace dwa_local_planner {
       double align_cmd_px_, align_cmd_nx_, align_cmd_py_, align_cmd_ny_, align_cmd_pth_, align_cmd_nth_;
       double default_cmd_px_, default_cmd_nx_, default_cmd_py_, default_cmd_ny_, default_cmd_pth_, default_cmd_nth_;
       double arrive_cmd_px_, arrive_cmd_nx_, arrive_cmd_py_, arrive_cmd_ny_, arrive_cmd_pth_, arrive_cmd_nth_;
+
+      base_local_planner::ObstacleCostFunction obstacle_costs_; /// <@brief penalizes trajectories close to obstacles
+      double align_obstacle_scale_;
+      double default_obstacle_scale_;
+      double arrive_obstacle_scale_;
 
       //! Scored sampling planner which evaluates the trajectories generation by the SimpleTrajectoryGenerator with use of costfunctions
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;
