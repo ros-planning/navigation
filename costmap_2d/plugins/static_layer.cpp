@@ -52,8 +52,8 @@ StaticLayer::StaticLayer() : dsrv_(NULL) {}
 
 StaticLayer::~StaticLayer()
 {
-    if(dsrv_)
-        delete dsrv_;
+  if(dsrv_)
+    delete dsrv_;
 }
 
 void StaticLayer::onInitialize()
@@ -66,7 +66,7 @@ void StaticLayer::onInitialize()
   std::string map_topic;
   nh.param("map_topic", map_topic, std::string("map"));
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
-  
+
   nh.param("track_unknown_space", track_unknown_space_, true);
   nh.param("use_maximum", use_maximum_, false);
 
@@ -91,7 +91,7 @@ void StaticLayer::onInitialize()
   }
 
   ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
-  
+
   if(subscribe_to_updates_)
   {
     ROS_INFO("Subscribing to updates");
@@ -123,9 +123,13 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
 
 void StaticLayer::matchSize()
 {
-  Costmap2D* master = layered_costmap_->getCostmap();
-  resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
-            master->getOriginX(), master->getOriginY());
+  // If we are using rolling costmap, the static map should not match
+  if (!layered_costmap_->isRolling())
+  {
+    Costmap2D* master = layered_costmap_->getCostmap();
+    resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
+              master->getOriginX(), master->getOriginY());
+  }
 }
 
 unsigned char StaticLayer::interpretValue(unsigned char value)
@@ -133,6 +137,8 @@ unsigned char StaticLayer::interpretValue(unsigned char value)
   //check if the static value is above the unknown or lethal thresholds
   if (track_unknown_space_ && value == unknown_cost_value_)
     return NO_INFORMATION;
+  else if (!track_unknown_space_ && value == unknown_cost_value_)
+    return FREE_SPACE;
   else if (value >= lethal_threshold_)
     return LETHAL_OBSTACLE;
   else if (trinary_costmap_)
@@ -150,21 +156,24 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 
   // resize costmap if size, resolution or origin do not match
   Costmap2D* master = layered_costmap_->getCostmap();
-  if (master->getSizeInCellsX() != size_x ||
+  if (!layered_costmap_->isRolling() && (master->getSizeInCellsX() != size_x ||
       master->getSizeInCellsY() != size_y ||
       master->getResolution() != new_map->info.resolution ||
       master->getOriginX() != new_map->info.origin.position.x ||
       master->getOriginY() != new_map->info.origin.position.y ||
-      !layered_costmap_->isSizeLocked())
+      !layered_costmap_->isSizeLocked()))
   {
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
                                 new_map->info.origin.position.y, true);
-  }else if(size_x_ != size_x || size_y_ != size_y ||
-      resolution_ != new_map->info.resolution ||
-      origin_x_ != new_map->info.origin.position.x ||
-      origin_y_ != new_map->info.origin.position.y){
-    matchSize();
+  }
+  else if (size_x_ != size_x || size_y_ != size_y ||
+           resolution_ != new_map->info.resolution ||
+           origin_x_ != new_map->info.origin.position.x ||
+           origin_y_ != new_map->info.origin.position.y)
+  {
+    ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
+    resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x, new_map->info.origin.position.y);
   }
 
   unsigned int index = 0;
@@ -188,39 +197,39 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 
 void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update)
 {
-    unsigned int di = 0;
-    for (unsigned int y = 0; y < update->height ; y++)
+  unsigned int di = 0;
+  for (unsigned int y = 0; y < update->height ; y++)
+  {
+    unsigned int index_base = (update->y + y) * size_x_;
+    for (unsigned int x = 0; x < update->width ; x++)
     {
-        unsigned int index_base = (update->y + y) * size_x_;
-        for (unsigned int x = 0; x < update->width ; x++)
-        {
-            unsigned int index = index_base + x + update->x;
-            costmap_[index] = interpretValue( update->data[di++] );
-        }
+      unsigned int index = index_base + x + update->x;
+      costmap_[index] = interpretValue( update->data[di++] );
     }
-    x_ = update->x;
-    y_ = update->y;
-    width_ = update->width;
-    height_ = update->height;
-    has_updated_data_ = true;
+  }
+  x_ = update->x;
+  y_ = update->y;
+  width_ = update->width;
+  height_ = update->height;
+  has_updated_data_ = true;
 }
 
 void StaticLayer::activate()
 {
-    onInitialize();
+  onInitialize();
 }
 
 void StaticLayer::deactivate()
 {
-    map_sub_.shutdown();
-    if (subscribe_to_updates_)
-        map_update_sub_.shutdown();
+  map_sub_.shutdown();
+  if (subscribe_to_updates_)
+    map_update_sub_.shutdown();
 }
 
 void StaticLayer::reset()
 {
-    deactivate();
-    activate();
+  deactivate();
+  activate();
 }
 
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
@@ -228,19 +237,19 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 {
   if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
     return;
-    
+
   useExtraBounds(min_x, min_y, max_x, max_y);
 
-  double mx, my;
-  
-  mapToWorld(x_, y_, mx, my);
-  *min_x = std::min(mx, *min_x);
-  *min_y = std::min(my, *min_y);
-  
-  mapToWorld(x_ + width_, y_ + height_, mx, my);
-  *max_x = std::max(mx, *max_x);
-  *max_y = std::max(my, *max_y);
-  
+  double wx, wy;
+
+  mapToWorld(x_, y_, wx, wy);
+  *min_x = std::min(wx, *min_x);
+  *min_y = std::min(wy, *min_y);
+
+  mapToWorld(x_ + width_, y_ + height_, wx, wy);
+  *max_x = std::max(wx, *max_x);
+  *max_y = std::max(wy, *max_y);
+
   has_updated_data_ = false;
 }
 
@@ -248,10 +257,33 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
 {
   if (!map_received_)
     return;
-  if (!use_maximum_)
-    updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
+
+  if (!layered_costmap_->isRolling())
+  {
+    if (!use_maximum_)
+      updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
+    else
+      updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+  }
   else
-    updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+  {
+    unsigned int mx, my;
+    double wx, wy;
+    for (unsigned int i = min_i; i < max_i; ++i)
+    {
+      for (unsigned int j = min_j; j < max_j; ++j)
+      {
+        layered_costmap_->getCostmap()->mapToWorld(i, j, wx, wy);
+        if (worldToMap(wx, wy, mx, my))
+        {
+          if (!use_maximum_)
+            master_grid.setCost(i, j, getCost(mx, my));
+          else
+            master_grid.setCost(i, j, std::max(getCost(mx, my), master_grid.getCost(i, j)));
+        }
+      }
+    }
+  }
 }
 
 }  // namespace costmap_2d
