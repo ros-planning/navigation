@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.2 (2015-03-31)
+-------------------
 * Static layer works with rolling window now
 * Contributors: Michael Ferguson, Rein Appeldoorn
 
