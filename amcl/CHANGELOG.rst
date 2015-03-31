@@ -2,6 +2,11 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix pthread_mutex_lock on shutdown
+* Contributors: Michael Ferguson
+
 1.12.1 (2015-03-14)
 -------------------
 * amcl_node will now save latest pose on shutdown

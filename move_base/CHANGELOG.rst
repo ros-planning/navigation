@@ -2,6 +2,9 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.12.1 (2015-03-14)
 -------------------
 * Fixing various memory freeing operations

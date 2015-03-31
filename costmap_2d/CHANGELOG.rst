@@ -2,6 +2,11 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Static layer works with rolling window now
+* Contributors: Michael Ferguson, Rein Appeldoorn
+
 1.12.1 (2015-03-14)
 -------------------
 * fixed issue with voxel_layer and obstacle_layer both deleting the same dynamic_reconfigure::Server and causing segfaults
