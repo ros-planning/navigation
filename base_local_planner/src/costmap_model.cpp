@@ -54,12 +54,14 @@ namespace base_local_planner {
     if(!costmap_.worldToMap(position.x, position.y, cell_x, cell_y))
       return -1.0;
 
-    //if number of points in the footprint is less than 3, we'll just assume a circular robot
+    //if the center point is LETHAL or INSCRIBED the footprint must be colliding
+    unsigned char cost = costmap_.getCost(cell_x, cell_y);
+    //if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE)
+    if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE || cost == NO_INFORMATION)
+      return -1.0;
+
+    //if number of points in the footprint is less than 3, we'll just assume a point robot
     if(footprint.size() < 3){
-      unsigned char cost = costmap_.getCost(cell_x, cell_y);
-      //if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE)
-      if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE || cost == NO_INFORMATION)
-        return -1.0;
       return cost;
     }
 
