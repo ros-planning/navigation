@@ -271,7 +271,12 @@ namespace move_base {
         planner_plan_->clear();
         latest_plan_->clear();
         controller_plan_->clear();
-        resetState();
+        runPlanner_ = false;
+        state_ = PLANNING;
+        recovery_index_ = 0;
+        recovery_trigger_ = PLANNING_R;
+        publishZeroVelocity();
+
         planner_->initialize(bgp_loader_.getName(config.base_global_planner), planner_costmap_ros_);
 
         lock.unlock();
