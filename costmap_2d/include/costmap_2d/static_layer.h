@@ -91,7 +91,6 @@ private:
 
   unsigned char lethal_threshold_, unknown_cost_value_;
 
-  mutable boost::recursive_mutex lock_;
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 };
 
