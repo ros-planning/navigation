@@ -80,6 +80,7 @@ private:
   unsigned char interpretValue(unsigned char value);
 
   std::string global_frame_; ///< @brief The global frame for the costmap
+  std::string map_frame_;  /// @brief frame that map is located in
   bool subscribe_to_updates_;
   bool map_received_;
   bool has_updated_data_;
