@@ -176,6 +176,7 @@ Costmap2D::Costmap2D() :
 Costmap2D::~Costmap2D()
 {
   deleteMaps();
+  delete access_;
 }
 
 unsigned int Costmap2D::cellDistance(double world_dist)
