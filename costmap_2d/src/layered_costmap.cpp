@@ -112,10 +112,10 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   if (xn < x0 || yn < y0)
     return;
 
-  costmap_.resetMap(x0, y0, xn, yn);
-
   {
-    boost::unique_lock < boost::shared_mutex > lock(*(costmap_.getLock()));
+    // Clear and update costmap under a single lock
+    boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
+    costmap_.resetMap(x0, y0, xn, yn);
     for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
         ++plugin)
     {
