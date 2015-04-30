@@ -3,6 +3,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2008, 2013, Willow Garage, Inc.
+ *  Copyright (c) 2015, Fetch Robotics, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -123,7 +124,8 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
 
 void StaticLayer::matchSize()
 {
-  // If we are using rolling costmap, the static map should not match
+  // If we are using rolling costmap, the static map size is
+  //   unrelated to the size of the layered costmap
   if (!layered_costmap_->isRolling())
   {
     Costmap2D* master = layered_costmap_->getCostmap();
@@ -163,6 +165,7 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       master->getOriginY() != new_map->info.origin.position.y ||
       !layered_costmap_->isSizeLocked()))
   {
+    // Update the size of the layered costmap (and all layers, including this one)
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
                                 new_map->info.origin.position.y, true);
@@ -172,6 +175,7 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
            origin_x_ != new_map->info.origin.position.x ||
            origin_y_ != new_map->info.origin.position.y)
   {
+    // only update the size of the costmap stored locally in this layer
     ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x, new_map->info.origin.position.y);
   }
@@ -188,6 +192,9 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       ++index;
     }
   }
+  map_frame_ = new_map->header.frame_id;
+
+  // we have a new map, update full size of map
   x_ = y_ = 0;
   width_ = size_x_;
   height_ = size_y_;
@@ -260,6 +267,7 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
 
   if (!layered_costmap_->isRolling())
   {
+    // if not rolling, the layered costmap (master_grid) has same coordinates as this layer
     if (!use_maximum_)
       updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
     else
@@ -267,14 +275,32 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
   }
   else
   {
+    // If rolling window, the master_grid is unlikely to have same coordinates as this layer
     unsigned int mx, my;
     double wx, wy;
+    // Might even be in a different frame
+    tf::StampedTransform transform;
+    try
+    {
+      tf_->lookupTransform(map_frame_, global_frame_, ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("%s",ex.what());
+      return;
+    }
+    // Copy map data given proper transformations
     for (unsigned int i = min_i; i < max_i; ++i)
     {
       for (unsigned int j = min_j; j < max_j; ++j)
       {
+        // Convert master_grid coordinates (i,j) into global_frame_(wx,wy) coordinates
         layered_costmap_->getCostmap()->mapToWorld(i, j, wx, wy);
-        if (worldToMap(wx, wy, mx, my))
+        // Transform from global_frame_ to map_frame_
+        tf::Point p(wx, wy, 0);
+        p = transform(p);
+        // Set master_grid with cell from map
+        if (worldToMap(p.x(), p.y(), mx, my))
         {
           if (!use_maximum_)
             master_grid.setCost(i, j, getCost(mx, my));
