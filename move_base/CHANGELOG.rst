@@ -2,6 +2,11 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* proper locking during costmap update
+* Contributors: Michael Ferguson
+
 1.12.2 (2015-03-31)
 -------------------
 

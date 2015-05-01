@@ -2,6 +2,13 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* support rolling static map in any frame
+* fix destructor of Costmap2D
+* proper locking during costmap update
+* Contributors: Michael Ferguson
+
 1.12.2 (2015-03-31)
 -------------------
 * Static layer works with rolling window now

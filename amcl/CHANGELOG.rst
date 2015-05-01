@@ -2,6 +2,9 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.12.2 (2015-03-31)
 -------------------
 * fix pthread_mutex_lock on shutdown
