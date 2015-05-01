@@ -2,8 +2,8 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.16 (2015-04-30)
+--------------------
 * update maintainer email
 * Contributors: Michael Ferguson
 

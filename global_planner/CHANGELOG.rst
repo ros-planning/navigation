@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.16 (2015-04-30)
+--------------------
 * update maintainer email
 * Fix gradient path edge case
 * Use euclidean distance for heuristic

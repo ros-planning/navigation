@@ -2,8 +2,8 @@
 Changelog for package move_slow_and_clear
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.16 (2015-04-30)
+--------------------
 * update maintainer email
 * Contributors: Michael Ferguson
 

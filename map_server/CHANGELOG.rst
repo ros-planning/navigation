@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.16 (2015-04-30)
+--------------------
 * update maintainer email
 * Contributors: Michael Ferguson
 
