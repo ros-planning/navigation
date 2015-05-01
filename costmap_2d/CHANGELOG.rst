@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.3 (2015-04-30)
+-------------------
 * support rolling static map in any frame
 * fix destructor of Costmap2D
 * proper locking during costmap update
