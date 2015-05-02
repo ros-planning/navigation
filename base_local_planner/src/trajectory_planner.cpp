@@ -50,9 +50,17 @@
 
 //for computing path distance
 #include <queue>
+#include <tf2/LinearMath/Matrix3x3.h>
 
 using namespace std;
 using namespace costmap_2d;
+
+inline double getYaw(const geometry_msgs::PoseStamped& pose) {
+  double yaw, _pitch, _roll;
+  tf2::Matrix3x3(tf2::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y,
+                                 pose.pose.orientation.z, pose.pose.orientation.w)).getEulerYPR(yaw, _pitch, _roll);
+                                 return yaw;
+}
 
 namespace base_local_planner{
 
@@ -918,11 +926,11 @@ namespace base_local_planner{
   }
 
   //given the current state of the robot, find a good trajectory
-  Trajectory TrajectoryPlanner::findBestPath(tf::Stamped<tf::Pose> global_pose, tf::Stamped<tf::Pose> global_vel,
-      tf::Stamped<tf::Pose>& drive_velocities){
+  Trajectory TrajectoryPlanner::findBestPath(const geometry_msgs::PoseStamped& global_pose,
+                              geometry_msgs::PoseStamped& global_vel, geometry_msgs::PoseStamped& drive_velocities) {
 
-    Eigen::Vector3f pos(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), tf::getYaw(global_pose.getRotation()));
-    Eigen::Vector3f vel(global_vel.getOrigin().getX(), global_vel.getOrigin().getY(), tf::getYaw(global_vel.getRotation()));
+    Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, getYaw(global_pose));
+    Eigen::Vector3f vel(global_vel.pose.position.x, global_vel.pose.position.y, getYaw(global_vel));
 
     //reset the map for new operations
     path_map_.resetPathDist();
@@ -978,14 +986,24 @@ namespace base_local_planner{
     */
 
     if(best.cost_ < 0){
-      drive_velocities.setIdentity();
+      drive_velocities.pose.position.x = 0;
+      drive_velocities.pose.position.y = 0;
+      drive_velocities.pose.position.z = 0;
+      drive_velocities.pose.orientation.w = 1;
+      drive_velocities.pose.orientation.x = 0;
+      drive_velocities.pose.orientation.y = 0;
+      drive_velocities.pose.orientation.z = 0;
     }
     else{
-      tf::Vector3 start(best.xv_, best.yv_, 0);
-      drive_velocities.setOrigin(start);
-      tf::Matrix3x3 matrix;
-      matrix.setRotation(tf::createQuaternionFromYaw(best.thetav_));
-      drive_velocities.setBasis(matrix);
+      drive_velocities.pose.position.x = best.xv_;
+      drive_velocities.pose.position.y = best.yv_;
+      drive_velocities.pose.position.z = 0;
+      tf2::Quaternion q;
+      q.setEuler(best.thetav_, 0, 0);
+      drive_velocities.pose.orientation.w = q.getW();
+      drive_velocities.pose.orientation.x = q.getX();
+      drive_velocities.pose.orientation.y = q.getY();
+      drive_velocities.pose.orientation.z = q.getZ();
     }
 
     return best;

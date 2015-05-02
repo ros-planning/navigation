@@ -21,7 +21,8 @@
     <build_depend>pluginlib</build_depend>
     <build_depend>nav_core</build_depend>
     <build_depend>base_local_planner</build_depend>
-    <build_depend>tf</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
+    <build_depend>tf2_ros</build_depend>
     <!--<build_depend>angles</build_depend>-->
     <build_depend>eigen</build_depend>
 
@@ -30,7 +31,7 @@
     <run_depend>pluginlib</run_depend>
     <run_depend>nav_core</run_depend>
     <run_depend>base_local_planner</run_depend>
-    <run_depend>tf</run_depend>
+    <run_depend>tf2_ros</run_depend>
     <!--<run_depend>angles</run_depend>-->
     <run_depend>eigen</run_depend>
 

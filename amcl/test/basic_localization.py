@@ -8,8 +8,8 @@ import unittest
 import rospy
 import rostest
 
-from tf.msg import tfMessage
-from tf.transformations import euler_from_quaternion
+from tf2_msgs.msg import TFMessage as tfMessage
+import PyKDL
 from std_srvs.srv import Empty
 
 
@@ -32,7 +32,7 @@ class TestBasicLocalization(unittest.TestCase):
 
     def compute_angle_diff(self):
         rot = self.tf.rotation
-        a = euler_from_quaternion([rot.x, rot.y, rot.z, rot.w])[2]
+        a = PyKDL.Rotation.Quaternion(rot.x, rot.y, rot.z, rot.w).GetRPY()[2]
         d_a = self.target_a
 
         return (a, abs(fmod(a - d_a + 5*pi, 2*pi) - pi))

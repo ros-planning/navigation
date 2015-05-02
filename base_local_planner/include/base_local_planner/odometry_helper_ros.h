@@ -38,10 +38,10 @@
 #ifndef ODOMETRY_HELPER_ROS2_H_
 #define ODOMETRY_HELPER_ROS2_H_
 
-#include <tf/transform_datatypes.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <boost/thread.hpp>
+#include <geometry_msgs/PoseStamped.h>
 
 namespace base_local_planner {
 
@@ -63,7 +63,7 @@ public:
 
   void getOdom(nav_msgs::Odometry& base_odom);
 
-  void getRobotVel(tf::Stamped<tf::Pose>& robot_vel);
+  void getRobotVel(geometry_msgs::PoseStamped& robot_vel);
 
   /** @brief Set the odometry topic.  This overrides what was set in the constructor, if anything.
    *

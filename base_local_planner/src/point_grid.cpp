@@ -40,11 +40,12 @@
 #include <sys/time.h>
 #include <math.h>
 #include <cstdio>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 using namespace std;
 using namespace costmap_2d;
 
-void printPoint(pcl::PointXYZ pt){
+void printPoint(const geometry_msgs::Point& pt){
   printf("(%.2f, %.2f, %.2f)", pt.x, pt.y, pt.z);
 }
 
@@ -58,7 +59,7 @@ void printPSFooter(){
   printf("showpage\n%%%%EOF\n");
 }
 
-void printPolygonPS(const std::vector<geometry_msgs::Point>& poly, double line_width){
+void printPolygonPS(const std::vector<geometry_msgs::Point32>& poly, double line_width){
   if(poly.size() < 2)
     return;
 
@@ -82,7 +83,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     cells_.resize(width_ * height_);
   }
 
-  double PointGrid::footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint, 
+  double PointGrid::footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
       double inscribed_radius, double circumscribed_radius){
     //the half-width of the circumscribed sqaure of the robot is equal to the circumscribed radius
     double outer_square_radius = circumscribed_radius;
@@ -116,10 +117,10 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
 
     //if there are points, we have to do a more expensive check
     for(unsigned int i = 0; i < points_.size(); ++i){
-      list<pcl::PointXYZ>* cell_points = points_[i];
+      list<geometry_msgs::Point32>* cell_points = points_[i];
       if(cell_points != NULL){
-        for(list<pcl::PointXYZ>::iterator it = cell_points->begin(); it != cell_points->end(); ++it){
-          const pcl::PointXYZ& pt = *it;
+        for(list<geometry_msgs::Point32>::iterator it = cell_points->begin(); it != cell_points->end(); ++it){
+          const geometry_msgs::Point32& pt = *it;
           //first, we'll check to make sure we're in the outer square
           //printf("(%.2f, %.2f) ... l(%.2f, %.2f) ... u(%.2f, %.2f)\n", pt.x, pt.y, c_lower_left.x, c_lower_left.y, c_upper_right.x, c_upper_right.y);
           if(pt.x > c_lower_left.x && pt.x < c_upper_right.x && pt.y > c_lower_left.y && pt.y < c_upper_right.y){
@@ -139,7 +140,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return 1.0;
   }
 
-  bool PointGrid::ptInPolygon(const pcl::PointXYZ& pt, const std::vector<geometry_msgs::Point>& poly){
+  bool PointGrid::ptInPolygon(const geometry_msgs::Point32& pt, const std::vector<geometry_msgs::Point>& poly){
     if(poly.size() < 3)
       return false;
 
@@ -175,7 +176,8 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return true;
   }
 
-  void PointGrid::getPointsInRange(const geometry_msgs::Point& lower_left, const geometry_msgs::Point& upper_right, vector< list<pcl::PointXYZ>* >& points){
+  void PointGrid::getPointsInRange(const geometry_msgs::Point& lower_left, const geometry_msgs::Point& upper_right,
+                                   vector< list<geometry_msgs::Point32>* >& points){
     points.clear();
 
     //compute the other corners of the box so we can get cells indicies for them
@@ -215,11 +217,11 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
      * (0, height) ----------------- (width, height)
      */
     //get an iterator
-    vector< list<pcl::PointXYZ> >::iterator cell_iterator = cells_.begin() + lower_left_index;
+    vector< list<geometry_msgs::Point32> >::iterator cell_iterator = cells_.begin() + lower_left_index;
     //printf("Index: %d, Width: %d, x_steps: %d, y_steps: %d\n", lower_left_index, width_, x_steps, y_steps);
     for(unsigned int i = 0; i < y_steps; ++i){
       for(unsigned int j = 0; j < x_steps; ++j){
-        list<pcl::PointXYZ>& cell = *cell_iterator;
+        list<geometry_msgs::Point32>& cell = *cell_iterator;
         //if the cell contains any points... we need to push them back to our list
         if(!cell.empty()){
           points.push_back(&cell);
@@ -231,7 +233,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     }
   }
 
-  void PointGrid::insert(pcl::PointXYZ pt){
+  void PointGrid::insert(const geometry_msgs::Point32& pt){
     //get the grid coordinates of the point
     unsigned int gx, gy;
 
@@ -251,18 +253,18 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     //printf("Index: %d, size: %d\n", pt_index, cells_[pt_index].size());
   }
 
-  double PointGrid::getNearestInCell(pcl::PointXYZ& pt, unsigned int gx, unsigned int gy){
+  double PointGrid::getNearestInCell(const geometry_msgs::Point32& pt, unsigned int gx, unsigned int gy){
     unsigned int index = gridIndex(gx, gy);
     double min_sq_dist = DBL_MAX;
     //loop through the points in the cell and find the minimum distance to the passed point
-    for(list<pcl::PointXYZ>::iterator it = cells_[index].begin(); it != cells_[index].end(); ++it){
+    for(list<geometry_msgs::Point32>::const_iterator it = cells_[index].begin(); it != cells_[index].end(); ++it){
       min_sq_dist = min(min_sq_dist, sq_distance(pt, *it));
     }
     return min_sq_dist;
   }
 
 
-  double PointGrid::nearestNeighborDistance(pcl::PointXYZ& pt){
+  double PointGrid::nearestNeighborDistance(const geometry_msgs::Point32& pt){
     //get the grid coordinates of the point
     unsigned int gx, gy;
 
@@ -273,7 +275,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     getCellBounds(gx, gy, lower_left, upper_right);
 
     //now we need to check what cells could contain the nearest neighbor
-    pcl::PointXYZ check_point;
+    geometry_msgs::Point32 check_point;
     double sq_dist = DBL_MAX;
     double neighbor_sq_dist = DBL_MAX;
     
@@ -355,7 +357,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     return neighbor_sq_dist;
   }
 
-  void PointGrid::updateWorld(const std::vector<geometry_msgs::Point>& footprint, 
+  void PointGrid::updateWorld(const std::vector<geometry_msgs::Point>& footprint,
       const vector<Observation>& observations, const vector<PlanarLaserScan>& laser_scans){
     //for our 2D point grid we only remove freespace based on the first laser scan
     if(laser_scans.empty())
@@ -366,22 +368,31 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     //iterate through all observations and update the grid
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
-      const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
-      for(unsigned int i = 0; i < cloud.size(); ++i){
+      const sensor_msgs::PointCloud2& cloud = *(obs.cloud_);
+
+      sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
+      sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
+      sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
+
+      geometry_msgs::Point32 pt;
+      for(; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z){
         //filter out points that are too high
-        if(cloud[i].z > max_z_)
+        if(*iter_z > max_z_)
           continue;
 
         //compute the squared distance from the hitpoint to the pointcloud's origin
-        double sq_dist = (cloud[i].x - obs.origin_.x) * (cloud[i].x - obs.origin_.x)
-          + (cloud[i].y - obs.origin_.y) * (cloud[i].y - obs.origin_.y) 
-          + (cloud[i].z - obs.origin_.z) * (cloud[i].z - obs.origin_.z);
+        double sq_dist = (*iter_x - obs.origin_.x) * (*iter_x - obs.origin_.x)
+          + (*iter_y - obs.origin_.y) * (*iter_y - obs.origin_.y)
+          + (*iter_z - obs.origin_.z) * (*iter_z - obs.origin_.z);
 
         if(sq_dist >= sq_obstacle_range_)
           continue;
 
         //insert the point
-        insert(cloud[i]);
+        pt.x = *iter_x;
+        pt.y = *iter_y;
+        pt.z = *iter_z;
+        insert(pt);
       }
     }
 
@@ -415,11 +426,11 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
 
     //if there are points, we have to check them against the scan explicitly to remove them
     for(unsigned int i = 0; i < points_.size(); ++i){
-      list<pcl::PointXYZ>* cell_points = points_[i];
+      list<geometry_msgs::Point32>* cell_points = points_[i];
       if(cell_points != NULL){
-        list<pcl::PointXYZ>::iterator it = cell_points->begin();
+        list<geometry_msgs::Point32>::iterator it = cell_points->begin();
         while(it != cell_points->end()){
-          const pcl::PointXYZ& pt = *it;
+          const geometry_msgs::Point32& pt = *it;
 
           //check if the point is in the polygon and if it is, erase it from the grid
           if(ptInScan(pt, laser_scan)){
@@ -432,7 +443,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     }
   }
 
-  bool PointGrid::ptInScan(const pcl::PointXYZ& pt, const PlanarLaserScan& laser_scan){
+  bool PointGrid::ptInScan(const geometry_msgs::Point32& pt, const PlanarLaserScan& laser_scan){
     if(!laser_scan.cloud.points.empty()){
       //compute the angle of the point relative to that of the scan
       double v1_x = laser_scan.cloud.points[0].x - laser_scan.origin.x;
@@ -476,10 +487,27 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
       return false;
   }
 
-  void PointGrid::getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud){
+  void PointGrid::getPoints(sensor_msgs::PointCloud2& cloud){
+    sensor_msgs::PointCloud2Modifier modifier(cloud);
+    modifier.setPointCloud2FieldsByString(1, "xyz");
+
+    size_t n = 0;
     for(unsigned int i = 0; i < cells_.size(); ++i){
-      for(list<pcl::PointXYZ>::iterator it = cells_[i].begin(); it != cells_[i].end(); ++it){
-        cloud.push_back(*it);
+      for(list<geometry_msgs::Point32>::iterator it = cells_[i].begin(); it != cells_[i].end(); ++it){
+        ++n;
+      }
+    }
+    modifier.resize(n);
+
+    sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+
+    for(unsigned int i = 0; i < cells_.size(); ++i){
+      for(list<geometry_msgs::Point32>::iterator it = cells_[i].begin(); it != cells_[i].end(); ++it, ++iter_x, ++iter_y, ++iter_z){
+        *iter_x = it->x;
+        *iter_y = it->y;
+        *iter_z = it->z;
       }
     }
   }
@@ -511,11 +539,11 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
 
     //if there are points, we have to check them against the polygon explicitly to remove them
     for(unsigned int i = 0; i < points_.size(); ++i){
-      list<pcl::PointXYZ>* cell_points = points_[i];
+      list<geometry_msgs::Point32>* cell_points = points_[i];
       if(cell_points != NULL){
-        list<pcl::PointXYZ>::iterator it = cell_points->begin();
+        list<geometry_msgs::Point32>::iterator it = cell_points->begin();
         while(it != cell_points->end()){
-          const pcl::PointXYZ& pt = *it;
+          const geometry_msgs::Point32& pt = *it;
 
           //check if the point is in the polygon and if it is, erase it from the grid
           if(ptInPolygon(pt, poly)){
@@ -528,7 +556,7 @@ PointGrid::PointGrid(double size_x, double size_y, double resolution, geometry_m
     }
   }
 
-  void PointGrid::intersectionPoint(const geometry_msgs::Point& v1, const geometry_msgs::Point& v2, 
+  void PointGrid::intersectionPoint(const geometry_msgs::Point& v1, const geometry_msgs::Point& v2,
       const geometry_msgs::Point& u1, const geometry_msgs::Point& u2, geometry_msgs::Point& result){
     //generate the equation for line 1
     double a1 = v2.y - v1.y;
@@ -638,7 +666,7 @@ int main(int argc, char** argv){
   pt.x = 1.325;
   pt.y = 1.325;
 
-  pcl::PointXYZ point;
+  geometry_msgs::Point32 point;
   point.x = 1.2;
   point.y = 1.2;
   point.z = 1.0;

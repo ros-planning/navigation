@@ -43,9 +43,11 @@
 
 #include <geometry_msgs/Twist.h>
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 namespace move_base {
 
-  MoveBase::MoveBase(tf::TransformListener& tf) :
+  MoveBase::MoveBase(tf2_ros::Buffer& tf) :
     tf_(tf),
     as_(NULL),
     planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
@@ -327,14 +329,14 @@ namespace move_base {
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
 
     //clear the planner's costmap
     planner_costmap_ros_->getRobotPose(global_pose);
 
     std::vector<geometry_msgs::Point> clear_poly;
-    double x = global_pose.getOrigin().x();
-    double y = global_pose.getOrigin().y();
+    double x = global_pose.pose.position.x;
+    double y = global_pose.pose.position.y;
     geometry_msgs::Point pt;
 
     pt.x = x - size_x / 2;
@@ -359,8 +361,8 @@ namespace move_base {
     controller_costmap_ros_->getRobotPose(global_pose);
 
     clear_poly.clear();
-    x = global_pose.getOrigin().x();
-    y = global_pose.getOrigin().y();
+    x = global_pose.pose.position.x;
+    y = global_pose.pose.position.y;
 
     pt.x = x - size_x / 2;
     pt.y = y - size_x / 2;
@@ -399,7 +401,7 @@ namespace move_base {
       ROS_ERROR("move_base cannot make a plan for you because it doesn't have a costmap");
       return false;
     }
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     if(!planner_costmap_ros_->getRobotPose(global_pose)){
       ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
       return false;
@@ -407,7 +409,7 @@ namespace move_base {
     geometry_msgs::PoseStamped start;
     //if the user does not specify a start pose, identified by an empty frame id, then use the robot's pose
     if(req.start.header.frame_id == "")
-      tf::poseStampedTFToMsg(global_pose, start);
+      start = global_pose;
     else
       start = req.start;
 
@@ -517,14 +519,13 @@ namespace move_base {
     }
 
     //get the starting pose of the robot
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     if(!planner_costmap_ros_->getRobotPose(global_pose)) {
       ROS_WARN("Unable to get starting pose of robot, unable to create global plan");
       return false;
     }
 
-    geometry_msgs::PoseStamped start;
-    tf::poseStampedTFToMsg(global_pose, start);
+    const geometry_msgs::PoseStamped& start = global_pose;
 
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
@@ -550,7 +551,7 @@ namespace move_base {
       return false;
     }
 
-    tf::Quaternion tf_q(q.x, q.y, q.z, q.w);
+    tf2::Quaternion tf_q(q.x, q.y, q.z, q.w);
 
     //next, we need to check if the length of the quaternion is close to zero
     if(tf_q.length2() < 1e-6){
@@ -561,7 +562,7 @@ namespace move_base {
     //next, we'll normalize the quaternion and check that it transforms the vertical vector correctly
     tf_q.normalize();
 
-    tf::Vector3 up(0, 0, 1);
+    tf2::Vector3 up(0, 0, 1);
 
     double dot = up.dot(up.rotate(tf_q.getAxis(), tf_q.getAngle()));
 
@@ -575,25 +576,23 @@ namespace move_base {
 
   geometry_msgs::PoseStamped MoveBase::goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg){
     std::string global_frame = planner_costmap_ros_->getGlobalFrameID();
-    tf::Stamped<tf::Pose> goal_pose, global_pose;
-    poseStampedMsgToTF(goal_pose_msg, goal_pose);
+    geometry_msgs::PoseStamped goal_pose, global_pose;
+    goal_pose = goal_pose_msg;
 
     //just get the latest available transform... for accuracy they should send
     //goals in the frame of the planner
-    goal_pose.stamp_ = ros::Time();
+    goal_pose.header.stamp = ros::Time();
 
     try{
-      tf_.transformPose(global_frame, goal_pose, global_pose);
+      tf_.transform(goal_pose_msg, global_pose, global_frame);
     }
-    catch(tf::TransformException& ex){
+    catch(tf2::TransformException& ex){
       ROS_WARN("Failed to transform the goal pose from %s into the %s frame: %s",
-          goal_pose.frame_id_.c_str(), global_frame.c_str(), ex.what());
+          goal_pose.header.frame_id.c_str(), global_frame.c_str(), ex.what());
       return goal_pose_msg;
     }
 
-    geometry_msgs::PoseStamped global_pose_msg;
-    tf::poseStampedTFToMsg(global_pose, global_pose_msg);
-    return global_pose_msg;
+    return global_pose;
   }
 
   void MoveBase::wakePlanner(const ros::TimerEvent& event)
@@ -831,10 +830,9 @@ namespace move_base {
     geometry_msgs::Twist cmd_vel;
 
     //update feedback to correspond to our curent position
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     planner_costmap_ros_->getRobotPose(global_pose);
-    geometry_msgs::PoseStamped current_position;
-    tf::poseStampedTFToMsg(global_pose, current_position);
+    const geometry_msgs::PoseStamped& current_position = global_pose;
 
     //push the feedback out
     move_base_msgs::MoveBaseFeedback feedback;
