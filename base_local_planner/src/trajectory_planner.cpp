@@ -369,32 +369,19 @@ namespace base_local_planner{
   }
 
   double TrajectoryPlanner::headingDiff(int cell_x, int cell_y, double x, double y, double heading){
-    double heading_diff = DBL_MAX;
     unsigned int goal_cell_x, goal_cell_y;
-    const double v2_x = cos(heading);
-    const double v2_y = sin(heading);
 
-    //find a clear line of sight from the robot's cell to a point on the path
+    // find a clear line of sight from the robot's cell to a farthest point on the path
     for (int i = global_plan_.size() - 1; i >=0; --i) {
       if (costmap_.worldToMap(global_plan_[i].pose.position.x, global_plan_[i].pose.position.y, goal_cell_x, goal_cell_y)) {
         if (lineCost(cell_x, goal_cell_x, cell_y, goal_cell_y) >= 0) {
           double gx, gy;
           costmap_.mapToWorld(goal_cell_x, goal_cell_y, gx, gy);
-          double v1_x = gx - x;
-          double v1_y = gy - y;
-
-          double perp_dot = v1_x * v2_y - v1_y * v2_x;
-          double dot = v1_x * v2_x + v1_y * v2_y;
-
-          //get the signed angle
-          double vector_angle = atan2(perp_dot, dot);
-
-          heading_diff = fabs(vector_angle);
-          return heading_diff;
+          return fabs(angles::shortest_angular_distance(heading, atan2(gy - y, gx - x)));
         }
       }
     }
-    return heading_diff;
+    return DBL_MAX;
   }
 
   //calculate the cost of a ray-traced line
