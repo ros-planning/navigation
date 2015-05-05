@@ -85,10 +85,13 @@ catkin_package(
 )
 
 add_library(costmap_2d
+  src/axis_aligned_bounding_box.cpp
   src/array_parser.cpp
   src/costmap_2d.cpp
+  src/dynamic_algorithm_select.cpp
   src/observation_buffer.cpp
   src/layer.cpp
+  src/layer_actions.cpp
   src/layered_costmap.cpp
   src/costmap_2d_ros.cpp
   src/costmap_2d_publisher.cpp

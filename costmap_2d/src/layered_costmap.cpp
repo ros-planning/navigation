@@ -36,6 +36,7 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/layer_actions.h>
 #include <costmap_2d/footprint.h>
 #include <cstdio>
 #include <string>
@@ -114,12 +115,16 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 
   costmap_.resetMap(x0, y0, xn, yn);
 
+  // we will record a list of actions taken on the costmaps so we can later
+  // make decisions about what needs to be inflated and what does not.
+  LayerActions actions;
+
   {
     boost::unique_lock < boost::shared_mutex > lock(*(costmap_.getLock()));
     for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
         ++plugin)
     {
-      (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
+      (*plugin)->updateCosts(&actions, costmap_, x0, y0, xn, yn);
     }
   }
 

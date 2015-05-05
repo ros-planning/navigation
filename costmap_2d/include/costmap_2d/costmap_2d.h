@@ -42,9 +42,18 @@
 #include <queue>
 #include <geometry_msgs/Point.h>
 #include <boost/thread.hpp>
+#include <map>
+
+#include <string>  // for string
+#include <algorithm>  // for min
 
 namespace costmap_2d
 {
+class Layer;
+class Costmap2D;
+
+typedef boost::shared_ptr<Costmap2D> Costmap2DPtr;
+
 
 //convenient for storing x/y point pairs
 struct MapLocation
@@ -98,6 +107,13 @@ public:
                          double win_size_y);
 
   /**
+   * @brief Create a new Cost Map at an equal or lower resolution
+   * @param factor  Resolution reduction factor.
+   * @return  New shared pointer of a Costmap2D object at an equal or lower resolution. The contents of the map are undefined.
+   */
+  Costmap2DPtr createReducedResolutionMap(int factor);
+
+  /**
    * @brief  Default constructor
    */
   Costmap2D();
@@ -116,12 +132,26 @@ public:
   unsigned char getCost(unsigned int mx, unsigned int my) const;
 
   /**
+   * @brief  Get the cost of a cell in the costmap
+   * @param index The offset from the start of the memory buffer holding the costmap
+   * @return The cost of the cell at the index
+   */
+  unsigned char getCost(unsigned int index) const;
+
+  /**
    * @brief  Set the cost of a cell in the costmap
    * @param mx The x coordinate of the cell
    * @param my The y coordinate of the cell
    * @param cost The cost to set the cell to
    */
   void setCost(unsigned int mx, unsigned int my, unsigned char cost);
+
+  /**
+   * @brief  Set the cost of a cell in the costmap
+   * @param index The index of the cell
+   * @param cost The cost to set the cell to
+   */
+  void setCost(unsigned int index, unsigned char cost);
 
   /**
    * @brief  Convert from map coordinates to world coordinates
@@ -281,7 +311,61 @@ public:
   void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
                  double origin_y);
 
+  /**
+    * @brief Copy a window of cells from the calling Costmap2D to a destination Costmap2D
+    * @param src_x0 base x value of the calling window
+    * @param src_y0 base y value of the calling window
+    * @param dst_x0 base x value of the destination window
+    * @param dst_y0 base y value of the destination window
+    * @param xn Number of cells in the x direction to reset (point x0 + xn not changed)
+    * @param yn Number of cells in the y direction to reset (point y0 + yn not changed)
+    */
+  void copyCellsTo(Costmap2D &map, unsigned int src_x0, unsigned int src_y0,
+                                   unsigned int dst_x0, unsigned int dst_y0,
+                                   unsigned int xn, unsigned int yn) const;
+
+  void copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
+                                     unsigned int dst_x0, unsigned int dst_y0,
+                                     unsigned int xn, unsigned int yn) const;
+
+  void copyCellsTo(Costmap2D& map, unsigned int x0, unsigned int y0,
+                                   unsigned int xn, unsigned int yn)  const;
+
+  void copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0,
+                                     unsigned int xn, unsigned int yn)  const;
+
+  void copyCellsTo(Costmap2D& map) const;
+  void copyCellsTo(Costmap2DPtr map) const;
+
+  /**
+    * @brief Reset a window of the map to the default value
+    * @param x0 base x value of the window
+    * @param y0 base y value of the window
+    * @param xn Number of cells in the x direction to reset (point x0 + xn not changed)
+    * @param yn Number of cells in the y direction to reset (point y0 + yn not changed)
+    */
   void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
+
+  /**
+    * @brief Reset the entire map. Set all values to the default value
+    */
+  void resetMap();
+
+  /**
+    * @brief Set a window of the map to a custom value
+    * @param x0 base x value of the window
+    * @param y0 base y value of the window
+    * @param xn Number of cells in the x direction to reset (point x0 + xn not changed)
+    * @param yn Number of cells in the y direction to reset (point y0 + yn not changed)
+    * @param value custom value to assign to the reset window
+    */
+  void setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, const unsigned char value);
+
+  /**
+    * @brief Set the entire map to a custom value
+    * @param value custom value to assign to the entire map
+    */
+  void setMapCost(const unsigned char value);
 
   /**
    * @brief  Given distance in the world... convert it to cells
@@ -289,6 +373,21 @@ public:
    * @return The equivalent cell distance
    */
   unsigned int cellDistance(double world_dist);
+
+  /**
+    * @brief Add a named child Costmap2D
+    * @param map The Costmap that will be attached to the parent Costmap
+    * @param map_name The name of the map
+    * @return The given Costmap2D
+    */
+  Costmap2DPtr addNamedCostmap2D(const std::string& map_name, Costmap2DPtr map);
+
+  /**
+    * @brief Get a sub-map with a given name
+    * @param map_name The name of the map
+    * @return The named Costmap2D or a null shared pointer if not found
+    */
+  Costmap2DPtr getNamedCostmap2D(const std::string& map_name);
 
   boost::shared_mutex* getLock()
   {
@@ -338,6 +437,7 @@ protected:
    */
   virtual void resetMaps();
 
+
   /**
    * @brief  Initializes the costmap, static_map, and markers data structures
    * @param size_x The x size to use for map initialization
@@ -384,7 +484,7 @@ protected:
       //otherwise y is dominant
       int error_x = abs_dy / 2;
       bresenham2D(at, abs_dy, abs_dx, error_x, offset_dy, offset_dx, offset, (unsigned int)(scale * abs_dy));
-
+ 
     }
 
 private:
@@ -425,6 +525,8 @@ protected:
   unsigned char* costmap_;
   unsigned char default_value_;
 
+  std::map<std::string, Costmap2DPtr> child_maps_;
+
   class MarkCell
   {
   public:
@@ -440,6 +542,8 @@ protected:
     unsigned char* costmap_;
     unsigned char value_;
   };
+
+
 
   class PolygonOutlineCells
   {
@@ -463,6 +567,6 @@ protected:
     std::vector<MapLocation>& cells_;
   };
 };
-}
+}  // namespace costmap_2d
 
-#endif
+#endif  // COSTMAP_COSTMAP_2D_H_

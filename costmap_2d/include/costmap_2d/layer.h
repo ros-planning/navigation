@@ -38,14 +38,20 @@
 #define COSTMAP_2D_COSTMAP_2D_LAYER_H_
 
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/layered_costmap.h>
 #include <string>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <vector>
+#include <string>
+#include <geometry_msgs/Point32.h>
 
 namespace costmap_2d
 {
 class LayeredCostmap;
+class Layer;
+class LayerActions;
 
 class Layer
 {
@@ -70,6 +76,13 @@ public:
    *        calculated during UpdateBounds().
    */
   virtual void updateCosts(Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
+
+  
+  /**
+   * @brief Actually update the underlying costmap, only within the bounds
+   *        calculated during UpdateBounds(). Tracking where modifications are made.
+   */
+  virtual void updateCosts(LayerActions* layer_actions, Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
 
   /** @brief Stop publishers. */
   virtual void deactivate() {}

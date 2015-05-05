@@ -37,6 +37,8 @@
  *********************************************************************/
 #include <costmap_2d/footprint_layer.h>
 #include <costmap_2d/footprint.h>
+#include <costmap_2d/axis_aligned_bounding_box.h>
+#include <costmap_2d/layer_actions.h>
 #include <string>
 #include <sstream>
 #include <pluginlib/class_list_macros.h>
@@ -98,13 +100,37 @@ namespace costmap_2d
       *max_y = std::max(py, *max_y);
     }
     footprint_pub_.publish( footprint_ );
+
+    // footprint bounding box in world coordinates
+    fl_min_x_ = *min_x;
+    fl_min_y_ = *min_y;
+    fl_max_x_ = *max_x;
+    fl_max_y_ = *max_y;
   }
 
-  void FootprintLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+  void FootprintLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
   {
     if(!enabled_) return;
+
+    // convert footprint bounding box to cell coordinates
+    int min_x, min_y;
+    int max_x, max_y;
+    master_grid.worldToMapEnforceBounds(fl_min_x_, fl_min_y_, min_x, min_y);
+    master_grid.worldToMapEnforceBounds(fl_max_x_, fl_max_y_, max_x, max_y);
+
+    // The footprint deletes data in the polygon on the master grid
+    if(layer_actions)
+      layer_actions->addAction(
+            AxisAlignedBoundingBox(min_x, min_y, max_x, max_y),
+            &master_grid,
+            LayerActions::MODIFY);
+
     std::vector<geometry_msgs::Point> footprint_points = costmap_2d::toPointVector(footprint_.polygon);
     master_grid.setConvexPolygonCost(footprint_points, costmap_2d::FREE_SPACE);
   }
 
+  void FootprintLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
+  {
+    updateCosts(NULL, master_grid, min_i, min_j, max_i, max_j);
+  }
 }  // namespace costmap_2d

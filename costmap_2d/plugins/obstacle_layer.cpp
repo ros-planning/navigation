@@ -38,6 +38,9 @@
 #include <costmap_2d/obstacle_layer.h>
 #include <costmap_2d/costmap_math.h>
 #include <pluginlib/class_list_macros.h>
+#include <costmap_2d/axis_aligned_bounding_box.h>
+#include <costmap_2d/layer_actions.h>
+
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
 
@@ -407,27 +410,49 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   }
 
   footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+
+  // ray trace bounding box in cell coordinates
+  worldToMapEnforceBounds(*min_x, *min_y, rt_min_x_, rt_min_y_);
+  worldToMapEnforceBounds(*max_x, *max_y, rt_max_x_, rt_max_y_);
 }
 
-void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
     return;
 
   // The footprint layer clears the footprint in this ObstacleLayer
   // before we merge this obstacle layer into the master_grid.
-  footprint_layer_.updateCosts(*this, min_i, min_j, max_i, max_j);
+  footprint_layer_.updateCosts(layer_actions, *this, min_i, min_j, max_i, max_j);
 
-  switch(combination_method_){
-    case 0: // Overwrite
-      updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
-      break;
-    case 1: // Maximum
-      updateWithMax(master_grid, min_i, min_j, max_i, max_j);
-      break;
-    default: // Nothing
-      break;
+  if(combination_method_==0)
+  {
+    updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
+    // making modifications in this window
+    if(layer_actions)
+      layer_actions->addAction(
+            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            this,
+            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            &master_grid,
+            LayerActions::OVERWRITE);
   }
+  else
+  {
+    updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+    if(layer_actions)
+      layer_actions->addAction(
+            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            this,
+            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            &master_grid,
+            LayerActions::MAX);
+  }
+}
+
+void ObstacleLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
+{
+  updateCosts(NULL, master_grid, min_i, min_j, max_i, max_j);
 }
 
 void ObstacleLayer::addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing)
