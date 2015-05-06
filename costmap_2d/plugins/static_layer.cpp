@@ -66,6 +66,7 @@ void StaticLayer::onInitialize()
 
   std::string map_topic;
   nh.param("map_topic", map_topic, std::string("map"));
+  nh.param("first_map_only", first_map_only_, false);
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
 
   nh.param("track_unknown_space", track_unknown_space_, true);
@@ -200,6 +201,12 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   height_ = size_y_;
   map_received_ = true;
   has_updated_data_ = true;
+
+  // shutdown the map subscrber if firt_map_only_ flag is on
+  if(first_map_only_) {
+    ROS_INFO("Shutting down the map subscriber. first_map_only flag is on");
+    map_sub_.shutdown();
+  }
 }
 
 void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update)
@@ -235,8 +242,13 @@ void StaticLayer::deactivate()
 
 void StaticLayer::reset()
 {
-  deactivate();
-  activate();
+  if(first_map_only_) {
+    has_updated_data_ = true;
+  }
+  else{
+   deactivate();
+   activate();
+  }
 }
 
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
