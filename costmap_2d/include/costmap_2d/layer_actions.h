@@ -96,13 +96,6 @@ public:
   /// Get the destination region at the given index
   const AxisAlignedBoundingBox& destinationAxisAlignedBoundingBoxAt(int idx);
 
-
-  /**
-   * @brief Look at the sequence of actions and determine if some can be merged. Attempting to merge all non-TRUEOVERWRITE actions.
-   * @param tolerance Some rectanges may not quite overlap but if they are within the given tolerance then we will merge them
-   */
-  void optimize(int tolerance=0);
-
   // These define the actions that we have collected
   // we have the source and destination rectangle with the corresponding maps
   // and the action type

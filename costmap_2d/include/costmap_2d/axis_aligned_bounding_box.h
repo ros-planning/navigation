@@ -139,6 +139,12 @@ public:
    */
   void setInitialized(bool b) {initialized_ = b;}
 
+  /** 
+   * @brief Expand bounding box to make sure the given points pass the inside test
+   * @param x  X coordinate
+   * @param y  Y coordinate
+   */
+  void ensureInside(int x, int y); 
 
   /**
    * @brief Static method that will take a vector of bounding boxes and modify it so that overlapping boxes are merged

@@ -42,6 +42,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <typeinfo>
 
 using std::vector;
 
@@ -118,7 +119,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   // we will record a list of actions taken on the costmaps so we can later
   // make decisions about what needs to be inflated and what does not.
   LayerActions actions;
-
+  
   {
     boost::unique_lock < boost::shared_mutex > lock(*(costmap_.getLock()));
     for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
@@ -127,7 +128,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
       (*plugin)->updateCosts(&actions, costmap_, x0, y0, xn, yn);
     }
   }
-
+  
   bx0_ = x0;
   bxn_ = xn;
   by0_ = y0;

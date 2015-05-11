@@ -92,11 +92,31 @@ void AxisAlignedBoundingBox::expandBoundingBox(int r)
 
 bool AxisAlignedBoundingBox::inside(int px, int py, int margin) const
 {
+  if(!initialized_)
+    return false;
   if (px < min_x_+margin) return false;
   if (px > max_x_-margin) return false;
   if (py < min_y_+margin) return false;
   if (py > max_y_-margin) return false;
   return true;
+}
+
+
+void AxisAlignedBoundingBox::ensureInside(int px, int py)
+{
+  if(!initialized_)
+  {
+    setInitialized(true);
+    min_x_ = max_x_ = px;
+    min_y_ = max_y_ = py;
+  }
+  else
+  {
+    min_x_ = std::min(min_x_, px);
+    max_x_ = std::max(max_x_, px);
+    min_y_ = std::min(min_y_, py);
+    max_y_ = std::max(max_y_, py);
+  }
 }
 
 bool AxisAlignedBoundingBox::inside(const AxisAlignedBoundingBox& bb, int margin) const

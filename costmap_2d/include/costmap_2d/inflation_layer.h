@@ -121,17 +121,6 @@ public:
     */
   virtual void updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j);
 
-
-  /** @brief Apply inflation to master_grid using the Overlay method
-    * @param master_grid Costmap2D to operate on
-    * @param min_i Window bounds to apply inflation
-    * @param min_j Window bounds to apply inflation
-    * @param max_i Window bounds to apply inflation
-    * @param max_j Window bounds to apply inflation
-    */
-  virtual void updateCostsOverlay(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j);
-
-
   virtual bool isDiscretized()
   {
     return true;
@@ -225,15 +214,6 @@ private:
 
   unsigned char** cached_costs_;
   double** cached_distances_;
-
-  /// @brief Inflated region about a single fatal point
-  Costmap2DPtr cached_kernel_;
-
-  /// @brief Center cell of cached kernel
-  unsigned int cached_kernel_cnx_;
-  unsigned int cached_kernel_cny_;
-
-  bool cached_kernel_inflated_;
 
 
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;

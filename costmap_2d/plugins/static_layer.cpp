@@ -122,6 +122,8 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
     x_ = y_ = 0;
     width_ = size_x_;
     height_ = size_y_;
+    
+    
   }
 }
 
@@ -188,6 +190,8 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   height_ = size_y_;
   map_received_ = true;
   has_updated_data_ = true;
+  
+  removeAllNamedCostmap2D();
 }
 
 void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update)
@@ -207,6 +211,9 @@ void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& up
     width_ = update->width;
     height_ = update->height;
     has_updated_data_ = true;
+    
+    
+    removeAllNamedCostmap2D();
 }
 
 void StaticLayer::activate()

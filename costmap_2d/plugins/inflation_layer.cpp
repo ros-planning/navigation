@@ -74,7 +74,6 @@ InflationLayer::InflationLayer()
   , seen_(NULL)
   , cached_costs_(NULL)
   , cached_distances_(NULL)
-  , cached_kernel_inflated_(false)
 {
   access_ = new boost::shared_mutex();
 }
@@ -173,100 +172,6 @@ void InflationLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, i
   return updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
 }
 
-// Apply inflation update rule on a contiguous row of memory
-static void updateCostsOverlay_row_helper(unsigned char* dest, const unsigned char* overlay, unsigned int n)
-{
-  for (int i = 0; i < n; i++)
-  {
-    unsigned char& old_cost = dest[i];
-    const unsigned char& cost = overlay[i];
-
-    if (old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
-      old_cost = cost;
-    else
-      old_cost = std::max(old_cost, cost);
-  }
-}
-
-// This helper function will overlay a source costmap onto a destination costmap with
-// logic to keep thing in bounds. The overlay is governed by the inflation update rules
-static void updateCostsOverlay_block_helper(Costmap2D* dest, Costmap2D* src, int _start_dest_i, int _start_dest_j)
-{
-  const int nsi = src->getSizeInCellsX();
-  const int nsj = src->getSizeInCellsY();
-
-  const int ndi = dest->getSizeInCellsX();
-  const int ndj = dest->getSizeInCellsX();
-
-  int start_dest_i = std::max(0, _start_dest_i);
-  int start_dest_j = std::max(0, _start_dest_j);
-
-  int end_dest_i = std::min(ndi, _start_dest_i + nsi);
-  int end_dest_j = std::min(ndj, _start_dest_j + nsj);
-
-  int start_src_i = start_dest_i - _start_dest_i;
-  int start_src_j = start_dest_j - _start_dest_j;
-
-  int range_i = end_dest_i - start_dest_i;
-  int range_j = end_dest_j - start_dest_j;
-
-  unsigned char* dest_array = dest->getCharMap();
-  unsigned char*  src_array =  src->getCharMap();
-
-  for (int j = 0; j < range_j; j++)
-  {
-    int dest_index = dest->getIndex(start_dest_i, start_dest_j + j);
-    int  src_index =  src->getIndex(start_src_i,  start_src_j  + j);
-
-    updateCostsOverlay_row_helper(dest_array + dest_index, src_array + src_index, range_i);
-  }
-}
-
-
-void InflationLayer::updateCostsOverlay(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
-{
-  if (!cached_kernel_inflated_)
-  {
-    updateCostsPQ(* cached_kernel_.get(), 0, 0, cached_kernel_->getSizeInCellsX(), cached_kernel_->getSizeInCellsX());
-    cached_kernel_inflated_ = true;
-  }
-
-  boost::unique_lock < boost::shared_mutex > lock(*access_);
-  if (!enabled_)
-    return;
-
-  unsigned char* master_array = master_grid.getCharMap();
-  unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
-
-  // We need to include in the inflation cells outside the bounding
-  // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
-  // up to that distance outside the box can still influence the costs
-  // stored in cells inside the box.
-  min_i -= cell_inflation_radius_;
-  min_j -= cell_inflation_radius_;
-  max_i += cell_inflation_radius_;
-  max_j += cell_inflation_radius_;
-
-  min_i = std::max(0, min_i);
-  min_j = std::max(0, min_j);
-  max_i = std::min(static_cast<int>(size_x), max_i);
-  max_j = std::min(static_cast<int>(size_y), max_j);
-
-  for (int j = min_j; j < max_j; j++)
-  {
-    for (int i = min_i; i < max_i; i++)
-    {
-      if (master_grid.getCost(i, j) == LETHAL_OBSTACLE)
-      {
-        updateCostsOverlay_block_helper(&master_grid, cached_kernel_.get(),
-                                        i - cached_kernel_cnx_, j - cached_kernel_cny_);
-      }
-    }
-  }
-}
-
-
-
 void InflationLayer::updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   boost::unique_lock < boost::shared_mutex > lock(*access_);
@@ -352,9 +257,19 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
   if (!enabled_)
     return;
 
-  int problem_size = master_grid.getSizeInCellsX() * master_grid.getSizeInCellsY();
-  int best_algorithm = algorithmSelect.selectAlgorithm(problem_size);
+  int problem_size = (max_j - min_j) * (max_i - min_i);
+//   int best_algorithm = algorithmSelect.selectAlgorithm(problem_size);
 
+//   int best_algorithm = ALG_PRIORITY_QUEUE;
+  int best_algorithm = ALG_LAYER_ACTIONS;
+
+  FILE* f = fopen("/tmp/PQ.txt", "r");
+  if(f)
+  {
+      best_algorithm = ALG_PRIORITY_QUEUE;
+      fclose(f);
+  }
+  
   if(best_algorithm == ALG_PRIORITY_QUEUE)
   {
     DynamicAlgorithmSelect::Timer timer;
@@ -384,13 +299,9 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
     // against it's small window
     AxisAlignedBoundingBox updateCostsBounds(min_i, min_j, max_i, max_j);
 
-    // First we need to look at all the old actions that made modifications
-    // to the given master_grid and optimize them, essentially we don't want
-    // to inflate the same area twice
+    // Find all actions that made modifications to the master_grid
     LayerActions l_acts;
     layer_actions->copyToWithMatchingDest(l_acts, &master_grid);
-    l_acts.optimize(); // merge similar actions on same regions
-
 
     // track how much data is pre-inflated
     std::vector<AxisAlignedBoundingBox> inflatedData;
@@ -407,8 +318,6 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
         Costmap2D* src = l_acts.sourceCostmapAt(i);
         if (src)
         {
-          int src_nx = src->getSizeInCellsX();
-          int src_ny = src->getSizeInCellsY();
           Costmap2DPtr inflated = src->getNamedCostmap2D("Inflated");
 
           if (inflated.get() == 0)  // then we don't have a cache of the inflated data
@@ -416,8 +325,11 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
             inflated = src->createReducedResolutionMap(1);
             src->copyCellsTo(inflated);
 
+            int src_nx = src->getSizeInCellsX();
+            int src_ny = src->getSizeInCellsY();
+
             // inflate cached data
-            updateCosts(*inflated.get(), 0, 0, src_nx, src_ny);
+            updateCostsPQ(*inflated.get(), 0, 0, src_nx, src_ny);
 
             // add inflated data to the source map so we have it next time
             src->addNamedCostmap2D("Inflated", inflated);
@@ -493,9 +405,9 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
     for (int i = 0; i < uninflatedData.size(); i++)
     {
       AxisAlignedBoundingBox& to_inflate = uninflatedData[i];
-
+      
       // and here it is: We are inflating only the required sections
-      updateCosts(*workspace.get(), to_inflate.min_x_, to_inflate.min_y_, to_inflate.max_x_, to_inflate.max_y_);
+      updateCostsPQ(*workspace.get(), to_inflate.min_x_, to_inflate.min_y_, to_inflate.max_x_, to_inflate.max_y_);
     }
 
     layer_actions->clear();
@@ -504,7 +416,7 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
     workspace->copyCellsTo(master_grid, min_i, min_j, max_i, max_j);
 
     timer.stop();
-
+    
     // Add data to profiler for smarter future choices
     algorithmSelect.addProfilingData(problem_size, ALG_LAYER_ACTIONS, timer.elapsed());
     return;
@@ -583,21 +495,6 @@ void InflationLayer::computeCaches()
     {
       cached_costs_[i][j] = computeCost(cached_distances_[i][j]);
     }
-  }
-
-  // Build costmap representing the inflation about a lethal point
-  // This is used in the updateCost with Overlays method
-  {
-    const unsigned int n = cell_inflation_radius_;
-    const unsigned int cnx = 2 * n + 1;
-    const unsigned int cny = 2 * n + 1;
-    cached_kernel_.reset(new Costmap2D(cnx, cny, getResolution(), 0, 0, FREE_SPACE));
-
-    cached_kernel_->setCost(n, n, LETHAL_OBSTACLE);
-    cached_kernel_cnx_ = n;
-    cached_kernel_cny_ = n;
-
-    cached_kernel_inflated_ = false;
   }
 }
 

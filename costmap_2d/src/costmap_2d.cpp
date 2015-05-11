@@ -91,6 +91,25 @@ Costmap2DPtr Costmap2D::getNamedCostmap2D(const std::string &map_name)
 }
 
 
+void Costmap2D::removeNamedCostmap2D(const std::string& map_name)
+{
+    std::map<std::string, Costmap2DPtr>::iterator it;
+
+    it = child_maps_.find( map_name );
+    
+    if( it != child_maps_.end() )
+    {
+      child_maps_.erase(it);
+    }
+}
+  
+
+void Costmap2D::removeAllNamedCostmap2D()
+{
+    child_maps_.clear();
+}
+
+
 void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resolution,
                           double origin_x, double origin_y)
 {
@@ -108,7 +127,7 @@ void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resol
 
 void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned int src_y0,
                                                 unsigned int dst_x0, unsigned int dst_y0,
-                                                unsigned int xn,     unsigned int yn) const
+                                                unsigned int xn,     unsigned int yn)
 {
   unsigned char* src = getCharMap();
   unsigned char* dst = costmap.getCharMap();
@@ -130,24 +149,26 @@ void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned in
   unsigned int dst_nx = costmap.getSizeInCellsX();
   unsigned int dst_ny = costmap.getSizeInCellsY();
 
-  // if copy range goes out of bounds then truncate
-  if (src_x0 + xn >= src_nx)
-    xn = src_nx - src_x0 - 1;
-  if (dst_x0 + xn >= dst_nx)
-    xn = dst_nx - dst_x0 - 1;
-  if (src_y0 + yn >= src_ny)
-    yn = src_ny - src_y0 - 1;
-  if (dst_y0 + yn >= dst_ny)
-    yn = dst_ny - dst_y0 - 1;
-
-  // copy each line of data
+  
   for (int y = 0; y < yn; y++)
-    memcpy(dst + y * dst_nx + dst_x0, src + y * src_nx + src_x0, xn);
+  {
+    if ((src_y0 + y < src_ny) && (dst_y0 + y < dst_ny))
+    {
+      for (int x = 0; x < xn; x++)
+      {
+        if ((src_x0 + x < src_nx) && (dst_x0 + x < dst_nx))
+        {
+          dst[dst_x0 + x + (y + dst_y0) * dst_nx] = src[src_x0 + x + (y + src_y0) * src_nx];
+        }
+      }
+    }    
+  }
+  
 }
 
 void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
                             unsigned int dst_x0, unsigned int dst_y0,
-                            unsigned int xn, unsigned int yn) const
+                            unsigned int xn, unsigned int yn)
 {
   if (map.get())
     copyCellsTo(*map.get(), src_x0, src_y0, dst_x0, dst_y0, xn, yn);
@@ -155,22 +176,22 @@ void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int 
     ROS_ERROR("NULL pointer in Costmap2D::copyCellsTo");
 }
 
-void Costmap2D::copyCellsTo(Costmap2D &map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn) const
+void Costmap2D::copyCellsTo(Costmap2D &map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn)
 {
   copyCellsTo(map, x0, y0, x0, y0, xn, yn);
 }
 
-void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn) const
+void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn)
 {
   copyCellsTo(map, x0, y0, x0, y0, xn, yn);
 }
 
-void Costmap2D::copyCellsTo(Costmap2D &map) const
+void Costmap2D::copyCellsTo(Costmap2D &map)
 {
   copyCellsTo(map, 0, 0, 0, 0, getSizeInCellsX(), getSizeInCellsY());
 }
 
-void Costmap2D::copyCellsTo(Costmap2DPtr map) const
+void Costmap2D::copyCellsTo(Costmap2DPtr map)
 {
   copyCellsTo(map, 0, 0, 0, 0, getSizeInCellsX(), getSizeInCellsY());
 }

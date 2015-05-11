@@ -124,7 +124,7 @@ public:
    * changes (via LayeredCostmap::setFootprint()).  Override to be
    * notified of changes to the robot's footprint. */
   virtual void onFootprintChanged() {}
-
+  
 protected:
   /** @brief This is called at the end of initialize().  Override to
    * implement subclass-specific initialization.

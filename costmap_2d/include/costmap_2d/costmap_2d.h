@@ -322,20 +322,20 @@ public:
     */
   void copyCellsTo(Costmap2D &map, unsigned int src_x0, unsigned int src_y0,
                                    unsigned int dst_x0, unsigned int dst_y0,
-                                   unsigned int xn, unsigned int yn) const;
+                                   unsigned int xn, unsigned int yn);
 
   void copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
                                      unsigned int dst_x0, unsigned int dst_y0,
-                                     unsigned int xn, unsigned int yn) const;
+                                     unsigned int xn, unsigned int yn);
 
   void copyCellsTo(Costmap2D& map, unsigned int x0, unsigned int y0,
-                                   unsigned int xn, unsigned int yn)  const;
+                                   unsigned int xn, unsigned int yn) ;
 
   void copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0,
-                                     unsigned int xn, unsigned int yn)  const;
+                                     unsigned int xn, unsigned int yn) ;
 
-  void copyCellsTo(Costmap2D& map) const;
-  void copyCellsTo(Costmap2DPtr map) const;
+  void copyCellsTo(Costmap2D& map);
+  void copyCellsTo(Costmap2DPtr map);
 
   /**
     * @brief Reset a window of the map to the default value
@@ -389,6 +389,18 @@ public:
     */
   Costmap2DPtr getNamedCostmap2D(const std::string& map_name);
 
+  /**
+    * @brief Remove a named sub-map with a given name from the internal list of sub-maps
+    * @param map_name The name of the map
+    */
+  void removeNamedCostmap2D(const std::string& map_name);
+  
+  /**
+    * @brief Remove all named sub-maps
+    * @param map_name The name of the map
+    */
+  void removeAllNamedCostmap2D();
+  
   boost::shared_mutex* getLock()
   {
     return access_;
@@ -409,13 +421,13 @@ protected:
    * @param region_size_y The y size of the region to copy
    */
   template<typename data_type>
-    void copyMapRegion(data_type* source_map, unsigned int sm_lower_left_x, unsigned int sm_lower_left_y,
+    void copyMapRegion(const data_type* source_map, unsigned int sm_lower_left_x, unsigned int sm_lower_left_y,
                        unsigned int sm_size_x, data_type* dest_map, unsigned int dm_lower_left_x,
                        unsigned int dm_lower_left_y, unsigned int dm_size_x, unsigned int region_size_x,
                        unsigned int region_size_y)
     {
       //we'll first need to compute the starting points for each map
-      data_type* sm_index = source_map + (sm_lower_left_y * sm_size_x + sm_lower_left_x);
+      const data_type* sm_index = source_map + (sm_lower_left_y * sm_size_x + sm_lower_left_x);
       data_type* dm_index = dest_map + (dm_lower_left_y * dm_size_x + dm_lower_left_x);
 
       //now, we'll copy the source map into the destination map
