@@ -25,7 +25,7 @@ public:
    */
   enum Action{
     NONE,            ///< No action taken
-    OVERWRITE,       ///< CostmapLayer::updateWithOverwrite action, overwite with exerything except NO_INFORMATION
+    OVERWRITE,       ///< CostmapLayer::updateWithOverwrite action, overwite with everything except NO_INFORMATION
     TRUEOVERWRITE,   ///< CostmapLayer::updateWithTureOverwrite action, overwite with exerything
     MODIFY,          ///< Make a modification to the Costmap2D
     MAX              ///< CostmapLayer::updateWithMax action, use the maximum value between the source and dest ignoring NO_INFORMATION
