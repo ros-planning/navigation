@@ -34,8 +34,9 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
-#ifndef NAV_CORE_RECOVERY_BEHAVIOR_H_
-#define NAV_CORE_RECOVERY_BEHAVIOR_H_
+#ifndef NAV_CORE_RECOVERY_BEHAVIOR_H
+#define NAV_CORE_RECOVERY_BEHAVIOR_H
+
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_listener.h>
 
@@ -67,5 +68,6 @@ namespace nav_core {
     protected:
       RecoveryBehavior(){}
   };
-};
-#endif
+};  // namespace nav_core
+
+#endif  // NAV_CORE_RECOVERY_BEHAVIOR_H

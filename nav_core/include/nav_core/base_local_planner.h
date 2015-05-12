@@ -34,8 +34,8 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
-#ifndef NAV_CORE_BASE_LOCAL_PLANNER_
-#define NAV_CORE_BASE_LOCAL_PLANNER_
+#ifndef NAV_CORE_BASE_LOCAL_PLANNER_H
+#define NAV_CORE_BASE_LOCAL_PLANNER_H
 
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
@@ -64,7 +64,7 @@ namespace nav_core {
 
       /**
        * @brief  Set the plan that the local planner is following
-       * @param orig_global_plan The plan to pass to the local planner
+       * @param plan The plan to pass to the local planner
        * @return True if the plan was updated successfully, false otherwise
        */
       virtual bool setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) = 0;
@@ -73,7 +73,7 @@ namespace nav_core {
        * @brief  Constructs the local planner
        * @param name The name to give this instance of the local planner
        * @param tf A pointer to a transform listener
-       * @param costmap The cost map to use for assigning costs to local plans
+       * @param costmap_ros The cost map to use for assigning costs to local plans
        */
       virtual void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 
@@ -85,6 +85,6 @@ namespace nav_core {
     protected:
       BaseLocalPlanner(){}
   };
-};
+};  // namespace nav_core
 
-#endif
+#endif  // NAV_CORE_BASE_LOCAL_PLANNER_H

@@ -34,8 +34,8 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
-#ifndef NAV_CORE_BASE_GLOBAL_PLANNER_
-#define NAV_CORE_BASE_GLOBAL_PLANNER_
+#ifndef NAV_CORE_BASE_GLOBAL_PLANNER_H
+#define NAV_CORE_BASE_GLOBAL_PLANNER_H
 
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
@@ -88,6 +88,6 @@ namespace nav_core {
     protected:
       BaseGlobalPlanner(){}
   };
-};
+};  // namespace nav_core
 
-#endif
+#endif  // NAV_CORE_BASE_GLOBAL_PLANNER_H
