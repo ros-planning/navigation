@@ -51,7 +51,7 @@ public:
   /**
    * @brief Expand the bounding box so that it contains the given bounding box
    * @param r AxisAlignedBoundingBox to compare against
-   * @param tol Tolerance of compairson (default 0)
+   * @param tol Tolerance of comparison (default 0)
    */
   void expandBoundingBox(const AxisAlignedBoundingBox& bb);
 
