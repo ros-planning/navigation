@@ -87,6 +87,7 @@ private:
   unsigned int x_,y_,width_,height_;
   bool track_unknown_space_;
   bool use_maximum_;
+  bool first_map_only_;      ///< @brief Store the first static map and reuse it on reinitializing
   bool trinary_costmap_;
   ros::Subscriber map_sub_, map_update_sub_;
 
