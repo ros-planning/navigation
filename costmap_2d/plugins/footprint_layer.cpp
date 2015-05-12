@@ -120,10 +120,12 @@ namespace costmap_2d
 
     // The footprint deletes data in the polygon on the master grid
     if(layer_actions)
+    {
       layer_actions->addAction(
             AxisAlignedBoundingBox(min_x, min_y, max_x, max_y),
             &master_grid,
             LayerActions::MODIFY);
+    }
 
     std::vector<geometry_msgs::Point> footprint_points = costmap_2d::toPointVector(footprint_.polygon);
     master_grid.setConvexPolygonCost(footprint_points, costmap_2d::FREE_SPACE);

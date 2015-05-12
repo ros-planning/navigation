@@ -349,9 +349,6 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
 
-  // bounding box in cell space
-  AxisAlignedBoundingBox bb; 
-  
   //get the marking observations
   current = current && getMarkingObservations(observations);
 
@@ -409,21 +406,21 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       unsigned int index = getIndex(mx, my);
       costmap_[index] = LETHAL_OBSTACLE;
       touch(px, py, min_x, min_y, max_x, max_y);
-      
-      bb.ensureInside(mx, my);
     }
   }
 
   footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 
   // ray trace bounding box in cell coordinates
-//   worldToMapEnforceBounds(*min_x, *min_y, rt_min_x_, rt_min_y_);
-//   worldToMapEnforceBounds(*max_x, *max_y, rt_max_x_, rt_max_y_);
-  rt_min_x_ = bb.min_x_;
-  rt_max_x_ = bb.max_x_;
-  
-  rt_min_y_ = bb.min_y_;
-  rt_max_y_ = bb.max_y_;
+  worldToMap(*min_x, *min_y, rt_min_x_, rt_min_y_);
+  worldToMap(*max_x, *max_y, rt_max_x_, rt_max_y_);
+
+  // adding safety margin
+  rt_min_x_ -= 2;
+  rt_min_y_ -= 2;
+
+  rt_max_x_ += 2;
+  rt_max_y_ += 2;
 }
 
 void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -440,23 +437,27 @@ void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap
     updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
     // making modifications in this window
     if(layer_actions)
+    {
       layer_actions->addAction(
             AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
             this,
             AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
             &master_grid,
             LayerActions::OVERWRITE);
+    }
   }
   else
   {
     updateWithMax(master_grid, min_i, min_j, max_i, max_j);
     if(layer_actions)
+    {
       layer_actions->addAction(
             AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
             this,
             AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
             &master_grid,
             LayerActions::MAX);
+    }
   }
 }
 

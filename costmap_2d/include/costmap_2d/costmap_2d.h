@@ -312,6 +312,16 @@ public:
                  double origin_y);
 
   /**
+   * @brief Policies on how data will copy over other data in a copyCellsTo call
+   */
+  enum CopyCellPolicy{
+    None,            ///< No copy
+    Overwrite,       ///< Copy all data except NO_INFORMATION
+    TrueOverwrite,   ///< Copy all data
+    Max              ///< Use maximum value except for NO_INFORMATION which is replaced with data
+  };
+  
+  /**
     * @brief Copy a window of cells from the calling Costmap2D to a destination Costmap2D
     * @param src_x0 base x value of the calling window
     * @param src_y0 base y value of the calling window
@@ -319,23 +329,24 @@ public:
     * @param dst_y0 base y value of the destination window
     * @param xn Number of cells in the x direction to reset (point x0 + xn not changed)
     * @param yn Number of cells in the y direction to reset (point y0 + yn not changed)
+    * @param policy Define how the copy is executed, default TrueOverwrite
     */
   void copyCellsTo(Costmap2D &map, unsigned int src_x0, unsigned int src_y0,
                                    unsigned int dst_x0, unsigned int dst_y0,
-                                   unsigned int xn, unsigned int yn);
+                                   unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
                                      unsigned int dst_x0, unsigned int dst_y0,
-                                     unsigned int xn, unsigned int yn);
+                                     unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2D& map, unsigned int x0, unsigned int y0,
-                                   unsigned int xn, unsigned int yn) ;
+                                   unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0,
-                                     unsigned int xn, unsigned int yn) ;
+                                     unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
 
-  void copyCellsTo(Costmap2D& map);
-  void copyCellsTo(Costmap2DPtr map);
+  void copyCellsTo(Costmap2D& map, CopyCellPolicy policy = TrueOverwrite);
+  void copyCellsTo(Costmap2DPtr map, CopyCellPolicy policy = TrueOverwrite);
 
   /**
     * @brief Reset a window of the map to the default value
@@ -401,6 +412,14 @@ public:
     */
   void removeAllNamedCostmap2D();
   
+  
+  /**
+    * @brief Mechanism to get or set a named integer value. 
+    * @param flag_name Name of flag to interact with
+    * @return Integer reference to named flag. 
+    */
+  int& namedFlag(const std::string& flag_name);
+  
   boost::shared_mutex* getLock()
   {
     return access_;
@@ -421,13 +440,13 @@ protected:
    * @param region_size_y The y size of the region to copy
    */
   template<typename data_type>
-    void copyMapRegion(const data_type* source_map, unsigned int sm_lower_left_x, unsigned int sm_lower_left_y,
+    void copyMapRegion(data_type* source_map, unsigned int sm_lower_left_x, unsigned int sm_lower_left_y,
                        unsigned int sm_size_x, data_type* dest_map, unsigned int dm_lower_left_x,
                        unsigned int dm_lower_left_y, unsigned int dm_size_x, unsigned int region_size_x,
                        unsigned int region_size_y)
     {
       //we'll first need to compute the starting points for each map
-      const data_type* sm_index = source_map + (sm_lower_left_y * sm_size_x + sm_lower_left_x);
+      data_type* sm_index = source_map + (sm_lower_left_y * sm_size_x + sm_lower_left_x);
       data_type* dm_index = dest_map + (dm_lower_left_y * dm_size_x + dm_lower_left_x);
 
       //now, we'll copy the source map into the destination map
@@ -496,7 +515,7 @@ protected:
       //otherwise y is dominant
       int error_x = abs_dy / 2;
       bresenham2D(at, abs_dy, abs_dx, error_x, offset_dy, offset_dx, offset, (unsigned int)(scale * abs_dy));
- 
+
     }
 
 private:
@@ -538,7 +557,9 @@ protected:
   unsigned char default_value_;
 
   std::map<std::string, Costmap2DPtr> child_maps_;
-
+  std::map<std::string, int> named_flags_;
+  
+  
   class MarkCell
   {
   public:
@@ -579,6 +600,6 @@ protected:
     std::vector<MapLocation>& cells_;
   };
 };
-}  // namespace costmap_2d
+}
 
-#endif  // COSTMAP_COSTMAP_2D_H_
+#endif

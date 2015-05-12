@@ -36,7 +36,8 @@ public:
   /**
    * @brief Determine if this AxisAlignedBoundingBox is the same as another with possible tolerance
    * @param r AxisAlignedBoundingBox to compare against
-   * @param tol Tolerance of compairson (default 0)
+   * @param tol Tolerance of comparison (default 0)
+   * @return Boolean result of comparison
    */
   bool same(const AxisAlignedBoundingBox& r, int tol=0);
 
@@ -66,6 +67,7 @@ public:
    * @param px x coordinate of test point
    * @param py y coordinate of test point
    * @param margin extra, optional margin to be added around bounding box in test
+   * @return Boolean result of test. True if inside, false otherwise.
    */
   bool inside(int px, int py, int margin = 0) const;
   
@@ -74,6 +76,7 @@ public:
    * @brief Test if a bounding box is completely inside the calling bounding box
    * @param bb test bounding box
    * @param margin extra, optional margin to be added around containing bounding box in test
+   * @return Boolean result of test. True if inside, false otherwise.
    */
   bool inside(const AxisAlignedBoundingBox& bb, int margin = 0) const;
 
@@ -90,8 +93,11 @@ public:
   void clampBounds();
 
   /**
-   * @brief Compute how much of the given AxisAlignedBoundingBox is inside the calling AxisAlignedBoundingBox as a ratio of areas
+   * @brief Compute how much of the given AxisAlignedBoundingBox is inside the calling 
+   *        AxisAlignedBoundingBox as a ratio of areas
    * @param bb The AxisAlignedBoundingBox to use as a test
+   * @return Numberic value in the range of [0:1] representing the ratio of the area 
+   *         of the argument bounding box compared to the area of the calling bounding box
    */
   double ratioInside(const AxisAlignedBoundingBox& bb) const;
 
@@ -99,45 +105,55 @@ public:
   /**
    * @brief Calculate the area of the bounding box
    * @return Area of the bounding box
+   * @return Area as an integer
    */
   int area() const;
 
   /**
    * @brief Number of grid points in the X direction
+   * @return Integer number of grid points
    */
   int xn() const;
+
   /**
    * @brief Number of grid points in the Y direction
+   * @return Integer number of grid points
    */
   int yn() const;
 
   
   /**
    * @brief X coordinate of minimum point
+   * @return Integer minimum X coordinate
    */
   int x0() const;
 
   /**
    * @brief Y coordinate of minimum point
+   * @return Integer minimum Y coordinate
    */
   int y0() const;
 
   /**
    * @brief Determine if this AxisAlignedBoundingBox intersects another AxisAlignedBoundingBox
    * @param bb AxisAlignedBoundingBox to compare against
-   * @param margin extra margin applied to the AxisAlignedBoundingBoxs. A positive margin will make side by side AxisAlignedBoundingBoxs appear to intersect. Default 0.
+   * @param margin extra margin applied to the AxisAlignedBoundingBoxs. A positive margin will 
+   *        make side by side AxisAlignedBoundingBoxs appear to intersect. Default 0.
+   * @return Boolean intersection test result
    */
   bool intersect(const AxisAlignedBoundingBox& bb, int margin = 0) const;
 
   /** 
    * @brief Determine if bounding box has been initialized
+   * @return Boolean flag representing internal initialization state
    */
   bool initialized() const {return initialized_;}
   
   /** 
    * @brief Set the initialization value of the bounding box
+   * @param b Optional new initialization state, default true.
    */
-  void setInitialized(bool b) {initialized_ = b;}
+  void setInitialized(bool b=true) {initialized_ = b;}
 
   /** 
    * @brief Expand bounding box to make sure the given points pass the inside test

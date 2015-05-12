@@ -150,7 +150,12 @@ double AxisAlignedBoundingBox::ratioInside(const AxisAlignedBoundingBox &bb) con
   AxisAlignedBoundingBox clipped;
   clip(bb, clipped);
 
-  return static_cast<double>(area()) / static_cast<double>(clipped.area());
+  const double denom = clipped.area();
+  const double numer = area();
+  
+  if(denom == 0)
+    return 0;
+  return numer/ denom;
 }
 
 int AxisAlignedBoundingBox::area() const

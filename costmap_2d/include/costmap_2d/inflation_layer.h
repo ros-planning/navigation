@@ -99,7 +99,7 @@ public:
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw,
                             double* min_x, double* min_y, double* max_x, double* max_y);
 
-  /** @brief Apply inflation to master_grid using the supplied actions to only inflate the required regions
+  /** @brief Apply inflation to master_grid using the best algorithm for the situation based on dynamic timing data
     * @param layer_actions Sequence of actions that the previous layer plugins have applied.
     * @param master_grid Costmap2D to operate on
     * @param min_i Window bounds to apply inflation
@@ -110,6 +110,13 @@ public:
   virtual void updateCosts(LayerActions *layer_actions, Costmap2D &master_grid,
                            int min_i, int min_j, int max_i, int max_j);
 
+  /** @brief Apply inflation to master_grid 
+    * @param master_grid Costmap2D to operate on
+    * @param min_i Window bounds to apply inflation
+    * @param min_j Window bounds to apply inflation
+    * @param max_i Window bounds to apply inflation
+    * @param max_j Window bounds to apply inflation
+    */
   virtual void updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j);
 
   /** @brief Apply inflation to master_grid using the Priority Queue method
@@ -119,8 +126,18 @@ public:
     * @param max_i Window bounds to apply inflation
     * @param max_j Window bounds to apply inflation
     */
-  virtual void updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j);
+  void updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j);
 
+  /** @brief Apply inflation to master_grid using the supplied actions to only inflate the required regions
+    * @param master_grid Costmap2D to operate on
+    * @param min_i Window bounds to apply inflation
+    * @param min_j Window bounds to apply inflation
+    * @param max_i Window bounds to apply inflation
+    * @param max_j Window bounds to apply inflation
+    */
+  void updateCostsLayerActions(LayerActions *layer_actions, Costmap2D &master_grid,
+                           int min_i, int min_j, int max_i, int max_j);
+  
   virtual bool isDiscretized()
   {
     return true;

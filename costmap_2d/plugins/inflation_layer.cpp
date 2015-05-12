@@ -45,7 +45,6 @@
 #include <limits>
 #include <algorithm>
 #include <vector>
-#include <map>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
 
@@ -251,53 +250,24 @@ void InflationLayer::updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j,
   }
 }
 
-void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid,
-                                 int min_i, int min_j, int max_i, int max_j)
+
+void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costmap2D &master_grid,
+                           int min_i, int min_j, int max_i, int max_j)
 {
-  if (!enabled_)
-    return;
-
-  int problem_size = (max_j - min_j) * (max_i - min_i);
-//   int best_algorithm = algorithmSelect.selectAlgorithm(problem_size);
-
-//   int best_algorithm = ALG_PRIORITY_QUEUE;
-  int best_algorithm = ALG_LAYER_ACTIONS;
-
-  FILE* f = fopen("/tmp/PQ.txt", "r");
-  if(f)
-  {
-      best_algorithm = ALG_PRIORITY_QUEUE;
-      fclose(f);
-  }
-  
-  if(best_algorithm == ALG_PRIORITY_QUEUE)
-  {
-    DynamicAlgorithmSelect::Timer timer;
-    timer.start();
-    updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
-    timer.stop();
-
-    // Add data to profiler for smarter future choices
-    algorithmSelect.addProfilingData(problem_size, ALG_PRIORITY_QUEUE, timer.elapsed());
-    return;
-  }
-
-  if(best_algorithm == ALG_LAYER_ACTIONS)
-  {
-    // We now have a list of all the actions that got us to this point.
+    // We have a list of all the actions that got us to this point.
     // Hopefully some actions will have associated, pre-calculated inflations data
     // and other layers will mark areas where we need to re-inflate.
-
-    DynamicAlgorithmSelect::Timer timer;
-    timer.start();
-
+    
     Costmap2DPtr workspace = master_grid.getNamedCostmap2D("Workspace");
     if (workspace.get() == 0)
       workspace = master_grid.addNamedCostmap2D("Workspace", master_grid.createReducedResolutionMap(1));
 
-    // build an AxisAlignedBoundingBox of the updateCostsBounds so we can clamp large ranges
+     // build an AxisAlignedBoundingBox of the updateCostsBounds so we can clamp large ranges
     // against it's small window
     AxisAlignedBoundingBox updateCostsBounds(min_i, min_j, max_i, max_j);
+
+    // start with clean workspace
+    workspace.get()->resetMap();
 
     // Find all actions that made modifications to the master_grid
     LayerActions l_acts;
@@ -318,12 +288,27 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
         Costmap2D* src = l_acts.sourceCostmapAt(i);
         if (src)
         {
+          // need to check if the stored inflation radius is relevant to this pass
+          if (src->namedFlag("InflationRadius") != cell_inflation_radius_)
+          {
+            // if not then we remove any existing inflated data
+            src->removeNamedCostmap2D("Inflated");
+          }
+          
+          unsigned int origin_x, origin_y;
+          src->worldToMap(0, 0, origin_x, origin_y);
+          // make sure the origin isn't moving or else the cached data isn't correct
+          if (src->namedFlag("origin_x") != origin_x || src->namedFlag("origin_y") != origin_y)
+          {
+            src->removeNamedCostmap2D("Inflated");
+          }
+            
           Costmap2DPtr inflated = src->getNamedCostmap2D("Inflated");
-
+          
           if (inflated.get() == 0)  // then we don't have a cache of the inflated data
           {
             inflated = src->createReducedResolutionMap(1);
-            src->copyCellsTo(inflated);
+            src->copyCellsTo(inflated, Costmap2D::TrueOverwrite);
 
             int src_nx = src->getSizeInCellsX();
             int src_ny = src->getSizeInCellsY();
@@ -333,12 +318,19 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
 
             // add inflated data to the source map so we have it next time
             src->addNamedCostmap2D("Inflated", inflated);
+            
+            // store the inflation radius used to generate this data
+            src->namedFlag("InflationRadius") = cell_inflation_radius_;
+            
+            // store the origin for this cache
+            src->namedFlag("origin_x") = origin_x;
+            src->namedFlag("origin_y") = origin_y;
           }
 
           // only copying the region that we are interested in
           inflated->copyCellsTo(workspace,
                                 updateCostsBounds.x0(), updateCostsBounds.y0(),
-                                updateCostsBounds.xn(), updateCostsBounds.yn());
+                                updateCostsBounds.xn(), updateCostsBounds.yn(), Costmap2D::TrueOverwrite);
 
           // remembering that we have good data
           inflatedData.push_back(AxisAlignedBoundingBox(updateCostsBounds));
@@ -374,9 +366,11 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
           const AxisAlignedBoundingBox& dst = l_acts.destinationAxisAlignedBoundingBoxAt(i);
           if (dst.initialized())
           {
+            // using Max policy here since we don't want to copy over good 
+            // inflated data
             master_grid.copyCellsTo(workspace,
                                     dst.x0(), dst.y0(),
-                                    dst.xn(), dst.yn());
+                                    dst.xn(), dst.yn(), Costmap2D::Max); 
 
             // mark that we need to inflate this data
             uninflatedData.push_back(AxisAlignedBoundingBox(dst));
@@ -395,17 +389,12 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
     }
 
     // At this point we have data on the workspace and lists of
-    // inflated and uninflated regions.
-    // The uninflated trumps inflated so we need to merge the
-    // uninflated list and apply inflation piecemeal only where it is needed
-
-    int inflation_margin = cellDistance(inflation_radius_);
-    AxisAlignedBoundingBox::mergeIntersecting(uninflatedData, inflation_margin);
-
+    // uninflated regions. We will work through those regions
+    // and inflate them
     for (int i = 0; i < uninflatedData.size(); i++)
     {
       AxisAlignedBoundingBox& to_inflate = uninflatedData[i];
-      
+      to_inflate.expandBoundingBox(cell_inflation_radius_);
       // and here it is: We are inflating only the required sections
       updateCostsPQ(*workspace.get(), to_inflate.min_x_, to_inflate.min_y_, to_inflate.max_x_, to_inflate.max_y_);
     }
@@ -413,16 +402,50 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
     layer_actions->clear();
 
     // Now we will copy from the workspace to the master_grid
-    workspace->copyCellsTo(master_grid, min_i, min_j, max_i, max_j);
+    workspace->copyCellsTo(master_grid, min_i, min_j, max_i, max_j, Costmap2D::TrueOverwrite);
+}
 
-    timer.stop();
-    
-    // Add data to profiler for smarter future choices
-    algorithmSelect.addProfilingData(problem_size, ALG_LAYER_ACTIONS, timer.elapsed());
+void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid,
+                                 int min_i, int min_j, int max_i, int max_j)
+{
+  if (!enabled_)
     return;
+
+  int problem_size = (max_j - min_j) * (max_i - min_i);
+
+  // TODO: Remove debug code for algorithm switching based on file /tmp/PQ.txt
+#if 0
+  int best_algorithm = algorithmSelect.selectAlgorithm(problem_size);
+#else
+int best_algorithm = ALG_LAYER_ACTIONS;
+  FILE* f = fopen("/tmp/PQ.txt", "r");
+  if(f)
+  {
+      best_algorithm = ALG_PRIORITY_QUEUE;
+      fclose(f);
+  }
+#endif
+
+  DynamicAlgorithmSelect::Timer timer;
+  timer.start();
+  
+  switch(best_algorithm)
+  {
+    case ALG_PRIORITY_QUEUE:
+      updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
+    break;
+
+    case ALG_LAYER_ACTIONS:
+      updateCostsLayerActions(layer_actions, master_grid, min_i, min_j, max_i, max_j);
+    break;
+    default:
+      ROS_ERROR("(inflation_layer.cpp:%d Unhandled dynamic algorithm type: %d", __LINE__, best_algorithm);
   }
 
-  ROS_ERROR("(inflation_layer.cpp:%d Unhandled dynamic algorithm type: %d", __LINE__, best_algorithm);
+  timer.stop();
+
+  // Add data to profiler for smarter future choices
+  algorithmSelect.addProfilingData(problem_size, best_algorithm, timer.elapsed());
 }
 
 /**

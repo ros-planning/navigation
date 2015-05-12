@@ -265,23 +265,27 @@ void StaticLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D
     updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
 
     if(layer_actions)
+    {
       layer_actions->addAction(
             AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
             this,
             AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
             &master_grid,
             LayerActions::TRUEOVERWRITE);
+    }
   }
   else
   {
     updateWithMax(master_grid, min_i, min_j, max_i, max_j);
     if(layer_actions)
+    {
       layer_actions->addAction(
             AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
             this,
             AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
             &master_grid,
             LayerActions::MAX);
+    }
   }
   current_ = true;
 }
