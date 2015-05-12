@@ -6,6 +6,7 @@ find_package(catkin REQUIRED
             roscpp
             tf
             dynamic_reconfigure
+            nav_msgs
         )
 
 find_package(Boost REQUIRED)
