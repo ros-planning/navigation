@@ -47,6 +47,7 @@
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose.h"
 #include "nav_msgs/GetMap.h"
+#include "nav_msgs/SetMap.h"
 #include "std_srvs/Empty.h"
 
 // For transform support
@@ -130,9 +131,12 @@ class AmclNode
                                     std_srvs::Empty::Response& res);
     bool nomotionUpdateCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
+    bool setMapCallback(nav_msgs::SetMap::Request& req,
+                        nav_msgs::SetMap::Response& res);
 
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg);
     void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
 
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
@@ -211,6 +215,7 @@ class AmclNode
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
+    ros::ServiceServer set_map_srv_;
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
 
@@ -386,6 +391,7 @@ AmclNode::AmclNode() :
 					 &AmclNode::globalLocalizationCallback,
                                          this);
   nomotion_update_srv_= nh_.advertiseService("request_nomotion_update", &AmclNode::nomotionUpdateCallback, this);
+  set_map_srv_= nh_.advertiseService("set_map", &AmclNode::setMapCallback, this);
 
   laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
   laser_scan_filter_ = 
@@ -897,6 +903,16 @@ AmclNode::nomotionUpdateCallback(std_srvs::Empty::Request& req,
 	return true;
 }
 
+bool
+AmclNode::setMapCallback(nav_msgs::SetMap::Request& req,
+                         nav_msgs::SetMap::Response& res)
+{
+  handleMapMessage(req.map);
+  handleInitialPoseMessage(req.initial_pose);
+  res.success = true;
+  return true;
+}
+
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
@@ -1285,17 +1301,23 @@ AmclNode::getYaw(tf::Pose& t)
 void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
+  handleInitialPoseMessage(*msg);
+}
+
+void
+AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg)
+{
   boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
-  if(msg->header.frame_id == "")
+  if(msg.header.frame_id == "")
   {
     // This should be removed at some point
     ROS_WARN("Received initial pose with empty frame_id.  You should always supply a frame_id.");
   }
   // We only accept initial pose estimates in the global frame, #5148.
-  else if(tf_->resolve(msg->header.frame_id) != tf_->resolve(global_frame_id_))
+  else if(tf_->resolve(msg.header.frame_id) != tf_->resolve(global_frame_id_))
   {
     ROS_WARN("Ignoring initial pose in frame \"%s\"; initial poses must be in the global frame, \"%s\"",
-             msg->header.frame_id.c_str(),
+             msg.header.frame_id.c_str(),
              global_frame_id_.c_str());
     return;
   }
@@ -1306,7 +1328,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   try
   {
     tf_->lookupTransform(base_frame_id_, ros::Time::now(),
-                         base_frame_id_, msg->header.stamp,
+                         base_frame_id_, msg.header.stamp,
                          global_frame_id_, tx_odom);
   }
   catch(tf::TransformException e)
@@ -1321,7 +1343,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   }
 
   tf::Pose pose_old, pose_new;
-  tf::poseMsgToTF(msg->pose.pose, pose_old);
+  tf::poseMsgToTF(msg.pose.pose, pose_old);
   pose_new = tx_odom.inverse() * pose_old;
 
   // Transform into the global frame
@@ -1342,10 +1364,10 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   {
     for(int j=0; j<2; j++)
     {
-      pf_init_pose_cov.m[i][j] = msg->pose.covariance[6*i+j];
+      pf_init_pose_cov.m[i][j] = msg.pose.covariance[6*i+j];
     }
   }
-  pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*5+5];
+  pf_init_pose_cov.m[2][2] = msg.pose.covariance[6*5+5];
 
   delete initial_pose_hyp_;
   initial_pose_hyp_ = new amcl_hyp_t();
