@@ -5,8 +5,8 @@ A 2D navigation stack that takes in information from odometry, sensor
 streams, and a goal pose and outputs safe velocity commands that are sent
 to a mobile base.
 
- * Devel Job Status: [![Devel Job Status](http://jenkins.ros.org/buildStatus/icon?job=devel-indigo-navigation)](http://jenkins.ros.org/job/devel-indigo-navigation/)
- * AMD64 Debian Job Status: [![Build Status](http://jenkins.ros.org/buildStatus/icon?job=ros-indigo-navigation_binarydeb_trusty_amd64)](http://jenkins.ros.org/job/ros-indigo-navigation_binarydeb_trusty_amd64/)
+ * Devel Job Status: [![Devel Job Status](http://jenkins.ros.org/buildStatus/icon?job=devel-jade-navigation)](http://jenkins.ros.org/job/devel-jade-navigation/)
+ * AMD64 Debian Job Status: [![Build Status](http://jenkins.ros.org/buildStatus/icon?job=ros-jade-navigation_binarydeb_trusty_amd64)](http://jenkins.ros.org/job/ros-jade-navigation_binarydeb_trusty_amd64/)
 
 Related stacks:
 
