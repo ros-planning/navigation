@@ -177,10 +177,10 @@ protected:
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
 
-  unsigned int rt_min_x_;  ///< @brief Ray trace bounding box in cell coordinates
-  unsigned int rt_min_y_;  ///< @brief Ray trace bounding box in cell coordinates
-  unsigned int rt_max_x_;  ///< @brief Ray trace bounding box in cell coordinates
-  unsigned int rt_max_y_;  ///< @brief Ray trace bounding box in cell coordinates
+  int rt_min_x_;  ///< @brief Ray trace bounding box in cell coordinates
+  int rt_min_y_;  ///< @brief Ray trace bounding box in cell coordinates
+  int rt_max_x_;  ///< @brief Ray trace bounding box in cell coordinates
+  int rt_max_y_;  ///< @brief Ray trace bounding box in cell coordinates
 };
 
 }  // namespace costmap_2d

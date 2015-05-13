@@ -168,12 +168,13 @@ void InflationLayer::onFootprintChanged()
 
 void InflationLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
 {
+  boost::unique_lock < boost::shared_mutex > lock(*access_);
+
   return updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
 }
 
 void InflationLayer::updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
 {
-  boost::unique_lock < boost::shared_mutex > lock(*access_);
   if (!enabled_)
     return;
 
@@ -261,8 +262,8 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
     Costmap2DPtr workspace = master_grid.getNamedCostmap2D("Workspace");
     if (workspace.get() == 0)
       workspace = master_grid.addNamedCostmap2D("Workspace", master_grid.createReducedResolutionMap(1));
-
-     // build an AxisAlignedBoundingBox of the updateCostsBounds so we can clamp large ranges
+ 
+    // build an AxisAlignedBoundingBox of the updateCostsBounds so we can clamp large ranges
     // against it's small window
     AxisAlignedBoundingBox updateCostsBounds(min_i, min_j, max_i, max_j);
 
@@ -302,7 +303,7 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
           {
             src->removeNamedCostmap2D("Inflated");
           }
-            
+          
           Costmap2DPtr inflated = src->getNamedCostmap2D("Inflated");
           
           if (inflated.get() == 0)  // then we don't have a cache of the inflated data
@@ -411,21 +412,22 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
   if (!enabled_)
     return;
 
+  boost::unique_lock < boost::shared_mutex > lock(*access_);
+
   int problem_size = (max_j - min_j) * (max_i - min_i);
 
-  // TODO: Remove debug code for algorithm switching based on file /tmp/PQ.txt
+  // TODO: Remove testing code
 #if 0
   int best_algorithm = algorithmSelect.selectAlgorithm(problem_size);
 #else
-int best_algorithm = ALG_LAYER_ACTIONS;
+  int best_algorithm = ALG_LAYER_ACTIONS;
   FILE* f = fopen("/tmp/PQ.txt", "r");
   if(f)
   {
-      best_algorithm = ALG_PRIORITY_QUEUE;
-      fclose(f);
+    best_algorithm = ALG_PRIORITY_QUEUE;
+    fclose(f);
   }
 #endif
-
   DynamicAlgorithmSelect::Timer timer;
   timer.start();
   

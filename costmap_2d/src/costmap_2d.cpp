@@ -149,29 +149,29 @@ void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned in
     return;
   }
 
-  unsigned int src_nx = getSizeInCellsX();
-  unsigned int src_ny = getSizeInCellsY();
+  const int src_nx = getSizeInCellsX();
+  const int src_ny = getSizeInCellsY();
 
-  unsigned int dst_nx = costmap.getSizeInCellsX();
-  unsigned int dst_ny = costmap.getSizeInCellsY();
+  const int dst_nx = costmap.getSizeInCellsX();
+  const int dst_ny = costmap.getSizeInCellsY();
 
   // inelegant but setup to accomodate data propagation to other maps
   for (int y = 0; y < yn; y++)
   {
     // first checking for in bound data
-    if ((src_y0 + y >= 0) && (dst_y0 + y >= 0))
+    if ((src_y0 + y >= 0 )    && (dst_y0 + y >= 0 ))
     if ((src_y0 + y < src_ny) && (dst_y0 + y < dst_ny))
     {
       for (int x = 0; x < xn; x++)
       {
-        if ((src_x0 + x >= 0 ) && (dst_x0 + x >= 0 ))
+        if ((src_x0 + x >= 0 )    && (dst_x0 + x >= 0 ))
         if ((src_x0 + x < src_nx) && (dst_x0 + x < dst_nx))
         {
-          const int dst_idx = dst_x0 + x + (y + dst_y0) * dst_nx;
-          const int src_idx = src_x0 + x + (y + src_y0) * src_nx; 
+          const int dst_idx = dst_x0 + x + (dst_y0 + y) * dst_nx;
+          const int src_idx = src_x0 + x + (src_y0 + y) * src_nx; 
           
           unsigned char& dst_val = dst[dst_idx];
-          unsigned char& src_val = src[dst_idx];
+          unsigned char& src_val = src[src_idx];
           
           switch(policy)
           {

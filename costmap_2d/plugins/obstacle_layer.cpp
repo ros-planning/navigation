@@ -412,9 +412,9 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 
   // ray trace bounding box in cell coordinates
-  worldToMap(*min_x, *min_y, rt_min_x_, rt_min_y_);
-  worldToMap(*max_x, *max_y, rt_max_x_, rt_max_y_);
-
+  worldToMapNoBounds(*min_x, *min_y, rt_min_x_, rt_min_y_);
+  worldToMapNoBounds(*max_x, *max_y, rt_max_x_, rt_max_y_);
+  
   // adding safety margin
   rt_min_x_ -= 2;
   rt_min_y_ -= 2;
