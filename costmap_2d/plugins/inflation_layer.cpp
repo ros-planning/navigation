@@ -416,18 +416,8 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
 
   int problem_size = (max_j - min_j) * (max_i - min_i);
 
-  // TODO: Remove testing code
-#if 0
   int best_algorithm = algorithmSelect.selectAlgorithm(problem_size);
-#else
-  int best_algorithm = ALG_LAYER_ACTIONS;
-  FILE* f = fopen("/tmp/PQ.txt", "r");
-  if(f)
-  {
-    best_algorithm = ALG_PRIORITY_QUEUE;
-    fclose(f);
-  }
-#endif
+
   DynamicAlgorithmSelect::Timer timer;
   timer.start();
   
