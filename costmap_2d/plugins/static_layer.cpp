@@ -37,6 +37,8 @@
  *********************************************************************/
 #include <costmap_2d/static_layer.h>
 #include <costmap_2d/costmap_math.h>
+#include <costmap_2d/axis_aligned_bounding_box.h>
+#include <costmap_2d/layer_actions.h>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayer, costmap_2d::Layer)
@@ -120,6 +122,8 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
     x_ = y_ = 0;
     width_ = size_x_;
     height_ = size_y_;
+    
+    
   }
 }
 
@@ -186,6 +190,8 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   height_ = size_y_;
   map_received_ = true;
   has_updated_data_ = true;
+  
+  removeAllNamedCostmap2D();
 }
 
 void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update)
@@ -205,6 +211,9 @@ void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& up
     width_ = update->width;
     height_ = update->height;
     has_updated_data_ = true;
+    
+    
+    removeAllNamedCostmap2D();
 }
 
 void StaticLayer::activate()
@@ -246,15 +255,44 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
   has_updated_data_ = false;
 }
 
-void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void StaticLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!map_received_)
     return;
+
   if (!use_maximum_)
+  {
     updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
+
+    if(layer_actions)
+    {
+      layer_actions->addAction(
+            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
+            this,
+            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
+            &master_grid,
+            LayerActions::TRUEOVERWRITE);
+    }
+  }
   else
+  {
     updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+    if(layer_actions)
+    {
+      layer_actions->addAction(
+            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
+            this,
+            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
+            &master_grid,
+            LayerActions::MAX);
+    }
+  }
   current_ = true;
+}
+
+void StaticLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
+{
+  updateCosts(NULL, master_grid, min_i, min_j, max_i, max_j);
 }
 
 }  // namespace costmap_2d

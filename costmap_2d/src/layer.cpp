@@ -28,6 +28,11 @@
  */
 
 #include "costmap_2d/layer.h"
+#include <stdio.h>
+
+#include <string>     // for string
+#include <algorithm>  // for min
+#include <vector>     // for vector<>
 
 namespace costmap_2d
 {

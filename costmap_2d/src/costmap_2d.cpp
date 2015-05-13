@@ -36,9 +36,14 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/layer.h>
 #include <cstdio>
 
 using namespace std;
+
+#include <string>      // for string
+#include <algorithm>   // for min
+#include <vector>
 
 namespace costmap_2d
 {
@@ -58,15 +63,54 @@ void Costmap2D::deleteMaps()
 {
   //clean up data
   boost::unique_lock < boost::shared_mutex > lock(*access_);
-  delete[] costmap_;
+  if(costmap_)
+    delete[] costmap_;
   costmap_ = NULL;
 }
 
 void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y)
 {
   boost::unique_lock < boost::shared_mutex > lock(*access_);
-  delete[] costmap_;
+  if (costmap_)
+    delete[] costmap_;
   costmap_ = new unsigned char[size_x * size_y];
+}
+
+
+Costmap2DPtr Costmap2D::addNamedCostmap2D(const std::string& map_name, Costmap2DPtr map)
+{
+  child_maps_[map_name] = map;
+  return map;
+}
+
+Costmap2DPtr Costmap2D::getNamedCostmap2D(const std::string &map_name)
+{
+  if (child_maps_.find(map_name) == child_maps_.end())
+    return Costmap2DPtr();  // NULL pointer
+  return child_maps_[map_name];
+}
+
+
+void Costmap2D::removeNamedCostmap2D(const std::string& map_name)
+{
+    std::map<std::string, Costmap2DPtr>::iterator it;
+
+    it = child_maps_.find( map_name );
+    
+    if( it != child_maps_.end() )
+    {
+      child_maps_.erase(it);
+    }
+}
+  
+void Costmap2D::removeAllNamedCostmap2D()
+{
+    child_maps_.clear();
+}
+
+int& Costmap2D::namedFlag(const std::string& flag_name)
+{
+  return named_flags_[flag_name];
 }
 
 void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resolution,
@@ -84,6 +128,113 @@ void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resol
   resetMaps();
 }
 
+void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned int src_y0,
+                                                unsigned int dst_x0, unsigned int dst_y0,
+                                                unsigned int xn,     unsigned int yn, CopyCellPolicy policy)
+{
+  if (policy == None)
+    return;
+
+  unsigned char* src = getCharMap();
+  unsigned char* dst = costmap.getCharMap();
+
+  if (!src)
+  {
+    ROS_ERROR("Source buffer NULL in Costmap2D::copyCellsTo()");
+    return;
+  }
+  if (!dst)
+  {
+    ROS_ERROR("Destination buffer NULL in Costmap2D::copyCellsTo()");
+    return;
+  }
+
+  const int src_nx = getSizeInCellsX();
+  const int src_ny = getSizeInCellsY();
+
+  const int dst_nx = costmap.getSizeInCellsX();
+  const int dst_ny = costmap.getSizeInCellsY();
+
+  // inelegant but setup to accomodate data propagation to other maps
+  for (int y = 0; y < yn; y++)
+  {
+    // first checking for in bound data
+    if ((src_y0 + y >= 0 )    && (dst_y0 + y >= 0 ))
+    if ((src_y0 + y < src_ny) && (dst_y0 + y < dst_ny))
+    {
+      for (int x = 0; x < xn; x++)
+      {
+        if ((src_x0 + x >= 0 )    && (dst_x0 + x >= 0 ))
+        if ((src_x0 + x < src_nx) && (dst_x0 + x < dst_nx))
+        {
+          const int dst_idx = dst_x0 + x + (dst_y0 + y) * dst_nx;
+          const int src_idx = src_x0 + x + (src_y0 + y) * src_nx; 
+          
+          unsigned char& dst_val = dst[dst_idx];
+          unsigned char& src_val = src[src_idx];
+          
+          switch(policy)
+          {
+            case TrueOverwrite:
+              dst_val = src_val;
+              break;
+            
+            case Overwrite:
+              if (src_val != NO_INFORMATION)
+                dst_val = src_val;
+              break;
+            
+            case Max:
+              if(dst_val == NO_INFORMATION)
+              {
+                dst_val = src_val;
+                break;
+              }
+              if(src_val == NO_INFORMATION)
+                break;
+              dst_val = std::max(dst_val, src_val);
+              break;
+            case None:
+              break;
+          }
+          
+        }
+      }
+    }    
+  }
+  
+}
+
+void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
+                            unsigned int dst_x0, unsigned int dst_y0,
+                            unsigned int xn, unsigned int yn, CopyCellPolicy policy)
+{
+  if (map.get())
+    copyCellsTo(*map.get(), src_x0, src_y0, dst_x0, dst_y0, xn, yn, policy);
+  else
+    ROS_ERROR("NULL pointer in Costmap2D::copyCellsTo");
+}
+
+void Costmap2D::copyCellsTo(Costmap2D &map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, CopyCellPolicy policy)
+{
+  copyCellsTo(map, x0, y0, x0, y0, xn, yn, policy);
+}
+
+void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, CopyCellPolicy policy)
+{
+  copyCellsTo(map, x0, y0, x0, y0, xn, yn, policy);
+}
+
+void Costmap2D::copyCellsTo(Costmap2D &map, CopyCellPolicy policy)
+{
+  copyCellsTo(map, 0, 0, 0, 0, getSizeInCellsX(), getSizeInCellsY(), policy);
+}
+
+void Costmap2D::copyCellsTo(Costmap2DPtr map, CopyCellPolicy policy)
+{
+  copyCellsTo(map, 0, 0, 0, 0, getSizeInCellsX(), getSizeInCellsY(), policy);
+}
+
 void Costmap2D::resetMaps()
 {
   boost::unique_lock < boost::shared_mutex > lock(*access_);
@@ -92,10 +243,25 @@ void Costmap2D::resetMaps()
 
 void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn)
 {
+  setMapCost(x0, y0, xn, yn, getDefaultValue());
+}
+
+void Costmap2D::resetMap()
+{
+  setMapCost(0, 0, getSizeInCellsX(), getSizeInCellsY(), getDefaultValue());
+}
+
+void Costmap2D::setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, const unsigned char value)
+{
   boost::unique_lock < boost::shared_mutex > lock(*(access_));
   unsigned int len = xn - x0;
   for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
-    memset(costmap_ + y, default_value_, len * sizeof(unsigned char));
+    memset(costmap_ + y, value, len * sizeof(unsigned char));
+}
+
+void Costmap2D::setMapCost(const unsigned char value)
+{
+  setMapCost(0, 0, getSizeInCellsX(), getSizeInCellsY(), value);
 }
 
 bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x,
@@ -159,6 +325,17 @@ Costmap2D& Costmap2D::operator=(const Costmap2D& map)
   return *this;
 }
 
+Costmap2DPtr Costmap2D::createReducedResolutionMap(int factor)
+{
+  return Costmap2DPtr(
+        new Costmap2D( (getSizeInCellsX()  + (factor-1)) / factor,
+                        (getSizeInCellsY()  + (factor-1)) / factor,
+                        getResolution() * factor,
+                        getOriginX(),
+                        getOriginY(),
+                        getDefaultValue() ) );
+}
+
 Costmap2D::Costmap2D(const Costmap2D& map) :
     costmap_(NULL)
 {
@@ -193,9 +370,21 @@ unsigned char Costmap2D::getCost(unsigned int mx, unsigned int my) const
   return costmap_[getIndex(mx, my)];
 }
 
+
+unsigned char Costmap2D::getCost(unsigned int idx) const
+{
+  return costmap_[idx];
+}
+
 void Costmap2D::setCost(unsigned int mx, unsigned int my, unsigned char cost)
 {
-  costmap_[getIndex(mx, my)] = cost;
+  setCost(getIndex(mx, my), cost);
+}
+
+void Costmap2D::setCost(unsigned int index, unsigned char cost)
+{
+  if(index >= 0 && index < size_x_ * size_y_)
+    costmap_[index] = cost;
 }
 
 void Costmap2D::mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy) const
@@ -481,4 +670,4 @@ bool Costmap2D::saveMap(std::string file_name)
   return true;
 }
 
-}
+}  // namespace costmap_2d

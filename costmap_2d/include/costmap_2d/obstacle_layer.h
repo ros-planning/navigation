@@ -56,6 +56,9 @@
 #include <costmap_2d/ObstaclePluginConfig.h>
 #include <costmap_2d/footprint_layer.h>
 
+#include <string>  // for string
+#include <vector>  // for vector<>
+
 namespace costmap_2d
 {
 
@@ -69,9 +72,11 @@ public:
 
   virtual ~ObstacleLayer();
   virtual void onInitialize();
-  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
-                             double* max_y);
-  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw,
+                            double* min_x, double* min_y, double* max_x, double* max_y);
+  virtual void updateCosts(costmap_2d::Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j);
+  virtual void updateCosts(LayerActions *layer_actions, Costmap2D &master_grid,
+                           int min_i, int min_j, int max_i, int max_j);
 
   virtual void activate();
   virtual void deactivate();
@@ -142,8 +147,8 @@ protected:
   virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
                                  double* max_x, double* max_y);
 
-  void updateRaytraceBounds(double ox, double oy, double wx, double wy, double range, double* min_x, double* min_y,
-			    double* max_x, double* max_y);
+  void updateRaytraceBounds(double ox, double oy, double wx, double wy, double range, double* min_x, double* min_y, 
+                            double* max_x, double* max_y);
 
   /** @brief Overridden from superclass Layer to pass new footprint into footprint_layer_. */
   virtual void onFootprintChanged();
@@ -171,6 +176,11 @@ protected:
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
+
+  int rt_min_x_;  ///< @brief Ray trace bounding box in cell coordinates
+  int rt_min_y_;  ///< @brief Ray trace bounding box in cell coordinates
+  int rt_max_x_;  ///< @brief Ray trace bounding box in cell coordinates
+  int rt_max_y_;  ///< @brief Ray trace bounding box in cell coordinates
 };
 
 }  // namespace costmap_2d
