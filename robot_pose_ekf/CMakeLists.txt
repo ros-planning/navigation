@@ -5,7 +5,6 @@ project(robot_pose_ekf)
 find_package(PkgConfig)
 pkg_check_modules(BFL REQUIRED orocos-bfl)
 
-
 #################
 ##   Coverage  ##
 #################

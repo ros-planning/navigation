@@ -128,7 +128,6 @@ void ObstacleLayer::onInitialize()
       sensor_frame = tf::resolve(tf_prefix, sensor_frame);
     }
 
-
     if (!(data_type == "PointCloud2" || data_type == "PointCloud" || data_type == "LaserScan"))
     {
       ROS_FATAL("Only topics that use point clouds or laser scans are currently supported");

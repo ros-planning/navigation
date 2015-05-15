@@ -192,7 +192,6 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 	Traceback* path_maker_backup_;
         OrientationFilter* orientation_filter_;
 
-
         bool publish_potential_;
         ros::Publisher potential_pub_;
         int publish_scale_;

@@ -90,6 +90,10 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
         current.first = min_x;
         current.second = min_y;
         path.push_back(current);
+        
+        if(c++>ns*4){
+            return false;
+        }
 
 	if(min_ind >= 0){
 	  if(path_set.find(min_ind) != path_set.end()){
