@@ -122,7 +122,6 @@ void VoxelLayer::reset()
   activate();
 }
 
-
 void VoxelLayer::resetOldCosts(double* min_x, double* min_y, 
 			       double* max_x, double* max_y){
   //removes any obstacles that were put down based on sensor observation when the timer expires 

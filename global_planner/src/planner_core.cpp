@@ -147,7 +147,6 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             
         orientation_filter_ = new OrientationFilter();
 
-
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
 

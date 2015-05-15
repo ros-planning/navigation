@@ -7,6 +7,7 @@ find_package(catkin REQUIRED
             tf
             dynamic_reconfigure
             laser_geometry
+            nav_msgs
         )
 
 find_package(Boost REQUIRED)
