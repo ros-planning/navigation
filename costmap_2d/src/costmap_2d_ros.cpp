@@ -387,20 +387,24 @@ void Costmap2DROS::readFootprintFromParams( ros::NodeHandle& nh )
   {
     XmlRpc::XmlRpcValue footprint_xmlrpc;
     nh.getParam( full_param_name, footprint_xmlrpc );
-    if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString )
+    if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString &&
+        footprint_xmlrpc != "" && footprint_xmlrpc != "[]" )
     {
       if( readFootprintFromString( std::string( footprint_xmlrpc )))
       {
         writeFootprintToParam( nh );
+        return;
       }
     }
     else if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray )
     {
       readFootprintFromXMLRPC( footprint_xmlrpc, full_param_name );
       writeFootprintToParam( nh );
+      return;
     }
   }
-  else if( nh.searchParam( "robot_radius", full_radius_param_name ))
+  
+  if( nh.searchParam( "robot_radius", full_radius_param_name ))
   {
     double robot_radius;
     nh.param( full_radius_param_name, robot_radius, 1.234 );
