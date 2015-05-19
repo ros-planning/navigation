@@ -267,7 +267,7 @@ namespace navfn {
 
     if(!costmap->worldToMap(wx, wy, mx, my)){
       if(tolerance <= 0.0){
-        ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
+        ROS_WARN_THROTTLE(1.0, "The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
         return false;
       }
       mx = 0;
@@ -404,7 +404,7 @@ namespace navfn {
     //the potential has already been computed, so we won't update our copy of the costmap
     unsigned int mx, my;
     if(!costmap->worldToMap(wx, wy, mx, my)){
-      ROS_WARN("The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
+      ROS_WARN_THROTTLE(1.0, "The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
       return false;
     }
 
