@@ -59,8 +59,6 @@ namespace costmap_2d
     dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
     dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(&FootprintLayer::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
-
-    current_ = true;
   }
 
   FootprintLayer::~FootprintLayer()
@@ -110,7 +108,11 @@ namespace costmap_2d
 
   void FootprintLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
   {
-    if(!enabled_) return;
+    if (!enabled_)
+    {
+      current_ = true; // don't block a waiting process
+      return;
+    }
 
     // convert footprint bounding box to cell coordinates
     int min_x, min_y;
@@ -129,6 +131,8 @@ namespace costmap_2d
 
     std::vector<geometry_msgs::Point> footprint_points = costmap_2d::toPointVector(footprint_.polygon);
     master_grid.setConvexPolygonCost(footprint_points, costmap_2d::FREE_SPACE);
+
+    current_ = true; // allow consumers to use this data
   }
 
   void FootprintLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)

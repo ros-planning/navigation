@@ -340,11 +340,21 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
+  bool use_forgetful_version = false;
+  ros::param::param("/move_base/obstacle_layer/enable_forget", use_forgetful_version, false);
+  if (use_forgetful_version)
+    return forgetfulUpdateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+
   if (rolling_window_)
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   if (!enabled_)
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);
+
+  double layer_min_x = robot_x;
+  double layer_max_x = robot_x;
+  double layer_min_y = robot_y;
+  double layer_max_y = robot_y;
 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
@@ -361,7 +371,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   //raytrace freespace
   for (unsigned int i = 0; i < clearing_observations.size(); ++i)
   {
-    raytraceFreespace(clearing_observations[i], min_x, min_y, max_x, max_y);
+    raytraceFreespace(clearing_observations[i], &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
   }
 
   //place the new obstacles into a priority queue... each with a priority of zero to begin with
@@ -405,28 +415,277 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 
       unsigned int index = getIndex(mx, my);
       costmap_[index] = LETHAL_OBSTACLE;
-      touch(px, py, min_x, min_y, max_x, max_y);
+      touch(px, py, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
     }
   }
 
-  footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+  footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
 
-  // ray trace bounding box in cell coordinates
-  worldToMapNoBounds(*min_x, *min_y, rt_min_x_, rt_min_y_);
-  worldToMapNoBounds(*max_x, *max_y, rt_max_x_, rt_max_y_);
+  // adding margin so that points on the edge are processed.
+  {
+    double one_cell_world_coords = 1.0 * resolution_;
+
+    layer_min_x -= one_cell_world_coords;
+    layer_min_y -= one_cell_world_coords;
+    layer_max_x += one_cell_world_coords;
+    layer_max_y += one_cell_world_coords;
+  }
+
+  // This layer's contribution in cell coordinates
+  worldToMapNoBounds(layer_min_x, layer_min_y, min_x_, min_y_);
+  worldToMapNoBounds(layer_max_x, layer_max_y, max_x_, max_y_);
   
-  // adding safety margin
-  rt_min_x_ -= 2;
-  rt_min_y_ -= 2;
+  // merge the local change with the global change
+  *min_x = std::min(*min_x, layer_min_x);
+  *min_y = std::min(*min_y, layer_min_y);
+  *max_x = std::max(*max_x, layer_max_x);
+  *max_y = std::max(*max_y, layer_max_y);
+}
 
-  rt_max_x_ += 2;
-  rt_max_y_ += 2;
+static bool sameTimeWorldPoints(const TimeWorldPoint& p1, const TimeWorldPoint& p2, double tolerance)
+{
+  const double p1x = p1.get<1>();
+  const double p1y = p1.get<2>();
+
+  const double p2x = p2.get<1>();
+  const double p2y = p2.get<2>();
+
+  const double dx = p2x - p1x;
+  const double dy = p2y - p1y;
+
+  return dx*dx + dy*dy <= tolerance * tolerance;
+}
+
+void ObstacleLayer::writeTimeWorldPoint(const TimeWorldPoint &p, unsigned char value,
+                                        double *min_x, double *min_y, double *max_x, double *max_y)
+{
+  const double px = p.get<1>();
+  const double py = p.get<2>();
+
+  unsigned int mx, my;
+  if (!worldToMap(px, py, mx, my))
+  {
+    ROS_DEBUG("Computing map coords failed");
+    return;
+  }
+
+  unsigned int index = getIndex(mx, my);
+  costmap_[index] = value;
+  touch(px, py, min_x, min_y, max_x, max_y);
+}
+
+void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
+                                          double* min_y, double* max_x, double* max_y)
+{
+  if (rolling_window_)
+    updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
+  if (!enabled_)
+    return;
+  useExtraBounds(min_x, min_y, max_x, max_y);
+
+  double layer_min_x = robot_x;
+  double layer_max_x = robot_x;
+  double layer_min_y = robot_y;
+  double layer_max_y = robot_y;
+
+  const double time_now = ros::Time::now().toSec();
+  double obstacle_lifespan = 5.0; // seconds
+  ros::param::param("/move_base/obstacle_layer/obstacle_lifespan", obstacle_lifespan, 5.0);
+
+  double obstacle_keep_radius = 1.0; // meters
+  ros::param::param("/move_base/obstacle_layer/obstacle_keep_radius", obstacle_keep_radius, 1.0);
+
+  int obstacle_queue_size = 50000;
+  ros::param::param("/move_base/obstacle_layer/obstacle_queue_size", obstacle_queue_size, 50000);
+
+  double obstacle_compare_tolerance = 0.01;
+  ros::param::param("/move_base/obstacle_layer/obstacle_compare_tolerance", obstacle_compare_tolerance, 0.01);
+
+  const double obstacle_keep_radius2 = obstacle_keep_radius * obstacle_keep_radius;
+
+  bool current = true;
+  std::vector<Observation> observations, clearing_observations;
+
+  //get the marking observations
+  current = current && getMarkingObservations(observations);
+
+  //get the clearing observations
+  current = current && getClearingObservations(clearing_observations);
+
+  //update the global current status
+  current_ = current;
+
+  // clear old observations (unless within keep radius)
+  const double earliest_epoch = time_now - obstacle_lifespan;
+  std::list<TimeWorldPoint>::iterator it;
+  for (it = time_world_points_.begin(); it != time_world_points_.end();)
+  {
+    const double sample_time = (*it).get<0>();
+    const double px = (*it).get<1>();
+    const double py = (*it).get<2>();
+
+    const double rx = px - robot_x;
+    const double ry = py - robot_y;
+    const double radius2 = rx*rx + ry*ry;
+
+    if(radius2 > obstacle_keep_radius2 && sample_time < earliest_epoch)
+    {
+      writeTimeWorldPoint( *it, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+      it = time_world_points_.erase(it);
+    }
+    else
+    {
+        ++it;
+    }
+  }
+
+  // limit memory size by removing duplicates
+  if( time_world_points_.size() > obstacle_queue_size )
+  {
+    std::list<TimeWorldPoint>::iterator it1;
+    std::list<TimeWorldPoint>::iterator it2;
+    for ( it1 = time_world_points_.begin(); it1 != time_world_points_.end(); ++it1)
+    {
+      it2 = std::list<TimeWorldPoint>::iterator(it1);
+      it2++; // so we don't compare a point with itself
+      while( it2 != time_world_points_.end())
+      {
+        if(sameTimeWorldPoints(*it1, *it2, obstacle_compare_tolerance))
+        {
+          // if the same then we will erase the 2nd (older) and rewrite the first
+          writeTimeWorldPoint( *it2, FREE_SPACE,      &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+          writeTimeWorldPoint( *it1, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+
+          it2 = time_world_points_.erase(it2);
+        }
+        else
+          ++it2;
+      }
+    }
+  }
+
+  // limit memory size (keeping points inside radius)
+  // iterating from the end as long as the memory is too long
+  // iterating backwards because the end is the old data
+  std::list<TimeWorldPoint>::reverse_iterator rit = time_world_points_.rbegin();
+  for (rit = time_world_points_.rbegin();
+       rit != time_world_points_.rend() && time_world_points_.size() > obstacle_queue_size;
+       /* increment in body */ )
+  {
+    TimeWorldPoint& p = *rit;
+
+    const double px = p.get<1>();
+    const double py = p.get<2>();
+
+    const double rx = px - robot_x;
+    const double ry = py - robot_y;
+    const double radius2 = rx*rx + ry*ry;
+
+    if(radius2 > obstacle_keep_radius2)
+    {
+      //now we need to compute the map coordinates for the observation
+      unsigned int mx, my;
+      if (!worldToMap(px, py, mx, my))
+      {
+        ROS_DEBUG("Computing map coords failed");
+        continue;
+      }
+
+      writeTimeWorldPoint( *rit, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y );
+
+      // erasing using a reverse iterator is problematic
+      // need to turn it into a normal iterator
+      std::list<TimeWorldPoint>::iterator temp_rit = time_world_points_.erase(--rit.base());
+      rit = std::list<TimeWorldPoint>::reverse_iterator(temp_rit);
+    }
+    else // we will keep this point because it's deemed important (close to robot)
+    {
+      ++rit;
+    }
+  }
+
+  // write survivors of memory cull
+  for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
+  {
+    writeTimeWorldPoint(*it, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+  }
+
+  // raytrace current freespace - may overwrite old memories, that's OK
+  for (unsigned int i = 0; i < clearing_observations.size(); ++i)
+  {
+    raytraceFreespace(clearing_observations[i], &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+  }
+
+  // mark current observations as usual and remember them
+  for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
+  {
+    const Observation& obs = *it;
+
+    const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
+
+    double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
+
+    for (unsigned int i = 0; i < cloud.points.size(); ++i)
+    {
+      double px = cloud.points[i].x, py = cloud.points[i].y, pz = cloud.points[i].z;
+
+      //if the obstacle is too high or too far away from the robot we won't add it
+      if (pz > max_obstacle_height_)
+      {
+        ROS_DEBUG("The point is too high");
+        continue;
+      }
+
+      //compute the squared distance from the hitpoint to the pointcloud's origin
+      double sq_dist = (px - obs.origin_.x) * (px - obs.origin_.x) + (py - obs.origin_.y) * (py - obs.origin_.y)
+          + (pz - obs.origin_.z) * (pz - obs.origin_.z);
+
+      //if the point is far enough away... we won't consider it
+      if (sq_dist >= sq_obstacle_range)
+      {
+        ROS_DEBUG("The point is too far away");
+        continue;
+      }
+
+      TimeWorldPoint p(time_now, px, py);
+      writeTimeWorldPoint(p, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+
+      // remember this data
+      time_world_points_.push_front(p);
+    }
+  }
+
+  footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+
+  // adding margin so that points on the edge are processed.
+  {
+    double one_cell_world_coords = 1.0 * resolution_;
+
+    layer_min_x -= one_cell_world_coords;
+    layer_min_y -= one_cell_world_coords;
+    layer_max_x += one_cell_world_coords;
+    layer_max_y += one_cell_world_coords;
+  }
+
+  // This layer's contribution in cell coordinates
+  worldToMapNoBounds(layer_min_x, layer_min_y, min_x_, min_y_);
+  worldToMapNoBounds(layer_max_x, layer_max_y, max_x_, max_y_);
+
+  // merge the local change with the global change
+  *min_x = std::min(*min_x, layer_min_x);
+  *min_y = std::min(*min_y, layer_min_y);
+  *max_x = std::max(*max_x, layer_max_x);
+  *max_y = std::max(*max_y, layer_max_y);
 }
 
 void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
+  {
+    current_ = true; // don't block a waiting process
     return;
+  }
+
 
   // The footprint layer clears the footprint in this ObstacleLayer
   // before we merge this obstacle layer into the master_grid.
@@ -436,12 +695,12 @@ void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap
   {
     updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
     // making modifications in this window
-    if(layer_actions)
+    if (layer_actions)
     {
       layer_actions->addAction(
-            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
             this,
-            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
             &master_grid,
             LayerActions::OVERWRITE);
     }
@@ -449,16 +708,18 @@ void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap
   else
   {
     updateWithMax(master_grid, min_i, min_j, max_i, max_j);
-    if(layer_actions)
+    if (layer_actions)
     {
       layer_actions->addAction(
-            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
             this,
-            AxisAlignedBoundingBox(rt_min_x_, rt_min_y_, rt_max_x_, rt_max_y_),
+            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
             &master_grid,
             LayerActions::MAX);
     }
   }
+
+  current_ = true; // allow consumers to use this data
 }
 
 void ObstacleLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)

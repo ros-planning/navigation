@@ -58,9 +58,14 @@
 
 #include <string>  // for string
 #include <vector>  // for vector<>
+#include <list>
+#include <boost/tuple/tuple.hpp>
 
 namespace costmap_2d
 {
+
+/// @brief Wall clock time, x and y coordinates in global reference frame
+typedef boost::tuple<double, double, double> TimeWorldPoint;
 
 class ObstacleLayer : public CostmapLayer
 {
@@ -119,6 +124,21 @@ public:
   void clearStaticObservations(bool marking, bool clearing);
 
 protected:
+  /// @brief customized version of updateBounds that explicitely remembers and forgets observations
+  virtual void forgetfulUpdateBounds(double robot_x, double robot_y, double robot_yaw,
+                            double* min_x, double* min_y, double* max_x, double* max_y);
+
+  /**
+   * @brief  Write a pixel on the costmap at a given TimeWorldPoint
+   * @param p The TimeWorldPoint
+   * @param value The new pixel value
+   * @param min_x boudning box coordinates to update to include this operation
+   * @param min_y
+   * @param max_x
+   * @param max_y
+   */
+  void writeTimeWorldPoint(const TimeWorldPoint& p, unsigned char value,
+                           double* min_x, double* min_y, double* max_x, double* max_y);
 
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
@@ -177,10 +197,13 @@ protected:
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
 
-  int rt_min_x_;  ///< @brief Ray trace bounding box in cell coordinates
-  int rt_min_y_;  ///< @brief Ray trace bounding box in cell coordinates
-  int rt_max_x_;  ///< @brief Ray trace bounding box in cell coordinates
-  int rt_max_y_;  ///< @brief Ray trace bounding box in cell coordinates
+  int min_x_;  ///< @brief bounding box in cell coordinates
+  int min_y_;  ///< @brief bounding box in cell coordinates
+  int max_x_;  ///< @brief bounding box in cell coordinates
+  int max_y_;  ///< @brief bounding box in cell coordinates
+
+  std::list<TimeWorldPoint> time_world_points_; /// <@brief list of points in memory
+
 };
 
 }  // namespace costmap_2d

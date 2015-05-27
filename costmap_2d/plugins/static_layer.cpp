@@ -257,8 +257,11 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 
 void StaticLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
-  if (!map_received_)
+  if (!enabled_ || !map_received_)
+  {
+    current_ = true; // don't block a waiting process
     return;
+  }
 
   if (!use_maximum_)
   {
@@ -287,7 +290,8 @@ void StaticLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D
             LayerActions::MAX);
     }
   }
-  current_ = true;
+
+  current_ = true; // allow consumers to use this data
 }
 
 void StaticLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)

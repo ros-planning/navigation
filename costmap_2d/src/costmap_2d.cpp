@@ -128,15 +128,19 @@ void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resol
   resetMaps();
 }
 
-void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned int src_y0,
-                                                unsigned int dst_x0, unsigned int dst_y0,
-                                                unsigned int xn,     unsigned int yn, CopyCellPolicy policy)
+
+// templated version so that the compiler can optimize out the switch statement
+template<int policy>
+void T_copyCellsTo(Costmap2D& src_map, Costmap2D& dst_map,
+                          unsigned int src_x0, unsigned int src_y0,
+                          unsigned int dst_x0, unsigned int dst_y0,
+                          unsigned int num_x,  unsigned int num_y)
 {
-  if (policy == None)
+  if (policy == Costmap2D::None)
     return;
 
-  unsigned char* src = getCharMap();
-  unsigned char* dst = costmap.getCharMap();
+  unsigned char* src = src_map.getCharMap();
+  unsigned char* dst = dst_map.getCharMap();
 
   if (!src)
   {
@@ -149,42 +153,42 @@ void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned in
     return;
   }
 
-  const int src_nx = getSizeInCellsX();
-  const int src_ny = getSizeInCellsY();
+  const int src_nx = src_map.getSizeInCellsX();
+  const int src_ny = src_map.getSizeInCellsY();
 
-  const int dst_nx = costmap.getSizeInCellsX();
-  const int dst_ny = costmap.getSizeInCellsY();
+  const int dst_nx = dst_map.getSizeInCellsX();
+  const int dst_ny = dst_map.getSizeInCellsY();
 
   // inelegant but setup to accomodate data propagation to other maps
-  for (int y = 0; y < yn; y++)
+  for (int y = 0; y < num_y; y++)
   {
     // first checking for in bound data
     if ((src_y0 + y >= 0 )    && (dst_y0 + y >= 0 ))
     if ((src_y0 + y < src_ny) && (dst_y0 + y < dst_ny))
     {
-      for (int x = 0; x < xn; x++)
+      for (int x = 0; x < num_x; x++)
       {
         if ((src_x0 + x >= 0 )    && (dst_x0 + x >= 0 ))
         if ((src_x0 + x < src_nx) && (dst_x0 + x < dst_nx))
         {
           const int dst_idx = dst_x0 + x + (dst_y0 + y) * dst_nx;
-          const int src_idx = src_x0 + x + (src_y0 + y) * src_nx; 
-          
+          const int src_idx = src_x0 + x + (src_y0 + y) * src_nx;
+
           unsigned char& dst_val = dst[dst_idx];
           unsigned char& src_val = src[src_idx];
-          
+
           switch(policy)
           {
-            case TrueOverwrite:
+            case Costmap2D::TrueOverwrite:
               dst_val = src_val;
               break;
-            
-            case Overwrite:
+
+            case Costmap2D::Overwrite:
               if (src_val != NO_INFORMATION)
                 dst_val = src_val;
               break;
-            
-            case Max:
+
+            case Costmap2D::Max:
               if(dst_val == NO_INFORMATION)
               {
                 dst_val = src_val;
@@ -194,35 +198,62 @@ void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned in
                 break;
               dst_val = std::max(dst_val, src_val);
               break;
-            case None:
+            case Costmap2D::Zero:
+              dst_val = 0;
+              break;
+            case Costmap2D::NoInformation:
+              dst_val = NO_INFORMATION;
+              break;
+            case Costmap2D::None:
               break;
           }
-          
+
         }
       }
-    }    
+    }
   }
-  
+}
+
+
+void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned int src_y0,
+                                                unsigned int dst_x0, unsigned int dst_y0,
+                                                unsigned int num_x,  unsigned int num_y, CopyCellPolicy policy)
+{
+  switch(policy)
+  {
+  case None:
+    return T_copyCellsTo<None>(*this, costmap, src_x0, src_y0, dst_x0, dst_y0, num_x, num_y);
+  case TrueOverwrite:
+    return T_copyCellsTo<TrueOverwrite>(*this, costmap, src_x0, src_y0, dst_x0, dst_y0, num_x, num_y);
+  case Overwrite:
+    return T_copyCellsTo<Overwrite>(*this, costmap, src_x0, src_y0, dst_x0, dst_y0, num_x, num_y);
+  case Max:
+    return T_copyCellsTo<Max>(*this, costmap, src_x0, src_y0, dst_x0, dst_y0, num_x, num_y);
+  case Zero:
+    return T_copyCellsTo<Zero>(*this, costmap, src_x0, src_y0, dst_x0, dst_y0, num_x, num_y);
+  case NoInformation:
+    return T_copyCellsTo<NoInformation>(*this, costmap, src_x0, src_y0, dst_x0, dst_y0, num_x, num_y);
+  }
 }
 
 void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
                             unsigned int dst_x0, unsigned int dst_y0,
-                            unsigned int xn, unsigned int yn, CopyCellPolicy policy)
+                            unsigned int num_x, unsigned int num_y, CopyCellPolicy policy)
 {
   if (map.get())
-    copyCellsTo(*map.get(), src_x0, src_y0, dst_x0, dst_y0, xn, yn, policy);
+    copyCellsTo(*map.get(), src_x0, src_y0, dst_x0, dst_y0, num_x, num_y, policy);
   else
     ROS_ERROR("NULL pointer in Costmap2D::copyCellsTo");
 }
 
-void Costmap2D::copyCellsTo(Costmap2D &map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, CopyCellPolicy policy)
+void Costmap2D::copyCellsTo(Costmap2D &map, unsigned int x0, unsigned int y0, unsigned int num_x, unsigned int num_y, CopyCellPolicy policy)
 {
-  copyCellsTo(map, x0, y0, x0, y0, xn, yn, policy);
+  copyCellsTo(map, x0, y0, x0, y0, num_x, num_y, policy);
 }
 
-void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, CopyCellPolicy policy)
+void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0, unsigned int num_x, unsigned int num_y, CopyCellPolicy policy)
 {
-  copyCellsTo(map, x0, y0, x0, y0, xn, yn, policy);
+  copyCellsTo(map, x0, y0, x0, y0, num_x, num_y, policy);
 }
 
 void Costmap2D::copyCellsTo(Costmap2D &map, CopyCellPolicy policy)

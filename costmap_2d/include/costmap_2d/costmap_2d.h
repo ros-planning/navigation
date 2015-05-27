@@ -318,6 +318,8 @@ public:
     None,            ///< No copy
     Overwrite,       ///< Copy all data except NO_INFORMATION
     TrueOverwrite,   ///< Copy all data
+    Zero,            ///< Zero all data
+    NoInformation,   ///< NO_INFORMATION all data
     Max              ///< Use maximum value except for NO_INFORMATION which is replaced with data
   };
   
@@ -327,23 +329,23 @@ public:
     * @param src_y0 base y value of the calling window
     * @param dst_x0 base x value of the destination window
     * @param dst_y0 base y value of the destination window
-    * @param xn Number of cells in the x direction to reset (point x0 + xn not changed)
-    * @param yn Number of cells in the y direction to reset (point y0 + yn not changed)
+    * @param num_x Number of cells in the x direction to reset (point x0 + num_x not changed)
+    * @param num_y Number of cells in the y direction to reset (point y0 + num_y not changed)
     * @param policy Define how the copy is executed, default TrueOverwrite
     */
   void copyCellsTo(Costmap2D &map, unsigned int src_x0, unsigned int src_y0,
                                    unsigned int dst_x0, unsigned int dst_y0,
-                                   unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
+                                   unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
                                      unsigned int dst_x0, unsigned int dst_y0,
-                                     unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
+                                     unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2D& map, unsigned int x0, unsigned int y0,
-                                   unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
+                                   unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0,
-                                     unsigned int xn, unsigned int yn, CopyCellPolicy policy = TrueOverwrite);
+                                     unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2D& map, CopyCellPolicy policy = TrueOverwrite);
   void copyCellsTo(Costmap2DPtr map, CopyCellPolicy policy = TrueOverwrite);
@@ -352,8 +354,8 @@ public:
     * @brief Reset a window of the map to the default value
     * @param x0 base x value of the window
     * @param y0 base y value of the window
-    * @param xn Number of cells in the x direction to reset (point x0 + xn not changed)
-    * @param yn Number of cells in the y direction to reset (point y0 + yn not changed)
+    * @param xn Upper open limit on x range
+    * @param yn Upper open limit on y range
     */
   void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
 
@@ -366,8 +368,8 @@ public:
     * @brief Set a window of the map to a custom value
     * @param x0 base x value of the window
     * @param y0 base y value of the window
-    * @param xn Number of cells in the x direction to reset (point x0 + xn not changed)
-    * @param yn Number of cells in the y direction to reset (point y0 + yn not changed)
+    * @param xn Upper open limit on x range
+    * @param yn Upper open limit on y range
     * @param value custom value to assign to the reset window
     */
   void setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, const unsigned char value);
