@@ -113,13 +113,13 @@ public:
    * @brief Number of grid points in the X direction
    * @return Integer number of grid points
    */
-  int xn() const;
+  int num_x() const;
 
   /**
    * @brief Number of grid points in the Y direction
    * @return Integer number of grid points
    */
-  int yn() const;
+  int num_y() const;
 
   
   /**

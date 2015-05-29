@@ -160,17 +160,17 @@ double AxisAlignedBoundingBox::ratioInside(const AxisAlignedBoundingBox &bb) con
 
 int AxisAlignedBoundingBox::area() const
 {
-  return xn() * yn();
+  return num_x() * num_y();
 }
 
-int AxisAlignedBoundingBox::xn() const
+int AxisAlignedBoundingBox::num_x() const
 {
   if (!initialized_)
     return 0;
   return max_x_ - min_x_;
 }
 
-int AxisAlignedBoundingBox::yn() const
+int AxisAlignedBoundingBox::num_y() const
 {
   if (!initialized_)
     return 0;

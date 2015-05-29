@@ -82,7 +82,7 @@ void InflationLayer::onInitialize()
   {
     boost::unique_lock < boost::shared_mutex > lock(*access_);
     ros::NodeHandle nh("~/" + name_), g_nh;
-    current_ = true;
+    current_ = false; // This is new, blocks planners until all the calculations are complete
     if (seen_)
       delete[] seen_;
     seen_ = NULL;
@@ -142,17 +142,13 @@ void InflationLayer::matchSize()
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
-  if( need_reinflation_ )
-  {
-    // For some reason when I make these -<double>::max() it does not
-    // work with Costmap2D::worldToMapEnforceBounds(), so I'm using
-    // -<float>::max() instead.
-    *min_x = -std::numeric_limits<float>::max();
-    *min_y = -std::numeric_limits<float>::max();
-    *max_x = std::numeric_limits<float>::max();
-    *max_y = std::numeric_limits<float>::max();
-    need_reinflation_ = false;
-  }
+  // 1 inflation radius to inflate the data
+  // an extra radius to allow the clearing of previous
+  // inflated data
+  *min_x = *min_x - 2*inflation_radius_;
+  *min_y = *min_y - 2*inflation_radius_;
+  *max_x = *max_x + 2*inflation_radius_;
+  *max_y = *max_y + 2*inflation_radius_;
 }
 
 void InflationLayer::onFootprintChanged()
@@ -170,7 +166,9 @@ void InflationLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, i
 {
   boost::unique_lock < boost::shared_mutex > lock(*access_);
 
-  return updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
+  updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
+
+  current_ = true; // update complete - stop blocking processes that are waiting on this data
 }
 
 void InflationLayer::updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -267,8 +265,8 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
     // against it's small window
     AxisAlignedBoundingBox updateCostsBounds(min_i, min_j, max_i, max_j);
 
-    // start with clean workspace
-    workspace.get()->resetMap();
+    // start with a clean workspace
+    workspace->setMapCost(min_i, min_j, max_i, max_j, FREE_SPACE);
 
     // Find all actions that made modifications to the master_grid
     LayerActions l_acts;
@@ -280,7 +278,7 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
     // track how much data has pending inflation required
     std::vector<AxisAlignedBoundingBox> uninflatedData;
 
-    // now we can start marching up the actions
+    // now we can act on each action
     for (int i = 0; i < l_acts.size(); i++)
     {
       if (l_acts.actionAt(i) == LayerActions::TRUEOVERWRITE)
@@ -289,7 +287,7 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
         Costmap2D* src = l_acts.sourceCostmapAt(i);
         if (src)
         {
-          // need to check if the stored inflation radius is relevant to this pass
+          // need to check if the stored inflation radius is appropriate for this pass
           if (src->namedFlag("InflationRadius") != cell_inflation_radius_)
           {
             // if not then we remove any existing inflated data
@@ -331,7 +329,7 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
           // only copying the region that we are interested in
           inflated->copyCellsTo(workspace,
                                 updateCostsBounds.x0(), updateCostsBounds.y0(),
-                                updateCostsBounds.xn(), updateCostsBounds.yn(), Costmap2D::TrueOverwrite);
+                                updateCostsBounds.num_x(), updateCostsBounds.num_y(), Costmap2D::TrueOverwrite);
 
           // remembering that we have good data
           inflatedData.push_back(AxisAlignedBoundingBox(updateCostsBounds));
@@ -343,7 +341,7 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
           {
             master_grid.copyCellsTo(workspace,
                                     dst.x0(), dst.y0(),
-                                    dst.xn(), dst.yn());
+                                    dst.num_x(), dst.num_y());
 
             // mark that we need to inflate this data
             uninflatedData.push_back(AxisAlignedBoundingBox(dst));
@@ -367,11 +365,9 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
           const AxisAlignedBoundingBox& dst = l_acts.destinationAxisAlignedBoundingBoxAt(i);
           if (dst.initialized())
           {
-            // using Max policy here since we don't want to copy over good 
-            // inflated data
             master_grid.copyCellsTo(workspace,
                                     dst.x0(), dst.y0(),
-                                    dst.xn(), dst.yn(), Costmap2D::Max); 
+                                    dst.num_x(), dst.num_y(), Costmap2D::Max);
 
             // mark that we need to inflate this data
             uninflatedData.push_back(AxisAlignedBoundingBox(dst));
@@ -395,7 +391,7 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
     for (int i = 0; i < uninflatedData.size(); i++)
     {
       AxisAlignedBoundingBox& to_inflate = uninflatedData[i];
-      to_inflate.expandBoundingBox(cell_inflation_radius_);
+
       // and here it is: We are inflating only the required sections
       updateCostsPQ(*workspace.get(), to_inflate.min_x_, to_inflate.min_y_, to_inflate.max_x_, to_inflate.max_y_);
     }
@@ -403,25 +399,54 @@ void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costma
     layer_actions->clear();
 
     // Now we will copy from the workspace to the master_grid
-    workspace->copyCellsTo(master_grid, min_i, min_j, max_i, max_j, Costmap2D::TrueOverwrite);
+    workspace->copyCellsTo(master_grid, min_i, min_j, max_i-min_i, max_j-min_j, Costmap2D::TrueOverwrite);
+
 }
 
 void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid,
                                  int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
+  {
+    current_ = true; // don't block a waiting process
     return;
+  }
 
   boost::unique_lock < boost::shared_mutex > lock(*access_);
 
   int problem_size = (max_j - min_j) * (max_i - min_i);
 
-  int best_algorithm = algorithmSelect.selectAlgorithm(problem_size);
+  std::string method_name;
+  // Available names:
+  const std::string method_priority_queue("Priority Queue");
+  const std::string method_layer_actions("Layer Actions");
+  const std::string method_automatic("Automatic");
+
+  // read from parameter server
+  ros::param::param("/move_base/inflation_layer/method", method_name, method_automatic);
+
+  int algorithm = ALG_LAYER_ACTIONS; // default method if none or invalid supplied
+  bool report_statistics = false;
+
+  // avoiding else statements below for clarity.
+  if (method_name.compare(method_priority_queue) == 0)
+  {
+    algorithm = ALG_PRIORITY_QUEUE;
+  }
+  if (method_name.compare(method_layer_actions) == 0)
+  {
+    algorithm = ALG_LAYER_ACTIONS;
+  }
+  if (method_name.compare(method_automatic) == 0)
+  {
+    report_statistics = true;
+    algorithm = algorithmSelect.selectAlgorithm(problem_size);
+  }
 
   DynamicAlgorithmSelect::Timer timer;
   timer.start();
-  
-  switch(best_algorithm)
+
+  switch(algorithm)
   {
     case ALG_PRIORITY_QUEUE:
       updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
@@ -431,13 +456,18 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
       updateCostsLayerActions(layer_actions, master_grid, min_i, min_j, max_i, max_j);
     break;
     default:
-      ROS_ERROR("(inflation_layer.cpp:%d Unhandled dynamic algorithm type: %d", __LINE__, best_algorithm);
+      ROS_ERROR("(inflation_layer.cpp:%d Unhandled algorithm type: %d", __LINE__, algorithm);
   }
 
   timer.stop();
 
-  // Add data to profiler for smarter future choices
-  algorithmSelect.addProfilingData(problem_size, best_algorithm, timer.elapsed());
+  if (report_statistics)
+  {
+    // Add data to profiler for smarter future choices
+    algorithmSelect.addProfilingData(problem_size, algorithm, timer.elapsed());
+  }
+
+  current_ = true; // allow consumers to use this data
 }
 
 /**
