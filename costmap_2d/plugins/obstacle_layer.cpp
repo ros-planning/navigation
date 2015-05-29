@@ -341,7 +341,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
                                           double* min_y, double* max_x, double* max_y)
 {
   bool use_forgetful_version = false;
-  ros::param::param("/move_base/obstacle_layer/enable_forget", use_forgetful_version, false);
+  ros::param::param("/move_base/obstacle_layer/enable_forget", use_forgetful_version, true);
   if (use_forgetful_version)
     return forgetfulUpdateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 
@@ -493,7 +493,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   ros::param::param("/move_base/obstacle_layer/obstacle_lifespan", obstacle_lifespan, 5.0);
 
   double obstacle_keep_radius = 1.0; // meters
-  ros::param::param("/move_base/obstacle_layer/obstacle_keep_radius", obstacle_keep_radius, 1.0);
+  ros::param::param("/move_base/obstacle_layer/obstacle_keep_radius", obstacle_keep_radius, 2.5);
 
   int obstacle_queue_size = 50000;
   ros::param::param("/move_base/obstacle_layer/obstacle_queue_size", obstacle_queue_size, 50000);

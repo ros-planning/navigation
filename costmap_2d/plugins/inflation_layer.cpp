@@ -142,19 +142,6 @@ void InflationLayer::matchSize()
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
-#if 0
-  if( need_reinflation_ )
-  {
-    // For some reason when I make these -<double>::max() it does not
-    // work with Costmap2D::worldToMapEnforceBounds(), so I'm using
-    // -<float>::max() instead.
-    *min_x = -std::numeric_limits<float>::max();
-    *min_y = -std::numeric_limits<float>::max();
-    *max_x = std::numeric_limits<float>::max();
-    *max_y = std::numeric_limits<float>::max();
-    need_reinflation_ = false;
-  }
-#endif
   // 1 inflation radius to inflate the data
   // an extra radius to allow the clearing of previous
   // inflated data
@@ -162,7 +149,6 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
   *min_y = *min_y - 2*inflation_radius_;
   *max_x = *max_x + 2*inflation_radius_;
   *max_y = *max_y + 2*inflation_radius_;
-
 }
 
 void InflationLayer::onFootprintChanged()
@@ -437,7 +423,7 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
   const std::string method_automatic("Automatic");
 
   // read from parameter server
-  ros::param::param("/move_base/inflation_layer/method", method_name, method_priority_queue);
+  ros::param::param("/move_base/inflation_layer/method", method_name, method_automatic);
 
   int algorithm = ALG_LAYER_ACTIONS; // default method if none or invalid supplied
   bool report_statistics = false;
