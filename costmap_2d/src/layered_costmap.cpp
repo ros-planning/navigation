@@ -80,7 +80,6 @@ void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double 
 
 void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 {
-
   // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
   if (rolling_window_)
   {
@@ -120,15 +119,13 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
     return;
 
   // non-locking reset Map:
-  {
-    unsigned char value = costmap_.getDefaultValue();
-    const int size_x_ = costmap_.getSizeInCellsX();
-    unsigned char* data = costmap_.getCharMap();
+  unsigned char value = costmap_.getDefaultValue();
+  const int size_x_ = costmap_.getSizeInCellsX();
+  unsigned char* data = costmap_.getCharMap();
 
-    unsigned int len = xn - x0;
-    for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
-      memset(data + y, value, len * sizeof(unsigned char));
-  }
+  unsigned int len = xn - x0;
+  for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
+    memset(data + y, value, len * sizeof(unsigned char));
 
   // we will record a list of actions taken on the costmaps so we can later
   // make decisions about what needs to be inflated and what does not.
