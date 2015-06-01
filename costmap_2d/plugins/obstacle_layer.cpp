@@ -616,6 +616,36 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
     raytraceFreespace(clearing_observations[i], &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
   }
 
+  // now we will check our memories to make sure they are not FREE_SPACE
+  // They would be free space if they got ray-traced away above.
+  // We shouldn't remember things that get invalidated by evidence
+  for (std::list<TimeWorldPoint>::iterator it = time_world_points_.begin();
+       it != time_world_points_.end();
+       /* increment in body */ )
+  {
+    TimeWorldPoint& p = *it;
+
+    const double px = p.get<1>();
+    const double py = p.get<2>();
+
+    unsigned int mx, my;
+    if (!worldToMap(px, py, mx, my))
+    {
+      ROS_DEBUG("Computing map coords failed");
+      continue;
+    }
+
+    unsigned int index = getIndex(mx, my);
+    if (costmap_[index] == FREE_SPACE)
+    {
+      it = time_world_points_.erase(it); // forget this data
+    }
+    else
+    {
+      ++it;
+    }
+  }
+  
   // mark current observations as usual and remember them
   for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
   {
