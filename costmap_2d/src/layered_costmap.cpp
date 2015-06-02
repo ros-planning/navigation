@@ -94,10 +94,6 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   minx_ = miny_ = 1e30;
   maxx_ = maxy_ = -1e30;
 
-  // locking for the rest of the method:
-  // Cannot lock before updateOrigin as it used a locking resetMap
-  boost::unique_lock < boost::shared_mutex > lock(*(costmap_.getLock()));
-
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
@@ -118,20 +114,22 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   if (xn < x0 || yn < y0)
     return;
 
-  // non-locking reset Map:
-  unsigned char value = costmap_.getDefaultValue();
-  const int size_x_ = costmap_.getSizeInCellsX();
-  unsigned char* data = costmap_.getCharMap();
-
-  unsigned int len = xn - x0;
-  for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
-    memset(data + y, value, len * sizeof(unsigned char));
-
-  // we will record a list of actions taken on the costmaps so we can later
-  // make decisions about what needs to be inflated and what does not.
-  LayerActions actions;
-  
   {
+    // locking for these operations as they change the map (note: single lock for all operations)
+    boost::unique_lock < boost::shared_mutex > lock(*(costmap_.getLock()));
+
+    unsigned char value = costmap_.getDefaultValue();
+    const int size_x_ = costmap_.getSizeInCellsX();
+    unsigned char* data = costmap_.getCharMap();
+    unsigned int len = xn - x0;
+  
+    for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
+      memset(data + y, value, len * sizeof(unsigned char));
+
+    // we will record a list of actions taken on the costmaps so we can later
+    // make decisions about what needs to be inflated and what does not.
+    LayerActions actions;
+      
     for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
         ++plugin)
     {

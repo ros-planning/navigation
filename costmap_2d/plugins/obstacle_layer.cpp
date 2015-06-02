@@ -585,13 +585,11 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
     {
       //now we need to compute the map coordinates for the observation
       unsigned int mx, my;
-      if (!worldToMap(px, py, mx, my))
+      if (worldToMap(px, py, mx, my))
       {
-        ROS_DEBUG("Computing map coords failed");
-        continue;
+        // paint it FREE_SPACE
+        writeTimeWorldPoint( *rit, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y );
       }
-
-      writeTimeWorldPoint( *rit, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y );
 
       // erasing using a reverse iterator is problematic
       // need to turn it into a normal iterator
@@ -629,20 +627,21 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
     const double py = p.get<2>();
 
     unsigned int mx, my;
-    if (!worldToMap(px, py, mx, my))
+    if (!worldToMap(px, py, mx, my)) 
     {
-      ROS_DEBUG("Computing map coords failed");
-      continue;
-    }
-
-    unsigned int index = getIndex(mx, my);
-    if (costmap_[index] == FREE_SPACE)
-    {
-      it = time_world_points_.erase(it); // forget this data
+      it = time_world_points_.erase(it);
     }
     else
     {
-      ++it;
+      unsigned int index = getIndex(mx, my);
+      if (costmap_[index] == FREE_SPACE)
+      {
+        it = time_world_points_.erase(it); // forget this data
+      }
+      else
+      {
+        ++it;
+      }
     }
   }
   
