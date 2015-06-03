@@ -704,22 +704,22 @@ namespace base_local_planner{
           if (rotating_right) {
             stuck_right = true;
           }
-          rotating_left = true;
+          rotating_right = true;
         } else if (best_traj->thetav_ > 0) {
           if (rotating_left){
             stuck_left = true;
           }
-          rotating_right = true;
+          rotating_left = true;
         } else if(best_traj->yv_ > 0) {
           if (strafe_right) {
             stuck_right_strafe = true;
           }
-          strafe_left = true;
+          strafe_right = true;
         } else if(best_traj->yv_ < 0){
           if (strafe_left) {
             stuck_left_strafe = true;
           }
-          strafe_right = true;
+          strafe_left = true;
         }
 
         //set the position we must move a certain distance away from
@@ -747,8 +747,6 @@ namespace base_local_planner{
 
       return *best_traj;
     }
-
-
 
     //only explore y velocities with holonomic robots
     if (holonomic_robot_) {
