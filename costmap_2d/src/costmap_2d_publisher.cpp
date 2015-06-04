@@ -67,6 +67,10 @@ Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* co
       cost_translation_table_[ i ] = char( 1 + (97 * ( i - 1 )) / 251 );
     }
   }
+
+  xn_ = yn_ = 0;
+  x0_ = costmap_->getSizeInCellsX();
+  y0_ = costmap_->getSizeInCellsY();
 }
 
 Costmap2DPublisher::~Costmap2DPublisher()
