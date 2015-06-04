@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.4 (2015-06-03)
+-------------------
 * add the set_map service to amcl
 * Contributors: Michael Ferguson, Stephan Wirth
 

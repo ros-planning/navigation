@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.4 (2015-06-03)
+-------------------
 * fix stuck_left/right calculation
 * Contributors: Michael Ferguson
 
