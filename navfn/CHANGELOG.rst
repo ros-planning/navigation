@@ -2,6 +2,11 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix for `#337 <https://github.com/mikeferguson/navigation/issues/337>`_
+* Contributors: David V. Lu!!
+
 1.12.3 (2015-04-30)
 -------------------
 
