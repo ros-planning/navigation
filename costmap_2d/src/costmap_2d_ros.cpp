@@ -136,7 +136,16 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   private_nh.param(topic_param, topic, std::string("footprint"));
   footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::setUnpaddedRobotFootprintPolygon, this);
 
-  readFootprintFromParams( private_nh );
+  try
+  {
+    readFootprintFromParams( private_nh );
+  }
+  catch(...)
+  {
+    // Read footprint can throw, unload plugins before passing it on
+    delete layered_costmap_;
+    throw;
+  }
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap", always_send_full_costmap);
 
