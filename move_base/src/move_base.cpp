@@ -280,19 +280,19 @@ namespace move_base {
     geometry_msgs::Point pt;
 
     pt.x = x - size_x / 2;
-    pt.y = y - size_x / 2;
+    pt.y = y - size_y / 2;
     clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
-    pt.y = y - size_x / 2;
+    pt.y = y - size_y / 2;
     clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
-    pt.y = y + size_x / 2;
+    pt.y = y + size_y / 2;
     clear_poly.push_back(pt);
 
     pt.x = x - size_x / 2;
-    pt.y = y + size_x / 2;
+    pt.y = y + size_y / 2;
     clear_poly.push_back(pt);
 
     planner_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
@@ -305,19 +305,19 @@ namespace move_base {
     y = global_pose.getOrigin().y();
 
     pt.x = x - size_x / 2;
-    pt.y = y - size_x / 2;
+    pt.y = y - size_y / 2;
     clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
-    pt.y = y - size_x / 2;
+    pt.y = y - size_y / 2;
     clear_poly.push_back(pt);
 
     pt.x = x + size_x / 2;
-    pt.y = y + size_x / 2;
+    pt.y = y + size_y / 2;
     clear_poly.push_back(pt);
 
     pt.x = x - size_x / 2;
-    pt.y = y + size_x / 2;
+    pt.y = y + size_y / 2;
     clear_poly.push_back(pt);
 
     controller_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
