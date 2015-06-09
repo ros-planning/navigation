@@ -81,7 +81,7 @@ class Expander {
                 int n = startCell+i+nx_*j;
                 if(potential[n]<POT_HIGH)
                     continue;
-                float c = costs[n]+neutral_cost_;
+                float c = factor_*costs[n]+neutral_cost_;
                 float pot = p_calc_->calculatePotential(potential, c, n);
                 potential[n] = pot;
             }
