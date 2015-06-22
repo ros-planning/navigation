@@ -88,6 +88,7 @@ void InflationLayer::onInitialize()
     seen_ = NULL;
     seen_size_ = 0;
     need_reinflation_ = false;
+    inflation_method_ = -1; // automatic
 
     dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
         &InflationLayer::reconfigureCB, this, _1, _2);
@@ -122,6 +123,8 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
     enabled_ = config.enabled;
     need_reinflation_ = true;
   }
+
+  inflation_method_ = config.method;
 }
 
 void InflationLayer::matchSize()
@@ -416,31 +419,20 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
 
   int problem_size = (max_j - min_j) * (max_i - min_i);
 
-  std::string method_name;
-  // Available names:
-  const std::string method_priority_queue("Priority Queue");
-  const std::string method_layer_actions("Layer Actions");
-  const std::string method_automatic("Automatic");
-
-  // read from parameter server
-  ros::param::param("/move_base/inflation_layer/method", method_name, method_automatic);
-
-  int algorithm = ALG_LAYER_ACTIONS; // default method if none or invalid supplied
+  int algorithm;
   bool report_statistics = false;
 
-  // avoiding else statements below for clarity.
-  if (method_name.compare(method_priority_queue) == 0)
+  switch(inflation_method_)
   {
+  case ALG_PRIORITY_QUEUE:
     algorithm = ALG_PRIORITY_QUEUE;
-  }
-  if (method_name.compare(method_layer_actions) == 0)
-  {
+    break;
+  case ALG_LAYER_ACTIONS:
     algorithm = ALG_LAYER_ACTIONS;
-  }
-  if (method_name.compare(method_automatic) == 0)
-  {
+    break;
+  default:
     report_statistics = true;
-    algorithm = algorithmSelect.selectAlgorithm(problem_size);
+    algorithm =  algorithmSelect.selectAlgorithm(problem_size);
   }
 
   DynamicAlgorithmSelect::Timer timer;
