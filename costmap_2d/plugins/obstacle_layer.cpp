@@ -59,11 +59,13 @@ void ObstacleLayer::onInitialize()
   ros::NodeHandle nh("~/" + name_), g_nh;
   rolling_window_ = layered_costmap_->isRolling();
 
-  obstacle_lifespan_ = 5.0; // seconds
-  obstacle_keep_radius_ = 2.5; // meters
-  obstacle_queue_size_ = 50000; // observations
-  obstacle_compare_tolerance_ = 0.01; // meters
-  use_forgetful_version_ = true;
+  // These values are read from dynamic reconfigure. To change the default
+  // values you can edit costmap_2d/cfg/ObstaclePlugin.cfg
+  obstacle_lifespan_ = 0.0;          // seconds
+  obstacle_keep_radius_ = 0.0;       // meters
+  obstacle_queue_size_ = 0;          // observations
+  obstacle_compare_tolerance_ = 0.0; // meters
+  use_forgetful_version_ = true;     // flag
 
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());

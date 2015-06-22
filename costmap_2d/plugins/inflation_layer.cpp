@@ -88,7 +88,10 @@ void InflationLayer::onInitialize()
     seen_ = NULL;
     seen_size_ = 0;
     need_reinflation_ = false;
-    inflation_method_ = -1; // automatic
+
+    // This value is read from dynamic reconfigure. To change the default
+    // value (-1, automatic) you can edit costmap_2d/cfg/InflationPlugin.cfg
+    inflation_method_ = 0;
 
     dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
         &InflationLayer::reconfigureCB, this, _1, _2);
