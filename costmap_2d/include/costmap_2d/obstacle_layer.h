@@ -202,6 +202,12 @@ private:
   int max_x_;  ///< @brief bounding box in cell coordinates
   int max_y_;  ///< @brief bounding box in cell coordinates
 
+  double obstacle_lifespan_; // seconds
+  double obstacle_keep_radius_; // meters
+  int obstacle_queue_size_; // observations
+  double obstacle_compare_tolerance_; // meters
+  bool use_forgetful_version_;
+
   std::list<TimeWorldPoint> time_world_points_; /// <@brief list of points in memory
 
 };

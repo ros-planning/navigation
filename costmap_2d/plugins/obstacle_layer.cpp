@@ -59,6 +59,14 @@ void ObstacleLayer::onInitialize()
   ros::NodeHandle nh("~/" + name_), g_nh;
   rolling_window_ = layered_costmap_->isRolling();
 
+  // These values are read from dynamic reconfigure. To change the default
+  // values you can edit costmap_2d/cfg/ObstaclePlugin.cfg
+  obstacle_lifespan_ = 0.0;          // seconds
+  obstacle_keep_radius_ = 0.0;       // meters
+  obstacle_queue_size_ = 0;          // observations
+  obstacle_compare_tolerance_ = 0.0; // meters
+  use_forgetful_version_ = true;     // flag
+
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
   if(track_unknown_space)
@@ -249,6 +257,12 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
   enabled_ = config.enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
+
+  obstacle_lifespan_ = config.obstacle_lifespan;
+  obstacle_keep_radius_ = config.obstacle_keep_radius;
+  obstacle_queue_size_ = config.obstacle_queue_size;
+  obstacle_compare_tolerance_ = config.obstacle_compare_tolerance;
+  use_forgetful_version_ = config.enable_forget;
 }
 
 void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
@@ -340,9 +354,7 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
-  bool use_forgetful_version = false;
-  ros::param::param("/move_base/obstacle_layer/enable_forget", use_forgetful_version, true);
-  if (use_forgetful_version)
+  if (use_forgetful_version_)
     return forgetfulUpdateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 
   if (rolling_window_)
@@ -489,19 +501,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   double layer_max_y = robot_y;
 
   const double time_now = ros::Time::now().toSec();
-  double obstacle_lifespan = 5.0; // seconds
-  ros::param::param("/move_base/obstacle_layer/obstacle_lifespan", obstacle_lifespan, 5.0);
-
-  double obstacle_keep_radius = 1.0; // meters
-  ros::param::param("/move_base/obstacle_layer/obstacle_keep_radius", obstacle_keep_radius, 2.5);
-
-  int obstacle_queue_size = 50000;
-  ros::param::param("/move_base/obstacle_layer/obstacle_queue_size", obstacle_queue_size, 50000);
-
-  double obstacle_compare_tolerance = 0.01;
-  ros::param::param("/move_base/obstacle_layer/obstacle_compare_tolerance", obstacle_compare_tolerance, 0.01);
-
-  const double obstacle_keep_radius2 = obstacle_keep_radius * obstacle_keep_radius;
+  const double obstacle_keep_radius2 = obstacle_keep_radius_ * obstacle_keep_radius_;
 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
@@ -516,7 +516,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   current_ = current;
 
   // clear old observations (unless within keep radius)
-  const double earliest_epoch = time_now - obstacle_lifespan;
+  const double earliest_epoch = time_now - obstacle_lifespan_;
   std::list<TimeWorldPoint>::iterator it;
   for (it = time_world_points_.begin(); it != time_world_points_.end();)
   {
@@ -540,7 +540,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   }
 
   // limit memory size by removing duplicates
-  if( time_world_points_.size() > obstacle_queue_size )
+  if( time_world_points_.size() > obstacle_queue_size_ )
   {
     std::list<TimeWorldPoint>::iterator it1;
     std::list<TimeWorldPoint>::iterator it2;
@@ -550,7 +550,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
       it2++; // so we don't compare a point with itself
       while( it2 != time_world_points_.end())
       {
-        if(sameTimeWorldPoints(*it1, *it2, obstacle_compare_tolerance))
+        if(sameTimeWorldPoints(*it1, *it2, obstacle_compare_tolerance_))
         {
           // if the same then we will erase the 2nd (older) and rewrite the first
           writeTimeWorldPoint( *it2, FREE_SPACE,      &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
@@ -569,7 +569,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   // iterating backwards because the end is the old data
   std::list<TimeWorldPoint>::reverse_iterator rit = time_world_points_.rbegin();
   for (rit = time_world_points_.rbegin();
-       rit != time_world_points_.rend() && time_world_points_.size() > obstacle_queue_size;
+       rit != time_world_points_.rend() && time_world_points_.size() > obstacle_queue_size_;
        /* increment in body */ )
   {
     TimeWorldPoint& p = *rit;
