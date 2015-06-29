@@ -316,9 +316,13 @@ void Costmap2DROS::readFootprintFromConfig( const costmap_2d::Costmap2DConfig &n
 
   if( new_config.footprint != "" && new_config.footprint != "[]" )
   {
-    bool error_flag;
-    setUnpaddedRobotFootprint( makeFootprintFromString( new_config.footprint, &error_flag ) );
-    if(error_flag){
+    std::vector<geometry_msgs::Point> new_footprint;
+    if (makeFootprintFromString( new_config.footprint, new_footprint ))
+    {
+        setUnpaddedRobotFootprint(new_footprint);
+    }    
+    else 
+    {
         ROS_ERROR("Invalid footprint string from dynamic reconfigure");
     }
   }

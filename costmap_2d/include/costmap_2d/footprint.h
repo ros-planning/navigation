@@ -111,9 +111,8 @@ std::vector<geometry_msgs::Point> makeFootprintFromRadius( double radius );
  *
  * Format should be bracketed array of arrays of floats, like so: [[1.0, 2.2], [3.3, 4.2], ...] 
  * 
- * If there's an error, the error_flag will be set to true. 
  */
-std::vector<geometry_msgs::Point> makeFootprintFromString( const std::string& footprint_string, bool* error_flag );
+bool makeFootprintFromString( const std::string& footprint_string, std::vector<geometry_msgs::Point>& footprint );
 
 /** 
  * @brief Read the ros-params "footprint" and/or "robot_radius" from

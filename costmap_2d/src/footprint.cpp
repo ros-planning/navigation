@@ -161,28 +161,25 @@ std::vector<geometry_msgs::Point> makeFootprintFromRadius( double radius )
 }
 
 
-std::vector<geometry_msgs::Point> makeFootprintFromString( const std::string& footprint_string, bool* error_flag )
+bool makeFootprintFromString( const std::string& footprint_string, std::vector<geometry_msgs::Point>& footprint )
 {
   std::string error;
   std::vector<std::vector<float> > vvf = parseVVF( footprint_string, error );
-  std::vector<geometry_msgs::Point> points;
   
   if( error != "" )
   {
     ROS_ERROR( "Error parsing footprint parameter: '%s'", error.c_str() );
     ROS_ERROR( "  Footprint string was '%s'.", footprint_string.c_str() );
-    *error_flag = true;
-    return points;
+    return false;
   }
 
   // convert vvf into points.
   if( vvf.size() < 3 )
   {
     ROS_ERROR( "You must specify at least three points for the robot footprint, reverting to previous footprint." );
-    *error_flag = true;
-    return points;
+    return false;
   }
-  points.reserve( vvf.size() );
+  footprint.reserve( vvf.size() );
   for( unsigned int i = 0; i < vvf.size(); i++ )
   {
     if( vvf[ i ].size() == 2 )
@@ -191,19 +188,17 @@ std::vector<geometry_msgs::Point> makeFootprintFromString( const std::string& fo
       point.x = vvf[ i ][ 0 ];
       point.y = vvf[ i ][ 1 ];
       point.z = 0;
-      points.push_back( point );
+      footprint.push_back( point );
     }
     else
     {
       ROS_ERROR( "Points in the footprint specification must be pairs of numbers.  Found a point with %d numbers.",
                  int( vvf[ i ].size() ));
-      *error_flag = true;
-      return points;
+      return false;
     }
   }
 
-  *error_flag = false;
-  return points;
+  return true;
 }
 
 
@@ -220,9 +215,7 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams( ros::NodeHandle& nh )
     nh.getParam( full_param_name, footprint_xmlrpc );
     if( footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString )
     {
-      bool error_flag;
-      points = makeFootprintFromString( std::string( footprint_xmlrpc ), &error_flag );
-      if(error_flag)
+      if(makeFootprintFromString( std::string( footprint_xmlrpc ), points ))
       {
         writeFootprintToParam( nh, points);
       }
