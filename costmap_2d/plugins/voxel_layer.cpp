@@ -283,7 +283,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
   }
 
   bool publish_clearing_points = (clearing_endpoints_pub_.getNumSubscribers() > 0);
-  if ( publish_clearing_points )
+  if (publish_clearing_points)
   {
     clearing_endpoints_.points.clear();
     clearing_endpoints_.points.reserve(clearing_observation.cloud_->points.size());
@@ -360,7 +360,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
 
       updateRaytraceBounds(ox, oy, wpx, wpy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
 
-      if ( publish_clearing_points )
+      if (publish_clearing_points)
       {
         geometry_msgs::Point32 point;
         point.x = wpx;
@@ -371,7 +371,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
     }
   }
 
-  if ( publish_clearing_points )
+  if (publish_clearing_points)
   {
     clearing_endpoints_.header.frame_id = global_frame_;
     clearing_endpoints_.header.stamp = pcl_conversions::fromPCL(clearing_observation.cloud_->header).stamp;

@@ -154,7 +154,7 @@ public:
   /** @brief Returns the current padded footprint as a geometry_msgs::Polygon. */
   geometry_msgs::Polygon getRobotFootprintPolygon()
   {
-    return costmap_2d::toPolygon( padded_footprint_);
+    return costmap_2d::toPolygon(padded_footprint_);
   }
 
   /** @brief Return the current footprint of the robot as a vector of points.

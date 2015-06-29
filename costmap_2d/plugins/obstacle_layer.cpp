@@ -183,7 +183,7 @@ void ObstacleLayer::onInitialize()
       boost::shared_ptr < message_filters::Subscriber<sensor_msgs::PointCloud>
           > sub(new message_filters::Subscriber<sensor_msgs::PointCloud>(g_nh, topic, 50));
 
-      if ( inf_is_valid )
+      if (inf_is_valid)
       {
        ROS_WARN("obstacle_layer: inf_is_valid option is not applicable to PointCloud observations.");
       }
@@ -201,7 +201,7 @@ void ObstacleLayer::onInitialize()
       boost::shared_ptr < message_filters::Subscriber<sensor_msgs::PointCloud2>
           > sub(new message_filters::Subscriber<sensor_msgs::PointCloud2>(g_nh, topic, 50));
 
-      if ( inf_is_valid )
+      if (inf_is_valid)
       {
        ROS_WARN("obstacle_layer: inf_is_valid option is not applicable to PointCloud observations.");
       }
@@ -280,10 +280,10 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
   // Filter positive infinities ("Inf"s) to max_range.
   float epsilon = 0.0001;  // a tenth of a millimeter
   sensor_msgs::LaserScan message = *raw_message;
-  for ( size_t i = 0; i < message.ranges.size(); i++ )
+  for (size_t i = 0; i < message.ranges.size(); i++)
   {
     float range = message.ranges[ i ];
-    if ( !std::isfinite( range ) && range > 0 )
+    if (!std::isfinite(range) && range > 0)
     {
       message.ranges[ i ] = message.range_max - epsilon;
     }

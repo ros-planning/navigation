@@ -21,7 +21,7 @@ void setValues(costmap_2d::Costmap2D& costmap, const unsigned char* map)
 
 char printableCost(unsigned char cost)
 {
-  switch ( cost)
+  switch (cost)
   {
   case costmap_2d::NO_INFORMATION: return '?';
   case costmap_2d::LETHAL_OBSTACLE: return 'L';

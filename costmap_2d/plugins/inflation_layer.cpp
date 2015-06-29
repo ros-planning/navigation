@@ -126,7 +126,7 @@ void InflationLayer::matchSize()
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
-  if ( need_reinflation_ )
+  if (need_reinflation_)
   {
     // For some reason when I make these -<double>::max() it does not
     // work with Costmap2D::worldToMapEnforceBounds(), so I'm using
