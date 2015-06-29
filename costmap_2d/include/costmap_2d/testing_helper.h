@@ -9,19 +9,19 @@
 
 const double MAX_Z(1.0);
 
-void setValues( costmap_2d::Costmap2D& costmap, const unsigned char* map )
+void setValues(costmap_2d::Costmap2D& costmap, const unsigned char* map)
 {
-  int index=0;
-  for(int i=0;i<costmap.getSizeInCellsY();i++){
-    for(int j=0;j<costmap.getSizeInCellsX();j++){
-      costmap.setCost(j,i,map[index]);
+  int index = 0;
+  for (int i = 0; i < costmap.getSizeInCellsY(); i++){
+    for (int j = 0; j < costmap.getSizeInCellsX(); j++){
+      costmap.setCost(j, i, map[index]);
     }
   }
 }
 
-char printableCost( unsigned char cost )
+char printableCost(unsigned char cost)
 {
-  switch( cost )
+  switch ( cost)
   {
   case costmap_2d::NO_INFORMATION: return '?';
   case costmap_2d::LETHAL_OBSTACLE: return 'L';
@@ -31,24 +31,24 @@ char printableCost( unsigned char cost )
   }
 }
 
-void printMap( costmap_2d::Costmap2D& costmap )
+void printMap(costmap_2d::Costmap2D& costmap)
 {
   printf("map:\n");
-  for(int i=0;i<costmap.getSizeInCellsY();i++){
-    for(int j=0;j<costmap.getSizeInCellsX();j++){
-      printf("%4d", int(costmap.getCost(j,i) ));
+  for (int i = 0; i < costmap.getSizeInCellsY(); i++){
+    for (int j = 0; j < costmap.getSizeInCellsX(); j++){
+      printf("%4d", int(costmap.getCost(j, i)));
     }
     printf("\n\n");
   }
 }
 
-unsigned int countValues( costmap_2d::Costmap2D& costmap, unsigned char value, bool equal=true)
+unsigned int countValues(costmap_2d::Costmap2D& costmap, unsigned char value, bool equal = true)
 {
   unsigned int count = 0;
-  for(int i=0;i<costmap.getSizeInCellsY();i++){
-    for(int j=0;j<costmap.getSizeInCellsX();j++){
-      unsigned char c = costmap.getCost(j,i);
-      if((equal && c==value) || (!equal && c!=value))
+  for (int i = 0; i < costmap.getSizeInCellsY(); i++){
+    for (int j = 0; j < costmap.getSizeInCellsX(); j++){
+      unsigned char c = costmap.getCost(j, i);
+      if ((equal && c == value) || (!equal && c != value))
       {
         count+=1;
       }
@@ -60,7 +60,7 @@ unsigned int countValues( costmap_2d::Costmap2D& costmap, unsigned char value, b
 void addStaticLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
 {
   costmap_2d::StaticLayer* slayer = new costmap_2d::StaticLayer();
-  layers.addPlugin( boost::shared_ptr<costmap_2d::Layer>(slayer) );
+  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(slayer));
   slayer->initialize(&layers, "static", &tf);
 }
 
@@ -68,11 +68,12 @@ costmap_2d::ObstacleLayer* addObstacleLayer(costmap_2d::LayeredCostmap& layers, 
 {
   costmap_2d::ObstacleLayer* olayer = new costmap_2d::ObstacleLayer();
   olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin( boost::shared_ptr<costmap_2d::Layer>(olayer) );
+  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(olayer));
   return olayer;
 }
 
-void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, double z=0.0, double ox=0.0, double oy=0.0, double oz=MAX_Z){
+void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, double z = 0.0,
+                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z){
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
   cloud.points[0].x = x;
@@ -93,9 +94,9 @@ costmap_2d::InflationLayer* addInflationLayer(costmap_2d::LayeredCostmap& layers
   costmap_2d::InflationLayer* ilayer = new costmap_2d::InflationLayer();
   ilayer->initialize(&layers, "inflation", &tf);
   boost::shared_ptr<costmap_2d::Layer> ipointer(ilayer);
-  layers.addPlugin( ipointer );
+  layers.addPlugin(ipointer);
   return ilayer;
 }
 
 
-#endif
+#endif  // TESTING_HELPER_H

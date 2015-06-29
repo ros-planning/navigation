@@ -49,7 +49,7 @@ void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footpr
 
   for (unsigned int i = 0; i < footprint.size() - 1; ++i)
   {
-    //check the distance from the robot center point to the first vertex
+    // check the distance from the robot center point to the first vertex
     double vertex_dist = distance(0.0, 0.0, footprint[i].x, footprint[i].y);
     double edge_dist = distanceToLine(0.0, 0.0, footprint[i].x, footprint[i].y,
                                       footprint[i + 1].x, footprint[i + 1].y);
@@ -57,7 +57,7 @@ void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footpr
     max_dist = std::max(max_dist, std::max(vertex_dist, edge_dist));
   }
 
-  //we also need to do the last vertex and the first vertex
+  // we also need to do the last vertex and the first vertex
   double vertex_dist = distance(0.0, 0.0, footprint.back().x, footprint.back().y);
   double edge_dist = distanceToLine(0.0, 0.0, footprint.back().x, footprint.back().y,
                                       footprint.front().x, footprint.front().y);
@@ -86,8 +86,8 @@ geometry_msgs::Point toPoint(geometry_msgs::Point32 pt)
 geometry_msgs::Polygon toPolygon(std::vector<geometry_msgs::Point> pts)
 {
   geometry_msgs::Polygon polygon;
-  for(int i=0;i<pts.size();i++){
-    polygon.points.push_back( toPoint32(pts[i]) );
+  for (int i = 0; i < pts.size(); i++){
+    polygon.points.push_back(toPoint32(pts[i]));
   }
   return polygon;
 }
@@ -95,11 +95,11 @@ geometry_msgs::Polygon toPolygon(std::vector<geometry_msgs::Point> pts)
 std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon)
 {
   std::vector<geometry_msgs::Point> pts;
-  for(int i=0;i<polygon.points.size();i++)
+  for (int i = 0; i < polygon.points.size(); i++)
   {
-    pts.push_back( toPoint(polygon.points[i] ) );
+    pts.push_back(toPoint(polygon.points[i]));
   }
   return pts;
 }
 
-} // end namespace costmap_2d
+}  // end namespace costmap_2d

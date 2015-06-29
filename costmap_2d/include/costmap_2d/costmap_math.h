@@ -66,4 +66,4 @@ bool intersects(std::vector<geometry_msgs::Point>& polygon, float testx, float t
 
 bool intersects(std::vector<geometry_msgs::Point>& polygon1, std::vector<geometry_msgs::Point>& polygon2);
 
-#endif
+#endif  // COSTMAP_MATH_H_

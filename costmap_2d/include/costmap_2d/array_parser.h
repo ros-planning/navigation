@@ -44,8 +44,8 @@ namespace costmap_2d
  *
  * On error, error_return is set and the return value could be
  * anything, like part of a successful parse. */
-std::vector<std::vector<float> > parseVVF( const std::string& input, std::string& error_return );
+std::vector<std::vector<float> > parseVVF(const std::string& input, std::string& error_return);
 
-} // end namespace costmap_2d
+}  // end namespace costmap_2d
 
-#endif // ARRAY_PARSER_H
+#endif  // ARRAY_PARSER_H

@@ -53,7 +53,7 @@ StaticLayer::StaticLayer() : dsrv_(NULL) {}
 
 StaticLayer::~StaticLayer()
 {
-  if(dsrv_)
+  if (dsrv_)
     delete dsrv_;
 }
 
@@ -79,7 +79,7 @@ void StaticLayer::onInitialize()
 
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
-  //we'll subscribe to the latched topic that the map server uses
+  // we'll subscribe to the latched topic that the map server uses
   ROS_INFO("Requesting the map...");
   map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
   map_received_ = false;
@@ -94,13 +94,13 @@ void StaticLayer::onInitialize()
 
   ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
 
-  if(subscribe_to_updates_)
+  if (subscribe_to_updates_)
   {
     ROS_INFO("Subscribing to updates");
     map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
   }
 
-  if(dsrv_)
+  if (dsrv_)
   {
     delete dsrv_;
   }
@@ -137,7 +137,7 @@ void StaticLayer::matchSize()
 
 unsigned char StaticLayer::interpretValue(unsigned char value)
 {
-  //check if the static value is above the unknown or lethal thresholds
+  // check if the static value is above the unknown or lethal thresholds
   if (track_unknown_space_ && value == unknown_cost_value_)
     return NO_INFORMATION;
   else if (!track_unknown_space_ && value == unknown_cost_value_)
@@ -178,12 +178,13 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   {
     // only update the size of the costmap stored locally in this layer
     ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
-    resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x, new_map->info.origin.position.y);
+    resizeMap(size_x, size_y, new_map->info.resolution,
+              new_map->info.origin.position.x, new_map->info.origin.position.y);
   }
 
   unsigned int index = 0;
 
-  //initialize the costmap with static data
+  // initialize the costmap with static data
   for (unsigned int i = 0; i < size_y; ++i)
   {
     for (unsigned int j = 0; j < size_x; ++j)
@@ -203,7 +204,8 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   has_updated_data_ = true;
 
   // shutdown the map subscrber if firt_map_only_ flag is on
-  if(first_map_only_) {
+  if (first_map_only_)
+  {
     ROS_INFO("Shutting down the map subscriber. first_map_only flag is on");
     map_sub_.shutdown();
   }
@@ -218,7 +220,7 @@ void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& up
     for (unsigned int x = 0; x < update->width ; x++)
     {
       unsigned int index = index_base + x + update->x;
-      costmap_[index] = interpretValue( update->data[di++] );
+      costmap_[index] = interpretValue(update->data[di++]);
     }
   }
   x_ = update->x;
@@ -242,12 +244,14 @@ void StaticLayer::deactivate()
 
 void StaticLayer::reset()
 {
-  if(first_map_only_) {
+  if (first_map_only_)
+  {
     has_updated_data_ = true;
   }
-  else{
-   deactivate();
-   activate();
+  else
+  {
+    deactivate();
+    activate();
   }
 }
 
@@ -298,7 +302,7 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
     }
     catch (tf::TransformException ex)
     {
-      ROS_ERROR("%s",ex.what());
+      ROS_ERROR("%s", ex.what());
       return;
     }
     // Copy map data given proper transformations

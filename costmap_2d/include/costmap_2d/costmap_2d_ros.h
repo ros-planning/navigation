@@ -154,7 +154,7 @@ public:
   /** @brief Returns the current padded footprint as a geometry_msgs::Polygon. */
   geometry_msgs::Polygon getRobotFootprintPolygon()
   {
-    return costmap_2d::toPolygon( padded_footprint_ );
+    return costmap_2d::toPolygon( padded_footprint_);
   }
 
   /** @brief Return the current footprint of the robot as a vector of points.
@@ -189,7 +189,8 @@ public:
    * @param  theta The orientation of the robot
    * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
    */
-  void getOrientedFootprint(double x, double y, double theta, std::vector<geometry_msgs::Point>& oriented_footprint) const;
+  void getOrientedFootprint(double x, double y, double theta,
+                            std::vector<geometry_msgs::Point>& oriented_footprint) const;
 
   /**
    * @brief  Build the oriented footprint of the robot at the robot's current pose
@@ -207,7 +208,7 @@ public:
    * layered_costmap_->setFootprint().  Also saves the unpadded
    * footprint, which is available from
    * getUnpaddedRobotFootprint(). */
-  void setUnpaddedRobotFootprint( const std::vector<geometry_msgs::Point>& points );
+  void setUnpaddedRobotFootprint(const std::vector<geometry_msgs::Point>& points);
 
   /** @brief Set the footprint of the robot to be the given polygon,
    * padded by footprint_padding.
@@ -219,7 +220,7 @@ public:
    * layered_costmap_->setFootprint().  Also saves the unpadded
    * footprint, which is available from
    * getUnpaddedRobotFootprint(). */
-  void setUnpaddedRobotFootprintPolygon( const geometry_msgs::Polygon& footprint );
+  void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
 
 protected:
   LayeredCostmap* layered_costmap_;
@@ -227,30 +228,30 @@ protected:
   tf::TransformListener& tf_;  ///< @brief Used for transforming point clouds
   std::string global_frame_;  ///< @brief The global frame for the costmap
   std::string robot_base_frame_;  ///< @brief The frame_id of the robot base
-  double transform_tolerance_; ///< timeout before transform errors
+  double transform_tolerance_;  ///< timeout before transform errors
 
 private:
   /** @brief Set the footprint from the given string.
    *
-   * Format should be bracketed array of arrays of floats, like so: [[1.0, 2.2], [3.3, 4.2], ...] 
+   * Format should be bracketed array of arrays of floats, like so: [[1.0, 2.2], [3.3, 4.2], ...]
    * @return true on success, false on failure. */
-  bool readFootprintFromString( const std::string& footprint_string );
+  bool readFootprintFromString(const std::string& footprint_string);
 
   /** @brief Set the footprint from the new_config object.
    *
    * If the values of footprint and robot_radius are the same in
    * new_config and old_config, nothing is changed. */
-  void readFootprintFromConfig( const costmap_2d::Costmap2DConfig &new_config,
-                                const costmap_2d::Costmap2DConfig &old_config );
+  void readFootprintFromConfig(const costmap_2d::Costmap2DConfig &new_config,
+                               const costmap_2d::Costmap2DConfig &old_config);
 
   /** @brief Set the footprint to a circle of the given radius, in meters. */
-  void setFootprintFromRadius( double radius );
-  
+  void setFootprintFromRadius(double radius);
+
   /** @brief Read the ros-params "footprint" and/or "robot_radius" from
    * the given NodeHandle using searchParam() to go up the tree.
    *
    * Calls setFootprint() when successful. */
-  void readFootprintFromParams( ros::NodeHandle& nh );
+  void readFootprintFromParams(ros::NodeHandle& nh);
 
   /** @brief Set the footprint from the given XmlRpcValue.
    *
@@ -262,13 +263,13 @@ private:
    * @param full_param_name this is the full name of the rosparam from
    * which the footprint_xmlrpc value came.  It is used only for
    * reporting errors. */
-  void readFootprintFromXMLRPC( XmlRpc::XmlRpcValue& footprint_xmlrpc,
-                                const std::string& full_param_name );
+  void readFootprintFromXMLRPC(XmlRpc::XmlRpcValue& footprint_xmlrpc,
+                                const std::string& full_param_name);
 
   /** @brief Write the current unpadded_footprint_ to the "footprint"
    * parameter of the given NodeHandle so that dynamic_reconfigure
    * will see the new value. */
-  void writeFootprintToParam( ros::NodeHandle& nh );
+  void writeFootprintToParam(ros::NodeHandle& nh);
 
   void resetOldParameters(ros::NodeHandle& nh);
   void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
@@ -295,6 +296,6 @@ private:
   costmap_2d::Costmap2DConfig old_config_;
 };
 // class Costmap2DROS
-}// namespace costmap_2d
+}  // namespace costmap_2d
 
-#endif
+#endif  // COSTMAP_2D_ROS_H
