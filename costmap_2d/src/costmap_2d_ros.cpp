@@ -126,11 +126,24 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   }
 
   // subscribe to the footprint topic
-  footprint_sub_ = private_nh.subscribe("footprint_spec", 1, &Costmap2DROS::setUnpaddedRobotFootprintPolygon, this);
+  std::string topic_param, topic;
+  if(!private_nh.searchParam("footprint_topic", topic_param))
+  {
+    topic_param = "footprint_topic";
+  }
+
+  private_nh.param(topic_param, topic, std::string("footprint"));
+  footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::setUnpaddedRobotFootprintPolygon, this);
+
+  if(!private_nh.searchParam("published_footprint_topic", topic_param))
+  {
+    topic_param = "published_footprint";
+  }
+
+  private_nh.param(topic_param, topic, std::string("oriented_footprint"));
+  footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
 
   setUnpaddedRobotFootprint( makeFootprintFromParams( private_nh ) );
-  
-  footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap", always_send_full_costmap);
 
