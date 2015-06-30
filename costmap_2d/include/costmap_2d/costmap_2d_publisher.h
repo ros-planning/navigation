@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_COSTMAP_2D_PUBLISHER_H_
-#define COSTMAP_COSTMAP_2D_PUBLISHER_H_
+#ifndef COSTMAP_2D_COSTMAP_2D_PUBLISHER_H_
+#define COSTMAP_2D_COSTMAP_2D_PUBLISHER_H_
 #include <ros/ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -55,7 +55,8 @@ public:
   /**
    * @brief  Constructor for the Costmap2DPublisher
    */
-  Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name, bool always_send_full_costmap = false);
+  Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* costmap, std::string global_frame,
+                     std::string topic_name, bool always_send_full_costmap = false);
 
   /**
    * @brief  Destructor
@@ -90,7 +91,7 @@ private:
   void prepareGrid();
 
   /** @brief Publish the latest full costmap to the new subscriber. */
-  void onNewSubscription( const ros::SingleSubscriberPublisher& pub );
+  void onNewSubscription(const ros::SingleSubscriberPublisher& pub);
 
   ros::NodeHandle* node;
   Costmap2D* costmap_;
@@ -101,7 +102,7 @@ private:
   ros::Publisher costmap_pub_;
   ros::Publisher costmap_update_pub_;
   nav_msgs::OccupancyGrid grid_;
-  static char* cost_translation_table_; ///< Translate from 0-255 values in costmap to -1 to 100 values in message.
+  static char* cost_translation_table_;  ///< Translate from 0-255 values in costmap to -1 to 100 values in message.
 };
-}
-#endif
+}  // namespace costmap_2d
+#endif  // COSTMAP_2D_COSTMAP_2D_PUBLISHER_H
