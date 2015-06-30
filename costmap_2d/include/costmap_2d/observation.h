@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2008, 2013, Willow Garage, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -13,7 +13,7 @@
  *     * Neither the name of the Willow Garage, Inc. nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -29,8 +29,8 @@
  * Authors: Conor McGann
  */
 
-#ifndef COSTMAP_OBSERVATION_H_
-#define COSTMAP_OBSERVATION_H_
+#ifndef COSTMAP_2D_OBSERVATION_H_
+#define COSTMAP_2D_OBSERVATION_H_
 
 #include <geometry_msgs/Point.h>
 #include <pcl/point_types.h>
@@ -67,9 +67,10 @@ public:
    * @param obstacle_range The range out to which an observation should be able to insert obstacles
    * @param raytrace_range The range out to which an observation should be able to clear via raytracing
    */
-  Observation(geometry_msgs::Point& origin, pcl::PointCloud<pcl::PointXYZ> cloud, double obstacle_range,
-              double raytrace_range) :
-      origin_(origin), cloud_(new pcl::PointCloud<pcl::PointXYZ>(cloud)), obstacle_range_(obstacle_range), raytrace_range_(raytrace_range)
+  Observation(geometry_msgs::Point& origin, pcl::PointCloud<pcl::PointXYZ> cloud,
+              double obstacle_range, double raytrace_range) :
+      origin_(origin), cloud_(new pcl::PointCloud<pcl::PointXYZ>(cloud)),
+      obstacle_range_(obstacle_range), raytrace_range_(raytrace_range)
   {
   }
 
@@ -78,8 +79,8 @@ public:
    * @param obs The observation to copy
    */
   Observation(const Observation& obs) :
-      origin_(obs.origin_), cloud_(new pcl::PointCloud<pcl::PointXYZ>(*(obs.cloud_))), obstacle_range_(obs.obstacle_range_), raytrace_range_(
-          obs.raytrace_range_)
+      origin_(obs.origin_), cloud_(new pcl::PointCloud<pcl::PointXYZ>(*(obs.cloud_))),
+      obstacle_range_(obs.obstacle_range_), raytrace_range_(obs.raytrace_range_)
   {
   }
 
@@ -98,5 +99,5 @@ public:
   double obstacle_range_, raytrace_range_;
 };
 
-}
-#endif
+}  // namespace costmap_2d
+#endif  // COSTMAP_2D_OBSERVATION_H_

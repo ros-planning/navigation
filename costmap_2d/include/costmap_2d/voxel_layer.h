@@ -65,14 +65,14 @@ public:
   VoxelLayer() :
       voxel_grid_(0, 0, 0)
   {
-    costmap_ = NULL; // this is the unsigned char* member of parent class's parent class Costmap2D.
+    costmap_ = NULL;  // this is the unsigned char* member of parent class's parent class Costmap2D.
   }
 
   virtual ~VoxelLayer();
 
   virtual void onInitialize();
-  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
-                             double* max_y);
+  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
+                            double* max_x, double* max_y);
 
   void updateOrigin(double new_origin_x, double new_origin_y);
   bool isDiscretized()
@@ -134,7 +134,7 @@ private:
 
   inline void mapToWorld3D(unsigned int mx, unsigned int my, unsigned int mz, double& wx, double& wy, double& wz)
   {
-    //returns the center point of the cell
+    // returns the center point of the cell
     wx = origin_x_ + (mx + 0.5) * resolution_;
     wy = origin_y_ + (my + 0.5) * resolution_;
     wz = origin_z_ + (mz + 0.5) * z_resolution_;
