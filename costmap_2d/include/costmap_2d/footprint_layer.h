@@ -62,7 +62,7 @@ public:
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
 private:
-  geometry_msgs::PolygonStamped footprint_; ///< Storage for polygon being published.
+  geometry_msgs::PolygonStamped footprint_;  ///< Storage for polygon being published.
   void publishFootprint();
   void reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level);
   ros::Publisher footprint_pub_;

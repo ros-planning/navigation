@@ -44,27 +44,30 @@ namespace costmap_2d
 
 char* Costmap2DPublisher::cost_translation_table_ = NULL;
 
-Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* costmap, std::string global_frame, std::string topic_name, bool always_send_full_costmap) :
-    node(ros_node), costmap_(costmap), global_frame_(global_frame), active_(false), always_send_full_costmap_(always_send_full_costmap)
+Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* costmap, std::string global_frame,
+                                       std::string topic_name, bool always_send_full_costmap) :
+    node(ros_node), costmap_(costmap), global_frame_(global_frame), active_(false),
+    always_send_full_costmap_(always_send_full_costmap)
 {
-  costmap_pub_ = ros_node->advertise<nav_msgs::OccupancyGrid>( topic_name, 1, boost::bind( &Costmap2DPublisher::onNewSubscription, this, _1 ));
-  costmap_update_pub_ = ros_node->advertise<map_msgs::OccupancyGridUpdate>( topic_name + "_updates", 1 );
+  costmap_pub_ = ros_node->advertise<nav_msgs::OccupancyGrid>(topic_name, 1,
+                                                    boost::bind(&Costmap2DPublisher::onNewSubscription, this, _1));
+  costmap_update_pub_ = ros_node->advertise<map_msgs::OccupancyGridUpdate>(topic_name + "_updates", 1);
 
-  if( cost_translation_table_ == NULL )
+  if (cost_translation_table_ == NULL)
   {
     cost_translation_table_ = new char[256];
 
     // special values:
-    cost_translation_table_[0] = 0; // NO obstacle
-    cost_translation_table_[253] = 99; // INSCRIBED obstacle
-    cost_translation_table_[254] = 100; // LETHAL obstacle
-    cost_translation_table_[255] = -1; // UNKNOWN
+    cost_translation_table_[0] = 0;  // NO obstacle
+    cost_translation_table_[253] = 99;  // INSCRIBED obstacle
+    cost_translation_table_[254] = 100;  // LETHAL obstacle
+    cost_translation_table_[255] = -1;  // UNKNOWN
 
     // regular cost values scale the range 1 to 252 (inclusive) to fit
     // into 1 to 98 (inclusive).
-    for( int i = 1; i < 253; i++ )
+    for (int i = 1; i < 253; i++)
     {
-      cost_translation_table_[ i ] = char( 1 + (97 * ( i - 1 )) / 251 );
+      cost_translation_table_[ i ] = char(1 + (97 * (i - 1)) / 251);
     }
   }
 
@@ -77,10 +80,10 @@ Costmap2DPublisher::~Costmap2DPublisher()
 {
 }
 
-void Costmap2DPublisher::onNewSubscription( const ros::SingleSubscriberPublisher& pub )
+void Costmap2DPublisher::onNewSubscription(const ros::SingleSubscriberPublisher& pub)
 {
   prepareGrid();
-  pub.publish( grid_ );
+  pub.publish(grid_);
 }
 
 // prepare grid_ message for publication.
@@ -116,11 +119,13 @@ void Costmap2DPublisher::publishCostmap()
 {
   double resolution = costmap_->getResolution();
 
-  if (always_send_full_costmap_ || grid_.info.resolution != resolution || grid_.info.width != costmap_->getSizeInCellsX())
+  if (always_send_full_costmap_ || grid_.info.resolution != resolution ||
+      grid_.info.width != costmap_->getSizeInCellsX())
   {
     prepareGrid();
-    if (costmap_pub_.getNumSubscribers() > 0) {
-      costmap_pub_.publish( grid_ );
+    if (costmap_pub_.getNumSubscribers() > 0)
+    {
+      costmap_pub_.publish(grid_);
     }
   }
   else if (x0_ < xn_)
@@ -145,7 +150,8 @@ void Costmap2DPublisher::publishCostmap()
         update.data[i++] = cost_translation_table_[ cost ];
       }
     }
-    if (costmap_update_pub_.getNumSubscribers() > 0) {
+    if (costmap_update_pub_.getNumSubscribers() > 0)
+    {
       costmap_update_pub_.publish(update);
     }
   }
@@ -155,4 +161,4 @@ void Costmap2DPublisher::publishCostmap()
   y0_ = costmap_->getSizeInCellsY();
 }
 
-} // end namespace costmap_2d
+}  // end namespace costmap_2d
