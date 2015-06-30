@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_COSTMAP_2D_H_
-#define COSTMAP_COSTMAP_2D_H_
+#ifndef COSTMAP_2D_COSTMAP_2D_H_
+#define COSTMAP_2D_COSTMAP_2D_H_
 
 #include <vector>
 #include <queue>
@@ -466,4 +466,4 @@ protected:
 };
 }  // namespace costmap_2d
 
-#endif  // COSTMAP_2D_H
+#endif  // COSTMAP_2D_COSTMAP_2D_H

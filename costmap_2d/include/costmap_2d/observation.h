@@ -29,8 +29,8 @@
  * Authors: Conor McGann
  */
 
-#ifndef COSTMAP_OBSERVATION_H_
-#define COSTMAP_OBSERVATION_H_
+#ifndef COSTMAP_2D_OBSERVATION_H_
+#define COSTMAP_2D_OBSERVATION_H_
 
 #include <geometry_msgs/Point.h>
 #include <pcl/point_types.h>
@@ -99,5 +99,5 @@ public:
   double obstacle_range_, raytrace_range_;
 };
 
-} // namespace costmap_2d
-#endif  // COSTMAP_OBSERVATION_H_
+}  // namespace costmap_2d
+#endif  // COSTMAP_2D_OBSERVATION_H_

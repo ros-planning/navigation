@@ -28,8 +28,8 @@
  *
  * author: Dave Hershberger
  */
-#ifndef ARRAY_PARSER_H
-#define ARRAY_PARSER_H
+#ifndef COSTMAP_2D_ARRAY_PARSER_H
+#define COSTMAP_2D_ARRAY_PARSER_H
 
 #include <vector>
 #include <string>
@@ -48,4 +48,4 @@ std::vector<std::vector<float> > parseVVF(const std::string& input, std::string&
 
 }  // end namespace costmap_2d
 
-#endif  // ARRAY_PARSER_H
+#endif  // COSTMAP_2D_ARRAY_PARSER_H

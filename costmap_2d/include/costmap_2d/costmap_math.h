@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_MATH_H_
-#define COSTMAP_MATH_H_
+#ifndef COSTMAP_2D_COSTMAP_MATH_H_
+#define COSTMAP_2D_COSTMAP_MATH_H_
 
 #include <math.h>
 #include <algorithm>
@@ -66,4 +66,4 @@ bool intersects(std::vector<geometry_msgs::Point>& polygon, float testx, float t
 
 bool intersects(std::vector<geometry_msgs::Point>& polygon1, std::vector<geometry_msgs::Point>& polygon2);
 
-#endif  // COSTMAP_MATH_H_
+#endif  // COSTMAP_2D_COSTMAP_MATH_H_

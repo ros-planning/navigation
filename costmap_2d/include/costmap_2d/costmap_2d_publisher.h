@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_COSTMAP_2D_PUBLISHER_H_
-#define COSTMAP_COSTMAP_2D_PUBLISHER_H_
+#ifndef COSTMAP_2D_COSTMAP_2D_PUBLISHER_H_
+#define COSTMAP_2D_COSTMAP_2D_PUBLISHER_H_
 #include <ros/ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -105,4 +105,4 @@ private:
   static char* cost_translation_table_;  ///< Translate from 0-255 values in costmap to -1 to 100 values in message.
 };
 }  // namespace costmap_2d
-#endif  // COSTMAP_2D_PUBLISHER_H
+#endif  // COSTMAP_2D_COSTMAP_2D_PUBLISHER_H

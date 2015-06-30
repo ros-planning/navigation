@@ -1,5 +1,5 @@
-#ifndef TESTING_HELPER_H
-#define TESTING_HELPER_H
+#ifndef COSTMAP_2D_TESTING_HELPER_H
+#define COSTMAP_2D_TESTING_HELPER_H
 
 #include<costmap_2d/cost_values.h>
 #include<costmap_2d/costmap_2d.h>
@@ -99,4 +99,4 @@ costmap_2d::InflationLayer* addInflationLayer(costmap_2d::LayeredCostmap& layers
 }
 
 
-#endif  // TESTING_HELPER_H
+#endif  // COSTMAP_2D_TESTING_HELPER_H

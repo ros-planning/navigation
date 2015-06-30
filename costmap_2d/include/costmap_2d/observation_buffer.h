@@ -34,8 +34,8 @@
  *
  * Author: Eitan Marder-Eppstein
  *********************************************************************/
-#ifndef COSTMAP_OBSERVATION_BUFFER_H_
-#define COSTMAP_OBSERVATION_BUFFER_H_
+#ifndef COSTMAP_2D_OBSERVATION_BUFFER_H_
+#define COSTMAP_2D_OBSERVATION_BUFFER_H_
 
 #include <vector>
 #include <list>
@@ -161,4 +161,4 @@ private:
   double tf_tolerance_;
 };
 }  // namespace costmap_2d
-#endif  // COSTMAP_OBSERVATION_BUFFER_H_
+#endif  // COSTMAP_2D_OBSERVATION_BUFFER_H_

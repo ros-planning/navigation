@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef _FOOTPRINT_HELPER_H
-#define _FOOTPRINT_HELPER_H
+#ifndef COSTMAP_2D_FOOTPRINT_H
+#define COSTMAP_2D_FOOTPRINT_H
 
 #include <ros/ros.h>
 #include <geometry_msgs/Polygon.h>
@@ -55,4 +55,4 @@ std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon);
 
 }  // end namespace costmap_2d
 
-#endif  // _FOOTPRINT_HELPER_H
+#endif  // COSTMAP_2D_FOOTPRINT_H
