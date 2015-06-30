@@ -63,8 +63,6 @@ void ObstacleLayer::onInitialize()
   // values you can edit costmap_2d/cfg/ObstaclePlugin.cfg
   obstacle_lifespan_ = 0.0;          // seconds
   obstacle_keep_radius_ = 0.0;       // meters
-  obstacle_queue_size_ = 0;          // observations
-  obstacle_compare_tolerance_ = 0.0; // meters
   use_forgetful_version_ = true;     // flag
 
   bool track_unknown_space;
@@ -260,8 +258,6 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
 
   obstacle_lifespan_ = config.obstacle_lifespan;
   obstacle_keep_radius_ = config.obstacle_keep_radius;
-  obstacle_queue_size_ = config.obstacle_queue_size;
-  obstacle_compare_tolerance_ = config.obstacle_compare_tolerance;
   use_forgetful_version_ = config.enable_forget;
 }
 
@@ -517,12 +513,12 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
 
   // clear old observations (unless within keep radius)
   const double earliest_epoch = time_now - obstacle_lifespan_;
-  std::list<TimeWorldPoint>::iterator it;
-  for (it = time_world_points_.begin(); it != time_world_points_.end();)
+  obst_map_t::iterator it;
+  for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
   {
-    const double sample_time = (*it).get<0>();
-    const double px = (*it).get<1>();
-    const double py = (*it).get<2>();
+    const double sample_time = (*it).second.get<0>();
+    const double px = (*it).second.get<1>();
+    const double py = (*it).second.get<2>();
 
     const double rx = px - robot_x;
     const double ry = py - robot_y;
@@ -530,82 +526,22 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
 
     if(radius2 > obstacle_keep_radius2 && sample_time < earliest_epoch)
     {
-      writeTimeWorldPoint( *it, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-      it = time_world_points_.erase(it);
-    }
-    else
-    {
-        ++it;
+      writeTimeWorldPoint( it->second, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+      map_pending_erase_.push_back(it->first);
     }
   }
 
-  // limit memory size by removing duplicates
-  if( time_world_points_.size() > obstacle_queue_size_ )
+  for(unsigned int i=0; i<map_pending_erase_.size(); i++)
   {
-    std::list<TimeWorldPoint>::iterator it1;
-    std::list<TimeWorldPoint>::iterator it2;
-    for ( it1 = time_world_points_.begin(); it1 != time_world_points_.end(); ++it1)
-    {
-      it2 = std::list<TimeWorldPoint>::iterator(it1);
-      it2++; // so we don't compare a point with itself
-      while( it2 != time_world_points_.end())
-      {
-        if(sameTimeWorldPoints(*it1, *it2, obstacle_compare_tolerance_))
-        {
-          // if the same then we will erase the 2nd (older) and rewrite the first
-          writeTimeWorldPoint( *it2, FREE_SPACE,      &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-          writeTimeWorldPoint( *it1, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-
-          it2 = time_world_points_.erase(it2);
-        }
-        else
-          ++it2;
-      }
-    }
-  }
-
-  // limit memory size (keeping points inside radius)
-  // iterating from the end as long as the memory is too long
-  // iterating backwards because the end is the old data
-  std::list<TimeWorldPoint>::reverse_iterator rit = time_world_points_.rbegin();
-  for (rit = time_world_points_.rbegin();
-       rit != time_world_points_.rend() && time_world_points_.size() > obstacle_queue_size_;
-       /* increment in body */ )
-  {
-    TimeWorldPoint& p = *rit;
-
-    const double px = p.get<1>();
-    const double py = p.get<2>();
-
-    const double rx = px - robot_x;
-    const double ry = py - robot_y;
-    const double radius2 = rx*rx + ry*ry;
-
-    if(radius2 > obstacle_keep_radius2)
-    {
-      //now we need to compute the map coordinates for the observation
-      unsigned int mx, my;
-      if (worldToMap(px, py, mx, my))
-      {
-        // paint it FREE_SPACE
-        writeTimeWorldPoint( *rit, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y );
-      }
-
-      // erasing using a reverse iterator is problematic
-      // need to turn it into a normal iterator
-      std::list<TimeWorldPoint>::iterator temp_rit = time_world_points_.erase(--rit.base());
-      rit = std::list<TimeWorldPoint>::reverse_iterator(temp_rit);
-    }
-    else // we will keep this point because it's deemed important (close to robot)
-    {
-      ++rit;
-    }
+    obst_map_t::iterator it = time_world_points_.find(map_pending_erase_[i]);
+    if (it != time_world_points_.end())
+      time_world_points_.erase (it);
   }
 
   // write survivors of memory cull
   for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
   {
-    writeTimeWorldPoint(*it, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+    writeTimeWorldPoint(it->second, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
   }
 
   // raytrace current freespace - may overwrite old memories, that's OK
@@ -617,11 +553,9 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   // now we will check our memories to make sure they are not FREE_SPACE
   // They would be free space if they got ray-traced away above.
   // We shouldn't remember things that get invalidated by evidence
-  for (std::list<TimeWorldPoint>::iterator it = time_world_points_.begin();
-       it != time_world_points_.end();
-       /* increment in body */ )
+  for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
   {
-    TimeWorldPoint& p = *it;
+    TimeWorldPoint& p = it->second;
 
     const double px = p.get<1>();
     const double py = p.get<2>();
@@ -629,21 +563,25 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
     unsigned int mx, my;
     if (!worldToMap(px, py, mx, my)) 
     {
-      it = time_world_points_.erase(it);
+      map_pending_erase_.push_back(it->first);
     }
     else
     {
       unsigned int index = getIndex(mx, my);
       if (costmap_[index] == FREE_SPACE)
       {
-        it = time_world_points_.erase(it); // forget this data
-      }
-      else
-      {
-        ++it;
+        map_pending_erase_.push_back(it->first);
       }
     }
   }
+
+  for(unsigned int i=0; i<map_pending_erase_.size(); i++)
+  {
+    obst_map_t::iterator it = time_world_points_.find(map_pending_erase_[i]);
+    if (it != time_world_points_.end())
+      time_world_points_.erase (it);
+  }
+
   
   // mark current observations as usual and remember them
   for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
@@ -680,7 +618,24 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
       writeTimeWorldPoint(p, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
 
       // remember this data
-      time_world_points_.push_front(p);
+      {
+        unsigned int mx, my;
+        if (!worldToMap(px, py, mx, my))
+        {
+          ROS_DEBUG("Computing map coords failed");
+        }
+        else
+        {
+          // remove data at location if it eists
+          std::pair<int,int> location(mx,my);
+          obst_map_t::iterator it = time_world_points_.find(location);
+          if (it != time_world_points_.end())
+            time_world_points_.erase (it);
+
+          // insert new data
+          time_world_points_[location] = p;
+        }
+      }
     }
   }
 

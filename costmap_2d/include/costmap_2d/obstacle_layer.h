@@ -208,7 +208,12 @@ private:
   double obstacle_compare_tolerance_; // meters
   bool use_forgetful_version_;
 
-  std::list<TimeWorldPoint> time_world_points_; /// <@brief list of points in memory
+  // std::list<TimeWorldPoint> time_world_points_; /// <@brief list of points in memory
+  typedef std::map< std::pair<unsigned int,unsigned int>, TimeWorldPoint> obst_map_t;
+  obst_map_t time_world_points_;
+
+  // work around for old compilers that don't return an iterator on map.erase
+  std::vector< std::pair<unsigned int,unsigned int> > map_pending_erase_;
 
 };
 
