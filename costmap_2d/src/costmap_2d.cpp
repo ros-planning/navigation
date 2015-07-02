@@ -285,6 +285,18 @@ void Costmap2D::resetMap()
 void Costmap2D::setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, const unsigned char value)
 {
   boost::unique_lock < boost::shared_mutex > lock(*(access_));
+  
+  // if the size is zero for some reason, don't do anything
+  if (size_x_ * size_y_ == 0)
+    return;
+  
+  // Make sure the bounds of the write are within range
+  x0 = std::min(size_x_ - 1, x0);
+  y0 = std::min(size_y_ - 1, y0);
+
+  xn = std::min(size_x_ - 1, xn);
+  yn = std::min(size_y_ - 1, yn);
+  
   unsigned int len = xn - x0;
   for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
     memset(costmap_ + y, value, len * sizeof(unsigned char));
