@@ -294,8 +294,8 @@ void Costmap2D::setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, un
   x0 = std::min(size_x_ - 1, x0);
   y0 = std::min(size_y_ - 1, y0);
 
-  xn = std::min(size_x_, xn);
-  yn = std::min(size_y_, yn);
+  xn = std::min(size_x_ - 1, xn);
+  yn = std::min(size_y_ - 1, yn);
   
   unsigned int len = xn - x0;
   for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
