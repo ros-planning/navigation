@@ -477,8 +477,7 @@ void ObstacleLayer::writeTimeWorldPoint(const TimeWorldPoint &p, unsigned char v
     return;
   }
 
-  unsigned int index = getIndex(mx, my);
-  costmap_[index] = value;
+  setCost(mx, my, value);
   touch(px, py, min_x, min_y, max_x, max_y);
 }
 
@@ -511,6 +510,9 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   //update the global current status
   current_ = current;
 
+  // work around for older standards that don't return an iterator on map.erase
+  std::vector< std::pair<unsigned int,unsigned int> > map_pending_erase_;
+  
   // clear old observations (unless within keep radius)
   const double earliest_epoch = time_now - obstacle_lifespan_;
   obst_map_t::iterator it;

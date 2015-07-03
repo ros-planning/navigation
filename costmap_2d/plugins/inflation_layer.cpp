@@ -41,7 +41,6 @@
 #include <costmap_2d/costmap_math.h>
 #include <costmap_2d/footprint.h>
 #include <pluginlib/class_list_macros.h>
-#include <costmap_2d/dynamic_algorithm_select.h>
 #include <limits>
 #include <algorithm>
 #include <vector>
@@ -52,14 +51,10 @@ using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 using costmap_2d::NO_INFORMATION;
 
-
 // algorithm "names"
 #define ALG_PRIORITY_QUEUE  0
 #define ALG_LAYER_ACTIONS   1
 #define ALG_TOTAL_AVAILABLE 2
-
-// Global data tracking algorithm runtimes
-costmap_2d::DynamicAlgorithmSelect algorithmSelect(ALG_TOTAL_AVAILABLE);
 
 namespace costmap_2d
 {
@@ -75,6 +70,8 @@ InflationLayer::InflationLayer()
   , cached_distances_(NULL)
 {
   access_ = new boost::shared_mutex();
+  
+  algorithmSelect_.setMaxAlgorithmTypes(ALG_TOTAL_AVAILABLE);
 }
 
 void InflationLayer::onInitialize()
@@ -435,7 +432,7 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
     break;
   default:
     report_statistics = true;
-    algorithm =  algorithmSelect.selectAlgorithm(problem_size);
+    algorithm =  algorithmSelect_.selectAlgorithm(problem_size);
   }
 
   DynamicAlgorithmSelect::Timer timer;
@@ -459,7 +456,7 @@ void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costma
   if (report_statistics)
   {
     // Add data to profiler for smarter future choices
-    algorithmSelect.addProfilingData(problem_size, algorithm, timer.elapsed());
+    algorithmSelect_.addProfilingData(problem_size, algorithm, timer.elapsed());
   }
 
   current_ = true; // allow consumers to use this data

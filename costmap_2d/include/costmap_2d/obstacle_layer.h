@@ -132,7 +132,7 @@ protected:
    * @brief  Write a pixel on the costmap at a given TimeWorldPoint
    * @param p The TimeWorldPoint
    * @param value The new pixel value
-   * @param min_x boudning box coordinates to update to include this operation
+   * @param min_x bounding box coordinates to update to include this operation
    * @param min_y
    * @param max_x
    * @param max_y
@@ -210,10 +210,6 @@ private:
 
   typedef std::map< std::pair<unsigned int,unsigned int>, TimeWorldPoint> obst_map_t;
   obst_map_t time_world_points_;
-
-  // work around for old compilers that don't return an iterator on map.erase
-  std::vector< std::pair<unsigned int,unsigned int> > map_pending_erase_;
-
 };
 
 }  // namespace costmap_2d
