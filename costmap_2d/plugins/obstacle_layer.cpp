@@ -533,10 +533,9 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
 
   for(unsigned int i=0; i<map_pending_erase_.size(); i++)
   {
-    obst_map_t::iterator it = time_world_points_.find(map_pending_erase_[i]);
-    if (it != time_world_points_.end())
-      time_world_points_.erase (it);
+    time_world_points_.erase (map_pending_erase_[i]);
   }
+  map_pending_erase_.clear();
 
   // write survivors of memory cull
   for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
@@ -577,10 +576,9 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
 
   for(unsigned int i=0; i<map_pending_erase_.size(); i++)
   {
-    obst_map_t::iterator it = time_world_points_.find(map_pending_erase_[i]);
-    if (it != time_world_points_.end())
-      time_world_points_.erase (it);
+    time_world_points_.erase (map_pending_erase_[i]);
   }
+  map_pending_erase_.clear();
 
   
   // mark current observations as usual and remember them
@@ -626,11 +624,9 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
         }
         else
         {
-          // remove data at location if it eists
-          std::pair<int,int> location(mx,my);
-          obst_map_t::iterator it = time_world_points_.find(location);
-          if (it != time_world_points_.end())
-            time_world_points_.erase (it);
+          // remove data at location if it exists
+          std::pair<unsigned int, unsigned int> location(mx,my);
+	  time_world_points_.erase(location);
 
           // insert new data
           time_world_points_[location] = p;
