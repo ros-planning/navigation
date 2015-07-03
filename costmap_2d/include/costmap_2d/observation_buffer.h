@@ -34,8 +34,8 @@
  *
  * Author: Eitan Marder-Eppstein
  *********************************************************************/
-#ifndef COSTMAP_OBSERVATION_BUFFER_H_
-#define COSTMAP_OBSERVATION_BUFFER_H_
+#ifndef COSTMAP_2D_OBSERVATION_BUFFER_H_
+#define COSTMAP_2D_OBSERVATION_BUFFER_H_
 
 #include <vector>
 #include <list>
@@ -45,7 +45,7 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 
-//PCL Stuff
+// PCL Stuff
 #include <pcl/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
 
@@ -156,9 +156,9 @@ private:
   std::list<Observation> observation_list_;
   std::string topic_name_;
   double min_obstacle_height_, max_obstacle_height_;
-  boost::recursive_mutex lock_; ///< @brief A lock for accessing data in callbacks safely
+  boost::recursive_mutex lock_;  ///< @brief A lock for accessing data in callbacks safely
   double obstacle_range_, raytrace_range_;
   double tf_tolerance_;
 };
-}
-#endif
+}  // namespace costmap_2d
+#endif  // COSTMAP_2D_OBSERVATION_BUFFER_H_
