@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef _FOOTPRINT_HELPER_H
-#define _FOOTPRINT_HELPER_H
+#ifndef COSTMAP_2D_FOOTPRINT_H
+#define COSTMAP_2D_FOOTPRINT_H
 
 #include <ros/ros.h>
 #include <geometry_msgs/Polygon.h>
@@ -46,12 +46,13 @@
 namespace costmap_2d
 {
 
-void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footprint, double& min_dist, double& max_dist);
-geometry_msgs::Point              toPoint      (geometry_msgs::Point32 pt);
-geometry_msgs::Point32            toPoint32    (geometry_msgs::Point   pt);
-geometry_msgs::Polygon            toPolygon    (std::vector<geometry_msgs::Point> pts);
+void calculateMinAndMaxDistances(const std::vector<geometry_msgs::Point>& footprint,
+                                 double& min_dist, double& max_dist);
+geometry_msgs::Point              toPoint(geometry_msgs::Point32 pt);
+geometry_msgs::Point32            toPoint32(geometry_msgs::Point   pt);
+geometry_msgs::Polygon            toPolygon(std::vector<geometry_msgs::Point> pts);
 std::vector<geometry_msgs::Point> toPointVector(geometry_msgs::Polygon polygon);
 
-} // end namespace costmap_2d
+}  // end namespace costmap_2d
 
-#endif
+#endif  // COSTMAP_2D_FOOTPRINT_H
