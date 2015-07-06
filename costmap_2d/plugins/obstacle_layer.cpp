@@ -65,6 +65,12 @@ void ObstacleLayer::onInitialize()
   obstacle_keep_radius_ = 0.0;       // meters
   use_forgetful_version_ = true;     // flag
 
+  // Initial pose confidence and threshold before we remember new data
+  // Threshold default in costmap_2d/cfg/ObstaclePlugin.cfg
+  pose_confidence_ = 0;
+  pose_confidence_threshold_ = 1;
+  pose_confidence_sub_ = g_nh.subscribe("slam/scan_match_score", 1, &ObstacleLayer::poseConfidenceCallback, this);
+
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
   if(track_unknown_space)
@@ -347,6 +353,11 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
   buffer->unlock();
 }
 
+void ObstacleLayer::poseConfidenceCallback(const std_msgs::Float64 &message)
+{
+  pose_confidence_ = message.data;
+}
+
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
@@ -618,6 +629,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
       writeTimeWorldPoint(p, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
 
       // remember this data
+      if(pose_confidence_ >= pose_confidence_threshold_)
       {
         unsigned int mx, my;
         if (!worldToMap(px, py, mx, my))
