@@ -69,8 +69,11 @@ void ObstacleLayer::onInitialize()
   // Threshold default in costmap_2d/cfg/ObstaclePlugin.cfg
   pose_confidence_ = 0;
   pose_confidence_threshold_ = 1;
-  pose_confidence_sub_ = g_nh.subscribe("slam/scan_match_score", 1, &ObstacleLayer::poseConfidenceCallback, this);
-
+  
+  std::string pose_confidence_topic_name;
+  nh.param<std::string>("pose_confidence_topic_name", pose_confidence_topic_name, "slam/localization_score");
+  pose_confidence_sub_ = g_nh.subscribe(pose_confidence_topic_name, 1, &ObstacleLayer::poseConfidenceCallback, this);
+    
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
   if(track_unknown_space)
