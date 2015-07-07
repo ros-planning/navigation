@@ -20,7 +20,7 @@ public:
    * @param  max_alg_type Maximum number of algorithms to consider
    * @param  max_data_per_type Maximum number of data points per algorithm type
    */
-  DynamicAlgorithmSelect(int max_alg_type, int max_data_per_type = 8);
+  DynamicAlgorithmSelect(int max_alg_type=1, int max_data_per_type = 8);
 
   /**
    * @brief Add data related to problem size, algorithm type and run time to the internal state.
@@ -70,6 +70,14 @@ public:
     TimerStruct* d;
   };
 
+  void setMaxAlgorithmTypes(int n)
+  {
+    max_algorithm_types_ = n;
+  }
+  void setMaxDataPerTypes(int n)
+  {
+    max_data_per_type_ = n;
+  }
 private:
   int max_algorithm_types_;
   int max_data_per_type_;

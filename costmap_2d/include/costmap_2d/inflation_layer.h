@@ -42,6 +42,7 @@
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/InflationPluginConfig.h>
+#include <costmap_2d/dynamic_algorithm_select.h>
 #include <dynamic_reconfigure/server.h>
 #include <queue>
 
@@ -239,6 +240,9 @@ private:
   void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
 
   bool need_reinflation_; ///< Indicates that the entire costmap should be reinflated next time around.
+
+  // Data tracking algorithm runtimes
+  costmap_2d::DynamicAlgorithmSelect algorithmSelect_;
 };
 
 }  // namespace costmap_2d
