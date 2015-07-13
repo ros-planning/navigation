@@ -226,7 +226,6 @@ void ObstacleLayer::onInitialize()
 
   dsrv_ = NULL;
   setupDynamicReconfigure(nh);
-  footprint_layer_.initialize(layered_costmap_, name_ + "_footprint", tf_);
 }
 
 void ObstacleLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
@@ -245,6 +244,7 @@ ObstacleLayer::~ObstacleLayer()
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
+  footprint_clearing_enabled_ = config.footprint_clearing_enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
 }
@@ -409,7 +409,19 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
     }
   }
 
-  footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+  updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+}
+
+void ObstacleLayer::updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
+                                    double* max_x, double* max_y)
+{
+    if (!footprint_clearing_enabled_) return;
+    transformFootprint(robot_x, robot_y, robot_yaw, getFootprint(), transformed_footprint_);
+
+    for (unsigned int i = 0; i < transformed_footprint_.size(); i++)
+    {
+      touch(transformed_footprint_[i].x, transformed_footprint_[i].y, min_x, min_y, max_x, max_y);
+    }
 }
 
 void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
@@ -417,9 +429,10 @@ void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, i
   if (!enabled_)
     return;
 
-  // The footprint layer clears the footprint in this ObstacleLayer
-  // before we merge this obstacle layer into the master_grid.
-  footprint_layer_.updateCosts(*this, min_i, min_j, max_i, max_j);
+  if (footprint_clearing_enabled_)
+  {
+    setConvexPolygonCost(transformed_footprint_, costmap_2d::FREE_SPACE);
+  }
 
   switch (combination_method_)
   {
@@ -602,11 +615,6 @@ void ObstacleLayer::reset()
     resetMaps();
     current_ = true;
     activate();
-}
-
-void ObstacleLayer::onFootprintChanged()
-{
-  footprint_layer_.onFootprintChanged();
 }
 
 }  // namespace costmap_2d

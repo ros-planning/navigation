@@ -54,7 +54,7 @@
 #include <message_filters/subscriber.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
-#include <costmap_2d/footprint_layer.h>
+#include <costmap_2d/footprint.h>
 
 namespace costmap_2d
 {
@@ -144,8 +144,10 @@ protected:
   void updateRaytraceBounds(double ox, double oy, double wx, double wy, double range, double* min_x, double* min_y,
                             double* max_x, double* max_y);
 
-  /** @brief Overridden from superclass Layer to pass new footprint into footprint_layer_. */
-  virtual void onFootprintChanged();
+  std::vector<geometry_msgs::Point> transformed_footprint_;
+  bool footprint_clearing_enabled_;
+  void updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, 
+                       double* max_x, double* max_y);
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
   double max_obstacle_height_;  ///< @brief Max Obstacle Height
@@ -163,8 +165,6 @@ protected:
 
   bool rolling_window_;
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
-
-  FootprintLayer footprint_layer_;  ///< @brief clears the footprint in this obstacle layer.
 
   int combination_method_;
 
