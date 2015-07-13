@@ -81,6 +81,7 @@ VoxelLayer::~VoxelLayer()
 void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
+  footprint_clearing_enabled_ = config.footprint_clearing_enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   size_z_ = config.z_voxels;
   origin_z_ = config.origin_z;
@@ -208,7 +209,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
     voxel_pub_.publish(grid_msg);
   }
 
-  footprint_layer_.updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+  updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
 
 void VoxelLayer::clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info)
