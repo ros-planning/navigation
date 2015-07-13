@@ -141,8 +141,8 @@ void padFootprint(std::vector<geometry_msgs::Point>& footprint, double padding)
   for (unsigned int i = 0; i < footprint.size(); i++)
   {
     geometry_msgs::Point& pt = footprint[ i ];
-    pt.x += sign(pt.x) * padding;
-    pt.y += sign(pt.y) * padding;
+    pt.x += sign0(pt.x) * padding;
+    pt.y += sign0(pt.y) * padding;
   }
 }
 
@@ -317,12 +317,5 @@ std::vector<geometry_msgs::Point> makeFootprintFromXMLRPC(XmlRpc::XmlRpcValue& f
   }
   return footprint;
 }
-
-double sign(double x)
-{
-  return x < 0.0 ? -1.0 : (x > 0.0 ? 1.0 : 0.0);
-}
-
-
 
 }  // end namespace costmap_2d
