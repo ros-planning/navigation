@@ -105,6 +105,8 @@ void Costmap2DPublisher::prepareGrid()
   grid_.info.origin.position.y = wy - resolution / 2;
   grid_.info.origin.position.z = 0.0;
   grid_.info.origin.orientation.w = 1.0;
+  saved_origin_x_ = costmap_->getOriginX();
+  saved_origin_y_ = costmap_->getOriginY();
 
   grid_.data.resize(grid_.info.width * grid_.info.height);
 
@@ -117,10 +119,12 @@ void Costmap2DPublisher::prepareGrid()
 
 void Costmap2DPublisher::publishCostmap()
 {
-  double resolution = costmap_->getResolution();
+  float resolution = costmap_->getResolution();
 
   if (always_send_full_costmap_ || grid_.info.resolution != resolution ||
-      grid_.info.width != costmap_->getSizeInCellsX())
+      grid_.info.width != costmap_->getSizeInCellsX() ||
+      saved_origin_x_ != costmap_->getOriginX() ||
+      saved_origin_y_ != costmap_->getOriginY())
   {
     prepareGrid();
     if (costmap_pub_.getNumSubscribers() > 0)
