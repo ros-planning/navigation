@@ -97,6 +97,7 @@ private:
   Costmap2D* costmap_;
   std::string global_frame_;
   unsigned int x0_, xn_, y0_, yn_;
+  double saved_origin_x_, saved_origin_y_;
   bool active_;
   bool always_send_full_costmap_;
   ros::Publisher costmap_pub_;
