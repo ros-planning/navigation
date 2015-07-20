@@ -132,8 +132,8 @@ void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resol
 // templated version so that the compiler can optimize out the switch statement
 template<int policy>
 void T_copyCellsTo(Costmap2D& src_map, Costmap2D& dst_map,
-                          unsigned int src_x0, unsigned int src_y0,
-                          unsigned int dst_x0, unsigned int dst_y0,
+                          int src_x0, int src_y0,
+                          int dst_x0, int dst_y0,
                           unsigned int num_x,  unsigned int num_y)
 {
   if (policy == Costmap2D::None)
@@ -215,9 +215,9 @@ void T_copyCellsTo(Costmap2D& src_map, Costmap2D& dst_map,
 }
 
 
-void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned int src_y0,
-                                                unsigned int dst_x0, unsigned int dst_y0,
-                                                unsigned int num_x,  unsigned int num_y, CopyCellPolicy policy)
+void Costmap2D::copyCellsTo(Costmap2D& costmap, int src_x0, int src_y0,
+                                                int dst_x0, int dst_y0,
+                                                int num_x,  int num_y, CopyCellPolicy policy)
 {
   switch(policy)
   {
@@ -236,9 +236,9 @@ void Costmap2D::copyCellsTo(Costmap2D& costmap, unsigned int src_x0, unsigned in
   }
 }
 
-void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
-                            unsigned int dst_x0, unsigned int dst_y0,
-                            unsigned int num_x, unsigned int num_y, CopyCellPolicy policy)
+void Costmap2D::copyCellsTo(Costmap2DPtr map, int src_x0, int src_y0,
+                            int dst_x0, int dst_y0,
+                            int num_x, int num_y, CopyCellPolicy policy)
 {
   if (map.get())
     copyCellsTo(*map.get(), src_x0, src_y0, dst_x0, dst_y0, num_x, num_y, policy);
@@ -246,12 +246,12 @@ void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int 
     ROS_ERROR("NULL pointer in Costmap2D::copyCellsTo");
 }
 
-void Costmap2D::copyCellsTo(Costmap2D &map, unsigned int x0, unsigned int y0, unsigned int num_x, unsigned int num_y, CopyCellPolicy policy)
+void Costmap2D::copyCellsTo(Costmap2D &map, int x0, int y0, int num_x, int num_y, CopyCellPolicy policy)
 {
   copyCellsTo(map, x0, y0, x0, y0, num_x, num_y, policy);
 }
 
-void Costmap2D::copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0, unsigned int num_x, unsigned int num_y, CopyCellPolicy policy)
+void Costmap2D::copyCellsTo(Costmap2DPtr map, int x0, int y0, int num_x, int num_y, CopyCellPolicy policy)
 {
   copyCellsTo(map, x0, y0, x0, y0, num_x, num_y, policy);
 }
@@ -272,7 +272,7 @@ void Costmap2D::resetMaps()
   memset(costmap_, default_value_, size_x_ * size_y_ * sizeof(unsigned char));
 }
 
-void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn)
+void Costmap2D::resetMap(int x0, int y0, int xn, int yn)
 {
   setMapCost(x0, y0, xn, yn, getDefaultValue());
 }
@@ -282,7 +282,7 @@ void Costmap2D::resetMap()
   setMapCost(0, 0, getSizeInCellsX(), getSizeInCellsY(), getDefaultValue());
 }
 
-void Costmap2D::setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, const unsigned char value)
+void Costmap2D::setMapCost(int x0, int y0, int xn, int yn, const unsigned char value)
 {
   boost::unique_lock < boost::shared_mutex > lock(*(access_));
   
@@ -291,11 +291,11 @@ void Costmap2D::setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, un
     return;
   
   // Make sure the bounds of the write are within range
-  x0 = std::min(size_x_ - 1, x0);
-  y0 = std::min(size_y_ - 1, y0);
+  x0 = std::max(0, x0);
+  y0 = std::max(0, y0);
 
-  xn = std::min(size_x_ - 1, xn);
-  yn = std::min(size_y_ - 1, yn);
+  xn = std::min((int)size_x_, xn);
+  yn = std::min((int)size_y_, yn);
   
   unsigned int len = xn - x0;
   for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
