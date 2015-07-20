@@ -333,19 +333,19 @@ public:
     * @param num_y Number of cells in the y direction to reset (point y0 + num_y not changed)
     * @param policy Define how the copy is executed, default TrueOverwrite
     */
-  void copyCellsTo(Costmap2D &map, unsigned int src_x0, unsigned int src_y0,
-                                   unsigned int dst_x0, unsigned int dst_y0,
-                                   unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
+  void copyCellsTo(Costmap2D &map, int src_x0, int src_y0,
+                                   int dst_x0, int dst_y0,
+                                   int num_x, int num_y, CopyCellPolicy policy = TrueOverwrite);
 
-  void copyCellsTo(Costmap2DPtr map, unsigned int src_x0, unsigned int src_y0,
-                                     unsigned int dst_x0, unsigned int dst_y0,
-                                     unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
+  void copyCellsTo(Costmap2DPtr map, int src_x0, int src_y0,
+                                     int dst_x0, int dst_y0,
+                                     int num_x, int num_y, CopyCellPolicy policy = TrueOverwrite);
 
-  void copyCellsTo(Costmap2D& map, unsigned int x0, unsigned int y0,
-                                   unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
+  void copyCellsTo(Costmap2D& map, int x0, int y0,
+                                   int num_x, int num_y, CopyCellPolicy policy = TrueOverwrite);
 
-  void copyCellsTo(Costmap2DPtr map, unsigned int x0, unsigned int y0,
-                                     unsigned int num_x, unsigned int num_y, CopyCellPolicy policy = TrueOverwrite);
+  void copyCellsTo(Costmap2DPtr map, int x0, int y0,
+                                     int num_x, int num_y, CopyCellPolicy policy = TrueOverwrite);
 
   void copyCellsTo(Costmap2D& map, CopyCellPolicy policy = TrueOverwrite);
   void copyCellsTo(Costmap2DPtr map, CopyCellPolicy policy = TrueOverwrite);
@@ -357,7 +357,7 @@ public:
     * @param xn Upper open limit on x range
     * @param yn Upper open limit on y range
     */
-  void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
+  void resetMap(int x0, int y0, int xn, int yn);
 
   /**
     * @brief Reset the entire map. Set all values to the default value
@@ -372,7 +372,7 @@ public:
     * @param yn Upper open limit on y range
     * @param value custom value to assign to the reset window
     */
-  void setMapCost(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn, const unsigned char value);
+  void setMapCost(int x0, int y0, int xn, int yn, const unsigned char value);
 
   /**
     * @brief Set the entire map to a custom value
