@@ -66,7 +66,7 @@ class MapServer
       double origin[3];
       int negate;
       double occ_th, free_th;
-      bool trinary = true;
+      MapMode mode = TRINARY;
       std::string frame_id;
       ros::NodeHandle private_nh("~");
       private_nh.param("frame_id", frame_id, std::string("map"));
@@ -112,10 +112,22 @@ class MapServer
           exit(-1);
         }
         try { 
-          doc["trinary"] >> trinary; 
+          std::string modeS = "";   
+          doc["mode"] >> modeS; 
+          
+          if(modeS=="trinary")
+            mode = TRINARY;
+          else if(modeS=="scale")
+            mode = SCALE;
+          else if(modeS=="raw")
+            mode = RAW;
+          else{
+            ROS_ERROR("Invalid mode tag \"%s\".", modeS.c_str());
+            exit(-1);
+          }
         } catch (YAML::Exception) { 
-          ROS_DEBUG("The map does not contain a trinary tag or it is invalid... assuming true");
-          trinary = true;
+          ROS_DEBUG("The map does not contain a mode tag or it is invalid... assuming Trinary");
+          mode = TRINARY;
         }
         try { 
           doc["origin"][0] >> origin[0]; 
@@ -153,7 +165,7 @@ class MapServer
       }
 
       ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
-      map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin, trinary);
+      map_server::loadMapFromFile(&map_resp_,mapfname.c_str(),res,negate,occ_th,free_th, origin, mode);
       map_resp_.map.info.map_load_time = ros::Time::now();
       map_resp_.map.header.frame_id = frame_id;
       map_resp_.map.header.stamp = ros::Time::now();
