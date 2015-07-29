@@ -144,14 +144,25 @@ void InflationLayer::matchSize()
 
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
-{
-  // 1 inflation radius to inflate the data
-  // an extra radius to allow the clearing of previous
-  // inflated data
-  *min_x = *min_x - 2*inflation_radius_;
-  *min_y = *min_y - 2*inflation_radius_;
-  *max_x = *max_x + 2*inflation_radius_;
-  *max_y = *max_y + 2*inflation_radius_;
+{  
+  if (need_reinflation_)
+  {
+    *min_x = std::numeric_limits<double>::min();
+    *min_y = std::numeric_limits<double>::min();
+    *max_x = std::numeric_limits<double>::max();
+    *max_y = std::numeric_limits<double>::max();
+    need_reinflation_ = false;
+  }
+  else
+  {
+    // 1 inflation radius to inflate the data
+    // an extra radius to allow the clearing of previous
+    // inflated data
+    *min_x = *min_x - 2*inflation_radius_;
+    *min_y = *min_y - 2*inflation_radius_;
+    *max_x = *max_x + 2*inflation_radius_;
+    *max_y = *max_y + 2*inflation_radius_;
+  }
 }
 
 void InflationLayer::onFootprintChanged()
