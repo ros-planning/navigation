@@ -201,9 +201,8 @@ void InflationLayer::updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j,
     seen_ = new bool[size_x * size_y];
     seen_size_ = size_x * size_y;
   }
-  else if (seen_size_ != size_x * size_y) 
+  else if (seen_size_ < size_x * size_y) 
   {
-    ROS_ERROR("seen size is wrong");
     delete[] seen_; 
     seen_ = new bool[size_x * size_y];
     seen_size_ = size_x * size_y;
