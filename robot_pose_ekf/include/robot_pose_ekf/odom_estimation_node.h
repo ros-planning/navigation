@@ -130,6 +130,7 @@ private:
   bool odom_active_, imu_active_, vo_active_, gps_active_;
   bool odom_used_, imu_used_, vo_used_, gps_used_;
   bool odom_initializing_, imu_initializing_, vo_initializing_, gps_initializing_;
+  bool publish_tf_;
   double timeout_;
   MatrixWrapper::SymmetricMatrix odom_covariance_, imu_covariance_, vo_covariance_, gps_covariance_;
   bool debug_, self_diagnose_;

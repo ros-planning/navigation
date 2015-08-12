@@ -60,6 +60,7 @@ namespace estimation
       imu_initializing_(false),
       vo_initializing_(false),
       gps_initializing_(false),
+      publish_tf_(true),
       odom_covariance_(6),
       imu_covariance_(3),
       vo_covariance_(6),
@@ -83,6 +84,7 @@ namespace estimation
     nh_private.param("gps_used",   gps_used_, false);
     nh_private.param("debug",   debug_, false);
     nh_private.param("self_diagnose",  self_diagnose_, false);
+    nh_private.param("publish_tf",  publish_tf_, true);
     double freq;
     nh_private.param("freq", freq, 30.0);
 
@@ -427,11 +429,13 @@ namespace estimation
           ekf_sent_counter_++;
           
           // broadcast most recent estimate to TransformArray
-          StampedTransform tmp;
-          my_filter_.getEstimate(ros::Time(), tmp);
-          if(!vo_active_ && !gps_active_)
-            tmp.getOrigin().setZ(0.0);
-          odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, base_footprint_frame_));
+          if ( publish_tf_ ) {
+            StampedTransform tmp;
+            my_filter_.getEstimate(ros::Time(), tmp);
+            if(!vo_active_ && !gps_active_)
+              tmp.getOrigin().setZ(0.0);
+            odom_broadcaster_.sendTransform(StampedTransform(tmp, tmp.stamp_, output_frame_, base_footprint_frame_));
+          }
           
           if (debug_){
             // write to file
