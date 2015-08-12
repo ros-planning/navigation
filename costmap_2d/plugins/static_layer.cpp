@@ -3,6 +3,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2008, 2013, Willow Garage, Inc.
+ *  Copyright (c) 2015, Fetch Robotics, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -54,8 +55,8 @@ StaticLayer::StaticLayer() : dsrv_(NULL) {}
 
 StaticLayer::~StaticLayer()
 {
-    if(dsrv_)
-        delete dsrv_;
+  if (dsrv_)
+    delete dsrv_;
 }
 
 void StaticLayer::onInitialize()
@@ -69,8 +70,9 @@ void StaticLayer::onInitialize()
 
   std::string map_topic;
   nh.param("map_topic", map_topic, std::string("map"));
+  nh.param("first_map_only", first_map_only_, false);
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
-  
+
   nh.param("track_unknown_space", track_unknown_space_, true);
   nh.param("use_maximum", use_maximum_, false);
 
@@ -81,7 +83,7 @@ void StaticLayer::onInitialize()
 
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
-  //we'll subscribe to the latched topic that the map server uses
+  // we'll subscribe to the latched topic that the map server uses
   ROS_INFO("Requesting the map...");
   map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
   map_received_ = false;
@@ -95,14 +97,14 @@ void StaticLayer::onInitialize()
   }
 
   ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
-  
-  if(subscribe_to_updates_)
+
+  if (subscribe_to_updates_)
   {
     ROS_INFO("Subscribing to updates");
     map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
   }
 
-  if(dsrv_)
+  if (dsrv_)
   {
     delete dsrv_;
   }
@@ -129,16 +131,23 @@ void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_
 
 void StaticLayer::matchSize()
 {
-  Costmap2D* master = layered_costmap_->getCostmap();
-  resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
-            master->getOriginX(), master->getOriginY());
+  // If we are using rolling costmap, the static map size is
+  //   unrelated to the size of the layered costmap
+  if (!layered_costmap_->isRolling())
+  {
+    Costmap2D* master = layered_costmap_->getCostmap();
+    resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
+              master->getOriginX(), master->getOriginY());
+  }
 }
 
 unsigned char StaticLayer::interpretValue(unsigned char value)
 {
-  //check if the static value is above the unknown or lethal thresholds
+  // check if the static value is above the unknown or lethal thresholds
   if (track_unknown_space_ && value == unknown_cost_value_)
     return NO_INFORMATION;
+  else if (!track_unknown_space_ && value == unknown_cost_value_)
+    return FREE_SPACE;
   else if (value >= lethal_threshold_)
     return LETHAL_OBSTACLE;
   else if (trinary_costmap_)
@@ -156,26 +165,32 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 
   // resize costmap if size, resolution or origin do not match
   Costmap2D* master = layered_costmap_->getCostmap();
-  if (master->getSizeInCellsX() != size_x ||
+  if (!layered_costmap_->isRolling() && (master->getSizeInCellsX() != size_x ||
       master->getSizeInCellsY() != size_y ||
       master->getResolution() != new_map->info.resolution ||
       master->getOriginX() != new_map->info.origin.position.x ||
       master->getOriginY() != new_map->info.origin.position.y ||
-      !layered_costmap_->isSizeLocked())
+      !layered_costmap_->isSizeLocked()))
   {
+    // Update the size of the layered costmap (and all layers, including this one)
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
                                 new_map->info.origin.position.y, true);
-  }else if(size_x_ != size_x || size_y_ != size_y ||
-      resolution_ != new_map->info.resolution ||
-      origin_x_ != new_map->info.origin.position.x ||
-      origin_y_ != new_map->info.origin.position.y){
-    matchSize();
+  }
+  else if (size_x_ != size_x || size_y_ != size_y ||
+           resolution_ != new_map->info.resolution ||
+           origin_x_ != new_map->info.origin.position.x ||
+           origin_y_ != new_map->info.origin.position.y)
+  {
+    // only update the size of the costmap stored locally in this layer
+    ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
+    resizeMap(size_x, size_y, new_map->info.resolution,
+              new_map->info.origin.position.x, new_map->info.origin.position.y);
   }
 
   unsigned int index = 0;
 
-  //initialize the costmap with static data
+  // initialize the costmap with static data
   for (unsigned int i = 0; i < size_y; ++i)
   {
     for (unsigned int j = 0; j < size_x; ++j)
@@ -185,6 +200,9 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       ++index;
     }
   }
+  map_frame_ = new_map->header.frame_id;
+
+  // we have a new map, update full size of map
   x_ = y_ = 0;
   width_ = size_x_;
   height_ = size_y_;
@@ -192,46 +210,59 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   has_updated_data_ = true;
   
   removeAllNamedCostmap2D();
+
+  // shutdown the map subscrber if firt_map_only_ flag is on
+  if (first_map_only_)
+  {
+    ROS_INFO("Shutting down the map subscriber. first_map_only flag is on");
+    map_sub_.shutdown();
+  }
 }
 
 void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& update)
 {
-    unsigned int di = 0;
-    for (unsigned int y = 0; y < update->height ; y++)
+  unsigned int di = 0;
+  for (unsigned int y = 0; y < update->height ; y++)
+  {
+    unsigned int index_base = (update->y + y) * size_x_;
+    for (unsigned int x = 0; x < update->width ; x++)
     {
-        unsigned int index_base = (update->y + y) * update->width;
-        for (unsigned int x = 0; x < update->width ; x++)
-        {
-            unsigned int index = index_base + x + update->x;
-            costmap_[index] = interpretValue( update->data[di++] );
-        }
+      unsigned int index = index_base + x + update->x;
+      costmap_[index] = interpretValue(update->data[di++]);
     }
-    x_ = update->x;
-    y_ = update->y;
-    width_ = update->width;
-    height_ = update->height;
-    has_updated_data_ = true;
-    
-    
-    removeAllNamedCostmap2D();
+  }
+  x_ = update->x;
+  y_ = update->y;
+  width_ = update->width;
+  height_ = update->height;
+  has_updated_data_ = true;
+
+  removeAllNamedCostmap2D();
 }
 
 void StaticLayer::activate()
 {
-    onInitialize();
+  onInitialize();
 }
 
 void StaticLayer::deactivate()
 {
-    map_sub_.shutdown();
-    if (subscribe_to_updates_)
-        map_update_sub_.shutdown();
+  map_sub_.shutdown();
+  if (subscribe_to_updates_)
+    map_update_sub_.shutdown();
 }
 
 void StaticLayer::reset()
 {
+  if (first_map_only_)
+  {
+    has_updated_data_ = true;
+  }
+  else
+  {
     deactivate();
     activate();
+  }
 }
 
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
@@ -239,19 +270,19 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 {
   if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
     return;
-    
+
   useExtraBounds(min_x, min_y, max_x, max_y);
 
-  double mx, my;
-  
-  mapToWorld(x_, y_, mx, my);
-  *min_x = std::min(mx, *min_x);
-  *min_y = std::min(my, *min_y);
-  
-  mapToWorld(x_ + width_, y_ + height_, mx, my);
-  *max_x = std::max(mx, *max_x);
-  *max_y = std::max(my, *max_y);
-  
+  double wx, wy;
+
+  mapToWorld(x_, y_, wx, wy);
+  *min_x = std::min(wx, *min_x);
+  *min_y = std::min(wy, *min_y);
+
+  mapToWorld(x_ + width_, y_ + height_, wx, wy);
+  *max_x = std::max(wx, *max_x);
+  *max_y = std::max(wy, *max_y);
+
   has_updated_data_ = false;
 }
 
@@ -262,35 +293,101 @@ void StaticLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D
     current_ = true; // don't block a waiting process
     return;
   }
-
-  if (!use_maximum_)
+  
+  if (!layered_costmap_->isRolling())
   {
-    updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
-
-    if(layer_actions)
-    {
-      layer_actions->addAction(
-            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
-            this,
-            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
-            &master_grid,
-            LayerActions::TRUEOVERWRITE);
-    }
+    // if not rolling, the layered costmap (master_grid) has same coordinates as this layer
+    if (!use_maximum_)
+      updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
+    else
+      updateWithMax(master_grid, min_i, min_j, max_i, max_j);
   }
   else
   {
-    updateWithMax(master_grid, min_i, min_j, max_i, max_j);
-    if(layer_actions)
+    // If rolling window, the master_grid is unlikely to have same coordinates as this layer
+    unsigned int mx, my;
+    double wx, wy;
+    // Might even be in a different frame
+    tf::StampedTransform transform;
+    try
     {
-      layer_actions->addAction(
-            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
-            this,
-            AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
-            &master_grid,
-            LayerActions::MAX);
+      tf_->lookupTransform(map_frame_, global_frame_, ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      current_ = true; // don't block a waiting process
+      return;
+    }
+    // Copy map data given proper transformations
+    for (unsigned int i = min_i; i < max_i; ++i)
+    {
+      for (unsigned int j = min_j; j < max_j; ++j)
+      {
+        // Convert master_grid coordinates (i,j) into global_frame_(wx,wy) coordinates
+        layered_costmap_->getCostmap()->mapToWorld(i, j, wx, wy);
+        // Transform from global_frame_ to map_frame_
+        tf::Point p(wx, wy, 0);
+        p = transform(p);
+        // Set master_grid with cell from map
+        if (worldToMap(p.x(), p.y(), mx, my))
+        {
+          if (!use_maximum_)
+            master_grid.setCost(i, j, getCost(mx, my));
+          else
+            master_grid.setCost(i, j, std::max(getCost(mx, my), master_grid.getCost(i, j)));
+        }
+      }
     }
   }
+  
+  if (layer_actions)
+  {
+    LayerActions::Action action = use_maximum_? LayerActions::MAX : LayerActions::TRUEOVERWRITE;
+    AxisAlignedBoundingBox region;
 
+    if (!layered_costmap_->isRolling())
+    {
+      region = AxisAlignedBoundingBox(min_i, min_j, max_i, max_j);
+    }
+    else
+    {
+      unsigned int mx0, my0, mx1, my1;
+      double wx0, wy0, wx1, wy1;
+
+      tf::StampedTransform transform;
+      try
+      {
+        tf_->lookupTransform(map_frame_, global_frame_, ros::Time(0), transform);
+      }
+      catch (tf::TransformException ex)
+      {
+        ROS_ERROR("%s", ex.what());
+        return;
+      }
+      
+      layered_costmap_->getCostmap()->mapToWorld(min_i, min_j, wx0, wy0);
+      tf::Point p0(wx0, wy0, 0);
+      p0 = transform(p0);
+      worldToMap(p0.x(), p0.y(), mx0, my0);
+      
+      layered_costmap_->getCostmap()->mapToWorld(max_i, max_j, wx1, wy1);
+      tf::Point p1(wx1, wy1, 0);
+      p1 = transform(p1);
+      worldToMap(p1.x(), p1.y(), mx1, my1);
+      
+      region = AxisAlignedBoundingBox(mx0, my0, mx1, my1);
+    }
+
+    // mark where the action tool place 
+    layer_actions->addAction(
+          region,
+          this,
+          AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
+          &master_grid,
+          action);
+  }
+  
   current_ = true; // allow consumers to use this data
 }
 

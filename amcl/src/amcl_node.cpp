@@ -28,6 +28,9 @@
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
 
+// Signal handling
+#include <signal.h>
+
 #include "map/map.h"
 #include "pf/pf.h"
 #include "sensors/amcl_odom.h"
@@ -44,6 +47,7 @@
 #include "geometry_msgs/PoseArray.h"
 #include "geometry_msgs/Pose.h"
 #include "nav_msgs/GetMap.h"
+#include "nav_msgs/SetMap.h"
 #include "std_srvs/Empty.h"
 
 // For transform support
@@ -105,6 +109,7 @@ class AmclNode
     ~AmclNode();
 
     int process();
+    void savePoseToServer();
 
   private:
     tf::TransformBroadcaster* tfb_;
@@ -126,9 +131,12 @@ class AmclNode
                                     std_srvs::Empty::Response& res);
     bool nomotionUpdateCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
+    bool setMapCallback(nav_msgs::SetMap::Request& req,
+                        nav_msgs::SetMap::Response& res);
 
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg);
     void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
 
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
@@ -141,6 +149,10 @@ class AmclNode
 
     //parameter for what odom to use
     std::string odom_frame_id_;
+
+    //paramater to store latest odom pose
+    tf::Stamped<tf::Pose> latest_odom_pose_;
+
     //parameter for what base to use
     std::string base_frame_id_;
     std::string global_frame_id_;
@@ -203,6 +215,7 @@ class AmclNode
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
+    ros::ServiceServer set_map_srv_;
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
 
@@ -240,15 +253,31 @@ std::vector<std::pair<int,int> > AmclNode::free_space_indices;
 
 #define USAGE "USAGE: amcl"
 
+boost::shared_ptr<AmclNode> amcl_node_ptr;
+
+void sigintHandler(int sig)
+{
+  // Save latest pose as we're shutting down.
+  amcl_node_ptr->savePoseToServer();
+  ros::shutdown();
+}
+
 int
 main(int argc, char** argv)
 {
   ros::init(argc, argv, "amcl");
   ros::NodeHandle nh;
 
-  AmclNode an;
+  // Override default sigint handler
+  signal(SIGINT, sigintHandler);
+
+  // Make our node available to sigintHandler
+  amcl_node_ptr.reset(new AmclNode());
 
   ros::spin();
+
+  // Without this, our boost locks are not shut down nicely
+  amcl_node_ptr.reset();
 
   // To quote Morgan, Hooray!
   return(0);
@@ -362,6 +391,7 @@ AmclNode::AmclNode() :
 					 &AmclNode::globalLocalizationCallback,
                                          this);
   nomotion_update_srv_= nh_.advertiseService("request_nomotion_update", &AmclNode::nomotionUpdateCallback, this);
+  set_map_srv_= nh_.advertiseService("set_map", &AmclNode::setMapCallback, this);
 
   laser_scan_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_, scan_topic_, 100);
   laser_scan_filter_ = 
@@ -533,6 +563,28 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
                                                    this, _1));
 
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
+}
+
+void AmclNode::savePoseToServer()
+{
+  // We need to apply the last transform to the latest odom pose to get
+  // the latest map pose to store.  We'll take the covariance from
+  // last_published_pose.
+  tf::Pose map_pose = latest_tf_.inverse() * latest_odom_pose_;
+  double yaw,pitch,roll;
+  map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
+
+  ROS_DEBUG("Saving pose to server. x: %.3f, y: %.3f", map_pose.getOrigin().x(), map_pose.getOrigin().y() );
+
+  private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
+  private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
+  private_nh_.setParam("initial_pose_a", yaw);
+  private_nh_.setParam("initial_cov_xx", 
+                                  last_published_pose.pose.covariance[6*0+0]);
+  private_nh_.setParam("initial_cov_yy", 
+                                  last_published_pose.pose.covariance[6*1+1]);
+  private_nh_.setParam("initial_cov_aa", 
+                                  last_published_pose.pose.covariance[6*5+5]);
 }
 
 void AmclNode::updatePoseFromServer()
@@ -851,6 +903,16 @@ AmclNode::nomotionUpdateCallback(std_srvs::Empty::Request& req,
 	return true;
 }
 
+bool
+AmclNode::setMapCallback(nav_msgs::SetMap::Request& req,
+                         nav_msgs::SetMap::Response& res)
+{
+  handleMapMessage(req.map);
+  handleInitialPoseMessage(req.initial_pose);
+  res.success = true;
+  return true;
+}
+
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
@@ -904,9 +966,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   }
 
   // Where was the robot when this scan was taken?
-  tf::Stamped<tf::Pose> odom_pose;
   pf_vector_t pose;
-  if(!getOdomPose(odom_pose, pose.v[0], pose.v[1], pose.v[2],
+  if(!getOdomPose(latest_odom_pose_, pose.v[0], pose.v[1], pose.v[2],
                   laser_scan->header.stamp, base_frame_id_))
   {
     ROS_ERROR("Couldn't determine robot's pose associated with laser scan");
@@ -1222,22 +1283,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     if((save_pose_period.toSec() > 0.0) &&
        (now - save_pose_last_time) >= save_pose_period)
     {
-      // We need to apply the last transform to the latest odom pose to get
-      // the latest map pose to store.  We'll take the covariance from
-      // last_published_pose.
-      tf::Pose map_pose = latest_tf_.inverse() * odom_pose;
-      double yaw,pitch,roll;
-      map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
-
-      private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
-      private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
-      private_nh_.setParam("initial_pose_a", yaw);
-      private_nh_.setParam("initial_cov_xx", 
-                                      last_published_pose.pose.covariance[6*0+0]);
-      private_nh_.setParam("initial_cov_yy", 
-                                      last_published_pose.pose.covariance[6*1+1]);
-      private_nh_.setParam("initial_cov_aa", 
-                                      last_published_pose.pose.covariance[6*5+5]);
+      this->savePoseToServer();
       save_pose_last_time = now;
     }
   }
@@ -1255,17 +1301,23 @@ AmclNode::getYaw(tf::Pose& t)
 void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
+  handleInitialPoseMessage(*msg);
+}
+
+void
+AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg)
+{
   boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
-  if(msg->header.frame_id == "")
+  if(msg.header.frame_id == "")
   {
     // This should be removed at some point
     ROS_WARN("Received initial pose with empty frame_id.  You should always supply a frame_id.");
   }
   // We only accept initial pose estimates in the global frame, #5148.
-  else if(tf_->resolve(msg->header.frame_id) != tf_->resolve(global_frame_id_))
+  else if(tf_->resolve(msg.header.frame_id) != tf_->resolve(global_frame_id_))
   {
     ROS_WARN("Ignoring initial pose in frame \"%s\"; initial poses must be in the global frame, \"%s\"",
-             msg->header.frame_id.c_str(),
+             msg.header.frame_id.c_str(),
              global_frame_id_.c_str());
     return;
   }
@@ -1276,7 +1328,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   try
   {
     tf_->lookupTransform(base_frame_id_, ros::Time::now(),
-                         base_frame_id_, msg->header.stamp,
+                         base_frame_id_, msg.header.stamp,
                          global_frame_id_, tx_odom);
   }
   catch(tf::TransformException e)
@@ -1291,7 +1343,7 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   }
 
   tf::Pose pose_old, pose_new;
-  tf::poseMsgToTF(msg->pose.pose, pose_old);
+  tf::poseMsgToTF(msg.pose.pose, pose_old);
   pose_new = tx_odom.inverse() * pose_old;
 
   // Transform into the global frame
@@ -1312,10 +1364,10 @@ AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedCons
   {
     for(int j=0; j<2; j++)
     {
-      pf_init_pose_cov.m[i][j] = msg->pose.covariance[6*i+j];
+      pf_init_pose_cov.m[i][j] = msg.pose.covariance[6*i+j];
     }
   }
-  pf_init_pose_cov.m[2][2] = msg->pose.covariance[6*5+5];
+  pf_init_pose_cov.m[2][2] = msg.pose.covariance[6*5+5];
 
   delete initial_pose_hyp_;
   initial_pose_hyp_ = new amcl_hyp_t();
