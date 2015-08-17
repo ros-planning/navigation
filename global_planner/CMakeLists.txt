@@ -3,6 +3,7 @@ project(global_planner)
 
 find_package(catkin REQUIRED
   COMPONENTS
+    angles
     costmap_2d
     dynamic_reconfigure
     geometry_msgs
@@ -44,6 +45,7 @@ add_library(${PROJECT_NAME}
   src/astar.cpp
   src/grid_path.cpp
   src/gradient_path.cpp
+  src/orientation_filter.cpp
   src/planner_core.cpp
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})

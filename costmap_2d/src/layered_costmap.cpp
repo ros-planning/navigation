@@ -116,7 +116,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 
   {
     // locking for these operations as they change the map (note: single lock for all operations)
-    boost::unique_lock < boost::shared_mutex > lock(*(costmap_.getLock()));
+    boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
 
     unsigned char value = costmap_.getDefaultValue();
     const int size_x_ = costmap_.getSizeInCellsX();
@@ -159,7 +159,7 @@ bool LayeredCostmap::isCurrent()
 void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
   footprint_ = footprint_spec;
-  costmap_2d::calculateMinAndMaxDistances( footprint_spec, inscribed_radius_, circumscribed_radius_ );
+  costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
 
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)

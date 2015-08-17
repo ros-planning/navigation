@@ -1,6 +1,6 @@
 <package>
     <name>amcl</name>
-    <version>1.12.0</version>
+    <version>1.12.4</version>
     <description>
         <p>
             amcl is a probabilistic localization system for a robot moving in
@@ -33,6 +33,7 @@
     <run_depend>roscpp</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>tf</run_depend>
+    <run_depend>nav_msgs</run_depend>
 
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>

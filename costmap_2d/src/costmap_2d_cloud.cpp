@@ -33,8 +33,9 @@
 static inline void mapToWorld3D(const unsigned int mx, const unsigned int my, const unsigned int mz,
                                       const double origin_x, const double origin_y, const double origin_z,
                                       const double x_resolution, const double y_resolution, const double z_resolution,
-                                      double& wx, double& wy, double& wz){
-  //returns the center point of the cell
+                                      double& wx, double& wy, double& wz)
+{
+  // returns the center point of the cell
   wx = origin_x + (mx + 0.5) * x_resolution;
   wy = origin_y + (my + 0.5) * y_resolution;
   wz = origin_z + (mz + 0.5) * z_resolution;
@@ -116,7 +117,6 @@ void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_u
 
           ++num_marked;
         }
-
       }
     }
   }
@@ -144,7 +144,7 @@ void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_u
       uint32_t r = g_colors_r[c.status] * 255.0;
       uint32_t g = g_colors_g[c.status] * 255.0;
       uint32_t b = g_colors_b[c.status] * 255.0;
-      //uint32_t a = g_colors_a[c.status] * 255.0;
+      // uint32_t a = g_colors_a[c.status] * 255.0;
 
       uint32_t col = (r << 16) | (g << 8) | b;
       cval = *reinterpret_cast<float*>(&col);
@@ -176,7 +176,7 @@ void voxelCallback(const ros::Publisher& pub_marked, const ros::Publisher& pub_u
       uint32_t r = g_colors_r[c.status] * 255.0;
       uint32_t g = g_colors_g[c.status] * 255.0;
       uint32_t b = g_colors_b[c.status] * 255.0;
-      //uint32_t a = g_colors_a[c.status] * 255.0;
+      // uint32_t a = g_colors_a[c.status] * 255.0;
 
       uint32_t col = (r << 16) | (g << 8) | b;
       cval = *reinterpret_cast<float*>(&col);

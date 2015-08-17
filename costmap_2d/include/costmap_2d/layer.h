@@ -34,8 +34,8 @@
  *
  * Author: David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_2D_COSTMAP_2D_LAYER_H_
-#define COSTMAP_2D_COSTMAP_2D_LAYER_H_
+#ifndef COSTMAP_2D_LAYER_H_
+#define COSTMAP_2D_LAYER_H_
 
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d.h>
@@ -58,7 +58,7 @@ class Layer
 public:
   Layer();
 
-  void initialize( LayeredCostmap* parent, std::string name, tf::TransformListener *tf );
+  void initialize(LayeredCostmap* parent, std::string name, tf::TransformListener *tf);
 
   /**
    * @brief This is called by the LayeredCostmap to poll this plugin as to how
@@ -94,15 +94,15 @@ public:
 
   virtual ~Layer() {}
 
-  /** 
-   * @brief Check to make sure all the data in the layer is up to date. 
-   *        If the layer is not up to date, then it may be unsafe to 
-   *        plan using the data from this layer, and the planner may 
-   *        need to know. 
+  /**
+   * @brief Check to make sure all the data in the layer is up to date.
+   *        If the layer is not up to date, then it may be unsafe to
+   *        plan using the data from this layer, and the planner may
+   *        need to know.
    *
    *        A layer's current state should be managed by the protected
    *        variable current_.
-   * @return Whether the data in the layer is up to date. 
+   * @return Whether the data in the layer is up to date.
    */
   bool isCurrent() const
   {
@@ -134,7 +134,7 @@ protected:
 
   LayeredCostmap* layered_costmap_;
   bool current_;
-  bool enabled_; ///< Currently this var is managed by subclasses.  TODO: make this managed by this class and/or container class.
+  bool enabled_;  ///< Currently this var is managed by subclasses. TODO: make this managed by this class and/or container class.
   std::string name_;
   tf::TransformListener* tf_;
 
@@ -144,4 +144,4 @@ private:
 
 }  // namespace costmap_2d
 
-#endif  // COSTMAP_2D_COSTMAP_2D_LAYER_H_
+#endif  // COSTMAP_2D_LAYER_H_
