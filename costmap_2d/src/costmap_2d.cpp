@@ -66,6 +66,8 @@ void Costmap2D::deleteMaps()
   if(costmap_)
     delete[] costmap_;
   costmap_ = NULL;
+
+  child_maps_.clear();
 }
 
 void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y)
@@ -74,6 +76,8 @@ void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y)
   if (costmap_)
     delete[] costmap_;
   costmap_ = new unsigned char[size_x * size_y];
+
+  child_maps_.clear();
 }
 
 
@@ -116,6 +120,8 @@ int& Costmap2D::namedFlag(const std::string& flag_name)
 void Costmap2D::resizeMap(unsigned int size_x, unsigned int size_y, double resolution,
                           double origin_x, double origin_y)
 {
+  boost::unique_lock<mutex_t> lock(*access_);
+
   size_x_ = size_x;
   size_y_ = size_y;
   resolution_ = resolution;
@@ -310,15 +316,14 @@ void Costmap2D::setMapCost(const unsigned char value)
 bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x,
                                   double win_size_y)
 {
+  boost::unique_lock<mutex_t> lock(*(access_));
+
   // check for self windowing
   if (this == &map)
   {
     // ROS_ERROR("Cannot convert this costmap into a window of itself");
     return false;
   }
-
-  // clean up old data
-  deleteMaps();
 
   // compute the bounds of our new map
   unsigned int lower_left_x, lower_left_y, upper_right_x, upper_right_y;
@@ -328,6 +333,9 @@ bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, dou
     // ROS_ERROR("Cannot window a map that the window bounds don't fit inside of");
     return false;
   }
+
+  // clean up old data
+  deleteMaps();
 
   size_x_ = upper_right_x - lower_left_x;
   size_y_ = upper_right_y - lower_left_y;
@@ -345,6 +353,8 @@ bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, dou
 
 Costmap2D& Costmap2D::operator=(const Costmap2D& map)
 {
+  boost::unique_lock<mutex_t> lock(*(access_));
+
   // check for self assignement
   if (this == &map)
     return *this;
@@ -491,6 +501,7 @@ void Costmap2D::worldToMapEnforceBounds(double wx, double wy, int& mx, int& my) 
 
 void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
 {
+  boost::unique_lock<mutex_t> lock(*(access_));
   // project the new origin into the grid
   int cell_ox, cell_oy;
   cell_ox = int((new_origin_x - origin_x_) / resolution_);
@@ -542,6 +553,7 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
 
 bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value)
 {
+  boost::unique_lock<mutex_t> lock(*(access_));
   // we assume the polygon is given in the global_frame... we need to transform it to map coordinates
   std::vector<MapLocation> map_polygon;
   for (unsigned int i = 0; i < polygon.size(); ++i)
@@ -571,6 +583,7 @@ bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& po
 
 void Costmap2D::polygonOutlineCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells)
 {
+  boost::unique_lock<mutex_t> lock(*(access_));
   PolygonOutlineCells cell_gatherer(*this, costmap_, polygon_cells);
   for (unsigned int i = 0; i < polygon.size() - 1; ++i)
   {
@@ -692,6 +705,7 @@ double Costmap2D::getResolution() const
 
 bool Costmap2D::saveMap(std::string file_name)
 {
+  boost::unique_lock<mutex_t> lock(*(access_));
   FILE *fp = fopen(file_name.c_str(), "w");
 
   if (!fp)

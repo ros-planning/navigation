@@ -48,8 +48,17 @@ void CostmapLayer::updateWithMax(costmap_2d::Costmap2D& master_grid, int min_i, 
   if (!enabled_)
     return;
 
+  boost::unique_lock<mutex_t> lock_1(*(getMutex()));
+  boost::unique_lock<mutex_t> lock_2(*(master_grid.getMutex()));
+
   unsigned char* master_array = master_grid.getCharMap();
   unsigned int span = master_grid.getSizeInCellsX();
+
+  // make sure the map size hasn't changed while we waited on the locks
+  if (span != getSizeInCellsX())
+    return;
+  if( master_grid.getSizeInCellsY() != getSizeInCellsY())
+    return;
 
   for (int j = min_j; j < max_j; j++)
   {
@@ -74,8 +83,18 @@ void CostmapLayer::updateWithTrueOverwrite(costmap_2d::Costmap2D& master_grid, i
 {
   if (!enabled_)
     return;
+
+  boost::unique_lock<mutex_t> lock_1(*(getMutex()));
+  boost::unique_lock<mutex_t> lock_2(*(master_grid.getMutex()));
+
   unsigned char* master = master_grid.getCharMap();
   unsigned int span = master_grid.getSizeInCellsX();
+
+  // make sure the map size hasn't changed while we waited on the locks
+  if (span != getSizeInCellsX())
+    return;
+  if( master_grid.getSizeInCellsY() != getSizeInCellsY())
+    return;
 
   for (int j = min_j; j < max_j; j++)
   {
@@ -92,8 +111,18 @@ void CostmapLayer::updateWithOverwrite(costmap_2d::Costmap2D& master_grid, int m
 {
   if (!enabled_)
     return;
+
+  boost::unique_lock<mutex_t> lock_1(*(getMutex()));
+  boost::unique_lock<mutex_t> lock_2(*(master_grid.getMutex()));
+
   unsigned char* master = master_grid.getCharMap();
   unsigned int span = master_grid.getSizeInCellsX();
+
+  // make sure the map size hasn't changed while we waited on the locks
+  if (span != getSizeInCellsX())
+    return;
+  if( master_grid.getSizeInCellsY() != getSizeInCellsY())
+    return;
 
   for (int j = min_j; j < max_j; j++)
   {
@@ -111,8 +140,18 @@ void CostmapLayer::updateWithAddition(costmap_2d::Costmap2D& master_grid, int mi
 {
   if (!enabled_)
     return;
+
+  boost::unique_lock<mutex_t> lock_1(*(getMutex()));
+  boost::unique_lock<mutex_t> lock_2(*(master_grid.getMutex()));
+
   unsigned char* master_array = master_grid.getCharMap();
   unsigned int span = master_grid.getSizeInCellsX();
+
+  // make sure the map size hasn't changed while we waited on the locks
+  if (span != getSizeInCellsX())
+    return;
+  if( master_grid.getSizeInCellsY() != getSizeInCellsY())
+    return;
 
   for (int j = min_j; j < max_j; j++)
   {
