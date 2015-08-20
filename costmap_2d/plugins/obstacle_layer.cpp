@@ -367,6 +367,9 @@ void ObstacleLayer::poseConfidenceCallback(const std_msgs::Float64 &message)
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
+  // we are making changes to the local costmap so we want to make sure others don't
+  boost::unique_lock<mutex_t> lock(*(getMutex()));
+
   if (use_forgetful_version_)
     return forgetfulUpdateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 
