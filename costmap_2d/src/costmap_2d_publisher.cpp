@@ -123,6 +123,7 @@ void Costmap2DPublisher::publishCostmap()
 
   if (always_send_full_costmap_ || grid_.info.resolution != resolution ||
       grid_.info.width != costmap_->getSizeInCellsX() ||
+      grid_.info.height != costmap_->getSizeInCellsY() ||
       saved_origin_x_ != costmap_->getOriginX() ||
       saved_origin_y_ != costmap_->getOriginY())
   {
