@@ -92,16 +92,15 @@ namespace base_local_planner {
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan){
-    const geometry_msgs::PoseStamped& plan_pose = global_plan[0];
-
     transformed_plan.clear();
 
-    try {
-      if (!global_plan.size() > 0) {
-        ROS_ERROR("Received plan with zero length");
-        return false;
-      }
+    if (global_plan.empty()) {
+      ROS_ERROR("Received plan with zero length");
+      return false;
+    }
 
+    const geometry_msgs::PoseStamped& plan_pose = global_plan[0];
+    try {
       // get plan_to_global_transform from plan frame to global_frame
       tf::StampedTransform plan_to_global_transform;
       tf.waitForTransform(global_frame, ros::Time::now(),
@@ -165,7 +164,7 @@ namespace base_local_planner {
     }
     catch(tf::ExtrapolationException& ex) {
       ROS_ERROR("Extrapolation Error: %s\n", ex.what());
-      if (global_plan.size() > 0)
+      if (!global_plan.empty())
         ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
 
       return false;
@@ -176,15 +175,15 @@ namespace base_local_planner {
 
   bool getGoalPose(const tf::TransformListener& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const std::string& global_frame, tf::Stamped<tf::Pose> &goal_pose) {
+      const std::string& global_frame, tf::Stamped<tf::Pose>& goal_pose) {
+    if (global_plan.empty())
+    {
+      ROS_ERROR("Received plan with zero length");
+      return false;
+    }
+
     const geometry_msgs::PoseStamped& plan_goal_pose = global_plan.back();
     try{
-      if (!global_plan.size() > 0)
-      {
-        ROS_ERROR("Recieved plan with zero length");
-        return false;
-      }
-
       tf::StampedTransform transform;
       tf.waitForTransform(global_frame, ros::Time::now(),
                           plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
@@ -219,14 +218,14 @@ namespace base_local_planner {
 
   bool isGoalReached(const tf::TransformListener& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const costmap_2d::Costmap2D& costmap,
+      const costmap_2d::Costmap2D& costmap __attribute__((unused)),
       const std::string& global_frame,
       tf::Stamped<tf::Pose>& global_pose,
       const nav_msgs::Odometry& base_odom,
       double rot_stopped_vel, double trans_stopped_vel,
       double xy_goal_tolerance, double yaw_goal_tolerance){
 
-	//we assume the global goal is the last point in the global plan
+    //we assume the global goal is the last point in the global plan
     tf::Stamped<tf::Pose> goal_pose;
     getGoalPose(tf, global_plan, global_frame, goal_pose);
 
