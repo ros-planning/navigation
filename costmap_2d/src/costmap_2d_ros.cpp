@@ -89,10 +89,13 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     ros::spinOnce();
     if (last_error + ros::Duration(5.0) < ros::Time::now())
     {
-      ROS_WARN("Waiting on transform from %s to %s to become available before running costmap, tf error: %s",
+      ROS_WARN("Timed out waiting for transform from %s to %s to become available before running costmap, tf error: %s",
                robot_base_frame_.c_str(), global_frame_.c_str(), tf_error.c_str());
       last_error = ros::Time::now();
     }
+    // The error string will accumulate and errors will typically be the same, so the last
+    // will do for the warning above. Reset the string here to avoid accumulation.
+    tf_error.clear();
   }
 
   // check if we want a rolling window version of the costmap
