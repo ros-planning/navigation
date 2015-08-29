@@ -357,7 +357,7 @@ protected:
    * @param  max_length The maximum desired length of the segment... allows you to not go all the way to the endpoint
    */
   template<class ActionType>
-    inline void raytraceLine(ActionType at, unsigned int x0, unsigned int y0, unsigned int x1, unsigned int y1,
+    inline void raytraceLine(ActionType &at, unsigned int x0, unsigned int y0, unsigned int x1, unsigned int y1,
                              unsigned int max_length = UINT_MAX)
     {
       int dx = x1 - x0;
@@ -393,7 +393,7 @@ private:
    * @brief  A 2D implementation of Bresenham's raytracing algorithm... applies an action at each step
    */
   template<class ActionType>
-    inline void bresenham2D(ActionType at, unsigned int abs_da, unsigned int abs_db, int error_b, int offset_a,
+    inline void bresenham2D(ActionType &at, unsigned int abs_da, unsigned int abs_db, int error_b, int offset_a,
                             int offset_b, unsigned int offset, unsigned int max_length)
     {
       unsigned int end = std::min(max_length, abs_da);
