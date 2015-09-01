@@ -49,19 +49,6 @@ add_executable(move_base_node
 target_link_libraries(move_base_node move_base)
 set_target_properties(move_base_node PROPERTIES OUTPUT_NAME move_base)
 
-install(DIRECTORY launch
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-    USE_SOURCE_PERMISSIONS
-    )
-
-install(
-    PROGRAMS
-       scripts/subtopic_forwarder.py
-       scripts/subtopic_forwarder_node.py
-       scripts/warner.py
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
 install(
     TARGETS
         move_base
