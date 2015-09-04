@@ -124,6 +124,15 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     }
   }
 
+  // This param sets a static inflation based on the footprint param.
+  // Make sure this is set before anything sets the footprints.
+  // TODO(pchen): This is a stop gap solution and can be removed once proper zone inflations are in.
+  private_nh.param("static_inflation", static_inflation_, false);
+  if (static_inflation_)
+  {
+    setStaticRobotFootprint(makeFootprintFromParams(private_nh));
+  }
+
   // subscribe to the footprint topic
   std::string topic_param, topic;
   if (!private_nh.searchParam("footprint_topic", topic_param))
@@ -141,14 +150,6 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
   private_nh.param(topic_param, topic, std::string("oriented_footprint"));
   footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
-
-  // This param sets a static inflation based on the footprint param.
-  // TODO(pchen): This is a stop gap solution and can be removed once proper zone inflations are in.
-  private_nh.param("static_inflation", static_inflation_, false);
-  if (static_inflation_)
-  {
-    setStaticRobotFootprint(makeFootprintFromParams(private_nh));
-  }
   
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
 
