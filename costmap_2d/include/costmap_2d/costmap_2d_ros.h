@@ -201,6 +201,11 @@ public:
    * getUnpaddedRobotFootprint(). */
   void setUnpaddedRobotFootprint(const std::vector<geometry_msgs::Point>& points);
 
+  /** @brief Sets the static footprint of the robot to the initial footprint defined in the params.
+   * TODO(pchen): Stop gap solution until zone inflations are in.
+   */
+  void setStaticRobotFootprint(const std::vector<geometry_msgs::Point>& points);
+
   /** @brief Set the footprint of the robot to be the given polygon,
    * padded by footprint_padding.
    *
@@ -251,8 +256,10 @@ private:
   bool got_footprint_;
   std::vector<geometry_msgs::Point> unpadded_footprint_;
   std::vector<geometry_msgs::Point> padded_footprint_;
+  std::vector<geometry_msgs::Point> static_footprint_;
   float footprint_padding_;
   costmap_2d::Costmap2DConfig old_config_;
+  bool static_inflation_;
 };
 // class Costmap2DROS
 }  // namespace costmap_2d

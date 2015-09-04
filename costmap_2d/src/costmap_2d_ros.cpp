@@ -142,6 +142,14 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   private_nh.param(topic_param, topic, std::string("oriented_footprint"));
   footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
 
+  // This param sets a static inflation based on the footprint param.
+  // TODO(pchen): This is a stop gap solution and can be removed once proper zone inflations are in.
+  private_nh.param("static_inflation", static_inflation_, false);
+  if (static_inflation_)
+  {
+    setStaticRobotFootprint(makeFootprintFromParams(private_nh));
+  }
+  
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap",
@@ -338,6 +346,14 @@ void Costmap2DROS::setUnpaddedRobotFootprint(const std::vector<geometry_msgs::Po
   padFootprint(padded_footprint_, footprint_padding_);
 
   layered_costmap_->setFootprint(padded_footprint_);
+}
+
+void Costmap2DROS::setStaticRobotFootprint(const std::vector<geometry_msgs::Point>& points)
+{
+  static_footprint_ = points;
+  padFootprint(static_footprint_, footprint_padding_);
+
+  layered_costmap_->setInflationRadius(static_footprint_);
 }
 
 void Costmap2DROS::movementCB(const ros::TimerEvent &event)
