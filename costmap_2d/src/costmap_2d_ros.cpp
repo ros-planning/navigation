@@ -353,7 +353,7 @@ void Costmap2DROS::setStaticRobotFootprint(const std::vector<geometry_msgs::Poin
 {
   static_footprint_ = points;
 
-  layered_costmap_->setInflationRadius(static_footprint_);
+  layered_costmap_->setStaticInscribedRadius(static_footprint_);
 }
 
 void Costmap2DROS::movementCB(const ros::TimerEvent &event)
