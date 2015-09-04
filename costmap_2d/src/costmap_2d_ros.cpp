@@ -351,7 +351,6 @@ void Costmap2DROS::setUnpaddedRobotFootprint(const std::vector<geometry_msgs::Po
 void Costmap2DROS::setStaticRobotFootprint(const std::vector<geometry_msgs::Point>& points)
 {
   static_footprint_ = points;
-  padFootprint(static_footprint_, footprint_padding_);
 
   layered_costmap_->setInflationRadius(static_footprint_);
 }
