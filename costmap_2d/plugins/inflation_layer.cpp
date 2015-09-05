@@ -166,7 +166,7 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
 
 void InflationLayer::onFootprintChanged()
 {
-  inscribed_radius_ = layered_costmap_->getInscribedRadius();
+  inscribed_radius_ = layered_costmap_->getInflationInscribedRadius();
   cell_inflation_radius_ = cellDistance(inflation_radius_);
   computeCaches();
   need_reinflation_ = true;

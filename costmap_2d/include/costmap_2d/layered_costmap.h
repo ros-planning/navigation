@@ -137,6 +137,11 @@ public:
    * layers. */
   void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec);
 
+  /** @brief Set the inscribed radii to be used for static inflation.
+   * TODO(pchen): This can be removed when zone inflations are in.
+   */
+  void setStaticInscribedRadius(const std::vector<geometry_msgs::Point>& footprint_spec);
+
   /** @brief Returns the latest footprint stored with setFootprint(). */
   const std::vector<geometry_msgs::Point>& getFootprint() { return footprint_; }
 
@@ -154,6 +159,11 @@ public:
    * This is updated by setFootprint(). */
   double getInscribedRadius() { return inscribed_radius_; }
 
+  /** @brief Gets the inscribed radius that should be used for inflation.
+   * TODO(pchen): This can be removed when zone inflations are in.
+   */
+  double getInflationInscribedRadius() { return (static_inscribed_radius_ < 0)?inscribed_radius_:static_inscribed_radius_; }
+
 private:
   Costmap2D costmap_;
   std::string global_frame_;
@@ -170,6 +180,7 @@ private:
   bool size_locked_;
   double circumscribed_radius_, inscribed_radius_;
   std::vector<geometry_msgs::Point> footprint_;
+  double static_inscribed_radius_;
 };
 
 }  // namespace costmap_2d
