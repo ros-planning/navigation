@@ -1022,7 +1022,6 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
-          //boost::unique_lock<boost::mutex> lock(planner_mutex_);  // Lock the planner thread?
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
 
