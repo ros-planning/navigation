@@ -668,12 +668,13 @@ namespace move_base {
         latest_plan_ = temp_plan;
         last_valid_plan_ = ros::Time::now();
         new_global_plan_ = true;
-
         ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
-        //make sure we only start the controller if we still haven't reached the goal
-        if(runPlanner_)
-          state_ = CONTROLLING;
+        /* As soon as we find a plan even if during recovery, set the state to CONTROLLING.
+         * In CONTROLLING state if isGoalReached returns true the cycle returns true so there's no
+         * need to check if we have or have not reached the goal to change the state.
+         */
+        state_ = CONTROLLING;
         if(planner_frequency_ <= 0)
           runPlanner_ = false;
         lock.unlock();
@@ -687,6 +688,14 @@ namespace move_base {
         lock.lock();
         if(ros::Time::now() > attempt_end && runPlanner_){
           //we'll move into our obstacle clearing mode
+          /* We're about to change the state to CLEARING (recovery).
+           * Since performing the recovery process is slower than this
+           * while loop, we should set runPlanner_ to false to suspend
+           * the planner thread or else we could plan in the middle of
+           * the recovery (e.g. before the obstacles have completely been
+           * disabled). We will reset this flag to true after recovery is done.
+           */
+          runPlanner_ = false;
           state_ = CLEARING;
           publishZeroVelocity();
           recovery_trigger_ = PLANNING_R;
@@ -974,8 +983,11 @@ namespace move_base {
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
-          if(recovery_trigger_ == CONTROLLING_R)
-            recovery_index_ = 0;
+          /* Set the recovery counter to zero regardless of whether we're coming
+           * from CONTROLLING_R or have found a plan after a recovery and executed it.
+           * This allows for multiple recovery attempts if the robot moves (as opposed to one only).
+           */
+          recovery_index_ = 0;
         }
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
@@ -1018,6 +1030,10 @@ namespace move_base {
 
           //we'll check if the recovery behavior actually worked
           ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
+          /* Now that recovery process is finished, we can reset the flag
+           * to allow the planner thread to proceed.
+           */
+          runPlanner_ = true;
           state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
