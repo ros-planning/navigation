@@ -3,6 +3,7 @@
 #include <string>     // for string
 #include <algorithm>  // for min
 #include <vector>     // for vector<>
+#include <cmath>
 
 namespace costmap_2d
 {
@@ -23,10 +24,10 @@ bool AxisAlignedBoundingBox::same(const AxisAlignedBoundingBox &r, int tol)
     return false;
   if (tol)
   {
-    if (abs(r.min_x_ - min_x_) > tol) return false;
-    if (abs(r.min_y_ - min_y_) > tol) return false;
-    if (abs(r.max_x_ - max_x_) > tol) return false;
-    if (abs(r.max_y_ - max_y_) > tol) return false;
+    if (std::abs((float)(r.min_x_ - min_x_)) > tol) return false;
+    if (std::abs((float)(r.min_y_ - min_y_)) > tol) return false;
+    if (std::abs((float)(r.max_x_ - max_x_)) > tol) return false;
+    if (std::abs((float)(r.max_y_ - max_y_)) > tol) return false;
     return true;
   }
   if (r.min_x_ != min_x_) return false;

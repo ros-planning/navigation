@@ -4,15 +4,6 @@
 #include <ros/ros.h>
 
 
-#ifdef CLOCK_THREAD_CPU_TIME
-#define CLOCKTYPE CLOCK_THREAD_CPU_TIME
-#else
-#define CLOCKTYPE CLOCK_REALTIME
-#endif
-#ifndef NANOSEC_PER_SEC
-#define NANOSEC_PER_SEC 1000000000
-#endif
-
 namespace costmap_2d
 {
 
@@ -130,45 +121,32 @@ void DynamicAlgorithmSelect::writeData(const char *filename)
 }
 
 
-
-
-struct DynamicAlgorithmSelect::Timer::TimerStruct
-{
-  struct timespec t0;
-  struct timespec t1;
-};
-
 // We are using an opaque class with a d-pointer
 // so we can modify the implementation without messing with the
 // header file. Should reduce compile times when this is
 // used more widely.
 DynamicAlgorithmSelect::Timer::Timer()
-  : d(new DynamicAlgorithmSelect::Timer::TimerStruct)
 {
 
 }
 
 DynamicAlgorithmSelect::Timer::~Timer()
 {
-  delete d;
 }
 
 void DynamicAlgorithmSelect::Timer::start()
 {
-  clock_gettime(CLOCKTYPE, (struct timespec*) &(d->t0));
+  start_ = ros::Time::now();
 }
 
 void DynamicAlgorithmSelect::Timer::stop()
 {
-  clock_gettime(CLOCKTYPE, (struct timespec*) &(d->t1));
+  end_ = ros::Time::now();
 }
 
 double DynamicAlgorithmSelect::Timer::elapsed()
 {
-  const double seconds = (d->t1.tv_sec - d->t0.tv_sec);
-  const double nanoseconds = (d->t1.tv_nsec - d->t0.tv_nsec);
-  const double elapsed_nanoseconds = seconds * NANOSEC_PER_SEC + nanoseconds;
-  return elapsed_nanoseconds;
+  return (end_-start_).toNSec();
 }
 
 
