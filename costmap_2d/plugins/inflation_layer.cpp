@@ -146,8 +146,8 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
 {
   if (need_reinflation_)
   {
-    *min_x = -std::numeric_limits<double>::min();
-    *min_y = -std::numeric_limits<double>::min();
+    *min_x = -std::numeric_limits<double>::max();
+    *min_y = -std::numeric_limits<double>::max();
     *max_x = std::numeric_limits<double>::max();
     *max_y = std::numeric_limits<double>::max();
     need_reinflation_ = false;
