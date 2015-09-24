@@ -2,6 +2,11 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.4 (2015-06-03)
+-------------------
+* Fix for `#337 <https://github.com/mikeferguson/navigation/issues/337>`_
+* Contributors: David V. Lu!!
+
 1.12.3 (2015-04-30)
 -------------------
 

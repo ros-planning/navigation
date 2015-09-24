@@ -2,6 +2,12 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.12.4 (2015-06-03)
+-------------------
+* Look for robot_radius when footprint is not set. `#206 <https://github.com/mikeferguson/navigation/issues/206>`_
+* Add a first_map_only parameter so we keep reusing the first received static map
+* Contributors: Jihoon Lee, Patrick Chin
+
 1.12.3 (2015-04-30)
 -------------------
 * support rolling static map in any frame

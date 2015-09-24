@@ -145,7 +145,7 @@ bool LayeredCostmap::isCurrent()
 void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
   footprint_ = footprint_spec;
-  costmap_2d::calculateMinAndMaxDistances( footprint_spec, inscribed_radius_, circumscribed_radius_ );
+  costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
 
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)

@@ -31,7 +31,7 @@ void CostmapLayer::useExtraBounds(double* min_x, double* min_y, double* max_x, d
 {
     if (!has_extra_bounds_)
         return;
-        
+
     *min_x = std::min(extra_min_x_, *min_x);
     *min_y = std::min(extra_min_y_, *min_y);
     *max_x = std::max(extra_max_x_, *max_x);
@@ -69,7 +69,8 @@ void CostmapLayer::updateWithMax(costmap_2d::Costmap2D& master_grid, int min_i, 
   }
 }
 
-void CostmapLayer::updateWithTrueOverwrite(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void CostmapLayer::updateWithTrueOverwrite(costmap_2d::Costmap2D& master_grid, int min_i, int min_j,
+                                           int max_i, int max_j)
 {
   if (!enabled_)
     return;
@@ -126,7 +127,7 @@ void CostmapLayer::updateWithAddition(costmap_2d::Costmap2D& master_grid, int mi
       unsigned char old_cost = master_array[it];
       if (old_cost == NO_INFORMATION)
         master_array[it] = costmap_[it];
-      else 
+      else
       {
         int sum = old_cost + costmap_[it];
         if (sum >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
@@ -137,7 +138,5 @@ void CostmapLayer::updateWithAddition(costmap_2d::Costmap2D& master_grid, int mi
       it++;
     }
   }
-
-
 }
-}
+}  // namespace costmap_2d

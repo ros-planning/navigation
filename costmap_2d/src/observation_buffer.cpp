@@ -88,13 +88,12 @@ bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame)
       origin.header.stamp = transform_time;
       origin.point = obs.origin_;
 
-      //we need to transform the origin of the observation to the new global frame
+      // we need to transform the origin of the observation to the new global frame
       tf_.transformPoint(new_global_frame, origin, origin);
       obs.origin_ = origin.point;
 
-      //we also need to transform the cloud of the observation to the new global frame
+      // we also need to transform the cloud of the observation to the new global frame
       pcl_ros::transformPointCloud(new_global_frame, *obs.cloud_, *obs.cloud_, tf_);
-
     }
     catch (TransformException& ex)
     {
@@ -104,7 +103,7 @@ bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame)
     }
   }
 
-  //now we need to update our global_frame member
+  // now we need to update our global_frame member
   global_frame_ = new_global_frame;
   return true;
 }
@@ -118,7 +117,7 @@ void ObservationBuffer::bufferCloud(const sensor_msgs::PointCloud2& cloud)
     // Actually convert the PointCloud2 message into a type we can reason about
     pcl::PointCloud < pcl::PointXYZ > pcl_cloud;
     pcl::fromPCLPointCloud2(pcl_pc2, pcl_cloud);
-    bufferCloud (pcl_cloud);
+    bufferCloud(pcl_cloud);
   }
   catch (pcl::PCLException& ex)
   {
@@ -131,39 +130,40 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
 {
   Stamped < tf::Vector3 > global_origin;
 
-  //create a new observation on the list to be populated
+  // create a new observation on the list to be populated
   observation_list_.push_front(Observation());
 
-  //check whether the origin frame has been set explicitly or whether we should get it from the cloud
+  // check whether the origin frame has been set explicitly or whether we should get it from the cloud
   string origin_frame = sensor_frame_ == "" ? cloud.header.frame_id : sensor_frame_;
 
   try
   {
-    //given these observations come from sensors... we'll need to store the origin pt of the sensor
-    Stamped < tf::Vector3 > local_origin(tf::Vector3(0, 0, 0), pcl_conversions::fromPCL(cloud.header).stamp, origin_frame);
+    // given these observations come from sensors... we'll need to store the origin pt of the sensor
+    Stamped < tf::Vector3 > local_origin(tf::Vector3(0, 0, 0),
+                            pcl_conversions::fromPCL(cloud.header).stamp, origin_frame);
     tf_.waitForTransform(global_frame_, local_origin.frame_id_, local_origin.stamp_, ros::Duration(0.5));
     tf_.transformPoint(global_frame_, local_origin, global_origin);
     observation_list_.front().origin_.x = global_origin.getX();
     observation_list_.front().origin_.y = global_origin.getY();
     observation_list_.front().origin_.z = global_origin.getZ();
 
-    //make sure to pass on the raytrace/obstacle range of the observation buffer to the observations the costmap will see
+    // make sure to pass on the raytrace/obstacle range of the observation buffer to the observations
     observation_list_.front().raytrace_range_ = raytrace_range_;
     observation_list_.front().obstacle_range_ = obstacle_range_;
 
     pcl::PointCloud < pcl::PointXYZ > global_frame_cloud;
 
-    //transform the point cloud
+    // transform the point cloud
     pcl_ros::transformPointCloud(global_frame_, cloud, global_frame_cloud, tf_);
     global_frame_cloud.header.stamp = cloud.header.stamp;
 
-    //now we need to remove observations from the cloud that are below or above our height thresholds
+    // now we need to remove observations from the cloud that are below or above our height thresholds
     pcl::PointCloud < pcl::PointXYZ > &observation_cloud = *(observation_list_.front().cloud_);
     unsigned int cloud_size = global_frame_cloud.points.size();
     observation_cloud.points.resize(cloud_size);
     unsigned int point_count = 0;
 
-    //copy over the points that are within our height bounds
+    // copy over the points that are within our height bounds
     for (unsigned int i = 0; i < cloud_size; ++i)
     {
       if (global_frame_cloud.points[i].z <= max_obstacle_height_
@@ -173,41 +173,39 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
       }
     }
 
-    //resize the cloud for the number of legal points
+    // resize the cloud for the number of legal points
     observation_cloud.points.resize(point_count);
     observation_cloud.header.stamp = cloud.header.stamp;
     observation_cloud.header.frame_id = global_frame_cloud.header.frame_id;
   }
   catch (TransformException& ex)
   {
-    //if an exception occurs, we need to remove the empty observation from the list
+    // if an exception occurs, we need to remove the empty observation from the list
     observation_list_.pop_front();
     ROS_ERROR("TF Exception that should never happen for sensor frame: %s, cloud frame: %s, %s", sensor_frame_.c_str(),
               cloud.header.frame_id.c_str(), ex.what());
     return;
   }
 
-  //if the update was successful, we want to update the last updated time
+  // if the update was successful, we want to update the last updated time
   last_updated_ = ros::Time::now();
 
-  //we'll also remove any stale observations from the list
+  // we'll also remove any stale observations from the list
   purgeStaleObservations();
-
 }
 
-//returns a copy of the observations
+// returns a copy of the observations
 void ObservationBuffer::getObservations(vector<Observation>& observations)
 {
-  //first... let's make sure that we don't have any stale observations
+  // first... let's make sure that we don't have any stale observations
   purgeStaleObservations();
 
-  //now we'll just copy the observations for the caller
+  // now we'll just copy the observations for the caller
   list<Observation>::iterator obs_it;
   for (obs_it = observation_list_.begin(); obs_it != observation_list_.end(); ++obs_it)
   {
     observations.push_back(*obs_it);
   }
-
 }
 
 void ObservationBuffer::purgeStaleObservations()
@@ -222,7 +220,7 @@ void ObservationBuffer::purgeStaleObservations()
       return;
     }
 
-    //otherwise... we'll have to loop through the observations to see which ones are stale
+    // otherwise... we'll have to loop through the observations to see which ones are stale
     for (obs_it = observation_list_.begin(); obs_it != observation_list_.end(); ++obs_it)
     {
       Observation& obs = *obs_it;
@@ -258,5 +256,5 @@ void ObservationBuffer::resetLastUpdated()
 {
   last_updated_ = ros::Time::now();
 }
-}
+}  // namespace costmap_2d
 
