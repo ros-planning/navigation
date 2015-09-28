@@ -127,8 +127,7 @@ namespace move_base {
         }
       }
 
-      planner_ = bgp_loader_.createInstance(global_planner);
-      planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);
+      planner_ = getGlobalPlannerPlugin(global_planner);
     } catch (const pluginlib::PluginlibException& ex)
     {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", global_planner.c_str(), ex.what());
@@ -262,11 +261,9 @@ namespace move_base {
           }
         }
 
-        planner_ = bgp_loader_.createInstance(config.base_global_planner);
-
         // wait for the current planner to finish planning
         boost::unique_lock<boost::mutex> lock(planner_mutex_);
-
+        
         // Clean up before initializing the new planner
         planner_plan_->clear();
         latest_plan_->clear();
@@ -277,7 +274,7 @@ namespace move_base {
         recovery_trigger_ = PLANNING_R;
         publishZeroVelocity();
 
-        planner_->initialize(bgp_loader_.getName(config.base_global_planner), planner_costmap_ros_);
+        planner_ = getGlobalPlannerPlugin(config.base_global_planner);
 
         lock.unlock();
       } catch (const pluginlib::PluginlibException& ex)
@@ -1218,5 +1215,24 @@ namespace move_base {
       planner_costmap_ros_->stop();
       controller_costmap_ros_->stop();
     }
+  }
+
+  boost::shared_ptr<nav_core::BaseGlobalPlanner> MoveBase::getGlobalPlannerPlugin(std::string plugin_name)
+  {
+    // Check if the current plugin already exists in the cache
+    if (global_planner_cache_.find(plugin_name) == global_planner_cache_.end() )
+    {
+      // We do not have an instance of this planner in cache, so create one and cache it.
+      ros::Time t = ros::Time::now();
+      global_planner_cache_.insert(std::make_pair(plugin_name, bgp_loader_.createInstance(plugin_name) ) ); 
+      global_planner_cache_[plugin_name]->initialize(bgp_loader_.getName(plugin_name), planner_costmap_ros_);
+      ROS_DEBUG("Created new global planner plugin %s in %f seconds.", plugin_name.c_str(), (ros::Time::now() - t).toSec() );
+    }
+    else
+    {
+      ROS_DEBUG("Got cached global planner plugin: %s.", plugin_name.c_str() );
+    } 
+    // Return the cached plugin instance.
+    return global_planner_cache_[plugin_name];
   }
 };

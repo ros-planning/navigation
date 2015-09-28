@@ -182,6 +182,15 @@ namespace move_base {
        */
       void wakePlanner(const ros::TimerEvent& event);
 
+      /**
+       * @brief Used to retrieve an instance of the specified global planner plugin.
+       * Creates an instance of the global planner plugin and saves it to cache if it does not exist.
+       * Otherwise, this function will return the global planner plugin instanced saved in cache.
+       * @param plugin_name Name of the planner plugin.
+       * @return Pointer to the global planner plugin instance.
+       */
+      boost::shared_ptr<nav_core::BaseGlobalPlanner> getGlobalPlannerPlugin(std::string plugin_name);
+
       tf::TransformListener& tf_;
 
       MoveBaseActionServer* as_;
@@ -190,6 +199,7 @@ namespace move_base {
       costmap_2d::Costmap2DROS* planner_costmap_ros_, *controller_costmap_ros_;
 
       boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_;
+      std::map<std::string, boost::shared_ptr<nav_core::BaseGlobalPlanner> > global_planner_cache_;
       std::string robot_base_frame_, global_frame_;
 
       std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
