@@ -853,6 +853,20 @@ namespace move_base {
 
     //push the feedback out
     move_base_msgs::MoveBaseFeedback feedback;
+    switch(state_) {
+      case CLEARING:
+    	feedback.state = "clearing";
+        break;
+      case PLANNING:
+    	feedback.state = "planning";
+        break;
+      case CONTROLLING:
+    	feedback.state = "controlling";
+        break;
+      default:
+        //Ignore, planner will crash anyway
+	break;
+    }
     feedback.base_position = current_position;
     as_->publishFeedback(feedback);
 
