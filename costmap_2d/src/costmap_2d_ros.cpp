@@ -540,7 +540,7 @@ bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const
   }
   catch (tf::ExtrapolationException& ex)
   {
-    ROS_ERROR_THROTTLE(20.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
+    ROS_ERROR_THROTTLE(60.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
     return false;
   }
   // check global_pose timeout
