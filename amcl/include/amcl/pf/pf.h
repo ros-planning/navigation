@@ -167,6 +167,10 @@ void pf_get_cep_stats(pf_t *pf, pf_vector_t *mean, double *var);
 int pf_get_cluster_stats(pf_t *pf, int cluster, double *weight,
                          pf_vector_t *mean, pf_matrix_t *cov);
 
+// Re-compute the cluster statistics for a sample set
+void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set);
+
+
 // Display the sample set
 void pf_draw_samples(pf_t *pf, struct _rtk_fig_t *fig, int max_samples);
 
