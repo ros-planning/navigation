@@ -39,8 +39,6 @@
 // with samples in them.
 static int pf_resample_limit(pf_t *pf, int k);
 
-// Re-compute the cluster statistics for a sample set
-static void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set);
 
 
 // Create a new filter
