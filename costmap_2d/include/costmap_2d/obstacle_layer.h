@@ -92,9 +92,11 @@ public:
    * @brief  A callback to handle buffering LaserScan messages
    * @param message The message returned from a message notifier
    * @param buffer A pointer to the observation buffer to update
+   * @param add_max_range Whether to add the max range meeasurements to the scan
    */
   void laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
-                         const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer);
+                         const boost::shared_ptr<costmap_2d::ObservationBuffer>& buffer,
+                         const bool add_max_range);
 
    /**
     * @brief A callback to handle buffering LaserScan messages which need filtering to turn Inf values into range_max.
