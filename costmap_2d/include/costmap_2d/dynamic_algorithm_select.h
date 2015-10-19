@@ -2,6 +2,7 @@
 #define COSTMAP_DYNAMIC_ALGORITHM_SELECT_H_
 
 #include <map>
+#include <ros/ros.h>
 
 namespace costmap_2d
 {
@@ -66,8 +67,7 @@ public:
      */
     double elapsed();
   private:
-    struct TimerStruct;
-    TimerStruct* d;
+    ros::Time start_, end_;
   };
 
   void setMaxAlgorithmTypes(int n)
