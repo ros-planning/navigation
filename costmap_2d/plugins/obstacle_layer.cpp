@@ -108,7 +108,7 @@ void ObstacleLayer::onInitialize()
     // get the parameters for the specific topic
     double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
     std::string topic, sensor_frame, data_type;
-    bool inf_is_valid, clearing, marking;
+    bool inf_is_valid, clearing, marking, add_max_range;
 
     source_node.param("topic", topic, source);
     source_node.param("sensor_frame", sensor_frame, std::string(""));
@@ -118,6 +118,7 @@ void ObstacleLayer::onInitialize()
     source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
     source_node.param("max_obstacle_height", max_obstacle_height, 2.0);
     source_node.param("inf_is_valid", inf_is_valid, false);
+    source_node.param("add_max_range", add_max_range, true);
     source_node.param("clearing", clearing, false);
     source_node.param("marking", marking, true);
 
@@ -188,7 +189,7 @@ void ObstacleLayer::onInitialize()
       else
       {
         filter->registerCallback(
-            boost::bind(&ObstacleLayer::laserScanCallback, this, _1, observation_buffers_.back()));
+            boost::bind(&ObstacleLayer::laserScanCallback, this, _1, observation_buffers_.back(), add_max_range));
       }
 
       observation_subscribers_.push_back(sub);
@@ -272,16 +273,27 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
 }
 
 void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
-                                      const boost::shared_ptr<ObservationBuffer>& buffer)
+                                      const boost::shared_ptr<ObservationBuffer>& buffer,
+                                      const bool add_max_range)
 {
   // project the laser into a point cloud
   sensor_msgs::PointCloud2 cloud;
   cloud.header = message->header;
 
+  sensor_msgs::LaserScan new_scan = *message;
+  if (add_max_range)
+  {
+    // This forces the addition of points that are at
+    //  the sensors max range. This will allow clearning of cells even
+    //  if there is nothing in view. NOTE: obstacle range MUST BE < range_max
+    //  or you will add obstacles that do no exist to the costmap
+    new_scan.range_max = std::numeric_limits<float>::max();
+  }
+
   // project the scan into a point cloud
   try
   {
-    projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_);
+    projector_.transformLaserScanToPointCloud(message->header.frame_id, new_scan, cloud, *tf_);
   }
   catch (tf::TransformException &ex)
   {
