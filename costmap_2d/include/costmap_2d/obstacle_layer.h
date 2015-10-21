@@ -66,7 +66,7 @@ namespace costmap_2d
 {
 
 /// @brief Wall clock time, x and y coordinates in global reference frame
-typedef boost::tuple<double, double, double, unsigned int, unsigned int> TimeWorldPoint;
+typedef boost::tuple<double, double, double> TimeWorldPoint;
 
 class ObstacleLayer : public CostmapLayer
 {
@@ -148,6 +148,7 @@ protected:
    */
   void writeTimeWorldPoint(const TimeWorldPoint& p, unsigned char value,
                            double* min_x, double* min_y, double* max_x, double* max_y);
+
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
   /**
