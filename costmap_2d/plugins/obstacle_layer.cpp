@@ -500,18 +500,8 @@ static bool sameTimeWorldPoints(const TimeWorldPoint& p1, const TimeWorldPoint& 
 void ObstacleLayer::writeTimeWorldPoint(const TimeWorldPoint &p, unsigned char value,
                                         double *min_x, double *min_y, double *max_x, double *max_y)
 {
-  const double px = p.get<1>();
-  const double py = p.get<2>();
-
-  unsigned int mx, my;
-  if (!worldToMap(px, py, mx, my))
-  {
-    ROS_DEBUG("Computing map coords failed");
-    return;
-  }
-
-  setCost(mx, my, value);
-  touch(px, py, min_x, min_y, max_x, max_y);
+  setCost(p.get<3>(), p.get<4>(), value);
+  touch(p.get<1>(), p.get<2>(), min_x, min_y, max_x, max_y);
 }
 
 void ObstacleLayer::updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
@@ -603,21 +593,10 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   {
     TimeWorldPoint& p = it->second;
 
-    const double px = p.get<1>();
-    const double py = p.get<2>();
-
-    unsigned int mx, my;
-    if (!worldToMap(px, py, mx, my)) 
+    unsigned int index = getIndex(p.get<3>(), p.get<4>());
+    if (costmap_[index] == FREE_SPACE)
     {
       map_pending_erase_.push_back(it->first);
-    }
-    else
-    {
-      unsigned int index = getIndex(mx, my);
-      if (costmap_[index] == FREE_SPACE)
-      {
-        map_pending_erase_.push_back(it->first);
-      }
     }
   }
 
@@ -659,33 +638,30 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
         continue;
       }
 
-      TimeWorldPoint p(time_now, px, py);
-      writeTimeWorldPoint(p, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-
-      // if we have low pose confidence we will make sure this
-      // data gets cleared quickly by setting it's "birthday" to
-      // far in the past.
-      if(pose_confidence_ < pose_confidence_threshold_)
+      unsigned int mx, my;
+      if (!worldToMap(px, py, mx, my))
       {
-        p.get<0>() = time_now - obstacle_lifespan_;
+        ROS_DEBUG("Computing map coords failed");
       }
-
-      // remember this data
+      else
       {
-        unsigned int mx, my;
-        if (!worldToMap(px, py, mx, my))
+        TimeWorldPoint p(time_now, px, py, mx, my);
+        // if we have low pose confidence we will make sure this
+        // data gets cleared quickly by setting it's "birthday" to
+        // far in the past.
+        if(pose_confidence_ < pose_confidence_threshold_)
         {
-          ROS_DEBUG("Computing map coords failed");
+          p.get<0>() = time_now - obstacle_lifespan_;
         }
-        else
-        {
-          // remove data at location if it exists
-          std::pair<unsigned int, unsigned int> location(mx,my);
-          time_world_points_.erase(location);
+        
+        writeTimeWorldPoint(p, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
 
-          // insert new data
-          time_world_points_[location] = p;
-        }
+        // remove data at location if it exists
+        std::pair<unsigned int, unsigned int> location(mx,my);
+        time_world_points_.erase(location);
+
+        // insert new data
+        time_world_points_[location] = p;
       }
     }
   }
