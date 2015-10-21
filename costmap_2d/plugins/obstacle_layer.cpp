@@ -270,6 +270,7 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
   obstacle_lifespan_ = config.obstacle_lifespan;
   obstacle_keep_radius_ = config.obstacle_keep_radius;
   use_forgetful_version_ = config.enable_forget;
+  pose_confidence_threshold_ = config.pose_confidence_threshold;
 }
 
 void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
@@ -534,6 +535,9 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);
 
+  // clear the costmap, it will get rewritten
+  resetMaps();
+  
   double layer_min_x = robot_x;
   double layer_max_x = robot_x;
   double layer_min_y = robot_y;
@@ -572,7 +576,6 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
 
     if(radius2 > obstacle_keep_radius2 && sample_time < earliest_epoch)
     {
-      writeTimeWorldPoint( it->second, FREE_SPACE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
       map_pending_erase_.push_back(it->first);
     }
   }
@@ -661,23 +664,28 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
       TimeWorldPoint p(time_now, px, py);
       writeTimeWorldPoint(p, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
 
-      // remember this data
-      if(pose_confidence_ >= pose_confidence_threshold_)
+      // if we have low pose confidence we will make sure this
+      // data gets cleared quickly by setting it's "birthday" to
+      // far in the past.
+      if(pose_confidence_ < pose_confidence_threshold_)
       {
-        unsigned int mx, my;
-        if (!worldToMap(px, py, mx, my))
-        {
-          ROS_DEBUG("Computing map coords failed");
-        }
-        else
-        {
-          // remove data at location if it exists
-          std::pair<unsigned int, unsigned int> location(mx,my);
-          time_world_points_.erase(location);
+        p.get<0>() = time_now - obstacle_lifespan_;
+      }
 
-          // insert new data
-          time_world_points_[location] = p;
-        }
+      // remember this data
+      unsigned int mx, my;
+      if (!worldToMap(px, py, mx, my))
+      {
+        ROS_DEBUG("Computing map coords failed");
+      }
+      else
+      {
+        // remove data at location if it exists
+        std::pair<unsigned int, unsigned int> location(mx,my);
+        time_world_points_.erase(location);
+
+        // insert new data
+        time_world_points_[location] = p;
       }
     }
   }
