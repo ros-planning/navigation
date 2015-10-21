@@ -673,21 +673,19 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
       }
 
       // remember this data
+      unsigned int mx, my;
+      if (!worldToMap(px, py, mx, my))
       {
-        unsigned int mx, my;
-        if (!worldToMap(px, py, mx, my))
-        {
-          ROS_DEBUG("Computing map coords failed");
-        }
-        else
-        {
-          // remove data at location if it exists
-          std::pair<unsigned int, unsigned int> location(mx,my);
-          time_world_points_.erase(location);
+        ROS_DEBUG("Computing map coords failed");
+      }
+      else
+      {
+        // remove data at location if it exists
+        std::pair<unsigned int, unsigned int> location(mx,my);
+        time_world_points_.erase(location);
 
-          // insert new data
-          time_world_points_[location] = p;
-        }
+        // insert new data
+        time_world_points_[location] = p;
       }
     }
   }
