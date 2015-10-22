@@ -89,19 +89,19 @@ void InflationLayer::onInitialize()
     // This value is read from dynamic reconfigure. To change the default
     // value (-1, automatic) you can edit costmap_2d/cfg/InflationPlugin.cfg
     inflation_method_ = 0;
+  }
 
-    dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
-        &InflationLayer::reconfigureCB, this, _1, _2);
+  dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
+      &InflationLayer::reconfigureCB, this, _1, _2);
 
-    if (dsrv_ != NULL){
-      dsrv_->clearCallback();
-      dsrv_->setCallback(cb);
-    }
-    else
-    {
-      dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
-      dsrv_->setCallback(cb);
-    }
+  if (dsrv_ != NULL){
+    dsrv_->clearCallback();
+    dsrv_->setCallback(cb);
+  }
+  else
+  {
+    dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
+    dsrv_->setCallback(cb);
   }
 
   matchSize();
@@ -109,6 +109,8 @@ void InflationLayer::onInitialize()
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
+  boost::unique_lock < boost::shared_mutex > lock(*access_);
+
   if (weight_ != config.cost_scaling_factor || inflation_radius_ != config.inflation_radius)
   {
     inflation_radius_ = config.inflation_radius;
