@@ -843,7 +843,7 @@ namespace move_base {
       r.sleep();
       //make sure to sleep for the remainder of our cycle time
       if(r.cycleTime() > ros::Duration(1 / controller_frequency_) && state_ == CONTROLLING)
-        ROS_WARN("Control loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", controller_frequency_, r.cycleTime().toSec());
+        ROS_WARN_THROTTLE(5, "Control loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", controller_frequency_, r.cycleTime().toSec());
     }
 
     //wake up the planner thread so that it can exit cleanly
@@ -1016,7 +1016,12 @@ namespace move_base {
 
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
-        ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
+        ROS_DEBUG_NAMED("move_base","In clearing/recovery state");   
+        if (planner_)
+        {
+          // This will invoke the resetPlanner method when recovery is called.
+          planner_->resetPlanner();
+        }
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
