@@ -58,4 +58,13 @@ const std::vector<geometry_msgs::Point>& Layer::getFootprint() const
   return layered_costmap_->getFootprint();
 }
 
+void Layer::setMaxRange(double* min_x, double* min_y, double* max_x, double* max_y)
+{
+  *min_x = -std::numeric_limits<double>::max();
+  *min_y = -std::numeric_limits<double>::max();
+  *max_x = std::numeric_limits<double>::max();
+  *max_y = std::numeric_limits<double>::max();    
+}
+
+
 }  // end namespace costmap_2d

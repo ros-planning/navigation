@@ -64,7 +64,8 @@ void ObstacleLayer::onInitialize()
   obstacle_lifespan_ = 0.0;          // seconds
   obstacle_keep_radius_ = 0.0;       // meters
   use_forgetful_version_ = true;     // flag
-
+  last_known_enabled_ = false;
+  
   // Initial pose confidence and threshold before we remember new data
   // Threshold default in costmap_2d/cfg/ObstaclePlugin.cfg
   pose_confidence_ = 0;
@@ -380,6 +381,12 @@ void ObstacleLayer::poseConfidenceCallback(const std_msgs::Float64 &message)
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
+  if (last_known_enabled_ != enabled_)
+  {
+    setMaxRange(min_x, min_y, max_x, max_y);
+    last_known_enabled_ = enabled_;
+  }
+  
   // we are making changes to the local costmap so we want to make sure others don't
   boost::unique_lock<mutex_t> lock(*(getMutex()));
 
