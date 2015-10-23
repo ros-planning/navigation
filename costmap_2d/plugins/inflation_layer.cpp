@@ -168,7 +168,6 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
     *max_x = *max_x + 2*inflation_radius_;
     *max_y = *max_y + 2*inflation_radius_;
   }
-  last_known_enabled_ = enabled_;
 }
 
 void InflationLayer::onFootprintChanged()
