@@ -131,10 +131,19 @@ protected:
    *
    * tf_, name_, and layered_costmap_ will all be set already when this is called. */
   virtual void onInitialize() {}
-
+  
+  /** @brief setMaxRange Set given range to maximums.
+   *  @param min_x range min x coordinate
+   *  @param min_y range min y coordinate
+   *  @param max_x range max x coordinate
+   *  @param max_y range max y coordinate
+   * */
+  void setMaxRange(double* min_x, double* min_y, double* max_x, double* max_y);
+  
   LayeredCostmap* layered_costmap_;
   bool current_;
   bool enabled_;  ///< Currently this var is managed by subclasses. TODO: make this managed by this class and/or container class.
+  bool last_known_enabled_;  ///< So we can determine when enabled_ has changed
   std::string name_;
   tf::TransformListener* tf_;
 

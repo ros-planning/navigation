@@ -69,6 +69,7 @@ InflationLayer::InflationLayer()
   , cached_costs_(NULL)
   , cached_distances_(NULL)
 {
+  last_known_enabled_ = false;
   access_ = new boost::shared_mutex();
   
   algorithmSelect_.setMaxAlgorithmTypes(ALG_TOTAL_AVAILABLE);
@@ -146,12 +147,15 @@ void InflationLayer::matchSize()
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
+  if (last_known_enabled_ != enabled_)
+  {
+    setMaxRange(min_x, min_y, max_x, max_y);
+    last_known_enabled_ = enabled_;
+  }
+
   if (need_reinflation_)
   {
-    *min_x = -std::numeric_limits<double>::max();
-    *min_y = -std::numeric_limits<double>::max();
-    *max_x = std::numeric_limits<double>::max();
-    *max_y = std::numeric_limits<double>::max();
+    setMaxRange(min_x, min_y, max_x, max_y);
     need_reinflation_ = false;
   }
   else
@@ -164,6 +168,7 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
     *max_x = *max_x + 2*inflation_radius_;
     *max_y = *max_y + 2*inflation_radius_;
   }
+  last_known_enabled_ = enabled_;
 }
 
 void InflationLayer::onFootprintChanged()

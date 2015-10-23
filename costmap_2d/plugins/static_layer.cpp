@@ -65,6 +65,7 @@ void StaticLayer::onInitialize()
 
   // Map is not current until it has been updated with static map
   current_ = false;
+  last_known_enabled_ = false;
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
 
@@ -269,6 +270,12 @@ void StaticLayer::reset()
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                                double* max_x, double* max_y)
 {
+  if (last_known_enabled_ != enabled_)
+  {
+    setMaxRange(min_x, min_y, max_x, max_y);
+    last_known_enabled_ = enabled_;
+  }
+  
   if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
     return;
 
