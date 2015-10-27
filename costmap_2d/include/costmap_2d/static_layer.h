@@ -67,7 +67,7 @@ public:
 
   virtual void matchSize();
 
-private:
+protected:
   /**
    * @brief  Callback to update the costmap's map from the map_server
    * @param new_map The map to put into the costmap. The origin of the new
