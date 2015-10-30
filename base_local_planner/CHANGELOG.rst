@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.5 (2015-10-29)
+-------------------
 * base_local_planner: some fixes in goal_functions
 * Contributors: Gael Ecorchard
 

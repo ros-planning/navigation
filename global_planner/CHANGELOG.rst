@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.5 (2015-10-29)
+-------------------
 * Add missing angles dependecy
 * Contributors: Gary Servin
 
