@@ -2,8 +2,8 @@
 Changelog for package nav_core
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.1 (2015-10-29)
+-------------------
 * Merge pull request `#338 <https://github.com/ros-planning/navigation/issues/338>`_ from mikeferguson/planner_review
 * fix doxygen, couple style fixes
 * Contributors: Michael Ferguson

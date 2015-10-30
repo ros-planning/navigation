@@ -1,6 +1,6 @@
 <package>
     <name>navigation</name>
-    <version>1.13.0</version>
+    <version>1.13.1</version>
     <description>
         A 2D navigation stack that takes in information from odometry, sensor
         streams, and a goal pose and outputs safe velocity commands that are sent

@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.1 (2015-10-29)
+-------------------
 * Removes installation of nonexistent directories
 * use correct size for clearing window
 * full name has been required for eons, this code just adds unneeded complexity

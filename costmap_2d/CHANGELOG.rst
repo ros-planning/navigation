@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.1 (2015-10-29)
+-------------------
 * Remove excessive canTransform spam.
 * Fix for `#382 <https://github.com/ros-planning/navigation/issues/382>`_
 * Republish costmap if origin changes

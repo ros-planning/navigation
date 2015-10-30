@@ -2,8 +2,8 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.1 (2015-10-29)
+-------------------
 * Fix for `#337 <https://github.com/ros-planning/navigation/issues/337>`_
 * Contributors: David V. Lu!!
 

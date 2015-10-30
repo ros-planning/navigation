@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.1 (2015-10-29)
+-------------------
 * adds the set_map service to amcl
 * fix pthread_mutex_lock on shutdown
 * Contributors: Michael Ferguson, Stephan Wirth
