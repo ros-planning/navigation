@@ -2,6 +2,17 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove canTransform spam.
+* Fix for `#382 <https://github.com/ros-planning/navigation/issues/382>`_
+* Republish costmap if origin changes
+* Remove extra sign definition and use proper one when padding footprint
+* Remove Footprint Layer
+* fix plugin warnings on throw, closes `#205 <https://github.com/ros-planning/navigation/issues/205>`_
+* initialize publisher variables
+* Contributors: Daniel Stonier, David Lu, Michael Ferguson
+
 1.12.4 (2015-06-03)
 -------------------
 * Look for robot_radius when footprint is not set. `#206 <https://github.com/mikeferguson/navigation/issues/206>`_

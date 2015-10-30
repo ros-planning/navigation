@@ -2,6 +2,11 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* More tolerant initial pose transform lookup.
+* Contributors: Daniel Stonier
+
 1.12.4 (2015-06-03)
 -------------------
 
