@@ -2,6 +2,14 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* base_local_planner: some fixes in goal_functions
+* Merge pull request `#348 <https://github.com/ros-planning/navigation/issues/348>`_ from mikeferguson/trajectory_planner_fixes
+* fix stuck_left/right calculation
+* fix calculation of heading diff
+* Contributors: Gael Ecorchard, Michael Ferguson
+
 1.13.0 (2015-03-17)
 -------------------
 * remove previously deprecated param

@@ -2,6 +2,15 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Removes installation of nonexistent directories
+* use correct size for clearing window
+* full name has been required for eons, this code just adds unneeded complexity
+* remove ancient conversion scripts from v0.2 to v0.3
+* proper locking during costmap update
+* Contributors: Michael Ferguson, Thiago de Freitas Oliveira Araujo
+
 1.13.0 (2015-03-17)
 -------------------
 * Fixing various memory freeing operations

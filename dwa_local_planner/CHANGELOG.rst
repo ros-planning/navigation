@@ -2,6 +2,9 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.13.0 (2015-03-17)
 -------------------
 * link only libraries found with find_package

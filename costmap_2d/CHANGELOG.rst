@@ -2,6 +2,25 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove excessive canTransform spam.
+* Fix for `#382 <https://github.com/ros-planning/navigation/issues/382>`_
+* Republish costmap if origin changes
+* Remove Footprint Layer
+* Remove extra sign definition and use proper one when padding footprint
+* fix plugin warnings on throw, closes `#205 <https://github.com/ros-planning/navigation/issues/205>`_
+* initialize publisher variables
+* Look for robot_radius when footprint is not set. `#206 <https://github.com/ros-planning/navigation/issues/206>`_
+* Add a first_map_only parameter so we keep reusing the first received static map
+* Merge pull request `#331 <https://github.com/ros-planning/navigation/issues/331>`_ from mikeferguson/static_layer_any_frame
+* support rolling static map in any frame
+* fix destructor of Costmap2D
+* proper locking during costmap update
+* do not resize static map when rolling
+* Static layer works with rolling window now
+* Contributors: Daniel Stonier, David Lu, Jihoon Lee, Michael Ferguson, Rein Appeldoorn, commaster90
+
 1.13.0 (2015-03-17)
 -------------------
 * fixed issue with voxel_layer and obstacle_layer both deleting the same dynamic_reconfigure::Server and causing segfaults

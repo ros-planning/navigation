@@ -2,6 +2,12 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add missing angles dependecy
+* Fix for `#337 <https://github.com/ros-planning/navigation/issues/337>`_
+* Contributors: David V. Lu!!, Gary Servin
+
 1.13.0 (2015-03-17)
 -------------------
 * Fixing various memory freeing operations
