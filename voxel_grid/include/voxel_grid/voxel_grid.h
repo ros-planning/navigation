@@ -433,10 +433,10 @@ private:
     }
 
     //clearing of last cell because loop only goes to number_of_steps - 1
-    off_a(offset_a);
+    (*clearer)(offset, z_mask);
   }
 
-  inline int sign(int i)
+  inline int sign(double i)
   {
     return i >= 0 ? 1 : -1;
   }
