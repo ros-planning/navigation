@@ -80,7 +80,7 @@ void InflationLayer::onInitialize()
   {
     boost::unique_lock < boost::shared_mutex > lock(*access_);
     ros::NodeHandle nh("~/" + name_), g_nh;
-    current_ = false; // This is new, blocks planners until all the calculations are complete
+    current_ = true;  // Make sure this is true so planners don't fail after layer reset (i.e. after recovery).
     if (seen_)
       delete[] seen_;
     seen_ = NULL;
