@@ -172,6 +172,50 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
   return;
 }
 
+void pf_init_with_hypotheses(pf_t *pf, pf_vector_t * hyps, pf_matrix_t * covs, int num_guesses)
+{
+  int i;
+  int p_i;
+  int num_samples_per_particle;
+  pf_sample_set_t *set;
+  pf_sample_t *sample;
+  pf_pdf_gaussian_t *pdf;
+
+  set = pf->sets + pf->current_set;
+
+  pf_kdtree_clear(set->kdtree);
+
+  set->sample_count = pf->max_samples;
+
+  num_samples_per_particle =set->sample_count/num_guesses;
+
+  for(p_i = 0; p_i < num_guesses; p_i++)
+  {
+      pdf = pf_pdf_gaussian_alloc(hyps[p_i], covs[p_i]);
+
+      for(i = 0; i < num_samples_per_particle; i++)
+      {
+           sample = set->samples + i;
+           sample->weight = 1.0 / pf->max_samples;
+           sample->pose = pf_pdf_gaussian_sample(pdf);
+
+           pf_kdtree_insert(set->kdtree, sample->pose, sample->weight);
+      }
+      pf_pdf_gaussian_free(pdf);
+  }
+
+  pf->w_slow = pf->w_slow = pf->w_fast = 0.0;
+
+  pf_cluster_stats(pf,set);
+
+  pf_init_converged(pf);
+
+  pf_update_converged(pf);
+
+  return;
+
+}
+
 
 // Initialize the filter using some model
 void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
