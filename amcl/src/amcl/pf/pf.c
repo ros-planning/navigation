@@ -204,7 +204,7 @@ void pf_init_with_hypotheses(pf_t *pf, pf_vector_t * hyps, pf_matrix_t * covs, i
       pf_pdf_gaussian_free(pdf);
   }
 
-  pf->w_slow = pf->w_slow = pf->w_fast = 0.0;
+  pf->w_slow = pf->w_fast = 0.0;
 
   pf_cluster_stats(pf,set);
 

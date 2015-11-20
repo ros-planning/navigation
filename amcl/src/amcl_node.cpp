@@ -1548,6 +1548,7 @@ void
 AmclNode::handleInitialHypothesisSetMessage(const HypothesisSet &msg)
 {
     boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
+    assert(msg.hypotheses.size() != 0);
     assert(max_beams_/msg.hypotheses.size() > 0);
     if(msg.header.frame_id == "")
     {
