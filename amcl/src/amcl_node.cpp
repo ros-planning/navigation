@@ -1540,7 +1540,7 @@ AmclNode::getYaw(tf::Pose& t)
 void
 AmclNode::initialHypothesisSetReceived(const HypothesisSetConstPtr &msg)
 {
-    ROS_INFO("Recieved new hyptoheses");
+    ROS_INFO("Recieved new hypotheses");
     handleInitialHypothesisSetMessage(*msg);
 }
 
@@ -1591,17 +1591,7 @@ AmclNode::handleInitialHypothesisSetMessage(const HypothesisSet &msg)
         }
     }
 
-    //Clear the hold hypothesis list if there's anything in it
-    if(initial_pose_hyp_list_ != NULL)
-    {
-        if(initial_pose_hyp_list_->covariances != NULL)
-            delete[] initial_pose_hyp_list_->covariances;
 
-        if(initial_pose_hyp_list_->hypotheses != NULL)
-            delete[] initial_pose_hyp_list_->hypotheses;
-
-        delete initial_pose_hyp_list_;
-    }
 
 
     initial_pose_hyp_list_ = new amcl_hyp_list;
@@ -1650,13 +1640,24 @@ AmclNode::applyInitialHypothesisSet()
                 initial_pose_hyp_list_->covariances,
                 initial_pose_hyp_list_->num_hyp);
         pf_init_ = false;
-
+        ROS_INFO("Particle reinitialized from set of hypotheses");
         if(initial_pose_hyp_ != NULL) {
             delete initial_pose_hyp_;
             initial_pose_hyp_ = NULL;
         }
+        //Clear the hold hypothesis list if there's anything in it
+        if(initial_pose_hyp_list_ != NULL)
+        {
+            if(initial_pose_hyp_list_->covariances != NULL)
+                delete[] initial_pose_hyp_list_->covariances;
+
+            if(initial_pose_hyp_list_->hypotheses != NULL)
+                delete[] initial_pose_hyp_list_->hypotheses;
+
+            delete initial_pose_hyp_list_;
+        }
     }
-    ROS_INFO("Particle reinitialized from set of hypotheses");
+
 
 }
 

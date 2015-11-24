@@ -195,7 +195,7 @@ void pf_init_with_hypotheses(pf_t *pf, pf_vector_t * hyps, pf_matrix_t * covs, i
 
       for(i = 0; i < num_samples_per_particle; i++)
       {
-           sample = set->samples + i;
+           sample = set->samples + p_i * num_samples_per_particle + i;
            sample->weight = 1.0 / pf->max_samples;
            sample->pose = pf_pdf_gaussian_sample(pdf);
 
