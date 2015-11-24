@@ -184,7 +184,6 @@ class FakeOdomNode
         ROS_ERROR("Failed to transform to %s from %s: %s\n", odom_frame_id_.c_str(), base_frame_id_.c_str(), e.what());
         return;
       }
-
       m_tfServer->sendTransform(tf::StampedTransform(odom_to_map.inverse(),
                                                      message->header.stamp + ros::Duration(transform_tolerance_),
                                                      global_frame_id_, message->header.frame_id));
@@ -221,7 +220,8 @@ class FakeOdomNode
       // set offset so that current pose is set to "initialpose"    
       tf::StampedTransform baseInMap;
       try{
-        m_tfListener->lookupTransform(base_frame_id_, global_frame_id_, msg->header.stamp, baseInMap);
+	// just get the latest
+        m_tfListener->lookupTransform(base_frame_id_, global_frame_id_, ros::Time(0), baseInMap);
       } catch(tf::TransformException){
         ROS_WARN("Failed to lookup transform!");
         return;

@@ -1,8 +1,5 @@
 <class_libraries>
   <library path="liblayers">
-    <class type="costmap_2d::FootprintLayer"  base_class_type="costmap_2d::Layer">
-      <description>Clears the area in the costmap under the footprint of the robot.</description>
-    </class>
     <class type="costmap_2d::InflationLayer"  base_class_type="costmap_2d::Layer">
       <description>Inflates obstacles to speed collision checking and to make robot prefer to stay away from obstacles.</description>
     </class>
@@ -14,12 +11,6 @@
     </class>
     <class type="costmap_2d::VoxelLayer"     base_class_type="costmap_2d::Layer">
       <description>Similar to obstacle costmap, but uses 3D voxel grid to store data.</description>
-    </class>
-    <class type="costmap_2d::VoxelWithFootprintLayer" base_class_type="costmap_2d::Layer">
-      <description>
-        Combines voxel and footprint plugins, so footprint-clearing is
-        done in the voxelgrid itself, rather than in the combined costmap.
-      </description>
     </class>
   </library>
 </class_libraries>

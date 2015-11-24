@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_COSTMAP_2D_H_
-#define COSTMAP_COSTMAP_2D_H_
+#ifndef COSTMAP_2D_COSTMAP_2D_H_
+#define COSTMAP_2D_COSTMAP_2D_H_
 
 #include <vector>
 #include <queue>
@@ -46,7 +46,7 @@
 namespace costmap_2d
 {
 
-//convenient for storing x/y point pairs
+// convenient for storing x/y point pairs
 struct MapLocation
 {
   unsigned int x;
@@ -59,7 +59,7 @@ struct MapLocation
  */
 class Costmap2D
 {
-  friend class CostmapTester; //Need this for gtest to work correctly
+  friend class CostmapTester;  // Need this for gtest to work correctly
 public:
   /**
    * @brief  Constructor for a costmap
@@ -317,11 +317,11 @@ protected:
                        unsigned int dm_lower_left_y, unsigned int dm_size_x, unsigned int region_size_x,
                        unsigned int region_size_y)
     {
-      //we'll first need to compute the starting points for each map
+      // we'll first need to compute the starting points for each map
       data_type* sm_index = source_map + (sm_lower_left_y * sm_size_x + sm_lower_left_x);
       data_type* dm_index = dest_map + (dm_lower_left_y * dm_size_x + dm_lower_left_x);
 
-      //now, we'll copy the source map into the destination map
+      // now, we'll copy the source map into the destination map
       for (unsigned int i = 0; i < region_size_y; ++i)
       {
         memcpy(dm_index, sm_index, region_size_x * sizeof(data_type));
@@ -371,11 +371,11 @@ protected:
 
       unsigned int offset = y0 * size_x_ + x0;
 
-      //we need to chose how much to scale our dominant dimension, based on the maximum length of the line
+      // we need to chose how much to scale our dominant dimension, based on the maximum length of the line
       double dist = hypot(dx, dy);
       double scale = (dist == 0.0) ? 1.0 : std::min(1.0, max_length / dist);
 
-      //if x is dominant
+      // if x is dominant
       if (abs_dx >= abs_dy)
       {
         int error_y = abs_dx / 2;
@@ -383,10 +383,9 @@ protected:
         return;
       }
 
-      //otherwise y is dominant
+      // otherwise y is dominant
       int error_x = abs_dy / 2;
       bresenham2D(at, abs_dy, abs_dx, error_x, offset_dy, offset_dx, offset, (unsigned int)(scale * abs_dy));
-
     }
 
 private:
@@ -451,7 +450,7 @@ protected:
     {
     }
 
-    //just push the relevant cells back onto the list
+    // just push the relevant cells back onto the list
     inline void operator()(unsigned int offset)
     {
       MapLocation loc;
@@ -465,6 +464,6 @@ protected:
     std::vector<MapLocation>& cells_;
   };
 };
-}
+}  // namespace costmap_2d
 
-#endif
+#endif  // COSTMAP_2D_COSTMAP_2D_H

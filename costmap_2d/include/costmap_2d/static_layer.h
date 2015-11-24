@@ -60,8 +60,8 @@ public:
   virtual void deactivate();
   virtual void reset();
 
-  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, double* max_x,
-                             double* max_y);
+  virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
+                            double* max_x, double* max_y);
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
   virtual void matchSize();
@@ -79,12 +79,12 @@ private:
 
   unsigned char interpretValue(unsigned char value);
 
-  std::string global_frame_; ///< @brief The global frame for the costmap
+  std::string global_frame_;  ///< @brief The global frame for the costmap
   std::string map_frame_;  /// @brief frame that map is located in
   bool subscribe_to_updates_;
   bool map_received_;
   bool has_updated_data_;
-  unsigned int x_,y_,width_,height_;
+  unsigned int x_, y_, width_, height_;
   bool track_unknown_space_;
   bool use_maximum_;
   bool first_map_only_;      ///< @brief Store the first static map and reuse it on reinitializing

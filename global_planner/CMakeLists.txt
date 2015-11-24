@@ -3,6 +3,7 @@ project(global_planner)
 
 find_package(catkin REQUIRED
   COMPONENTS
+    angles
     costmap_2d
     dynamic_reconfigure
     geometry_msgs

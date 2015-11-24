@@ -1,6 +1,6 @@
 <package>
   <name>global_planner</name>
-  <version>1.12.3</version>
+  <version>1.12.4</version>
   <description>
      A path planner library and node.
   </description>
@@ -13,6 +13,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>angles</build_depend>
   <build_depend>costmap_2d</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>geometry_msgs</build_depend>

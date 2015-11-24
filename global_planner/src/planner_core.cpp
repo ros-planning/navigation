@@ -424,8 +424,8 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     wy = goal.pose.position.y;
 
     if (!costmap_->worldToMap(wx, wy, goal_x_i, goal_y_i)) {
-        ROS_WARN(
-                "The goal sent to the navfn planner is off the global costmap. Planning will always fail to this goal.");
+        ROS_WARN_THROTTLE(1.0,
+                "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
         return false;
     }
     if(old_navfn_behavior_){
