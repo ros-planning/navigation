@@ -7,7 +7,9 @@ find_package(catkin REQUIRED
             tf
             dynamic_reconfigure
             laser_geometry
+            message_generation
             nav_msgs
+            geometry_msgs
         )
 
 find_package(Boost REQUIRED)
@@ -27,6 +29,19 @@ endif()
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/AMCL.cfg
+)
+
+# messages
+add_message_files(
+        DIRECTORY msg
+        FILES
+        HypothesisSet.msg
+)
+
+generate_messages(
+        DEPENDENCIES
+        std_msgs
+        geometry_msgs
 )
 
 catkin_package(

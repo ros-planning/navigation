@@ -45,6 +45,7 @@
 #include "sensor_msgs/LaserScan.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 #include "geometry_msgs/PoseArray.h"
+#include "amcl/HypothesisSet.h"
 #include "geometry_msgs/Pose.h"
 #include "nav_msgs/GetMap.h"
 #include "nav_msgs/SetMap.h"
@@ -82,6 +83,12 @@ typedef struct
   pf_matrix_t pf_pose_cov;
 
 } amcl_hyp_t;
+
+typedef struct {
+ pf_vector_t* hypotheses;
+ pf_matrix_t* covariances;
+ int num_hyp;
+} amcl_hyp_list;
 
 static double
 normalize(double z)
@@ -141,14 +148,16 @@ class AmclNode
 
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
+    void initialHypothesisSetReceived(const HypothesisSetConstPtr &msg);
     void handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg);
+    void handleInitialHypothesisSetMessage(const HypothesisSet &msg);
     void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
-
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
     void freeMapDependentMemory();
     map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
     void updatePoseFromServer();
     void applyInitialPose();
+    void applyInitialHypothesisSet();
 
     double getYaw(tf::Pose& t);
 
@@ -188,6 +197,7 @@ class AmclNode
     message_filters::Subscriber<sensor_msgs::LaserScan>* laser_scan_sub_;
     tf::MessageFilter<sensor_msgs::LaserScan>* laser_scan_filter_;
     ros::Subscriber initial_pose_sub_;
+    ros::Subscriber initial_pose_cloud_sub_;
     std::vector< AMCLLaser* > lasers_;
     std::vector< bool > lasers_update_;
     std::map< std::string, int > frame_to_laser_;
@@ -237,6 +247,8 @@ class AmclNode
     ros::Subscriber map_sub_;
 
     amcl_hyp_t* initial_pose_hyp_;
+    amcl_hyp_list* initial_pose_hyp_list_;
+
     bool first_map_received_;
     bool first_reconfigure_call_;
     bool draw_laser_points_; 
@@ -472,7 +484,8 @@ AmclNode::AmclNode() :
                                                         100);
   laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
                                                    this, _1));
-  initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
+  initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this); //Single pose initialization
+  initial_pose_cloud_sub_ = nh_.subscribe("initialpose_cloud", 2, &AmclNode::initialHypothesisSetReceived, this); //Multi-pose initialization
 
   if(use_map_topic_) {
     map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);
@@ -1525,6 +1538,130 @@ AmclNode::getYaw(tf::Pose& t)
 }
 
 void
+AmclNode::initialHypothesisSetReceived(const HypothesisSetConstPtr &msg)
+{
+    ROS_INFO("Recieved new hypotheses");
+    handleInitialHypothesisSetMessage(*msg);
+}
+
+void
+AmclNode::handleInitialHypothesisSetMessage(const HypothesisSet &msg)
+{
+    boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
+    assert(msg.hypotheses.size() != 0);
+    assert(max_beams_/msg.hypotheses.size() > 0);
+    if(msg.header.frame_id == "")
+    {
+        // This should be removed at some point
+        ROS_WARN("Received initial pose with empty frame_id.  You should always supply a frame_id.");
+    }
+
+    // We only accept initial pose estimates in the global frame, #5148.
+    else if(tf_->resolve(msg.header.frame_id) != tf_->resolve(global_frame_id_))
+    {
+        ROS_WARN("Ignoring initial pose in frame \"%s\"; initial poses must be in the global frame, \"%s\"",
+             msg.header.frame_id.c_str(),
+             global_frame_id_.c_str());
+        return;
+    }
+
+    // In case the client sent us a pose estimate in the past, integrate the
+    // intervening odometric change.
+    tf::StampedTransform tx_odom;
+    if (!use_tf_to_update_initial_pose_){
+        tx_odom.setIdentity();
+    }
+    else
+    {
+        try
+        {
+            tf_->lookupTransform(base_frame_id_, ros::Time::now(),
+                                 base_frame_id_, msg.header.stamp,
+                                 global_frame_id_, tx_odom);
+        }
+        catch(tf::TransformException e)
+        {
+            // If we've never sent a transform, then this is normal, because the
+            // global_frame_id_ frame doesn't exist.  We only care about in-time
+            // transformation for on-the-move pose-setting, so ignoring this
+            // startup condition doesn't really cost us anything.
+            if(sent_first_transform_)
+                ROS_WARN("Failed to transform initial pose in time (%s), using identity transform for the hopefully-tiny odometric change since initial pose was broadcast", e.what());
+            tx_odom.setIdentity();
+        }
+    }
+
+
+
+
+    initial_pose_hyp_list_ = new amcl_hyp_list;
+    initial_pose_hyp_list_->num_hyp = msg.hypotheses.size();
+    initial_pose_hyp_list_->hypotheses = new pf_vector_t[initial_pose_hyp_list_->num_hyp];
+    initial_pose_hyp_list_->covariances = new pf_matrix_t[initial_pose_hyp_list_->num_hyp];
+
+    //Setup the pose list for estimates
+    for(int p_i = 0; p_i < msg.hypotheses.size(); p_i++)
+    {
+        tf::Pose pose_old, pose_new;
+        tf::poseMsgToTF(msg.hypotheses[p_i].pose, pose_old);
+        pose_new = tx_odom.inverse() * pose_old;
+
+        pf_vector_t pf_hyp = pf_vector_zero();
+        pf_hyp.v[0] = pose_new.getOrigin().x();
+        pf_hyp.v[1] = pose_new.getOrigin().y();
+        pf_hyp.v[2] = getYaw(pose_new);
+        initial_pose_hyp_list_->hypotheses[p_i] = pf_hyp;
+
+    }
+    //Setup the covariance of each estimate
+    for(int p_i = 0; p_i < msg.hypotheses.size(); p_i++) {
+        pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
+        // Copy in the covariance, converting from 6-D to 3-D
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                pf_init_pose_cov.m[i][j] = msg.hypotheses[p_i].covariance[6 * i + j];
+            }
+        }
+        pf_init_pose_cov.m[2][2] = msg.hypotheses[p_i].covariance[6 * 5 + 5];
+        initial_pose_hyp_list_->covariances[p_i] = pf_init_pose_cov;
+    }
+    //Initialize the pf
+
+    applyInitialHypothesisSet();
+}
+
+void
+AmclNode::applyInitialHypothesisSet()
+{
+    boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
+    if( initial_pose_hyp_list_->num_hyp > 0 && map_ != NULL ) {
+        pf_init_with_hypotheses(pf_,
+                initial_pose_hyp_list_->hypotheses,
+                initial_pose_hyp_list_->covariances,
+                initial_pose_hyp_list_->num_hyp);
+        pf_init_ = false;
+        ROS_INFO("Particle reinitialized from set of hypotheses");
+        if(initial_pose_hyp_ != NULL) {
+            delete initial_pose_hyp_;
+            initial_pose_hyp_ = NULL;
+        }
+        //Clear the hold hypothesis list if there's anything in it
+        if(initial_pose_hyp_list_ != NULL)
+        {
+            if(initial_pose_hyp_list_->covariances != NULL)
+                delete[] initial_pose_hyp_list_->covariances;
+
+            if(initial_pose_hyp_list_->hypotheses != NULL)
+                delete[] initial_pose_hyp_list_->hypotheses;
+
+            delete initial_pose_hyp_list_;
+        }
+    }
+
+
+}
+
+void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
   handleInitialPoseMessage(*msg);
@@ -1569,9 +1706,10 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
       // transformation for on-the-move pose-setting, so ignoring this
       // startup condition doesn't really cost us anything.
       if(sent_first_transform_)
-	ROS_WARN("Failed to transform initial pose in time (%s), using identity transform for the hopefully-tiny odometric change since initial pose was broadcast", e.what());
+         ROS_WARN("Failed to transform initial pose in time (%s), using identity transform for the hopefully-tiny odometric change since initial pose was broadcast", e.what());
       tx_odom.setIdentity();
     }
+
   }
 
   tf::Pose pose_old, pose_new;
