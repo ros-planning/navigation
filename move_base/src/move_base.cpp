@@ -42,6 +42,7 @@
 #include <boost/thread.hpp>
 
 #include <geometry_msgs/Twist.h>
+#include <angles/angles.h>
 
 namespace move_base {
 
@@ -647,13 +648,27 @@ namespace move_base {
       ros::Time start_time = ros::Time::now();
 
       //time to plan! get a copy of the goal and unlock the mutex
-      geometry_msgs::PoseStamped temp_goal = planner_goal_;
+      geometry_msgs::PoseStamped plan_goal = planner_goal_;
       lock.unlock();
       ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
       //run planner
       planner_plan_->clear();
-      bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
+      bool gotPlan = n.ok() && makePlan(plan_goal, *planner_plan_);
+
+      // makePlan can take time. While planning, it's possible that we received a new goal. We should check for this
+      // condition, and if it's true, we should carry on as if we did not succeed in planning this goal, which will
+      // cause us to move on and re-start this thread for the new goal.
+      lock.lock();
+      geometry_msgs::PoseStamped latest_goal = planner_goal_;
+      lock.unlock();
+
+      // Make sure the goal didn't change
+      if (distanceXYTheta(latest_goal, plan_goal) >= 1e-3)
+      {
+        ROS_INFO_STREAM("Planned goal and latest received goal do not match. Assuming new goal issued; ignoring this plan.\n");
+        gotPlan = false;
+      }
 
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
@@ -756,6 +771,7 @@ namespace move_base {
       }
 
       if(as_->isPreemptRequested()){
+
         if(as_->isNewGoalAvailable()){
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
@@ -833,7 +849,9 @@ namespace move_base {
 
       //if we're done, then we'll return from execute
       if(done)
+      {
         return;
+      }
 
       //check if execution of the goal has completed in some way
 
@@ -857,9 +875,19 @@ namespace move_base {
     return;
   }
 
-  double MoveBase::distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
+  double MoveBase::distanceXY(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
   {
-    return hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
+    return ::hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
+  }
+
+  double MoveBase::distanceXYTheta(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
+  {
+    double diff_x = p1.pose.position.x - p2.pose.position.x;
+    double diff_y = p1.pose.position.y - p2.pose.position.y;
+    double diff_yaw = angles::shortest_angular_distance(tf::getYaw(p1.pose.orientation),
+                                                        tf::getYaw(p2.pose.orientation));
+
+    return ::sqrt(diff_x * diff_x + diff_y * diff_y + diff_yaw * diff_yaw);
   }
 
   bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan){
@@ -879,7 +907,7 @@ namespace move_base {
     as_->publishFeedback(feedback);
 
     //check to see if we've moved far enough to reset our oscillation timeout
-    if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
+    if(distanceXY(current_position, oscillation_pose_) >= oscillation_distance_)
     {
       last_oscillation_reset_ = ros::Time::now();
       oscillation_pose_ = current_position;
