@@ -771,7 +771,6 @@ namespace move_base {
       }
 
       if(as_->isPreemptRequested()){
-
         if(as_->isNewGoalAvailable()){
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
