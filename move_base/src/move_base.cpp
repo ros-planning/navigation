@@ -648,27 +648,13 @@ namespace move_base {
       ros::Time start_time = ros::Time::now();
 
       //time to plan! get a copy of the goal and unlock the mutex
-      geometry_msgs::PoseStamped plan_goal = planner_goal_;
+      geometry_msgs::PoseStamped planned_goal = planner_goal_;
       lock.unlock();
       ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
       //run planner
       planner_plan_->clear();
-      bool gotPlan = n.ok() && makePlan(plan_goal, *planner_plan_);
-
-      // makePlan can take time. While planning, it's possible that we received a new goal. We should check for this
-      // condition, and if it's true, we should carry on as if we did not succeed in planning this goal, which will
-      // cause us to move on and re-start this thread for the new goal.
-      lock.lock();
-      geometry_msgs::PoseStamped latest_goal = planner_goal_;
-      lock.unlock();
-
-      // Make sure the goal didn't change
-      if (distanceXYTheta(latest_goal, plan_goal) >= 1e-3)
-      {
-        ROS_INFO_STREAM("Planned goal and latest received goal do not match. Assuming new goal issued; ignoring this plan.\n");
-        gotPlan = false;
-      }
+      bool gotPlan = n.ok() && makePlan(planned_goal, *planner_plan_);
 
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
@@ -676,19 +662,36 @@ namespace move_base {
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
         lock.lock();
-        planner_plan_ = latest_plan_;
-        latest_plan_ = temp_plan;
-        last_valid_plan_ = ros::Time::now();
-        new_global_plan_ = true;
-        ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
-        /* As soon as we find a plan even if during recovery, set the state to CONTROLLING.
-         * In CONTROLLING state if isGoalReached returns true the cycle returns true so there's no
-         * need to check if we have or have not reached the goal to change the state.
-         */
-        state_ = CONTROLLING;
-        if(planner_frequency_ <= 0)
-          runPlanner_ = false;
+        // Update the last_valid_plan_ time regardless, as it will keep us from triggering recovery behaviours if we
+        // simply interrupted our last goal with a new one.
+        last_valid_plan_ = ros::Time::now();
+
+        // makePlan can take time. While planning, it's possible that we received a new goal. We should check for this
+        // condition, and if it's true, we should carry on as if we did not succeed in planning this goal, which will
+        // cause us to move on and re-start this thread for the new goal.
+        if (distanceXYTheta(planner_goal_, planned_goal) >= 1e-3)
+        {
+          ROS_INFO("Planned goal and latest received goal do not match. Assuming new goal issued; ignoring this "
+                   "plan.\n");
+        }
+        else
+        {
+          planner_plan_ = latest_plan_;
+          latest_plan_ = temp_plan;
+          new_global_plan_ = true;
+
+          ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
+
+          /* As soon as we find a plan even if during recovery, set the state to CONTROLLING.
+           * In CONTROLLING state if isGoalReached returns true the cycle returns true so there's no
+           * need to check if we have or have not reached the goal to change the state.
+           */
+          state_ = CONTROLLING;
+          if(planner_frequency_ <= 0)
+            runPlanner_ = false;
+        }
+
         lock.unlock();
       }
       //if we didn't get a plan and we are in the planning state (the robot isn't moving)
