@@ -173,13 +173,7 @@ namespace move_base {
 
       bool isQuaternionValid(const geometry_msgs::Quaternion& q);
 
-      /**
-       * @brief  Computes the 2D linear (X-Y) distance between two poses
-       * @param p1 The first pose
-       * @param p1 The second pose
-       * @return The 2D linear distance between the poses
-       */
-      double distanceXY(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
+      double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
 
       /**
        * @brief  Computes the X-Y-theta distance between two poses

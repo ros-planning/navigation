@@ -851,9 +851,7 @@ namespace move_base {
 
       //if we're done, then we'll return from execute
       if(done)
-      {
         return;
-      }
 
       //check if execution of the goal has completed in some way
 
@@ -877,9 +875,9 @@ namespace move_base {
     return;
   }
 
-  double MoveBase::distanceXY(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
+  double MoveBase::distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
   {
-    return ::hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
+    return hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
   }
 
   double MoveBase::distanceXYTheta(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
@@ -909,7 +907,7 @@ namespace move_base {
     as_->publishFeedback(feedback);
 
     //check to see if we've moved far enough to reset our oscillation timeout
-    if(distanceXY(current_position, oscillation_pose_) >= oscillation_distance_)
+    if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
     {
       last_oscillation_reset_ = ros::Time::now();
       oscillation_pose_ = current_position;
