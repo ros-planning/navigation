@@ -175,6 +175,14 @@ namespace move_base {
 
       double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
 
+      /**
+       * @brief  Computes the X-Y-theta distance between two poses
+       * @param p1 The first pose
+       * @param p1 The second pose
+       * @return The 3D (X-Y-theta) distance between the poses
+       */
+      double distanceXYTheta(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
+
       geometry_msgs::PoseStamped goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg);
 
       /**
