@@ -174,10 +174,18 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       master->getOriginY() != new_map->info.origin.position.y ||
       !layered_costmap_->isSizeLocked()))
   {
+    // Calling resizeMap on the layered_costmap_ is going to update the global/master map, not the local one for this
+    // layer. It also will lock the mutex around the global/master map, so we should unlock the local one first to
+    // avoid deadlock situations.
+    lock.unlock();
+
     // Update the size of the layered costmap (and all layers, including this one)
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
                                 new_map->info.origin.position.y, true);
+
+    // Resume the lock for the rest of this method
+    lock.lock();
   }
   else if (size_x_ != size_x || size_y_ != size_y ||
            resolution_ != new_map->info.resolution ||
