@@ -174,15 +174,29 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
       master->getOriginY() != new_map->info.origin.position.y ||
       !layered_costmap_->isSizeLocked()))
   {
+    // Calling resizeMap on the layered_costmap_ is going to update the global/master map, not the local one for this
+    // layer. It also will lock the mutex around the global/master map, so we should unlock the local one first to
+    // avoid deadlock situations.
+    lock.unlock();
+
     // Update the size of the layered costmap (and all layers, including this one)
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
                                 new_map->info.origin.position.y, true);
+
+    // Resume the lock for the rest of this method
+    lock.lock();
   }
-  else if (size_x_ != size_x || size_y_ != size_y ||
-           resolution_ != new_map->info.resolution ||
-           origin_x_ != new_map->info.origin.position.x ||
-           origin_y_ != new_map->info.origin.position.y)
+
+  // Make sure our local map's dimensions match the new_map that we just received. Normally, the call above to
+  // layered_costmap_->resizeMap will handle this, as it will loop through all layers, including this one, and call
+  // matchSize. However, in the event that (a) something manages to change the local costmap size in between the call
+  // to layered_costmap_->resizeMap and the lock, or (b) the global costmap is rolling or already matches the received
+  // map, we'll want to enter this block to make sure our map matches.
+  if (size_x_ != size_x || size_y_ != size_y ||
+      resolution_ != new_map->info.resolution ||
+      origin_x_ != new_map->info.origin.position.x ||
+      origin_y_ != new_map->info.origin.position.y)
   {
     // only update the size of the costmap stored locally in this layer
     ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
