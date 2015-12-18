@@ -38,6 +38,7 @@
 #include <costmap_2d/inflation_layer.h>
 #include <costmap_2d/costmap_math.h>
 #include <costmap_2d/footprint.h>
+#include <boost/thread.hpp>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
@@ -59,13 +60,13 @@ InflationLayer::InflationLayer()
   , cached_costs_(NULL)
   , cached_distances_(NULL)
 {
-  access_ = new boost::shared_mutex();
+  inflation_access_ = new boost::recursive_mutex();
 }
 
 void InflationLayer::onInitialize()
 {
   {
-    boost::unique_lock < boost::shared_mutex > lock(*access_);
+    boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
     ros::NodeHandle nh("~/" + name_), g_nh;
     current_ = true;
     if (seen_)
@@ -93,14 +94,7 @@ void InflationLayer::onInitialize()
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
-  if (weight_ != config.cost_scaling_factor || inflation_radius_ != config.inflation_radius)
-  {
-    inflation_radius_ = config.inflation_radius;
-    cell_inflation_radius_ = cellDistance(inflation_radius_);
-    weight_ = config.cost_scaling_factor;
-    need_reinflation_ = true;
-    computeCaches();
-  }
+  setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
 
   if (enabled_ != config.enabled) {
     enabled_ = config.enabled;
@@ -110,7 +104,7 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
 
 void InflationLayer::matchSize()
 {
-  boost::unique_lock < boost::shared_mutex > lock(*access_);
+  boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
   costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
   resolution_ = costmap->getResolution();
   cell_inflation_radius_ = cellDistance(inflation_radius_);
@@ -154,7 +148,7 @@ void InflationLayer::onFootprintChanged()
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i,
                                           int max_j)
 {
-  boost::unique_lock < boost::shared_mutex > lock(*access_);
+  boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
   if (!enabled_)
     return;
 
@@ -191,7 +185,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   min_j = std::max(0, min_j);
   max_i = std::min(int(size_x), max_i);
   max_j = std::min(int(size_y), max_j);
-
+  
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
@@ -326,6 +320,22 @@ void InflationLayer::deleteKernels()
     }
     delete[] cached_costs_;
     cached_costs_ = NULL;
+  }
+}
+
+void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
+{
+  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius)
+  {
+    // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
+    // when accessing the cached arrays
+    boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
+
+    inflation_radius_ = inflation_radius;
+    cell_inflation_radius_ = cellDistance(inflation_radius_);
+    weight_ = cost_scaling_factor;
+    need_reinflation_ = true;
+    computeCaches();
   }
 }
 
