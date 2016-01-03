@@ -2,6 +2,9 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.12.5 (2015-10-29)
 -------------------
 * More tolerant initial pose transform lookup.

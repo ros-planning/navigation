@@ -2,6 +2,9 @@
 Changelog for package rotate_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.12.5 (2015-10-29)
 -------------------
 
