@@ -43,6 +43,7 @@
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/InflationPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
+#include <boost/thread.hpp>
 #include <queue>
 
 namespace costmap_2d
@@ -127,9 +128,16 @@ public:
     return cost;
   }
 
+  /**
+   * @brief Change the values of the inflation radius parameters
+   * @param inflation_radius The new inflation radius
+   * @param cost_scaling_factor The new weight
+   */
+  void setInflationParameters(double inflation_radius, double cost_scaling_factor);
+
 protected:
   virtual void onFootprintChanged();
-  boost::shared_mutex* access_;
+  boost::recursive_mutex* inflation_access_;
 
 private:
   /**
