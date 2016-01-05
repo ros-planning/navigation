@@ -605,6 +605,12 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
     raytraceFreespace(clearing_observations[i], &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
   }
 
+  // If we are footprint clearing then we should do so now to invalidate points.
+  if (footprint_clearing_enabled_)
+  {
+    setConvexPolygonCost(transformed_footprint_, costmap_2d::FREE_SPACE);
+  }
+
   // now we will check our memories to make sure they are not FREE_SPACE
   // They would be free space if they got ray-traced away above.
   // We shouldn't remember things that get invalidated by evidence
