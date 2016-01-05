@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.7 (2016-01-05)
+-------------------
 * Fix inflation layer locking
 * Contributors: Levon Avagyan
 
