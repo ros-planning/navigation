@@ -48,9 +48,10 @@ namespace nav_core {
   class BaseGlobalPlanner{
     public:
       /**
-       * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose 
-       * @param goal The goal pose 
+       * @brief Given a goal pose in the world, compute a plan. The implementation of this method is
+       *        responsible for locking the costmap mutex.
+       * @param start The start pose
+       * @param goal The goal pose
        * @param plan The plan... filled by the planner
        * @return True if a valid plan was found, false otherwise
        */
