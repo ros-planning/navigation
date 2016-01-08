@@ -47,12 +47,7 @@ void OdometryHelperRos::odomCallback(const nav_msgs::Odometry::ConstPtr& msg) {
 
   //we assume that the odometry is published in the frame of the base
   boost::mutex::scoped_lock lock(odom_mutex_);
-  base_odom_.twist.twist.linear.x = msg->twist.twist.linear.x;
-  base_odom_.twist.twist.linear.y = msg->twist.twist.linear.y;
-  base_odom_.twist.twist.angular.z = msg->twist.twist.angular.z;
-  base_odom_.child_frame_id = msg->child_frame_id;
-//  ROS_DEBUG_NAMED("dwa_local_planner", "In the odometry callback with velocity values: (%.2f, %.2f, %.2f)",
-//      base_odom_.twist.twist.linear.x, base_odom_.twist.twist.linear.y, base_odom_.twist.twist.angular.z);
+  base_odom_ = *msg;
 }
 
 //copy over the odometry information
