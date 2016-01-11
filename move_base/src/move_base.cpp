@@ -437,6 +437,8 @@ namespace move_base {
 
     //first try to make a plan to the exact desired goal
     std::vector<geometry_msgs::PoseStamped> global_plan;
+
+    // NOTE: The implementation of makePlan is responsible for locking the costmap
     if(!planner_->makePlan(start, req.goal, global_plan) || global_plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a plan to exact goal of (%.2f, %.2f), searching for a feasible goal within tolerance",
           req.goal.pose.position.x, req.goal.pose.position.y);
@@ -467,6 +469,7 @@ namespace move_base {
                 p.pose.position.y = req.goal.pose.position.y + y_offset * y_mult;
                 p.pose.position.x = req.goal.pose.position.x + x_offset * x_mult;
 
+                // NOTE: The implementation of makePlan is responsible for locking the costmap
                 if(planner_->makePlan(start, p, global_plan)){
                   if(!global_plan.empty()){
 
@@ -527,7 +530,6 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock< boost::recursive_mutex > cm_lock(clear_costmap_mutex_);
-    boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
 
     //check if the costmap is current before planning on it
     if (!planner_costmap_ros_->isCurrent())
@@ -555,6 +557,7 @@ namespace move_base {
     geometry_msgs::PoseStamped start;
     tf::poseStampedTFToMsg(global_pose, start);
 
+    // NOTE: The implementation of makePlan is responsible for locking the costmap
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", goal.pose.position.x, goal.pose.position.y);
