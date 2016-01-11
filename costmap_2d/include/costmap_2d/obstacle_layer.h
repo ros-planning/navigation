@@ -206,7 +206,7 @@ protected:
 
 private:
   /**
-   * @brief Immediately clears the stored memory of obstacles that we've seen
+   * @brief Flags that the obstacle memory should be cleared the next time we update the map
    * @param request The empty service request
    * @param response The empty service response
    * @return true if successful, false otherwise
