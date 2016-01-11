@@ -54,6 +54,7 @@
 #include <message_filters/subscriber.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
+#include <std_srvs/Empty.h>
 
 #include <string>  // for string
 #include <vector>  // for vector<>
@@ -204,6 +205,14 @@ protected:
   int combination_method_;
 
 private:
+  /**
+   * @brief Immediately clears the stored memory of obstacles that we've seen
+   * @param request The empty service request
+   * @param response The empty service response
+   * @return true if successful, false otherwise
+   */
+  bool clearObstacleMemory(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
+
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
 
   int min_x_;  ///< @brief bounding box in cell coordinates
@@ -223,6 +232,8 @@ private:
   ros::Subscriber pose_confidence_sub_;
   float pose_confidence_;           /// <@brief current confidence in pose.
   float pose_confidence_threshold_; /// <@brief below this threshold we will not remember obstacles.
+
+  ros::ServiceServer clear_memory_server_;  /// <@brief service for clearing obstacle memory (time_world_points_)
 };
 
 }  // namespace costmap_2d

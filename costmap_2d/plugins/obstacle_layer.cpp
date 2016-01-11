@@ -74,7 +74,9 @@ void ObstacleLayer::onInitialize()
   std::string pose_confidence_topic_name;
   nh.param<std::string>("pose_confidence_topic_name", pose_confidence_topic_name, "slam/localization_score");
   pose_confidence_sub_ = g_nh.subscribe(pose_confidence_topic_name, 1, &ObstacleLayer::poseConfidenceCallback, this);
-    
+
+  clear_memory_server_ = nh.advertiseService("clear_obstacle_memory", &ObstacleLayer::clearObstacleMemory, this);
+
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
   if (track_unknown_space)
@@ -261,6 +263,28 @@ ObstacleLayer::~ObstacleLayer()
     if (dsrv_)
         delete dsrv_;
 }
+
+bool ObstacleLayer::clearObstacleMemory(std_srvs::Empty::Request&, std_srvs::Empty::Response&)
+{
+  ROS_INFO("Obstacle memory clearing service invoked.");
+
+  // Let the user know if they're requesting a service that will have no effect. Note that we can use
+  // dynamic_reconfigure to turn off use_forgetful_version_ (which actually means "remember obstacles for a time")
+  // while running, so we may have stored obstacles that need to be cleared, even though we're not using them.
+  if(!use_forgetful_version_ && time_world_points_.size() == 0)
+  {
+    ROS_INFO("Obstacle memory is disabled and no obstacles exist in memory.");
+  }
+  else
+  {
+    ROS_INFO("Clearing obstacle memory.");
+  }
+
+  time_world_points_.clear();
+
+  return (time_world_points_.size() == 0);
+}
+
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
