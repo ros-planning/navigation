@@ -234,6 +234,7 @@ private:
   float pose_confidence_threshold_; /// <@brief below this threshold we will not remember obstacles.
 
   ros::ServiceServer clear_memory_server_;  /// <@brief service for clearing obstacle memory (time_world_points_)
+  bool clear_obstacle_memory_;              /// <@brief whether or not we clear the stored obstacles before updating
 };
 
 }  // namespace costmap_2d

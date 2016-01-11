@@ -65,6 +65,7 @@ void ObstacleLayer::onInitialize()
   obstacle_keep_radius_ = 0.0;       // meters
   use_forgetful_version_ = true;     // flag
   last_known_enabled_ = false;
+  clear_obstacle_memory_ = false;    // flag
   
   // Initial pose confidence and threshold before we remember new data
   // Threshold default in costmap_2d/cfg/ObstaclePlugin.cfg
@@ -268,21 +269,10 @@ bool ObstacleLayer::clearObstacleMemory(std_srvs::Empty::Request&, std_srvs::Emp
 {
   ROS_INFO("Obstacle memory clearing service invoked.");
 
-  // Let the user know if they're requesting a service that will have no effect. Note that we can use
-  // dynamic_reconfigure to turn off use_forgetful_version_ (which actually means "remember obstacles for a time")
-  // while running, so we may have stored obstacles that need to be cleared, even though we're not using them.
-  if(!use_forgetful_version_ && time_world_points_.size() == 0)
-  {
-    ROS_INFO("Obstacle memory is disabled and no obstacles exist in memory.");
-  }
-  else
-  {
-    ROS_INFO("Clearing obstacle memory.");
-  }
+  // Set a flag that will cause us to clear the obstacle memory the next time we update
+  clear_obstacle_memory_ = true;
 
-  time_world_points_.clear();
-
-  return (time_world_points_.size() == 0);
+  return true;
 }
 
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
@@ -565,6 +555,14 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   if (!enabled_)
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);
+
+  // Check if we received a request to clear the obstacle memory
+  if(clear_obstacle_memory_)
+  {
+    ROS_INFO("Clearing obstacle memory.");
+    time_world_points_.clear();
+    clear_obstacle_memory_ = false;
+  }
 
   // clear the costmap, it will get rewritten
   resetMaps();
