@@ -60,6 +60,15 @@ namespace nav_core {
       virtual void runBehavior() = 0;
 
       /**
+       * @brief   Cleans up any system-wide changes made by the behavior
+       *
+       * After the behavior executes, we return to planning state, which may succeed or fail. In either case, we want
+       * to undo any system-wide changes we may have made during the execution of the behavior. This method runs when
+       * we execute the next recovery behavior, when post-recovery planning succeeds, or all recoveries fail.
+       */
+      virtual void revertChanges() { };
+
+      /**
        * @brief  Virtual destructor for the interface
        */
       virtual ~RecoveryBehavior(){}
