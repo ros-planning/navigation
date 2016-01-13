@@ -89,6 +89,8 @@ namespace move_base {
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
 
+    rec_complete_client_ = private_nh.serviceClient<std_srvs::Empty>("recovery_complete");
+
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
 
@@ -271,6 +273,10 @@ namespace move_base {
         controller_plan_->clear();
         runPlanner_ = false;
         state_ = PLANNING;
+        if(recovery_index_ != 0)
+        {
+          rec_complete_client_.call(rec_complete_);
+        }
         recovery_index_ = 0;
         recovery_trigger_ = PLANNING_R;
         publishZeroVelocity();
@@ -789,6 +795,10 @@ namespace move_base {
           goal = goalToGlobalFrame(new_goal.target_pose);
 
           //we'll make sure that we reset our state for the next execution cycle
+          if(recovery_index_ != 0)
+          {
+            rec_complete_client_.call(rec_complete_);
+          }
           recovery_index_ = 0;
           state_ = PLANNING;
 
@@ -826,6 +836,10 @@ namespace move_base {
         goal = goalToGlobalFrame(goal);
 
         //we want to go back to the planning state for the next execution cycle
+        if(recovery_index_ != 0)
+        {
+          rec_complete_client_.call(rec_complete_);
+        }
         recovery_index_ = 0;
         state_ = PLANNING;
 
@@ -917,7 +931,13 @@ namespace move_base {
 
       //if our last recovery was caused by oscillation, we want to reset the recovery index
       if(recovery_trigger_ == OSCILLATION_R)
+      {
+        if(recovery_index_ != 0)
+        {
+          rec_complete_client_.call(rec_complete_);
+        }
         recovery_index_ = 0;
+      }
     }
 
     //check that the observation buffers for the costmap are current, we don't want to drive blind
@@ -959,7 +979,13 @@ namespace move_base {
 
       //make sure to reset recovery_index_ since we were able to find a valid plan
       if(recovery_trigger_ == PLANNING_R)
+      {
+        if(recovery_index_ != 0)
+        {
+          rec_complete_client_.call(rec_complete_);
+        }
         recovery_index_ = 0;
+      }
     }
 
     //the move_base state machine, handles the control logic for navigation
@@ -1015,6 +1041,10 @@ namespace move_base {
            * from CONTROLLING_R or have found a plan after a recovery and executed it.
            * This allows for multiple recovery attempts if the robot moves (as opposed to one only).
            */
+          if(recovery_index_ != 0)
+          {
+            rec_complete_client_.call(rec_complete_);
+          }
           recovery_index_ = 0;
         }
         else {
@@ -1093,6 +1123,7 @@ namespace move_base {
             ROS_ERROR("Aborting because the robot appears to be oscillating over and over. Even after executing all recovery behaviors");
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Robot is oscillating. Even after executing recovery behaviors.");
           }
+          rec_complete_client_.call(rec_complete_);
           resetState();
           return true;
         }
@@ -1240,6 +1271,10 @@ namespace move_base {
     lock.unlock();
 
     // Reset statemachine
+    if(state_ != PLANNING || recovery_index_ != 0)
+    {
+      rec_complete_client_.call(rec_complete_);
+    }
     state_ = PLANNING;
     recovery_index_ = 0;
     recovery_trigger_ = PLANNING_R;
