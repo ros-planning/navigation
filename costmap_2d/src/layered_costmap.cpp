@@ -164,17 +164,7 @@ Layer* LayeredCostmap::getLayerByName(const std::string &layer_name)
 
 bool LayeredCostmap::hasLayer(const std::string &layer_name)
 {
-  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin();
-       plugin != plugins_.end();
-       ++plugin)
-  {
-    if((*plugin)->getName() == layer_name)
-    {
-      return true;
-    }
-  }
-
-  return false;
+  return (getLayerByName(layer_name) != NULL);
 }
 
 bool LayeredCostmap::isCurrent()
