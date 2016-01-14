@@ -80,22 +80,6 @@ void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double 
   }
 }
 
-void LayeredCostmap::setLayerEnabled(const std::string &layer_name, const bool enabled)
-{
-  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin();
-       plugin != plugins_.end();
-       ++plugin)
-  {
-    if((*plugin)->getName() == layer_name)
-    {
-      (*plugin)->setEnabled(enabled);
-      return;
-    }
-  }
-
-  ROS_WARN_STREAM("Attempted to disable layer with name " << layer_name << ", but no layer with that name exists.");
-}
-
 void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 {
   // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
@@ -161,6 +145,36 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   byn_ = yn;
 
   initialized_ = true;
+}
+
+Layer* LayeredCostmap::getLayerByName(const std::string &layer_name)
+{
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin();
+       plugin != plugins_.end();
+       ++plugin)
+  {
+    if((*plugin)->getName() == layer_name)
+    {
+      return plugin->get();
+    }
+  }
+
+  return NULL;
+}
+
+bool LayeredCostmap::hasLayer(const std::string &layer_name)
+{
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin();
+       plugin != plugins_.end();
+       ++plugin)
+  {
+    if((*plugin)->getName() == layer_name)
+    {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool LayeredCostmap::isCurrent()

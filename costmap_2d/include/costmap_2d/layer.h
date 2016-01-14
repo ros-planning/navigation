@@ -129,7 +129,7 @@ public:
    * @brief Indicates whether this layer is currently included in the combined costmap calculation
    * @return true if enabled, false otherwise
    * */
-  bool getEnabled();
+  bool isEnabled();
 
   /**
    * @brief Determines whether this layer will be included in the combined costmap calculation

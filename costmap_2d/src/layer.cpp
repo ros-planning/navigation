@@ -66,7 +66,7 @@ void Layer::setMaxRange(double* min_x, double* min_y, double* max_x, double* max
   *max_y = std::numeric_limits<double>::max();    
 }
 
-bool Layer::getEnabled()
+bool Layer::isEnabled()
 {
   return enabled_;
 }
