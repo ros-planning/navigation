@@ -147,6 +147,26 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   initialized_ = true;
 }
 
+Layer* LayeredCostmap::getLayerByName(const std::string &layer_name)
+{
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin();
+       plugin != plugins_.end();
+       ++plugin)
+  {
+    if((*plugin)->getName() == layer_name)
+    {
+      return plugin->get();
+    }
+  }
+
+  return NULL;
+}
+
+bool LayeredCostmap::hasLayer(const std::string &layer_name)
+{
+  return (getLayerByName(layer_name) != NULL);
+}
+
 bool LayeredCostmap::isCurrent()
 {
   current_ = true;

@@ -125,6 +125,21 @@ public:
    * notified of changes to the robot's footprint. */
   virtual void onFootprintChanged() {}
   
+  /**
+   * @brief Indicates whether this layer is currently included in the combined costmap calculation
+   * @return true if enabled, false otherwise
+   * */
+  bool isEnabled();
+
+  /**
+   * @brief Determines whether this layer will be included in the combined costmap calculation
+   *
+   * This method can be overridden if you need to make costmap layer whose enabled state cannot change.
+   *
+   * @param[in] enabled Whether the layer will be enabled
+   * */
+  virtual void setEnabled(const bool enabled);
+
 protected:
   /** @brief This is called at the end of initialize().  Override to
    * implement subclass-specific initialization.

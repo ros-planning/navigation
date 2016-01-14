@@ -65,6 +65,7 @@ void ObstacleLayer::onInitialize()
   obstacle_keep_radius_ = 0.0;       // meters
   use_forgetful_version_ = true;     // flag
   last_known_enabled_ = false;
+  clear_obstacle_memory_ = false;    // flag
   
   // Initial pose confidence and threshold before we remember new data
   // Threshold default in costmap_2d/cfg/ObstaclePlugin.cfg
@@ -74,7 +75,7 @@ void ObstacleLayer::onInitialize()
   std::string pose_confidence_topic_name;
   nh.param<std::string>("pose_confidence_topic_name", pose_confidence_topic_name, "slam/localization_score");
   pose_confidence_sub_ = g_nh.subscribe(pose_confidence_topic_name, 1, &ObstacleLayer::poseConfidenceCallback, this);
-    
+
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
   if (track_unknown_space)
@@ -261,16 +262,36 @@ ObstacleLayer::~ObstacleLayer()
     if (dsrv_)
         delete dsrv_;
 }
+
+void ObstacleLayer::clearObstacleMemory()
+{
+  // Set a flag that will cause us to clear the obstacle memory the next time we update
+  clear_obstacle_memory_ = true;
+}
+
+bool ObstacleLayer::isMemoryEnabled()
+{
+  return use_forgetful_version_;
+}
+
+void ObstacleLayer::setMemoryEnabled(const bool enabled)
+{
+  // "Forgetful version" means that it remembers obstacles for a time, then discards them. Setting it to false means
+  // that it doesn't even try to remember them.
+  use_forgetful_version_ = enabled;
+}
+
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
-  enabled_ = config.enabled;
+  setEnabled(config.enabled);
+  setMemoryEnabled(config.enable_forget);
+
   footprint_clearing_enabled_ = config.footprint_clearing_enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
 
   obstacle_lifespan_ = config.obstacle_lifespan;
   obstacle_keep_radius_ = config.obstacle_keep_radius;
-  use_forgetful_version_ = config.enable_forget;
   pose_confidence_threshold_ = config.pose_confidence_threshold;
 }
 
@@ -541,6 +562,14 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
   if (!enabled_)
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);
+
+  // Check if we received a request to clear the obstacle memory
+  if(clear_obstacle_memory_)
+  {
+    ROS_INFO("Clearing obstacle memory.");
+    time_world_points_.clear();
+    clear_obstacle_memory_ = false;
+  }
 
   // clear the costmap, it will get rewritten
   resetMaps();

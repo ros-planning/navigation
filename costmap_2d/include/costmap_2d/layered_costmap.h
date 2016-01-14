@@ -127,6 +127,20 @@ public:
     *yn = byn_;
   }
 
+  /**
+   * @brief Method to check if a layer exists
+   * @param[in] layer_name The layer name whose existence we want to check
+   * @return true if the layer exists, false otherwise
+   *  */
+  bool hasLayer(const std::string &layer_name);
+
+  /**
+   * @brief Gets a specific layer by name
+   * @param[in] layer_name The name of the layer we're requesting
+   * @return the layer with the requested name, if it exists, NULL otherwise
+   *  */
+  Layer* getLayerByName(const std::string &layer_name);
+
   bool isInitialized()
   {
       return initialized_;

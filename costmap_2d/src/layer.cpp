@@ -66,5 +66,14 @@ void Layer::setMaxRange(double* min_x, double* min_y, double* max_x, double* max
   *max_y = std::numeric_limits<double>::max();    
 }
 
+bool Layer::isEnabled()
+{
+  return enabled_;
+}
+
+void Layer::setEnabled(const bool enabled)
+{
+  enabled_ = enabled;
+}
 
 }  // end namespace costmap_2d
