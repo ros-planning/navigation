@@ -193,6 +193,7 @@ namespace move_base {
 
     //we'll start executing recovery behaviors at the beginning of our list
     recovery_index_ = 0;
+    active_recovery_index_ = -1;
 
     //we're all set up now so we can start the action server
     as_->start();
@@ -270,8 +271,10 @@ namespace move_base {
         latest_plan_->clear();
         controller_plan_->clear();
         runPlanner_ = false;
+        revertRecoveryChanges();
         state_ = PLANNING;
         recovery_index_ = 0;
+        active_recovery_index_ = -1;
         recovery_trigger_ = PLANNING_R;
         publishZeroVelocity();
 
@@ -789,7 +792,9 @@ namespace move_base {
           goal = goalToGlobalFrame(new_goal.target_pose);
 
           //we'll make sure that we reset our state for the next execution cycle
+          revertRecoveryChanges();
           recovery_index_ = 0;
+          active_recovery_index_ = -1;
           state_ = PLANNING;
 
           //we have a new goal so make sure the planner is awake
@@ -826,7 +831,9 @@ namespace move_base {
         goal = goalToGlobalFrame(goal);
 
         //we want to go back to the planning state for the next execution cycle
+        revertRecoveryChanges();
         recovery_index_ = 0;
+        active_recovery_index_ = -1;
         state_ = PLANNING;
 
         //we have a new goal so make sure the planner is awake
@@ -917,7 +924,11 @@ namespace move_base {
 
       //if our last recovery was caused by oscillation, we want to reset the recovery index
       if(recovery_trigger_ == OSCILLATION_R)
+      {
+        revertRecoveryChanges();
         recovery_index_ = 0;
+        active_recovery_index_ = -1;
+      }
     }
 
     //check that the observation buffers for the costmap are current, we don't want to drive blind
@@ -959,7 +970,11 @@ namespace move_base {
 
       //make sure to reset recovery_index_ since we were able to find a valid plan
       if(recovery_trigger_ == PLANNING_R)
+      {
+        revertRecoveryChanges();
         recovery_index_ = 0;
+        active_recovery_index_ = -1;
+      }
     }
 
     //the move_base state machine, handles the control logic for navigation
@@ -1015,7 +1030,9 @@ namespace move_base {
            * from CONTROLLING_R or have found a plan after a recovery and executed it.
            * This allows for multiple recovery attempts if the robot moves (as opposed to one only).
            */
+          revertRecoveryChanges();
           recovery_index_ = 0;
+          active_recovery_index_ = -1;
         }
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
@@ -1056,6 +1073,7 @@ namespace move_base {
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
+          active_recovery_index_ = recovery_index_;
           recovery_behaviors_[recovery_index_]->runBehavior();
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
@@ -1240,8 +1258,10 @@ namespace move_base {
     lock.unlock();
 
     // Reset statemachine
+    revertRecoveryChanges();
     state_ = PLANNING;
     recovery_index_ = 0;
+    active_recovery_index_ = -1;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
 
@@ -1270,5 +1290,13 @@ namespace move_base {
     } 
     // Return the cached plugin instance.
     return global_planner_cache_[plugin_name];
+  }
+
+  void MoveBase::revertRecoveryChanges()
+  {
+    if(recovery_behavior_enabled_ && active_recovery_index_ >= 0)
+    {
+      recovery_behaviors_[active_recovery_index_]->revertChanges();
+    }
   }
 };

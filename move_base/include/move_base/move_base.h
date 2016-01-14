@@ -199,6 +199,11 @@ namespace move_base {
        */
       boost::shared_ptr<nav_core::BaseGlobalPlanner> getGlobalPlannerPlugin(std::string plugin_name);
 
+      /**
+       * @brief Used to undo changes made by the last-executed recovery behavior
+       */
+      void revertRecoveryChanges();
+
       tf::TransformListener& tf_;
 
       MoveBaseActionServer* as_;
@@ -212,6 +217,7 @@ namespace move_base {
 
       std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
       unsigned int recovery_index_;
+      int active_recovery_index_;  // Intentionally signed
 
       tf::Stamped<tf::Pose> global_pose_;
       double planner_frequency_, controller_frequency_, inscribed_radius_, circumscribed_radius_;
