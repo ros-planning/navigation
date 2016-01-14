@@ -128,13 +128,6 @@ public:
   }
 
   /**
-   * @brief Whether or not a given layer is enabled
-   * @param[in] layer_name The layer name whose enabled state we want to check
-   * @return true if the layer exists and is enabled, false otherwise
-   *  */
-  bool getLayerEnabled(const std::string &layer_name);
-
-  /**
    * @brief Method to check if a layer exists
    * @param[in] layer_name The layer name whose existence we want to check
    * @return true if the layer exists, false otherwise
