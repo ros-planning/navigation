@@ -90,6 +90,23 @@ public:
   virtual void reset();
 
   /**
+   * @brief Flags that the obstacle memory should be cleared the next time we update the map
+   */
+  void clearObstacleMemory();
+
+  /**
+   * Indicates whether obstacle memory is currently on
+   * @return true if memory is enabled, false otherwise
+   */
+  bool isMemoryEnabled();
+
+  /**
+   * @brief Used to enable or disable the obstacle memory
+   * @param[in] enabled Whether to enable or disable the memory
+   */
+  void setMemoryEnabled(const bool enabled);
+
+  /**
    * @brief  A callback to handle buffering LaserScan messages
    * @param message The message returned from a message notifier
    * @param buffer A pointer to the observation buffer to update
@@ -205,14 +222,6 @@ protected:
   int combination_method_;
 
 private:
-  /**
-   * @brief Flags that the obstacle memory should be cleared the next time we update the map
-   * @param request The empty service request
-   * @param response The empty service response
-   * @return true if successful, false otherwise
-   */
-  bool clearObstacleMemory(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
-
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
 
   int min_x_;  ///< @brief bounding box in cell coordinates
@@ -233,8 +242,7 @@ private:
   float pose_confidence_;           /// <@brief current confidence in pose.
   float pose_confidence_threshold_; /// <@brief below this threshold we will not remember obstacles.
 
-  ros::ServiceServer clear_memory_server_;  /// <@brief service for clearing obstacle memory (time_world_points_)
-  bool clear_obstacle_memory_;              /// <@brief whether or not we clear the stored obstacles before updating
+  bool clear_obstacle_memory_;  /// <@brief Used to reset the obstacle memory before the next update
 };
 
 }  // namespace costmap_2d

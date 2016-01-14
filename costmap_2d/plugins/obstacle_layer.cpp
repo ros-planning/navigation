@@ -76,8 +76,6 @@ void ObstacleLayer::onInitialize()
   nh.param<std::string>("pose_confidence_topic_name", pose_confidence_topic_name, "slam/localization_score");
   pose_confidence_sub_ = g_nh.subscribe(pose_confidence_topic_name, 1, &ObstacleLayer::poseConfidenceCallback, this);
 
-  clear_memory_server_ = nh.advertiseService("clear_obstacle_memory", &ObstacleLayer::clearObstacleMemory, this);
-
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
   if (track_unknown_space)
@@ -265,14 +263,22 @@ ObstacleLayer::~ObstacleLayer()
         delete dsrv_;
 }
 
-bool ObstacleLayer::clearObstacleMemory(std_srvs::Empty::Request&, std_srvs::Empty::Response&)
+void ObstacleLayer::clearObstacleMemory()
 {
-  ROS_INFO("Obstacle memory clearing service invoked.");
-
   // Set a flag that will cause us to clear the obstacle memory the next time we update
   clear_obstacle_memory_ = true;
+}
 
-  return true;
+bool ObstacleLayer::isMemoryEnabled()
+{
+  return use_forgetful_version_;
+}
+
+void ObstacleLayer::setMemoryEnabled(const bool enabled)
+{
+  // "Forgetful version" means that it remembers obstacles for a time, then discards them. Setting it to false means
+  // that it doesn't even try to remember them.
+  use_forgetful_version_ = enabled;
 }
 
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
