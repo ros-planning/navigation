@@ -283,8 +283,8 @@ void ObstacleLayer::setMemoryEnabled(const bool enabled)
 
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
-  this->setEnabled(config.enabled);
-  this->setMemoryEnabled(config.enable_forget);
+  setEnabled(config.enabled);
+  setMemoryEnabled(config.enable_forget);
 
   footprint_clearing_enabled_ = config.footprint_clearing_enabled;
   max_obstacle_height_ = config.max_obstacle_height;
