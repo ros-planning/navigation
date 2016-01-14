@@ -137,6 +137,12 @@ public:
    * layers. */
   void setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec);
 
+  /** @brief Utility method for enabling or disabling specific layers by name
+   * @param[in] layer_name The layer to enable or disable
+   * @param[in] enabled Whether the costmap layer should be enabled
+   *  */
+  void setLayerEnabled(const std::string &layer_name, const bool enabled);
+
   /** @brief Set the inscribed radii to be used for static inflation.
    * TODO(pchen): This can be removed when zone inflations are in.
    */
