@@ -292,7 +292,6 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
 
   obstacle_lifespan_ = config.obstacle_lifespan;
   obstacle_keep_radius_ = config.obstacle_keep_radius;
-
   pose_confidence_threshold_ = config.pose_confidence_threshold;
 }
 

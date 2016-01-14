@@ -54,7 +54,6 @@
 #include <message_filters/subscriber.h>
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
-#include <std_srvs/Empty.h>
 
 #include <string>  // for string
 #include <vector>  // for vector<>
