@@ -283,14 +283,16 @@ void ObstacleLayer::setMemoryEnabled(const bool enabled)
 
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
-  enabled_ = config.enabled;
+  this->setEnabled(config.enabled);
+  this->setMemoryEnabled(config.enable_forget);
+
   footprint_clearing_enabled_ = config.footprint_clearing_enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
 
   obstacle_lifespan_ = config.obstacle_lifespan;
   obstacle_keep_radius_ = config.obstacle_keep_radius;
-  use_forgetful_version_ = config.enable_forget;
+
   pose_confidence_threshold_ = config.pose_confidence_threshold;
 }
 
