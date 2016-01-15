@@ -38,6 +38,8 @@
 #define NAV_CORE_RECOVERY_BEHAVIOR_H_
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_listener.h>
+#include <nav_core/base_global_planner.h>
+#include <nav_core/base_local_planner.h>
 
 namespace nav_core {
   /**
@@ -73,8 +75,29 @@ namespace nav_core {
        */
       virtual ~RecoveryBehavior(){}
 
+      /**
+       * @brief Set the function that will get the current local planner
+       * @param local_planner_fetch A boost function that will return the current local planner
+       */
+      void setLocalPlannerFetchFunction(BaseLocalPlanner::FetchFunction f)
+      {
+        local_planner_fetch_ = f;
+      }
+
+      /**
+       * @brief Set the function that will get the current global planner
+       * @param global_planner_fetch A boost function that will return the current global planner
+       */
+      void setGlobalPlannerFetchFunction(BaseGlobalPlanner::FetchFunction f)
+      {
+        global_planner_fetch_ = f;
+      }
+
     protected:
       RecoveryBehavior(){}
+
+      BaseGlobalPlanner::FetchFunction global_planner_fetch_;
+      BaseLocalPlanner::FetchFunction local_planner_fetch_;
   };
 };
 #endif

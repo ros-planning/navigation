@@ -39,6 +39,8 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
 
 namespace nav_core {
   /**
@@ -47,6 +49,9 @@ namespace nav_core {
    */
   class BaseGlobalPlanner{
     public:
+      typedef boost::shared_ptr<BaseGlobalPlanner> Ptr;
+      typedef boost::function <Ptr ()> FetchFunction;
+      
       /**
        * @brief Given a goal pose in the world, compute a plan. The implementation of this method is
        *        responsible for locking the costmap mutex.
