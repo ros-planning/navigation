@@ -35,6 +35,7 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
+#include <algorithm>
 #include <costmap_2d/inflation_layer.h>
 #include <costmap_2d/costmap_math.h>
 #include <costmap_2d/footprint.h>
@@ -59,6 +60,10 @@ InflationLayer::InflationLayer()
   , seen_(NULL)
   , cached_costs_(NULL)
   , cached_distances_(NULL)
+  , last_min_x_(-std::numeric_limits<float>::max())
+  , last_min_y_(-std::numeric_limits<float>::max())
+  , last_max_x_(std::numeric_limits<float>::max())
+  , last_max_y_(std::numeric_limits<float>::max())
 {
   inflation_access_ = new boost::recursive_mutex();
 }
@@ -122,6 +127,10 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
 {
   if (need_reinflation_)
   {
+    last_min_x_ = *min_x;
+    last_min_y_ = *min_y;
+    last_max_x_ = *max_x;
+    last_max_y_ = *max_y;
     // For some reason when I make these -<double>::max() it does not
     // work with Costmap2D::worldToMapEnforceBounds(), so I'm using
     // -<float>::max() instead.
@@ -130,6 +139,25 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
     *max_x = std::numeric_limits<float>::max();
     *max_y = std::numeric_limits<float>::max();
     need_reinflation_ = false;
+  }
+  else
+  {
+    double tmp_min_x = last_min_x_;
+    double tmp_min_y = last_min_y_;
+    double tmp_max_x = last_max_x_;
+    double tmp_max_y = last_max_y_;
+    last_min_x_ = *min_x;
+    last_min_y_ = *min_y;
+    last_max_x_ = *max_x;
+    last_max_y_ = *max_y;
+    // We need to include in the inflation cells outside the bounding
+    // box by the amount of the cell_inflation_radius_.  Cells
+    // up to that distance outside the box can still influence the costs
+    // stored in cells inside the box.
+    *min_x = std::min(tmp_min_x, *min_x) - inflation_radius_;
+    *min_y = std::min(tmp_min_y, *min_y) - inflation_radius_;
+    *max_x = std::max(tmp_max_x, *max_x) + inflation_radius_;
+    *max_y = std::max(tmp_max_y, *max_y) + inflation_radius_;
   }
 }
 
@@ -171,15 +199,6 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
     seen_ = new bool[seen_size_];
   }
   memset(seen_, false, size_x * size_y * sizeof(bool));
-
-  // We need to include in the inflation cells outside the bounding
-  // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
-  // up to that distance outside the box can still influence the costs
-  // stored in cells inside the box.
-  min_i -= cell_inflation_radius_;
-  min_j -= cell_inflation_radius_;
-  max_i += cell_inflation_radius_;
-  max_j += cell_inflation_radius_;
 
   min_i = std::max(0, min_i);
   min_j = std::max(0, min_j);
