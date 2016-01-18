@@ -41,6 +41,8 @@
 #include <geometry_msgs/Twist.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_listener.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
 
 namespace nav_core {
   /**
@@ -49,6 +51,9 @@ namespace nav_core {
    */
   class BaseLocalPlanner{
     public:
+      typedef boost::shared_ptr<BaseLocalPlanner> Ptr;
+      typedef boost::function <Ptr ()> FetchFunction;
+
       /**
        * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
        * @param cmd_vel Will be filled with the velocity command to be passed to the robot base

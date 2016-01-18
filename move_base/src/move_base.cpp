@@ -1191,6 +1191,14 @@ namespace move_base {
 
             //initialize the recovery behavior with its name
             behavior->initialize(behavior_list[i]["name"], &tf_, planner_costmap_ros_, controller_costmap_ros_);
+
+            //tell the behaviors how to access the planners
+            nav_core::BaseLocalPlanner::FetchFunction get_local = boost::bind(&MoveBase::getCurrentLocalPlannerPlugin, this);
+            behavior->setLocalPlannerFetchFunction(get_local);
+
+            nav_core::BaseGlobalPlanner::FetchFunction get_global = boost::bind(&MoveBase::getCurrentGlobalPlannerPlugin, this);
+            behavior->setGlobalPlannerFetchFunction(get_global);
+
             recovery_behaviors_.push_back(behavior);
           }
           catch(pluginlib::PluginlibException& ex){
@@ -1290,6 +1298,16 @@ namespace move_base {
     } 
     // Return the cached plugin instance.
     return global_planner_cache_[plugin_name];
+  }
+
+  nav_core::BaseGlobalPlanner::Ptr MoveBase::getCurrentGlobalPlannerPlugin()
+  {
+    return planner_;
+  }
+
+  nav_core::BaseLocalPlanner::Ptr MoveBase::getCurrentLocalPlannerPlugin()
+  {
+    return tc_;
   }
 
   void MoveBase::revertRecoveryChanges()

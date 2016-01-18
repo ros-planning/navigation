@@ -200,6 +200,18 @@ namespace move_base {
       boost::shared_ptr<nav_core::BaseGlobalPlanner> getGlobalPlannerPlugin(std::string plugin_name);
 
       /**
+       * @brief Used to retrieve the current global planner plugin.
+       * @return Pointer to the global planner plugin instance.
+       */
+      nav_core::BaseGlobalPlanner::Ptr getCurrentGlobalPlannerPlugin();
+
+      /**
+       * @brief Used to retrieve the current local planner plugin.
+       * @return Pointer to the local planner plugin instance.
+       */
+      nav_core::BaseLocalPlanner::Ptr getCurrentLocalPlannerPlugin();
+
+      /**
        * @brief Used to undo changes made by the last-executed recovery behavior
        */
       void revertRecoveryChanges();
