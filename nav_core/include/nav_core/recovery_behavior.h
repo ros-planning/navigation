@@ -79,7 +79,7 @@ namespace nav_core {
        * @brief Set the function that will get the current local planner
        * @param local_planner_fetch A boost function that will return the current local planner
        */
-      void setLocalPlannerFetchFunction(BaseLocalPlanner::FetchFunction f)
+      virtual void setLocalPlannerFetchFunction(BaseLocalPlanner::FetchFunction f)
       {
         local_planner_fetch_ = f;
       }
@@ -88,7 +88,7 @@ namespace nav_core {
        * @brief Set the function that will get the current global planner
        * @param global_planner_fetch A boost function that will return the current global planner
        */
-      void setGlobalPlannerFetchFunction(BaseGlobalPlanner::FetchFunction f)
+      virtual void setGlobalPlannerFetchFunction(BaseGlobalPlanner::FetchFunction f)
       {
         global_planner_fetch_ = f;
       }
