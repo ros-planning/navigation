@@ -35,7 +35,10 @@
 #include <nav_msgs/GetMap.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/MapMetaData.h>
+#include <stdio.h>
 
+#include "map_server/image_loader.h"
+#include "map_server/map_generator.h"
 #include "test_constants.h"
 
 int g_argc;
@@ -134,6 +137,77 @@ TEST_F(MapClientTest, subscribe_topic_metadata)
   ASSERT_EQ(map_metadata_->width, g_valid_image_width);
   ASSERT_EQ(map_metadata_->height, g_valid_image_height);
 }
+
+/* Map saver fixture and tests */
+class MapSaverTest : public testing::Test
+{
+  public:
+    MapSaverTest()
+    {
+      // TODO: What does this do?
+      ros::init(g_argc, g_argv, "map_saver");
+      temp_map_name = "temp_map";
+    }
+  std::string temp_map_name;
+  nav_msgs::GetMap::Response map_resp;
+};
+
+/* Try to save the published map as a PNG and verify its contents. */
+TEST_F(MapSaverTest, save_png_map)
+{
+  try
+  {
+    ros::param::set("/map_saver/save_file_type", "png");
+    std::string mapfile = temp_map_name + ".png";
+    std::string yamlfile = temp_map_name + ".yaml";
+    MapGenerator mg = MapGenerator(temp_map_name);
+    while(!mg.saved_map_ && ros::ok())
+      ros::spinOnce();
+
+    double origin[3] = {0.0, 0.0, 0.0};
+    map_server::loadMapFromFile(&map_resp, mapfile.c_str(), g_valid_image_res, false, 0.65, 0.1, origin);
+    EXPECT_FLOAT_EQ(map_resp.map.info.resolution, g_valid_image_res);
+    EXPECT_EQ(map_resp.map.info.width, g_valid_image_width);
+    EXPECT_EQ(map_resp.map.info.height, g_valid_image_height);
+    for(unsigned int i=0; i < map_resp.map.info.width * map_resp.map.info.height; i++)
+      EXPECT_EQ(g_valid_image_content[i], map_resp.map.data[i]);
+    remove(mapfile.c_str());
+    remove(yamlfile.c_str());
+  }
+  catch(...)
+  {
+    ADD_FAILURE() << "Uncaught exception : " << "This is OK on OS X";
+  }
+}
+
+/* Try to save the published map as a PGM and verify its contents. */
+TEST_F(MapSaverTest, save_pgm_map)
+{
+   try
+   {
+    ros::param::set("/map_saver/save_file_type", "pgm");
+    std::string mapfile = temp_map_name + ".pgm";
+    std::string yamlfile = temp_map_name + ".yaml";
+    MapGenerator mg = MapGenerator(temp_map_name);
+    while(!mg.saved_map_ && ros::ok())
+      ros::spinOnce();
+
+    double origin[3] = {0.0, 0.0, 0.0};
+    map_server::loadMapFromFile(&map_resp, mapfile.c_str(), g_valid_image_res, false, 0.65, 0.1, origin);
+    EXPECT_FLOAT_EQ(map_resp.map.info.resolution, g_valid_image_res);
+    EXPECT_EQ(map_resp.map.info.width, g_valid_image_width);
+    EXPECT_EQ(map_resp.map.info.height, g_valid_image_height);
+    for(unsigned int i=0; i < map_resp.map.info.width * map_resp.map.info.height; i++)
+      EXPECT_EQ(g_valid_image_content[i], map_resp.map.data[i]);
+    remove(mapfile.c_str());
+    remove(yamlfile.c_str());
+  }
+  catch(...)
+  {
+    ADD_FAILURE() << "Uncaught exception";
+  }
+}
+
 
 int main(int argc, char **argv)
 {

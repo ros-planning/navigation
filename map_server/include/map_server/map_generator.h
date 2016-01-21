@@ -27,51 +27,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef MAP_SERVER_MAP_GENERATOR_H
+#define MAP_SERVER_MAP_GENERATOR_H
 
-#include "map_server/map_generator.h"
-#include "ros/ros.h"
-#include "ros/console.h"
+#include <cstdio>
+#include <map>
 #include <string>
+#include "ros/ros.h"
+#include "nav_msgs/GetMap.h"
 
-#define USAGE "Usage: \n" \
-              "  map_saver -h\n"\
-              "  map_saver [-f <mapname>] [ROS remapping args]"
-
-int main(int argc, char** argv) 
+/**
+ * @brief Map generation node.
+ * @param mapname The filename to save the map to
+ */
+class MapGenerator 
 {
-  ros::init(argc, argv, "map_saver");
-  std::string mapname = "map";
+  public:
+    MapGenerator(const std::string& mapname);
 
-  for(int i=1; i<argc; i++)
-  {
-    if(!strcmp(argv[i], "-h"))
-    {
-      puts(USAGE);
-      return 0;
-    }
-    else if(!strcmp(argv[i], "-f"))
-    {
-      if(++i < argc)
-        mapname = argv[i];
-      else
-      {
-        puts(USAGE);
-        return 1;
-      }
-    }
-    else
-    {
-      puts(USAGE);
-      return 1;
-    }
-  }
-  
-  MapGenerator mg(mapname);
+    void savePNG(const std::string& mapdatafile,
+                 const nav_msgs::OccupancyGridConstPtr& map);
 
-  while(!mg.saved_map_ && ros::ok())
-    ros::spinOnce();
+    void savePGM(const std::string& mapdatafile,
+                 const nav_msgs::OccupancyGridConstPtr& map);
 
-  return 0;
-}
+    void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
 
+    std::string mapname_;
+    ros::Subscriber map_sub_;
+    bool saved_map_;
+    std::map<std::string, std::string> types_;
+};
 
+#endif

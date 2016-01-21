@@ -7,14 +7,24 @@ find_package(catkin REQUIRED
             tf
             nav_msgs
         )
+find_package(PNG REQUIRED)
+find_path(png++_INCLUDE_DIR
+  NAMES png++/png.hpp)
+
 
 find_package(Boost REQUIRED COMPONENTS system)
 
 find_package(PkgConfig)
 pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
 if(NEW_YAMLCPP_FOUND)
-add_definitions(-DHAVE_NEW_YAMLCPP)
+  add_definitions(-DHAVE_NEW_YAMLCPP)
 endif(NEW_YAMLCPP_FOUND)
+
+pkg_check_modules (LIBPNG libpng REQUIRED)
+if(NOT png++_INCLUDE_DIR)
+  message(STATUS "libpng++ not found. PNG saving will be unavailable for map_server.")
+  add_definitions(-DNO_LIBPNGPP)
+endif()
 
 catkin_package(
     INCLUDE_DIRS
@@ -26,10 +36,23 @@ catkin_package(
         tf
         nav_msgs
 )
+include_directories (${LIBPNG_INCLUDE_DIRS})
+link_directories (${LIBPNG_LIBRARY_DIRS})
 
-include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
-add_library(image_loader src/image_loader.cpp)
-target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
+include_directories( 
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  ${PNG_INCLUDE_DIR}
+)
+
+add_library(map_server_image_loader src/image_loader.cpp)
+target_link_libraries(map_server_image_loader
+  SDL
+  SDL_image
+  ${Boost_LIBRARIES}
+  ${LIBPNG_LIBRARIES}
+)
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server
@@ -38,11 +61,28 @@ target_link_libraries(map_server
     ${catkin_LIBRARIES}
 )
 
-add_executable(map_server-map_saver src/map_saver.cpp)
-set_target_properties(map_server-map_saver PROPERTIES OUTPUT_NAME map_saver)
+add_library(map_server_map_generator
+  src/map_generator.cpp
+  ${LIBPNG_LINK_FLAGS}
+)
+target_link_libraries(map_server_map_generator
+  ${catkin_LIBRARIES}
+  ${LIBPNG_LIBRARIES}
+)
+
+add_executable(map_server-map_saver
+  src/map_saver.cpp
+)
+set_target_properties(map_server-map_saver
+  PROPERTIES
+    OUTPUT_NAME
+      map_saver
+)
 target_link_libraries(map_server-map_saver
+    map_server_map_generator
     ${catkin_LIBRARIES}
-    )
+    ${LIBPNG_LIBRARIES}
+)
 
 # copy test data to same place as tests are run
 function(copy_test_data)
@@ -60,12 +100,22 @@ if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(${PROJECT_NAME}_utest test/utest.cpp test/test_constants.cpp)
   target_link_libraries(${PROJECT_NAME}_utest image_loader SDL SDL_image)
 
-  add_executable(rtest test/rtest.cpp test/test_constants.cpp)
-  target_link_libraries( rtest
+  add_executable(map_server_rtest
+    src/map_generator.cpp
+    src/image_loader.cpp
+    test/rtest.cpp
+    test/test_constants.cpp
+  )
+  target_link_libraries(map_server_rtest
       gtest
       ${catkin_LIBRARIES}
+      ${LIBPNG_LIBRARIES}
+      map_server_image_loader
+      map_server_map_generator
+      SDL
+      SDL_image
   )
-  add_dependencies(rtest nav_msgs_gencpp)
+  add_dependencies(map_server_rtest nav_msgs_gencpp)
 
   # This has to be done after we've already built targets, or catkin variables get borked
   find_package(rostest)
