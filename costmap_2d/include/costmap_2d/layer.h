@@ -77,13 +77,6 @@ public:
    */
   virtual void updateCosts(Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
 
-  
-  /**
-   * @brief Actually update the underlying costmap, only within the bounds
-   *        calculated during UpdateBounds(). Tracking where modifications are made.
-   */
-  virtual void updateCosts(LayerActions* layer_actions, Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) = 0;
-
   /** @brief Stop publishers. */
   virtual void deactivate() {}
 
