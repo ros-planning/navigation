@@ -38,20 +38,14 @@
 #define COSTMAP_2D_LAYER_H_
 
 #include <costmap_2d/costmap_2d.h>
-#include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/layered_costmap.h>
 #include <string>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
-#include <vector>
-#include <string>
-#include <geometry_msgs/Point32.h>
 
 namespace costmap_2d
 {
 class LayeredCostmap;
-class Layer;
-class LayerActions;
 
 class Layer
 {
@@ -117,21 +111,6 @@ public:
    * changes (via LayeredCostmap::setFootprint()).  Override to be
    * notified of changes to the robot's footprint. */
   virtual void onFootprintChanged() {}
-  
-  /**
-   * @brief Indicates whether this layer is currently included in the combined costmap calculation
-   * @return true if enabled, false otherwise
-   * */
-  bool isEnabled();
-
-  /**
-   * @brief Determines whether this layer will be included in the combined costmap calculation
-   *
-   * This method can be overridden if you need to make costmap layer whose enabled state cannot change.
-   *
-   * @param[in] enabled Whether the layer will be enabled
-   * */
-  virtual void setEnabled(const bool enabled);
 
 protected:
   /** @brief This is called at the end of initialize().  Override to
@@ -139,19 +118,10 @@ protected:
    *
    * tf_, name_, and layered_costmap_ will all be set already when this is called. */
   virtual void onInitialize() {}
-  
-  /** @brief setMaxRange Set given range to maximums.
-   *  @param min_x range min x coordinate
-   *  @param min_y range min y coordinate
-   *  @param max_x range max x coordinate
-   *  @param max_y range max y coordinate
-   * */
-  void setMaxRange(double* min_x, double* min_y, double* max_x, double* max_y);
-  
+
   LayeredCostmap* layered_costmap_;
   bool current_;
   bool enabled_;  ///< Currently this var is managed by subclasses. TODO: make this managed by this class and/or container class.
-  bool last_known_enabled_;  ///< So we can determine when enabled_ has changed
   std::string name_;
   tf::TransformListener* tf_;
 

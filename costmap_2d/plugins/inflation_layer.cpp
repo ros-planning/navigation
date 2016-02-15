@@ -37,7 +37,6 @@
  *********************************************************************/
 #include <costmap_2d/inflation_layer.h>
 #include <costmap_2d/axis_aligned_bounding_box.h>
-#include <costmap_2d/layer_actions.h>
 #include <costmap_2d/costmap_math.h>
 #include <costmap_2d/footprint.h>
 #include <pluginlib/class_list_macros.h>
@@ -53,8 +52,7 @@ using costmap_2d::NO_INFORMATION;
 
 // algorithm "names"
 #define ALG_PRIORITY_QUEUE  0
-#define ALG_LAYER_ACTIONS   1
-#define ALG_TOTAL_AVAILABLE 2
+#define ALG_TOTAL_AVAILABLE 1
 
 namespace costmap_2d
 {
@@ -69,7 +67,6 @@ InflationLayer::InflationLayer()
   , cached_costs_(NULL)
   , cached_distances_(NULL)
 {
-  last_known_enabled_ = false;
   access_ = new boost::shared_mutex();
   
   algorithmSelect_.setMaxAlgorithmTypes(ALG_TOTAL_AVAILABLE);
@@ -147,15 +144,8 @@ void InflationLayer::matchSize()
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
-  if (last_known_enabled_ != enabled_)
-  {
-    setMaxRange(min_x, min_y, max_x, max_y);
-    last_known_enabled_ = enabled_;
-  }
-
   if (need_reinflation_)
   {
-    setMaxRange(min_x, min_y, max_x, max_y);
     need_reinflation_ = false;
   }
   else
@@ -266,216 +256,6 @@ void InflationLayer::updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j,
     if (my < size_y - 1)
       enqueue(master_array, index + size_x, mx, my + 1, sx, sy);
   }
-}
-
-
-void InflationLayer::updateCostsLayerActions(LayerActions *layer_actions, Costmap2D &master_grid,
-                           int min_i, int min_j, int max_i, int max_j)
-{
-    // We have a list of all the actions that got us to this point.
-    // Hopefully some actions will have associated, pre-calculated inflations data
-    // and other layers will mark areas where we need to re-inflate.
-    
-    Costmap2DPtr workspace = master_grid.getNamedCostmap2D("Workspace");
-    if (workspace.get() == 0)
-      workspace = master_grid.addNamedCostmap2D("Workspace", master_grid.createReducedResolutionMap(1));
- 
-    // build an AxisAlignedBoundingBox of the updateCostsBounds so we can clamp large ranges
-    // against it's small window
-    AxisAlignedBoundingBox updateCostsBounds(min_i, min_j, max_i, max_j);
-
-    // start with a clean workspace
-    workspace->setMapCost(min_i, min_j, max_i, max_j, FREE_SPACE);
-
-    // Find all actions that made modifications to the master_grid
-    LayerActions l_acts;
-    layer_actions->copyToWithMatchingDest(l_acts, &master_grid);
-
-    // track how much data is pre-inflated
-    std::vector<AxisAlignedBoundingBox> inflatedData;
-
-    // track how much data has pending inflation required
-    std::vector<AxisAlignedBoundingBox> uninflatedData;
-
-    // now we can act on each action
-    for (int i = 0; i < l_acts.size(); i++)
-    {
-      if (l_acts.actionAt(i) == LayerActions::TRUEOVERWRITE)
-      {
-        // if it's a true overwrite then we can lay down a copy of the cached inflated data
-        Costmap2D* src = l_acts.sourceCostmapAt(i);
-        if (src)
-        {
-          // need to check if the stored inflation radius is appropriate for this pass
-          if (src->namedFlag("InflationRadius") != cell_inflation_radius_)
-          {
-            // if not then we remove any existing inflated data
-            src->removeNamedCostmap2D("Inflated");
-          }
-          
-          unsigned int origin_x, origin_y;
-          src->worldToMap(0, 0, origin_x, origin_y);
-          // make sure the origin isn't moving or else the cached data isn't correct
-          if (src->namedFlag("origin_x") != origin_x || src->namedFlag("origin_y") != origin_y)
-          {
-            src->removeNamedCostmap2D("Inflated");
-          }
-          
-          Costmap2DPtr inflated = src->getNamedCostmap2D("Inflated");
-          
-          if (inflated.get() == 0)  // then we don't have a cache of the inflated data
-          {
-            inflated = src->createReducedResolutionMap(1);
-            src->copyCellsTo(inflated, Costmap2D::TrueOverwrite);
-
-            int src_nx = src->getSizeInCellsX();
-            int src_ny = src->getSizeInCellsY();
-
-            // inflate cached data
-            updateCostsPQ(*inflated.get(), 0, 0, src_nx, src_ny);
-
-            // add inflated data to the source map so we have it next time
-            src->addNamedCostmap2D("Inflated", inflated);
-            
-            // store the inflation radius used to generate this data
-            src->namedFlag("InflationRadius") = cell_inflation_radius_;
-            
-            // store the origin for this cache
-            src->namedFlag("origin_x") = origin_x;
-            src->namedFlag("origin_y") = origin_y;
-          }
-
-          // only copying the region that we are interested in
-          inflated->copyCellsTo(workspace,
-                                updateCostsBounds.x0(), updateCostsBounds.y0(),
-                                updateCostsBounds.num_x(), updateCostsBounds.num_y(), Costmap2D::TrueOverwrite);
-
-          // remembering that we have good data
-          inflatedData.push_back(AxisAlignedBoundingBox(updateCostsBounds));
-        }
-        else  // no defined source, need to work with master_grid
-        {
-          const AxisAlignedBoundingBox& dst = l_acts.destinationAxisAlignedBoundingBoxAt(i);
-          if (dst.initialized())
-          {
-            master_grid.copyCellsTo(workspace,
-                                    dst.x0(), dst.y0(),
-                                    dst.num_x(), dst.num_y());
-
-            // mark that we need to inflate this data
-            uninflatedData.push_back(AxisAlignedBoundingBox(dst));
-          }
-          else
-          {
-            // This is a problem that shouldn't be encountered if everything has been done properly.
-            ROS_DEBUG("(inflation_layer.cpp:%d) Destination bounding box uninitialized, "
-                      "falling back to global inflation.", __LINE__);
-
-            // Falling back to old method: not fancy but it works
-            return updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
-          }
-        }
-      }
-      else  // l_acts.actionAt(i) != LayerActions::TRUEOVERWRITE
-      {
-        if (l_acts.actionAt(i) != LayerActions::NONE)
-        {
-          // copy from the master to the workspace and mark to inflate the window
-          const AxisAlignedBoundingBox& dst = l_acts.destinationAxisAlignedBoundingBoxAt(i);
-          if (dst.initialized())
-          {
-            master_grid.copyCellsTo(workspace,
-                                    dst.x0(), dst.y0(),
-                                    dst.num_x(), dst.num_y(), Costmap2D::Max);
-
-            // mark that we need to inflate this data
-            uninflatedData.push_back(AxisAlignedBoundingBox(dst));
-          }
-          else
-          {
-            // This is a problem that shouldn't be encountered if everything has been done properly.
-            ROS_DEBUG("(inflation_layer.cpp:%d) Destination bounding box uninitialized, "
-                      "falling back to global inflation.", __LINE__);
-
-            // Falling back to old method: not fancy but it works
-            return updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
-          }
-        }
-      }
-    }
-
-    // At this point we have data on the workspace and lists of
-    // uninflated regions. We will work through those regions
-    // and inflate them
-    for (int i = 0; i < uninflatedData.size(); i++)
-    {
-      AxisAlignedBoundingBox& to_inflate = uninflatedData[i];
-
-      // and here it is: We are inflating only the required sections
-      updateCostsPQ(*workspace.get(), to_inflate.min_x_, to_inflate.min_y_, to_inflate.max_x_, to_inflate.max_y_);
-    }
-
-    layer_actions->clear();
-
-    // Now we will copy from the workspace to the master_grid
-    workspace->copyCellsTo(master_grid, min_i, min_j, max_i-min_i, max_j-min_j, Costmap2D::TrueOverwrite);
-
-}
-
-void InflationLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid,
-                                 int min_i, int min_j, int max_i, int max_j)
-{
-  if (!enabled_)
-  {
-    current_ = true; // don't block a waiting process
-    return;
-  }
-
-  boost::unique_lock < boost::shared_mutex > lock(*access_);
-
-  int problem_size = (max_j - min_j) * (max_i - min_i);
-
-  int algorithm;
-  bool report_statistics = false;
-
-  switch(inflation_method_)
-  {
-  case ALG_PRIORITY_QUEUE:
-    algorithm = ALG_PRIORITY_QUEUE;
-    break;
-  case ALG_LAYER_ACTIONS:
-    algorithm = ALG_LAYER_ACTIONS;
-    break;
-  default:
-    report_statistics = true;
-    algorithm =  algorithmSelect_.selectAlgorithm(problem_size);
-  }
-
-  DynamicAlgorithmSelect::Timer timer;
-  timer.start();
-
-  switch(algorithm)
-  {
-    case ALG_PRIORITY_QUEUE:
-      updateCostsPQ(master_grid, min_i, min_j, max_i, max_j);
-    break;
-
-    case ALG_LAYER_ACTIONS:
-      updateCostsLayerActions(layer_actions, master_grid, min_i, min_j, max_i, max_j);
-    break;
-    default:
-      ROS_ERROR("(inflation_layer.cpp:%d Unhandled algorithm type: %d", __LINE__, algorithm);
-  }
-
-  timer.stop();
-
-  if (report_statistics)
-  {
-    // Add data to profiler for smarter future choices
-    algorithmSelect_.addProfilingData(problem_size, algorithm, timer.elapsed());
-  }
-
-  current_ = true; // allow consumers to use this data
 }
 
 /**

@@ -64,7 +64,6 @@ void ObstacleLayer::onInitialize()
   obstacle_lifespan_ = 0.0;          // seconds
   obstacle_keep_radius_ = 0.0;       // meters
   use_forgetful_version_ = true;     // flag
-  last_known_enabled_ = false;
   clear_obstacle_memory_ = false;    // flag
   
   // Initial pose confidence and threshold before we remember new data
@@ -283,9 +282,7 @@ void ObstacleLayer::setMemoryEnabled(const bool enabled)
 
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
-  setEnabled(config.enabled);
-  setMemoryEnabled(config.enable_forget);
-
+  enabled_ = config.enabled;
   footprint_clearing_enabled_ = config.footprint_clearing_enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
@@ -402,12 +399,6 @@ void ObstacleLayer::poseConfidenceCallback(const std_msgs::Float64 &message)
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
-  if (last_known_enabled_ != enabled_)
-  {
-    setMaxRange(min_x, min_y, max_x, max_y);
-    last_known_enabled_ = enabled_;
-  }
-  
   // we are making changes to the local costmap so we want to make sure others don't
   boost::unique_lock<mutex_t> lock(*(getMutex()));
 
@@ -756,7 +747,7 @@ void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double
 }
 
 
-void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
   {
@@ -772,37 +763,14 @@ void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap
   if (combination_method_ == 0)
   {
     updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
-    if (layer_actions)
-    {
-      layer_actions->addAction(
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            this,
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            &master_grid,
-            LayerActions::OVERWRITE);
-    }
   }
   
   if (combination_method_ == 1)
   {
     updateWithMax(master_grid, min_i, min_j, max_i, max_j);
-    if (layer_actions)
-    {
-      layer_actions->addAction(
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            this,
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            &master_grid,
-            LayerActions::MAX);
-    }
   }
 
   current_ = true; // allow consumers to use this data
-}
-
-void ObstacleLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
-{
-  updateCosts(NULL, master_grid, min_i, min_j, max_i, max_j);
 }
 
 void ObstacleLayer::addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing)
