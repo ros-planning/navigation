@@ -36,11 +36,11 @@
 #include "nav_msgs/GetMap.h"
 
 /** Map mode
- *  Default: TRINARY - 
+ *  Default: TRINARY -
  *      value >= occ_th - Occupied (100)
  *      value <= free_th - Free (0)
  *      otherwise - Unknown
- *  SCALE - 
+ *  SCALE -
  *      alpha < 1.0 - Unknown
  *      value >= occ_th - Occupied (100)
  *      value <= free_th - Free (0)

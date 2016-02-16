@@ -112,9 +112,9 @@ class MapServer
           exit(-1);
         }
         try { 
-          std::string modeS = "";   
-          doc["mode"] >> modeS; 
-          
+          std::string modeS = "";
+          doc["mode"] >> modeS;
+
           if(modeS=="trinary")
             mode = TRINARY;
           else if(modeS=="scale")
