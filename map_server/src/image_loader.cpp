@@ -124,13 +124,13 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
 
       if(negate)
         color_avg = 255 - color_avg;
-        
+
       if(mode==RAW){
           value = color_avg;
           resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
           continue;
       }
-        
+
 
       // If negate is true, we consider blacker pixels free, and whiter
       // pixels free.  Otherwise, it's vice versa.
