@@ -972,13 +972,14 @@ namespace move_base {
         return true;
       }
 
-      //make sure to reset recovery_index_ since we were able to find a valid plan
+      /*//make sure to reset recovery_index_ since we were able to find a valid plan
       if(recovery_trigger_ == PLANNING_R)
       {
+        ROS_ERROR("Resetting recovery counter!");
         revertRecoveryChanges();
         recovery_index_ = 0;
         active_recovery_index_ = -1;
-      }
+      }*/
     }
 
     //the move_base state machine, handles the control logic for navigation
@@ -1047,12 +1048,14 @@ namespace move_base {
 
           //check if we've tried to find a valid control for longer than our time limit
           if(ros::Time::now() > attempt_end){
+            ROS_ERROR("Gone into recovery");
             //we'll move into our obstacle clearing mode
             publishZeroVelocity();
             state_ = CLEARING;
             recovery_trigger_ = CONTROLLING_R;
           }
           else{
+            ROS_ERROR("Gone into planning");
             //otherwise, if we can't find a valid control, we'll go back to planning
             last_valid_plan_ = ros::Time::now();
             state_ = PLANNING;
@@ -1096,9 +1099,10 @@ namespace move_base {
 
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
+          ROS_ERROR("Performing recovery %d / %zu", recovery_index_ - 1, recovery_behaviors_.size() );
         }
         else{
-          ROS_DEBUG_NAMED("move_base_recovery","All recovery behaviors have failed, locking the planner and disabling it.");
+          ROS_ERROR("All recovery behaviors have failed, locking the planner and disabling it.");
           //disable the planner thread
           boost::unique_lock<boost::mutex> lock(planner_mutex_);
           runPlanner_ = false;
