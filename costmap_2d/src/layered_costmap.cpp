@@ -135,7 +135,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
     for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
         ++plugin)
     {
-      (*plugin)->updateCosts(&actions, costmap_, x0, y0, xn, yn);
+      (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
     }
   }
   

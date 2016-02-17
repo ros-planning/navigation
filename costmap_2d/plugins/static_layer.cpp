@@ -65,7 +65,6 @@ void StaticLayer::onInitialize()
 
   // Map is not current until it has been updated with static map
   current_ = false;
-  last_known_enabled_ = false;
 
   global_frame_ = layered_costmap_->getGlobalFrameID();
 
@@ -284,12 +283,6 @@ void StaticLayer::reset()
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                                double* max_x, double* max_y)
 {
-  if (last_known_enabled_ != enabled_)
-  {
-    setMaxRange(min_x, min_y, max_x, max_y);
-    last_known_enabled_ = enabled_;
-  }
-  
   if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
     return;
 
@@ -308,7 +301,7 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
   has_updated_data_ = false;
 }
 
-void StaticLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_ || !map_received_)
   {
@@ -363,59 +356,7 @@ void StaticLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D
     }
   }
   
-  if (layer_actions)
-  {
-    LayerActions::Action action = use_maximum_? LayerActions::MAX : LayerActions::TRUEOVERWRITE;
-    AxisAlignedBoundingBox region;
-
-    if (!layered_costmap_->isRolling())
-    {
-      region = AxisAlignedBoundingBox(min_i, min_j, max_i, max_j);
-    }
-    else
-    {
-      unsigned int mx0, my0, mx1, my1;
-      double wx0, wy0, wx1, wy1;
-
-      tf::StampedTransform transform;
-      try
-      {
-        tf_->lookupTransform(map_frame_, global_frame_, ros::Time(0), transform);
-      }
-      catch (tf::TransformException ex)
-      {
-        ROS_ERROR("%s", ex.what());
-        return;
-      }
-      
-      layered_costmap_->getCostmap()->mapToWorld(min_i, min_j, wx0, wy0);
-      tf::Point p0(wx0, wy0, 0);
-      p0 = transform(p0);
-      worldToMap(p0.x(), p0.y(), mx0, my0);
-      
-      layered_costmap_->getCostmap()->mapToWorld(max_i, max_j, wx1, wy1);
-      tf::Point p1(wx1, wy1, 0);
-      p1 = transform(p1);
-      worldToMap(p1.x(), p1.y(), mx1, my1);
-      
-      region = AxisAlignedBoundingBox(mx0, my0, mx1, my1);
-    }
-
-    // mark where the action tool place 
-    layer_actions->addAction(
-          region,
-          this,
-          AxisAlignedBoundingBox(min_i, min_j, max_i, max_j),
-          &master_grid,
-          action);
-  }
-  
   current_ = true; // allow consumers to use this data
-}
-
-void StaticLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
-{
-  updateCosts(NULL, master_grid, min_i, min_j, max_i, max_j);
 }
 
 }  // namespace costmap_2d
