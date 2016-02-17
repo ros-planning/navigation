@@ -329,6 +329,12 @@ bool Costmap2DROS::readFootprintFromString( const std::string& footprint_string 
     return false;
   }
 
+  if( vvf.size() == 0 )
+  {
+    ROS_INFO( "No robot footprint points specified, reverting to previous footprint." );
+    return false;
+  }
+
   // convert vvf into points.
   if( vvf.size() < 3 )
   {
