@@ -694,6 +694,10 @@ namespace move_base {
            * need to check if we have or have not reached the goal to change the state.
            */
           state_ = CONTROLLING;
+
+          // Reset the failed goal record (so that if we fail on that goal again in the future we show a log message)
+          last_failed_goal_.pose.position.x = FLT_MAX;
+
           if(planner_frequency_ <= 0)
             runPlanner_ = false;
         }
@@ -1033,6 +1037,9 @@ namespace move_base {
           revertRecoveryChanges();
           recovery_index_ = 0;
           active_recovery_index_ = -1;
+
+          // Reset the failed goal record (so that if we fail on that goal again in the future we show a log message)
+          last_failed_goal_.pose.position.x = FLT_MAX;
         }
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
