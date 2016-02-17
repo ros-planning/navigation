@@ -1099,18 +1099,25 @@ namespace move_base {
 
           ROS_DEBUG_NAMED("move_base_recovery","Something should abort after this.");
 
+          // We need to abort goal and log a message; decide if we should spit out a new log
+          bool log_condition = (distanceXYTheta(planner_goal_, last_failed_goal_) >= 1e-3);
+
           if(recovery_trigger_ == CONTROLLING_R){
-            ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
+            ROS_ERROR_COND(log_condition, "Aborting because a valid control could not be found. Even after executing all recovery behaviors");
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
           }
           else if(recovery_trigger_ == PLANNING_R){
-            ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
+            ROS_ERROR_COND(log_condition, "Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
           }
           else if(recovery_trigger_ == OSCILLATION_R){
-            ROS_ERROR("Aborting because the robot appears to be oscillating over and over. Even after executing all recovery behaviors");
+            ROS_ERROR_COND(log_condition, "Aborting because the robot appears to be oscillating over and over. Even after executing all recovery behaviors");
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Robot is oscillating. Even after executing recovery behaviors.");
           }
+
+          // Record the failed goal so in the next cycle we don't log a new message
+          last_failed_goal_ = planner_goal_;
+
           resetState();
           return true;
         }
