@@ -967,14 +967,6 @@ namespace move_base {
         as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to pass global plan to the controller.");
         return true;
       }
-
-      //make sure to reset recovery_index_ since we were able to find a valid plan
-      if(recovery_trigger_ == PLANNING_R)
-      {
-        revertRecoveryChanges();
-        recovery_index_ = 0;
-        active_recovery_index_ = -1;
-      }
     }
 
     //the move_base state machine, handles the control logic for navigation
