@@ -204,7 +204,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   min_j = std::max(0, min_j);
   max_i = std::min(int(size_x), max_i);
   max_j = std::min(int(size_y), max_j);
-
+  
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
