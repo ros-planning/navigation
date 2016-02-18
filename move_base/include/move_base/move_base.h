@@ -261,6 +261,7 @@ namespace move_base {
       boost::recursive_mutex clear_costmap_mutex_;
       boost::condition_variable planner_cond_;
       geometry_msgs::PoseStamped planner_goal_;
+      geometry_msgs::PoseStamped last_failed_goal_;
       boost::thread* planner_thread_;
 
 
