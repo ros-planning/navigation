@@ -322,7 +322,7 @@ public:
     NoInformation,   ///< NO_INFORMATION all data
     Max              ///< Use maximum value except for NO_INFORMATION which is replaced with data
   };
-  
+
   /**
     * @brief Copy a window of cells from the calling Costmap2D to a destination Costmap2D
     * @param src_x0 base x value of the calling window
@@ -407,21 +407,20 @@ public:
     * @param map_name The name of the map
     */
   void removeNamedCostmap2D(const std::string& map_name);
-  
+
   /**
     * @brief Remove all named sub-maps
     * @param map_name The name of the map
     */
   void removeAllNamedCostmap2D();
-  
-  
+
   /**
-    * @brief Mechanism to get or set a named integer value. 
+    * @brief Mechanism to get or set a named integer value.
     * @param flag_name Name of flag to interact with
-    * @return Integer reference to named flag. 
+    * @return Integer reference to named flag.
     */
   int& namedFlag(const std::string& flag_name);
-  
+
   // Provide a typedef to ease future code maintenance
   typedef boost::recursive_mutex mutex_t;
   mutex_t* getMutex()
@@ -561,8 +560,8 @@ protected:
 
   std::map<std::string, Costmap2DPtr> child_maps_;
   std::map<std::string, int> named_flags_;
-  
-  
+
+
   class MarkCell
   {
   public:

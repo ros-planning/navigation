@@ -100,13 +100,13 @@ void Costmap2D::removeNamedCostmap2D(const std::string& map_name)
     std::map<std::string, Costmap2DPtr>::iterator it;
 
     it = child_maps_.find( map_name );
-    
+
     if( it != child_maps_.end() )
     {
       child_maps_.erase(it);
     }
 }
-  
+
 void Costmap2D::removeAllNamedCostmap2D()
 {
     child_maps_.clear();
@@ -291,11 +291,11 @@ void Costmap2D::resetMap()
 void Costmap2D::setMapCost(int x0, int y0, int xn, int yn, const unsigned char value)
 {
   boost::unique_lock<mutex_t> lock(*(access_));
-  
+
   // if the size is zero for some reason, don't do anything
   if (size_x_ * size_y_ == 0)
     return;
-  
+
   // Make sure the bounds of the write are within range
   x0 = std::max(0, x0);
   y0 = std::max(0, y0);
