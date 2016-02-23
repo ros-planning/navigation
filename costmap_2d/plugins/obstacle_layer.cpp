@@ -38,9 +38,6 @@
 #include <costmap_2d/obstacle_layer.h>
 #include <costmap_2d/costmap_math.h>
 #include <pluginlib/class_list_macros.h>
-#include <costmap_2d/axis_aligned_bounding_box.h>
-#include <costmap_2d/layer_actions.h>
-
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
 
@@ -58,23 +55,6 @@ void ObstacleLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
   rolling_window_ = layered_costmap_->isRolling();
-
-  // These values are read from dynamic reconfigure. To change the default
-  // values you can edit costmap_2d/cfg/ObstaclePlugin.cfg
-  obstacle_lifespan_ = 0.0;          // seconds
-  obstacle_keep_radius_ = 0.0;       // meters
-  use_forgetful_version_ = true;     // flag
-  last_known_enabled_ = false;
-  clear_obstacle_memory_ = false;    // flag
-  
-  // Initial pose confidence and threshold before we remember new data
-  // Threshold default in costmap_2d/cfg/ObstaclePlugin.cfg
-  pose_confidence_ = 0;
-  pose_confidence_threshold_ = 1;
-  
-  std::string pose_confidence_topic_name;
-  nh.param<std::string>("pose_confidence_topic_name", pose_confidence_topic_name, "slam/localization_score");
-  pose_confidence_sub_ = g_nh.subscribe(pose_confidence_topic_name, 1, &ObstacleLayer::poseConfidenceCallback, this);
 
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
@@ -110,7 +90,7 @@ void ObstacleLayer::onInitialize()
     // get the parameters for the specific topic
     double observation_keep_time, expected_update_rate, min_obstacle_height, max_obstacle_height;
     std::string topic, sensor_frame, data_type;
-    bool inf_is_valid, clearing, marking, add_max_range;
+    bool inf_is_valid, clearing, marking;
 
     source_node.param("topic", topic, source);
     source_node.param("sensor_frame", sensor_frame, std::string(""));
@@ -120,7 +100,6 @@ void ObstacleLayer::onInitialize()
     source_node.param("min_obstacle_height", min_obstacle_height, 0.0);
     source_node.param("max_obstacle_height", max_obstacle_height, 2.0);
     source_node.param("inf_is_valid", inf_is_valid, false);
-    source_node.param("add_max_range", add_max_range, true);
     source_node.param("clearing", clearing, false);
     source_node.param("marking", marking, true);
 
@@ -191,7 +170,7 @@ void ObstacleLayer::onInitialize()
       else
       {
         filter->registerCallback(
-            boost::bind(&ObstacleLayer::laserScanCallback, this, _1, observation_buffers_.back(), add_max_range));
+            boost::bind(&ObstacleLayer::laserScanCallback, this, _1, observation_buffers_.back()));
       }
 
       observation_subscribers_.push_back(sub);
@@ -262,61 +241,25 @@ ObstacleLayer::~ObstacleLayer()
     if (dsrv_)
         delete dsrv_;
 }
-
-void ObstacleLayer::clearObstacleMemory()
-{
-  // Set a flag that will cause us to clear the obstacle memory the next time we update
-  clear_obstacle_memory_ = true;
-}
-
-bool ObstacleLayer::isMemoryEnabled()
-{
-  return use_forgetful_version_;
-}
-
-void ObstacleLayer::setMemoryEnabled(const bool enabled)
-{
-  // "Forgetful version" means that it remembers obstacles for a time, then discards them. Setting it to false means
-  // that it doesn't even try to remember them.
-  use_forgetful_version_ = enabled;
-}
-
 void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
 {
-  setEnabled(config.enabled);
-  setMemoryEnabled(config.enable_forget);
-
+  enabled_ = config.enabled;
   footprint_clearing_enabled_ = config.footprint_clearing_enabled;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
-
-  obstacle_lifespan_ = config.obstacle_lifespan;
-  obstacle_keep_radius_ = config.obstacle_keep_radius;
-  pose_confidence_threshold_ = config.pose_confidence_threshold;
 }
 
 void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
-                                      const boost::shared_ptr<ObservationBuffer>& buffer,
-                                      const bool add_max_range)
+                                      const boost::shared_ptr<ObservationBuffer>& buffer)
 {
   // project the laser into a point cloud
   sensor_msgs::PointCloud2 cloud;
   cloud.header = message->header;
 
-  sensor_msgs::LaserScan new_scan = *message;
-  if (add_max_range)
-  {
-    // This forces the addition of points that are at
-    //  the sensors max range. This will allow clearning of cells even
-    //  if there is nothing in view. NOTE: obstacle range MUST BE < range_max
-    //  or you will add obstacles that do no exist to the costmap
-    new_scan.range_max = std::numeric_limits<float>::max();
-  }
-
   // project the scan into a point cloud
   try
   {
-    projector_.transformLaserScanToPointCloud(message->header.frame_id, new_scan, cloud, *tf_);
+    projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_);
   }
   catch (tf::TransformException &ex)
   {
@@ -394,36 +337,14 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
   buffer->unlock();
 }
 
-void ObstacleLayer::poseConfidenceCallback(const std_msgs::Float64 &message)
-{
-  pose_confidence_ = message.data;
-}
-
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
-  if (last_known_enabled_ != enabled_)
-  {
-    setMaxRange(min_x, min_y, max_x, max_y);
-    last_known_enabled_ = enabled_;
-  }
-  
-  // we are making changes to the local costmap so we want to make sure others don't
-  boost::unique_lock<mutex_t> lock(*(getMutex()));
-
-  if (use_forgetful_version_)
-    return forgetfulUpdateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
-
   if (rolling_window_)
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   if (!enabled_)
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);
-
-  double layer_min_x = robot_x;
-  double layer_max_x = robot_x;
-  double layer_min_y = robot_y;
-  double layer_max_y = robot_y;
 
   bool current = true;
   std::vector<Observation> observations, clearing_observations;
@@ -440,7 +361,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
   // raytrace freespace
   for (unsigned int i = 0; i < clearing_observations.size(); ++i)
   {
-    raytraceFreespace(clearing_observations[i], &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+    raytraceFreespace(clearing_observations[i], min_x, min_y, max_x, max_y);
   }
 
   // place the new obstacles into a priority queue... each with a priority of zero to begin with
@@ -484,62 +405,11 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 
       unsigned int index = getIndex(mx, my);
       costmap_[index] = LETHAL_OBSTACLE;
-      touch(px, py, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
+      touch(px, py, min_x, min_y, max_x, max_y);
     }
   }
 
-  updateFootprint(robot_x, robot_y, robot_yaw, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-
-  // adding margin so that points on the edge are processed.
-  {
-    double one_cell_world_coords = 1.0 * resolution_;
-
-    layer_min_x -= one_cell_world_coords;
-    layer_min_y -= one_cell_world_coords;
-    layer_max_x += one_cell_world_coords;
-    layer_max_y += one_cell_world_coords;
-  }
-
-  // This layer's contribution in cell coordinates
-  worldToMapNoBounds(layer_min_x, layer_min_y, min_x_, min_y_);
-  worldToMapNoBounds(layer_max_x, layer_max_y, max_x_, max_y_);
-  
-  // merge the local change with the global change
-  *min_x = std::min(*min_x, layer_min_x);
-  *min_y = std::min(*min_y, layer_min_y);
-  *max_x = std::max(*max_x, layer_max_x);
-  *max_y = std::max(*max_y, layer_max_y);
-}
-
-static bool sameTimeWorldPoints(const TimeWorldPoint& p1, const TimeWorldPoint& p2, double tolerance)
-{
-  const double p1x = p1.get<1>();
-  const double p1y = p1.get<2>();
-
-  const double p2x = p2.get<1>();
-  const double p2y = p2.get<2>();
-
-  const double dx = p2x - p1x;
-  const double dy = p2y - p1y;
-
-  return dx*dx + dy*dy <= tolerance * tolerance;
-}
-
-void ObstacleLayer::writeTimeWorldPoint(const TimeWorldPoint &p, unsigned char value,
-                                        double *min_x, double *min_y, double *max_x, double *max_y)
-{
-  const double px = p.get<1>();
-  const double py = p.get<2>();
-
-  unsigned int mx, my;
-  if (!worldToMap(px, py, mx, my))
-  {
-    ROS_DEBUG("Computing map coords failed");
-    return;
-  }
-
-  setCost(mx, my, value);
-  touch(px, py, min_x, min_y, max_x, max_y);
+  updateFootprint(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
 
 void ObstacleLayer::updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
@@ -554,255 +424,27 @@ void ObstacleLayer::updateFootprint(double robot_x, double robot_y, double robot
     }
 }
 
-void ObstacleLayer::forgetfulUpdateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
-                                          double* min_y, double* max_x, double* max_y)
-{
-  if (rolling_window_)
-    updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
-  if (!enabled_)
-    return;
-  useExtraBounds(min_x, min_y, max_x, max_y);
-
-  // Check if we received a request to clear the obstacle memory
-  if(clear_obstacle_memory_)
-  {
-    ROS_INFO("Clearing obstacle memory.");
-    time_world_points_.clear();
-    clear_obstacle_memory_ = false;
-  }
-
-  // clear the costmap, it will get rewritten
-  resetMaps();
-  
-  double layer_min_x = robot_x;
-  double layer_max_x = robot_x;
-  double layer_min_y = robot_y;
-  double layer_max_y = robot_y;
-
-  const double time_now = ros::Time::now().toSec();
-  const double obstacle_keep_radius2 = obstacle_keep_radius_ * obstacle_keep_radius_;
-
-  bool current = true;
-  std::vector<Observation> observations, clearing_observations;
-
-  //get the marking observations
-  current = current && getMarkingObservations(observations);
-
-  //get the clearing observations
-  current = current && getClearingObservations(clearing_observations);
-
-  //update the global current status
-  current_ = current;
-
-  // work around for older standards that don't return an iterator on map.erase
-  std::vector< std::pair<unsigned int,unsigned int> > map_pending_erase_;
-  
-  // clear old observations (unless within keep radius)
-  const double earliest_epoch = time_now - obstacle_lifespan_;
-  obst_map_t::iterator it;
-  for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
-  {
-    const double sample_time = (*it).second.get<0>();
-    const double px = (*it).second.get<1>();
-    const double py = (*it).second.get<2>();
-
-    const double rx = px - robot_x;
-    const double ry = py - robot_y;
-    const double radius2 = rx*rx + ry*ry;
-
-    if(radius2 > obstacle_keep_radius2 && sample_time < earliest_epoch)
-    {
-      map_pending_erase_.push_back(it->first);
-    }
-  }
-
-  for(unsigned int i=0; i<map_pending_erase_.size(); i++)
-  {
-    time_world_points_.erase (map_pending_erase_[i]);
-  }
-  map_pending_erase_.clear();
-
-  // write survivors of memory cull
-  for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
-  {
-    writeTimeWorldPoint(it->second, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-  }
-
-  // raytrace current freespace - may overwrite old memories, that's OK
-  for (unsigned int i = 0; i < clearing_observations.size(); ++i)
-  {
-    raytraceFreespace(clearing_observations[i], &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-  }
-
-  // If we are footprint clearing then we should do so now to invalidate points.
-  if (footprint_clearing_enabled_)
-  {
-    setConvexPolygonCost(transformed_footprint_, costmap_2d::FREE_SPACE);
-  }
-
-  // now we will check our memories to make sure they are not FREE_SPACE
-  // They would be free space if they got ray-traced away above.
-  // We shouldn't remember things that get invalidated by evidence
-  for (it = time_world_points_.begin(); it != time_world_points_.end(); ++it)
-  {
-    TimeWorldPoint& p = it->second;
-
-    const double px = p.get<1>();
-    const double py = p.get<2>();
-
-    unsigned int mx, my;
-    if (!worldToMap(px, py, mx, my)) 
-    {
-      map_pending_erase_.push_back(it->first);
-    }
-    else
-    {
-      unsigned int index = getIndex(mx, my);
-      if (costmap_[index] == FREE_SPACE)
-      {
-        map_pending_erase_.push_back(it->first);
-      }
-    }
-  }
-
-  for(unsigned int i=0; i<map_pending_erase_.size(); i++)
-  {
-    time_world_points_.erase (map_pending_erase_[i]);
-  }
-  map_pending_erase_.clear();
-
-  
-  // mark current observations as usual and remember them
-  for (std::vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it)
-  {
-    const Observation& obs = *it;
-
-    const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
-
-    double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
-
-    for (unsigned int i = 0; i < cloud.points.size(); ++i)
-    {
-      double px = cloud.points[i].x, py = cloud.points[i].y, pz = cloud.points[i].z;
-
-      //if the obstacle is too high or too far away from the robot we won't add it
-      if (pz > max_obstacle_height_)
-      {
-        ROS_DEBUG("The point is too high");
-        continue;
-      }
-
-      //compute the squared distance from the hitpoint to the pointcloud's origin
-      double sq_dist = (px - obs.origin_.x) * (px - obs.origin_.x) + (py - obs.origin_.y) * (py - obs.origin_.y)
-          + (pz - obs.origin_.z) * (pz - obs.origin_.z);
-
-      //if the point is far enough away... we won't consider it
-      if (sq_dist >= sq_obstacle_range)
-      {
-        ROS_DEBUG("The point is too far away");
-        continue;
-      }
-
-      TimeWorldPoint p(time_now, px, py);
-      writeTimeWorldPoint(p, LETHAL_OBSTACLE, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-
-      // if we have low pose confidence we will make sure this
-      // data gets cleared quickly by setting it's "birthday" to
-      // far in the past.
-      if(pose_confidence_ < pose_confidence_threshold_)
-      {
-        p.get<0>() = time_now - obstacle_lifespan_;
-      }
-
-      // remember this data
-      unsigned int mx, my;
-      if (!worldToMap(px, py, mx, my))
-      {
-        ROS_DEBUG("Computing map coords failed");
-      }
-      else
-      {
-        // remove data at location if it exists
-        std::pair<unsigned int, unsigned int> location(mx,my);
-        time_world_points_.erase(location);
-
-        // insert new data
-        time_world_points_[location] = p;
-      }
-    }
-  }
-
-  updateFootprint(robot_x, robot_y, robot_yaw, &layer_min_x, &layer_min_y, &layer_max_x, &layer_max_y);
-
-  // adding margin so that points on the edge are processed.
-  {
-    double one_cell_world_coords = 1.0 * resolution_;
-
-    layer_min_x -= one_cell_world_coords;
-    layer_min_y -= one_cell_world_coords;
-    layer_max_x += one_cell_world_coords;
-    layer_max_y += one_cell_world_coords;
-  }
-
-  // This layer's contribution in cell coordinates
-  worldToMapNoBounds(layer_min_x, layer_min_y, min_x_, min_y_);
-  worldToMapNoBounds(layer_max_x, layer_max_y, max_x_, max_y_);
-
-  // merge the local change with the global change
-  *min_x = std::min(*min_x, layer_min_x);
-  *min_y = std::min(*min_y, layer_min_y);
-  *max_x = std::max(*max_x, layer_max_x);
-  *max_y = std::max(*max_y, layer_max_y);
-}
-
-
-void ObstacleLayer::updateCosts(LayerActions* layer_actions, costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   if (!enabled_)
-  {
-    current_ = true; // don't block a waiting process
     return;
-  }
 
   if (footprint_clearing_enabled_)
   {
     setConvexPolygonCost(transformed_footprint_, costmap_2d::FREE_SPACE);
   }
 
-  if (combination_method_ == 0)
+  switch (combination_method_)
   {
-    updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
-    if (layer_actions)
-    {
-      layer_actions->addAction(
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            this,
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            &master_grid,
-            LayerActions::OVERWRITE);
-    }
+    case 0:  // Overwrite
+      updateWithOverwrite(master_grid, min_i, min_j, max_i, max_j);
+      break;
+    case 1:  // Maximum
+      updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+      break;
+    default:  // Nothing
+      break;
   }
-  
-  if (combination_method_ == 1)
-  {
-    updateWithMax(master_grid, min_i, min_j, max_i, max_j);
-    if (layer_actions)
-    {
-      layer_actions->addAction(
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            this,
-            AxisAlignedBoundingBox(min_x_, min_y_, max_x_, max_y_),
-            &master_grid,
-            LayerActions::MAX);
-    }
-  }
-
-  current_ = true; // allow consumers to use this data
-}
-
-void ObstacleLayer::updateCosts(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j)
-{
-  updateCosts(NULL, master_grid, min_i, min_j, max_i, max_j);
 }
 
 void ObstacleLayer::addStaticObservation(costmap_2d::Observation& obs, bool marking, bool clearing)

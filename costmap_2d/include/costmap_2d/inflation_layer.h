@@ -42,8 +42,8 @@
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/InflationPluginConfig.h>
-#include <costmap_2d/dynamic_algorithm_select.h>
 #include <dynamic_reconfigure/server.h>
+#include <boost/thread.hpp>
 #include <queue>
 
 namespace costmap_2d
@@ -106,36 +106,6 @@ public:
   }
   virtual void matchSize();
 
-  /** @brief Apply inflation to master_grid using the best algorithm for the situation based on dynamic timing data
-    * @param layer_actions Sequence of actions that the previous layer plugins have applied.
-    * @param master_grid Costmap2D to operate on
-    * @param min_i Window bounds to apply inflation
-    * @param min_j Window bounds to apply inflation
-    * @param max_i Window bounds to apply inflation
-    * @param max_j Window bounds to apply inflation
-    */
-  virtual void updateCosts(LayerActions *layer_actions, Costmap2D &master_grid,
-                           int min_i, int min_j, int max_i, int max_j);
-
-  /** @brief Apply inflation to master_grid using the Priority Queue method
-    * @param master_grid Costmap2D to operate on
-    * @param min_i Window bounds to apply inflation
-    * @param min_j Window bounds to apply inflation
-    * @param max_i Window bounds to apply inflation
-    * @param max_j Window bounds to apply inflation
-    */
-  void updateCostsPQ(Costmap2D &master_grid, int min_i, int min_j, int max_i, int max_j);
-
-  /** @brief Apply inflation to master_grid using the supplied actions to only inflate the required regions
-    * @param master_grid Costmap2D to operate on
-    * @param min_i Window bounds to apply inflation
-    * @param min_j Window bounds to apply inflation
-    * @param max_i Window bounds to apply inflation
-    * @param max_j Window bounds to apply inflation
-    */
-  void updateCostsLayerActions(LayerActions *layer_actions, Costmap2D &master_grid,
-                           int min_i, int min_j, int max_i, int max_j);
-
   virtual void reset() { onInitialize(); }
 
   /** @brief  Given a distance, compute a cost.
@@ -158,9 +128,16 @@ public:
     return cost;
   }
 
+  /**
+   * @brief Change the values of the inflation radius parameters
+   * @param inflation_radius The new inflation radius
+   * @param cost_scaling_factor The new weight
+   */
+  void setInflationParameters(double inflation_radius, double cost_scaling_factor);
+
 protected:
   virtual void onFootprintChanged();
-  boost::shared_mutex* access_;
+  boost::recursive_mutex* inflation_access_;
 
 private:
   /**
@@ -202,16 +179,8 @@ private:
     return layered_costmap_->getCostmap()->cellDistance(world_dist);
   }
 
-  double getResolution() const
-  {
-    return layered_costmap_->getCostmap()->getResolution();
-  }
-
-
   inline void enqueue(unsigned char* grid, unsigned int index, unsigned int mx, unsigned int my, unsigned int src_x,
                       unsigned int src_y);
-
-  int inflation_method_; // the type of the method to use for inflation
 
   double inflation_radius_, inscribed_radius_, weight_;
   unsigned int cell_inflation_radius_;
@@ -225,15 +194,12 @@ private:
 
   unsigned char** cached_costs_;
   double** cached_distances_;
-
+  double last_min_x_, last_min_y_, last_max_x_, last_max_y_;
 
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
   void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
 
   bool need_reinflation_;  ///< Indicates that the entire costmap should be reinflated next time around.
-
-  // Data tracking algorithm runtimes
-  costmap_2d::DynamicAlgorithmSelect algorithmSelect_;
 };
 
 }  // namespace costmap_2d
