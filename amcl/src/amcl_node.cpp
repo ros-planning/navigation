@@ -1327,9 +1327,14 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
   tf::StampedTransform tx_odom;
   try
   {
-    tf_->lookupTransform(base_frame_id_, ros::Time::now(),
-                         base_frame_id_, msg.header.stamp,
-                         global_frame_id_, tx_odom);
+    ros::Time now = ros::Time::now();
+    // wait a little for the latest tf to become available
+    tf_->waitForTransform(base_frame_id_, msg.header.stamp,
+                         base_frame_id_, now,
+                         odom_frame_id_, ros::Duration(0.5));
+    tf_->lookupTransform(base_frame_id_, msg.header.stamp,
+                         base_frame_id_, now,
+                         odom_frame_id_, tx_odom);
   }
   catch(tf::TransformException e)
   {
@@ -1344,7 +1349,7 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
 
   tf::Pose pose_old, pose_new;
   tf::poseMsgToTF(msg.pose.pose, pose_old);
-  pose_new = tx_odom.inverse() * pose_old;
+  pose_new = pose_old * tx_odom;
 
   // Transform into the global frame
 
