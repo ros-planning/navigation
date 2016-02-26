@@ -61,6 +61,11 @@
 #include "dynamic_reconfigure/server.h"
 #include "amcl/AMCLConfig.h"
 
+// Allows AMCL to run from bag file
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <boost/foreach.hpp>
+
 #define NEW_UNIFORM_SAMPLING 1
 
 using namespace amcl;
@@ -108,12 +113,24 @@ class AmclNode
     AmclNode();
     ~AmclNode();
 
+    /**
+     * @brief Uses TF and LaserScan messages from bag file to drive AMCL instead
+     */
+    void runFromBag(const std::string &in_bag_fn);
+
     int process();
     void savePoseToServer();
 
   private:
     tf::TransformBroadcaster* tfb_;
-    tf::TransformListener* tf_;
+
+    // Use a child class to get access to tf2::Buffer class inside of tf_
+    struct TransformListenerWrapper : public tf::TransformListener
+    {
+      inline tf2_ros::Buffer &getBuffer() {return tf2_buffer_;}
+    };
+
+    TransformListenerWrapper* tf_;
 
     bool sent_first_transform_;
 
@@ -198,6 +215,9 @@ class AmclNode
     ros::Duration cloud_pub_interval;
     ros::Time last_cloud_pub_time;
 
+    // For slowing play-back when reading directly from a bag file
+    ros::WallDuration bag_scan_period_;
+
     void requestMap();
 
     // Helper to get odometric pose from transform system
@@ -274,7 +294,15 @@ main(int argc, char** argv)
   // Make our node available to sigintHandler
   amcl_node_ptr.reset(new AmclNode());
 
-  ros::spin();
+  if (argc == 1)
+  {
+    // run using ROS input
+    ros::spin();
+  }
+  else if ((argc == 3) && (std::string(argv[1]) == "--run-from-bag"))
+  {
+    amcl_node_ptr->runFromBag(argv[2]);
+  }
 
   // Without this, our boost locks are not shut down nicely
   amcl_node_ptr.reset();
@@ -379,11 +407,17 @@ AmclNode::AmclNode() :
 
   transform_tolerance_.fromSec(tmp_tol);
 
+  {
+    double bag_scan_period;
+    private_nh_.param("bag_scan_period", bag_scan_period, -1.0);
+    bag_scan_period_.fromSec(bag_scan_period);
+  }
+
   updatePoseFromServer();
 
   cloud_pub_interval.fromSec(1.0);
   tfb_ = new tf::TransformBroadcaster();
-  tf_ = new tf::TransformListener();
+  tf_ = new TransformListenerWrapper();
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
@@ -564,6 +598,94 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
 
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 }
+
+
+void AmclNode::runFromBag(const std::string &in_bag_fn)
+{
+  rosbag::Bag bag;
+  bag.open(in_bag_fn, rosbag::bagmode::Read);
+  std::vector<std::string> topics;
+  topics.push_back(std::string("tf"));
+  std::string scan_topic_name = "base_scan"; // TODO determine what topic this actually is from ROS
+  topics.push_back(scan_topic_name);
+  rosbag::View view(bag, rosbag::TopicQuery(topics));
+
+  ros::Publisher laser_pub = nh_.advertise<sensor_msgs::LaserScan>(scan_topic_name, 100);
+  ros::Publisher tf_pub = nh_.advertise<tf2_msgs::TFMessage>("/tf", 100);
+
+  // Sleep for a second to let all subscribers connect
+  ros::WallDuration(1.0).sleep();
+
+  ros::WallTime start(ros::WallTime::now());
+
+  // Wait for map
+  while (ros::ok())
+  {
+    {
+      boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
+      if (map_)
+      {
+        ROS_INFO("Map is ready");
+        break;
+      }
+    }
+    ROS_INFO("Waiting for map...");
+    ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0));
+  }
+
+  BOOST_FOREACH(rosbag::MessageInstance const msg, view)
+  {
+    if (!ros::ok())
+    {
+      break;
+    }
+
+    // Process any ros messages or callbacks at this point
+    ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration());
+
+    tf2_msgs::TFMessage::ConstPtr tf_msg = msg.instantiate<tf2_msgs::TFMessage>();
+    if (tf_msg != NULL)
+    {
+      tf_pub.publish(msg);
+      for (size_t ii=0; ii<tf_msg->transforms.size(); ++ii)
+      {
+        tf_->getBuffer().setTransform(tf_msg->transforms[ii], "rosbag_authority");
+      }
+      continue;
+    }
+
+    sensor_msgs::LaserScan::ConstPtr base_scan = msg.instantiate<sensor_msgs::LaserScan>();
+    if (base_scan != NULL)
+    {
+      laser_pub.publish(msg);
+      laser_scan_filter_->add(base_scan);
+      if (bag_scan_period_ > ros::WallDuration(0))
+      {
+        bag_scan_period_.sleep();
+      }
+      continue;
+    }
+
+    ROS_WARN_STREAM("Unsupported message type" << msg.getTopic());
+  }
+
+  bag.close();
+
+  double runtime = (ros::WallTime::now() - start).toSec();
+  ROS_INFO("Bag complete, took %.1f seconds to process, shutting down", runtime);
+
+  const geometry_msgs::Quaternion & q(last_published_pose.pose.pose.orientation);
+  double yaw, pitch, roll;
+  tf::Matrix3x3(tf::Quaternion(q.x, q.y, q.z, q.w)).getEulerYPR(yaw,pitch,roll);
+  ROS_INFO("Final location %.3f, %.3f, %.3f with stamp=%f",
+            last_published_pose.pose.pose.position.x,
+            last_published_pose.pose.pose.position.y,
+            yaw, last_published_pose.header.stamp.toSec()
+            );
+
+  ros::shutdown();
+}
+
 
 void AmclNode::savePoseToServer()
 {
