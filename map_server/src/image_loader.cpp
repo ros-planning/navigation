@@ -99,7 +99,9 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   rowstride = img->pitch;
   n_channels = img->format->BytesPerPixel;
 
-  if (n_channels <= 3)
+  // NOTE: Trinary mode still overrides here to preserve existing behavior.
+  // Alpha will be averaged in with color channels when using trinary mode.
+  if (mode==TRINARY || !img->format->Amask)
     avg_channels = n_channels;
   else
     avg_channels = n_channels - 1;
