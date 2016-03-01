@@ -55,7 +55,7 @@ void
 loadMapFromFile(nav_msgs::GetMap::Response* resp,
                 const char* fname, double res, bool negate,
                 double occ_th, double free_th, double* origin,
-                bool trinary)
+                MapMode mode)
 {
   SDL_Surface* img;
 
@@ -99,7 +99,9 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   rowstride = img->pitch;
   n_channels = img->format->BytesPerPixel;
 
-  if (trinary || n_channels == 1)
+  // NOTE: Trinary mode still overrides here to preserve existing behavior.
+  // Alpha will be averaged in with color channels when using trinary mode.
+  if (mode==TRINARY || !img->format->Amask)
     avg_channels = n_channels;
   else
     avg_channels = n_channels - 1;
@@ -122,12 +124,19 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
       else
           alpha = *(p+n_channels-1);
 
+      if(negate)
+        color_avg = 255 - color_avg;
+
+      if(mode==RAW){
+          value = color_avg;
+          resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
+          continue;
+      }
+
+
       // If negate is true, we consider blacker pixels free, and whiter
       // pixels free.  Otherwise, it's vice versa.
-      if(negate)
-        occ = color_avg / 255.0;
-      else
-        occ = (255 - color_avg) / 255.0;
+      occ = (255 - color_avg) / 255.0;
       
       // Apply thresholds to RGB means to determine occupancy values for
       // map.  Note that we invert the graphics-ordering of the pixels to
@@ -136,7 +145,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
         value = +100;
       else if(occ < free_th)
         value = 0;
-      else if(trinary || alpha < 1.0)
+      else if(mode==TRINARY || alpha < 1.0)
         value = -1;
       else {
         double ratio = (occ - free_th) / (occ_th - free_th);
