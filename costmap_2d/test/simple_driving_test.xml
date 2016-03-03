@@ -7,7 +7,7 @@
   <node name="map_server" pkg="map_server" type="map_server" args="$(find costmap_2d)/../../../devel/share/costmap_2d/test/willow-full-0.025.pgm 0.025" />
 
   <rosparam file="$(find costmap_2d)/test/costmap_params.yaml" command="load" ns="simple_driving_test/test_costmap" />
-  <test time-limit="300" test-name="simple_driving_test" pkg="costmap_2d" type="costmap_tester">
+  <test time-limit="600" test-name="simple_driving_test" pkg="costmap_2d" type="costmap_tester">
     <param name="wait_time" value="40.0" />
   </test>
 
