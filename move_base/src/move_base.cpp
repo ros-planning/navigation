@@ -1016,6 +1016,9 @@ namespace move_base {
         boost::unique_lock<boost::recursive_mutex> cm_lock(clear_costmap_mutex_);
          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
 
+        // Cleanup and revert any recovery behaviors before generating any control commands or collision checks.
+        revertRecoveryChanges();
+
         if(tc_->computeVelocityCommands(cmd_vel)){
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
                            cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
@@ -1026,7 +1029,6 @@ namespace move_base {
            * from CONTROLLING_R or have found a plan after a recovery and executed it.
            * This allows for multiple recovery attempts if the robot moves (as opposed to one only).
            */
-          revertRecoveryChanges();
           recovery_index_ = 0;
           active_recovery_index_ = -1;
 
