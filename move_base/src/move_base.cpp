@@ -509,9 +509,10 @@ namespace move_base {
 
   MoveBase::~MoveBase(){
     recovery_behaviors_.clear();
-
+    
     delete dsrv_;
-
+  
+    as_feedback_timer_.stop();
     if(as_ != NULL)
       delete as_;
 
