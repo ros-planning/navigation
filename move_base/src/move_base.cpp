@@ -201,6 +201,9 @@ namespace move_base {
     dsrv_ = new dynamic_reconfigure::Server<move_base::MoveBaseConfig>(ros::NodeHandle("~"));
     dynamic_reconfigure::Server<move_base::MoveBaseConfig>::CallbackType cb = boost::bind(&MoveBase::reconfigureCB, this, _1, _2);
     dsrv_->setCallback(cb);
+
+    // Create and start the timer for publishing action server feedback
+    as_feedback_timer_ = nh.createTimer(ros::Duration(0.05), &MoveBase::asFeedbackTimerCallback, this);
   }
 
   void MoveBase::reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level){
@@ -506,9 +509,10 @@ namespace move_base {
 
   MoveBase::~MoveBase(){
     recovery_behaviors_.clear();
-
+    
     delete dsrv_;
-
+  
+    as_feedback_timer_.stop();
     if(as_ != NULL)
       delete as_;
 
@@ -909,16 +913,10 @@ namespace move_base {
     //we need to be able to publish velocity commands
     geometry_msgs::Twist cmd_vel;
 
-    //update feedback to correspond to our curent position
     tf::Stamped<tf::Pose> global_pose;
     planner_costmap_ros_->getRobotPose(global_pose);
     geometry_msgs::PoseStamped current_position;
     tf::poseStampedTFToMsg(global_pose, current_position);
-
-    //push the feedback out
-    move_base_msgs::MoveBaseFeedback feedback;
-    feedback.base_position = current_position;
-    as_->publishFeedback(feedback);
 
     //check to see if we've moved far enough to reset our oscillation timeout
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
@@ -1323,6 +1321,23 @@ namespace move_base {
     if(recovery_behavior_enabled_ && active_recovery_index_ >= 0)
     {
       recovery_behaviors_[active_recovery_index_]->revertChanges();
+    }
+  }
+
+  void MoveBase::asFeedbackTimerCallback(const ros::TimerEvent&)
+  {
+    if (as_->isActive() )
+    {
+      //update feedback to correspond to our curent position
+      tf::Stamped<tf::Pose> global_pose;
+      planner_costmap_ros_->getRobotPose(global_pose);
+      geometry_msgs::PoseStamped current_position;
+      tf::poseStampedTFToMsg(global_pose, current_position);
+
+      //push the feedback out
+      move_base_msgs::MoveBaseFeedback feedback;
+      feedback.base_position = current_position;
+      as_->publishFeedback(feedback);
     }
   }
 };
