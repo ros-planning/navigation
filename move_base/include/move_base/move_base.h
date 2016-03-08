@@ -216,6 +216,12 @@ namespace move_base {
        */
       void revertRecoveryChanges();
 
+      /**
+       * @brief Timer callback used to trigger sending of action server feedback.
+       * This is needed so we can get feedback messages during planning.
+       */
+      void asFeedbackTimerCallback(const ros::TimerEvent&);
+
       tf::TransformListener& tf_;
 
       MoveBaseActionServer* as_;
@@ -274,6 +280,8 @@ namespace move_base {
       move_base::MoveBaseConfig default_config_;
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
+
+      ros::Timer as_feedback_timer_;
   };
 };
 #endif
