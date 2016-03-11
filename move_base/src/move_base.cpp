@@ -56,6 +56,8 @@ namespace move_base {
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
+    goal_manager_.reset(new nav_core::NavGoalMananger);
+
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
     ros::NodeHandle private_nh("~");
@@ -157,6 +159,7 @@ namespace move_base {
 
       tc_ = blp_loader_.createInstance(local_planner);
       ROS_INFO("Created local_planner %s", local_planner.c_str());
+      tc_->setGoalManager(goal_manager_);
       tc_->initialize(blp_loader_.getName(local_planner), &tf_, controller_costmap_ros_);
     } catch (const pluginlib::PluginlibException& ex)
     {
@@ -268,7 +271,7 @@ namespace move_base {
 
         // wait for the current planner to finish planning
         boost::unique_lock<boost::mutex> lock(planner_mutex_);
-        
+
         // Clean up before initializing the new planner
         planner_plan_->clear();
         latest_plan_->clear();
@@ -316,6 +319,7 @@ namespace move_base {
         latest_plan_->clear();
         controller_plan_->clear();
         resetState();
+        tc_->setGoalManager(goal_manager_);
         tc_->initialize(blp_loader_.getName(config.base_local_planner), &tf_, controller_costmap_ros_);
       } catch (const pluginlib::PluginlibException& ex)
       {
@@ -444,6 +448,8 @@ namespace move_base {
     //first try to make a plan to the exact desired goal
     std::vector<geometry_msgs::PoseStamped> global_plan;
 
+    goal_manager_->setCurrentGoal(nav_core::NavGoal(req.goal));
+
     // NOTE: The implementation of makePlan is responsible for locking the costmap
     if(!planner_->makePlan(start, req.goal, global_plan) || global_plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a plan to exact goal of (%.2f, %.2f), searching for a feasible goal within tolerance",
@@ -474,6 +480,8 @@ namespace move_base {
 
                 p.pose.position.y = req.goal.pose.position.y + y_offset * y_mult;
                 p.pose.position.x = req.goal.pose.position.x + x_offset * x_mult;
+
+                goal_manager_->setCurrentGoal(nav_core::NavGoal(p));
 
                 // NOTE: The implementation of makePlan is responsible for locking the costmap
                 if(planner_->makePlan(start, p, global_plan)){
@@ -509,9 +517,9 @@ namespace move_base {
 
   MoveBase::~MoveBase(){
     recovery_behaviors_.clear();
-    
+
     delete dsrv_;
-  
+
     as_feedback_timer_.stop();
     if(as_ != NULL)
       delete as_;
@@ -563,6 +571,7 @@ namespace move_base {
 
     geometry_msgs::PoseStamped start;
     tf::poseStampedTFToMsg(global_pose, start);
+    goal_manager_->setCurrentGoal(nav_core::NavGoal(goal));
 
     // NOTE: The implementation of makePlan is responsible for locking the costmap
     //if the planner fails or returns a zero length plan, planning failed
@@ -750,6 +759,7 @@ namespace move_base {
   {
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+      goal_manager_->setActiveGoal(false);  // setting no active goal
       return;
     }
 
@@ -794,10 +804,12 @@ namespace move_base {
 
           if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+            goal_manager_->setActiveGoal(false);  // setting no active goal
             return;
           }
 
           goal = goalToGlobalFrame(new_goal.target_pose);
+          goal_manager_->setCurrentGoal(nav_core::NavGoal(goal));
 
           //we'll make sure that we reset our state for the next execution cycle
           revertRecoveryChanges();
@@ -837,6 +849,7 @@ namespace move_base {
       //we also want to check if we've changed global frames because we need to transform our goal pose
       if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
         goal = goalToGlobalFrame(goal);
+        goal_manager_->setCurrentGoal(nav_core::NavGoal(goal));
 
         //we want to go back to the planning state for the next execution cycle
         revertRecoveryChanges();
@@ -1063,7 +1076,7 @@ namespace move_base {
 
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
-        ROS_DEBUG_NAMED("move_base","In clearing/recovery state");   
+        ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         if (planner_)
         {
           // This will invoke the resetPlanner method when recovery is called.
@@ -1195,6 +1208,7 @@ namespace move_base {
               return false;
             }
 
+            behavior->setGoalManager(goal_manager_);
             //initialize the recovery behavior with its name
             behavior->initialize(behavior_list[i]["name"], &tf_, planner_costmap_ros_, controller_costmap_ros_);
 
@@ -1239,18 +1253,21 @@ namespace move_base {
 
       //first, we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      cons_clear->setGoalManager(goal_manager_);
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
 
       //next, we'll load a recovery behavior to rotate in place
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
+        rotate->setGoalManager(goal_manager_);
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
 
       //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      ags_clear->setGoalManager(goal_manager_);
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
 
@@ -1266,6 +1283,8 @@ namespace move_base {
   }
 
   void MoveBase::resetState(){
+    goal_manager_->setActiveGoal(false);  // setting no active goal
+
     // Disable the planner thread
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
     runPlanner_ = false;
@@ -1294,14 +1313,16 @@ namespace move_base {
     {
       // We do not have an instance of this planner in cache, so create one and cache it.
       ros::Time t = ros::Time::now();
-      global_planner_cache_.insert(std::make_pair(plugin_name, bgp_loader_.createInstance(plugin_name) ) ); 
+      global_planner_cache_.insert(std::make_pair(plugin_name, bgp_loader_.createInstance(plugin_name) ) );
+      global_planner_cache_[plugin_name]->setGoalManager(goal_manager_);
       global_planner_cache_[plugin_name]->initialize(bgp_loader_.getName(plugin_name), planner_costmap_ros_);
       ROS_DEBUG("Created new global planner plugin %s in %f seconds.", plugin_name.c_str(), (ros::Time::now() - t).toSec() );
     }
     else
     {
       ROS_DEBUG("Got cached global planner plugin: %s.", plugin_name.c_str() );
-    } 
+    }
+
     // Return the cached plugin instance.
     return global_planner_cache_[plugin_name];
   }
