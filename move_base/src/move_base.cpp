@@ -337,6 +337,7 @@ namespace move_base {
     move_base_msgs::MoveBaseActionGoal action_goal;
     action_goal.header.stamp = ros::Time::now();
     action_goal.goal.target_pose = *goal;
+    goal_manager_->setCurrentGoal(nav_core::NavGoal(*goal));
 
     action_goal_pub_.publish(action_goal);
   }
@@ -447,8 +448,6 @@ namespace move_base {
 
     //first try to make a plan to the exact desired goal
     std::vector<geometry_msgs::PoseStamped> global_plan;
-
-    goal_manager_->setCurrentGoal(nav_core::NavGoal(req.goal));
 
     // NOTE: The implementation of makePlan is responsible for locking the costmap
     if(!planner_->makePlan(start, req.goal, global_plan) || global_plan.empty()){
@@ -764,6 +763,7 @@ namespace move_base {
     }
 
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+    goal_manager_->setCurrentGoal(nav_core::NavGoal(goal));
 
     //we have a goal so start the planner
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
@@ -834,6 +834,8 @@ namespace move_base {
           last_oscillation_reset_ = ros::Time::now();
         }
         else {
+          goal_manager_->setActiveGoal(false);  // setting no active goal
+
           //if we've been preempted explicitly we need to shut things down
           resetState();
 
