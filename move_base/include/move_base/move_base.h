@@ -280,6 +280,7 @@ namespace move_base {
       move_base::MoveBaseConfig default_config_;
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
+      bool recovery_cleanup_requested_;
 
       ros::Timer as_feedback_timer_;
   };
