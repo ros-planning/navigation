@@ -3,7 +3,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2008, 2013, Willow Garage, Inc.
- *  Copyright (c) 2015, Fetch Robotics, Inc.
+ *  Copyright (c) 2015, 2016, Fetch Robotics, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -80,30 +80,38 @@ void StaticLayer::onInitialize()
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
 
-  // Only resubscribe if topic has changed
-  if (map_sub_.getTopic() != ros::names::resolve(map_topic))
+  // Limit the maximum amount of time to wait for map to be available
+  double max_request_time;
+  nh.param("max_request_time", max_request_time, 0.0);
+  ros::Time timeout = ros::Time::now() + ros::Duration(max_request_time);
+
+  // we'll subscribe to the latched topic that the map server uses
+  ROS_INFO("Requesting the map...");
+  map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
+  map_received_ = false;
+  has_updated_data_ = false;
+
+
+  ros::Rate r(10);
+  while (!map_received_ && g_nh.ok())
   {
-    // we'll subscribe to the latched topic that the map server uses
-    ROS_INFO("Requesting the map...");
-    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
-    map_received_ = false;
-    has_updated_data_ = false;
+    ros::spinOnce();
+    r.sleep();
 
-    ros::Rate r(10);
-    while (!map_received_ && g_nh.ok())
+    // How long do we want to wait?
+    if (max_request_time > 0 && ros::Time::now() > timeout)
     {
-      ros::spinOnce();
-      r.sleep();
+      ROS_ERROR("Timed out waiting for new map");
+      break;
     }
+  }
 
-    ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+  ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
 
-    if (subscribe_to_updates_)
-    {
-      ROS_INFO("Subscribing to updates");
-      map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
-
-    }
+  if (subscribe_to_updates_)
+  {
+    ROS_INFO("Subscribing to updates");
+    map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
   }
 
   if (dsrv_)
@@ -256,7 +264,8 @@ void StaticLayer::reset()
   }
   else
   {
-    onInitialize();
+    deactivate();
+    activate();
   }
 }
 
