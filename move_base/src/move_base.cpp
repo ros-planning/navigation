@@ -54,8 +54,9 @@ namespace move_base {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"),
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
-
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false),
+    new_global_plan_(false), recovery_cleanup_requested_(false)
+  {
     goal_manager_.reset(new nav_core::NavGoalMananger);
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
@@ -277,7 +278,7 @@ namespace move_base {
         latest_plan_->clear();
         controller_plan_->clear();
         runPlanner_ = false;
-        revertRecoveryChanges();
+        recovery_cleanup_requested_ = true;
         state_ = PLANNING;
         recovery_index_ = 0;
         active_recovery_index_ = -1;
@@ -663,6 +664,16 @@ namespace move_base {
         planner_cond_.wait(lock);
         wait_for_wake = false;
       }
+
+      // If we just swapped planners, we should clean up any recoveries from the last planner.
+      // We do this here instead of in the execute thread to make use of the planner_mutex_
+      // which ensures the variable is not being modified by reconfigureCB at the same time.
+      if (recovery_cleanup_requested_)
+      {
+        recovery_cleanup_requested_ = false;
+        revertRecoveryChanges();
+      }
+
       ros::Time start_time = ros::Time::now();
 
       //time to plan! get a copy of the goal and unlock the mutex
