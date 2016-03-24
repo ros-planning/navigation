@@ -688,10 +688,15 @@ namespace move_base {
         // makePlan can take time. While planning, it's possible that we received a new goal. We should check for this
         // condition, and if it's true, we should carry on as if we did not succeed in planning this goal, which will
         // cause us to move on and re-start this thread for the new goal.
-        if (distanceXYTheta(planner_goal_, planned_goal) >= 1e-3)
+
+        if (!nav_core::NavGoal(planned_goal).equalPose(goal_manager_->currentGoal()))
         {
           ROS_INFO("Planned goal and latest received goal do not match. Assuming new goal issued; ignoring this "
-                   "plan.\n");
+                   "plan.");
+        }
+        else if (!goal_manager_->activeGoal())
+        {
+          ROS_INFO("Goal has become inactive; ignoring this plan.");
         }
         else
         {

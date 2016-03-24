@@ -81,7 +81,7 @@ public:
       return false;
     }
 
-    return angles::normalize_angle(tf::getYaw(p2.orientation) - tf::getYaw(p1.orientation)) <= angle_tol_rad;
+    return angles::shortest_angular_distance(tf::getYaw(p2.orientation), tf::getYaw(p1.orientation)) <= angle_tol_rad;
   }
 
   geometry_msgs::PoseStamped pose_;
