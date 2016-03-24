@@ -43,6 +43,7 @@
 #include <tf/transform_listener.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+#include "nav_core/nav_goal_manager.h"
 
 namespace nav_core {
   /**
@@ -83,9 +84,23 @@ namespace nav_core {
       virtual void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 
       /**
+       * Set the goal manager
+       * @param goal_manager goal manager
+       */
+      virtual void setGoalManager(NavGoalMananger::Ptr goal_manager)
+      {
+        goal_manager_ = goal_manager;
+      }
+      
+      /**
        * @brief  Virtual destructor for the interface
        */
       virtual ~BaseLocalPlanner(){}
+
+      /**
+       * @brief Common goal goal manager
+       */
+      NavGoalMananger::Ptr goal_manager_;
 
     protected:
       BaseLocalPlanner(){}

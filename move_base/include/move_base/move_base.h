@@ -48,6 +48,8 @@
 #include <nav_core/base_local_planner.h>
 #include <nav_core/base_global_planner.h>
 #include <nav_core/recovery_behavior.h>
+#include <nav_core/nav_goal_manager.h>
+
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
@@ -283,6 +285,8 @@ namespace move_base {
       bool recovery_cleanup_requested_;
 
       ros::Timer as_feedback_timer_;
+
+      nav_core::NavGoalMananger::Ptr goal_manager_;
   };
 };
 #endif

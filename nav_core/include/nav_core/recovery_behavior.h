@@ -40,6 +40,7 @@
 #include <tf/transform_listener.h>
 #include <nav_core/base_global_planner.h>
 #include <nav_core/base_local_planner.h>
+#include "nav_core/nav_goal_manager.h"
 
 namespace nav_core {
   /**
@@ -51,8 +52,8 @@ namespace nav_core {
       /**
        * @brief  Initialization function for the RecoveryBehavior
        * @param tf A pointer to a transform listener
-       * @param global_costmap A pointer to the global_costmap used by the navigation stack 
-       * @param local_costmap A pointer to the local_costmap used by the navigation stack 
+       * @param global_costmap A pointer to the global_costmap used by the navigation stack
+       * @param local_costmap A pointer to the local_costmap used by the navigation stack
        */
       virtual void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap) = 0;
 
@@ -92,6 +93,20 @@ namespace nav_core {
       {
         global_planner_fetch_ = f;
       }
+
+      /**
+       * Set the goal manager
+       * @param goal_manager goal manager
+       */
+      virtual void setGoalManager(NavGoalMananger::Ptr goal_manager)
+      {
+        goal_manager_ = goal_manager;
+      }
+
+      /**
+       * @brief Common goal goal manager
+       */
+      NavGoalMananger::Ptr goal_manager_;
 
     protected:
       RecoveryBehavior(){}

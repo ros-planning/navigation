@@ -41,6 +41,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+#include "nav_core/nav_goal_manager.h"
 
 namespace nav_core {
   /**
@@ -51,7 +52,7 @@ namespace nav_core {
     public:
       typedef boost::shared_ptr<BaseGlobalPlanner> Ptr;
       typedef boost::function <Ptr ()> FetchFunction;
-      
+
       /**
        * @brief Given a goal pose in the world, compute a plan. The implementation of this method is
        *        responsible for locking the costmap mutex.
@@ -60,7 +61,7 @@ namespace nav_core {
        * @param plan The plan... filled by the planner
        * @return True if a valid plan was found, false otherwise
        */
-      virtual bool makePlan(const geometry_msgs::PoseStamped& start, 
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start,
           const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan) = 0;
 
       /**
@@ -76,9 +77,23 @@ namespace nav_core {
       virtual void resetPlanner(){}
 
       /**
+       * Set the goal manager
+       * @param goal_manager goal manager
+       */
+      virtual void setGoalManager(NavGoalMananger::Ptr goal_manager)
+      {
+        goal_manager_ = goal_manager;
+      }
+
+      /**
        * @brief  Virtual destructor for the interface
        */
       virtual ~BaseGlobalPlanner(){}
+
+      /**
+       * @brief Common goal goal manager
+       */
+      NavGoalMananger::Ptr goal_manager_;
 
     protected:
       BaseGlobalPlanner(){}

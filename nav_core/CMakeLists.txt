@@ -3,10 +3,11 @@ project(nav_core)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            std_msgs
-            geometry_msgs
-            tf
             costmap_2d
+            geometry_msgs
+            roscpp
+            std_msgs
+            tf
         )
 
 catkin_package(
