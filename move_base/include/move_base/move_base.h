@@ -224,6 +224,12 @@ namespace move_base {
        */
       void asFeedbackTimerCallback(const ros::TimerEvent&);
 
+      /**
+       * @brief Custom preemption callback to be called when the action server detects preemption
+       */
+      void asPreemptCallback();
+
+
       tf::TransformListener& tf_;
 
       MoveBaseActionServer* as_;
