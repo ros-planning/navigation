@@ -61,6 +61,10 @@ namespace move_base {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
+    // register custom preemption callback so we can respond
+    // to changes even if the action server thread is occupied
+    as_->registerPreemptCallback(boost::bind(&MoveBase::asPreemptCallback, this));
+
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
 
@@ -1378,5 +1382,20 @@ namespace move_base {
       feedback.base_position = current_position;
       as_->publishFeedback(feedback);
     }
+  }
+
+  void MoveBase::asPreemptCallback()
+  {
+    if (as_->isNewGoalAvailable())
+    {
+      // tell the goal manager about the new goal so that
+      // components can exit if their local goal has changed
+      move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
+      geometry_msgs::PoseStamped goal = goalToGlobalFrame(new_goal.target_pose);
+      goal_manager_->setCurrentGoal(nav_core::NavGoal(goal));
+    }
+
+    // allow cancels to be recognized by components
+    goal_manager_->setActiveGoal(as_->isActive());
   }
 };
