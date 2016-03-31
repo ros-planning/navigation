@@ -215,8 +215,9 @@ namespace move_base {
 
       /**
        * @brief Used to undo changes made by the last-executed recovery behavior
+       * @param force Force the reset even if the pose is not different than the recovert pose
        */
-      void revertRecoveryChanges();
+      void revertRecoveryChanges(bool force = false);
 
       /**
        * @brief Timer callback used to trigger sending of action server feedback.
@@ -229,6 +230,23 @@ namespace move_base {
        */
       void asPreemptCallback();
 
+      /**
+       * @brief Get the current pose
+       * @param current_pose The current pose
+       */
+      void getCurrentPose(geometry_msgs::PoseStamped& current_pose);
+
+      /**
+       * @brief Record current pose to be used when deciding if we need to reset
+       *        the recovery index
+       */
+      void recordRecoveryPose();
+
+      /**
+       * @brief Decide if the current pose if different than the last recorded recovery pose
+       * @return true if distance(current_pose, recovery_pose_) > recovery_reset_distance_
+       */
+      bool currentPoseNotRecoveryPose();
 
       tf::TransformListener& tf_;
 
@@ -293,6 +311,19 @@ namespace move_base {
       ros::Timer as_feedback_timer_;
 
       nav_core::NavGoalMananger::Ptr goal_manager_;
+
+
+      /**
+       * @brief The robot must move at least this value from where the last recovery
+       *        finished to have the recovery index reset
+       */
+      double recovery_reset_distance_;
+
+      /**
+       * @brief The pose when we finished recovery. Used to decide if we can
+       *        reset the recovery index or we should cycle through all behaviours
+       */
+      geometry_msgs::PoseStamped recovery_pose_;
   };
 };
 #endif
