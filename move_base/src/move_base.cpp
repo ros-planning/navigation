@@ -1048,13 +1048,25 @@ namespace move_base {
 
         // Cleanup and revert any recovery behaviors before generating any control commands or collision checks.
         revertRecoveryChanges();
+        int custom_status = nav_core::status::UNDEFINED;
 
-        if(tc_->computeVelocityCommands(cmd_vel)){
+        if (tc_->computeVelocityCommands(cmd_vel, custom_status))
+        {
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
                            cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
+
+          // It is possible for computeVelocityCommands to return true when we are waiting for dynamics
+          // to timeout. In that case, custom_status == nav_core::status::WAIT. If we are in an OK state
+          // where meaningful cmd_vel is being published then we can force recovery changes to be reverted
+          // and reset the indices here in move_base as well as in the recovery_manager.
+          if (custom_status == nav_core::status::OK)
+          {
+            const bool force_revert = true;
+            revertRecoveryChanges(force_revert);
+          }
 
           // Reset the failed goal record (so that if we fail on that goal again in the future we show a log message)
           last_failed_goal_.pose.position.x = FLT_MAX;
