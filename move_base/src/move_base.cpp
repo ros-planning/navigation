@@ -833,8 +833,6 @@ namespace move_base {
 
           //we'll make sure that we reset our state for the next execution cycle
           revertRecoveryChanges();
-          recovery_index_ = 0;
-          active_recovery_index_ = -1;
           state_ = PLANNING;
 
           //we have a new goal so make sure the planner is awake
@@ -875,8 +873,6 @@ namespace move_base {
 
         //we want to go back to the planning state for the next execution cycle
         revertRecoveryChanges();
-        recovery_index_ = 0;
-        active_recovery_index_ = -1;
         state_ = PLANNING;
 
         //we have a new goal so make sure the planner is awake
@@ -963,8 +959,6 @@ namespace move_base {
       if(recovery_trigger_ == OSCILLATION_R)
       {
         revertRecoveryChanges();
-        recovery_index_ = 0;
-        active_recovery_index_ = -1;
       }
     }
 
@@ -1318,8 +1312,6 @@ namespace move_base {
     // Reset statemachine
     revertRecoveryChanges();
     state_ = PLANNING;
-    recovery_index_ = 0;
-    active_recovery_index_ = -1;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
 
