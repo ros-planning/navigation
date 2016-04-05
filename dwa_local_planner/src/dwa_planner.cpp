@@ -49,7 +49,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dwa_local_planner {
-  void DWAPlanner::reconfigure(DWAPlannerConfig &config)
+  void DWAPlanner::reconfigure(DWAPlannerConfig &config, const std::vector<geometry_msgs::Point> &footprint_spec)
   {
 
     boost::mutex::scoped_lock l(configuration_mutex_);
@@ -82,6 +82,9 @@ namespace dwa_local_planner {
  
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
+
+    // Fixes issue 327: https://github.com/ros-planning/navigation/issues/327
+    obstacle_costs_.setFootprint(footprint_spec);
 
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
@@ -292,10 +295,7 @@ namespace dwa_local_planner {
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       tf::Stamped<tf::Pose> global_pose,
       tf::Stamped<tf::Pose> global_vel,
-      tf::Stamped<tf::Pose>& drive_velocities,
-      std::vector<geometry_msgs::Point> footprint_spec) {
-
-    obstacle_costs_.setFootprint(footprint_spec);
+      tf::Stamped<tf::Pose>& drive_velocities) {
 
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
