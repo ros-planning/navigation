@@ -1014,6 +1014,7 @@ namespace move_base {
 
       //if we're controlling, we'll attempt to find valid velocity commands
       case CONTROLLING:
+      {
         ROS_DEBUG_NAMED("move_base","In controlling state.");
 
         //check to see if we've reached our goal
@@ -1095,7 +1096,8 @@ namespace move_base {
         }
 
         break;
-
+      }
+      
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
