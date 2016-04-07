@@ -46,6 +46,13 @@
 #include "nav_core/nav_goal_manager.h"
 
 namespace nav_core {
+  namespace status
+  {
+    const int UNDEFINED = -1;
+    const int FAIL = 0;
+    const int OK = 1;
+    const int WAIT = 2;
+  }
   /**
    * @class BaseLocalPlanner
    * @brief Provides an interface for local planners used in navigation. All local planners written as plugins for the navigation stack must adhere to this interface.
@@ -61,6 +68,29 @@ namespace nav_core {
        * @return True if a valid velocity command was found, false otherwise
        */
       virtual bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel) = 0;
+
+      /**
+       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @param custom_status Extra field to better qualify the result of the method
+       * @return True if a valid velocity command was found, false otherwise
+       */
+      virtual bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel, int& custom_status)
+      {
+        // Generating a default 2 argument implementation for the plugins that don't provide it.
+        // The custom_status will mirror the return value of the single argument computeVelocityCommands.
+        const bool return_value = computeVelocityCommands(cmd_vel);
+        if (return_value)
+        {
+          custom_status = status::OK;
+        }
+        else
+        {
+          custom_status = status::FAIL;
+        }
+
+        return return_value;
+      }
 
       /**
        * @brief  Check if the goal pose has been achieved by the local planner
@@ -91,7 +121,7 @@ namespace nav_core {
       {
         goal_manager_ = goal_manager;
       }
-      
+
       /**
        * @brief  Virtual destructor for the interface
        */

@@ -833,8 +833,6 @@ namespace move_base {
 
           //we'll make sure that we reset our state for the next execution cycle
           revertRecoveryChanges();
-          recovery_index_ = 0;
-          active_recovery_index_ = -1;
           state_ = PLANNING;
 
           //we have a new goal so make sure the planner is awake
@@ -875,8 +873,6 @@ namespace move_base {
 
         //we want to go back to the planning state for the next execution cycle
         revertRecoveryChanges();
-        recovery_index_ = 0;
-        active_recovery_index_ = -1;
         state_ = PLANNING;
 
         //we have a new goal so make sure the planner is awake
@@ -963,8 +959,6 @@ namespace move_base {
       if(recovery_trigger_ == OSCILLATION_R)
       {
         revertRecoveryChanges();
-        recovery_index_ = 0;
-        active_recovery_index_ = -1;
       }
     }
 
@@ -1020,6 +1014,7 @@ namespace move_base {
 
       //if we're controlling, we'll attempt to find valid velocity commands
       case CONTROLLING:
+      {
         ROS_DEBUG_NAMED("move_base","In controlling state.");
 
         //check to see if we've reached our goal
@@ -1045,25 +1040,32 @@ namespace move_base {
           recovery_trigger_ = OSCILLATION_R;
         }
 
+        int custom_status = nav_core::status::UNDEFINED;
+        bool computeVelocityCommands_return = false;
+        
         {
-        boost::unique_lock<boost::recursive_mutex> cm_lock(clear_costmap_mutex_);
-         boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
+          // only holding lock while we compute velocity commands
+          boost::unique_lock<boost::recursive_mutex> cm_lock(clear_costmap_mutex_);
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
+          computeVelocityCommands_return = tc_->computeVelocityCommands(cmd_vel, custom_status);
+        }
 
-        // Cleanup and revert any recovery behaviors before generating any control commands or collision checks.
-        revertRecoveryChanges();
-
-        if(tc_->computeVelocityCommands(cmd_vel)){
+        if (computeVelocityCommands_return)
+        {
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
                            cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
-          /* Set the recovery counter to zero regardless of whether we're coming
-           * from CONTROLLING_R or have found a plan after a recovery and executed it.
-           * This allows for multiple recovery attempts if the robot moves (as opposed to one only).
-           */
-          recovery_index_ = 0;
-          active_recovery_index_ = -1;
+
+          // It is possible for computeVelocityCommands to return true when we are waiting for dynamics
+          // to timeout. In that case, custom_status == nav_core::status::WAIT. If we are in an OK state
+          // where meaningful cmd_vel is being published then we can force recovery changes to be reverted
+          // and reset the indices here in move_base as well as in the recovery_manager.
+          if (custom_status == nav_core::status::OK)
+          {
+            revertRecoveryChanges();
+          }
 
           // Reset the failed goal record (so that if we fail on that goal again in the future we show a log message)
           last_failed_goal_.pose.position.x = FLT_MAX;
@@ -1092,10 +1094,10 @@ namespace move_base {
             lock.unlock();
           }
         }
-        }
 
         break;
-
+      }
+      
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
@@ -1315,8 +1317,6 @@ namespace move_base {
     // Reset statemachine
     revertRecoveryChanges();
     state_ = PLANNING;
-    recovery_index_ = 0;
-    active_recovery_index_ = -1;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
 
@@ -1361,9 +1361,13 @@ namespace move_base {
 
   void MoveBase::revertRecoveryChanges()
   {
-    if(recovery_behavior_enabled_ && active_recovery_index_ >= 0)
+    if(recovery_behavior_enabled_ &&
+      active_recovery_index_ >= 0 &&
+      active_recovery_index_ < recovery_behaviors_.size())
     {
       recovery_behaviors_[active_recovery_index_]->revertChanges();
+      recovery_index_ = 0;
+      active_recovery_index_ = -1;
     }
   }
 
