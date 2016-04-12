@@ -776,6 +776,19 @@ namespace move_base {
 
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
+    // The Action Server can call the callback on a null ptr. Before doing this it will
+    // issue a ROS_ERROR with the text:
+    //    Attempting to accept the next goal when a new goal is not available
+    // For robustness, we need to check for that null ptr here and set the state to
+    // aborted rather than crashing.
+    // CORE-3682
+    if (!move_base_goal.get())
+    {
+      as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was a NULL pointer");
+      goal_manager_->setActiveGoal(false);  // setting no active goal
+      return;
+    }
+
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       goal_manager_->setActiveGoal(false);  // setting no active goal
@@ -820,8 +833,16 @@ namespace move_base {
       if(as_->isPreemptRequested()){
         if(as_->isNewGoalAvailable()){
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
-          move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
+          move_base_msgs::MoveBaseGoalConstPtr new_goal_ptr = as_->acceptNewGoal();
 
+          if (new_goal_ptr.get() == NULL)
+          {
+            as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was NULL");
+            goal_manager_->setActiveGoal(false);  // setting no active goal
+            return;
+          }
+
+          move_base_msgs::MoveBaseGoal new_goal = *new_goal_ptr;
           if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
             goal_manager_->setActiveGoal(false);  // setting no active goal
@@ -1042,7 +1063,7 @@ namespace move_base {
 
         int custom_status = nav_core::status::UNDEFINED;
         bool computeVelocityCommands_return = false;
-        
+
         {
           // only holding lock while we compute velocity commands
           boost::unique_lock<boost::recursive_mutex> cm_lock(clear_costmap_mutex_);
@@ -1097,7 +1118,7 @@ namespace move_base {
 
         break;
       }
-      
+
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
@@ -1363,7 +1384,7 @@ namespace move_base {
   {
     if(recovery_behavior_enabled_ &&
       active_recovery_index_ >= 0 &&
-      active_recovery_index_ < recovery_behaviors_.size())
+      active_recovery_index_ < static_cast<int>(recovery_behaviors_.size()))
     {
       recovery_behaviors_[active_recovery_index_]->revertChanges();
       recovery_index_ = 0;
@@ -1390,16 +1411,9 @@ namespace move_base {
 
   void MoveBase::asPreemptCallback()
   {
-    if (as_->isNewGoalAvailable())
-    {
-      // tell the goal manager about the new goal so that
-      // components can exit if their local goal has changed
-      move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
-      geometry_msgs::PoseStamped goal = goalToGlobalFrame(new_goal.target_pose);
-      goal_manager_->setCurrentGoal(nav_core::NavGoal(goal));
-    }
-
-    // allow cancels to be recognized by components
-    goal_manager_->setActiveGoal(as_->isActive());
+    // Setting no active goal, when the preempt filters though it will
+    // set a new active goal. For now we will allow behaviours to stop
+    // due to no active goal
+    goal_manager_->setActiveGoal(false);
   }
 };
