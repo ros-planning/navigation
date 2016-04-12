@@ -782,7 +782,7 @@ namespace move_base {
     // For robustness, we need to check for that null ptr here and set the state to
     // aborted rather than crashing.
     // CORE-3682
-    if (!move_base_goal.get())
+    if (move_base_goal.get() == NULL)
     {
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was a NULL pointer");
       goal_manager_->setActiveGoal(false);  // setting no active goal
