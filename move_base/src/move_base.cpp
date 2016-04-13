@@ -676,6 +676,7 @@ namespace move_base {
       {
         recovery_cleanup_requested_ = false;
         revertRecoveryChanges();
+        resetRecoveryIndices();
       }
 
       ros::Time start_time = ros::Time::now();
@@ -854,6 +855,7 @@ namespace move_base {
 
           //we'll make sure that we reset our state for the next execution cycle
           revertRecoveryChanges();
+          resetRecoveryIndices();
           state_ = PLANNING;
 
           //we have a new goal so make sure the planner is awake
@@ -894,6 +896,7 @@ namespace move_base {
 
         //we want to go back to the planning state for the next execution cycle
         revertRecoveryChanges();
+        resetRecoveryIndices();
         state_ = PLANNING;
 
         //we have a new goal so make sure the planner is awake
@@ -980,6 +983,7 @@ namespace move_base {
       if(recovery_trigger_ == OSCILLATION_R)
       {
         revertRecoveryChanges();
+        resetRecoveryIndices();
       }
     }
 
@@ -1071,6 +1075,13 @@ namespace move_base {
           computeVelocityCommands_return = tc_->computeVelocityCommands(cmd_vel, custom_status);
         }
 
+        // Revert the changes done by the recovery behaviour.
+        // It is important that we do this regardless of computeVelocityCommands_return or else behaviours such as
+        // disable obstacle layer could possibly never be reverted if we haven't moved.
+        // This could result in rapid replan and non-zero cmd_vel cycles which in turn cause the breaks
+        // to engage-disengage frequently.
+        revertRecoveryChanges();
+
         if (computeVelocityCommands_return)
         {
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
@@ -1081,11 +1092,11 @@ namespace move_base {
 
           // It is possible for computeVelocityCommands to return true when we are waiting for dynamics
           // to timeout. In that case, custom_status == nav_core::status::WAIT. If we are in an OK state
-          // where meaningful cmd_vel is being published then we can force recovery changes to be reverted
-          // and reset the indices here in move_base as well as in the recovery_manager.
+          // where meaningful cmd_vel is being published then we can reset the indices here in move_base
+          // as well as in the recovery_manager.
           if (custom_status == nav_core::status::OK)
           {
-            revertRecoveryChanges();
+            resetRecoveryIndices();
           }
 
           // Reset the failed goal record (so that if we fail on that goal again in the future we show a log message)
@@ -1337,6 +1348,7 @@ namespace move_base {
 
     // Reset statemachine
     revertRecoveryChanges();
+    resetRecoveryIndices();
     state_ = PLANNING;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
@@ -1387,9 +1399,13 @@ namespace move_base {
       active_recovery_index_ < static_cast<int>(recovery_behaviors_.size()))
     {
       recovery_behaviors_[active_recovery_index_]->revertChanges();
-      recovery_index_ = 0;
-      active_recovery_index_ = -1;
     }
+  }
+
+  void MoveBase::resetRecoveryIndices()
+  {
+    recovery_index_ = 0;
+    active_recovery_index_ = -1;
   }
 
   void MoveBase::asFeedbackTimerCallback(const ros::TimerEvent&)

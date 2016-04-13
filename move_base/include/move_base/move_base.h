@@ -219,6 +219,11 @@ namespace move_base {
       void revertRecoveryChanges();
 
       /**
+       * @brief Resets the move_base and RecoveryManager's indices.
+       */
+      void resetRecoveryIndices();
+
+      /**
        * @brief Timer callback used to trigger sending of action server feedback.
        * This is needed so we can get feedback messages during planning.
        */
