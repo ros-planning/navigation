@@ -1083,21 +1083,21 @@ namespace move_base {
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
 
-          // It is possible for computeVelocityCommands to return true when we are waiting for dynamics
-          // to timeout. In that case, custom_status == nav_core::status::WAIT. If we are in an OK state
-          // where meaningful cmd_vel is being published then we can force recovery changes to be reverted
-          // and reset the indices here in move_base as well as in the recovery_manager.
-          if (custom_status == nav_core::status::OK)
-          {
-            resetRecoveryIndices();
-          }
-
           // Revert the changes done by the recovery behaviour.
           // It is important that we do this regardless of the custom_status or else behaviours such as
           // disable obstacle layer could possibly never be reverted if we haven't moved.
           // This could result in rapid replan and non-zero cmd_vel cycles which in turn cause the breaks
           // to engage-disengage frequently.
           revertRecoveryChanges();
+
+          // It is possible for computeVelocityCommands to return true when we are waiting for dynamics
+          // to timeout. In that case, custom_status == nav_core::status::WAIT. If we are in an OK state
+          // where meaningful cmd_vel is being published then we can reset the indices here in move_base
+          // as well as in the recovery_manager.
+          if (custom_status == nav_core::status::OK)
+          {
+            resetRecoveryIndices();
+          }
 
           // Reset the failed goal record (so that if we fail on that goal again in the future we show a log message)
           last_failed_goal_.pose.position.x = FLT_MAX;
