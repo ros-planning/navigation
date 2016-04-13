@@ -155,9 +155,12 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   initialized_ = true;
   stopped_ = false;
 
-  // Create a time r to check if the robot is moving
+  // Create a timer to check if the robot is moving
   robot_stopped_ = false;
-  timer_ = private_nh.createTimer(ros::Duration(.1), &Costmap2DROS::movementCB, this);
+  double pose_update_frequency;
+  private_nh.param("pose_update_frequency", pose_update_frequency, 10.0);
+  timer_ = private_nh.createTimer(ros::Duration(1 / pose_update_frequency),
+                                  &Costmap2DROS::movementCB, this);
 
   dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/" + name));
   dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1,
@@ -352,7 +355,7 @@ void Costmap2DROS::movementCB(const ros::TimerEvent &event)
 
   if (!getRobotPose(new_pose))
   {
-    ROS_WARN_THROTTLE(1.0, "Could not get robot pose, cancelling reconfiguration");
+    ROS_WARN_THROTTLE(1.0, "Could not get robot pose, cancelling pose reconfiguration");
     robot_stopped_ = false;
   }
   // make sure that the robot is not moving
