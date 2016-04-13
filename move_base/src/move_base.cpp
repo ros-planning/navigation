@@ -676,6 +676,7 @@ namespace move_base {
       {
         recovery_cleanup_requested_ = false;
         revertRecoveryChanges();
+        resetRecoveryIndices();
       }
 
       ros::Time start_time = ros::Time::now();
@@ -854,6 +855,7 @@ namespace move_base {
 
           //we'll make sure that we reset our state for the next execution cycle
           revertRecoveryChanges();
+          resetRecoveryIndices();
           state_ = PLANNING;
 
           //we have a new goal so make sure the planner is awake
@@ -894,6 +896,7 @@ namespace move_base {
 
         //we want to go back to the planning state for the next execution cycle
         revertRecoveryChanges();
+        resetRecoveryIndices();
         state_ = PLANNING;
 
         //we have a new goal so make sure the planner is awake
@@ -980,6 +983,7 @@ namespace move_base {
       if(recovery_trigger_ == OSCILLATION_R)
       {
         revertRecoveryChanges();
+        resetRecoveryIndices();
       }
     }
 
@@ -1085,8 +1089,15 @@ namespace move_base {
           // and reset the indices here in move_base as well as in the recovery_manager.
           if (custom_status == nav_core::status::OK)
           {
-            revertRecoveryChanges();
+            resetRecoveryIndices();
           }
+
+          // Revert the changes done by the recovery behaviour.
+          // It is important that we do this regardless of the custom_status or else behaviours such as
+          // disable obstacle layer could possibly never be reverted if we haven't moved.
+          // This could result in rapid replan and non-zero cmd_vel cycles which in turn cause the breaks
+          // to engage-disengage frequently.
+          revertRecoveryChanges();
 
           // Reset the failed goal record (so that if we fail on that goal again in the future we show a log message)
           last_failed_goal_.pose.position.x = FLT_MAX;
@@ -1337,6 +1348,7 @@ namespace move_base {
 
     // Reset statemachine
     revertRecoveryChanges();
+    resetRecoveryIndices();
     state_ = PLANNING;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
@@ -1387,9 +1399,13 @@ namespace move_base {
       active_recovery_index_ < static_cast<int>(recovery_behaviors_.size()))
     {
       recovery_behaviors_[active_recovery_index_]->revertChanges();
-      recovery_index_ = 0;
-      active_recovery_index_ = -1;
     }
+  }
+
+  void MoveBase::resetRecoveryIndices()
+  {
+    recovery_index_ = 0;
+    active_recovery_index_ = -1;
   }
 
   void MoveBase::asFeedbackTimerCallback(const ros::TimerEvent&)
