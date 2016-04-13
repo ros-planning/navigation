@@ -1075,6 +1075,13 @@ namespace move_base {
           computeVelocityCommands_return = tc_->computeVelocityCommands(cmd_vel, custom_status);
         }
 
+        // Revert the changes done by the recovery behaviour.
+        // It is important that we do this regardless of computeVelocityCommands_return or else behaviours such as
+        // disable obstacle layer could possibly never be reverted if we haven't moved.
+        // This could result in rapid replan and non-zero cmd_vel cycles which in turn cause the breaks
+        // to engage-disengage frequently.
+        revertRecoveryChanges();
+
         if (computeVelocityCommands_return)
         {
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
@@ -1082,13 +1089,6 @@ namespace move_base {
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
-
-          // Revert the changes done by the recovery behaviour.
-          // It is important that we do this regardless of the custom_status or else behaviours such as
-          // disable obstacle layer could possibly never be reverted if we haven't moved.
-          // This could result in rapid replan and non-zero cmd_vel cycles which in turn cause the breaks
-          // to engage-disengage frequently.
-          revertRecoveryChanges();
 
           // It is possible for computeVelocityCommands to return true when we are waiting for dynamics
           // to timeout. In that case, custom_status == nav_core::status::WAIT. If we are in an OK state
