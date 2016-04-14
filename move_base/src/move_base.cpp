@@ -744,7 +744,7 @@ namespace move_base {
 
         //check if we've tried to make a plan for over our time limit
         lock.lock();
-        if(ros::Time::now() > attempt_end && runPlanner_){
+        if(ros::Time::now() >= attempt_end && runPlanner_){
           //we'll move into our obstacle clearing mode
           /* We're about to change the state to CLEARING (recovery).
            * Since performing the recovery process is slower than this
