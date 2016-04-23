@@ -11,12 +11,13 @@ link_directories(${BFL_LIBRARY_DIRS})
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            tf
             nav_msgs
             std_msgs
             geometry_msgs
             sensor_msgs
             message_generation
+            tf2_geometry_msgs
+            tf2_ros
         )
 
 find_package(Boost REQUIRED COMPONENTS thread)

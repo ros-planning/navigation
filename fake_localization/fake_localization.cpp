@@ -81,11 +81,14 @@
 
 #include "ros/console.h"
 
-#include "tf/transform_broadcaster.h"
-#include "tf/transform_listener.h"
-#include "tf/message_filter.h"
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/convert.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/message_filter.h>
 #include "message_filters/subscriber.h"
-
 
 class FakeOdomNode
 {
@@ -94,8 +97,9 @@ class FakeOdomNode
     {
       m_posePub = m_nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose",1,true);
       m_particlecloudPub = m_nh.advertise<geometry_msgs::PoseArray>("particlecloud",1,true);
-      m_tfServer = new tf::TransformBroadcaster();	
-      m_tfListener = new tf::TransformListener();
+      m_tfServer = new tf2_ros::TransformBroadcaster();
+      m_tfBuffer = new tf2_ros::Buffer();
+      m_tfListener = new tf2_ros::TransformListener(*m_tfBuffer);
 
       m_base_pos_received = false;
 
@@ -112,16 +116,18 @@ class FakeOdomNode
       m_particleCloud.poses.resize(1);
       ros::NodeHandle nh;
 
-      m_offsetTf = tf::Transform(tf::createQuaternionFromRPY(0, 0, -delta_yaw_ ), tf::Point(-delta_x_, -delta_y_, 0.0));
+      tf2::Quaternion q;
+      q.setEuler(-delta_yaw_, 0, 0);
+      m_offsetTf = tf2::Transform(q, tf2::Vector3(-delta_x_, -delta_y_, 0.0));
 
       stuff_sub_ = nh.subscribe("base_pose_ground_truth", 100, &FakeOdomNode::stuffFilter, this);
       filter_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh, "", 100);
-      filter_ = new tf::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfListener, base_frame_id_, 100);
+      filter_ = new tf2_ros::MessageFilter<nav_msgs::Odometry>(*filter_sub_, *m_tfBuffer, base_frame_id_, 100, nh);
       filter_->registerCallback(boost::bind(&FakeOdomNode::update, this, _1));
 
       // subscription to "2D Pose Estimate" from RViz:
       m_initPoseSub = new message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>(nh, "initialpose", 1);
-      m_initPoseFilter = new tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*m_initPoseSub, *m_tfListener, global_frame_id_, 1);
+      m_initPoseFilter = new tf2_ros::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>(*m_initPoseSub, *m_tfBuffer, global_frame_id_, 1, nh);
       m_initPoseFilter->registerCallback(boost::bind(&FakeOdomNode::initPoseReceived, this, _1));
     }
 
@@ -129,6 +135,10 @@ class FakeOdomNode
     {
       if (m_tfServer)
         delete m_tfServer; 
+      if (m_tfListener)
+        delete m_tfListener;
+      if (m_tfBuffer)
+        delete m_tfBuffer;
     }
 
 
@@ -137,10 +147,11 @@ class FakeOdomNode
     ros::Publisher m_posePub;
     ros::Publisher m_particlecloudPub;
     message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseSub;
-    tf::TransformBroadcaster       *m_tfServer;
-    tf::TransformListener          *m_tfListener;
-    tf::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseFilter;
-    tf::MessageFilter<nav_msgs::Odometry>* filter_;
+    tf2_ros::TransformBroadcaster       *m_tfServer;
+    tf2_ros::TransformListener          *m_tfListener;
+    tf2_ros::Buffer                     *m_tfBuffer;
+    tf2_ros::MessageFilter<geometry_msgs::PoseWithCovarianceStamped>* m_initPoseFilter;
+    tf2_ros::MessageFilter<nav_msgs::Odometry>* filter_;
     ros::Subscriber stuff_sub_; 
     message_filters::Subscriber<nav_msgs::Odometry>* filter_sub_;
 
@@ -151,7 +162,7 @@ class FakeOdomNode
     nav_msgs::Odometry  m_basePosMsg;
     geometry_msgs::PoseArray      m_particleCloud;
     geometry_msgs::PoseWithCovarianceStamped      m_currentPos;
-    tf::Transform m_offsetTf;
+    tf2::Transform m_offsetTf;
 
     //parameter for what odom to use
     std::string odom_frame_id_;
@@ -170,37 +181,52 @@ class FakeOdomNode
     }
 
     void update(const nav_msgs::OdometryConstPtr& message){
-      tf::Pose txi;
-      tf::poseMsgToTF(message->pose.pose, txi);
+      tf2::Transform txi;
+      tf2::convert(message->pose.pose, txi);
       txi = m_offsetTf * txi;
 
-      tf::Stamped<tf::Pose> odom_to_map;
+      geometry_msgs::TransformStamped txi_inv;
+      txi_inv.header.frame_id = base_frame_id_;
+      txi_inv.header.stamp = message->header.stamp;
+      tf2::convert(txi.inverse(), txi_inv.transform);
+
+      geometry_msgs::TransformStamped odom_to_map;
       try
       {
-        m_tfListener->transformPose(odom_frame_id_, tf::Stamped<tf::Pose>(txi.inverse(), message->header.stamp, base_frame_id_), odom_to_map);
+        m_tfBuffer->transform(txi_inv, odom_to_map, odom_frame_id_);
       }
-      catch(tf::TransformException &e)
+      catch(tf2::TransformException &e)
       {
         ROS_ERROR("Failed to transform to %s from %s: %s\n", odom_frame_id_.c_str(), base_frame_id_.c_str(), e.what());
         return;
       }
-      m_tfServer->sendTransform(tf::StampedTransform(odom_to_map.inverse(),
-                                                     message->header.stamp + ros::Duration(transform_tolerance_),
-                                                     global_frame_id_, message->header.frame_id));
 
-      tf::Pose current;
-      tf::poseMsgToTF(message->pose.pose, current);
+      geometry_msgs::TransformStamped trans;
+      trans.header.stamp = message->header.stamp + ros::Duration(transform_tolerance_);
+      trans.header.frame_id = global_frame_id_;
+      trans.child_frame_id = message->header.frame_id;
+      tf2::Transform odom_to_map_tf2;
+      tf2::convert(odom_to_map.transform, odom_to_map_tf2);
+      tf2::Transform odom_to_map_inv = odom_to_map_tf2.inverse();
+      tf2::convert(*static_cast<tf2::Transform*>(&odom_to_map_inv), trans.transform);
+      m_tfServer->sendTransform(trans);
+
+      tf2::Transform current;
+      tf2::convert(message->pose.pose, current);
 
       //also apply the offset to the pose
       current = m_offsetTf * current;
 
-      geometry_msgs::Pose current_msg;
-      tf::poseTFToMsg(current, current_msg);
+      geometry_msgs::Transform current_msg;
+      tf2::convert(current, current_msg);
 
       // Publish localized pose
       m_currentPos.header = message->header;
       m_currentPos.header.frame_id = global_frame_id_;
-      m_currentPos.pose.pose = current_msg;
+      tf2::convert(current_msg.rotation, m_currentPos.pose.pose.orientation);
+      m_currentPos.pose.pose.position.x = current_msg.translation.x;
+      m_currentPos.pose.pose.position.y = current_msg.translation.y;
+      m_currentPos.pose.pose.position.z = current_msg.translation.z;
       m_posePub.publish(m_currentPos);
 
       // The particle cloud is the current position. Quite convenient.
@@ -210,24 +236,26 @@ class FakeOdomNode
     }
 
     void initPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg){
-      tf::Pose pose;
-      tf::poseMsgToTF(msg->pose.pose, pose);
+      tf2::Transform pose;
+      tf2::convert(msg->pose.pose, pose);
 
       if (msg->header.frame_id != global_frame_id_){
         ROS_WARN("Frame ID of \"initialpose\" (%s) is different from the global frame %s", msg->header.frame_id.c_str(), global_frame_id_.c_str());
       }
 
       // set offset so that current pose is set to "initialpose"    
-      tf::StampedTransform baseInMap;
+      geometry_msgs::TransformStamped baseInMap;
       try{
 	// just get the latest
-        m_tfListener->lookupTransform(base_frame_id_, global_frame_id_, ros::Time(0), baseInMap);
-      } catch(tf::TransformException){
+        baseInMap = m_tfBuffer->lookupTransform(base_frame_id_, global_frame_id_, msg->header.stamp);
+      } catch(tf2::TransformException){
         ROS_WARN("Failed to lookup transform!");
         return;
       }
 
-      tf::Transform delta = pose * baseInMap;
+      tf2::Transform baseInMapTf2;
+      tf2::convert(baseInMap.transform, baseInMapTf2);
+      tf2::Transform delta = pose * baseInMapTf2;
       m_offsetTf = delta * m_offsetTf;
 
     }

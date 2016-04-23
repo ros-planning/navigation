@@ -12,7 +12,7 @@ find_package(catkin REQUIRED
             pluginlib
             pcl_conversions
             roscpp
-            tf
+            tf2_ros
         )
 
 find_package(Eigen REQUIRED)

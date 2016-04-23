@@ -32,8 +32,9 @@
 #include "ros/ros.h"
 #include "ros/console.h"
 #include "nav_msgs/GetMap.h"
-#include "tf/LinearMath/Matrix3x3.h"
 #include "geometry_msgs/Quaternion.h"
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/utils.h>
 
 using namespace std;
  
@@ -102,9 +103,7 @@ free_thresh: 0.196
        */
 
       geometry_msgs::Quaternion orientation = map->info.origin.orientation;
-      tf::Matrix3x3 mat(tf::Quaternion(orientation.x, orientation.y, orientation.z, orientation.w));
-      double yaw, pitch, roll;
-      mat.getEulerYPR(yaw, pitch, roll);
+      double yaw = tf2::getYaw(tf2::Quaternion(orientation.x, orientation.y, orientation.z, orientation.w));
 
       fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n",
               mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw);

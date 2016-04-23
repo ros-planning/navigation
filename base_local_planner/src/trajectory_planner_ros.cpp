@@ -50,7 +50,7 @@
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
 
-
+#include <tf2/utils.h>
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
@@ -74,7 +74,7 @@ namespace base_local_planner {
   TrajectoryPlannerROS::TrajectoryPlannerROS() :
       world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), setup_(false), initialized_(false), odom_helper_("odom") {}
 
-  TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) :
+  TrajectoryPlannerROS::TrajectoryPlannerROS(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros) :
       world_model_(NULL), tc_(NULL), costmap_ros_(NULL), tf_(NULL), setup_(false), initialized_(false), odom_helper_("odom") {
 
       //initialize the planner
@@ -83,7 +83,7 @@ namespace base_local_planner {
 
   void TrajectoryPlannerROS::initialize(
       std::string name,
-      tf::TransformListener* tf,
+      tf2_ros::Buffer* tf,
       costmap_2d::Costmap2DROS* costmap_ros){
     if (! isInitialized()) {
 
@@ -280,19 +280,19 @@ namespace base_local_planner {
       delete world_model_;
   }
 
-  bool TrajectoryPlannerROS::stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel){
+  bool TrajectoryPlannerROS::stopWithAccLimits(const geometry_msgs::PoseStamped& global_pose, const geometry_msgs::PoseStamped& robot_vel, geometry_msgs::Twist& cmd_vel){
     //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible
     //but we'll use a tenth of a second to be consistent with the implementation of the local planner.
-    double vx = sign(robot_vel.getOrigin().x()) * std::max(0.0, (fabs(robot_vel.getOrigin().x()) - acc_lim_x_ * sim_period_));
-    double vy = sign(robot_vel.getOrigin().y()) * std::max(0.0, (fabs(robot_vel.getOrigin().y()) - acc_lim_y_ * sim_period_));
+    double vx = sign(robot_vel.pose.position.x) * std::max(0.0, (fabs(robot_vel.pose.position.x) - acc_lim_x_ * sim_period_));
+    double vy = sign(robot_vel.pose.position.y) * std::max(0.0, (fabs(robot_vel.pose.position.y) - acc_lim_y_ * sim_period_));
 
-    double vel_yaw = tf::getYaw(robot_vel.getRotation());
+    double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
     double vth = sign(vel_yaw) * std::max(0.0, (fabs(vel_yaw) - acc_lim_theta_ * sim_period_));
 
     //we do want to check whether or not the command is valid
-    double yaw = tf::getYaw(global_pose.getRotation());
-    bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw, 
-        robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), vel_yaw, vx, vy, vth);
+    double yaw = tf2::getYaw(global_pose.pose.orientation);
+    bool valid_cmd = tc_->checkTrajectory(global_pose.pose.position.x, global_pose.pose.position.y, yaw,
+        robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw, vx, vy, vth);
 
     //if we have a valid command, we'll pass it on, otherwise we'll command all zeros
     if(valid_cmd){
@@ -309,9 +309,9 @@ namespace base_local_planner {
     return false;
   }
 
-  bool TrajectoryPlannerROS::rotateToGoal(const tf::Stamped<tf::Pose>& global_pose, const tf::Stamped<tf::Pose>& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel){
-    double yaw = tf::getYaw(global_pose.getRotation());
-    double vel_yaw = tf::getYaw(robot_vel.getRotation());
+  bool TrajectoryPlannerROS::rotateToGoal(const geometry_msgs::PoseStamped& global_pose, const geometry_msgs::PoseStamped& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel){
+    double yaw = tf2::getYaw(global_pose.pose.orientation);
+    double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
     cmd_vel.linear.x = 0;
     cmd_vel.linear.y = 0;
     double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
@@ -337,8 +337,8 @@ namespace base_local_planner {
       : std::max( min_vel_th_, std::min( -1.0 * min_in_place_vel_th_, v_theta_samp ));
 
     //we still want to lay down the footprint of the robot and check if the action is legal
-    bool valid_cmd = tc_->checkTrajectory(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw, 
-        robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), vel_yaw, 0.0, 0.0, v_theta_samp);
+    bool valid_cmd = tc_->checkTrajectory(global_pose.pose.position.x, global_pose.pose.position.y, yaw,
+        robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw, 0.0, 0.0, v_theta_samp);
 
     ROS_DEBUG("Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
 
@@ -376,7 +376,7 @@ namespace base_local_planner {
     }
 
     std::vector<geometry_msgs::PoseStamped> local_plan;
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     if (!costmap_ros_->getRobotPose(global_pose)) {
       return false;
     }
@@ -392,10 +392,10 @@ namespace base_local_planner {
     if(prune_plan_)
       prunePlan(global_pose, transformed_plan, global_plan_);
 
-    tf::Stamped<tf::Pose> drive_cmds;
-    drive_cmds.frame_id_ = robot_base_frame_;
+    geometry_msgs::PoseStamped drive_cmds;
+    drive_cmds.header.frame_id = robot_base_frame_;
 
-    tf::Stamped<tf::Pose> robot_vel;
+    geometry_msgs::PoseStamped robot_vel;
     odom_helper_.getRobotVel(robot_vel);
 
     /* For timing uncomment
@@ -408,13 +408,12 @@ namespace base_local_planner {
     if(transformed_plan.empty())
       return false;
 
-    tf::Stamped<tf::Pose> goal_point;
-    tf::poseStampedMsgToTF(transformed_plan.back(), goal_point);
+    const geometry_msgs::PoseStamped& goal_point = transformed_plan.back();
     //we assume the global goal is the last point in the global plan
-    double goal_x = goal_point.getOrigin().getX();
-    double goal_y = goal_point.getOrigin().getY();
+    double goal_x = goal_point.pose.position.x;
+    double goal_y = goal_point.pose.position.y;
 
-    double yaw = tf::getYaw(goal_point.getRotation());
+    double yaw = tf2::getYaw(goal_point.pose.orientation);
 
     double goal_th = yaw;
 
@@ -487,9 +486,9 @@ namespace base_local_planner {
     */
 
     //pass along drive commands
-    cmd_vel.linear.x = drive_cmds.getOrigin().getX();
-    cmd_vel.linear.y = drive_cmds.getOrigin().getY();
-    cmd_vel.angular.z = tf::getYaw(drive_cmds.getRotation());
+    cmd_vel.linear.x = drive_cmds.pose.position.x;
+    cmd_vel.linear.y = drive_cmds.pose.position.y;
+    cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
     //if we cannot move... tell someone
     if (path.cost_ < 0) {
@@ -508,15 +507,16 @@ namespace base_local_planner {
     for (unsigned int i = 0; i < path.getPointsSize(); ++i) {
       double p_x, p_y, p_th;
       path.getPoint(i, p_x, p_y, p_th);
-      tf::Stamped<tf::Pose> p =
-          tf::Stamped<tf::Pose>(tf::Pose(
-              tf::createQuaternionFromYaw(p_th),
-              tf::Point(p_x, p_y, 0.0)),
-              ros::Time::now(),
-              global_frame_);
-      geometry_msgs::PoseStamped pose;
-      tf::poseStampedTFToMsg(p, pose);
-      local_plan.push_back(pose);
+      geometry_msgs::PoseStamped p;
+      p.header.frame_id = global_frame_;
+      p.header.stamp = ros::Time::now();
+      p.pose.position.x = p_x;
+      p.pose.position.y = p_y;
+      p.pose.position.z = 0.0;
+      tf2::Quaternion q;
+      q.setEuler(p_th, 0, 0);
+      tf2::convert(q, p.pose.orientation);
+      local_plan.push_back(p);
     }
 
     //publish information to the visualizer
@@ -526,15 +526,13 @@ namespace base_local_planner {
   }
 
   bool TrajectoryPlannerROS::checkTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map){
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     if(costmap_ros_->getRobotPose(global_pose)){
       if(update_map){
         //we need to give the planne some sort of global plan, since we're only checking for legality
         //we'll just give the robots current position
         std::vector<geometry_msgs::PoseStamped> plan;
-        geometry_msgs::PoseStamped pose_msg;
-        tf::poseStampedTFToMsg(global_pose, pose_msg);
-        plan.push_back(pose_msg);
+        plan.push_back(global_pose);
         tc_->updatePlan(plan, true);
       }
 
@@ -545,7 +543,7 @@ namespace base_local_planner {
         base_odom = base_odom_;
       }
 
-      return tc_->checkTrajectory(global_pose.getOrigin().x(), global_pose.getOrigin().y(), tf::getYaw(global_pose.getRotation()),
+      return tc_->checkTrajectory(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation),
           base_odom.twist.twist.linear.x,
           base_odom.twist.twist.linear.y,
           base_odom.twist.twist.angular.z, vx_samp, vy_samp, vtheta_samp);
@@ -558,15 +556,13 @@ namespace base_local_planner {
 
   double TrajectoryPlannerROS::scoreTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map){
     // Copy of checkTrajectory that returns a score instead of True / False
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     if(costmap_ros_->getRobotPose(global_pose)){
       if(update_map){
         //we need to give the planne some sort of global plan, since we're only checking for legality
         //we'll just give the robots current position
         std::vector<geometry_msgs::PoseStamped> plan;
-        geometry_msgs::PoseStamped pose_msg;
-        tf::poseStampedTFToMsg(global_pose, pose_msg);
-        plan.push_back(pose_msg);
+        plan.push_back(global_pose);
         tc_->updatePlan(plan, true);
       }
 
@@ -577,7 +573,7 @@ namespace base_local_planner {
         base_odom = base_odom_;
       }
 
-      return tc_->scoreTrajectory(global_pose.getOrigin().x(), global_pose.getOrigin().y(), tf::getYaw(global_pose.getRotation()),
+      return tc_->scoreTrajectory(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation),
           base_odom.twist.twist.linear.x,
           base_odom.twist.twist.linear.y,
           base_odom.twist.twist.angular.z, vx_samp, vy_samp, vtheta_samp);

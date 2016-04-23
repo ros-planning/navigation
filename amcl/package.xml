@@ -28,13 +28,15 @@
     <build_depend>roscpp</build_depend>
     <build_depend>rostest</build_depend>
     <build_depend>std_srvs</build_depend>
-    <build_depend>tf</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
+    <build_depend>tf2_ros</build_depend>
 
     <run_depend>roscpp</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
-    <run_depend>tf</run_depend>
     <run_depend>nav_msgs</run_depend>
+    <run_depend>tf2_ros</run_depend>
 
     <test_depend>map_server</test_depend>
+    <test_depend>python_orocos_kdl</test_depend>
     <test_depend>rosbag</test_depend>
 </package>
