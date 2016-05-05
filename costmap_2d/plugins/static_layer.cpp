@@ -105,6 +105,10 @@ void StaticLayer::onInitialize()
 
     }
   }
+  else
+  {
+    has_updated_data_ = true;
+  }
 
   if (dsrv_)
   {
