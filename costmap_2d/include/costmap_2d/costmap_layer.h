@@ -48,8 +48,8 @@ class CostmapLayer : public Layer, public Costmap2D
 {
 public:
   CostmapLayer() : has_extra_bounds_(false),
-    extra_min_x_(1e6), extra_min_y_(1e6),
-    extra_max_x_(-1e6), extra_max_y_(-1e6) {}
+    extra_min_x_(1e6), extra_max_x_(-1e6),
+    extra_min_y_(1e6), extra_max_y_(-1e6) {}
 
   bool isDiscretized()
   {
