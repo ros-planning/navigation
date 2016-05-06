@@ -92,8 +92,12 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   minx_ = miny_ = 1e30;
   maxx_ = maxy_ = -1e30;
 
+  // Lock for the remainder of this function, some plugins (e.g. VoxelLayer)
+  // implement thread unsafe updateBounds() functions.
+  boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
+
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
-      ++plugin)
+       ++plugin)
   {
     (*plugin)->updateBounds(robot_x, robot_y, robot_yaw, &minx_, &miny_, &maxx_, &maxy_);
   }
@@ -112,15 +116,11 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   if (xn < x0 || yn < y0)
     return;
 
+  costmap_.resetMap(x0, y0, xn, yn);
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+       ++plugin)
   {
-    // Clear and update costmap under a single lock
-    boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
-    costmap_.resetMap(x0, y0, xn, yn);
-    for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
-        ++plugin)
-    {
-      (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
-    }
+    (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
   }
 
   bx0_ = x0;
