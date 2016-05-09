@@ -14,15 +14,19 @@ find_package(catkin REQUIRED
             costmap_2d
             pluginlib
             angles
-        )
+)
 
 find_package(Boost REQUIRED
     COMPONENTS
         thread
-        )
+)
 
 find_package(Eigen REQUIRED)
 find_package(PCL REQUIRED)
+if(NOT "${PCL_LIBRARIES}" STREQUAL "")
+  list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
+endif()
+
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}

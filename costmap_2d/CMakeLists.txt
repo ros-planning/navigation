@@ -22,6 +22,10 @@ find_package(catkin REQUIRED
         )
 
 find_package(PCL REQUIRED)
+if(NOT "${PCL_LIBRARIES}" STREQUAL "")
+    list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
+endif()
+
 find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
