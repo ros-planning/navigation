@@ -2,6 +2,13 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Corrections to alpha channel detection and usage.
+* Removing some trailing whitespace.
+* Use enum to control map interpretation
+* Contributors: Aaron Hoy, David Lu
+
 1.12.7 (2016-01-05)
 -------------------
 

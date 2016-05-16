@@ -2,6 +2,12 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Allow AMCL to run from bag file to allow very fast testing.
+* Fixes interpretation of a delayed initialpose message
+* Contributors: Derek King, Michael Ferguson, Stephan Wirth
+
 1.12.7 (2016-01-05)
 -------------------
 

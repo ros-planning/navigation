@@ -2,6 +2,16 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix resource locations to fix tests
+* Fix bug with resetting static layer
+* Made update map threadsafe
+* Reordered initializer list to match order of declarations.
+* Parametrize movementCB timer's period
+* No more ghosts in the inflation layer
+* Contributors: Alex Henning, Daniel Stonier, Michael Ferguson, Spyros Maniatopoulos
+
 1.12.7 (2016-01-05)
 -------------------
 * Fix inflation layer locking
