@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.8 (2016-05-16)
+-------------------
 * fix resource locations to fix tests
 * Fix bug with resetting static layer
 * Made update map threadsafe

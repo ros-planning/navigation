@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.8 (2016-05-16)
+-------------------
 * Corrections to alpha channel detection and usage.
 * Removing some trailing whitespace.
 * Use enum to control map interpretation
