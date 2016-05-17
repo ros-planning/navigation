@@ -67,8 +67,8 @@ namespace dwa_local_planner {
   * Default:  normal operating conditions
   * Arrive:   the robot is close (with switch dist) of its goal
   * Align:    there is a large orientation error between robot and path */
-  enum LocalPlannerState {Default, Arrive, Align, None};
-  static const char * StateName[] = { "Default", "Arrive", "Align" };
+  enum LocalPlannerState {Default, Arrive, Align, NotMoving, None};
+  static const char * StateName[] = { "Default", "Arrive", "Align", "NotMoving" };
 
   /**
    * @class DWAPlanner
@@ -112,13 +112,18 @@ namespace dwa_local_planner {
       inline double getSimPeriod() { return sim_period_; }
       inline double getSimTime() { return sim_time_; }
 
+      /**
+       * @brief Sets the stamp of the last motion to the current time. This is used to determine whether the robot is and should be moving.
+       */
+      void resetMotionStamp() { stamp_last_motion_ = ros::Time::now(); }
+
     private:
 
       //! Pointer to planner util
       base_local_planner::LocalPlannerUtil *planner_util_;
 
       //! Switches which determine the state of the DWA Planner
-      LocalPlannerState determineState(double yaw_error, double plan_distance, double goal_distance);
+      LocalPlannerState determineState(tf::Stamped<tf::Pose> robot_pose, double yaw_error, double plan_distance, double goal_distance);
       double switch_yaw_error_;
       double switch_plan_distance_;
       double switch_goal_distance_;
@@ -165,6 +170,17 @@ namespace dwa_local_planner {
 
       //! Visualization
       Visualization vis_;
+
+      /**
+       * @brief Checks if the robot is moving. Although somewhat arbitrary:
+       * if it hasn't moved at least 10 cm in the past 10 seconds,
+       * it is assumed the robot is not moving.
+       * @param robot_pose: current pose of the robot
+       */
+      bool isMoving(tf::Stamped<tf::Pose>& robot_pose);
+
+      //! ROS time where the robot was last moving
+      ros::Time stamp_last_motion_;
   };
 }
 #endif

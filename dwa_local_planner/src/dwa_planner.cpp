@@ -179,9 +179,12 @@ namespace dwa_local_planner {
         std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
         generator_list.push_back(&generator_);
         scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
+
+        // Time stamp
+        stamp_last_motion_ = ros::Time::now();
     }
 
-    LocalPlannerState DWAPlanner::determineState(double yaw_error, double plan_distance, double goal_distance)
+    LocalPlannerState DWAPlanner::determineState(tf::Stamped<tf::Pose> robot_pose, double yaw_error, double plan_distance, double goal_distance)
     {
         static LocalPlannerState prev_state = None;
         LocalPlannerState state = Default;
@@ -189,7 +192,9 @@ namespace dwa_local_planner {
         // todo: optional path_distance state
 
         // ToDo: can we make this more generic???
-        if (goal_distance < switch_goal_distance_)
+        if (!isMoving(robot_pose)) // ToDo: prevent switching behavior???
+            state = NotMoving;
+        else if (goal_distance < switch_goal_distance_)
             state = Arrive;
         else if (fabs(yaw_error) > switch_yaw_error_ || ( prev_state == Align && fabs(yaw_error) > (switch_yaw_error_/2) ) )
             state = Align;
@@ -214,11 +219,24 @@ namespace dwa_local_planner {
         double goal_distance = base_local_planner::getGoalPositionDistance(robot_pose, local_plan.back().pose.position.x, local_plan.back().pose.position.y);
 
         /// Determine state of the controller
-        LocalPlannerState state = determineState(yaw_error, plan_distance, goal_distance);
+        LocalPlannerState state = determineState(robot_pose, yaw_error, plan_distance, goal_distance);
 
         /// Update the cost functions depending on the state we are in
         switch (state)
         {
+        case NotMoving:
+            // Almost similar to Align (see below). Difference in the desired orientation
+            alignment_costs_.setScale(align_align_scale_);
+            plan_costs_.setScale(align_plan_scale_);
+            goal_costs_.setScale(align_goal_scale_);
+
+            alignment_costs_.setDesiredOrientation(tf::getYaw(local_plan.back().pose.orientation));
+
+            cmd_vel_costs_.setCoefficients(align_cmd_px_, align_cmd_nx_, align_cmd_py_, align_cmd_ny_, align_cmd_pth_, align_cmd_nth_);
+
+            obstacle_costs_.setScale(align_obstacle_scale_);
+
+            break;
         case Align:
             alignment_costs_.setScale(align_align_scale_);
             plan_costs_.setScale(align_plan_scale_);
@@ -299,5 +317,58 @@ namespace dwa_local_planner {
         vis_.publishTrajectoryCloud(all_explored);
 
         return result_traj;
+    }
+
+    bool DWAPlanner::isMoving(tf::Stamped<tf::Pose>& robot_pose)
+    {
+        static double x_saved = 0.0;
+        static double y_saved = 0.0;
+        static bool prev_is_moving = true;
+        static ros::Time stamp_not_moving = ros::Time::now();  // Time stamp to indicate when the robot went to 'not moving'
+
+        double x = robot_pose.getOrigin().getX();
+        double y = robot_pose.getOrigin().getY();
+
+        double dist_sq = (x_saved - x) * (x_saved - x) + (y_saved - y) * (y_saved - y);
+//        ROS_ERROR_THROTTLE(1.0, "Dist sq: %2f, time: %2f", dist_sq, (ros::Time::now() - stamp_last_motion_).toSec());
+
+        double time_since_move = (ros::Time::now() - stamp_last_motion_).toSec();
+        double time_since_stop = (ros::Time::now() - stamp_not_moving).toSec();
+
+        bool is_moving = false;
+
+        // Check whether we're actually moving
+        if (dist_sq > 0.01)
+        {
+            stamp_last_motion_ = ros::Time::now();
+            x_saved = x;
+            y_saved = y;
+            is_moving = true;
+        }
+
+        if (!prev_is_moving && time_since_stop < 5.0)
+        {
+            // Make sure we are always 'notMoving' for at least 5 seconds to avoid switching behavior
+            return false;
+        }
+        else if (is_moving)
+        {
+            prev_is_moving = true;
+            return true;
+        } else if ( time_since_move > 10.0)
+        {
+            if (prev_is_moving)
+            {
+                ROS_WARN("Robot has not moved significantly for more than 10 seconds");
+                stamp_not_moving = ros::Time::now();
+                prev_is_moving = false;
+            }
+            return false;
+        } else
+        {
+            return true;
+        }
+
+
     }
 }

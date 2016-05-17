@@ -238,6 +238,9 @@ namespace dwa_local_planner {
             return false;
         }
 
+        // Reset the motion time stamp of the planner
+        dp_->resetMotionStamp();
+
         return planner_util_.setPlan(orig_global_plan);
     }
 
@@ -295,7 +298,8 @@ namespace dwa_local_planner {
 
         // Publish the local plan
         publishTrajectory(traj);
-
+         
         return traj.cost_ >= 0;
     }
+    
 }
