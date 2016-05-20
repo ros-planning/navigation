@@ -2,6 +2,16 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* navfn: make independent on costmap implementation
+  navfn::NavfnROS:
+  * remove direct dependency on costmap_2d::Costmap2DROS
+  * add constructor for barebone costmap_2d::Costmap2D (user must provide also global_frame)
+  * NavfnROS::initialize() follows constructor semantics
+  nav_core::BaseGlobalPlanner interface unchanged
+* Contributors: Jiri Horner
+
 1.13.1 (2015-10-29)
 -------------------
 * Fix for `#337 <https://github.com/ros-planning/navigation/issues/337>`_

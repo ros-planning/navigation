@@ -2,6 +2,26 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Allow AMCL to run from bag file to allow very fast testing.
+* Fixes interpretation of a delayed initialpose message (see `#424 <https://github.com/ros-planning/navigation/issues/424>`_).
+  The tf lookup as it was before this change was very likely to fail as
+  ros::Time::now() was used to look up a tf without waiting on the tf's
+  availability. Additionally, the computation of the "new pose" by
+  multiplying the delta that the robot moved from the initialpose's
+  timestamp to ros::Time::now() was wrong. That delta has to by multiplied
+  from the right to the "old pose".
+  This commit also changes the reference frame to look up this delta to be
+  the odom frame as this one is supposed to be smooth and therefore the
+  best reference to get relative robot motion in the robot (base link) frame.
+* New unit test for proper interpretation of a delayed initialpose message.
+  Modifies the set_pose.py script to be able to send an initial pose with
+  a user defined time stamp at a user defined time. Adds a rostest to
+  exercise this new option.
+  This reveals the issues mentioned in `#424 <https://github.com/ros-planning/navigation/issues/424>`_ (the new test fails).
+* Contributors: Derek King, Stephan Wirth
+
 1.13.1 (2015-10-29)
 -------------------
 * adds the set_map service to amcl

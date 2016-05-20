@@ -2,6 +2,13 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add to install script/ directory
+* add execute bit to scripts/wtf.py
+* robot_pose_ekf/src/odom_estimation_node.cpp: add to print gps sensor and used/not used in getStatus
+* Contributors: Kei Okada
+
 1.13.1 (2015-10-29)
 -------------------
 

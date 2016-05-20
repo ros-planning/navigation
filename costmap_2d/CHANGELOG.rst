@@ -2,6 +2,45 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Reordered initializer list to match order of declarations.
+  This avoids compiler warning with some compilers.
+* Made update map threadsafe
+  This is necessary for some plugins (e.g. VoxelLayer) that implement a
+  thread unsafe updateBounds() function.
+* Fix bug with resetting static layer
+  If we don't have a new topic, consider our old data as if it were new.
+* fix resource locations to fix tests
+* Increase time-limit on failing test
+* Merge pull request `#388 <https://github.com/ros-planning/navigation/issues/388>`_ from yujinrobot/jade_inflation_ghost_fix
+  No more ghosts in the inflation layer
+* Fixes the dynamic reconfigure segfault
+  Doing a dynamic reconfigure of the inflation radius recreates
+  the cached cost values without first locking a mutex, which causes
+  a segfault. This breaks the reconfigure of inflation parameters into
+  a separate function and adds a mutex lock.
+* Merge pull request `#415 <https://github.com/ros-planning/navigation/issues/415>`_ from alexhenning/jade-fix-multiple-static-layers
+  Fixes an issue with having multiple static layers
+* Fixes an issue with having multiple static layers
+  If you have a static layer in both the local and global costmaps that
+  use the same map topic, there is a race condition that can cause the
+  static layer to get stuck after printing `Requesting map....`. This race
+  condition seems to be due to the call to shutdown in deactivate and how
+  the NodeHandle handles multiple subscribers under the hood.
+  This issue appears to happen about 1 in 1000 times in the setup I was
+  testing. This fix has never failed in over 1000000 tests. Instead of
+  calling activate and deactivate, the publisher is only recreated if the
+  topic has changed. Otherwise, it reuses the old setup.
+* fix related to issue `#408 <https://github.com/ros-planning/navigation/issues/408>`_ - With Rolling Window on, costmap_2d not properly updating bounds and costs in the static layer
+* No more ghosts in the inflation layer
+  Previous bounds would fit the sensor measurements, and the inflation layer would clear
+  out to these, but leave 'ghosts' behind. These ghosts are from two sources - 1) the
+  inflation radius and 2) whole obstacles left behind as the robot has moved from the last point.
+  The modifications here remember the last bounds and set the new bounds so that a box at least
+  large enough to incorporate the old bounds plus the inflation radius is generated.
+* Contributors: Alex Henning, Daniel Stonier, Levon Avagyan, Michael Ferguson, palmieri
+
 1.13.1 (2015-10-29)
 -------------------
 * Remove excessive canTransform spam.
