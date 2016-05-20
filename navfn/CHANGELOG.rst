@@ -2,8 +2,8 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.0 (2016-05-20)
+-------------------
 * navfn: make independent on costmap implementation
   navfn::NavfnROS:
   * remove direct dependency on costmap_2d::Costmap2DROS

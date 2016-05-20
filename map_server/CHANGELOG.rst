@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.0 (2016-05-20)
+-------------------
 * Corrections to alpha channel detection and usage.
   Changing to actually detect whether the image has an alpha channel instead of
   inferring based on the number of channels.

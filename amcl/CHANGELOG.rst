@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.0 (2016-05-20)
+-------------------
 * Allow AMCL to run from bag file to allow very fast testing.
 * Fixes interpretation of a delayed initialpose message (see `#424 <https://github.com/ros-planning/navigation/issues/424>`_).
   The tf lookup as it was before this change was very likely to fail as

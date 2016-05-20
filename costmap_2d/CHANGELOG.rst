@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.0 (2016-05-20)
+-------------------
 * Reordered initializer list to match order of declarations.
   This avoids compiler warning with some compilers.
 * Made update map threadsafe
