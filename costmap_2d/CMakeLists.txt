@@ -19,6 +19,8 @@ find_package(catkin REQUIRED
             std_msgs
             tf
             voxel_grid
+            ed_sensor_integration
+            rgbd
         )
 
 find_package(PCL REQUIRED)
@@ -105,6 +107,16 @@ target_link_libraries(costmap_2d
   ${OpenCV_LIBRARIES}
 )
 
+add_library(depth_3d_integration
+    include/costmap_2d/depth_3d_integrator.h
+    plugins/depth_3d_integrator.cpp
+)
+target_link_libraries(depth_3d_integration
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
 add_library(layers
   plugins/footprint_layer.cpp
   plugins/inflation_layer.cpp
@@ -115,6 +127,7 @@ add_library(layers
 )
 target_link_libraries(layers
   costmap_2d
+  depth_3d_integration
 )
 
 add_dependencies(costmap_2d costmap_2d_gencfg)
