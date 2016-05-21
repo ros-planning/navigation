@@ -81,9 +81,15 @@ class MapServer
 
       deprecated_ = (res != 0);
       if (!deprecated_) {
-        loadMapFromYaml(fname);
+        if (!loadMapFromYaml(fname))
+        {
+          exit(-1);
+        }
       } else {
-        loadMapFromParams(fname, res);
+        if (!loadMapFromParams(fname, res))
+        {
+          exit(-1);
+        }
       }
     }
 
@@ -110,13 +116,19 @@ class MapServer
 
     /** Load a map given all the values needed to understand it
      */
-    void loadMapFromValues(std::string map_file_name, double resolution,
+    bool loadMapFromValues(std::string map_file_name, double resolution,
                            int negate, double occ_th, double free_th,
                            double origin[3], MapMode mode)
     {
       ROS_INFO("Loading map from image \"%s\"", map_file_name.c_str());
-      map_server::loadMapFromFile(&map_resp_, map_file_name.c_str(), resolution,
-          negate, occ_th, free_th, origin, mode);
+      try {
+        map_server::loadMapFromFile(&map_resp_, map_file_name.c_str(),
+                                    resolution, negate, occ_th, free_th,
+                                    origin, mode);
+      } catch (std::runtime_error& e) {
+        ROS_ERROR("%s", e.what());
+        return false;
+      }
 
       // To make sure get a consistent time in simulation
       ros::Time::waitForValid();
@@ -132,11 +144,12 @@ class MapServer
       //Publish latched topics
       metadata_pub_.publish( meta_data_message_ );
       map_pub_.publish( map_resp_.map );
+      return true;
     }
 
     /** Load a map using the deprecated method
      */
-    void loadMapFromParams(std::string map_file_name, double resolution)
+    bool loadMapFromParams(std::string map_file_name, double resolution)
     {
       ros::NodeHandle private_nh("~");
       int negate;
@@ -147,12 +160,12 @@ class MapServer
       private_nh.param("occupied_thresh", occ_th, 0.65);
       private_nh.param("free_thresh", free_th, 0.196);
       origin[0] = origin[1] = origin[2] = 0.0;
-      loadMapFromValues(map_file_name, resolution, negate, occ_th, free_th, origin, TRINARY);
+      return loadMapFromValues(map_file_name, resolution, negate, occ_th, free_th, origin, TRINARY);
     }
 
     /** Load a map given a path to a yaml file
      */
-    void loadMapFromYaml(std::string path_to_yaml)
+    bool loadMapFromYaml(std::string path_to_yaml)
     {
       std::string mapfname;
       MapMode mode;
@@ -164,7 +177,7 @@ class MapServer
       std::ifstream fin(path_to_yaml.c_str());
       if (fin.fail()) {
         ROS_ERROR("Map_server could not open %s.", path_to_yaml.c_str());
-        exit(-1);
+        return false;
       }
 #ifdef HAVE_YAMLCPP_GT_0_5_0
       // The document loading process changed in yaml-cpp 0.5.
@@ -178,25 +191,25 @@ class MapServer
         doc["resolution"] >> res;
       } catch (YAML::InvalidScalar &) {
         ROS_ERROR("The map does not contain a resolution tag or it is invalid.");
-        exit(-1);
+        return false;
       }
       try {
         doc["negate"] >> negate;
       } catch (YAML::InvalidScalar &) {
         ROS_ERROR("The map does not contain a negate tag or it is invalid.");
-        exit(-1);
+        return false;
       }
       try {
         doc["occupied_thresh"] >> occ_th;
       } catch (YAML::InvalidScalar &) {
         ROS_ERROR("The map does not contain an occupied_thresh tag or it is invalid.");
-        exit(-1);
+        return false;
       }
       try {
         doc["free_thresh"] >> free_th;
       } catch (YAML::InvalidScalar &) {
         ROS_ERROR("The map does not contain a free_thresh tag or it is invalid.");
-        exit(-1);
+        return false;
       }
       try {
         std::string modeS = "";
@@ -210,7 +223,7 @@ class MapServer
           mode = RAW;
         else{
           ROS_ERROR("Invalid mode tag \"%s\".", modeS.c_str());
-          exit(-1);
+          return false;
         }
       } catch (YAML::Exception &) {
         ROS_DEBUG("The map does not contain a mode tag or it is invalid... assuming Trinary");
@@ -222,7 +235,7 @@ class MapServer
         doc["origin"][2] >> origin[2];
       } catch (YAML::InvalidScalar &) {
         ROS_ERROR("The map does not contain an origin tag or it is invalid.");
-        exit(-1);
+        return false;
       }
       try {
         doc["image"] >> mapfname;
@@ -230,7 +243,7 @@ class MapServer
         if(mapfname.size() == 0)
         {
           ROS_ERROR("The image tag cannot be an empty string.");
-          exit(-1);
+          return false;
         }
 
         boost::filesystem::path mapfpath(mapfname);
@@ -243,9 +256,9 @@ class MapServer
         }
       } catch (YAML::InvalidScalar &) {
         ROS_ERROR("The map does not contain an image tag or it is invalid.");
-        exit(-1);
+        return false;
       }
-      loadMapFromValues(mapfname, res, negate, occ_th, free_th, origin, mode);
+      return loadMapFromValues(mapfname, res, negate, occ_th, free_th, origin, mode);
     }
 
     /** The map data is cached here, to be sent out to service callers
