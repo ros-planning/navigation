@@ -40,4 +40,11 @@ extern const char* g_valid_png_file;
 extern const char* g_valid_bmp_file;
 extern const float g_valid_image_res;
 
+namespace tmap2 {
+  extern const char g_valid_image_content[];
+  extern const float g_valid_image_res;
+  extern const unsigned int g_valid_image_width;
+  extern const unsigned int g_valid_image_height;
+}
+
 #endif

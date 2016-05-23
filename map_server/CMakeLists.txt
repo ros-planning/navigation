@@ -6,6 +6,9 @@ find_package(catkin REQUIRED
             roscpp
             tf
             nav_msgs
+            std_msgs
+            message_generation
+            roslib
         )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -15,6 +18,16 @@ pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
 if(NEW_YAMLCPP_FOUND)
 add_definitions(-DHAVE_NEW_YAMLCPP)
 endif(NEW_YAMLCPP_FOUND)
+
+add_service_files(
+  FILES
+  LoadMap.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 catkin_package(
     INCLUDE_DIRS
