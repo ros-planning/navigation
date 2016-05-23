@@ -32,9 +32,11 @@
 #include <gtest/gtest.h>
 #include <ros/service.h>
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <nav_msgs/GetMap.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/MapMetaData.h>
+#include <nav_msgs/LoadMap.h>
 
 #include "test_constants.h"
 
@@ -133,6 +135,56 @@ TEST_F(MapClientTest, subscribe_topic_metadata)
   ASSERT_FLOAT_EQ(map_metadata_->resolution, g_valid_image_res);
   ASSERT_EQ(map_metadata_->width, g_valid_image_width);
   ASSERT_EQ(map_metadata_->height, g_valid_image_height);
+}
+
+/* Change the map, retrieve the map via topic, and compare to ground truth */
+TEST_F(MapClientTest, change_map)
+{
+  ros::Subscriber sub = n_->subscribe<nav_msgs::OccupancyGrid>("map", 1, boost::bind(&MapClientTest::mapCallback, this, _1));
+
+  // Try a few times, because the server may not be up yet.
+  for (int i = 20; i > 0 && !got_map_; i--)
+  {
+    ros::spinOnce();
+    ros::Duration d = ros::Duration().fromSec(0.25);
+    d.sleep();
+  }
+  ASSERT_TRUE(got_map_);
+
+  // Now change the map
+  got_map_ = false;
+  nav_msgs::LoadMap::Request  req;
+  nav_msgs::LoadMap::Response resp;
+  req.map_url = ros::package::getPath("map_server") + "/test/testmap2.yaml";
+  ASSERT_TRUE(ros::service::waitForService("change_map", 5000));
+  ASSERT_TRUE(ros::service::call("change_map", req, resp));
+  ASSERT_EQ(0u, resp.result);
+  for (int i = 20; i > 0 && !got_map_; i--)
+  {
+    ros::spinOnce();
+    ros::Duration d = ros::Duration().fromSec(0.25);
+    d.sleep();
+  }
+
+  ASSERT_FLOAT_EQ(tmap2::g_valid_image_res, map_->info.resolution);
+  ASSERT_EQ(tmap2::g_valid_image_width, map_->info.width);
+  ASSERT_EQ(tmap2::g_valid_image_height, map_->info.height);
+  ASSERT_STREQ("map", map_->header.frame_id.c_str());
+  for(unsigned int i=0; i < map_->info.width * map_->info.height; i++)
+    ASSERT_EQ(tmap2::g_valid_image_content[i], map_->data[i]) << "idx:" << i;
+
+  //Put the old map back so the next test isn't broken
+  got_map_ = false;
+  req.map_url = ros::package::getPath("map_server") + "/test/testmap.yaml";
+  ASSERT_TRUE(ros::service::call("change_map", req, resp));
+  ASSERT_EQ(0u, resp.result);
+  for (int i = 20; i > 0 && !got_map_; i--)
+  {
+    ros::spinOnce();
+    ros::Duration d = ros::Duration().fromSec(0.25);
+    d.sleep();
+  }
+  ASSERT_TRUE(got_map_);
 }
 
 int main(int argc, char **argv)
