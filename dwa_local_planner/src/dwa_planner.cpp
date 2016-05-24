@@ -83,10 +83,10 @@ namespace dwa_local_planner {
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
 
-    int vx_samp, vy_samp, vth_samp;
+    int vx_samp, vy_samp, vtheta_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
-    vth_samp = config.vth_samples;
+    vtheta_samp = config.vtheta_samples;
  
     if (vx_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
@@ -100,15 +100,15 @@ namespace dwa_local_planner {
       config.vy_samples = vy_samp;
     }
  
-    if (vth_samp <= 0) {
-      ROS_WARN("You've specified that you don't want any samples in the th dimension. We'll at least assume that you want to sample one value... so we're going to set vth_samples to 1 instead");
-      vth_samp = 1;
-      config.vth_samples = vth_samp;
+    if (vtheta_samp <= 0) {
+      ROS_WARN("You've specified that you don't want any samples in the th dimension. We'll at least assume that you want to sample one value... so we're going to set vtheta_samples to 1 instead");
+      vtheta_samp = 1;
+      config.vtheta_samples = vtheta_samp;
     }
  
     vsamples_[0] = vx_samp;
     vsamples_[1] = vy_samp;
-    vsamples_[2] = vth_samp;
+    vsamples_[2] = vtheta_samp;
  
 
   }
