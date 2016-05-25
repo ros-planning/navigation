@@ -119,6 +119,12 @@ void Costmap2DPublisher::prepareGrid()
 
 void Costmap2DPublisher::publishCostmap()
 {
+  if (costmap_pub_.getNumSubscribers() == 0)
+  {
+    // No subscribers, so why do any work?
+    return;
+  }
+
   float resolution = costmap_->getResolution();
 
   if (always_send_full_costmap_ || grid_.info.resolution != resolution ||
@@ -128,10 +134,7 @@ void Costmap2DPublisher::publishCostmap()
       saved_origin_y_ != costmap_->getOriginY())
   {
     prepareGrid();
-    if (costmap_pub_.getNumSubscribers() > 0)
-    {
-      costmap_pub_.publish(grid_);
-    }
+    costmap_pub_.publish(grid_);
   }
   else if (x0_ < xn_)
   {
@@ -155,10 +158,7 @@ void Costmap2DPublisher::publishCostmap()
         update.data[i++] = cost_translation_table_[ cost ];
       }
     }
-    if (costmap_update_pub_.getNumSubscribers() > 0)
-    {
-      costmap_update_pub_.publish(update);
-    }
+    costmap_update_pub_.publish(update);
   }
 
   xn_ = yn_ = 0;
