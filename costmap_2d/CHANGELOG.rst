@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.9 (2016-05-26)
+-------------------
 * Made costmap publishing truly lazy
 * Contributors: Alex Henning
 
