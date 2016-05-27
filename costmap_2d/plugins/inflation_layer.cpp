@@ -150,14 +150,10 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
     last_min_y_ = *min_y;
     last_max_x_ = *max_x;
     last_max_y_ = *max_y;
-    // We need to include in the inflation cells outside the bounding
-    // box by the amount of the cell_inflation_radius_.  Cells
-    // up to that distance outside the box can still influence the costs
-    // stored in cells inside the box.
-    *min_x = std::min(tmp_min_x, *min_x) - inflation_radius_;
-    *min_y = std::min(tmp_min_y, *min_y) - inflation_radius_;
-    *max_x = std::max(tmp_max_x, *max_x) + inflation_radius_;
-    *max_y = std::max(tmp_max_y, *max_y) + inflation_radius_;
+    *min_x = std::min(tmp_min_x, *min_x);
+    *min_y = std::min(tmp_min_y, *min_y);
+    *max_x = std::max(tmp_max_x, *max_x);
+    *max_y = std::max(tmp_max_y, *max_y);
   }
 }
 
@@ -200,11 +196,20 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   }
   memset(seen_, false, size_x * size_y * sizeof(bool));
 
+  // We need to include in the inflation cells outside the bounding
+  // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
+  // up to that distance outside the box can still influence the costs
+  // stored in cells inside the box.
+  min_i -= cell_inflation_radius_;
+  min_j -= cell_inflation_radius_;
+  max_i += cell_inflation_radius_;
+  max_j += cell_inflation_radius_;
+
   min_i = std::max(0, min_i);
   min_j = std::max(0, min_j);
   max_i = std::min(int(size_x), max_i);
   max_j = std::min(int(size_y), max_j);
-  
+
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
