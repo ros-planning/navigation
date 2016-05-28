@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.10 (2016-05-27)
+--------------------
 * Fixes issue with costmaps shearing
 * Contributors: Alex Henning
 
