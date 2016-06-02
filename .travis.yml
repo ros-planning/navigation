@@ -1,0 +1,24 @@
+# This config file for Travis CI utilizes ros-industrial/industrial_ci package.
+# For more info for the package, see https://github.com/ros-industrial/industrial_ci/blob/master/README.rst
+sudo: required 
+dist: trusty 
+services:
+  - docker
+language: generic 
+compiler:
+  - gcc
+notifications:
+  email:
+    on_success: always
+    on_failure: always
+    recipients:
+      - gm130s@gmail.com
+env:
+  matrix:
+    - ROS_DISTRO="jade"   ROS_REPOSITORY_PATH=http://packages.ros.org/ros/ubuntu  USE_DEB=true
+    - ROS_DISTRO="jade"   PRERELEASE=true PRERELEASE_DOWNSTREAM_DEPTH=0
+matrix:
+  allow_failures:
+    - env: ROS_DISTRO="jade"   PRERELEASE=true PRERELEASE_DOWNSTREAM_DEPTH=0
+install:
+  - git clone https://github.com/ros-industrial/industrial_ci.git .ci_config && source .ci_config/travis.sh
