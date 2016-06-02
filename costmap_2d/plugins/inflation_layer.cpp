@@ -150,10 +150,10 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
     last_min_y_ = *min_y;
     last_max_x_ = *max_x;
     last_max_y_ = *max_y;
-    *min_x = std::min(tmp_min_x, *min_x);
-    *min_y = std::min(tmp_min_y, *min_y);
-    *max_x = std::max(tmp_max_x, *max_x);
-    *max_y = std::max(tmp_max_y, *max_y);
+    *min_x = std::min(tmp_min_x, *min_x) + inflation_radius_;
+    *min_y = std::min(tmp_min_y, *min_y) + inflation_radius_;
+    *max_x = std::max(tmp_max_x, *max_x) + inflation_radius_;
+    *max_y = std::max(tmp_max_y, *max_y) + inflation_radius_;
   }
 }
 
