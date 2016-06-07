@@ -38,6 +38,7 @@
 #include <costmap_2d/inflation_layer.h>
 #include <costmap_2d/observation_buffer.h>
 #include <costmap_2d/testing_helper.h>
+#include <queue>
 #include <set>
 #include <gtest/gtest.h>
 #include <tf/transform_listener.h>
@@ -67,6 +68,63 @@ std::vector<Point> setRadii(LayeredCostmap& layers, double length, double width,
   nh.setParam("/inflation_tests/inflation/inflation_radius", inflation_radius);
 
   return polygon;
+}
+
+// Test that a single point gets inflated properly
+void validatePointInflation(unsigned int mx, unsigned int my, Costmap2D* costmap, InflationLayer* ilayer, double inflation_radius)
+{
+  bool* seen = new bool[costmap->getSizeInCellsX() * costmap->getSizeInCellsY()];
+  memset(seen, false, costmap->getSizeInCellsX() * costmap->getSizeInCellsY() * sizeof(bool));
+  std::priority_queue<CellData> q;
+  CellData initial(0, costmap->getIndex(mx, my), mx, my, mx, my);
+  q.push(initial);
+  while (!q.empty())
+  {
+    const CellData& cell = q.top();
+    if (!seen[cell.index_])
+    {
+      seen[cell.index_] = true;
+      unsigned int dx = abs(cell.x_ - cell.src_x_);
+      unsigned int dy = abs(cell.y_ - cell.src_y_);
+      double dist = hypot(dx, dy);
+
+      unsigned char expected_cost = ilayer->computeCost(dist);
+      ASSERT_TRUE(costmap->getCost(cell.x_, cell.y_) >= expected_cost);
+
+      if (dist > inflation_radius)
+      {
+        q.pop();
+        continue;
+      }
+
+      if (cell.x_ > 0)
+      {
+        CellData data(dist, costmap->getIndex(cell.x_-1, cell.y_),
+                      cell.x_-1, cell.y_, cell.src_x_, cell.src_y_);
+        q.push(data);
+      }
+      if (cell.y_ > 0)
+      {
+        CellData data(dist, costmap->getIndex(cell.x_, cell.y_-1),
+                      cell.x_, cell.y_-1, cell.src_x_, cell.src_y_);
+        q.push(data);
+      }
+      if (cell.x_ < costmap->getSizeInCellsX() - 1)
+      {
+        CellData data(dist, costmap->getIndex(cell.x_+1, cell.y_),
+                      cell.x_+1, cell.y_, cell.src_x_, cell.src_y_);
+        q.push(data);
+      }
+      if (cell.y_ < costmap->getSizeInCellsY() - 1)
+      {
+        CellData data(dist, costmap->getIndex(cell.x_, cell.y_+1),
+                      cell.x_, cell.y_+1, cell.src_x_, cell.src_y_);
+        q.push(data);
+      }
+    }
+    q.pop();
+  }
+  delete[] seen;
 }
 
 TEST(costmap, testAdjacentToObstacleCanStillMove){
@@ -182,7 +240,36 @@ TEST(costmap, testCostFunctionCorrectness){
       ASSERT_EQ(map->getCost(i, j), costmap_2d::FREE_SPACE);*/
 }
 
+/**
+ * Test that there is no regression and that costs do not get
+ * underestimated due to the underlying priority queue being
+ * misused. This is a more thorough test of the cost function being
+ * correctly applied.
+ */
+TEST(costmap, testPriorityQueueUseCorrectness){
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);
+  layers.resizeMap(10, 10, 1, 0, 0);
 
+  // Footprint with inscribed radius = 2.1
+  //               circumscribed radius = 3.1
+  const double inflation_radius = 4.1;
+  std::vector<Point> polygon = setRadii(layers, 2.1, 2.3, inflation_radius);
+
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+  InflationLayer* ilayer = addInflationLayer(layers, tf);
+  layers.setFootprint(polygon);
+
+  // Add two diagonal cells, they would induce problems under the
+  // previous implementations
+  addObservation(olayer, 4, 4, MAX_Z);
+  addObservation(olayer, 5, 5, MAX_Z);
+
+  layers.updateMap(0, 0, 0);
+
+  validatePointInflation(4, 4, layers.getCostmap(), ilayer, inflation_radius);
+  validatePointInflation(5, 5, layers.getCostmap(), ilayer, inflation_radius);
+}
 
 /**
  * Test inflation for both static and dynamic obstacles
