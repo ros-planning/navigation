@@ -5,7 +5,6 @@ A 2D navigation stack that takes in information from odometry, sensor
 streams, and a goal pose and outputs safe velocity commands that are sent
 to a mobile base.
 
- * Devel Job Status: [![Devel Job Status](http://build.ros.org/buildStatus/icon?job=Idev__navigation__ubuntu_trusty_amd64)](http://build.ros.org/view/Idev/job/Idev__navigation__ubuntu_trusty_amd64/)
  * AMD64 Debian Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Ibin_uT64__navigation__ubuntu_trusty_amd64__binary)](http://build.ros.org/view/Ibin_uT64/job/Ibin_uT64__navigation__ubuntu_trusty_amd64__binary/)
 
 Related stacks:
