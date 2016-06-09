@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.11 (2016-06-08)
+--------------------
 * [Fix] Illegal vector visit when no path planned
 * Contributors: gjc13
 

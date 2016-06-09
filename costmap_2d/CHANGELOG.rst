@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.11 (2016-06-08)
+--------------------
 * Fixed bug with inflation layer that caused underinflation
   When marking before adding to the priority queue, it was possible to
   underestimate the cost of a cell. This is both dangerous and can lead to
