@@ -2,6 +2,11 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [Fix] Illegal vector visit when no path planned
+* Contributors: gjc13
+
 1.12.10 (2016-05-27)
 --------------------
 
