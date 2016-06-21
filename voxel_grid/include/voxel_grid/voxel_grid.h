@@ -383,11 +383,11 @@ private:
                                           OffC off_c, unsigned int abs_da, unsigned int abs_db, unsigned int abs_dc,
                                           int error_b, int error_c, int offset_a, int offset_b, int offset_c,
                                           unsigned int &offset, unsigned int &z_mask,
-                                          unsigned int number_of_steps)
+                                          int number_of_steps)
   {
     //-1 because we don't want to clear the corners _after_ the last cell
     //last cell is cleared after the loop
-    for (unsigned int i = 0; i < number_of_steps - 1; ++i)
+    for (int i = 0; i < number_of_steps - 1; ++i)
     {
       (*clearer)(offset, z_mask);
       off_a(offset_a);

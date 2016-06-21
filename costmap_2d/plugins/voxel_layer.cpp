@@ -295,14 +295,6 @@ void VoxelLayer::clear(std::vector<Observation>& observations, double* min_x, do
   {
     unsigned int max_raytrace_range_in_cells = std::floor(max_raytrace_range_ / resolution_);
 
-    if (max_raytrace_range_in_cells < size_y_ || max_raytrace_range_in_cells < size_x_)
-    {
-      ROS_WARN_STREAM_ONCE(
-          "The raytrace_range is set to something smaller than the costmap size, max_raytrace_range_in_cells: " << max_raytrace_range_in_cells << ", costmap size: " << size_x_ << "x" << size_y_);
-      ROS_WARN_ONCE(
-          "Make sure that the measurements stay inside the raytrace_range, else some nice random memory over-writing happens.");
-    }
-
     update_area_center = max_raytrace_range_in_cells + 1; // +1 to have a buffer
     unsigned int cached_update_area_width = update_area_center * 2 + 1; //+1 to have a center point
 
@@ -445,7 +437,13 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
     //In the case we go outside, we want to go all the way to the border (and also clear the cell at the border).
     //Because of this we crop at 0.0 - epsilon and size (which is max index +1), "setting the obstacle cell just outside of the border".
     double cropped_distance = 0.0;
-    double scaling = 1.0;
+
+    // Initialize scale based on raytrace range.
+    // When c++17 is supported, use hypot(abs_dx, abs_dy, abs_dz) to compute observation length
+    double obs_len = std::sqrt((abs_dx * resolution_) * (abs_dx * resolution_) +
+                               (abs_dy * resolution_) * (abs_dy * resolution_) +
+                               (abs_dz * z_resolution_) * (abs_dz * z_resolution_));
+    double scaling = std::min(1.0, max_raytrace_range_/obs_len);
 
     //Check if we go outside, and set the scaling factor accordingly
     if (point_x < 0.0)
