@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.12 (2016-06-24)
+--------------------
 * Fixed sign error in inflation layer
 * Adds warning when a layer shrinks the bounds
 * Contributors: Alex Henning
