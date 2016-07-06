@@ -529,7 +529,6 @@ namespace move_base {
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
       ROS_DEBUG_NAMED("move_base","Failed to find a  plan to point (%.2f, %.2f)", goal.pose.position.x, goal.pose.position.y);
-      publishZeroVelocity();
       return false;
     }
 
