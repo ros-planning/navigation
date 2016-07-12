@@ -57,6 +57,12 @@ angle_diff(double a, double b)
     return(d2);
 }
 
+inline double
+sign(double x)
+{
+  return x < 0.0 ? -1.0 : 1.0;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
 AMCLOdom::AMCLOdom() : AMCLSensor()
@@ -98,7 +104,8 @@ AMCLOdom::SetModel( odom_model_t type,
                     double alpha2,
                     double alpha3,
                     double alpha4,
-                    double alpha5 )
+                    double alpha5,
+                    double alpha6 )
 {
   this->model_type = type;
   this->alpha1 = alpha1;
@@ -106,6 +113,7 @@ AMCLOdom::SetModel( odom_model_t type,
   this->alpha3 = alpha3;
   this->alpha4 = alpha4;
   this->alpha5 = alpha5;
+  this->alpha6 = alpha6;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -126,21 +134,26 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
   case ODOM_MODEL_OMNI_ROSIE:
   {
     double vx, vy, wz;
-    double delta_trans, delta_rot, delta_bearing;
+    double delta_trans, delta_strafe, delta_rot, delta_bearing;
     double delta_trans_hat, delta_rot_hat, delta_strafe_hat;
 
     vx = ndata->delta.v[0];
     vy = ndata->delta.v[1];
     wz = ndata->delta.v[2];
 
-    delta_trans = sqrt(pow(vx, 2) + pow(vy, 2));
+    delta_trans = sqrt(vx * vx + vy * vy);
     delta_rot = wz;
+    delta_strafe = fabs( delta_trans * sin( angle_diff( atan2(vy, vx),
+                                                        old_pose.v[2])));
 
     // Precompute a couple of things
+    double sgn_dot_product = sign( - sin(old_pose.v[2]) * vx +
+                                   + cos(old_pose.v[2]) * vy );
     double trans_hat_stddev = sqrt( alpha3 * (delta_trans*delta_trans) +
                                     alpha1 * (delta_rot*delta_rot) );
     double rot_hat_stddev = sqrt( alpha4 * (delta_rot*delta_rot) +
                                   alpha2 * (delta_trans*delta_trans) );
+    double intake_hat_stddev = sqrt( alpha6 * (delta_strafe*delta_strafe) );
     double strafe_hat_stddev = sqrt( alpha1 * (delta_rot*delta_rot) +
                                      alpha5 * (delta_trans*delta_trans) );
 
@@ -157,6 +170,10 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
       delta_trans_hat = delta_trans + pf_ran_gaussian(trans_hat_stddev);
       delta_rot_hat = delta_rot + pf_ran_gaussian(rot_hat_stddev);
       delta_strafe_hat = 0 + pf_ran_gaussian(strafe_hat_stddev);
+
+      // NOTE: Bias heading noise due to intake and roller brush effects:
+      delta_rot_hat+= - sgn_dot_product * fabs(pf_ran_gaussian(intake_hat_stddev));
+
       // Apply sampled update to particle pose
       sample->pose.v[0] += (delta_trans_hat * cs_bearing +
                             delta_strafe_hat * sn_bearing);
