@@ -9,6 +9,7 @@ find_package(catkin REQUIRED
         actionlib
         dynamic_reconfigure
         message_generation
+        move_base_msgs
         nav_core
         tf
 )
