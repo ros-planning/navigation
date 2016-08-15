@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.13 (2016-08-15)
+--------------------
 * Fixed race condition with costmaps
   Modifying minx\_, miny\_,, maxx\_, and maxy\_ without locking the mutex is
   unsafe and is a race condition if updateMap is called from multiple

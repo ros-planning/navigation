@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.13 (2016-08-15)
+--------------------
 * Merge pull request `#495 <https://github.com/ros-planning/navigation/issues/495>`_ from corot/patch-3
   Fix `#494 <https://github.com/ros-planning/navigation/issues/494>`_: prevent zero-velocity commands during recovery behaviors
 * move_base: Add move_base_msgs to find_package.

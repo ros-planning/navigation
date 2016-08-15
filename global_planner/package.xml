@@ -1,6 +1,6 @@
 <package>
   <name>global_planner</name>
-  <version>1.12.12</version>
+  <version>1.12.13</version>
   <description>
      A path planner library and node.
   </description>
