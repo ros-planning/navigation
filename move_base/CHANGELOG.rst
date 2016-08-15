@@ -2,6 +2,16 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#495 <https://github.com/ros-planning/navigation/issues/495>`_ from corot/patch-3
+  Fix `#494 <https://github.com/ros-planning/navigation/issues/494>`_: prevent zero-velocity commands during recovery behaviors
+* move_base: Add move_base_msgs to find_package.
+* Issue `#496 <https://github.com/ros-planning/navigation/issues/496>`_: add a max_planning_retries parameter as an alternative to planner_patience to limit the failed calls to global planner
+* Fix `#494 <https://github.com/ros-planning/navigation/issues/494>`_: prevent zero-velocity commands during recovery behaviors
+  Partially reverts 0a686c90c6f188a2731f6f88c2c08610f0ec907e
+* Contributors: Jorge Santos, Jorge Santos Simón, Maarten de Vries, Michael Ferguson
+
 1.12.12 (2016-06-24)
 --------------------
 

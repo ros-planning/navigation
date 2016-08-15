@@ -2,6 +2,14 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed race condition with costmaps
+  Modifying minx\_, miny\_,, maxx\_, and maxy\_ without locking the mutex is
+  unsafe and is a race condition if updateMap is called from multiple
+  threads.
+* Contributors: Alex Henning
+
 1.12.12 (2016-06-24)
 --------------------
 * Fixed sign error in inflation layer
