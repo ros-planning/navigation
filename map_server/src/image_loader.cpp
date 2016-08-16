@@ -54,6 +54,17 @@ namespace map_server
 void
 loadMapFromFile(nav_msgs::GetMap::Response* resp,
                 const char* fname, double res, bool negate,
+                double occ_th, double free_th, double* origin)
+{
+  loadMapFromFile(resp,
+                  fname, res, negate,
+                  occ_th, free_th, origin,
+                  TRINARY);
+}
+
+void
+loadMapFromFile(nav_msgs::GetMap::Response* resp,
+                const char* fname, double res, bool negate,
                 double occ_th, double free_th, double* origin,
                 bool trinary)
 {

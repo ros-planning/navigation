@@ -90,6 +90,23 @@ void loadMapFromFile(nav_msgs::GetMap::Response* resp,
                     const char* fname, double res, bool negate,
                     double occ_th, double free_th, double* origin,
                     bool trinary=true);
+
+/** Legacy signature see issue #474
+ *
+* @param resp The map wil be written into here
+* @param fname The image file to read from
+* @param res The resolution of the map (gets stored in resp)
+* @param negate If true, then whiter pixels are occupied, and blacker
+*               pixels are free
+* @param occ_th Threshold above which pixels are occupied
+* @param free_th Threshold below which pixels are free
+* @param origin Triple specifying 2-D pose of lower-left corner of image
+* @param trinary If true, only outputs Occupied/Free/Unknown
+* @throws std::runtime_error If the image file can't be loaded
+* */
+void loadMapFromFile(nav_msgs::GetMap::Response* resp,
+                    const char* fname, double res, bool negate,
+                    double occ_th, double free_th, double* origin);
 }
 
 #endif
