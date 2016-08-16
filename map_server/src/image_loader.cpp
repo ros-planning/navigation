@@ -57,6 +57,10 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
                 double occ_th, double free_th, double* origin,
                 bool trinary)
 {
+  ROS_WARN(
+    "map_server::loadMapFromFile with trinary as bool has been deprecated."
+    "Please update your code to use MapMode enumerable."
+  );
   MapMode mode = (trinary)?TRINARY:RAW;
   loadMapFromFile(resp,
                   fname, res, negate,
