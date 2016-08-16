@@ -18,6 +18,7 @@ find_package(catkin REQUIRED
             sensor_msgs
             std_msgs
             tf
+            visualization_msgs
             voxel_grid
         )
 
@@ -77,6 +78,7 @@ catkin_package(
         sensor_msgs
         std_msgs
         tf
+        visualization_msgs
         voxel_grid
     DEPENDS
         PCL
