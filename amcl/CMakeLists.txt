@@ -23,7 +23,6 @@ catkin_package(
         rosbag
         roscpp
         dynamic_reconfigure
-        std_srvs
         tf
   INCLUDE_DIRS include
   LIBRARIES amcl_sensors amcl_map amcl_pf
