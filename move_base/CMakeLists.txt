@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
         message_generation
         move_base_msgs
         nav_core
+        std_srvs
         tf
 )
 find_package(Eigen REQUIRED)
