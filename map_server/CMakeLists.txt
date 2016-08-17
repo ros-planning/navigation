@@ -29,7 +29,7 @@ catkin_package(
 
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 add_library(map_server_image_loader src/image_loader.cpp)
-target_link_libraries(map_server_image_loader SDL SDL_image ${Boost_LIBRARIES})
+target_link_libraries(map_server_image_loader SDL SDL_image ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server
@@ -85,7 +85,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
   PATTERN ".svn" EXCLUDE)
 
 ## Install excutable python script
-install( 
+install(
     PROGRAMS
       scripts/crop_map
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
