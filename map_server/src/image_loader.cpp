@@ -39,6 +39,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "ros/ros.h"
+#include "ros/console.h"
+
 // We use SDL_image to load the image from disk
 #include <SDL/SDL_image.h>
 
