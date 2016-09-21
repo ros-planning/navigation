@@ -84,7 +84,7 @@ namespace move_base {
     //set up the planner's thread
     planner_thread_ = new boost::thread(boost::bind(&MoveBase::planThread, this));
 
-    //for comanding the base
+    //for commanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
 
@@ -272,7 +272,7 @@ namespace move_base {
     tf::Stamped<tf::Pose> global_pose;
 
     //clear the planner's costmap
-    planner_costmap_ros_->getRobotPose(global_pose);
+    getRobotPose(global_pose, planner_costmap_ros_);
 
     std::vector<geometry_msgs::Point> clear_poly;
     double x = global_pose.getOrigin().x();
@@ -298,7 +298,7 @@ namespace move_base {
     planner_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
 
     //clear the controller's costmap
-    controller_costmap_ros_->getRobotPose(global_pose);
+    getRobotPose(global_pose, controller_costmap_ros_);
 
     clear_poly.clear();
     x = global_pose.getOrigin().x();
@@ -342,7 +342,7 @@ namespace move_base {
       return false;
     }
     tf::Stamped<tf::Pose> global_pose;
-    if(!planner_costmap_ros_->getRobotPose(global_pose)){
+    if(!getRobotPose(global_pose, planner_costmap_ros_)){
       ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
       return false;
     }
@@ -460,7 +460,7 @@ namespace move_base {
 
     //get the starting pose of the robot
     tf::Stamped<tf::Pose> global_pose;
-    if(!planner_costmap_ros_->getRobotPose(global_pose)) {
+    if(!getRobotPose(global_pose, planner_costmap_ros_)) {
       ROS_WARN("Unable to get starting pose of robot, unable to create global plan");
       return false;
     }
@@ -774,7 +774,7 @@ namespace move_base {
 
     //update feedback to correspond to our curent position
     tf::Stamped<tf::Pose> global_pose;
-    planner_costmap_ros_->getRobotPose(global_pose);
+    getRobotPose(global_pose, planner_costmap_ros_);
     geometry_msgs::PoseStamped current_position;
     tf::poseStampedTFToMsg(global_pose, current_position);
 
@@ -1112,5 +1112,47 @@ namespace move_base {
       planner_costmap_ros_->stop();
       controller_costmap_ros_->stop();
     }
+  }
+
+  bool MoveBase::getRobotPose(tf::Stamped<tf::Pose>& global_pose, costmap_2d::Costmap2DROS* costmap)
+  {
+    global_pose.setIdentity();
+    tf::Stamped < tf::Pose > robot_pose;
+    robot_pose.setIdentity();
+    robot_pose.frame_id_ = robot_base_frame_;
+    robot_pose.stamp_ = ros::Time(); // latest available
+    ros::Time current_time = ros::Time::now();  // save time for checking tf delay later
+
+    // get robot pose on the given costmap frame
+    try
+    {
+      tf_.transformPose(costmap->getGlobalFrameID(), robot_pose, global_pose);
+    }
+    catch (tf::LookupException& ex)
+    {
+      ROS_ERROR_THROTTLE(1.0, "No Transform available Error looking up robot pose: %s\n", ex.what());
+      return false;
+    }
+    catch (tf::ConnectivityException& ex)
+    {
+      ROS_ERROR_THROTTLE(1.0, "Connectivity Error looking up robot pose: %s\n", ex.what());
+      return false;
+    }
+    catch (tf::ExtrapolationException& ex)
+    {
+      ROS_ERROR_THROTTLE(1.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
+      return false;
+    }
+
+    // check if global_pose time stamp is within costmap transform tolerance
+    if (current_time.toSec() - global_pose.stamp_.toSec() > costmap->getTransformTolerance())
+    {
+      ROS_WARN_THROTTLE(1.0, "Transform timeout for %s. " \
+                        "Current time: %.4f, pose stamp: %.4f, tolerance: %.4f", costmap->getName().c_str(),
+                        current_time.toSec(), global_pose.stamp_.toSec(), costmap->getTransformTolerance());
+      return false;
+    }
+
+    return true;
   }
 };
