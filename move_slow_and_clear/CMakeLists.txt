@@ -20,9 +20,8 @@ find_package(Boost REQUIRED COMPONENTS thread)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    SYSTEM
-        ${EIGEN3_INCLUDE_DIRS}
-        ${PCL_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
 )
 add_definitions(${EIGEN3_DEFINITIONS})
 
