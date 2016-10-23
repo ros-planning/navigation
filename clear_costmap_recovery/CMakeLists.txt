@@ -11,15 +11,15 @@ find_package(catkin REQUIRED
             tf
         )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    ${EIGEN_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
 )
-add_definitions(${EIGEN_DEFINITIONS})
+add_definitions(${EIGEN3_DEFINITIONS})
 
 catkin_package(
     INCLUDE_DIRS include
@@ -49,7 +49,6 @@ if(CATKIN_ENABLE_TESTING)
 
   # Create targets for test executables
   add_rostest_gtest(clear_tester test/clear_tests.launch test/clear_tester.cpp)
-  add_dependencies(tests clear_tester ${catkin_LIBRARIES})
   target_link_libraries(clear_tester clear_costmap_recovery ${GTEST_LIBRARIES})
 endif()
 
