@@ -173,7 +173,7 @@ private:
   double inflation_radius_, inscribed_radius_, weight_;
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
-  std::map<double, std::vector<CellData>> inflation_cells_;
+  std::map<double, std::vector<CellData> > inflation_cells_;
 
   double resolution_;
 
