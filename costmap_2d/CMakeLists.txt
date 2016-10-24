@@ -18,21 +18,23 @@ find_package(catkin REQUIRED
             sensor_msgs
             std_msgs
             tf
+            visualization_msgs
             voxel_grid
         )
 
 find_package(PCL REQUIRED)
-find_package(Eigen REQUIRED)
+remove_definitions(-DDISABLE_LIBUSB-1.0)
+find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    ${EIGEN_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
 
-add_definitions(${EIGEN_DEFINITIONS})
+add_definitions(${EIGEN3_DEFINITIONS})
 
 # messages
 add_message_files(
@@ -60,7 +62,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
     INCLUDE_DIRS
         include
-        ${EIGEN_INCLUDE_DIRS}
+        ${EIGEN3_INCLUDE_DIRS}
         ${PCL_INCLUDE_DIRS}
     LIBRARIES costmap_2d layers
     CATKIN_DEPENDS
@@ -80,7 +82,7 @@ catkin_package(
         voxel_grid
     DEPENDS
         PCL
-        Eigen
+        EIGEN3
         Boost
 )
 

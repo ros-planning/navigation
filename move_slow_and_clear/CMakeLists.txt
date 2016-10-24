@@ -13,17 +13,18 @@ find_package(catkin REQUIRED
         )
 
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
+remove_definitions(-DDISABLE_LIBUSB-1.0)
 find_package(Boost REQUIRED COMPONENTS thread)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
     SYSTEM
-        ${EIGEN_INCLUDE_DIRS}
+        ${EIGEN3_INCLUDE_DIRS}
         ${PCL_INCLUDE_DIRS}
 )
-add_definitions(${EIGEN_DEFINITIONS})
+add_definitions(${EIGEN3_DEFINITIONS})
 
 catkin_package(
     INCLUDE_DIRS include
@@ -35,7 +36,7 @@ catkin_package(
 )
 
 add_library(${PROJECT_NAME} src/move_slow_and_clear.cpp)
-add_dependencies(${PROJECT_NAME} geometry_msgs_gencpp)
+add_dependencies(${PROJECT_NAME} geometry_msgs_generate_messages_cpp)
 target_link_libraries(${PROJECT_NAME}
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
