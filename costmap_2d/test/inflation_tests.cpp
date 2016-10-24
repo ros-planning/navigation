@@ -74,7 +74,7 @@ void validatePointInflation(unsigned int mx, unsigned int my, Costmap2D* costmap
 {
   bool* seen = new bool[costmap->getSizeInCellsX() * costmap->getSizeInCellsY()];
   memset(seen, false, costmap->getSizeInCellsX() * costmap->getSizeInCellsY() * sizeof(bool));
-  std::map<double, std::vector<CellData>> m;
+  std::map<double, std::vector<CellData> > m;
   CellData initial(costmap->getIndex(mx, my), mx, my, mx, my);
   m[0].push_back(initial);
   for (auto& dist_bin: m)
