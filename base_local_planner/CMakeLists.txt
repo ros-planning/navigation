@@ -18,6 +18,7 @@ find_package(catkin REQUIRED
             rospy
             std_msgs
             tf
+            tf2_geometry_msgs
             voxel_grid
         )
 

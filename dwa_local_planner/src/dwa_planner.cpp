@@ -45,7 +45,7 @@
 #include <angles/angles.h>
 
 #include <ros/ros.h>
-
+#include <tf2/utils.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dwa_local_planner {
@@ -220,7 +220,7 @@ namespace dwa_local_planner {
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
-    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf::getYaw(goal_pose.pose.orientation));
+    Eigen::Vector3f goal(goal_pose.pose.position.x, goal_pose.pose.position.y, tf2::getYaw(goal_pose.pose.orientation));
     base_local_planner::LocalPlannerLimits limits = planner_util_->getCurrentLimits();
     generator_.initialise(pos,
         vel,
