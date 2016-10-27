@@ -22,7 +22,6 @@ remove_definitions(-DDISABLE_LIBUSB-1.0)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    SYSTEM
     ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
 )
