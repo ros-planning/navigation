@@ -79,45 +79,46 @@ void validatePointInflation(unsigned int mx, unsigned int my, Costmap2D* costmap
   m[0].push_back(initial);
   for (std::map<double, std::vector<CellData> >::iterator bin = m.begin(); bin != m.end(); ++bin)
   {
-    for (std::vector<CellData>::iterator cell = bin->second.begin(); cell != bin->second.end(); ++cell)
+    for (int i = 0; i < bin->second.size(); ++i)
     {
-      if (!seen[cell->index_])
+      const CellData& cell = bin->second[i];
+      if (!seen[cell.index_])
       {
-        seen[cell->index_] = true;
-        unsigned int dx = abs(cell->x_ - cell->src_x_);
-        unsigned int dy = abs(cell->y_ - cell->src_y_);
+        seen[cell.index_] = true;
+        unsigned int dx = abs(cell.x_ - cell.src_x_);
+        unsigned int dy = abs(cell.y_ - cell.src_y_);
         double dist = hypot(dx, dy);
 
         unsigned char expected_cost = ilayer->computeCost(dist);
-        ASSERT_TRUE(costmap->getCost(cell->x_, cell->y_) >= expected_cost);
+        ASSERT_TRUE(costmap->getCost(cell.x_, cell.y_) >= expected_cost);
 
         if (dist > inflation_radius)
         {
           continue;
         }
 
-        if (cell->x_ > 0)
+        if (cell.x_ > 0)
         {
-          CellData data(costmap->getIndex(cell->x_-1, cell->y_),
-                        cell->x_-1, cell->y_, cell->src_x_, cell->src_y_);
+          CellData data(costmap->getIndex(cell.x_-1, cell.y_),
+                        cell.x_-1, cell.y_, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
-        if (cell->y_ > 0)
+        if (cell.y_ > 0)
         {
-          CellData data(costmap->getIndex(cell->x_, cell->y_-1),
-                        cell->x_, cell->y_-1, cell->src_x_, cell->src_y_);
+          CellData data(costmap->getIndex(cell.x_, cell.y_-1),
+                        cell.x_, cell.y_-1, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
-        if (cell->x_ < costmap->getSizeInCellsX() - 1)
+        if (cell.x_ < costmap->getSizeInCellsX() - 1)
         {
-          CellData data(costmap->getIndex(cell->x_+1, cell->y_),
-                        cell->x_+1, cell->y_, cell->src_x_, cell->src_y_);
+          CellData data(costmap->getIndex(cell.x_+1, cell.y_),
+                        cell.x_+1, cell.y_, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
-        if (cell->y_ < costmap->getSizeInCellsY() - 1)
+        if (cell.y_ < costmap->getSizeInCellsY() - 1)
         {
-          CellData data(costmap->getIndex(cell->x_, cell->y_+1),
-                        cell->x_, cell->y_+1, cell->src_x_, cell->src_y_);
+          CellData data(costmap->getIndex(cell.x_, cell.y_+1),
+                        cell.x_, cell.y_+1, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
       }
