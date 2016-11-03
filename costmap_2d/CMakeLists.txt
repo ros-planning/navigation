@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(costmap_2d)
 
-# Required to use is_sorted and all_of algorithms
-add_definitions("-std=c++11")
-
 find_package(catkin REQUIRED
         COMPONENTS
             cmake_modules
