@@ -8,7 +8,12 @@ find_package(catkin REQUIRED
         geometry_msgs
         )
 
-
+# services
+add_service_files(
+    DIRECTORY srv
+    FILES
+        ClearCostmap.srv
+)
 # actions
 add_action_files(
     DIRECTORY action

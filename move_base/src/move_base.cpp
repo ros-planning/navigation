@@ -383,7 +383,7 @@ namespace move_base {
     controller_costmap_ros_->getCostmap()->setConvexPolygonCost(clear_poly, costmap_2d::FREE_SPACE);
   }
 
-  bool MoveBase::clearCostmapsService(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &resp){
+  bool MoveBase::clearCostmapsService(move_base_msgs::ClearCostmap::Request &req, move_base_msgs::ClearCostmap::Response &resp){
     //clear the costmaps
     ROS_WARN("Clearing costmaps");
     planner_costmap_ros_->resetLayers();
@@ -391,10 +391,9 @@ namespace move_base {
 
     // Make sure the planner costmap is current and updated.
     float sleep_time = 0.1;
-    float timeout = 1.0;
     float total_slept = 0.0;
     while (!planner_costmap_ros_->isCurrent()) {
-      if (total_slept >= timeout) {
+      if (total_slept >= req.timeout) {
         ROS_WARN("Planner costmap not current within %f seconds.  Failing costmap clear.", total_slept);
         resp.success = false;
         resp.message = "Planner costmap not current.  Failing clear.";
@@ -409,7 +408,7 @@ namespace move_base {
     // Make sure the controller costmap is current and updated.
     total_slept = 0;
     while (!controller_costmap_ros_->isCurrent()) {
-      if (total_slept >= timeout) {
+      if (total_slept >= req.timeout) {
         ROS_WARN("Controller costmap not current within %f seconds.  Failing costmap clear.", total_slept);
         resp.success = false;
         resp.message = "Controller costmap not current.  Failing clear.";

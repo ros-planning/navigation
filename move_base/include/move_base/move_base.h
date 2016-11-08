@@ -54,7 +54,7 @@
 #include <nav_msgs/GetPlan.h>
 
 #include <pluginlib/class_loader.h>
-#include <std_srvs/Trigger.h>
+#include <move_base_msgs/ClearCostmap.h>
 
 #include <dynamic_reconfigure/server.h>
 #include "move_base/MoveBaseConfig.h"
@@ -109,7 +109,7 @@ namespace move_base {
        * @param resp The service response
        * @return True if the service call succeeds, false otherwise
        */
-      bool clearCostmapsService(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &resp);
+      bool clearCostmapsService(move_base_msgs::ClearCostmap::Request &req, move_base_msgs::ClearCostmap::Response &resp);
 
       /**
        * @brief  A service call that can be made when the action is inactive that will return a plan
