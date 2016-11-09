@@ -54,7 +54,7 @@
 #include <nav_msgs/GetPlan.h>
 
 #include <pluginlib/class_loader.h>
-#include <std_srvs/Empty.h>
+#include <move_base_msgs/ClearCostmap.h>
 
 #include <dynamic_reconfigure/server.h>
 #include "move_base/MoveBaseConfig.h"
@@ -105,11 +105,11 @@ namespace move_base {
     private:
       /**
        * @brief  A service call that clears the costmaps of obstacles
-       * @param req The service request 
+       * @param req The service request
        * @param resp The service response
        * @return True if the service call succeeds, false otherwise
        */
-      bool clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp);
+      bool clearCostmapsService(move_base_msgs::ClearCostmap::Request &req, move_base_msgs::ClearCostmap::Response &resp);
 
       /**
        * @brief  A service call that can be made when the action is inactive that will return a plan
@@ -129,7 +129,7 @@ namespace move_base {
 
       /**
        * @brief  Load the recovery behaviors for the navigation stack from the parameter server
-       * @param node The ros::NodeHandle to be used for loading parameters 
+       * @param node The ros::NodeHandle to be used for loading parameters
        * @return True if the recovery behaviors were loaded successfully, false otherwise
        */
       bool loadRecoveryBehaviors(ros::NodeHandle node);
@@ -222,7 +222,7 @@ namespace move_base {
 
       boost::recursive_mutex configuration_mutex_;
       dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
-      
+
       void reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level);
 
       move_base::MoveBaseConfig last_config_;
