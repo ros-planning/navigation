@@ -181,6 +181,12 @@ namespace dwa_local_planner {
     private_nh.param("cheat_factor", cheat_factor_, 1.0);
   }
 
+    void DWAPlanner::setFootprintSpec(std::vector<geometry_msgs::Point> footprint_spec)
+    {
+      ROS_INFO("Setting footprint now!");
+      obstacle_costs_.setFootprint(footprint_spec);
+    }
+
   // used for visualization only, total_costs are not really total costs
   bool DWAPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
 
@@ -292,10 +298,7 @@ namespace dwa_local_planner {
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       tf::Stamped<tf::Pose> global_pose,
       tf::Stamped<tf::Pose> global_vel,
-      tf::Stamped<tf::Pose>& drive_velocities,
-      std::vector<geometry_msgs::Point> footprint_spec) {
-
-    obstacle_costs_.setFootprint(footprint_spec);
+      tf::Stamped<tf::Pose>& drive_velocities) {
 
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
