@@ -70,7 +70,7 @@ namespace nav_core {
                             double& cost)
       {
         cost = 0;
-        makePlan(start, goal, plan);
+        return makePlan(start, goal, plan);
       }
 
       /**
