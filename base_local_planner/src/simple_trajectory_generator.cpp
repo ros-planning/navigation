@@ -36,7 +36,7 @@
  *********************************************************************/
 
 #include <base_local_planner/simple_trajectory_generator.h>
-
+#include <ros/ros.h>
 #include <cmath>
 
 #include <base_local_planner/velocity_iterator.h>
@@ -130,6 +130,20 @@ void SimpleTrajectoryGenerator::initialise(
         th_it.reset();
       }
       y_it.reset();
+    }
+    // Add in some special cases to check to encourage turn in place when needed.
+    if (std::fabs(vel[0]) < 0.01 && std::fabs(vel[1]) < 0.01 && std::fabs(vel[2]) < 0.1) {
+      ROS_WARN("Adding turn in place and go straight encouragement");
+      vel_samp[0] = 0;
+      vel_samp[1] = 0;
+      vel_samp[2] = max_vel_th;
+      sample_params_.push_back(vel_samp);
+      vel_samp[2] = -max_vel_th;
+      sample_params_.push_back(vel_samp);
+
+      vel_samp[0] = max_vel_x;
+      vel_samp[2] = 0;
+      sample_params_.push_back(vel_samp);
     }
   }
 }
