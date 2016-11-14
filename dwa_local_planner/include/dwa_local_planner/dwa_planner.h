@@ -142,7 +142,7 @@ namespace dwa_local_planner {
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
 
-     void setFootprintSpec(std::vector<geometry_msgs::Point> footprint_spec);
+      void setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec);
 
     private:
 
@@ -158,6 +158,7 @@ namespace dwa_local_planner {
       double forward_point_distance_;
 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
+      std::vector<geometry_msgs::Point> robot_footprint_;
 
       boost::mutex configuration_mutex_;
       pcl::PointCloud<base_local_planner::MapGridCostPoint>* traj_cloud_;

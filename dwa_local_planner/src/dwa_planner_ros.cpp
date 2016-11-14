@@ -112,6 +112,7 @@ namespace dwa_local_planner {
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
 
+      // set up footprint when initialization
       dp_->setFootprintSpec(costmap_ros->getRobotFootprint());
 
       if( private_nh.getParam( "odom_topic", odom_topic_ ))
