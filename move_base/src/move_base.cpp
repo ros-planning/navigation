@@ -935,7 +935,8 @@ namespace move_base {
       if(recovery_trigger_ == PLANNING_R)
         recovery_index_ = 0;
     }
-
+    ROS_DEBUG_NAMED("move_base", "switch states");
+    ROS_DEBUG_NAMED("move_base", "current state: %d", state_);
     //the move_base state machine, handles the control logic for navigation
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan
@@ -990,15 +991,18 @@ namespace move_base {
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
           ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
-
+          ROS_DEBUG_NAMED("move_base", "attempt_end: %lf", attempt_end.toSec());
+          ROS_DEBUG_NAMED("move_base", "current: %lf", ros::Time::now().toSec());
           //check if we've tried to find a valid control for longer than our time limit
           if(ros::Time::now() > attempt_end){
+            ROS_DEBUG_NAMED("move_base", "time> attempt_end");
             //we'll move into our obstacle clearing mode
             publishZeroVelocity();
             state_ = CLEARING;
             recovery_trigger_ = CONTROLLING_R;
           }
           else{
+            ROS_DEBUG_NAMED("move_base", "time <= attempt_end");
             //otherwise, if we can't find a valid control, we'll go back to planning
             last_valid_plan_ = ros::Time::now();
             planning_retries_ = 0;

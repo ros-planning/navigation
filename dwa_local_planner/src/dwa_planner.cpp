@@ -183,9 +183,10 @@ namespace dwa_local_planner {
 
     void DWAPlanner::setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec)
     {
-      ROS_INFO("Setting footprint now!");
-      obstacle_costs_.setFootprint(footprint_spec);
+      ROS_INFO("Get footprint from DWAPlannerROS");
       robot_footprint_ = footprint_spec;
+      ROS_INFO("in setFootprintSpec(), setting footprint");
+      obstacle_costs_.setFootprint(robot_footprint_);
     }
 
   // used for visualization only, total_costs are not really total costs
@@ -222,7 +223,8 @@ namespace dwa_local_planner {
       Eigen::Vector3f vel,
       Eigen::Vector3f vel_samples){
 
-	obstacle_costs_.setFootprint(robot_footprint_);
+    ROS_INFO("in checkTrajectory() setting footprint");
+    obstacle_costs_.setFootprint(robot_footprint_);
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
@@ -303,7 +305,8 @@ namespace dwa_local_planner {
       tf::Stamped<tf::Pose> global_vel,
       tf::Stamped<tf::Pose>& drive_velocities) {
 
-	obstacle_costs_.setFootprint(robot_footprint_);
+    ROS_INFO("in findBestPath(), setting footprint");
+    obstacle_costs_.setFootprint(robot_footprint_);
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
 
