@@ -133,7 +133,7 @@ void SimpleTrajectoryGenerator::initialise(
     }
     // Add in some special cases to check to encourage turn in place when needed.
     if (std::fabs(vel[0]) < 0.01 && std::fabs(vel[1]) < 0.01 && std::fabs(vel[2]) < 0.1) {
-      ROS_DEBUGGIG("Adding turn in place and go straight encouragement");
+      ROS_WARN("Adding turn in place and go straight encouragement");
       vel_samp[0] = 0;
       vel_samp[1] = 0;
       vel_samp[2] = max_vel_th;
