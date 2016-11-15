@@ -424,7 +424,6 @@ namespace move_base {
     return true;
   }
 
-
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
     if(as_->isActive()){
       ROS_ERROR("move_base must be in an inactive state to make a plan for an external user");
@@ -662,7 +661,27 @@ namespace move_base {
       planner_plan_->clear();
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
-      if(gotPlan){
+      //if we didn't get a plan and we are in the planning state (the robot isn't moving)
+      if(state_== PLANNING){
+        ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
+        ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
+
+        //check if we've tried to make a plan for over our time limit or our maximum number of retries
+        //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
+        //is negative (the default), it is just ignored and we have the same behavior as ever
+        lock.lock();
+        if(runPlanner_ &&
+           (ros::Time::now() > attempt_end || ++planning_retries_ > uint32_t(max_planning_retries_))){
+          //we'll move into our obstacle clearing mode
+          state_ = CLEARING;
+          publishZeroVelocity();
+          recovery_trigger_ = PLANNING_R;
+        }
+        lock.unlock();
+      }else if (state_ == CLEARING){
+    	// Do nothing to load recovery behavior in executeCycle()
+    	ROS_DEBUG_NAMED("move_base_plan_thread", "state_ is set to CLEARING");
+      }else if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
@@ -681,24 +700,6 @@ namespace move_base {
           state_ = CONTROLLING;
         if(planner_frequency_ <= 0)
           runPlanner_ = false;
-        lock.unlock();
-      }
-      //if we didn't get a plan and we are in the planning state (the robot isn't moving)
-      else if(state_==PLANNING){
-        ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
-        ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
-
-        //check if we've tried to make a plan for over our time limit or our maximum number of retries
-        //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
-        //is negative (the default), it is just ignored and we have the same behavior as ever
-        lock.lock();
-        if(runPlanner_ &&
-           (ros::Time::now() > attempt_end || ++planning_retries_ > uint32_t(max_planning_retries_))){
-          //we'll move into our obstacle clearing mode
-          state_ = CLEARING;
-          publishZeroVelocity();
-          recovery_trigger_ = PLANNING_R;
-        }
         lock.unlock();
       }
 
@@ -935,8 +936,8 @@ namespace move_base {
       if(recovery_trigger_ == PLANNING_R)
         recovery_index_ = 0;
     }
-    ROS_DEBUG_NAMED("move_base", "switch states");
-    ROS_DEBUG_NAMED("move_base", "current state: %d", state_);
+
+    ROS_DEBUG_NAMED("move_base", "Current state: %d", state_);
     //the move_base state machine, handles the control logic for navigation
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan
@@ -991,18 +992,18 @@ namespace move_base {
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
           ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
-          ROS_DEBUG_NAMED("move_base", "attempt_end: %lf", attempt_end.toSec());
-          ROS_DEBUG_NAMED("move_base", "current: %lf", ros::Time::now().toSec());
+          ROS_DEBUG_NAMED("move_base", "Attempt time limit: %lf", attempt_end.toSec());
+          ROS_DEBUG_NAMED("move_base", "Current time: %lf", ros::Time::now().toSec());
           //check if we've tried to find a valid control for longer than our time limit
           if(ros::Time::now() > attempt_end){
-            ROS_DEBUG_NAMED("move_base", "time> attempt_end");
+            ROS_DEBUG_NAMED("move_base", "Already exceeds time limit. Change to CLEARING state");
             //we'll move into our obstacle clearing mode
             publishZeroVelocity();
             state_ = CLEARING;
             recovery_trigger_ = CONTROLLING_R;
           }
           else{
-            ROS_DEBUG_NAMED("move_base", "time <= attempt_end");
+            ROS_DEBUG_NAMED("move_base", "Still trying to find a valid plan");
             //otherwise, if we can't find a valid control, we'll go back to planning
             last_valid_plan_ = ros::Time::now();
             planning_retries_ = 0;
@@ -1075,6 +1076,7 @@ namespace move_base {
     }
 
     //we aren't done yet
+    ROS_DEBUG_NAMED("move_base", "state_ is: %d after executeCycle()", state_);
     return false;
   }
 
