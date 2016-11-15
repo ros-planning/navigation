@@ -661,8 +661,31 @@ namespace move_base {
       planner_plan_->clear();
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
+      if(gotPlan){
+        ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
+		//pointer swap the plans under mutex (the controller will pull from latest_plan_)
+		std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
+
+		lock.lock();
+		planner_plan_ = latest_plan_;
+		latest_plan_ = temp_plan;
+		last_valid_plan_ = ros::Time::now();
+		planning_retries_ = 0;
+		new_global_plan_ = true;
+
+		ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
+
+		//make sure we only start the controller if we still haven't reached the goal
+		if(runPlanner_ && (state_ != CLEARING)){
+		  state_ = CONTROLLING;
+		}
+		if(planner_frequency_ <= 0)
+		  runPlanner_ = false;
+		lock.unlock();
+      }
+
       //if we didn't get a plan and we are in the planning state (the robot isn't moving)
-      if(state_== PLANNING){
+      else if(state_== PLANNING){
         ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
 
@@ -677,29 +700,6 @@ namespace move_base {
           publishZeroVelocity();
           recovery_trigger_ = PLANNING_R;
         }
-        lock.unlock();
-      }else if (state_ == CLEARING){
-    	// Do nothing to load recovery behavior in executeCycle()
-    	ROS_DEBUG_NAMED("move_base_plan_thread", "state_ is set to CLEARING");
-      }else if(gotPlan){
-        ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
-        //pointer swap the plans under mutex (the controller will pull from latest_plan_)
-        std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
-
-        lock.lock();
-        planner_plan_ = latest_plan_;
-        latest_plan_ = temp_plan;
-        last_valid_plan_ = ros::Time::now();
-        planning_retries_ = 0;
-        new_global_plan_ = true;
-
-        ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
-
-        //make sure we only start the controller if we still haven't reached the goal
-        if(runPlanner_)
-          state_ = CONTROLLING;
-        if(planner_frequency_ <= 0)
-          runPlanner_ = false;
         lock.unlock();
       }
 
@@ -901,7 +901,7 @@ namespace move_base {
       publishZeroVelocity();
       return false;
     }
-
+    ROS_DEBUG_NAMED("move_base", "state_ is : %d before executeCycle()", state_);
     //if we have a new plan then grab it and give it to the controller
     if(new_global_plan_){
       //make sure to set the new plan flag to false
@@ -937,7 +937,6 @@ namespace move_base {
         recovery_index_ = 0;
     }
 
-    ROS_DEBUG_NAMED("move_base", "Current state: %d", state_);
     //the move_base state machine, handles the control logic for navigation
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan
@@ -992,18 +991,18 @@ namespace move_base {
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
           ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
-          ROS_DEBUG_NAMED("move_base", "Attempt time limit: %lf", attempt_end.toSec());
-          ROS_DEBUG_NAMED("move_base", "Current time: %lf", ros::Time::now().toSec());
+
           //check if we've tried to find a valid control for longer than our time limit
           if(ros::Time::now() > attempt_end){
-            ROS_DEBUG_NAMED("move_base", "Already exceeds time limit. Change to CLEARING state");
+            ROS_DEBUG_NAMED("move_base", "Exceeds time limit. Change to CLEARING state");
             //we'll move into our obstacle clearing mode
+            ROS_DEBUG_NAMED("move_base", "There are %d types of recovery behaviors", recovery_behaviors_.size());
             publishZeroVelocity();
             state_ = CLEARING;
             recovery_trigger_ = CONTROLLING_R;
           }
           else{
-            ROS_DEBUG_NAMED("move_base", "Still trying to find a valid plan");
+            ROS_DEBUG_NAMED("move_base", "executeCycle() still tries to find a valid plan");
             //otherwise, if we can't find a valid control, we'll go back to planning
             last_valid_plan_ = ros::Time::now();
             planning_retries_ = 0;

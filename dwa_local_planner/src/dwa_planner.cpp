@@ -223,6 +223,7 @@ namespace dwa_local_planner {
       Eigen::Vector3f vel_samples){
 
     // set footprint
+	ROS_DEBUG_NAMED("checkTrajectory() sets footprint with size %d", robot_footprint_.size());
     obstacle_costs_.setFootprint(robot_footprint_);
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
@@ -304,6 +305,7 @@ namespace dwa_local_planner {
       tf::Stamped<tf::Pose> global_vel,
       tf::Stamped<tf::Pose>& drive_velocities) {
 
+	ROS_DEBUG_NAMED("findBestPath() sets footprint with size %d", robot_footprint_.size());
     obstacle_costs_.setFootprint(robot_footprint_);
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
