@@ -4,7 +4,7 @@
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_DECLARE_CLASS(move_backwards_recovery, MoveBackRecovery, move_backwards_recovery::MoveBackRecovery, nav_core::RecoveryBehavior)
 
-namespace MoveBackwards {
+namespace move_backwards_recovery {
 MoveBackRecovery::MoveBackRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
   tf_(NULL), initialized_(false), world_model_(NULL) {} 
 
@@ -79,8 +79,7 @@ void MoveBackRecovery::runBehavior(){
     ROS_DEBUG_NAMED("move_back", "dist left %lf", dist_left);
     if(dist_left <= 0)
       return;
-    }
-
+    
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = -0.1;
     cmd_vel.linear.y = 0.0;

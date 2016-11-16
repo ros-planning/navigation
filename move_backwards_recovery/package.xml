@@ -11,7 +11,8 @@
     <name>move_backwards_recovery</name>
     <version>1.0.0</version>
     <description>Node package: move_backwards_recovery</description>
-
+    <author>Zach Fang</author>
+    <maintainer email="zachfang@6river.com">Zach Fang</maintainer>
     <license>Proprietary</license>
 
     <buildtool_depend>catkin</buildtool_depend>

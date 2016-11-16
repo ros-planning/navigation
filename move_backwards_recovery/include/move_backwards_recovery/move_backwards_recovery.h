@@ -10,7 +10,7 @@
 #include <geometry_msgs/Point.h>
 #include <angles/angles.h>
 
-namespace MoveBackwards{
+namespace move_backwards_recovery{
  
   class MoveBackRecovery : public nav_core::RecoveryBehavior {
     public:
