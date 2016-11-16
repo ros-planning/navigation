@@ -229,6 +229,10 @@ namespace move_base {
       move_base::MoveBaseConfig default_config_;
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
+
+      // for move_backwards_recovery
+      double move_backwards_distance_;
+      bool move_backwards_enabled_;
   };
 };
 #endif
