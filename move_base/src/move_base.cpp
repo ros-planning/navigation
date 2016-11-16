@@ -1024,6 +1024,9 @@ namespace move_base {
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
+        ROS_DEBUG_NAMED("move_base", "recovery_enabled is %d", recovery_behavior_enabled_);
+        ROS_DEBUG_NAMED("move_base", "recovery_index is %d and behavior size is %d", recovery_index_, recovery_behaviors_.size());
+        recovery_behavior_enabled_ = true;
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
