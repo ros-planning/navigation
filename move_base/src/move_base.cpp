@@ -677,7 +677,7 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
         //make sure we only start the controller if we still haven't reached the goal
-        if(runPlanner_)
+        if(runPlanner_ && state_ != CLEARING)
           state_ = CONTROLLING;
         if(planner_frequency_ <= 0)
           runPlanner_ = false;
