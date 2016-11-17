@@ -36,7 +36,7 @@
  *********************************************************************/
 
 #include <base_local_planner/simple_trajectory_generator.h>
-
+#include <ros/ros.h>
 #include <cmath>
 
 #include <base_local_planner/velocity_iterator.h>
@@ -107,11 +107,11 @@ void SimpleTrajectoryGenerator::initialise(
       // with dwa do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
       max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_period_);
-      max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
+      max_vel[2] = std::max(std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_), limits->min_rot_vel);
 
       min_vel[0] = std::max(min_vel_x, vel[0] - acc_lim[0] * sim_period_);
       min_vel[1] = std::max(min_vel_y, vel[1] - acc_lim[1] * sim_period_);
-      min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
+      min_vel[2] = std::min(std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_), -limits->min_rot_vel);
     }
 
     Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
