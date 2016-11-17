@@ -107,11 +107,11 @@ void SimpleTrajectoryGenerator::initialise(
       // with dwa do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
       max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_period_);
-      max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
+      max_vel[2] = std::max(std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_), limits->min_rot_vel);
 
       min_vel[0] = std::max(min_vel_x, vel[0] - acc_lim[0] * sim_period_);
       min_vel[1] = std::max(min_vel_y, vel[1] - acc_lim[1] * sim_period_);
-      min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
+      min_vel[2] = std::min(std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_), -limits->min_rot_vel);
     }
 
     Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
@@ -130,20 +130,6 @@ void SimpleTrajectoryGenerator::initialise(
         th_it.reset();
       }
       y_it.reset();
-    }
-    // Add in some special cases to check to encourage turn in place when needed.
-    if (std::fabs(vel[0]) < 0.01 && std::fabs(vel[1]) < 0.01 && std::fabs(vel[2]) < 0.1) {
-      ROS_WARN("Adding turn in place and go straight encouragement");
-      vel_samp[0] = 0;
-      vel_samp[1] = 0;
-      vel_samp[2] = max_vel_th;
-      sample_params_.push_back(vel_samp);
-      vel_samp[2] = -max_vel_th;
-      sample_params_.push_back(vel_samp);
-
-      vel_samp[0] = max_vel_x;
-      vel_samp[2] = 0;
-      sample_params_.push_back(vel_samp);
     }
   }
 }
