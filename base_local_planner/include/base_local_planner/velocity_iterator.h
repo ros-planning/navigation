@@ -53,7 +53,9 @@ namespace base_local_planner {
           samples_.push_back(min);
         } else {
           num_samples = std::max(2, num_samples);
-
+          if (min * max > 0) {
+            samples_.push_back(0.0);
+          }
           // e.g. for 4 samples, split distance in 3 even parts
           double step_size = (max - min) / double(std::max(1, (num_samples - 1)));
 
