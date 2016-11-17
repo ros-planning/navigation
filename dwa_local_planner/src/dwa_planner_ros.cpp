@@ -112,6 +112,9 @@ namespace dwa_local_planner {
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
 
+      // set up footprint when initialization
+      dp_->setFootprintSpec(costmap_ros->getRobotFootprint());
+
       if( private_nh.getParam( "odom_topic", odom_topic_ ))
       {
         odom_helper_.setOdomTopic( odom_topic_ );
@@ -195,7 +198,7 @@ namespace dwa_local_planner {
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
     
     // call with updated footprint
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds, costmap_ros_->getRobotFootprint());
+    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment

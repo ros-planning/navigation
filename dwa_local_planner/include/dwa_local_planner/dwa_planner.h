@@ -109,8 +109,7 @@ namespace dwa_local_planner {
       base_local_planner::Trajectory findBestPath(
           tf::Stamped<tf::Pose> global_pose,
           tf::Stamped<tf::Pose> global_vel,
-          tf::Stamped<tf::Pose>& drive_velocities,
-          std::vector<geometry_msgs::Point> footprint_spec);
+          tf::Stamped<tf::Pose>& drive_velocities);
 
       /**
        * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
@@ -142,6 +141,9 @@ namespace dwa_local_planner {
        */
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
+
+      void setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec);
+
     private:
 
       base_local_planner::LocalPlannerUtil *planner_util_;
@@ -156,6 +158,7 @@ namespace dwa_local_planner {
       double forward_point_distance_;
 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
+      std::vector<geometry_msgs::Point> robot_footprint_;
 
       boost::mutex configuration_mutex_;
       pcl::PointCloud<base_local_planner::MapGridCostPoint>* traj_cloud_;
