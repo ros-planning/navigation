@@ -7,7 +7,7 @@ PLUGINLIB_DECLARE_CLASS(move_backwards_recovery, MoveBackRecovery, move_backward
 
 namespace move_backwards_recovery {
 MoveBackRecovery::MoveBackRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
-  tf_(NULL), initialized_(false), world_model_(NULL) {} 
+  tf_(NULL), initialized_(false){} 
 
 void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
