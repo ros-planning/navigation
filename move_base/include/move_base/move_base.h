@@ -233,6 +233,7 @@ namespace move_base {
       // for move_backwards_recovery
       double move_backwards_distance_;
       bool move_backwards_enabled_;
+      double move_backwards_velocity_;
   };
 };
 #endif

@@ -109,6 +109,7 @@ namespace move_base {
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
     private_nh.param("move_backwards_distance", move_backwards_distance_, 0.15);
     private_nh.param("move_backwards_enabled", move_backwards_enabled_, true);
+    private_nh.param("move_backwards_velocity", move_backwards_velocity_, 0.1);
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
@@ -1173,7 +1174,7 @@ namespace move_base {
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("move_backwards/distance_backward", move_backwards_distance_);
-
+      n.setParam("move_backwards/backwards_velocity", move_backwards_velocity_);
       //first, we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);

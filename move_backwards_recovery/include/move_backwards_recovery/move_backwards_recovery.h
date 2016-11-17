@@ -30,8 +30,10 @@ namespace move_backwards_recovery{
       std::string name_;
       tf::TransformListener* tf_;
       bool initialized_;
-      double sim_granularity_, min_rotational_vel_, max_rotational_vel_, acc_lim_th_, tolerance_, frequency_;
-      base_local_planner::CostmapModel* world_model_;
+      double distance_backwards_;
+      double backwards_velocity_;
+
+      static constexpr auto RECOVERY_VELOCITY_CMD = "/internal/sensors/odometry/velocity/cmd";
   };
 };
 #endif  
