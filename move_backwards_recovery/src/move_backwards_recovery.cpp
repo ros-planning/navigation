@@ -7,7 +7,7 @@ PLUGINLIB_DECLARE_CLASS(move_backwards_recovery, MoveBackRecovery, move_backward
 
 namespace move_backwards_recovery {
 MoveBackRecovery::MoveBackRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
-  tf_(NULL), initialized_(false){} 
+  tf_(NULL), initialized_(false), world_model_(NULL){} 
 
 void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
@@ -23,6 +23,7 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     private_nh.param("distance_backward", distance_backwards_, 0.15);
     private_nh.param("backwards_velocity", backwards_velocity_, -0.05);
 
+    world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
     initialized_ = true;
   }
   else{
@@ -30,7 +31,9 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
   }
 }
 
-MoveBackRecovery::~MoveBackRecovery(){}
+MoveBackRecovery::~MoveBackRecovery(){
+  delete world_model_;
+}
 
 void MoveBackRecovery::runBehavior(){
   if(!initialized_){
@@ -77,8 +80,17 @@ void MoveBackRecovery::runBehavior(){
   while(n.ok()){
     local_costmap_->getRobotPose(global_pose);
 
-    distance_traveled = sqrt((global_pose.getOrigin().x()- originX)* (global_pose.getOrigin().x()- originX)+
-                        (global_pose.getOrigin().y()- originY)* (global_pose.getOrigin().y()- originY));
+    double cur_x = global_pose.getOrigin().x();
+    double cur_y = global_pose.getOrigin().y();
+    double cur_theta = tf::getYaw(global_pose.getRotation());
+
+    double footprint_cost = world_model_->footprintCost(cur_x, cur_y, cur_theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
+      if(footprint_cost < 0.0){
+        ROS_ERROR("Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
+        return;
+      }
+
+    distance_traveled = sqrt((cur_x- originX)* (cur_x- originX) + (cur_y- originY)* (cur_y- originY));
 
     double dist_left = distance_backwards_ - distance_traveled;
     ROS_DEBUG_NAMED("move_backwards_recovery", "Distance left: %lf", dist_left);
