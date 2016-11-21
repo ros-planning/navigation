@@ -84,21 +84,29 @@ void MoveBackRecovery::runBehavior(){
     double cur_y = global_pose.getOrigin().y();
     double cur_theta = tf::getYaw(global_pose.getRotation());
 
-    double footprint_cost = world_model_->footprintCost(cur_x, cur_y, cur_theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
-      if(footprint_cost < 0.0){
-        ROS_ERROR("Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
-        return;
-      }
-
     distance_traveled = sqrt((cur_x- originX)* (cur_x- originX) + (cur_y- originY)* (cur_y- originY));
 
     double dist_left = distance_backwards_ - distance_traveled;
     ROS_DEBUG_NAMED("move_backwards_recovery", "Distance left: %lf", dist_left);
 
-    // if robot has already exceeded assigned distance, return
+    // if robot has already traveled enough, return
     if(dist_left <= 0)
       return;
     
+    double sim_dist = 0.0;
+    while(dist_left >= sim_dist){
+      double sim_x = cur_x - sim_dist * cos(cur_theta);
+      double sim_y = cur_y - sim_dist * sin(cur_theta);
+
+      double footprint_cost = world_model_->footprintCost(sim_x, sim_y, cur_theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
+      if(footprint_cost < 0.0){
+    	ROS_ERROR("Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
+    	return;
+      }
+
+      sim_dist += 0.01;
+    }
+
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = backwards_velocity_;
     cmd_vel.linear.y = 0.0;
