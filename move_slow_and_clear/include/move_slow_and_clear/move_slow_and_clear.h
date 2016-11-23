@@ -57,7 +57,7 @@ namespace move_slow_and_clear
           costmap_2d::Costmap2DROS* local_costmap);
 
       /// Run the behavior
-      void runBehavior();
+      bool runBehavior();
 
     private:
       void setRobotSpeed(double trans_speed, double rot_speed);

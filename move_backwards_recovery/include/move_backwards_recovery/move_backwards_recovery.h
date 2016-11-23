@@ -20,7 +20,7 @@ namespace move_backwards_recovery{
       void initialize(std::string name, tf::TransformListener* tf, 
           costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap);
 
-      void runBehavior();
+      bool runBehavior();
 
       ~MoveBackRecovery();
 

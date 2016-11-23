@@ -70,7 +70,7 @@ namespace clear_costmap_recovery{
        * costmap to the static map outside of a user-specified window and
        * clears unknown space around the robot.
        */
-      void runBehavior();
+      bool runBehavior();
 
     private:
       void clear(costmap_2d::Costmap2DROS* costmap);      

@@ -78,15 +78,15 @@ RotateRecovery::~RotateRecovery(){
   delete world_model_;
 }
 
-void RotateRecovery::runBehavior(){
+bool RotateRecovery::runBehavior(){
   if(!initialized_){
     ROS_ERROR("This object must be initialized before runBehavior is called");
-    return;
+    return false;
   }
 
   if(global_costmap_ == NULL || local_costmap_ == NULL){
     ROS_ERROR("The costmaps passed to the RotateRecovery object cannot be NULL. Doing nothing.");
-    return;
+    return false;
   }
   ROS_WARN("Rotate recovery behavior started.");
 
@@ -122,7 +122,7 @@ void RotateRecovery::runBehavior(){
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
       if(footprint_cost < 0.0){
         ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f", footprint_cost);
-        return;
+        return false;
       }
 
       sim_angle += sim_granularity_;
@@ -147,7 +147,7 @@ void RotateRecovery::runBehavior(){
 
     //if we're done with our in-place rotation... then return
     if(got_180 && current_angle >= (0.0 - tolerance_))
-      return;
+      return true;
 
     r.sleep();
   }

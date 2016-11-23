@@ -71,12 +71,12 @@ namespace move_slow_and_clear
     initialized_ = true;
   }
 
-  void MoveSlowAndClear::runBehavior()
+  bool MoveSlowAndClear::runBehavior()
   {
     if(!initialized_)
     {
       ROS_ERROR("This recovery behavior has not been initialized, doing nothing.");
-      return;
+      return false;
     }
     ROS_WARN("Move slow and clear recovery behavior started.");
     tf::Stamped<tf::Pose> global_pose, local_pose;
@@ -150,6 +150,7 @@ namespace move_slow_and_clear
     setRobotSpeed(limited_trans_speed_, limited_rot_speed_);
     limit_set_ = true;
     distance_check_timer_ = private_nh_.createTimer(ros::Duration(0.1), &MoveSlowAndClear::distanceCheck, this);
+    return true;
   }
 
   double MoveSlowAndClear::getSqDistance()

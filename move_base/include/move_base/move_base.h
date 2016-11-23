@@ -234,6 +234,8 @@ namespace move_base {
       double move_backwards_distance_;
       bool move_backwards_enabled_;
       double move_backwards_velocity_;
+
+      bool recovery_success_;
   };
 };
 #endif

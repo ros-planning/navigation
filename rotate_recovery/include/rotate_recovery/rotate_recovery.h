@@ -71,7 +71,7 @@ namespace rotate_recovery{
       /**
        * @brief  Run the RotateRecovery recovery behavior.
        */
-      void runBehavior();
+      bool runBehavior();
 
       /**
        * @brief  Destructor for the rotate recovery behavior

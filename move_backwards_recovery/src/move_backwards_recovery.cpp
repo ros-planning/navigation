@@ -35,25 +35,25 @@ MoveBackRecovery::~MoveBackRecovery(){
   delete world_model_;
 }
 
-void MoveBackRecovery::runBehavior(){
+bool MoveBackRecovery::runBehavior(){
   if(!initialized_){
     ROS_ERROR("This object must be initialized before runBehavior is called");
-    return;
+    return false;
   }
 
   if(global_costmap_ == NULL || local_costmap_ == NULL){
     ROS_ERROR("The costmaps passed to the MoveBackRecovery object cannot be NULL. Doing nothing.");
-    return;
+    return false;
   }
 
   if(backwards_velocity_ == 0 || distance_backwards_ ==0){
     ROS_ERROR("Bad input. Either velocity or distance is not setup correctly");
-    return;
+    return false;
   }
 
   if(fabs(backwards_velocity_) > 0.1){
     ROS_ERROR("Velocity is too high to implement move_backwards_recovery");
-    return;
+    return false;
   }
 
   // make sure the distance value >0 and backwards velocity < 0
@@ -91,7 +91,7 @@ void MoveBackRecovery::runBehavior(){
 
     // if robot has already traveled enough, return
     if(dist_left <= 0)
-      return;
+      return true;
     
     double sim_dist = 0.0;
     while(dist_left >= sim_dist){
@@ -101,7 +101,7 @@ void MoveBackRecovery::runBehavior(){
       double footprint_cost = world_model_->footprintCost(sim_x, sim_y, cur_theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
       if(footprint_cost < 0.0){
     	ROS_ERROR("Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
-    	return;
+    	return false;
       }
 
       sim_dist += 0.01;
