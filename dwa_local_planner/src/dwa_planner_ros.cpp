@@ -63,18 +63,20 @@ namespace dwa_local_planner {
 
       // update generic local planner params
       base_local_planner::LocalPlannerLimits limits;
-      limits.max_trans_vel = config.max_trans_vel;
+      //limits.max_trans_vel = config.max_trans_vel;
       limits.min_trans_vel = config.min_trans_vel;
       limits.max_vel_x = config.max_vel_x;
       limits.min_vel_x = config.min_vel_x;
       limits.max_vel_y = config.max_vel_y;
       limits.min_vel_y = config.min_vel_y;
+      limits.max_trans_vel = std::max(limits.max_vel_x, limits.max_vel_y);
       limits.max_rot_vel = config.max_rot_vel;
       limits.min_rot_vel = config.min_rot_vel;
       limits.acc_lim_x = config.acc_lim_x;
       limits.acc_lim_y = config.acc_lim_y;
       limits.acc_lim_theta = config.acc_lim_theta;
-      limits.acc_limit_trans = config.acc_limit_trans;
+      //limits.acc_limit_trans = config.acc_limit_trans;
+      limits.acc_limit_trans = std::max(limits.acc_lim_x, limits.acc_lim_y);
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
       limits.prune_plan = config.prune_plan;
