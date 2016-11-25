@@ -85,16 +85,40 @@ public:
 
 protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
-
   virtual void resetMaps();
+  virtual void resetGrid();
+
+  boost::shared_ptr<std::list<std::pair<unsigned int, unsigned int> > > updated_cells_indices_;
 
 private:
   void reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t level);
   void clearNonLethal(double wx, double wy, double w_size_x, double w_size_y, bool clear_no_info);
-  virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation, double* min_x, double* min_y,
-                                 double* max_x, double* max_y);
+  virtual void clear(std::vector<Observation>& observations, double* min_x, double* min_y,
+                     double* max_x, double* max_y);
+  virtual void raytraceFreespace(const costmap_2d::Observation& clearing_observation,
+                                 boost::shared_ptr<voxel_grid::AbstractGridUpdater> voxel_clearer,
+                                 double* min_x, double* min_y, double* max_x, double* max_y,
+                                 unsigned int update_area_center = 0);
+  virtual void convertFromMapToWorld(sensor_msgs::PointCloud& point_cloud);
 
   dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig> *voxel_dsrv_;
+
+  /**
+   * @brief Include corner cases or not.
+   *
+   * The raytracing works with the Bresenham algorithm on discrete cells.
+   * raytrace_corner_cases_ includes additional cells at the transition of one row / column to the next:
+   *
+   * |   |   |   |   |
+   * -----------------  Legend:
+   * |   | # | = | = |          = : Cells added by original Bresenham
+   * -----------------          # : Additional cells added with raytrace_corner_cases_
+   * | = | = | # |   |
+   * -----------------
+  **/
+  bool clear_corner_cases_;
+
+  bool use_cached_updating_;
 
   bool publish_voxel_;
   ros::Publisher voxel_pub_;
@@ -102,6 +126,7 @@ private:
   double z_resolution_, origin_z_;
   unsigned int unknown_threshold_, mark_threshold_, size_z_;
   ros::Publisher clearing_endpoints_pub_;
+  ros::Publisher cleared_points_pub_;
   sensor_msgs::PointCloud clearing_endpoints_;
 
   inline bool worldToMap3DFloat(double wx, double wy, double wz, double& mx, double& my, double& mz)

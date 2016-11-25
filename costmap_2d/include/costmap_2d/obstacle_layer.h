@@ -168,6 +168,8 @@ protected:
 
   int combination_method_;
 
+  double max_raytrace_range_;
+
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
 };
@@ -175,3 +177,4 @@ private:
 }  // namespace costmap_2d
 
 #endif  // COSTMAP_2D_OBSTACLE_LAYER_H_
+
