@@ -53,7 +53,7 @@ namespace move_base {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"),
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false), recovery_success_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -1030,20 +1030,16 @@ namespace move_base {
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           ROS_DEBUG_NAMED("move_base_recovery", "Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
-          //Only when we are sure the robot can rotate, then we clear costmap
-          if(!(recovery_index_ == 2 && !recovery_success_)){
         
-            recovery_success_ = recovery_behaviors_[recovery_index_]->runBehavior();
-            ROS_DEBUG_NAMED("move_base_recovery", "Recovery success: %d", recovery_success_);
-            //we at least want to give the robot some time to stop oscillating after executing the behavior
-            last_oscillation_reset_ = ros::Time::now();
+          recovery_behaviors_[recovery_index_]->runBehavior();
           
-            //we'll check if the recovery behavior actually worked
-            ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
-            state_ = PLANNING;
-          } else {
-            ROS_DEBUG_NAMED("move_base_recovery", "Skip clearing costmap recovery");
-          }
+          //we at least want to give the robot some time to stop oscillating after executing the behavior
+          last_oscillation_reset_ = ros::Time::now();
+          
+          //we'll check if the recovery behavior actually worked
+          ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
+          state_ = PLANNING;
+          
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
         }
@@ -1181,26 +1177,26 @@ namespace move_base {
       n.setParam("move_backwards/distance_backward", move_backwards_distance_);
       n.setParam("move_backwards/backwards_velocity", move_backwards_velocity_);
       
-      
+      //first, clear costmap to clean costmap in front of the robot
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(cons_clear);
 
-
-      //first, we'll load a recovery behavior to move backwards
+      //second, we'll load a recovery behavior to move backwards
       boost::shared_ptr<nav_core::RecoveryBehavior> move_backwards(recovery_loader_.createInstance("move_backwards_recovery/MoveBackRecovery"));
       move_backwards->initialize("move_backwards", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       if(move_backwards_enabled_){
         recovery_behaviors_.push_back(move_backwards);
       }
       
-      //second, we'll load rotate recovery
+      //third, we'll load rotate recovery
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       if(clearing_rotation_allowed_){
         recovery_behaviors_.push_back(rotate);
       }
       
-      //thrid, load clear costmap recovery
+      //forth, load clear costmap recovery
       recovery_behaviors_.push_back(cons_clear);
       
       //lastly, rotate again to know the robot's surrounding

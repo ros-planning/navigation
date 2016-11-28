@@ -57,7 +57,7 @@ namespace nav_core {
       /**
        * @brief   Runs the RecoveryBehavior
        */
-      virtual bool runBehavior() = 0;
+      virtual void runBehavior() = 0;
 
       /**
        * @brief  Virtual destructor for the interface

@@ -77,22 +77,21 @@ void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* t
   }
 }
 
-bool ClearCostmapRecovery::runBehavior(){
+void ClearCostmapRecovery::runBehavior(){
   if(!initialized_){
     ROS_ERROR("This object must be initialized before runBehavior is called");
-    return false;
+    return;
   }
 
   if(global_costmap_ == NULL || local_costmap_ == NULL){
     ROS_ERROR("The costmaps passed to the ClearCostmapRecovery object cannot be NULL. Doing nothing.");
-    return false ;
+    return;
   }
   ROS_WARN("Clearing costmap to unstuck robot (%fm).", reset_distance_);
   clear(global_costmap_);
   clear(local_costmap_);
 
-  // assume there won't be issue in clear() function for now
-  return true;
+  return;
 }
 
 void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
@@ -131,7 +130,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> 
  
   double start_point_x = pose_x - reset_distance_ / 2;
   double start_point_y = pose_y - reset_distance_ / 2;
-  double end_point_x = start_point_x + reset_distance_;
+  double end_point_x = start_point_x;
   double end_point_y = start_point_y + reset_distance_;
 
   int start_x, start_y, end_x, end_y;
