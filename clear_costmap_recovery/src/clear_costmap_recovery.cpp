@@ -130,7 +130,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> 
  
   double start_point_x = pose_x - reset_distance_ / 2;
   double start_point_y = pose_y - reset_distance_ / 2;
-  double end_point_x = start_point_x;
+  double end_point_x = start_point_x + reset_distance_;
   double end_point_y = start_point_y + reset_distance_;
 
   int start_x, start_y, end_x, end_y;
