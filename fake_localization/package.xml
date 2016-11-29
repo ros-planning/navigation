@@ -16,7 +16,8 @@
     <build_depend>rosconsole</build_depend>
     <build_depend>nav_msgs</build_depend>
     <build_depend>geometry_msgs</build_depend>
-    <build_depend>tf</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
+    <build_depend>tf2_ros</build_depend>
     <build_depend>message_filters</build_depend>
     <build_depend>rospy</build_depend>
 
@@ -24,7 +25,7 @@
     <run_depend>rosconsole</run_depend>
     <run_depend>nav_msgs</run_depend>
     <run_depend>geometry_msgs</run_depend>
-    <run_depend>tf</run_depend>
+    <run_depend>tf2_ros</run_depend>
     <run_depend>message_filters</run_depend>
     <run_depend>rospy</run_depend>
 

@@ -40,11 +40,18 @@
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_DECLARE_CLASS(rotate_recovery, RotateRecovery, rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
+inline double getYaw(const geometry_msgs::PoseStamped& pose) {
+  double yaw, _pitch, _roll;
+  tf2::Matrix3x3(tf2::Quaternion(pose.pose.orientation.x, pose.pose.orientation.y,
+                                 pose.pose.orientation.z, pose.pose.orientation.w)).getEulerYPR(yaw, _pitch, _roll);
+                                 return yaw;
+}
+
 namespace rotate_recovery {
 RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
   tf_(NULL), initialized_(false), world_model_(NULL) {} 
 
-void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
+void RotateRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
   if(!initialized_){
     name_ = name;
@@ -94,29 +101,29 @@ void RotateRecovery::runBehavior(){
   ros::NodeHandle n;
   ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
-  tf::Stamped<tf::Pose> global_pose;
+  geometry_msgs::PoseStamped global_pose;
   local_costmap_->getRobotPose(global_pose);
 
   double current_angle = -1.0 * M_PI;
 
   bool got_180 = false;
 
-  double start_offset = 0 - angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
+  double start_offset = 0 - angles::normalize_angle(getYaw(global_pose));
   while(n.ok()){
     local_costmap_->getRobotPose(global_pose);
 
-    double norm_angle = angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
+    double norm_angle = angles::normalize_angle(getYaw(global_pose));
     current_angle = angles::normalize_angle(norm_angle + start_offset);
 
     //compute the distance left to rotate
     double dist_left = M_PI - current_angle;
 
-    double x = global_pose.getOrigin().x(), y = global_pose.getOrigin().y();
+    double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
     //check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
     while(sim_angle < dist_left){
-      double theta = tf::getYaw(global_pose.getRotation()) + sim_angle;
+      double theta = getYaw(global_pose) + sim_angle;
 
       //make sure that the point is legal, if it isn't... we'll abort
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);

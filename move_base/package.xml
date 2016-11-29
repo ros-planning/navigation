@@ -29,7 +29,7 @@
     <build_depend>rospy</build_depend>
     <build_depend>std_msgs</build_depend>
     <build_depend>std_srvs</build_depend>
-    <build_depend>tf</build_depend>
+    <build_depend>tf2_ros</build_depend>
     <build_depend>visualization_msgs</build_depend>
 
     <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->
@@ -57,7 +57,7 @@
     <run_depend>rospy</run_depend>
     <run_depend>std_msgs</run_depend>
     <run_depend>std_srvs</run_depend>
-    <run_depend>tf</run_depend>
+    <run_depend>tf2_ros</run_depend>
     <run_depend>visualization_msgs</run_depend>
 
 </package>

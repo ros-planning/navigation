@@ -36,6 +36,15 @@
 *********************************************************************/
 #include <carrot_planner/carrot_planner.h>
 #include <pluginlib/class_list_macros.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+inline
+void fromMsg(const geometry_msgs::Pose& pose_msg, tf2::Transform& pose)
+{
+  pose = tf2::Transform(tf2::Quaternion(pose_msg.orientation.x, pose_msg.orientation.y,
+                                        pose_msg.orientation.z, pose_msg.orientation.w),
+                        tf2::Vector3(pose_msg.position.x, pose_msg.position.y, pose_msg.position.z));
+}
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(carrot_planner::CarrotPlanner, nav_core::BaseGlobalPlanner)
@@ -103,11 +112,11 @@ namespace carrot_planner {
       return false;
     }
 
-    tf::Stamped<tf::Pose> goal_tf;
-    tf::Stamped<tf::Pose> start_tf;
+    tf2::Transform goal_tf;
+    tf2::Transform start_tf;
 
-    poseStampedMsgToTF(goal,goal_tf);
-    poseStampedMsgToTF(start,start_tf);
+    fromMsg(goal.pose, goal_tf);
+    fromMsg(start.pose, start_tf);
 
     double useless_pitch, useless_roll, goal_yaw, start_yaw;
     start_tf.getBasis().getEulerYPR(start_yaw, useless_pitch, useless_roll);
@@ -155,7 +164,8 @@ namespace carrot_planner {
 
     plan.push_back(start);
     geometry_msgs::PoseStamped new_goal = goal;
-    tf::Quaternion goal_quat = tf::createQuaternionFromYaw(target_yaw);
+    tf2::Quaternion goal_quat;
+    goal_quat.setEuler(target_yaw, 0, 0);
 
     new_goal.pose.position.x = target_x;
     new_goal.pose.position.y = target_y;
