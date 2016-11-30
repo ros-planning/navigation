@@ -84,15 +84,16 @@ void MoveBackRecovery::runBehavior(){
     double cur_y = global_pose.getOrigin().y();
     double cur_theta = tf::getYaw(global_pose.getRotation());
 
-    distance_traveled = sqrt((cur_x- originX)* (cur_x- originX) + (cur_y- originY)* (cur_y- originY));
+    distance_traveled = sqrt((cur_x - originX) * (cur_x - originX) + (cur_y - originY) * (cur_y - originY));
 
     double dist_left = distance_backwards_ - distance_traveled;
     ROS_DEBUG_NAMED("move_backwards_recovery", "Distance left: %lf", dist_left);
 
     // if robot has already traveled enough, return
-    if(dist_left <= 0)
+    if(dist_left <= 0){
       return;
-    
+    }
+
     double sim_dist = 0.0;
     while(dist_left >= sim_dist){
       double sim_x = cur_x - sim_dist * cos(cur_theta);
