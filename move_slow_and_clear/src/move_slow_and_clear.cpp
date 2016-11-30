@@ -150,7 +150,6 @@ namespace move_slow_and_clear
     setRobotSpeed(limited_trans_speed_, limited_rot_speed_);
     limit_set_ = true;
     distance_check_timer_ = private_nh_.createTimer(ros::Duration(0.1), &MoveSlowAndClear::distanceCheck, this);
-    return;
   }
 
   double MoveSlowAndClear::getSqDistance()

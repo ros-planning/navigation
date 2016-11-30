@@ -141,7 +141,6 @@ namespace dwa_local_planner {
        */
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
-
       void setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec);
 
     private:

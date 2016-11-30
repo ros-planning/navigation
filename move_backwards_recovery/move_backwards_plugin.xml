@@ -1,7 +1,7 @@
 <library path="lib/libmove_backwards_recovery">
   <class name="move_backwards_recovery/MoveBackRecovery" type="move_backwards_recovery::MoveBackRecovery" base_class_type="nav_core::RecoveryBehavior">
     <description>
-      Move back
+      A 6RS recovery behavior that will slowly move backwards by predefined velocity and distance.
     </description>
   </class>
 </library>

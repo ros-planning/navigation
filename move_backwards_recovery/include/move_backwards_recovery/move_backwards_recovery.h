@@ -8,7 +8,6 @@
 #include <base_local_planner/costmap_model.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
-#include <angles/angles.h>
 
 namespace move_backwards_recovery{
  
