@@ -1,16 +1,15 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(move_backwards_recovery)
 add_definitions(-std=c++11)
-find_package(catkin REQUIRED
-        COMPONENTS
-            cmake_modules
-            roscpp
-            tf
-            costmap_2d
-            nav_core
-            pluginlib
-            base_local_planner
-        )
+find_package(catkin REQUIRED COMPONENTS
+    cmake_modules
+    roscpp
+    tf
+    costmap_2d
+    nav_core
+    pluginlib
+    base_local_planner
+)
 
 find_package(Eigen REQUIRED)
 include_directories(

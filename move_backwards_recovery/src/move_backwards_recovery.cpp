@@ -75,7 +75,8 @@ void MoveBackRecovery::runBehavior(){
   double originX = global_pose.getOrigin().x(); 
   double originY = global_pose.getOrigin().y();   
 
-  double distance_traveled = 0.0;
+  double distance_traveled_sq = 0.0;
+  double distance_max_sq = distance_backwards_ * distance_backwards_;
 
   while(n.ok()){
     local_costmap_->getRobotPose(global_pose);
@@ -84,18 +85,20 @@ void MoveBackRecovery::runBehavior(){
     double cur_y = global_pose.getOrigin().y();
     double cur_theta = tf::getYaw(global_pose.getRotation());
 
-    distance_traveled = sqrt((cur_x - originX) * (cur_x - originX) + (cur_y - originY) * (cur_y - originY));
+    distance_traveled_sq = (cur_x - originX) * (cur_x - originX) + (cur_y - originY) * (cur_y - originY);
 
-    double dist_left = distance_backwards_ - distance_traveled;
-    ROS_DEBUG_NAMED("move_backwards_recovery", "Distance left: %lf", dist_left);
+    ROS_DEBUG_NAMED("move_backwards_recovery", "Sqare of distance traveled: %lf", distance_traveled_sq);
+    
+    double distance_left_sq = distance_max_sq - distance_traveled_sq; 
 
     // if robot has already traveled enough, return
-    if(dist_left <= 0){
+    if(distance_left_sq <= 0){
       return;
     }
-
+    
+    // forward simulation to avoid collision
     double sim_dist = 0.0;
-    while(dist_left >= sim_dist){
+    while(distance_left_sq >= (sim_dist * sim_dist)){
       double sim_x = cur_x - sim_dist * cos(cur_theta);
       double sim_y = cur_y - sim_dist * sin(cur_theta);
 

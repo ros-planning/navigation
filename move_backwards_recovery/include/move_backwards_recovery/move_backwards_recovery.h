@@ -33,7 +33,7 @@ namespace move_backwards_recovery{
       double backwards_velocity_;
  
       base_local_planner::CostmapModel* world_model_;     
-      static constexpr auto RECOVERY_VELOCITY_CMD = "/internal/sensors/odometry/velocity/cmd";
+      static constexpr auto RECOVERY_VELOCITY_CMD = "/cmd_vel";
  
   };
 };

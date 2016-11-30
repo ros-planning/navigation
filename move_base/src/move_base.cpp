@@ -246,6 +246,11 @@ namespace move_base {
 
     oscillation_timeout_ = config.oscillation_timeout;
     oscillation_distance_ = config.oscillation_distance;
+
+    move_backwards_distance_ = config.move_backwards_distance;
+    move_backwards_enabled_ = config.move_backwards_enabled;
+    move_backwards_velocity_ = config.move_backwards_velocity;
+    
     if(config.base_global_planner != last_config_.base_global_planner) {
       boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
       //initialize the global planner
@@ -1174,6 +1179,7 @@ namespace move_base {
       //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
+      n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
       n.setParam("move_backwards/distance_backward", move_backwards_distance_);
       n.setParam("move_backwards/backwards_velocity", move_backwards_velocity_);
       
@@ -1184,20 +1190,22 @@ namespace move_base {
 
       //second, we'll load a recovery behavior to move backwards
       boost::shared_ptr<nav_core::RecoveryBehavior> move_backwards(recovery_loader_.createInstance("move_backwards_recovery/MoveBackRecovery"));
-      move_backwards->initialize("move_backwards", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       if(move_backwards_enabled_){
+        move_backwards->initialize("move_backwards", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(move_backwards);
       }
       
       //third, we'll load rotate recovery
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
-      rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       if(clearing_rotation_allowed_){
+        rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
       
-      //forth, load clear costmap recovery
-      recovery_behaviors_.push_back(cons_clear);
+      //forth, aggressive costmap clearing is called
+      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(ags_clear);
       
       //lastly, rotate again to know the robot's surrounding
       if(clearing_rotation_allowed_){
