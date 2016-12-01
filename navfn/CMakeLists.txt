@@ -6,11 +6,13 @@ find_package(catkin REQUIRED
         cmake_modules
         costmap_2d
         geometry_msgs
+        message_generation
         nav_core
         nav_msgs
         pcl_conversions
         pcl_ros
         pluginlib
+        rosconsole
         roscpp
         tf
         visualization_msgs
@@ -38,9 +40,7 @@ add_service_files(
 
 generate_messages(
     DEPENDENCIES
-        std_msgs
         geometry_msgs
-        nav_msgs
 )
 
 catkin_package(
@@ -49,9 +49,13 @@ catkin_package(
     LIBRARIES
         navfn
     CATKIN_DEPENDS
+        geometry_msgs
+        message_runtime
         nav_core
-        roscpp
+        nav_msgs
         pluginlib
+        roscpp
+        visualization_msgs
 )
 
 add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
