@@ -107,7 +107,9 @@ namespace move_base {
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
-
+    private_nh.param("move_backwards_distance", move_backwards_distance_, 0.15);
+    private_nh.param("move_backwards_enabled", move_backwards_enabled_, true);
+    private_nh.param("move_backwards_velocity", move_backwards_velocity_, 0.1);
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
@@ -184,6 +186,7 @@ namespace move_base {
 
     //load any user specified recovery behaviors, and if that fails load the defaults
     if(!loadRecoveryBehaviors(private_nh)){
+      ROS_DEBUG_NAMED("move_base", "Loading default recovery behaviors");
       loadDefaultRecoveryBehaviors();
     }
 
@@ -243,6 +246,11 @@ namespace move_base {
 
     oscillation_timeout_ = config.oscillation_timeout;
     oscillation_distance_ = config.oscillation_distance;
+
+    move_backwards_distance_ = config.move_backwards_distance;
+    move_backwards_enabled_ = config.move_backwards_enabled;
+    move_backwards_velocity_ = config.move_backwards_velocity;
+    
     if(config.base_global_planner != last_config_.base_global_planner) {
       boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
       //initialize the global planner
@@ -423,7 +431,6 @@ namespace move_base {
     resp.success = true;
     return true;
   }
-
 
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
     if(as_->isActive()){
@@ -664,27 +671,33 @@ namespace move_base {
 
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
-        //pointer swap the plans under mutex (the controller will pull from latest_plan_)
-        std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
+	//pointer swap the plans under mutex (the controller will pull from latest_plan_)
+	std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
-        lock.lock();
-        planner_plan_ = latest_plan_;
-        latest_plan_ = temp_plan;
-        last_valid_plan_ = ros::Time::now();
-        planning_retries_ = 0;
-        new_global_plan_ = true;
+  	lock.lock();
+	planner_plan_ = latest_plan_;
+	latest_plan_ = temp_plan;
+	last_valid_plan_ = ros::Time::now();
+	planning_retries_ = 0;
+	new_global_plan_ = true;
 
-        ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
+	ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
-        //make sure we only start the controller if we still haven't reached the goal
-        if(runPlanner_ && state_ != CLEARING)
+	//make sure we only start the controller if we still haven't reached the goal
+        // The if condition here always sets state_ to CLONTROLLING even the state_ is 
+        // CLEARING and should conduct CLEARING action. 
+	if(runPlanner_ && (state_ != CLEARING)){
           state_ = CONTROLLING;
-        if(planner_frequency_ <= 0)
-          runPlanner_ = false;
+	}
+
+	if(planner_frequency_ <= 0)
+	  runPlanner_ = false;
+	
         lock.unlock();
       }
+
       //if we didn't get a plan and we are in the planning state (the robot isn't moving)
-      else if(state_==PLANNING){
+      else if(state_== PLANNING){
         ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
 
@@ -900,7 +913,7 @@ namespace move_base {
       publishZeroVelocity();
       return false;
     }
-
+    
     //if we have a new plan then grab it and give it to the controller
     if(new_global_plan_){
       //make sure to set the new plan flag to false
@@ -1021,16 +1034,17 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
-          ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
+          ROS_DEBUG_NAMED("move_base_recovery", "Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
+        
           recovery_behaviors_[recovery_index_]->runBehavior();
-
+          
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
-
+          
           //we'll check if the recovery behavior actually worked
           ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
           state_ = PLANNING;
-
+          
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
         }
@@ -1166,27 +1180,37 @@ namespace move_base {
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
-
-      //first, we'll load a recovery behavior to clear the costmap
+      n.setParam("move_backwards/distance_backward", move_backwards_distance_);
+      n.setParam("move_backwards/backwards_velocity", move_backwards_velocity_);
+      
+      //first, clear costmap to clean costmap in front of the robot
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
 
-      //next, we'll load a recovery behavior to rotate in place
+      //second, we'll load a recovery behavior to move backwards
+      boost::shared_ptr<nav_core::RecoveryBehavior> move_backwards(recovery_loader_.createInstance("move_backwards_recovery/MoveBackRecovery"));
+      if(move_backwards_enabled_){
+        move_backwards->initialize("move_backwards", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(move_backwards);
+      }
+      
+      //third, we'll load rotate recovery
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
-
-      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
+      
+      //forth, aggressive costmap clearing is called
       boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
-
-      //we'll rotate in-place one more time
-      if(clearing_rotation_allowed_)
+      
+      //lastly, rotate again to know the robot's surrounding
+      if(clearing_rotation_allowed_){
         recovery_behaviors_.push_back(rotate);
+      }
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
