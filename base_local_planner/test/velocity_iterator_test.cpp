@@ -96,9 +96,9 @@ TEST(VelocityIteratorTest, test1_pos) {
     result[i] = x_it.getVelocity();
     i++;
   }
-  EXPECT_EQ(2, i);
-  double expected [2]= {10.0, 30.0};
-  for (int j = 0; j < 2; ++j) {
+  EXPECT_EQ(3, i);
+  double expected [3]= {0.0, 10.0, 30.0};
+  for (int j = 0; j < 3; ++j) {
     EXPECT_EQ(expected[j], result[j]);
   }
 }
@@ -110,9 +110,9 @@ TEST(VelocityIteratorTest, test1_neg) {
     result[i] = x_it.getVelocity();
     i++;
   }
-  EXPECT_EQ(2, i);
-  double expected [2]= {-30.0, -10.0};
-  for (int j = 0; j < 2; ++j) {
+  EXPECT_EQ(3, i);
+  double expected [3]= {0.0, -30.0, -10.0};
+  for (int j = 0; j < 3; ++j) {
     EXPECT_EQ(expected[j], result[j]);
   }
 }
