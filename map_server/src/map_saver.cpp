@@ -153,6 +153,9 @@ int main(int argc, char** argv)
       return 1;
     }
   }
+
+  if(*mapname.rbegin() == '/')
+    mapname += "map";
   
   MapGenerator mg(mapname);
 
