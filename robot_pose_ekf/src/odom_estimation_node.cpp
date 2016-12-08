@@ -244,7 +244,7 @@ namespace estimation
       return;
     }
     StampedTransform base_imu_offset;
-    robot_state_.lookupTransform(base_footprint_frame_, imu->header.frame_id, imu_stamp_, base_imu_offset);
+    robot_state_.lookupTransform(imu->header.frame_id, base_footprint_frame_, imu_stamp_, base_imu_offset);
     imu_meas_ = imu_meas_ * base_imu_offset;
 
     imu_time_  = Time::now();
