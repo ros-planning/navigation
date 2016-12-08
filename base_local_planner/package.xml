@@ -3,7 +3,7 @@
     <version>1.12.13</version>
     <description>
 
-        This package provides implementations of the Trajectory Rollout and Dynamic Window approaches to local robot navigation on a plane. Given a plan to follow and a costmap, the controller produces velocity commands to send to a mobile base. This package supports both holonomic and non-holonomic robots, any robot footprint that can be represented as a convex polygon or circle, and exposes its configuration as ROS parameters that can be set in a launch file. This package's ROS wrapper adheres to the BaseLocalPlanner interface specified in the <a href="http://wiki.ros.org/nav_core">nav_core</a> package. 
+        This package provides implementations of the Trajectory Rollout and Dynamic Window approaches to local robot navigation on a plane. Given a plan to follow and a costmap, the controller produces velocity commands to send to a mobile base. This package supports both holonomic and non-holonomic robots, any robot footprint that can be represented as a convex polygon or circle, and exposes its configuration as ROS parameters that can be set in a launch file. This package's ROS wrapper adheres to the BaseLocalPlanner interface specified in the <a href="http://wiki.ros.org/nav_core">nav_core</a> package.
 
     </description>
     <author>Eitan Marder-Eppstein</author>
@@ -35,6 +35,8 @@
     <build_depend>eigen</build_depend>
     <build_depend>dynamic_reconfigure</build_depend>
     <build_depend>message_generation</build_depend>
+    <build_depend>srslib_framework</build_depend>
+
 
     <run_depend>std_msgs</run_depend>
     <run_depend>nav_msgs</run_depend>
@@ -53,6 +55,8 @@
     <run_depend>eigen</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>message_generation</run_depend>
+    <run_depend>srslib_framework</run_depend>
+
 
     <export>
         <nav_core plugin="${prefix}/blp_plugin.xml" />

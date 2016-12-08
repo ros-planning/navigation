@@ -59,6 +59,8 @@
 #include <dynamic_reconfigure/server.h>
 #include "move_base/MoveBaseConfig.h"
 
+#include <srslib_framework/platform/timing/TimingDataRecorder.hpp>
+
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
   typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
@@ -198,7 +200,7 @@ namespace move_base {
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
       double oscillation_timeout_, oscillation_distance_;
 
-      // for move_backwards recovery 
+      // for move_backwards recovery
       double move_backwards_distance_;
       bool move_backwards_enabled_;
       double move_backwards_velocity_;
@@ -235,6 +237,10 @@ namespace move_base {
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
 
+      // Add a couple timing data recorders
+      srs::TimingDataRecorder tdr_controller_execution_;
+      srs::TimingDataRecorder tdr_controller_total_loop_;
+      srs::TimingDataRecorder tdr_planner_execution_;
   };
 };
 #endif

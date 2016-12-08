@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(dwa_local_planner)
+set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED
         COMPONENTS
@@ -13,6 +14,7 @@ find_package(catkin REQUIRED
             pcl_conversions
             roscpp
             tf
+            srslib_framework
         )
 
 find_package(Eigen REQUIRED)

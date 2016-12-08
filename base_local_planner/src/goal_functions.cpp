@@ -103,16 +103,14 @@ namespace base_local_planner {
     try {
       // get plan_to_global_transform from plan frame to global_frame
       tf::StampedTransform plan_to_global_transform;
-      tf.waitForTransform(global_frame, ros::Time::now(),
-                          plan_pose.header.frame_id, plan_pose.header.stamp,
-                          plan_pose.header.frame_id, ros::Duration(0.5));
-      tf.lookupTransform(global_frame, ros::Time(),
-                         plan_pose.header.frame_id, plan_pose.header.stamp, 
+      tf.lookupTransform(global_frame, ros::Time(0),
+                         plan_pose.header.frame_id, ros::Time(0),
                          plan_pose.header.frame_id, plan_to_global_transform);
 
       //let's get the pose of the robot in the frame of the plan
       tf::Stamped<tf::Pose> robot_pose;
-      tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
+      tf::Stamped<tf::Pose> global_pose_time_zero(global_pose, ros::Time(0), global_pose.frame_id_);
+      tf.transformPose(plan_pose.header.frame_id, global_pose_time_zero, robot_pose);
 
       //we'll discard points on the plan that are outside the local costmap
       double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
@@ -163,7 +161,7 @@ namespace base_local_planner {
       return false;
     }
     catch(tf::ExtrapolationException& ex) {
-      ROS_ERROR("Extrapolation Error: %s\n", ex.what());
+      ROS_ERROR("Extrapolation Error in tranform global plan: %s\n", ex.what());
       if (!global_plan.empty())
         ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
 
@@ -185,18 +183,13 @@ namespace base_local_planner {
     const geometry_msgs::PoseStamped& plan_goal_pose = global_plan.back();
     try{
       tf::StampedTransform transform;
-      tf.waitForTransform(global_frame, ros::Time::now(),
-                          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
-                          plan_goal_pose.header.frame_id, ros::Duration(0.5));
-      tf.lookupTransform(global_frame, ros::Time(),
-                         plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
+      tf.lookupTransform(global_frame, ros::Time(0),
+                         plan_goal_pose.header.frame_id, ros::Time(0),
                          plan_goal_pose.header.frame_id, transform);
-
       poseStampedMsgToTF(plan_goal_pose, goal_pose);
       goal_pose.setData(transform * goal_pose);
       goal_pose.stamp_ = transform.stamp_;
       goal_pose.frame_id_ = global_frame;
-
     }
     catch(tf::LookupException& ex) {
       ROS_ERROR("No Transform available Error: %s\n", ex.what());
@@ -207,7 +200,7 @@ namespace base_local_planner {
       return false;
     }
     catch(tf::ExtrapolationException& ex) {
-      ROS_ERROR("Extrapolation Error: %s\n", ex.what());
+      ROS_ERROR("Extrapolation Error in get goal pose: %s\n", ex.what());
       if (global_plan.size() > 0)
         ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
 
@@ -246,9 +239,9 @@ namespace base_local_planner {
     return false;
   }
 
-  bool stopped(const nav_msgs::Odometry& base_odom, 
+  bool stopped(const nav_msgs::Odometry& base_odom,
       const double& rot_stopped_velocity, const double& trans_stopped_velocity){
-    return fabs(base_odom.twist.twist.angular.z) <= rot_stopped_velocity 
+    return fabs(base_odom.twist.twist.angular.z) <= rot_stopped_velocity
       && fabs(base_odom.twist.twist.linear.x) <= trans_stopped_velocity
       && fabs(base_odom.twist.twist.linear.y) <= trans_stopped_velocity;
   }

@@ -43,6 +43,8 @@
 
 #include <geometry_msgs/Twist.h>
 
+#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
+
 namespace move_base {
 
   MoveBase::MoveBase(tf::TransformListener& tf) :
@@ -53,7 +55,9 @@ namespace move_base {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"),
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
+    tdr_controller_execution_("LocalPlanner-Execution"), tdr_controller_total_loop_("LocalPlanner-TotalLoop"),
+    tdr_planner_execution_("GlobalPlanner-Execution", 10) {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -250,7 +254,7 @@ namespace move_base {
     move_backwards_distance_ = config.move_backwards_distance;
     move_backwards_enabled_ = config.move_backwards_enabled;
     move_backwards_velocity_ = config.move_backwards_velocity;
-    
+
     if(config.base_global_planner != last_config_.base_global_planner) {
       boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
       //initialize the global planner
@@ -665,9 +669,11 @@ namespace move_base {
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
       lock.unlock();
       ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
+      srs::ScopedTimingSampleRecorder stsr_planner_execution(&tdr_planner_execution_);
       //run planner
       planner_plan_->clear();
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
+      stsr_planner_execution.stopSample();
 
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
@@ -684,15 +690,15 @@ namespace move_base {
 	ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
 	//make sure we only start the controller if we still haven't reached the goal
-        // The if condition here always sets state_ to CLONTROLLING even the state_ is 
-        // CLEARING and should conduct CLEARING action. 
+        // The if condition here always sets state_ to CLONTROLLING even the state_ is
+        // CLEARING and should conduct CLEARING action.
 	if(runPlanner_ && (state_ != CLEARING)){
           state_ = CONTROLLING;
 	}
 
 	if(planner_frequency_ <= 0)
 	  runPlanner_ = false;
-	
+
         lock.unlock();
       }
 
@@ -764,6 +770,8 @@ namespace move_base {
     ros::NodeHandle n;
     while(n.ok())
     {
+      srs::ScopedTimingSampleRecorder stsr_controller_total_loop(&tdr_controller_total_loop_);
+
       if(c_freq_change_)
       {
         ROS_INFO("Setting controller frequency to %.2f", controller_frequency_);
@@ -813,7 +821,7 @@ namespace move_base {
           as_->setPreempted();
 
           //we'll actually return from execute after preempting
-          return;
+         return;
         }
       }
 
@@ -850,8 +858,9 @@ namespace move_base {
       bool done = executeCycle(goal, global_plan);
 
       //if we're done, then we'll return from execute
-      if(done)
+      if(done){
         return;
+      }
 
       //check if execution of the goal has completed in some way
 
@@ -862,6 +871,8 @@ namespace move_base {
       //make sure to sleep for the remainder of our cycle time
       if(r.cycleTime() > ros::Duration(1 / controller_frequency_) && state_ == CONTROLLING)
         ROS_WARN("Control loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", controller_frequency_, r.cycleTime().toSec());
+
+      stsr_controller_total_loop.stopSample();
     }
 
     //wake up the planner thread so that it can exit cleanly
@@ -913,7 +924,6 @@ namespace move_base {
       publishZeroVelocity();
       return false;
     }
-    
     //if we have a new plan then grab it and give it to the controller
     if(new_global_plan_){
       //make sure to set the new plan flag to false
@@ -948,7 +958,6 @@ namespace move_base {
       if(recovery_trigger_ == PLANNING_R)
         recovery_index_ = 0;
     }
-
     //the move_base state machine, handles the control logic for navigation
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan
@@ -978,7 +987,6 @@ namespace move_base {
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           return true;
         }
-
         //check for an oscillation condition
         if(oscillation_timeout_ > 0.0 &&
             last_oscillation_reset_ + ros::Duration(oscillation_timeout_) < ros::Time::now())
@@ -987,11 +995,14 @@ namespace move_base {
           state_ = CLEARING;
           recovery_trigger_ = OSCILLATION_R;
         }
-
         {
          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
 
-        if(tc_->computeVelocityCommands(cmd_vel)){
+        srs::ScopedTimingSampleRecorder stsr_controller_execution(&tdr_controller_execution_);
+        bool successfulCalc = tc_->computeVelocityCommands(cmd_vel);
+        stsr_controller_execution.stopSample();
+
+        if(successfulCalc){
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
                            cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
           last_valid_control_ = ros::Time::now();
@@ -1035,16 +1046,16 @@ namespace move_base {
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           ROS_DEBUG_NAMED("move_base_recovery", "Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
-        
+
           recovery_behaviors_[recovery_index_]->runBehavior();
-          
+
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
-          
+
           //we'll check if the recovery behavior actually worked
           ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
           state_ = PLANNING;
-          
+
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
         }
@@ -1182,7 +1193,7 @@ namespace move_base {
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
       n.setParam("move_backwards/distance_backward", move_backwards_distance_);
       n.setParam("move_backwards/backwards_velocity", move_backwards_velocity_);
-      
+
       //first, clear costmap to clean costmap in front of the robot
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
@@ -1194,19 +1205,19 @@ namespace move_base {
         move_backwards->initialize("move_backwards", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(move_backwards);
       }
-      
+
       //third, we'll load rotate recovery
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
       }
-      
+
       //forth, aggressive costmap clearing is called
       boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
-      
+
       //lastly, rotate again to know the robot's surrounding
       if(clearing_rotation_allowed_){
         recovery_behaviors_.push_back(rotate);

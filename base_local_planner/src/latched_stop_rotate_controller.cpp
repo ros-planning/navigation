@@ -93,6 +93,7 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
       xy_tolerance_latch_ = true;
     }
     double goal_th = tf::getYaw(goal_pose.getRotation());
+
     double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
     //check to see if the goal orientation has been reached
     if (fabs(angle) <= limits.yaw_goal_tolerance) {
@@ -101,6 +102,7 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
         return true;
       }
     }
+
   }
   return false;
 }
