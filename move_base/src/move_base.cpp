@@ -56,8 +56,7 @@ namespace move_base {
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
-    tdr_controller_execution_("LocalPlanner-Execution"), tdr_controller_total_loop_("LocalPlanner-TotalLoop"),
-    tdr_planner_execution_("GlobalPlanner-Execution", 10) {
+    timingDataRecorder_("MoveBase") {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -669,7 +668,7 @@ namespace move_base {
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
       lock.unlock();
       ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
-      srs::ScopedTimingSampleRecorder stsr_planner_execution(&tdr_planner_execution_);
+      srs::ScopedTimingSampleRecorder stsr_planner_execution(timingDataRecorder_.getRecorder("-PlannerExecution", 10));
       //run planner
       planner_plan_->clear();
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
@@ -770,7 +769,7 @@ namespace move_base {
     ros::NodeHandle n;
     while(n.ok())
     {
-      srs::ScopedTimingSampleRecorder stsr_controller_total_loop(&tdr_controller_total_loop_);
+      srs::ScopedTimingSampleRecorder stsr_controller_total_loop(timingDataRecorder_.getRecorder("-ControllerLoop"));
 
       if(c_freq_change_)
       {
@@ -998,7 +997,7 @@ namespace move_base {
         {
          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
 
-        srs::ScopedTimingSampleRecorder stsr_controller_execution(&tdr_controller_execution_);
+        srs::ScopedTimingSampleRecorder stsr_controller_execution(timingDataRecorder_.getRecorder("-ControllerExecution"));
         bool successfulCalc = tc_->computeVelocityCommands(cmd_vel);
         stsr_controller_execution.stopSample();
 

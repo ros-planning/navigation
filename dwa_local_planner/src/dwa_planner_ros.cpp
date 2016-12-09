@@ -90,7 +90,7 @@ namespace dwa_local_planner {
 
   DWAPlannerROS::DWAPlannerROS() : initialized_(false),
       odom_helper_("odom"), setup_(false),
-      tdr_("DWAPlanner-PlanCall")
+      tdr_("DWAPlanner")
       {
 
   }
@@ -201,7 +201,7 @@ namespace dwa_local_planner {
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
 
     // call with updated footprint
-    srs::ScopedTimingSampleRecorder stsr(&tdr_);
+    srs::ScopedTimingSampleRecorder stsr(tdr_.getRecorder("-PlanCall"));
     base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
     stsr.stopSample();
 

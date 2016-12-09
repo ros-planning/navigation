@@ -59,7 +59,7 @@
 #include <dynamic_reconfigure/server.h>
 #include "move_base/MoveBaseConfig.h"
 
-#include <srslib_framework/platform/timing/TimingDataRecorder.hpp>
+#include <srslib_framework/platform/timing/MasterTimingDataRecorder.hpp>
 
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
@@ -237,10 +237,8 @@ namespace move_base {
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
 
-      // Add a couple timing data recorders
-      srs::TimingDataRecorder tdr_controller_execution_;
-      srs::TimingDataRecorder tdr_controller_total_loop_;
-      srs::TimingDataRecorder tdr_planner_execution_;
+      // Add timing data recorder
+      srs::MasterTimingDataRecorder timingDataRecorder_;
   };
 };
 #endif
