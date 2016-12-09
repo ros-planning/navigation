@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(base_local_planner)
+set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED
         COMPONENTS
@@ -14,6 +15,7 @@ find_package(catkin REQUIRED
             costmap_2d
             pluginlib
             angles
+            srslib_framework
         )
 
 find_package(Boost REQUIRED

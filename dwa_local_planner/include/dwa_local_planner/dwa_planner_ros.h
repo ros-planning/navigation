@@ -54,6 +54,7 @@
 #include <base_local_planner/latched_stop_rotate_controller.h>
 
 #include <base_local_planner/odometry_helper_ros.h>
+#include <srslib_framework/platform/timing/MasterTimingDataRecorder.hpp>
 
 #include <dwa_local_planner/dwa_planner.h>
 
@@ -154,6 +155,8 @@ namespace dwa_local_planner {
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
+
+      srs::MasterTimingDataRecorder tdr_;
   };
 };
 #endif

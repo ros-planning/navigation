@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(move_base)
+set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED
     COMPONENTS
@@ -12,6 +13,7 @@ find_package(catkin REQUIRED
         move_base_msgs
         nav_core
         tf
+        srslib_framework
 )
 find_package(Eigen REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})
