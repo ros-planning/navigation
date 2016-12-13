@@ -30,12 +30,14 @@
     <build_depend>rostest</build_depend>
     <build_depend>std_srvs</build_depend>
     <build_depend>tf</build_depend>
+    <build_depend>srslib_framework</build_depend>
 
     <run_depend>rosbag</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>tf</run_depend>
     <run_depend>nav_msgs</run_depend>
+    <run_depend>srslib_framework</run_depend>
 
     <test_depend>map_server</test_depend>
 </package>
