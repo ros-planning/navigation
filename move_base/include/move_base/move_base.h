@@ -239,6 +239,10 @@ namespace move_base {
 
       // Add timing data recorder
       srs::MasterTimingDataRecorder timingDataRecorder_;
+
+      // Thread affinities
+      int planner_thread_affinity_;
+      int controller_thread_affinity_;
   };
 };
 #endif
