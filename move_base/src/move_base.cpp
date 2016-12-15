@@ -44,6 +44,7 @@
 #include <geometry_msgs/Twist.h>
 
 #include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
+#include <costmap_2d/ThreadAffinity.hpp>
 
 namespace move_base {
 
@@ -79,6 +80,9 @@ namespace move_base {
 
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
+
+    private_nh.param("planner_thread_affinity", planner_thread_affinity_, -1);
+    private_nh.param("controller_thread_affinity", controller_thread_affinity_, -1);
 
     //set up plan triple buffer
     planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();
@@ -649,6 +653,17 @@ namespace move_base {
   }
 
   void MoveBase::planThread(){
+    if (planner_thread_affinity_ >= 0)
+    {
+      if (setThreadAffinity(planner_thread_affinity_))
+      {
+        ROS_INFO("Set planner thread affinity to %d", planner_thread_affinity_);
+      }
+      else
+      {
+        ROS_WARN("Could not set planner thread affinity to %d", planner_thread_affinity_);
+      }
+    }
     ROS_DEBUG_NAMED("move_base_plan_thread","Starting planner thread...");
     ros::NodeHandle n;
     ros::Timer timer;
@@ -739,6 +754,18 @@ namespace move_base {
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
+    }
+
+    if (controller_thread_affinity_ >= 0)
+    {
+      if (setThreadAffinity(controller_thread_affinity_))
+      {
+        ROS_INFO("Set controller thread affinity to %d", controller_thread_affinity_);
+      }
+      else
+      {
+        ROS_WARN("Could not set controller thread affinity to %d", controller_thread_affinity_);
+      }
     }
 
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
