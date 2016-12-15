@@ -38,6 +38,8 @@
 #ifndef SIMPLE_SCORED_SAMPLING_PLANNER_H_
 #define SIMPLE_SCORED_SAMPLING_PLANNER_H_
 
+#include <srslib_framework/platform/timing/MasterTimingDataRecorder.hpp>
+
 #include <vector>
 #include <base_local_planner/trajectory.h>
 #include <base_local_planner/trajectory_cost_function.h>
@@ -99,6 +101,12 @@ private:
   std::vector<TrajectoryCostFunction*> critics_;
 
   int max_samples_;
+
+  srs::MasterTimingDataRecorder tdr_;
+
+  std::vector<double> critic_timing_;
+  std::vector<double> critic_costs_;
+
 };
 
 

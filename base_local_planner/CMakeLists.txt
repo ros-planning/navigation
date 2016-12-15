@@ -77,6 +77,7 @@ catkin_package(
 add_library(base_local_planner
 	src/footprint_helper.cpp
 	src/goal_functions.cpp
+    src/heading_cost_function.cpp
 	src/map_cell.cpp
 	src/map_grid.cpp
 	src/map_grid_visualizer.cpp
@@ -92,6 +93,7 @@ add_library(base_local_planner
 	src/simple_scored_sampling_planner.cpp
 	src/simple_trajectory_generator.cpp
 	src/trajectory.cpp
+    src/velocity_cost_function.cpp
 	src/voxel_grid_model.cpp)
 add_dependencies(base_local_planner base_local_planner_gencfg)
 add_dependencies(base_local_planner base_local_planner_gencpp)

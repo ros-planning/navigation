@@ -90,7 +90,7 @@ namespace dwa_local_planner {
 
   DWAPlannerROS::DWAPlannerROS() : initialized_(false),
       odom_helper_("odom"), setup_(false),
-      tdr_("DWAPlanner")
+      tdr_("DWAPlannerROS")
       {
 
   }
@@ -277,7 +277,9 @@ namespace dwa_local_planner {
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
 
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
+    srs::ScopedTimingSampleRecorder stsr(tdr_.getRecorder("-UpdatePlanCosts"));
     dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan);
+    stsr.stopSample();
 
     if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_)) {
       //publish an empty plan because we've reached our goal position
@@ -295,7 +297,9 @@ namespace dwa_local_planner {
           current_pose_,
           boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
     } else {
+      srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-dwaComputeVelCommands"));
       bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
+      stsr2.stopSample();
       if (isOk) {
         publishGlobalPlan(transformed_plan);
       } else {
