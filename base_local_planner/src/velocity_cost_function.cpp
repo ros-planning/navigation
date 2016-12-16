@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2016, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: TKruse
+ * Author: Daniel Grieneisen
  *********************************************************************/
 
 #include <base_local_planner/velocity_cost_function.h>
@@ -62,17 +62,7 @@ double VelocityCostFunction::scoreTrajectory(Trajectory &traj) {
     return 0.0;
   }
 
-  double numerator = numerator = std::fabs(traj.xv_);
-  // if (traj.xv_ < min_linear_velocity_)
-  // {
-  //   numerator = std::fabs(traj.xv_);
-  // }
-  // else
-  // {
-  //   numerator = std::fabs(traj.xv_) + std::fabs(traj.thetav_);
-  // }
-
-  double ratio =  numerator / max_linear_velocity_;
+  double ratio =  std::fabs(traj.xv_) / max_linear_velocity_;
 
   if (ratio < 1)
   {

@@ -90,6 +90,8 @@ namespace dwa_local_planner {
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
 
+    oscillation_reset_plan_divergence_distance_ = config.oscillation_reset_plan_divergence_distance;
+
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
@@ -217,7 +219,12 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
-    oscillation_costs_.resetOscillationFlags();
+    double divergenceDistance = planner_util_->distanceToPlanDivergence(orig_global_plan);
+    if (divergenceDistance >= 0 && divergenceDistance < oscillation_reset_plan_divergence_distance_)
+    {
+      ROS_DEBUG("flag reset due to set plan at range %f", divergenceDistance);
+      oscillation_costs_.resetOscillationFlags();
+    }
     return planner_util_->setPlan(orig_global_plan);
   }
 
@@ -233,7 +240,6 @@ namespace dwa_local_planner {
     // set footprint
     ROS_DEBUG_NAMED("dwaPlanner", "checkTrajectory() sets footprint with size %u", robot_footprint_.size());
     obstacle_costs_.setFootprint(robot_footprint_);
-
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
@@ -359,6 +365,8 @@ namespace dwa_local_planner {
         pcl_conversions::fromPCL(traj_cloud_->header, header);
         header.stamp = ros::Time::now();
         traj_cloud_->header = pcl_conversions::toPCL(header);
+        std::stringstream ss;
+        ss << "Costs: ";
         for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); ++t)
         {
             if(t->cost_<0)
@@ -373,9 +381,11 @@ namespace dwa_local_planner {
                 pt.path_cost=p_th;
                 pt.total_cost=t->cost_;
                 traj_cloud_->push_back(pt);
+                ss << t->cost_ << ", ";
             }
         }
         traj_cloud_pub_.publish(*traj_cloud_);
+        //ROS_WARN_STREAM(ss.str());
     }
 
     // verbose publishing of point clouds

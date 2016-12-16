@@ -137,10 +137,11 @@ double ObstacleCostFunction::footprintCost (
     return -7.0;
   }
 
-  double occ_cost = std::max(std::max(0.0, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
+  // double occ_cost = std::max(std::max(0.0, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
+  double occ_cost =  double(costmap->getCost(cell_x, cell_y));
 
   // Normalize the obstacle cost to the max possible value.
-  return occ_cost / costmap_2d::LETHAL_OBSTACLE;
+  return occ_cost / costmap_2d::LETHAL_OBSTACLE * scale;
 }
 
 } /* namespace base_local_planner */

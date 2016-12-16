@@ -187,6 +187,8 @@ namespace dwa_local_planner {
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;
 
       srs::MasterTimingDataRecorder tdr_;
+
+      double oscillation_reset_plan_divergence_distance_;
   };
 };
 #endif

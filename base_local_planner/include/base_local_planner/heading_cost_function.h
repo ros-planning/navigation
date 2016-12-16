@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2016, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: TKruse
+ * Author: Daniel Grieneisen
  *********************************************************************/
 
 #ifndef HEADING_COST_FUNCTION_H_
@@ -46,28 +46,67 @@ namespace base_local_planner {
 /**
  * This class provides cost based on the heading of the robot relative to the trajectory.
  *
- * This can be used to favor trajectories which stay on a given path, or which
- * approach a given goal.
+ * It will reject trajectories that are not turn in place if the path goes behind the robot.
  */
 class HeadingCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
+  /**
+   * Constructor
+   * @param rejection_half_angle Sets the rejection_half_angle (see other comments)
+   */
   HeadingCostFunction(double rejection_half_angle=M_PI / 2);
 
+  /**
+   * Destructor
+   */
   ~HeadingCostFunction() {}
 
+  /**
+   * Set the target poses (global plan)
+   * @param target_poses The target poses
+   */
   void setTargetPoses(std::vector<geometry_msgs::PoseStamped> target_poses);
 
+  /**
+   * Set the current pose of the robot
+   * @param pose The current pose
+   */
   void setCurrentPose(geometry_msgs::PoseStamped pose) {current_pose_ = pose;}
 
+  /**
+   * Sets the rejection half angle (rha).
+   * This describes a region behind the robot of [PI - rha, PI + rha].  If the global path heading
+   * is in this region, all non turn in place trajectories are rejected.
+   * @param rejection_half_angle The rejection_half_angle
+   */
   void setRejectionHalfAngle(double rejection_half_angle) {rejection_half_angle_ = rejection_half_angle;}
 
+  /**
+   * Sets the square of the distance to the goal.
+   * @param goal_distance_squared The goal distance squared.
+   */
   void setGoalDistanceSquared(double goal_distance_squared) {goal_distance_squared_ = goal_distance_squared;}
 
+  /**
+   * Prepare for operation.
+   * @return true if preparations were successful
+   */
   bool prepare();
 
+  /**
+   * Scores the trajectory.  Returns a negative value for rejected trajectories.
+   * @param traj The trajectory
+   * @return Non-negative value if the trajectory is valid, negative otherwise.
+   */
   double scoreTrajectory(Trajectory &traj);
 
 private:
+  /**
+   * Calculates the square of the distance between two poses.
+   * @param p1 First pose
+   * @param p2 Second pose
+   * @return the squared distance between the poses.
+   */
   double poseDistanceSquared(geometry_msgs::PoseStamped p1, geometry_msgs::PoseStamped p2)
   {
     double dx = p1.pose.position.x - p2.pose.position.x;

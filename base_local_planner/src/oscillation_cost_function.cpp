@@ -36,6 +36,7 @@
  *********************************************************************/
 
 #include <base_local_planner/oscillation_cost_function.h>
+#include <ros/ros.h>
 
 #include <cmath>
 
@@ -74,14 +75,26 @@ void OscillationCostFunction::resetOscillationFlagsIfPossible(const Eigen::Vecto
 
   double th_diff = pos[2] - prev[2];
 
+  while (th_diff < -M_PI)
+  {
+    th_diff += M_PI * 2;
+  }
+  while (th_diff > M_PI)
+  {
+    th_diff -= M_PI * 2;
+  }
+
   //if we've moved far enough... we can reset our flags
   if (sq_dist > oscillation_reset_dist_ * oscillation_reset_dist_ ||
       fabs(th_diff) > oscillation_reset_angle_) {
+    ROS_DEBUG("flag reset: d %f, reset d %f, th %f, reset th %f", sq_dist, oscillation_reset_dist_,
+      th_diff, oscillation_reset_angle_);
     resetOscillationFlags();
   }
 }
 
 void OscillationCostFunction::resetOscillationFlags() {
+  ROS_WARN("Oscillation flags reset");
   strafe_pos_only_ = false;
   strafe_neg_only_ = false;
   strafing_pos_ = false;
@@ -145,6 +158,7 @@ bool OscillationCostFunction::setOscillationFlags(base_local_planner::Trajectory
       if (rotating_pos_) {
         rot_neg_only_ = true;
         flag_set = true;
+        ROS_DEBUG("Setting negative rotate flag.");
       }
       rotating_pos_ = false;
       rotating_neg_ = true;
@@ -155,6 +169,7 @@ bool OscillationCostFunction::setOscillationFlags(base_local_planner::Trajectory
       if (rotating_neg_) {
         rot_pos_only_ = true;
         flag_set = true;
+        ROS_DEBUG("Setting positive rotate flag.");
       }
       rotating_neg_ = false;
       rotating_pos_ = true;

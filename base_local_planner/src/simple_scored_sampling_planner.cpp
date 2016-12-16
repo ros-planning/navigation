@@ -79,11 +79,10 @@ namespace base_local_planner {
       traj_cost += cost;
       if (best_traj_cost > 0) {
         // since we keep adding positives, once we are worse than the best, we will stay worse
-        // if (traj_cost > best_traj_cost) {
-        //   critic_timing_[k] = stopWatch.elapsed();
-
-        //   break;
-        // }
+        if (traj_cost > best_traj_cost) {
+          critic_timing_[k] = stopWatch.elapsedMilliseconds();
+          break;
+        }
       }
       critic_timing_[k] += stopWatch.elapsedMilliseconds();
       gen_id ++;
@@ -107,9 +106,9 @@ namespace base_local_planner {
         return false;
       }
     }
-stsr.stopSample();
+    stsr.stopSample();
 
-srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-scoring trajectories"));
+    srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-scoring trajectories"));
     critic_timing_.assign(critics_.size(), 0);
     srs::StopWatch stopWatch;
     for (std::vector<TrajectorySampleGenerator*>::iterator loop_gen = gen_list_.begin(); loop_gen != gen_list_.end(); ++loop_gen) {
@@ -138,7 +137,7 @@ srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-scoring trajectories"))
               ss << cost << ", ";
             }
             ss << " [v,w] - [" << loop_traj.xv_ << ", " << loop_traj.thetav_ << "]";
-            ROS_WARN("%s", ss.str().c_str());
+            ROS_DEBUG("%s", ss.str().c_str());
             best_traj_cost = loop_traj_cost;
             best_traj = loop_traj;
           } else if (loop_traj_cost == best_traj_cost) {
@@ -149,7 +148,7 @@ srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-scoring trajectories"))
               ss << cost << ", ";
             }
             ss << " [v,w] - [" << loop_traj.xv_ << ", " << loop_traj.thetav_ << "]";
-            ROS_WARN("%s", ss.str().c_str());          }
+            ROS_DEBUG("%s", ss.str().c_str());          }
         }
         count++;
         if (max_samples_ > 0 && count >= max_samples_) {
@@ -181,7 +180,7 @@ srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-scoring trajectories"))
     {
       ss << " Critic " << k << ": " << critic_timing_[k] << std::endl;
     }
-    ROS_WARN("%s", ss.str().c_str());
+    ROS_DEBUG("%s", ss.str().c_str());
 
     return best_traj_cost >= 0;
   }

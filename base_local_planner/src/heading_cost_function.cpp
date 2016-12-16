@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2016, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: TKruse
+ * Author: Daniel Grieneisen
  *********************************************************************/
 
 #include <base_local_planner/heading_cost_function.h>
@@ -72,7 +72,6 @@ bool HeadingCostFunction::prepare() {
   double min_caputure_radius_squared = pose_capture_min_radius_ * pose_capture_min_radius_;
   double max_caputure_radius_squared = pose_capture_max_radius_ * pose_capture_max_radius_;
 
-
   // Go forwards through the poses and find the first one that exits the min radius.
   geometry_msgs::PoseStamped target_pose = target_poses_[0];
   for (size_t k = 0; k < target_poses_.size(); ++k)
@@ -93,6 +92,7 @@ bool HeadingCostFunction::prepare() {
   // Check the heading difference
   double current_heading = tf::getYaw(current_pose_.pose.orientation);
   double heading_diff = current_heading - path_start_heading_;
+  // Normalize the heading difference
   while (heading_diff > M_PI)
   {
     heading_diff -= 2 * M_PI;
@@ -102,7 +102,7 @@ bool HeadingCostFunction::prepare() {
     heading_diff += 2 * M_PI;
   }
 
-  ROS_WARN("Path heading: %f, current heading: %f", path_start_heading_, current_heading);
+  ROS_DEBUG("Path heading: %f, current heading: %f", path_start_heading_, current_heading);
   if (std::fabs(heading_diff) > rejection_half_angle_)
   {
     heading_violation_ = true;
@@ -126,7 +126,6 @@ double HeadingCostFunction::scoreTrajectory(Trajectory &traj) {
     }
   }
   return 0.0;
-
 }
 
 } /* namespace base_local_planner */

@@ -102,6 +102,39 @@ bool LocalPlannerUtil::setPlan(const std::vector<geometry_msgs::PoseStamped>& or
   return true;
 }
 
+double LocalPlannerUtil::distanceToPlanDivergence(const std::vector<geometry_msgs::PoseStamped>& new_plan)
+{
+  double EPSILON = 0.01;
+  double distance = 0;
+  size_t min_samples = std::min(new_plan.size(), global_plan_.size());
+  bool foundDivergence = false;
+  for (size_t k = 0; k < min_samples; ++k)
+  {
+    geometry_msgs::PoseStamped new_plan_pose = new_plan[k];
+    geometry_msgs::PoseStamped global_plan_pose = global_plan_[k];
+
+    if (std::fabs(new_plan_pose.pose.position.x - global_plan_pose.pose.position.x) > EPSILON
+      || std::fabs(new_plan_pose.pose.position.y - global_plan_pose.pose.position.y) > EPSILON)
+      {
+        foundDivergence = true;
+        break;
+      }
+
+    if (k > 0)
+    {
+      geometry_msgs::PoseStamped new_plan_pose_prev = new_plan[k - 1];
+      double dx = new_plan_pose.pose.position.x - new_plan_pose_prev.pose.position.x;
+      double dy = new_plan_pose.pose.position.y - new_plan_pose_prev.pose.position.y;
+      distance += std::sqrt(dx * dx + dy * dy);
+    }
+  }
+  if (!foundDivergence)
+  {
+    distance = -1.0;
+  }
+  return distance;
+}
+
 bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan) {
   //get the global plan in our frame
   if(!base_local_planner::transformGlobalPlan(
