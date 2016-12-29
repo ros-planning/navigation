@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2016, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,84 +32,44 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Eitan Marder-Eppstein
+ * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef ABSTRACT_LOCAL_PLANNER_ODOM_H_
-#define ABSTRACT_LOCAL_PLANNER_ODOM_H_
-
-#include <nav_core/base_local_planner.h>
-
-#include <boost/thread.hpp>
-
-#include <costmap_2d/costmap_2d.h>
-#include <tf/transform_datatypes.h>
-#include <tf/transform_listener.h>
-
-#include <base_local_planner/local_planner_limits.h>
-
+#include <base_local_planner/velocity_cost_function.h>
 
 namespace base_local_planner {
 
-/**
- * @class LocalPlannerUtil
- * @brief Helper class implementing infrastructure code many local planner implementations may need.
- */
-class LocalPlannerUtil {
+VelocityCostFunction::VelocityCostFunction() :
+    goal_distance_squared_(16.0),
+    min_goal_distance_squared_(1.0),
+    max_linear_velocity_(0.0),
+    min_linear_velocity_(0.0),
+    EPSILON(0.001) {}
 
-private:
-  // things we get from move_base
-  std::string name_;
-  std::string global_frame_;
+bool VelocityCostFunction::prepare() {
+  // Don't prepare anything.
+  return true;
+}
 
-  costmap_2d::Costmap2D* costmap_;
-  tf::TransformListener* tf_;
-
-
-  std::vector<geometry_msgs::PoseStamped> global_plan_;
-
-
-  boost::mutex limits_configuration_mutex_;
-  bool setup_;
-  LocalPlannerLimits default_limits_;
-  LocalPlannerLimits limits_;
-  bool initialized_;
-
-public:
-
-  /**
-   * @brief  Callback to update the local planner's parameters
-   */
-  void reconfigureCB(LocalPlannerLimits &config, bool restore_defaults);
-
-  LocalPlannerUtil() : initialized_(false) {}
-
-  ~LocalPlannerUtil() {
+double VelocityCostFunction::scoreTrajectory(Trajectory &traj) {
+  if (goal_distance_squared_ < min_goal_distance_squared_)
+  {
+    return 0.0;
   }
 
-  void initialize(tf::TransformListener* tf,
-      costmap_2d::Costmap2D* costmap,
-      std::string global_frame);
+  if (std::fabs(max_linear_velocity_) < EPSILON)
+  {
+    return 0.0;
+  }
 
-  bool getGoal(tf::Stamped<tf::Pose>& goal_pose);
+  double ratio =  std::fabs(traj.xv_) / max_linear_velocity_;
 
-  bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+  if (ratio < 1)
+  {
+    return 1.0 - ratio;
+  }
 
-  bool getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan);
+  return 0.0;
+}
 
-  costmap_2d::Costmap2D* getCostmap();
-
-  LocalPlannerLimits getCurrentLimits();
-
-  std::string getGlobalFrame(){ return global_frame_; }
-
-  double distanceToPlanDivergence(const std::vector<geometry_msgs::PoseStamped>& new_plan);
-
-};
-
-
-
-
-};
-
-#endif /* ABSTRACT_LOCAL_PLANNER_ODOM_H_ */
+} /* namespace base_local_planner */

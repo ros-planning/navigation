@@ -40,6 +40,7 @@
 #include <vector>
 #include <Eigen/Core>
 
+#include <srslib_framework/platform/timing/MasterTimingDataRecorder.hpp>
 
 #include <dwa_local_planner/DWAPlannerConfig.h>
 
@@ -56,9 +57,12 @@
 #include <base_local_planner/simple_trajectory_generator.h>
 
 #include <base_local_planner/oscillation_cost_function.h>
+#include <base_local_planner/heading_cost_function.h>
+#include <base_local_planner/velocity_cost_function.h>
 #include <base_local_planner/map_grid_cost_function.h>
 #include <base_local_planner/obstacle_cost_function.h>
 #include <base_local_planner/simple_scored_sampling_planner.h>
+
 
 #include <nav_msgs/Path.h>
 
@@ -71,7 +75,7 @@ namespace dwa_local_planner {
     public:
       /**
        * @brief  Constructor for the planner
-       * @param name The name of the planner 
+       * @param name The name of the planner
        * @param costmap_ros A pointer to the costmap instance the planner should use
        * @param global_frame the frame id of the tf frame to use
        */
@@ -101,8 +105,8 @@ namespace dwa_local_planner {
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
-       * @param global_pose The current position of the robot 
-       * @param global_vel The current velocity of the robot 
+       * @param global_pose The current position of the robot
+       * @param global_vel The current velocity of the robot
        * @param drive_velocities The velocities to send to the robot base
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
@@ -172,6 +176,8 @@ namespace dwa_local_planner {
       // see constructor body for explanations
       base_local_planner::SimpleTrajectoryGenerator generator_;
       base_local_planner::OscillationCostFunction oscillation_costs_;
+      base_local_planner::HeadingCostFunction heading_costs_;
+      base_local_planner::VelocityCostFunction velocity_costs_;
       base_local_planner::ObstacleCostFunction obstacle_costs_;
       base_local_planner::MapGridCostFunction path_costs_;
       base_local_planner::MapGridCostFunction goal_costs_;
@@ -179,6 +185,10 @@ namespace dwa_local_planner {
       base_local_planner::MapGridCostFunction alignment_costs_;
 
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;
+
+      srs::MasterTimingDataRecorder tdr_;
+
+      double oscillation_reset_plan_divergence_distance_;
   };
 };
 #endif

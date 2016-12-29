@@ -81,6 +81,7 @@ double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
   unsigned int cell_x, cell_y;
   double grid_dist;
 
+  double robot_pose_distance = -1;
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     traj.getPoint(i, px, py, pth);
 
@@ -111,6 +112,11 @@ double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
       }
     }
 
+    if (i == 0)
+    {
+      robot_pose_distance = grid_dist;
+    }
+
     switch( aggregationType_ ) {
     case Last:
       cost = grid_dist;
@@ -125,7 +131,9 @@ double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
       break;
     }
   }
-  return cost;
+
+  // Normalize by the distance from the robot to the goal
+  return cost / std::max(robot_pose_distance, 1.0);
 }
 
 } /* namespace base_local_planner */

@@ -34,6 +34,7 @@
  *
  * Author: TKruse
  *********************************************************************/
+#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
 
 #include <base_local_planner/simple_scored_sampling_planner.h>
 
@@ -41,36 +42,49 @@
 
 namespace base_local_planner {
 
-  SimpleScoredSamplingPlanner::SimpleScoredSamplingPlanner(std::vector<TrajectorySampleGenerator*> gen_list, std::vector<TrajectoryCostFunction*>& critics, int max_samples) {
+  SimpleScoredSamplingPlanner::SimpleScoredSamplingPlanner(std::vector<TrajectorySampleGenerator*> gen_list, std::vector<TrajectoryCostFunction*>& critics, int max_samples)
+  : tdr_("SSSP") {
     max_samples_ = max_samples;
     gen_list_ = gen_list;
     critics_ = critics;
   }
 
   double SimpleScoredSamplingPlanner::scoreTrajectory(Trajectory& traj, double best_traj_cost) {
+    srs::StopWatch stopWatch;
+    critic_costs_.assign(critics_.size(), 0);
+
     double traj_cost = 0;
     int gen_id = 0;
+    int k = -1;
     for(std::vector<TrajectoryCostFunction*>::iterator score_function = critics_.begin(); score_function != critics_.end(); ++score_function) {
+      stopWatch.reset();
+      k++;
       TrajectoryCostFunction* score_function_p = *score_function;
       if (score_function_p->getScale() == 0) {
+        critic_timing_[k] += stopWatch.elapsedMilliseconds();
         continue;
       }
       double cost = score_function_p->scoreTrajectory(traj);
       if (cost < 0) {
         ROS_DEBUG("Velocity %.3lf, %.3lf, %.3lf discarded by cost function  %d with cost: %f", traj.xv_, traj.yv_, traj.thetav_, gen_id, cost);
         traj_cost = cost;
+        critic_timing_[k] += stopWatch.elapsedMilliseconds();
+        critic_costs_[k] = cost;
         break;
       }
       if (cost != 0) {
         cost *= score_function_p->getScale();
       }
+      critic_costs_[k] = cost;
       traj_cost += cost;
       if (best_traj_cost > 0) {
         // since we keep adding positives, once we are worse than the best, we will stay worse
         if (traj_cost > best_traj_cost) {
+          critic_timing_[k] = stopWatch.elapsedMilliseconds();
           break;
         }
       }
+      critic_timing_[k] += stopWatch.elapsedMilliseconds();
       gen_id ++;
     }
 
@@ -83,14 +97,20 @@ namespace base_local_planner {
     double loop_traj_cost, best_traj_cost = -1;
     bool gen_success;
     int count, count_valid;
+
+    srs::ScopedTimingSampleRecorder stsr(tdr_.getRecorder("-preparingCritics"));
     for (std::vector<TrajectoryCostFunction*>::iterator loop_critic = critics_.begin(); loop_critic != critics_.end(); ++loop_critic) {
       TrajectoryCostFunction* loop_critic_p = *loop_critic;
       if (loop_critic_p->prepare() == false) {
-        ROS_WARN("A scoring function failed to prepare");
+        ROS_DEBUG("A scoring function failed to prepare");
         return false;
       }
     }
+    stsr.stopSample();
 
+    srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-scoring trajectories"));
+    critic_timing_.assign(critics_.size(), 0);
+    srs::StopWatch stopWatch;
     for (std::vector<TrajectorySampleGenerator*>::iterator loop_gen = gen_list_.begin(); loop_gen != gen_list_.end(); ++loop_gen) {
       count = 0;
       count_valid = 0;
@@ -110,9 +130,25 @@ namespace base_local_planner {
         if (loop_traj_cost >= 0) {
           count_valid++;
           if (best_traj_cost < 0 || loop_traj_cost < best_traj_cost) {
+            std::stringstream ss;
+            ss << "New best: " << loop_traj_cost << " with critics: ";
+            for (auto cost : critic_costs_)
+            {
+              ss << cost << ", ";
+            }
+            ss << " [v,w] - [" << loop_traj.xv_ << ", " << loop_traj.thetav_ << "]";
+            ROS_DEBUG("%s", ss.str().c_str());
             best_traj_cost = loop_traj_cost;
             best_traj = loop_traj;
-          }
+          } else if (loop_traj_cost == best_traj_cost) {
+            std::stringstream ss;
+            ss << "Tied best: " << loop_traj_cost << " with critics: ";
+            for (auto cost : critic_costs_)
+            {
+              ss << cost << ", ";
+            }
+            ss << " [v,w] - [" << loop_traj.xv_ << ", " << loop_traj.thetav_ << "]";
+            ROS_DEBUG("%s", ss.str().c_str());          }
         }
         count++;
         if (max_samples_ > 0 && count >= max_samples_) {
@@ -137,6 +173,15 @@ namespace base_local_planner {
         break;
       }
     }
+
+    std::stringstream ss;
+    ss << "Critical timing: total:  " << stopWatch.elapsedMilliseconds() << std::endl;
+    for (size_t k = 0; k < critic_timing_.size(); ++k)
+    {
+      ss << " Critic " << k << ": " << critic_timing_[k] << std::endl;
+    }
+    ROS_DEBUG("%s", ss.str().c_str());
+
     return best_traj_cost >= 0;
   }
 

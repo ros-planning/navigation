@@ -39,10 +39,11 @@
 #include <cmath>
 #include <Eigen/Core>
 #include <ros/console.h>
+#include <costmap_2d/cost_values.h>
 
 namespace base_local_planner {
 
-ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap) 
+ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap)
     : costmap_(costmap), sum_scores_(false) {
   if (costmap != NULL) {
     world_model_ = new base_local_planner::CostmapModel(*costmap_);
@@ -136,9 +137,11 @@ double ObstacleCostFunction::footprintCost (
     return -7.0;
   }
 
-  double occ_cost = std::max(std::max(0.0, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
+  // double occ_cost = std::max(std::max(0.0, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
+  double occ_cost =  double(costmap->getCost(cell_x, cell_y));
 
-  return occ_cost;
+  // Normalize the obstacle cost to the max possible value.
+  return occ_cost / costmap_2d::LETHAL_OBSTACLE * scale;
 }
 
 } /* namespace base_local_planner */

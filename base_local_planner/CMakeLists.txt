@@ -75,24 +75,26 @@ catkin_package(
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
 add_library(base_local_planner
-	src/footprint_helper.cpp
-	src/goal_functions.cpp
-	src/map_cell.cpp
-	src/map_grid.cpp
-	src/map_grid_visualizer.cpp
-	src/map_grid_cost_function.cpp
-	src/latched_stop_rotate_controller.cpp
-	src/local_planner_util.cpp
-	src/odometry_helper_ros.cpp
-	src/obstacle_cost_function.cpp
-	src/oscillation_cost_function.cpp
-	src/prefer_forward_cost_function.cpp
-	src/point_grid.cpp
-	src/costmap_model.cpp
-	src/simple_scored_sampling_planner.cpp
-	src/simple_trajectory_generator.cpp
-	src/trajectory.cpp
-	src/voxel_grid_model.cpp)
+    src/footprint_helper.cpp
+    src/goal_functions.cpp
+    src/heading_cost_function.cpp
+    src/map_cell.cpp
+    src/map_grid.cpp
+    src/map_grid_visualizer.cpp
+    src/map_grid_cost_function.cpp
+    src/latched_stop_rotate_controller.cpp
+    src/local_planner_util.cpp
+    src/odometry_helper_ros.cpp
+    src/obstacle_cost_function.cpp
+    src/oscillation_cost_function.cpp
+    src/prefer_forward_cost_function.cpp
+    src/point_grid.cpp
+    src/costmap_model.cpp
+    src/simple_scored_sampling_planner.cpp
+    src/simple_trajectory_generator.cpp
+    src/trajectory.cpp
+    src/velocity_cost_function.cpp
+    src/voxel_grid_model.cpp)
 add_dependencies(base_local_planner base_local_planner_gencfg)
 add_dependencies(base_local_planner base_local_planner_gencpp)
 add_dependencies(base_local_planner nav_msgs_gencpp)
@@ -104,8 +106,8 @@ target_link_libraries(base_local_planner
     )
 
 add_library(trajectory_planner_ros
-	src/trajectory_planner.cpp
-	src/trajectory_planner_ros.cpp)
+    src/trajectory_planner.cpp
+    src/trajectory_planner_ros.cpp)
 add_dependencies(trajectory_planner_ros nav_msgs_gencpp)
 target_link_libraries(trajectory_planner_ros
      base_local_planner)

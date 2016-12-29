@@ -34,6 +34,9 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
+
+#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
+
 #include <dwa_local_planner/dwa_planner.h>
 #include <base_local_planner/goal_functions.h>
 #include <base_local_planner/map_grid_cost_point.h>
@@ -74,43 +77,47 @@ namespace dwa_local_planner {
     occdist_scale_ = config.occdist_scale;
     obstacle_costs_.setScale(resolution * occdist_scale_);
 
+    velocity_costs_.setScale(config.velocity_scale);
+    velocity_costs_.setMaxVelocity(config.max_vel_x);
+    velocity_costs_.setMinVelocity(config.min_vel_x);
+
     stop_time_buffer_ = config.stop_time_buffer;
     oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist, config.oscillation_reset_angle);
     forward_point_distance_ = config.forward_point_distance;
     goal_front_costs_.setXShift(forward_point_distance_);
     alignment_costs_.setXShift(forward_point_distance_);
- 
+
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
+
+    oscillation_reset_plan_divergence_distance_ = config.oscillation_reset_plan_divergence_distance;
 
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
     vth_samp = config.vth_samples;
- 
+
     if (vx_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
       vx_samp = 1;
       config.vx_samples = vx_samp;
     }
- 
+
     if (vy_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the y dimension. We'll at least assume that you want to sample one value... so we're going to set vy_samples to 1 instead");
       vy_samp = 1;
       config.vy_samples = vy_samp;
     }
- 
+
     if (vth_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the th dimension. We'll at least assume that you want to sample one value... so we're going to set vth_samples to 1 instead");
       vth_samp = 1;
       config.vth_samples = vth_samp;
     }
- 
+
     vsamples_[0] = vx_samp;
     vsamples_[1] = vy_samp;
     vsamples_[2] = vth_samp;
- 
-
   }
 
   DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util) :
@@ -119,7 +126,8 @@ namespace dwa_local_planner {
       path_costs_(planner_util->getCostmap()),
       goal_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
       goal_front_costs_(planner_util->getCostmap(), 0.0, 0.0, true),
-      alignment_costs_(planner_util->getCostmap())
+      alignment_costs_(planner_util->getCostmap()), tdr_("DWAPlannerROS")
+
   {
     ros::NodeHandle private_nh("~/" + name);
 
@@ -165,7 +173,9 @@ namespace dwa_local_planner {
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
+    critics.push_back(&heading_costs_); // discards trajectories that are not turn in place if path is behind robot
     critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
+    critics.push_back(&velocity_costs_); // scales cost based on velocity
     critics.push_back(&obstacle_costs_); // discards trajectories that move into obstacles
     critics.push_back(&goal_front_costs_); // prefers trajectories that make the nose go towards (local) nose goal
     critics.push_back(&alignment_costs_); // prefers trajectories that keep the robot nose on nose path
@@ -209,7 +219,12 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
-    oscillation_costs_.resetOscillationFlags();
+    double divergenceDistance = planner_util_->distanceToPlanDivergence(orig_global_plan);
+    if (divergenceDistance >= 0 && divergenceDistance < oscillation_reset_plan_divergence_distance_)
+    {
+      ROS_DEBUG("flag reset due to set plan at range %f", divergenceDistance);
+      oscillation_costs_.resetOscillationFlags();
+    }
     return planner_util_->setPlan(orig_global_plan);
   }
 
@@ -225,7 +240,6 @@ namespace dwa_local_planner {
     // set footprint
     ROS_DEBUG_NAMED("dwaPlanner", "checkTrajectory() sets footprint with size %u", robot_footprint_.size());
     obstacle_costs_.setFootprint(robot_footprint_);
-    
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
@@ -284,7 +298,7 @@ namespace dwa_local_planner {
       sin(angle_to_goal);
 
     goal_front_costs_.setTargetPoses(front_global_plan);
-    
+
     // keeping the nose on the path
     if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
       double resolution = planner_util_->getCostmap()->getResolution();
@@ -295,6 +309,15 @@ namespace dwa_local_planner {
       // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
       alignment_costs_.setScale(0.0);
     }
+
+    // costs for having the wrong heading
+    geometry_msgs::PoseStamped global_pose_as_pose;
+    tf::poseStampedTFToMsg(global_pose, global_pose_as_pose);
+    heading_costs_.setCurrentPose(global_pose_as_pose);
+    heading_costs_.setTargetPoses(global_plan_);
+    heading_costs_.setGoalDistanceSquared(sq_dist);
+
+    velocity_costs_.setGoalDistanceSquared(sq_dist);
   }
 
 
@@ -308,7 +331,7 @@ namespace dwa_local_planner {
 
     ROS_DEBUG_NAMED("dwaPlanner", "findBestPath() sets footprint with size %u", robot_footprint_.size());
     obstacle_costs_.setFootprint(robot_footprint_);
-    
+
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);
 
@@ -328,7 +351,9 @@ namespace dwa_local_planner {
     result_traj_.cost_ = -7;
     // find best trajectory by sampling and scoring the samples
     std::vector<base_local_planner::Trajectory> all_explored;
+    srs::ScopedTimingSampleRecorder stsr(tdr_.getRecorder("-findBest"));
     scored_sampling_planner_.findBestTrajectory(result_traj_, &all_explored);
+    stsr.stopSample();
 
     if(publish_traj_pc_)
     {
@@ -340,6 +365,8 @@ namespace dwa_local_planner {
         pcl_conversions::fromPCL(traj_cloud_->header, header);
         header.stamp = ros::Time::now();
         traj_cloud_->header = pcl_conversions::toPCL(header);
+        std::stringstream ss;
+        ss << "Costs: ";
         for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); ++t)
         {
             if(t->cost_<0)
@@ -354,9 +381,11 @@ namespace dwa_local_planner {
                 pt.path_cost=p_th;
                 pt.total_cost=t->cost_;
                 traj_cloud_->push_back(pt);
+                ss << t->cost_ << ", ";
             }
         }
         traj_cloud_pub_.publish(*traj_cloud_);
+        ROS_DEBUG_STREAM(ss.str());
     }
 
     // verbose publishing of point clouds
