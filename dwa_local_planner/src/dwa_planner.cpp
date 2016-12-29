@@ -385,7 +385,7 @@ namespace dwa_local_planner {
             }
         }
         traj_cloud_pub_.publish(*traj_cloud_);
-        //ROS_WARN_STREAM(ss.str());
+        ROS_DEBUG_STREAM(ss.str());
     }
 
     // verbose publishing of point clouds

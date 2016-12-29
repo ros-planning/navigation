@@ -97,6 +97,8 @@ public:
    * Scores the trajectory.  Returns a negative value for rejected trajectories.
    * @param traj The trajectory
    * @return Non-negative value if the trajectory is valid, negative otherwise.
+   *     -1 indicates that there is no angular velocity and the heading is in violation
+   *     -2 indicates that there is some linear velocity and the heading is in violation
    */
   double scoreTrajectory(Trajectory &traj);
 

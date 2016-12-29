@@ -94,7 +94,7 @@ void OscillationCostFunction::resetOscillationFlagsIfPossible(const Eigen::Vecto
 }
 
 void OscillationCostFunction::resetOscillationFlags() {
-  ROS_WARN("Oscillation flags reset");
+  ROS_DEBUG("Oscillation flags reset");
   strafe_pos_only_ = false;
   strafe_neg_only_ = false;
   strafing_pos_ = false;
