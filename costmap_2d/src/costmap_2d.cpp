@@ -65,7 +65,9 @@ void Costmap2D::deleteMaps()
 void Costmap2D::initMaps(unsigned int size_x, unsigned int size_y)
 {
   boost::unique_lock < boost::shared_mutex > lock(*access_);
-  delete[] costmap_;
+  if (costmap_) {
+    delete[] costmap_;
+  }
   costmap_ = new unsigned char[size_x * size_y];
 }
 
