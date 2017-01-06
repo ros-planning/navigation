@@ -6,7 +6,8 @@ find_package(catkin REQUIRED
         message_generation
         actionlib_msgs
         geometry_msgs
-        )
+        nav_msgs
+)
 
 # services
 add_service_files(
@@ -14,6 +15,7 @@ add_service_files(
     FILES
         ClearCostmap.srv
 )
+
 # actions
 add_action_files(
     DIRECTORY action
@@ -21,10 +23,18 @@ add_action_files(
         MoveBase.action
 )
 
+add_message_files(
+    DIRECTORY msg
+    FILES
+   		PoseWithCovarianceStampedArray.msg
+)
+
 generate_messages(
     DEPENDENCIES
+    	std_msgs
         actionlib_msgs
         geometry_msgs
+    	nav_msgs
 )
 
 catkin_package(
