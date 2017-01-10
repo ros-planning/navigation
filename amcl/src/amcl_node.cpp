@@ -453,8 +453,7 @@ AmclNode::AmclNode() :
   initial_poses_sub_ = nh_.subscribe("initialposes", 2, &AmclNode::initialPosesReceived, this);
 
   if(use_map_topic_) {
-    map_sub_ = nh_.subscribe("/internal/state/map/ros_amcl_occupancy", 1, &AmclNode::mapReceived, this);
-    ROS_INFO("Subscribed to map topic.");
+	map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);		    ROS_INFO("Subscribed to map topic.");
   } else {
     requestMap();
   }
@@ -1553,7 +1552,7 @@ AmclNode::handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStam
 
   std::string strData = stream.str( );
 
-  ROS_ERROR_STREAM( strData );
+  ROS_INFO_STREAM( strData );
 
   applyInitialPose();
 }
