@@ -129,9 +129,11 @@ void pf_free(pf_t *pf)
 }
 
 // Initialize the filter using a guassian
-void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
+void pf_init(pf_t *pf, int count, pf_vector_t* means, pf_matrix_t* covs)
 {
-  int i;
+  int poseIndex = 0;
+  int sampleIndex = 0;
+  int i = 0;
   pf_sample_set_t *set;
   pf_sample_t *sample;
   pf_pdf_gaussian_t *pdf;
@@ -143,22 +145,33 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
 
   set->sample_count = pf->max_samples;
 
-  pdf = pf_pdf_gaussian_alloc(mean, cov);
-    
-  // Compute the new sample poses
-  for (i = 0; i < set->sample_count; i++)
+  int samples = (int)((float)set->sample_count / (float)count);
+
+  for (poseIndex = 0; poseIndex < count; poseIndex++)
   {
-    sample = set->samples + i;
-    sample->weight = 1.0 / pf->max_samples;
-    sample->pose = pf_pdf_gaussian_sample(pdf);
+	  pdf = pf_pdf_gaussian_alloc(means[poseIndex], covs[poseIndex]);
 
-    // Add sample to histogram
-    pf_kdtree_insert(set->kdtree, sample->pose, sample->weight);
+	  // Give the remainder to the last initial pose
+	  if (poseIndex == (count - 1))
+	  {
+		  samples += set->sample_count % count;
+	  }
+
+	  // Compute the new sample poses
+	  for (i = 0; i < samples; i++)
+	  {
+		sample = set->samples + sampleIndex++;
+		sample->weight = 1.0 / pf->max_samples;
+		sample->pose = pf_pdf_gaussian_sample(pdf);
+
+		// Add sample to histogram
+		pf_kdtree_insert(set->kdtree, sample->pose, sample->weight);
+	  }
+
+	  pf->w_slow = pf->w_fast = 0.0;
+
+	  pf_pdf_gaussian_free(pdf);
   }
-
-  pf->w_slow = pf->w_fast = 0.0;
-
-  pf_pdf_gaussian_free(pdf);
     
   // Re-compute cluster statistics
   pf_cluster_stats(pf, set); 

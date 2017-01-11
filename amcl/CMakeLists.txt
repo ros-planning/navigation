@@ -10,6 +10,8 @@ find_package(catkin REQUIRED
             dynamic_reconfigure
             nav_msgs
             srslib_framework
+            geometry_msgs
+            move_base_msgs
         )
 
 find_package(Boost REQUIRED)

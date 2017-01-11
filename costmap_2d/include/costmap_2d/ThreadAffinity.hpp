@@ -11,7 +11,9 @@
 #include <sys/syscall.h>
 #include <iostream>
 
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE
+#endif
 
 bool setThreadAffinity(int core_id) {
    int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
