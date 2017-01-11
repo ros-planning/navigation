@@ -450,8 +450,8 @@ AmclNode::AmclNode() :
   initial_poses_sub_ = nh_.subscribe("initialposes", 2, &AmclNode::initialPosesReceived, this);
 
   if(use_map_topic_) {
-	map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);
-	ROS_INFO("Subscribed to map topic.");
+    map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);
+    ROS_INFO("Subscribed to map topic.");
   } else {
     requestMap();
   }
@@ -1124,7 +1124,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                   fabs(delta.v[1]) > d_thresh_ ||
                   fabs(delta.v[2]) > a_thresh_;
     update = update || force_update_;
-    force_update_=false;
+    force_update_ = false;
 
     // Set the laser update flags
     if(update)
