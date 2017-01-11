@@ -214,8 +214,8 @@ class AmclNode
     double laser_min_range_;
     double laser_max_range_;
 
-    //Nomotion update control
-    bool m_force_update;  // used to temporarily let amcl update samples even when no motion occurs...
+    // Nomotion update control
+	bool force_update_;  // used to temporarily let amcl update samples even when no motion occurs...
 
     AMCLOdom* odom_;
     AMCLLaser* laser_;
@@ -338,11 +338,11 @@ AmclNode::AmclNode() :
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
   // Grab params off the param server
-  private_nh_.param("use_map_topic", use_map_topic_, true);
-  private_nh_.param("first_map_only", first_map_only_, true);
+  private_nh_.param("use_map_topic", use_map_topic_, false);
+  private_nh_.param("first_map_only", first_map_only_, false);
 
-  use_map_topic_ = true;
-  first_map_only_ = true;
+  use_map_topic_ = false;
+  first_map_only_ = false;
 
   double tmp;
   private_nh_.param("gui_publish_rate", tmp, -1.0);
@@ -453,11 +453,12 @@ AmclNode::AmclNode() :
   initial_poses_sub_ = nh_.subscribe("initialposes", 2, &AmclNode::initialPosesReceived, this);
 
   if(use_map_topic_) {
-	map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);		    ROS_INFO("Subscribed to map topic.");
+	map_sub_ = nh_.subscribe("map", 1, &AmclNode::mapReceived, this);
+	ROS_INFO("Subscribed to map topic.");
   } else {
     requestMap();
   }
-  m_force_update = false;
+  force_update_ = false;
 
   dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
   dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
@@ -1034,7 +1035,7 @@ bool
 AmclNode::nomotionUpdateCallback(std_srvs::Empty::Request& req,
                                      std_srvs::Empty::Response& res)
 {
-	m_force_update = true;
+	force_update_ = true;
 	//ROS_INFO("Requesting no-motion update");
 	return true;
 }
@@ -1125,8 +1126,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     bool update = fabs(delta.v[0]) > d_thresh_ ||
                   fabs(delta.v[1]) > d_thresh_ ||
                   fabs(delta.v[2]) > a_thresh_;
-    update = update || m_force_update;
-    m_force_update=false;
+    update = update || force_update_;
+    force_update_=false;
 
     // Set the laser update flags
     if(update)
@@ -1256,7 +1257,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
     // Publish the resulting cloud
     // TODO: set maximum rate for publishing
-    if (!m_force_update) {
+    if (!force_update_) {
       geometry_msgs::PoseArray cloud_msg;
       cloud_msg.header.stamp = ros::Time::now();
       cloud_msg.header.frame_id = global_frame_id_;
@@ -1448,7 +1449,7 @@ AmclNode::initialPosesReceived(const move_base_msgs::PoseWithCovarianceStampedAr
   handleInitialPosesMessage(*msg);
 
   // Force one no motion update
-  m_force_update = true;
+  force_update_ = true;
 }
 
 void
