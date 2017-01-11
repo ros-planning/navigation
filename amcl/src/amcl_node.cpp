@@ -341,9 +341,6 @@ AmclNode::AmclNode() :
   private_nh_.param("use_map_topic", use_map_topic_, false);
   private_nh_.param("first_map_only", first_map_only_, false);
 
-  use_map_topic_ = false;
-  first_map_only_ = false;
-
   double tmp;
   private_nh_.param("gui_publish_rate", tmp, -1.0);
   gui_publish_period = ros::Duration(1.0/tmp);
