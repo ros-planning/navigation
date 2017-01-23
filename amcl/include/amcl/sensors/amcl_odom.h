@@ -40,7 +40,8 @@ typedef enum
   ODOM_MODEL_DIFF,
   ODOM_MODEL_OMNI,
   ODOM_MODEL_DIFF_CORRECTED,
-  ODOM_MODEL_OMNI_CORRECTED
+  ODOM_MODEL_OMNI_CORRECTED,
+  ODOM_MODEL_OMNI_ROSIE
 } odom_model_t;
 
 // Odometric sensor data
@@ -60,14 +61,14 @@ class AMCLOdom : public AMCLSensor
   // Default constructor
   public: AMCLOdom();
 
-  public: void SetModelDiff(double alpha1, 
-                            double alpha2, 
-                            double alpha3, 
+  public: void SetModelDiff(double alpha1,
+                            double alpha2,
+                            double alpha3,
                             double alpha4);
 
-  public: void SetModelOmni(double alpha1, 
-                            double alpha2, 
-                            double alpha3, 
+  public: void SetModelOmni(double alpha1,
+                            double alpha2,
+                            double alpha3,
                             double alpha4,
                             double alpha5);
 
@@ -76,7 +77,8 @@ class AMCLOdom : public AMCLSensor
                          double alpha2,
                          double alpha3,
                          double alpha4,
-                         double alpha5 = 0 );
+                         double alpha5 = 0,
+                         double alpha6 = 0);
 
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.
@@ -84,12 +86,12 @@ class AMCLOdom : public AMCLSensor
 
   // Current data timestamp
   private: double time;
-  
+
   // Model type
   private: odom_model_t model_type;
 
   // Drift parameters
-  private: double alpha1, alpha2, alpha3, alpha4, alpha5;
+  private: double alpha1, alpha2, alpha3, alpha4, alpha5, alpha6;
 };
 
 
