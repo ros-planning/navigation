@@ -30,4 +30,7 @@
     <run_depend>yaml-cpp</run_depend>
 
     <test_depend>rospy</test_depend>
+    <test_depend>libpng12-dev</test_depend>
+    <test_depend>libpng++-dev</test_depend>
+
 </package>
