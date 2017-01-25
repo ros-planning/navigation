@@ -110,12 +110,11 @@ add_library(layers
   plugins/voxel_layer.cpp
   src/observation_buffer.cpp
 )
+add_dependencies(layers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(layers
   costmap_2d
 )
 
-add_dependencies(costmap_2d costmap_2d_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(layers costmap_2d_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
 add_dependencies(costmap_2d_markers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -130,6 +129,7 @@ target_link_libraries(costmap_2d_cloud
     )
 
 add_executable(costmap_2d_node src/costmap_2d_node.cpp)
+add_dependencies(costmap_2d_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d_node
     costmap_2d
     )
@@ -141,9 +141,6 @@ if(CATKIN_ENABLE_TESTING)
 
   # Add the test folder to the include directories
   include_directories(test)
-
-  include_directories(${GTEST_INCLUDE_DIRS})
-  link_directories(${GTEST_LIBRARY_DIRS})
 
   # Create targets for test executables
   add_executable(costmap_tester EXCLUDE_FROM_ALL test/costmap_tester.cpp)

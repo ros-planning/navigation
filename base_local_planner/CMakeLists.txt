@@ -3,16 +3,22 @@ project(base_local_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
-            cmake_modules
-            roscpp
-            tf
-            message_generation
-            dynamic_reconfigure
-            nav_core
-            pcl_conversions
-            costmap_2d
-            pluginlib
             angles
+            cmake_modules
+            costmap_2d
+            dynamic_reconfigure
+            geometry_msgs
+            message_generation
+            nav_core
+            nav_msgs
+            pcl_conversions
+            pcl_ros
+            pluginlib
+            roscpp
+            rospy
+            std_msgs
+            tf
+            voxel_grid
         )
 
 find_package(Boost REQUIRED
@@ -55,14 +61,17 @@ catkin_package(
         base_local_planner
         trajectory_planner_ros
     CATKIN_DEPENDS
-        roscpp
-        dynamic_reconfigure
-        message_generation
-        tf
-        pluginlib
-        costmap_2d
-        nav_core
         angles
+        costmap_2d
+        dynamic_reconfigure
+        geometry_msgs
+        message_runtime
+        nav_core
+        nav_msgs
+        pluginlib
+        roscpp
+        std_msgs
+        tf
 )
 
 #uncomment for profiling
@@ -103,11 +112,12 @@ target_link_libraries(base_local_planner
 add_library(trajectory_planner_ros
 	src/trajectory_planner.cpp
 	src/trajectory_planner_ros.cpp)
-add_dependencies(trajectory_planner_ros nav_msgs_gencpp)
+add_dependencies(trajectory_planner_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(trajectory_planner_ros
      base_local_planner)
 
 add_executable(point_grid src/point_grid.cpp)
+add_dependencies(point_grid ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(point_grid ${catkin_LIBRARIES})
 
 install(TARGETS

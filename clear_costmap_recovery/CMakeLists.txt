@@ -33,6 +33,7 @@ catkin_package(
 )
 
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
+add_dependencies(clear_costmap_recovery ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(clear_costmap_recovery ${catkin_LIBRARIES})
 
 
@@ -43,9 +44,6 @@ if(CATKIN_ENABLE_TESTING)
 
   # Add the test folder to the include directories
   include_directories(test)
-
-  include_directories(${GTEST_INCLUDE_DIRS})
-  link_directories(${GTEST_LIBRARY_DIRS})
 
   # Create targets for test executables
   add_rostest_gtest(clear_tester test/clear_tests.launch test/clear_tester.cpp)

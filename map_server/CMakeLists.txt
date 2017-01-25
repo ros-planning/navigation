@@ -29,9 +29,11 @@ catkin_package(
 
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 add_library(image_loader src/image_loader.cpp)
+add_dependencies(image_loader ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
 
 add_executable(map_server src/main.cpp)
+add_dependencies(map_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(map_server
     image_loader
     yaml-cpp
@@ -39,6 +41,7 @@ target_link_libraries(map_server
 )
 
 add_executable(map_server-map_saver src/map_saver.cpp)
+add_dependencies(map_server-map_saver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 set_target_properties(map_server-map_saver PROPERTIES OUTPUT_NAME map_saver)
 target_link_libraries(map_server-map_saver
     ${catkin_LIBRARIES}
@@ -61,14 +64,14 @@ if(CATKIN_ENABLE_TESTING)
   target_link_libraries(${PROJECT_NAME}_utest image_loader SDL SDL_image)
 
   add_executable(rtest test/rtest.cpp test/test_constants.cpp)
+  add_dependencies(rtest ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
   target_link_libraries( rtest
       gtest
       ${catkin_LIBRARIES}
   )
-  add_dependencies(rtest nav_msgs_gencpp)
 
   # This has to be done after we've already built targets, or catkin variables get borked
-  find_package(rostest)
+  find_package(rostest REQUIRED)
   add_rostest(test/rtest.xml)
 endif()
 

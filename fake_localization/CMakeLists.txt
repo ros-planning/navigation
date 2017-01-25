@@ -4,12 +4,13 @@ project(fake_localization)
 find_package(catkin REQUIRED
         COMPONENTS
             angles
-            roscpp
-            rosconsole
-            nav_msgs
             geometry_msgs
-            tf
             message_filters
+            nav_msgs
+            rosconsole
+            roscpp
+            rospy
+            tf
         )
 
 
@@ -17,6 +18,8 @@ find_package(Boost REQUIRED COMPONENTS signals)
 
 catkin_package(
     CATKIN_DEPENDS
+        geometry_msgs
+        nav_msgs
         roscpp
         rospy
 )
@@ -29,8 +32,7 @@ target_link_libraries(fake_localization
     ${Boost_LIBRARIES}
     )
 
-add_dependencies(fake_localization nav_msgs_gencpp)
-add_dependencies(fake_localization geometry_msgs_gencpp)
+add_dependencies(fake_localization ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 install(
     PROGRAMS
