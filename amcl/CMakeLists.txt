@@ -30,7 +30,7 @@ catkin_package(
   LIBRARIES amcl_sensors amcl_map amcl_pf
 )
 
-include_directories(include/amcl include/amcl/map include/amcl/sensors include/amcl/pf)
+include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
 add_library(amcl_pf
