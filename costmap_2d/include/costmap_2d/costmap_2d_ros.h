@@ -48,6 +48,8 @@
 #include <dynamic_reconfigure/server.h>
 #include <pluginlib/class_loader.h>
 
+#include <srslib_timing/MasterTimingDataRecorder.hpp>
+
 class SuperValue : public XmlRpc::XmlRpcValue
 {
 public:
@@ -255,6 +257,9 @@ private:
   costmap_2d::Costmap2DConfig old_config_;
 
   int map_update_thread_affinity_;
+
+  // Add timing data recorder
+  srs::MasterTimingDataRecorder timingDataRecorder_;
 };
 // class Costmap2DROS
 }  // namespace costmap_2d

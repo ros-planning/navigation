@@ -43,7 +43,7 @@
 
 #include <geometry_msgs/Twist.h>
 
-#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
+#include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 #include <costmap_2d/ThreadAffinity.hpp>
 
 namespace move_base {
@@ -405,35 +405,12 @@ namespace move_base {
     controller_costmap_ros_->resetLayers();
 
     // Make sure the planner costmap is current and updated.
-    float sleep_time = 0.1;
-    float total_slept = 0.0;
-    while (!planner_costmap_ros_->isCurrent()) {
-      if (total_slept >= req.timeout) {
-        ROS_WARN("Planner costmap not current within %f seconds.  Failing costmap clear.", total_slept);
-        resp.success = false;
-        resp.message = "Planner costmap not current.  Failing clear.";
-        return true;
-      }
-      ROS_INFO("Planner costmap not current.  Waiting for it to become current...");
-      ros::Duration(sleep_time).sleep();
-      total_slept += sleep_time;
-    }
     planner_costmap_ros_->updateMap();
 
+
     // Make sure the controller costmap is current and updated.
-    total_slept = 0;
-    while (!controller_costmap_ros_->isCurrent()) {
-      if (total_slept >= req.timeout) {
-        ROS_WARN("Controller costmap not current within %f seconds.  Failing costmap clear.", total_slept);
-        resp.success = false;
-        resp.message = "Controller costmap not current.  Failing clear.";
-        return true;
-      }
-      ROS_INFO("Controller costmap not current.  Waiting for it to become current...");
-      ros::Duration(sleep_time).sleep();
-      total_slept += sleep_time;
-    }
     controller_costmap_ros_->updateMap();
+
     ROS_WARN("Costmaps cleared and updated with recent data.");
     resp.success = true;
     return true;

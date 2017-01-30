@@ -22,6 +22,7 @@ find_package(catkin REQUIRED
             std_msgs
             tf
             voxel_grid
+            srslib_timing
         )
 
 find_package(PCL REQUIRED)
@@ -42,6 +43,8 @@ add_message_files(
     DIRECTORY msg
     FILES
     VoxelGrid.msg
+    ObstructionMsg.msg
+    ObstructionListMsg.msg
 )
 
 generate_messages(
@@ -55,6 +58,7 @@ generate_messages(
 generate_dynamic_reconfigure_options(
   cfg/Costmap2D.cfg
   cfg/ObstaclePlugin.cfg
+  cfg/ObstructionPlugin.cfg
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
   cfg/VoxelPlugin.cfg
@@ -81,6 +85,7 @@ catkin_package(
         std_msgs
         tf
         voxel_grid
+        srslib_timing
     DEPENDS
         PCL
         Eigen
@@ -109,7 +114,9 @@ target_link_libraries(costmap_2d
 add_library(layers
   plugins/inflation_layer.cpp
   plugins/obstacle_layer.cpp
+  plugins/obstruction_layer.cpp
   plugins/static_layer.cpp
+  plugins/static_layer_with_inflation.cpp
   plugins/voxel_layer.cpp
   src/observation_buffer.cpp
 )
@@ -170,6 +177,10 @@ if(CATKIN_ENABLE_TESTING)
   add_dependencies(tests inflation_tests)
   target_link_libraries(inflation_tests costmap_2d layers ${GTEST_LIBRARIES})
 
+  add_executable(static_with_inflation_tests EXCLUDE_FROM_ALL test/static_with_inflation_tests.cpp)
+  add_dependencies(tests static_with_inflation_tests)
+  target_link_libraries(static_with_inflation_tests costmap_2d layers ${GTEST_LIBRARIES})
+
   catkin_download_test_data(${PROJECT_NAME}_simple_driving_test_indexed.bag
     http://download.ros.org/data/costmap_2d/simple_driving_test_indexed.bag
     DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/test
@@ -181,6 +192,7 @@ if(CATKIN_ENABLE_TESTING)
 
   add_rostest(test/footprint_tests.launch)
   add_rostest(test/inflation_tests.launch)
+  add_rostest(test/static_with_inflation_tests.launch)
   add_rostest(test/obstacle_tests.launch)
   add_rostest(test/simple_driving_test.xml)
   add_rostest(test/static_tests.launch)

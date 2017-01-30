@@ -1,0 +1,12 @@
+#
+# (c) Copyright 2015-2016 River Systems, all rights reserved
+#
+# This is proprietary software, unauthorized distribution is not permitted.
+#
+image: bigmap.pgm
+resolution: 0.050
+origin: [-0.025, -0.025, 0.000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+

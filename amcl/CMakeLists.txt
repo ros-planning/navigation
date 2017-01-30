@@ -9,7 +9,7 @@ find_package(catkin REQUIRED
             tf
             dynamic_reconfigure
             nav_msgs
-            srslib_framework
+            srslib_timing
             geometry_msgs
             move_base_msgs
         )

@@ -15,7 +15,7 @@ find_package(catkin REQUIRED
             costmap_2d
             pluginlib
             angles
-            srslib_framework
+            srslib_timing
         )
 
 find_package(Boost REQUIRED

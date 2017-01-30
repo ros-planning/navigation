@@ -38,7 +38,7 @@
 #ifndef SIMPLE_SCORED_SAMPLING_PLANNER_H_
 #define SIMPLE_SCORED_SAMPLING_PLANNER_H_
 
-#include <srslib_framework/platform/timing/MasterTimingDataRecorder.hpp>
+#include <srslib_timing/MasterTimingDataRecorder.hpp>
 
 #include <vector>
 #include <base_local_planner/trajectory.h>

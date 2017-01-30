@@ -40,7 +40,7 @@
 #include <vector>
 #include <Eigen/Core>
 
-#include <srslib_framework/platform/timing/MasterTimingDataRecorder.hpp>
+#include <srslib_timing/MasterTimingDataRecorder.hpp>
 
 #include <dwa_local_planner/DWAPlannerConfig.h>
 

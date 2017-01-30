@@ -163,7 +163,6 @@ void InflationLayer::onFootprintChanged()
   cell_inflation_radius_ = cellDistance(inflation_radius_);
   computeCaches();
   need_reinflation_ = true;
-
   ROS_DEBUG("InflationLayer::onFootprintChanged(): num footprint points: %lu,"
             " inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_);
@@ -226,6 +225,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
       }
     }
   }
+  ROS_DEBUG_STREAM("Gathered " << obs_bin.size() << " obstacles to inflate");
 
   // Process cells by increasing distance; new cells are appended to the corresponding distance bin, so they
   // can overtake previously inserted but farther away cells
@@ -300,6 +300,10 @@ inline void InflationLayer::enqueue(unsigned int index, unsigned int mx, unsigne
 
 void InflationLayer::computeCaches()
 {
+
+  ROS_DEBUG_STREAM("Cache compute with ir: " << inflation_radius_ << ", cir: "
+    << cell_inflation_radius_ << ", w: " << weight_
+    << ", insc: " << inscribed_radius_ << ", res: " << resolution_);
   if (cell_inflation_radius_ == 0)
     return;
 
@@ -361,6 +365,7 @@ void InflationLayer::deleteKernels()
 
 void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
 {
+  ROS_DEBUG_STREAM("Calling set inflation params with " << inflation_radius << " and " << cost_scaling_factor);
   if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius)
   {
     // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
@@ -371,6 +376,8 @@ void InflationLayer::setInflationParameters(double inflation_radius, double cost
     cell_inflation_radius_ = cellDistance(inflation_radius_);
     weight_ = cost_scaling_factor;
     need_reinflation_ = true;
+    ROS_DEBUG_STREAM("About to cache with " << inflation_radius_ << ", "
+      << cell_inflation_radius_ << ", " << weight_);
     computeCaches();
   }
 }

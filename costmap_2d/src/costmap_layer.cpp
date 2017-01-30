@@ -3,12 +3,52 @@
 namespace costmap_2d
 {
 
+void CostmapLayer::clearWindow(double min_x, double min_y, double max_x, double max_y)
+{
+  /// @todo Optimize this further.
+  int start_x, start_y, end_x, end_y;
+  worldToMapNoBounds(min_x, min_y, start_x, start_y);
+  worldToMapNoBounds(max_x, max_y, end_x, end_y);
+
+  unsigned char* grid = getCharMap();
+  for(int x=0; x<(int)getSizeInCellsX(); x++){
+    bool xrange = x>start_x && x<end_x;
+
+    for(int y=0; y<(int)getSizeInCellsY(); y++){
+      if(xrange && y>start_y && y<end_y){
+        continue;
+      }
+
+      clearGridCell(x, y);
+    }
+  }
+
+  double ox = getOriginX();
+  double oy = getOriginY();
+  double width = getSizeInMetersX();
+  double height = getSizeInMetersY();
+  addExtraBounds(ox, oy, ox + width, oy + height);
+}
+
+void CostmapLayer::clearGridCell(unsigned int x, unsigned int y)
+{
+  costmap_[getIndex(x,y)] = NO_INFORMATION;
+}
+
 void CostmapLayer::touch(double x, double y, double* min_x, double* min_y, double* max_x, double* max_y)
 {
     *min_x = std::min(x, *min_x);
     *min_y = std::min(y, *min_y);
     *max_x = std::max(x, *max_x);
     *max_y = std::max(y, *max_y);
+}
+
+void CostmapLayer::touchWithRadius(double x, double y, double radius, double* min_x, double* min_y, double* max_x, double* max_y)
+{
+    *min_x = std::min(x - radius, *min_x);
+    *min_y = std::min(y - radius, *min_y);
+    *max_x = std::max(x + radius, *max_x);
+    *max_y = std::max(y + radius, *max_y);
 }
 
 void CostmapLayer::matchSize()
@@ -80,6 +120,7 @@ void CostmapLayer::updateWithTrueOverwrite(costmap_2d::Costmap2D& master_grid, i
   for (int j = min_j; j < max_j; j++)
   {
     unsigned int it = span*j+min_i;
+
     for (int i = min_i; i < max_i; i++)
     {
       master[it] = costmap_[it];

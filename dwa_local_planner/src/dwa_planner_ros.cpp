@@ -46,7 +46,7 @@
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
 
-#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
+#include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)

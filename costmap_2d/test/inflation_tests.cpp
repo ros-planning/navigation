@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2013, Willow Garage, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -13,7 +13,7 @@
  *     * Neither the name of the Willow Garage, Inc. nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -43,39 +43,15 @@
 #include <tf/transform_listener.h>
 
 using namespace costmap_2d;
-using geometry_msgs::Point;
-
-std::vector<Point> setRadii(LayeredCostmap& layers, double length, double width, double inflation_radius)
-{
-  std::vector<Point> polygon;
-  Point p;
-  p.x = width;
-  p.y = length; 
-  polygon.push_back(p);
-  p.x = width;
-  p.y = -length; 
-  polygon.push_back(p);
-  p.x = -width;
-  p.y = -length; 
-  polygon.push_back(p);
-  p.x = -width;
-  p.y = length; 
-  polygon.push_back(p);
-  layers.setFootprint(polygon);
-
-  ros::NodeHandle nh;
-  nh.setParam("/inflation_tests/inflation/inflation_radius", inflation_radius);
-
-  return polygon;
-}
 
 // Test that a single point gets inflated properly
-void validatePointInflation(unsigned int mx, unsigned int my, Costmap2D* costmap, InflationLayer* ilayer, double inflation_radius)
+void validatePointInflation(unsigned int mx, unsigned int my, costmap_2d::Costmap2D* costmap,
+  costmap_2d::InflationLayer* ilayer, double inflation_radius)
 {
   bool* seen = new bool[costmap->getSizeInCellsX() * costmap->getSizeInCellsY()];
   memset(seen, false, costmap->getSizeInCellsX() * costmap->getSizeInCellsY() * sizeof(bool));
-  std::map<double, std::vector<CellData>> m;
-  CellData initial(costmap->getIndex(mx, my), mx, my, mx, my);
+  std::map<double, std::vector<costmap_2d::CellData>> m;
+  costmap_2d::CellData initial(costmap->getIndex(mx, my), mx, my, mx, my);
   m[0].push_back(initial);
   for (auto& dist_bin: m)
   {
@@ -98,25 +74,25 @@ void validatePointInflation(unsigned int mx, unsigned int my, Costmap2D* costmap
 
         if (cell.x_ > 0)
         {
-          CellData data(costmap->getIndex(cell.x_-1, cell.y_),
+          costmap_2d::CellData data(costmap->getIndex(cell.x_-1, cell.y_),
                         cell.x_-1, cell.y_, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
         if (cell.y_ > 0)
         {
-          CellData data(costmap->getIndex(cell.x_, cell.y_-1),
+          costmap_2d::CellData data(costmap->getIndex(cell.x_, cell.y_-1),
                         cell.x_, cell.y_-1, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
         if (cell.x_ < costmap->getSizeInCellsX() - 1)
         {
-          CellData data(costmap->getIndex(cell.x_+1, cell.y_),
+          costmap_2d::CellData data(costmap->getIndex(cell.x_+1, cell.y_),
                         cell.x_+1, cell.y_, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
         if (cell.y_ < costmap->getSizeInCellsY() - 1)
         {
-          CellData data(costmap->getIndex(cell.x_, cell.y_+1),
+          costmap_2d::CellData data(costmap->getIndex(cell.x_, cell.y_+1),
                         cell.x_, cell.y_+1, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
@@ -133,9 +109,9 @@ TEST(costmap, testAdjacentToObstacleCanStillMove){
 
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
-  std::vector<Point> polygon = setRadii(layers, 2.1, 2.3, 4.1);
+  std::vector<geometry_msgs::Point> polygon = setRadii(layers, 2.1, 2.3, 4.1);
 
-  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   InflationLayer* ilayer = addInflationLayer(layers, tf);
   layers.setFootprint(polygon);
 
@@ -159,9 +135,9 @@ TEST(costmap, testInflationShouldNotCreateUnknowns){
 
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
-  std::vector<Point> polygon = setRadii(layers, 2.1, 2.3, 4.1);
+  std::vector<geometry_msgs::Point> polygon = setRadii(layers, 2.1, 2.3, 4.1);
 
-  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   InflationLayer* ilayer = addInflationLayer(layers, tf);
   layers.setFootprint(polygon);
 
@@ -184,9 +160,9 @@ TEST(costmap, testCostFunctionCorrectness){
 
   // Footprint with inscribed radius = 5.0
   //               circumscribed radius = 8.0
-  std::vector<Point> polygon = setRadii(layers, 5.0, 6.25, 10.5);
+  std::vector<geometry_msgs::Point> polygon = setRadii(layers, 5.0, 6.25, 10.5);
 
-  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   InflationLayer* ilayer = addInflationLayer(layers, tf);
   layers.setFootprint(polygon);
 
@@ -253,7 +229,7 @@ TEST(costmap, testInflationOrderCorrectness){
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
   const double inflation_radius = 4.1;
-  std::vector<Point> polygon = setRadii(layers, 2.1, 2.3, inflation_radius);
+  std::vector<geometry_msgs::Point> polygon = setRadii(layers, 2.1, 2.3, inflation_radius);
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   InflationLayer* ilayer = addInflationLayer(layers, tf);
@@ -280,10 +256,10 @@ TEST(costmap, testInflation){
 
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
-  std::vector<Point> polygon = setRadii(layers, 1, 1, 1);
+  std::vector<geometry_msgs::Point> polygon = setRadii(layers, 1, 1, 1);
 
   addStaticLayer(layers, tf);
-  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   InflationLayer* ilayer = addInflationLayer(layers, tf);
   layers.setFootprint(polygon);
 
@@ -309,7 +285,7 @@ TEST(costmap, testInflation){
   // It and its 2 neighbors makes 3 obstacles
   ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE) + countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)51);
 
-  // @todo Rewrite 
+  // @todo Rewrite
   // Add an obstacle at <2,0> which will inflate and refresh to of the other inflated cells
   addObservation(olayer, 2, 0);
   layers.updateMap(0,0,0);
@@ -344,10 +320,10 @@ TEST(costmap, testInflation2){
 
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
-  std::vector<Point> polygon = setRadii(layers, 1, 1, 1);
+  std::vector<geometry_msgs::Point> polygon = setRadii(layers, 1, 1, 1);
 
   addStaticLayer(layers, tf);
-  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   InflationLayer* ilayer = addInflationLayer(layers, tf);
   layers.setFootprint(polygon);
 
@@ -359,7 +335,7 @@ TEST(costmap, testInflation2){
 
   Costmap2D* costmap = layers.getCostmap();
   //printMap(*costmap);
-  ASSERT_EQ(costmap->getCost(2, 3), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);  
+  ASSERT_EQ(costmap->getCost(2, 3), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
   ASSERT_EQ(costmap->getCost(3, 3), costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
 }
 
@@ -372,9 +348,9 @@ TEST(costmap, testInflation3){
   layers.resizeMap(10, 10, 1, 0, 0);
 
   // 1 2 3
-  std::vector<Point> polygon = setRadii(layers, 1, 1.75, 3);
+  std::vector<geometry_msgs::Point> polygon = setRadii(layers, 1, 1.75, 3);
 
-  ObstacleLayer* olayer = addObstacleLayer(layers, tf);  
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   InflationLayer* ilayer = addInflationLayer(layers, tf);
   layers.setFootprint(polygon);
 

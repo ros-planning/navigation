@@ -35,7 +35,7 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 
-#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
+#include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 
 #include <dwa_local_planner/dwa_planner.h>
 #include <base_local_planner/goal_functions.h>

@@ -42,7 +42,7 @@
 #include <algorithm>
 #include <vector>
 #include <costmap_2d/ThreadAffinity.hpp>
-
+#include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 
 using namespace std;
 
@@ -63,7 +63,8 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
 Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     layered_costmap_(NULL), name_(name), tf_(tf), stop_updates_(false), initialized_(true), stopped_(false),
     robot_stopped_(false), map_update_thread_(NULL), last_publish_(0),
-    plugin_loader_("costmap_2d", "costmap_2d::Layer"), publisher_(NULL), map_update_thread_affinity_(-1)
+    plugin_loader_("costmap_2d", "costmap_2d::Layer"), publisher_(NULL), map_update_thread_affinity_(-1),
+    timingDataRecorder_("CM2dROS-"+name)
 {
   ros::NodeHandle private_nh("~/" + name);
   ros::NodeHandle g_nh;
@@ -399,11 +400,16 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
   ros::Rate r(frequency);
   while (nh.ok() && !map_update_thread_shutdown_)
   {
+    srs::ScopedTimingSampleRecorder stsr_update_loop(timingDataRecorder_.getRecorder("-UpdateLoop", 1));
+
     struct timeval start, end;
     double start_t, end_t, t_diff;
     gettimeofday(&start, NULL);
 
-    updateMap();
+    {
+      srs::ScopedTimingSampleRecorder stsr_update(timingDataRecorder_.getRecorder("-Update", 1));
+      updateMap();
+    }
 
     gettimeofday(&end, NULL);
     start_t = start.tv_sec + double(start.tv_usec) / 1e6;
@@ -507,7 +513,6 @@ void Costmap2DROS::resume()
   while (!initialized_)
     r.sleep();
 }
-
 
 void Costmap2DROS::resetLayers()
 {

@@ -34,7 +34,7 @@
  *
  * Author: TKruse
  *********************************************************************/
-#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
+#include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 
 #include <base_local_planner/simple_scored_sampling_planner.h>
 

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(map_server)
+add_definitions("-std=c++11")
 
 find_package(catkin REQUIRED
         COMPONENTS
@@ -85,7 +86,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
   PATTERN ".svn" EXCLUDE)
 
 ## Install excutable python script
-install( 
+install(
     PROGRAMS
       scripts/crop_map
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

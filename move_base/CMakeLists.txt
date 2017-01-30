@@ -13,7 +13,7 @@ find_package(catkin REQUIRED
         move_base_msgs
         nav_core
         tf
-        srslib_framework
+        srslib_timing
 )
 find_package(Eigen REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})
@@ -49,7 +49,7 @@ add_dependencies(move_base geometry_msgs_gencpp)
 add_executable(move_base_node
   src/move_base_node.cpp
 )
-target_link_libraries(move_base_node move_base)
+target_link_libraries(move_base_node move_base )
 set_target_properties(move_base_node PROPERTIES OUTPUT_NAME move_base)
 
 install(DIRECTORY launch

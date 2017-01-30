@@ -48,7 +48,7 @@ namespace costmap_2d
 {
 
 LayeredCostmap::LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown) :
-    costmap_(), global_frame_(global_frame), rolling_window_(rolling_window), initialized_(false), size_locked_(false)
+    costmap_(), global_frame_(global_frame), rolling_window_(rolling_window), initialized_(false), size_locked_(false), timingDataRecorder_("layered"+global_frame)
 {
   if (track_unknown)
     costmap_.setDefaultValue(255);
@@ -80,7 +80,12 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 {
   // Lock for the remainder of this function, some plugins (e.g. VoxelLayer)
   // implement thread unsafe updateBounds() functions.
+
+  srs::TimingDataRecorder* rec = nullptr;
+  if (rolling_window_) {rec = timingDataRecorder_.getRecorder("-getLock", 1);  rec->startSample();}
+
   boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
+  if (rec) {rec->stopSample();}
 
   // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
   if (rolling_window_)
@@ -95,6 +100,9 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 
   minx_ = miny_ = 1e30;
   maxx_ = maxy_ = -1e30;
+
+  rec = nullptr;
+  if (rolling_window_) {rec = timingDataRecorder_.getRecorder("-updateBounds", 1);  rec->startSample();}
 
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)
@@ -113,6 +121,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
                         (*plugin)->getName().c_str());
     }
   }
+  if (rec) {rec->stopSample();}
 
   int x0, xn, y0, yn;
   costmap_.worldToMapEnforceBounds(minx_, miny_, x0, y0);
@@ -124,16 +133,29 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   yn = std::min(int(costmap_.getSizeInCellsY()), yn + 1);
 
   ROS_DEBUG("Updating area x: [%d, %d] y: [%d, %d]", x0, xn, y0, yn);
-
-  if (xn < x0 || yn < y0)
+  if (xn < x0 || yn < y0){
     return;
+  }
+
+  rec = nullptr;
+  if (rolling_window_) {rec = timingDataRecorder_.getRecorder("-resetMaps", 1);  rec->startSample();}
 
   costmap_.resetMap(x0, y0, xn, yn);
+  if (rec) {rec->stopSample();}
+
+  rec = nullptr;
+  if (rolling_window_) {rec = timingDataRecorder_.getRecorder("-updateCosts", 1);  rec->startSample();}
+
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)
   {
+    srs::TimingDataRecorder* rec2 = nullptr;
+    if (rolling_window_) {rec2 = timingDataRecorder_.getRecorder("-updateCost"+(*plugin)->getName(), 1);  rec2->startSample();}
+
     (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
+    if (rec2) {rec2->stopSample();}
   }
+  if (rec) {rec->stopSample();}
 
   bx0_ = x0;
   bxn_ = xn;

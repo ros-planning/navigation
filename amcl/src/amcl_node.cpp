@@ -67,8 +67,8 @@
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
 
-#include <srslib_framework/platform/timing/ScopedTimingSampleRecorder.hpp>
-#include <srslib_framework/platform/timing/MasterTimingDataRecorder.hpp>
+#include <srslib_timing/ScopedTimingSampleRecorder.hpp>
+#include <srslib_timing/MasterTimingDataRecorder.hpp>
 
 
 #define NEW_UNIFORM_SAMPLING 1

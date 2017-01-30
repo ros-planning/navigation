@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(carrot_planner)
+add_definitions("-std=c++11")
 
 find_package(catkin REQUIRED
         COMPONENTS
@@ -12,7 +13,7 @@ find_package(catkin REQUIRED
         )
 
 include_directories(
-    include 
+    include
     ${catkin_INCLUDE_DIRS}
     )
 add_definitions(${EIGEN_DEFINITIONS})

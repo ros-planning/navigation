@@ -43,6 +43,7 @@
 #include <costmap_2d/costmap_2d.h>
 #include <vector>
 #include <string>
+#include <srslib_timing/MasterTimingDataRecorder.hpp>
 
 namespace costmap_2d
 {
@@ -170,6 +171,9 @@ private:
   bool size_locked_;
   double circumscribed_radius_, inscribed_radius_;
   std::vector<geometry_msgs::Point> footprint_;
+
+  // Add timing data recorder
+  srs::MasterTimingDataRecorder timingDataRecorder_;
 };
 
 }  // namespace costmap_2d

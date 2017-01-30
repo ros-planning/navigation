@@ -14,7 +14,7 @@ find_package(catkin REQUIRED
             pcl_conversions
             roscpp
             tf
-            srslib_framework
+            srslib_timing
         )
 
 find_package(Eigen REQUIRED)

@@ -35,7 +35,7 @@
     <build_depend>eigen</build_depend>
     <build_depend>dynamic_reconfigure</build_depend>
     <build_depend>message_generation</build_depend>
-    <build_depend>srslib_framework</build_depend>
+    <build_depend>srslib_timing</build_depend>
 
 
     <run_depend>std_msgs</run_depend>
@@ -55,7 +55,7 @@
     <run_depend>eigen</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>message_generation</run_depend>
-    <run_depend>srslib_framework</run_depend>
+    <run_depend>srslib_timing</run_depend>
 
 
     <export>

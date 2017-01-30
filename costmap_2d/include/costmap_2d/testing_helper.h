@@ -4,7 +4,9 @@
 #include<costmap_2d/cost_values.h>
 #include<costmap_2d/costmap_2d.h>
 #include <costmap_2d/static_layer.h>
+#include <costmap_2d/static_layer_with_inflation.h>
 #include <costmap_2d/obstacle_layer.h>
+#include <costmap_2d/obstruction_layer.h>
 #include <costmap_2d/inflation_layer.h>
 
 const double MAX_Z(1.0);
@@ -64,6 +66,13 @@ void addStaticLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& t
   slayer->initialize(&layers, "static", &tf);
 }
 
+void addStaticLayerWithInflation(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
+{
+  costmap_2d::StaticLayerWithInflation* slayer = new costmap_2d::StaticLayerWithInflation();
+  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(slayer));
+  slayer->initialize(&layers, "static", &tf);
+}
+
 costmap_2d::ObstacleLayer* addObstacleLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
 {
   costmap_2d::ObstacleLayer* olayer = new costmap_2d::ObstacleLayer();
@@ -72,7 +81,32 @@ costmap_2d::ObstacleLayer* addObstacleLayer(costmap_2d::LayeredCostmap& layers, 
   return olayer;
 }
 
+costmap_2d::ObstructionLayer* addObstructionLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
+{
+  costmap_2d::ObstructionLayer* olayer = new costmap_2d::ObstructionLayer();
+  olayer->initialize(&layers, "obstructions", &tf);
+  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(olayer));
+  return olayer;
+}
+
 void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, double z = 0.0,
+                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z){
+  pcl::PointCloud<pcl::PointXYZ> cloud;
+  cloud.points.resize(1);
+  cloud.points[0].x = x;
+  cloud.points[0].y = y;
+  cloud.points[0].z = z;
+
+  geometry_msgs::Point p;
+  p.x = ox;
+  p.y = oy;
+  p.z = oz;
+
+  costmap_2d::Observation obs(p, cloud, 100.0, 100.0);  // obstacle range = raytrace range = 100.0
+  olayer->addStaticObservation(obs, true, true);
+}
+
+void addObservation(costmap_2d::ObstructionLayer* olayer, double x, double y, double z = 0.0,
                     double ox = 0.0, double oy = 0.0, double oz = MAX_Z){
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
@@ -96,6 +130,30 @@ costmap_2d::InflationLayer* addInflationLayer(costmap_2d::LayeredCostmap& layers
   boost::shared_ptr<costmap_2d::Layer> ipointer(ilayer);
   layers.addPlugin(ipointer);
   return ilayer;
+}
+
+std::vector<geometry_msgs::Point> setRadii(costmap_2d::LayeredCostmap& layers, double length, double width, double inflation_radius)
+{
+  std::vector<geometry_msgs::Point> polygon;
+  geometry_msgs::Point p;
+  p.x = width;
+  p.y = length;
+  polygon.push_back(p);
+  p.x = width;
+  p.y = -length;
+  polygon.push_back(p);
+  p.x = -width;
+  p.y = -length;
+  polygon.push_back(p);
+  p.x = -width;
+  p.y = length;
+  polygon.push_back(p);
+  layers.setFootprint(polygon);
+
+  ros::NodeHandle nh;
+  nh.setParam("/inflation_tests/inflation/inflation_radius", inflation_radius);
+
+  return polygon;
 }
 
 
