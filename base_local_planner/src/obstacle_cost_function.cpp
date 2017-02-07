@@ -44,7 +44,7 @@
 namespace base_local_planner {
 
 ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap)
-    : costmap_(costmap), sum_scores_(false) {
+    : costmap_(costmap), sum_scores_(false), ignore_speed_cost_(false) {
   if (costmap != NULL) {
     world_model_ = new base_local_planner::CostmapModel(*costmap_);
   }
@@ -74,7 +74,11 @@ bool ObstacleCostFunction::prepare() {
 
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0;
-  double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
+  double scale = 1.0;
+  if (!ignore_speed_cost_)
+  {
+    scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
+  }
   double px, py, pth;
   if (footprint_spec_.size() == 0) {
     // Bug, should never happen

@@ -62,6 +62,12 @@ public:
   void setSumScores(bool score_sums){ sum_scores_=score_sums; }
 
   void setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed);
+
+  void setIgnoreSpeedCost(bool ignore)
+  {
+    ignore_speed_cost_ = ignore;
+  };
+
   void setFootprint(std::vector<geometry_msgs::Point> footprint_spec);
 
   // helper functions, made static for easy unit testing
@@ -83,6 +89,7 @@ private:
   bool sum_scores_;
   //footprint scaling with velocity;
   double max_scaling_factor_, scaling_speed_;
+  bool ignore_speed_cost_;
 };
 
 } /* namespace base_local_planner */
