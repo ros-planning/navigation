@@ -123,6 +123,8 @@ public:
    */
   void setInflationParameters(double inflation_radius, double cost_scaling_factor);
 
+  bool needsReinflation() {return need_reinflation_;};
+
 protected:
   virtual void onFootprintChanged();
   boost::recursive_mutex* inflation_access_;

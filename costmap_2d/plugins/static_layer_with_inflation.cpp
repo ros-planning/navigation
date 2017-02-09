@@ -311,6 +311,15 @@ void StaticLayerWithInflation::updateBounds(double robot_x, double robot_y, doub
                                double* max_x, double* max_y)
 {
 
+  if (inflation_layer_)
+  {
+    if (inflation_layer_->needsReinflation())
+    {
+      needs_reinflation_ = true;
+    }
+    inflation_layer_->updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+  }
+
   if( !layered_costmap_->isRolling() ){
     if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
       return;
@@ -329,11 +338,6 @@ void StaticLayerWithInflation::updateBounds(double robot_x, double robot_y, doub
   *max_y = std::max(wy, *max_y);
 
   has_updated_data_ = false;
-  if (!inflation_layer_){
-    ROS_WARN("No inflation layer in static layer. Can't update bounds...");
-    return;
-  }
-  inflation_layer_->updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
 
 void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
