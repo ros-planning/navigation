@@ -79,7 +79,8 @@ namespace dwa_local_planner {
             if (vel[2] > 0) vth = std::max(0.0, vel[2] - limits.acc_lim_theta * sim_period);
             if (vel[2] < 0) vth = std::min(0.0, vel[2] + limits.acc_lim_theta * sim_period);
 
-            ROS_ERROR_STREAM_DELAYED_THROTTLE(5, "DWA PLANNER DISCARDED ALL TRAJECTORIES, DEACCELERATING WITH MAX; COST: " << traj.cost_ << "\n"
+            ROS_WARN_STREAM_DELAYED_THROTTLE(10, "DWA Planner discarded all trajectories. Enable ROS_DEBUG for more information.");
+            ROS_DEBUG_STREAM("DWA PLANNER DISCARDED ALL TRAJECTORIES, DEACCELERATING WITH MAX; COST: " << traj.cost_ << "\n"
                             << "     vx: " << vel[0] << " --> " << vx << "-- frac: " << v0frac << "\n"
                             << "     vy: " << vel[1] << " --> " << vy << "-- frac: " << v1frac << "\n"
                             << "     vth: " << vel[2] << " --> " <<  vth << "\n"
