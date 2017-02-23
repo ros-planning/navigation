@@ -138,6 +138,14 @@ public:
         Eigen::Vector3f sample_target_vel,
         base_local_planner::Trajectory& traj);
 
+  virtual double getStartLinearVelocity() { return vel_[0];};
+  virtual double getStartAngularVelocity() { return vel_[2];};
+
+  void setSimTime(double sim_time)
+  {
+    sim_time_ = sim_time;
+  }
+
 protected:
 
   unsigned int next_sample_index_;

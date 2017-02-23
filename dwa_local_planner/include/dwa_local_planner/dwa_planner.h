@@ -58,6 +58,7 @@
 
 #include <base_local_planner/oscillation_cost_function.h>
 #include <base_local_planner/heading_cost_function.h>
+#include <base_local_planner/jerk_cost_function.h>
 #include <base_local_planner/velocity_cost_function.h>
 #include <base_local_planner/map_grid_cost_function.h>
 #include <base_local_planner/obstacle_cost_function.h>
@@ -120,6 +121,7 @@ namespace dwa_local_planner {
        * @param  new_plan The new global plan
        */
       void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose,
+          tf::Stamped<tf::Pose> global_vel,
           const std::vector<geometry_msgs::PoseStamped>& new_plan);
 
       /**
@@ -156,6 +158,7 @@ namespace dwa_local_planner {
       Eigen::Vector3f vsamples_;
 
       double sim_period_;///< @brief The number of seconds to use to compute max/min vels for dwa
+      double generator_sim_time_;
       base_local_planner::Trajectory result_traj_;
 
       double forward_point_distance_;
@@ -177,6 +180,7 @@ namespace dwa_local_planner {
       base_local_planner::SimpleTrajectoryGenerator generator_;
       base_local_planner::OscillationCostFunction oscillation_costs_;
       base_local_planner::HeadingCostFunction heading_costs_;
+      base_local_planner::JerkCostFunction jerk_costs_;
       base_local_planner::VelocityCostFunction velocity_costs_;
       base_local_planner::ObstacleCostFunction obstacle_costs_;
       base_local_planner::MapGridCostFunction path_costs_;

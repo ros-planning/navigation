@@ -84,6 +84,8 @@ namespace dwa_local_planner {
       limits.rot_stopped_vel = config.rot_stopped_vel;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
 
+      odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
+
       // update dwa specific configuration
       dp_->reconfigure(config);
   }
@@ -168,7 +170,6 @@ namespace dwa_local_planner {
     base_local_planner::publishPlan(path, l_plan_pub_);
   }
 
-
   void DWAPlannerROS::publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
     base_local_planner::publishPlan(path, g_plan_pub_);
   }
@@ -178,17 +179,13 @@ namespace dwa_local_planner {
     delete dsrv_;
   }
 
-
-
-  bool DWAPlannerROS::dwaComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, geometry_msgs::Twist& cmd_vel) {
+  bool DWAPlannerROS::dwaComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, tf::Stamped<tf::Pose>& robot_vel,
+    geometry_msgs::Twist& cmd_vel) {
     // dynamic window sampling approach to get useful velocity commands
     if(! isInitialized()){
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-
-    tf::Stamped<tf::Pose> robot_vel;
-    odom_helper_.getRobotVel(robot_vel);
 
     /* For timing uncomment
     struct timeval start, end;
@@ -220,6 +217,8 @@ namespace dwa_local_planner {
     cmd_vel.linear.y = drive_cmds.getOrigin().getY();
     cmd_vel.angular.z = tf::getYaw(drive_cmds.getRotation());
 
+    odom_helper_.setCmdVel(cmd_vel);
+
     //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
     if(path.cost_ < 0) {
@@ -227,6 +226,7 @@ namespace dwa_local_planner {
           "The dwa local planner failed to find a valid plan, cost functions discarded all candidates. This can mean there is an obstacle too close to the robot.");
       local_plan.clear();
       publishLocalPlan(local_plan);
+
       return false;
     }
 
@@ -255,9 +255,6 @@ namespace dwa_local_planner {
     return true;
   }
 
-
-
-
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
     if ( ! costmap_ros_->getRobotPose(current_pose_)) {
@@ -276,9 +273,12 @@ namespace dwa_local_planner {
     }
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
 
+    tf::Stamped<tf::Pose> robot_vel;
+    odom_helper_.getEstimatedRobotVel(robot_vel);
+
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
     srs::ScopedTimingSampleRecorder stsr(tdr_.getRecorder("-UpdatePlanCosts"));
-    dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan);
+    dp_->updatePlanAndLocalCosts(current_pose_, robot_vel, transformed_plan);
     stsr.stopSample();
 
     if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_)) {
@@ -298,7 +298,7 @@ namespace dwa_local_planner {
           boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
     } else {
       srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-dwaComputeVelCommands"));
-      bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
+      bool isOk = dwaComputeVelocityCommands(current_pose_, robot_vel, cmd_vel);
       stsr2.stopSample();
       if (isOk) {
         publishGlobalPlan(transformed_plan);
@@ -310,6 +310,4 @@ namespace dwa_local_planner {
       return isOk;
     }
   }
-
-
 };

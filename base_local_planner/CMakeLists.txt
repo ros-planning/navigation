@@ -39,7 +39,9 @@ catkin_python_setup()
 add_message_files(
     DIRECTORY msg
     FILES
-    Position2DInt.msg
+        Position2DInt.msg
+        CriticCosts.msg
+        ScoredSamplingPlannerCosts.msg
 )
 
 generate_messages(
@@ -78,6 +80,7 @@ add_library(base_local_planner
     src/footprint_helper.cpp
     src/goal_functions.cpp
     src/heading_cost_function.cpp
+    src/jerk_cost_function.cpp
     src/map_cell.cpp
     src/map_grid.cpp
     src/map_grid_visualizer.cpp

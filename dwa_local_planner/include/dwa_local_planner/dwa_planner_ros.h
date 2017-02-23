@@ -100,7 +100,9 @@ namespace dwa_local_planner {
        * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
        * @return True if a valid trajectory was found, false otherwise
        */
-      bool dwaComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose, geometry_msgs::Twist& cmd_vel);
+      bool dwaComputeVelocityCommands(tf::Stamped<tf::Pose>& global_pose,
+        tf::Stamped<tf::Pose>& robot_vel,
+        geometry_msgs::Twist& cmd_vel);
 
       /**
        * @brief  Set the plan that the controller is following

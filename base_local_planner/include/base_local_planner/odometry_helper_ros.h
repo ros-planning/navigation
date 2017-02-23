@@ -65,6 +65,8 @@ public:
 
   void getRobotVel(tf::Stamped<tf::Pose>& robot_vel);
 
+  void getEstimatedRobotVel(tf::Stamped<tf::Pose>& robot_vel);
+
   /** @brief Set the odometry topic.  This overrides what was set in the constructor, if anything.
    *
    * This unsubscribes from the old topic (if any) and subscribes to the new one (if any).
@@ -75,7 +77,23 @@ public:
   /** @brief Return the current odometry topic. */
   std::string getOdomTopic() const { return odom_topic_; }
 
+  void setCmdVel(geometry_msgs::Twist vel);
+
+  void setAccelerationRates(double linear, double angular);
+
+  void setExpectedVelocityLoopDelay(double delay);
+
 private:
+  double forwardEstimateVelocity(double old, double cmd, double accel, double dt);
+  geometry_msgs::Twist estimateRobotVel();
+
+  geometry_msgs::Twist cmd_vel_;
+  double cmd_vel_time_;
+  double velocity_loop_delays_;
+  double linear_acceleration_rate_;
+  double angular_acceleration_rate_;
+  double cmd_vel_timeout_;
+
   //odom topic
   std::string odom_topic_;
 

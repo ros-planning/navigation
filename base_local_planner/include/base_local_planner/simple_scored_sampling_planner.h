@@ -45,6 +45,8 @@
 #include <base_local_planner/trajectory_cost_function.h>
 #include <base_local_planner/trajectory_sample_generator.h>
 #include <base_local_planner/trajectory_search.h>
+#include <ros/ros.h>
+#include <base_local_planner/CriticCosts.h>
 
 namespace base_local_planner {
 
@@ -80,7 +82,7 @@ public:
    * of positive costs, aborting as soon as a negative cost are found or costs greater
    * than positive best_traj_cost accumulated
    */
-  double scoreTrajectory(Trajectory& traj, double best_traj_cost);
+  double scoreTrajectory(Trajectory& traj, double best_traj_cost, CriticCosts* costs);
 
   /**
    * Calls generator until generator has no more samples or max_samples is reached.
@@ -106,6 +108,8 @@ private:
 
   std::vector<double> critic_timing_;
   std::vector<double> critic_costs_;
+
+  ros::Publisher cost_publisher_;
 
 };
 

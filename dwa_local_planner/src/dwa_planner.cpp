@@ -64,6 +64,7 @@ namespace dwa_local_planner {
         config.use_dwa,
         sim_period_);
 
+    generator_sim_time_ = config.sim_time;
     double resolution = planner_util_->getCostmap()->getResolution();
     pdist_scale_ = config.path_distance_bias;
     // pdistscale used for both path and alignment, set  forward_point_distance to zero to discard alignment
@@ -86,6 +87,8 @@ namespace dwa_local_planner {
     forward_point_distance_ = config.forward_point_distance;
     goal_front_costs_.setXShift(forward_point_distance_);
     alignment_costs_.setXShift(forward_point_distance_);
+
+    jerk_costs_.setScale(config.jerk_scale);
 
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
@@ -181,6 +184,7 @@ namespace dwa_local_planner {
     critics.push_back(&alignment_costs_); // prefers trajectories that keep the robot nose on nose path
     critics.push_back(&path_costs_); // prefers trajectories on global path
     critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
+    critics.push_back(&jerk_costs_); // prefers trajectories that have the same acceleration as the previous trajectory
 
     // trajectory generators
     std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
@@ -249,9 +253,10 @@ namespace dwa_local_planner {
         vel,
         goal,
         &limits,
-        vsamples_);
+        vsamples_,
+        true);
     generator_.generateTrajectory(pos, vel, vel_samples, traj);
-    double cost = scored_sampling_planner_.scoreTrajectory(traj, -1);
+    double cost = scored_sampling_planner_.scoreTrajectory(traj, -1, nullptr);
     //if the trajectory is a legal one... the check passes
     if(cost >= 0) {
       return true;
@@ -265,6 +270,7 @@ namespace dwa_local_planner {
 
   void DWAPlanner::updatePlanAndLocalCosts(
       tf::Stamped<tf::Pose> global_pose,
+      tf::Stamped<tf::Pose> global_vel,
       const std::vector<geometry_msgs::PoseStamped>& new_plan) {
     global_plan_.resize(new_plan.size());
     for (unsigned int i = 0; i < new_plan.size(); ++i) {
@@ -305,13 +311,42 @@ namespace dwa_local_planner {
       alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
       // costs for robot being aligned with path (nose on path, not ju
       alignment_costs_.setTargetPoses(global_plan_);
+
+      goal_front_costs_.setScale(resolution * gdist_scale_ * 0.5);
+
       // costs for going fast near obstacles
       obstacle_costs_.setIgnoreSpeedCost(false);
     } else {
       // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
       alignment_costs_.setScale(0.0);
+
+      goal_front_costs_.setScale(0.0);
+
       // costs for going fast near obstacles
       obstacle_costs_.setIgnoreSpeedCost(true);
+    }
+
+    // Change the sim time depending on distance from goal.
+    double max_vel_x = planner_util_->getCurrentLimits().max_vel_x;
+
+    double sq_max_vel_sim_distance = (generator_sim_time_ * max_vel_x) * (generator_sim_time_ * max_vel_x);
+    if (sq_dist > sq_max_vel_sim_distance)
+    {
+      generator_.setSimTime(generator_sim_time_);
+    }
+    else
+    {
+      double max_linear_accel = planner_util_->getCurrentLimits().getAccLimits()[0];
+      if (max_vel_x > 0 && max_linear_accel > 0)
+      {
+        // Shorten the sim time.
+        double time_to_goal_at_max = std::sqrt(sq_dist) / max_vel_x;
+        // We don't want to overshoot the goal either -> leads to spinning around.
+        double time_to_decel_from_max = max_vel_x / max_linear_accel;
+        double time_to_decel_from_current = global_vel.getOrigin().getX() / max_linear_accel;
+        double sim_time = std::max(std::max(time_to_goal_at_max, time_to_decel_from_current), 0.25 * generator_sim_time_);
+        generator_.setSimTime(sim_time);
+      }
     }
 
     // costs for having the wrong heading
@@ -350,7 +385,10 @@ namespace dwa_local_planner {
         vel,
         goal,
         &limits,
-        vsamples_);
+        vsamples_,
+        true);
+
+    jerk_costs_.setCurrentVelocity(vel);
 
     result_traj_.cost_ = -7;
     // find best trajectory by sampling and scoring the samples
@@ -405,6 +443,9 @@ namespace dwa_local_planner {
     if (result_traj_.cost_ < 0) {
       drive_velocities.setIdentity();
     } else {
+      // add it to the jerk costs
+      jerk_costs_.setPreviousTrajectoryAndVelocity(&result_traj_, vel);
+
       tf::Vector3 start(result_traj_.xv_, result_traj_.yv_, 0);
       drive_velocities.setOrigin(start);
       tf::Matrix3x3 matrix;
