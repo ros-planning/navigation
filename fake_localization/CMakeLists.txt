@@ -29,8 +29,8 @@ target_link_libraries(fake_localization
     ${Boost_LIBRARIES}
     )
 
-add_dependencies(fake_localization nav_msgs_gencpp)
-add_dependencies(fake_localization geometry_msgs_gencpp)
+add_dependencies(fake_localization nav_msgs_generate_messages_cpp)
+add_dependencies(fake_localization geometry_msgs_generate_messages_cpp)
 
 install(
     PROGRAMS

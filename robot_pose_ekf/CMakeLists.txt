@@ -65,7 +65,7 @@ target_link_libraries(robot_pose_ekf
     ${Boost_LIBRARIES}
     ${BFL_LIBRARIES}
     )
-add_dependencies(robot_pose_ekf robot_pose_ekf_gencpp)
+add_dependencies(robot_pose_ekf robot_pose_ekf_generate_messages_cpp)
 
 install(
     TARGETS

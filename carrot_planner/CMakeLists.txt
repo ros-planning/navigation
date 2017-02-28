@@ -15,7 +15,7 @@ include_directories(
     include 
     ${catkin_INCLUDE_DIRS}
     )
-add_definitions(${EIGEN_DEFINITIONS})
+add_definitions(${EIGEN3_DEFINITIONS})
 
 catkin_package(
     INCLUDE_DIRS include

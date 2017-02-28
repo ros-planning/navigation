@@ -16,15 +16,15 @@ find_package(catkin REQUIRED
             visualization_msgs
         )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    ${EIGEN_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     )
-add_definitions(${EIGEN_DEFINITIONS})
+add_definitions(${EIGEN3_DEFINITIONS})
 
 link_directories(${catkin_LIBRARY_DIRS})
 
@@ -46,8 +46,8 @@ file(GLOB_RECURSE HEADER_FILES include/*.h)
 add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp src/visualization.cpp ${HEADER_FILES})
 target_link_libraries(dwa_local_planner base_local_planner ${catkin_LIBRARIES})
 add_dependencies(dwa_local_planner dwa_local_planner_gencfg)
-add_dependencies(dwa_local_planner nav_msgs_gencpp)
-add_dependencies(dwa_local_planner visualization_msgs_gencpp)
+add_dependencies(dwa_local_planner nav_msgs_generate_messages_cpp)
+add_dependencies(dwa_local_planner visualization_msgs_generate_messages_cpp)
 
 install(TARGETS dwa_local_planner
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
