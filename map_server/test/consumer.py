@@ -32,6 +32,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
+from __future__ import print_function
+
 PKG = 'static_map_server'
 NAME = 'consumer'
 
@@ -50,7 +52,7 @@ class TestConsumer(unittest.TestCase):
         self.success = False
 
     def callback(self, data):
-        print rospy.get_caller_id(), "I heard %s" % data.data
+        print(rospy.get_caller_id(), "I heard %s" % data.data)
         self.success = data.data and data.data.startswith('hello world')
         rospy.signal_shutdown('test done')
 
@@ -59,7 +61,7 @@ class TestConsumer(unittest.TestCase):
         mapsrv = rospy.ServiceProxy('static_map', GetMap)
         resp = mapsrv()
         self.success = True
-        print resp
+        print(resp)
         while not rospy.is_shutdown() and not self.success:  # and time.time() < timeout_t: <== timeout_t doesn't exists??
             time.sleep(0.1)
         self.assert_(self.success)
