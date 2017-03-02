@@ -85,7 +85,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
   PATTERN ".svn" EXCLUDE)
 
 ## Install excutable python script
-install( 
+install(
     PROGRAMS
       scripts/crop_map
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
