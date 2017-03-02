@@ -281,7 +281,7 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
   for( size_t i = 0; i < message.ranges.size(); i++ )
   {
     float range = message.ranges[ i ];
-    if( !std::isfinite( range ) && range > 0 )
+    if( !std::isfinite( range ) )
     {
       message.ranges[ i ] = message.range_max - epsilon;
     }
