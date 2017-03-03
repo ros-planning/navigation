@@ -4,9 +4,10 @@ project(map_server)
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            tf
             nav_msgs
         )
+
+find_package(Bullet REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS system)
 
@@ -23,13 +24,12 @@ catkin_package(
         map_server_image_loader
     CATKIN_DEPENDS
         roscpp
-        tf
         nav_msgs
 )
 
-include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
+include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${BULLET_INCLUDE_DIRS} )
 add_library(map_server_image_loader src/image_loader.cpp)
-target_link_libraries(map_server_image_loader SDL SDL_image ${Boost_LIBRARIES})
+target_link_libraries(map_server_image_loader SDL SDL_image ${Boost_LIBRARIES} ${BULLET_LIBRARIES})
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server

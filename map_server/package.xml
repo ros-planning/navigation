@@ -15,18 +15,18 @@
 
     <buildtool_depend version_gte="0.5.68">catkin</buildtool_depend>
 
+    <build_depend>bullet</build_depend>
     <build_depend>nav_msgs</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>rostest</build_depend>
     <build_depend>sdl-image</build_depend>
-    <build_depend>tf</build_depend>
     <build_depend>yaml-cpp</build_depend>
 
+    <run_depend>bullet</run_depend>
     <run_depend>nav_msgs</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>rostest</run_depend>
     <run_depend>sdl-image</run_depend>
-    <run_depend>tf</run_depend>
     <run_depend>yaml-cpp</run_depend>
 
     <test_depend>rospy</test_depend>
