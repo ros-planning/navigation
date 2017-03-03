@@ -77,6 +77,7 @@ catkin_package(
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
 add_library(base_local_planner
+    src/euclidean_distance_cost_function.cpp
     src/footprint_helper.cpp
     src/goal_functions.cpp
     src/heading_cost_function.cpp

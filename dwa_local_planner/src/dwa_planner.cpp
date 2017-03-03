@@ -90,6 +90,11 @@ namespace dwa_local_planner {
 
     jerk_costs_.setScale(config.jerk_scale);
 
+    euclidean_distance_costs_.setScale(config.euclidean_distance_scale);
+    euclidean_distance_scale_ = config.euclidean_distance_scale;
+
+    minimum_simulation_time_factor_ = config.minimum_simulation_time_factor;
+
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
 
@@ -185,6 +190,7 @@ namespace dwa_local_planner {
     critics.push_back(&path_costs_); // prefers trajectories on global path
     critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
     critics.push_back(&jerk_costs_); // prefers trajectories that have the same acceleration as the previous trajectory
+    critics.push_back(&euclidean_distance_costs_); // costs trajectories based on distance to goal
 
     // trajectory generators
     std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
@@ -283,6 +289,8 @@ namespace dwa_local_planner {
     // costs for not going towards the local goal as much as possible
     goal_costs_.setTargetPoses(global_plan_);
 
+    euclidean_distance_costs_.setTargetPoses(global_plan_);
+
     // alignment costs
     geometry_msgs::PoseStamped goal_pose = global_plan_.back();
 
@@ -313,17 +321,23 @@ namespace dwa_local_planner {
       alignment_costs_.setTargetPoses(global_plan_);
 
       goal_front_costs_.setScale(resolution * gdist_scale_ * 0.5);
+      goal_costs_.setScale(resolution * gdist_scale_ * 0.5);
 
       // costs for going fast near obstacles
       obstacle_costs_.setIgnoreSpeedCost(false);
+
+      euclidean_distance_costs_.setScale(0.0);
     } else {
       // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
       alignment_costs_.setScale(0.0);
 
       goal_front_costs_.setScale(0.0);
+      goal_costs_.setScale(0.0);
 
       // costs for going fast near obstacles
       obstacle_costs_.setIgnoreSpeedCost(true);
+
+      euclidean_distance_costs_.setScale(euclidean_distance_scale_);
     }
 
     // Change the sim time depending on distance from goal.
@@ -344,7 +358,9 @@ namespace dwa_local_planner {
         // We don't want to overshoot the goal either -> leads to spinning around.
         double time_to_decel_from_max = max_vel_x / max_linear_accel;
         double time_to_decel_from_current = global_vel.getOrigin().getX() / max_linear_accel;
-        double sim_time = std::max(std::max(time_to_goal_at_max, time_to_decel_from_current), 0.25 * generator_sim_time_);
+        double sim_time = std::max(std::max(time_to_goal_at_max,
+                                            time_to_decel_from_current),
+                                            minimum_simulation_time_factor_ * generator_sim_time_);
         generator_.setSimTime(sim_time);
       }
     }
