@@ -46,7 +46,7 @@
 #include "nav_msgs/MapMetaData.h"
 #include "yaml-cpp/yaml.h"
 
-#ifdef HAVE_NEW_YAMLCPP
+#ifdef HAVE_YAMLCPP_GT_0_5_0
 // The >> operator disappeared in yaml-cpp 0.5, so this function is
 // added to provide support for code written under the yaml-cpp 0.3 API.
 template<typename T>
@@ -79,7 +79,7 @@ class MapServer
           ROS_ERROR("Map_server could not open %s.", fname.c_str());
           exit(-1);
         }
-#ifdef HAVE_NEW_YAMLCPP
+#ifdef HAVE_YAMLCPP_GT_0_5_0
         // The document loading process changed in yaml-cpp 0.5.
         YAML::Node doc = YAML::Load(fin);
 #else
