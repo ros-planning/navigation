@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2008, Willow Garage, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -13,7 +13,7 @@
  *     * Neither the name of the Willow Garage, Inc. nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -29,7 +29,7 @@
 
 /*
  * This file contains helper functions for loading images as maps.
- * 
+ *
  * Author: Brian Gerkey
  */
 
@@ -73,7 +73,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   // Load the image using SDL.  If we get NULL back, the image load failed.
   if(!(img = IMG_Load(fname)))
   {
-    std::string errmsg = std::string("failed to open image file \"") + 
+    std::string errmsg = std::string("failed to open image file \"") +
             std::string(fname) + std::string("\"");
     throw std::runtime_error(errmsg);
   }
@@ -137,7 +137,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
       // If negate is true, we consider blacker pixels free, and whiter
       // pixels free.  Otherwise, it's vice versa.
       occ = (255 - color_avg) / 255.0;
-      
+
       // Apply thresholds to RGB means to determine occupancy values for
       // map.  Note that we invert the graphics-ordering of the pixels to
       // produce a map with cell (0,0) in the lower-left corner.
@@ -151,7 +151,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
         double ratio = (occ - free_th) / (occ_th - free_th);
         value = 99 * ratio;
       }
-           
+
       resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
     }
   }
