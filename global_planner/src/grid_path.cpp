@@ -38,15 +38,18 @@
 #include <global_planner/grid_path.h>
 #include <algorithm>
 #include <stdio.h>
+#include <set>
+
 namespace global_planner {
 
 bool GridPath::getPath(float* potential, double start_x, double start_y, double end_x, double end_y, std::vector<std::pair<float, float> >& path) {
     std::pair<float, float> current;
+    std::set<int> path_set; //this is used to ensure we don't get stuck in a loop (as it seems possible to do) 
     current.first = end_x;
     current.second = end_y;
 
     int start_index = getIndex(start_x, start_y);
-
+    path_set.insert(getIndex(end_x, end_y));
     path.push_back(current);
     int c = 0;
     int ns = xs_ * ys_;
@@ -54,21 +57,36 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
     while (getIndex(current.first, current.second) != start_index) {
         float min_val = 1e10;
         int min_x = 0, min_y = 0;
+        int min_ind = -1; 
+        //check the neighbors to find the node with the lowest cost 
         for (int xd = -1; xd <= 1; xd++) {
             for (int yd = -1; yd <= 1; yd++) {
                 if (xd == 0 && yd == 0)
                     continue;
+	
                 int x = current.first + xd, y = current.second + yd;
+
+                //make sure we don't connect because of wrap around 
+                if(x < 0 || x > xs_ -1 || y > ys_ -1 || y < 0){
+                  continue; 
+                }
+
                 int index = getIndex(x, y);
+                if(path_set.find(index) != path_set.end()){
+                  continue;
+                }
                 if (potential[index] < min_val) {
                     min_val = potential[index];
                     min_x = x;
                     min_y = y;
+                    min_ind = index;
                 }
             }
         }
-        if (min_x == 0 && min_y == 0)
-            return false;
+        if (min_x == 0 && min_y == 0){
+          return false;
+        }
+
         current.first = min_x;
         current.second = min_y;
         path.push_back(current);
@@ -77,6 +95,12 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
             return false;
         }
 
+        if(min_ind >= 0){
+          if(path_set.find(min_ind) != path_set.end()){
+            return false;
+          }
+          path_set.insert(min_ind);
+        }
     }
     return true;
 }
