@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2016, 6 River Systems
+ *  Copyright (c) 2017 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,64 +32,67 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Daniel Grieneisen
+ * Author: Dgrieneisen
  *********************************************************************/
 
-#ifndef JERK_COST_FUNCTION_H_
-#define JERK_COST_FUNCTION_H_
+#ifndef STATIONARY_TRAJECTORY_GENERATOR_H_
+#define STATIONARY_TRAJECTORY_GENERATOR_H_
 
-#include <base_local_planner/trajectory_cost_function.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <base_local_planner/trajectory_sample_generator.h>
+#include <base_local_planner/local_planner_limits.h>
 #include <Eigen/Core>
-
 
 namespace base_local_planner {
 
 /**
- * This class provides cost based on the jerk of the robot
- *
+ * generates a single sample trajectory if the robot isn't moving to remain stationary
  */
-class JerkCostFunction: public base_local_planner::TrajectoryCostFunction {
+class StationaryTrajectoryGenerator: public base_local_planner::TrajectorySampleGenerator {
 public:
-  /**
-   * Constructor
-   */
-  JerkCostFunction();
+
+  StationaryTrajectoryGenerator() {
+    limits_ = NULL;
+  }
+
+  ~StationaryTrajectoryGenerator() {}
 
   /**
-   * Destructor
+   * @param pos current robot position
+   * @param vel current robot velocity
+   * @param limits Current velocity limits
    */
-  ~JerkCostFunction() {}
+  void initialise(
+      const Eigen::Vector3f& pos,
+      const Eigen::Vector3f& vel,
+      base_local_planner::LocalPlannerLimits* limits);
 
   /**
-   * Prepare for operation.
-   * @return true if preparations were successful
+   * Whether this generator can create more trajectories
    */
-  bool prepare();
+  bool hasMoreTrajectories();
 
   /**
-   * Scores the trajectory.  Returns a negative value for rejected trajectories.
-   * @param traj The trajectory
-   * @return Non-negative value if the trajectory is valid, negative otherwise.
+   * Whether this generator can create more trajectories
    */
-  double scoreTrajectory(Trajectory &traj);
+  bool nextTrajectory(Trajectory &traj);
 
-  void setPreviousTrajectoryAndVelocity(const Trajectory& traj, const Eigen::Vector3f& vel);
+  bool generateTrajectory(
+        Eigen::Vector3f pos,
+        Eigen::Vector3f vel,
+        base_local_planner::Trajectory& traj);
 
-  void setCurrentVelocity(Eigen::Vector3f vel)
-  {
-    current_vel_ = vel;
-  };
+  virtual double getStartLinearVelocity() { return vel_[0];};
+  virtual double getStartAngularVelocity() { return vel_[2];};
 
-private:
-  void calculateAccelerations(const Trajectory& traj, Eigen::Vector3f vel,
-    std::string msg, double& linear_accel, double& angular_accel);
+protected:
+  bool trajectory_generated_;
+  unsigned int next_sample_index_;
 
-  double EPSILON;
-  double old_linear_accel_;
-  double old_angular_accel_;
-  Eigen::Vector3f current_vel_;
+  base_local_planner::LocalPlannerLimits* limits_;
+  Eigen::Vector3f pos_;
+  Eigen::Vector3f vel_;
+
 };
 
 } /* namespace base_local_planner */
-#endif /* HEADING_COST_FUNCTION_H_ */
+#endif /* STATIONARY_TRAJECTORY_GENERATOR_H_ */

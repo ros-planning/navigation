@@ -22,5 +22,5 @@ public:
 
   virtual void TestBody(){}
 };
-  
+
 }

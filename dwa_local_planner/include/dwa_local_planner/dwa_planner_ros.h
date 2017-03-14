@@ -43,7 +43,8 @@
 #include <tf/transform_listener.h>
 
 #include <dynamic_reconfigure/server.h>
-#include <dwa_local_planner/DWAPlannerConfig.h>
+#include <dwa_local_planner/DWAPlannerModeConfig.h>
+#include <dwa_local_planner/dwa_planner_configuration.h>
 
 #include <angles/angles.h>
 
@@ -127,7 +128,7 @@ namespace dwa_local_planner {
       /**
        * @brief Callback to update the local planner's parameters based on dynamic reconfigure
        */
-      void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
+      void reconfigureCB(DWAPlannerModeConfig &config, uint32_t level);
 
       void publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
@@ -144,8 +145,10 @@ namespace dwa_local_planner {
 
       costmap_2d::Costmap2DROS* costmap_ros_;
 
-      dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
-      dwa_local_planner::DWAPlannerConfig default_config_;
+      dynamic_reconfigure::Server<DWAPlannerModeConfig> *dsrv_;
+      dwa_local_planner::DWAPlannerModeConfig default_config_;
+      std::vector<std::shared_ptr<dwa_local_planner::DWAPlannerConfiguration> > mode_configurations_;
+
       bool setup_;
       tf::Stamped<tf::Pose> current_pose_;
 

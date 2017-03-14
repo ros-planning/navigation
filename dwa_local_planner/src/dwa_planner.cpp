@@ -64,6 +64,14 @@ namespace dwa_local_planner {
         config.use_dwa,
         sim_period_);
 
+    follower_generator_.setParameters(
+        config.sim_time,
+        config.sim_granularity,
+        config.follower_generator_kp_theta,
+        config.follower_generator_lookahead_distance,
+        config.follower_generator_num_trajectories
+      );
+
     generator_sim_time_ = config.sim_time;
     double resolution = planner_util_->getCostmap()->getResolution();
     pdist_scale_ = config.path_distance_bias;
@@ -92,6 +100,11 @@ namespace dwa_local_planner {
 
     euclidean_distance_costs_.setScale(config.euclidean_distance_scale);
     euclidean_distance_scale_ = config.euclidean_distance_scale;
+    always_use_euclidean_goal_distance_ = config.always_use_euclidean_goal_distance;
+
+    heading_costs_.setPoseCaptureMinRadius(config.heading_critic_capture_min_radius);
+    heading_costs_.setPoseCaptureMaxRadius(config.heading_critic_capture_max_radius);
+    heading_costs_.setRejectionHalfAngle(config.heading_critic_half_angle);
 
     minimum_simulation_time_factor_ = config.minimum_simulation_time_factor;
 
@@ -126,6 +139,10 @@ namespace dwa_local_planner {
     vsamples_[0] = vx_samp;
     vsamples_[1] = vy_samp;
     vsamples_[2] = vth_samp;
+
+    generator_.enable(config.enable_simple_trajectory_generator);
+    follower_generator_.enable(config.enable_follower_trajectory_generator);
+    stationary_generator_.enable(config.enable_stationary_trajectory_generator);
   }
 
   DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util) :
@@ -139,6 +156,7 @@ namespace dwa_local_planner {
   {
     ros::NodeHandle private_nh("~/" + name);
 
+    goal_costs_.setStopOnFailure( false );
     goal_front_costs_.setStopOnFailure( false );
     alignment_costs_.setStopOnFailure( false );
 
@@ -195,6 +213,8 @@ namespace dwa_local_planner {
     // trajectory generators
     std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
     generator_list.push_back(&generator_);
+    generator_list.push_back(&stationary_generator_);
+    generator_list.push_back(&follower_generator_);
 
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
 
@@ -248,7 +268,7 @@ namespace dwa_local_planner {
       Eigen::Vector3f vel_samples){
 
     // set footprint
-    ROS_DEBUG_NAMED("dwaPlanner", "checkTrajectory() sets footprint with size %u", robot_footprint_.size());
+    ROS_DEBUG_NAMED("dwaPlanner", "checkTrajectory() sets footprint with size %zu", robot_footprint_.size());
     obstacle_costs_.setFootprint(robot_footprint_);
     oscillation_costs_.resetOscillationFlags();
     base_local_planner::Trajectory traj;
@@ -325,8 +345,14 @@ namespace dwa_local_planner {
 
       // costs for going fast near obstacles
       obstacle_costs_.setIgnoreSpeedCost(false);
-
-      euclidean_distance_costs_.setScale(0.0);
+      if (!always_use_euclidean_goal_distance_)
+      {
+        euclidean_distance_costs_.setScale(0.0);
+      }
+      else
+      {
+        euclidean_distance_costs_.setScale(euclidean_distance_scale_);
+      }
     } else {
       // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
       alignment_costs_.setScale(0.0);
@@ -384,7 +410,7 @@ namespace dwa_local_planner {
       tf::Stamped<tf::Pose> global_vel,
       tf::Stamped<tf::Pose>& drive_velocities) {
 
-    ROS_DEBUG_NAMED("dwaPlanner", "findBestPath() sets footprint with size %u", robot_footprint_.size());
+    ROS_DEBUG_NAMED("dwaPlanner", "findBestPath() sets footprint with size %zu", robot_footprint_.size());
     obstacle_costs_.setFootprint(robot_footprint_);
 
     //make sure that our configuration doesn't change mid-run
@@ -403,7 +429,13 @@ namespace dwa_local_planner {
         &limits,
         vsamples_,
         true);
-
+    follower_generator_.setGlobalPlan(global_plan_);
+    follower_generator_.initialise(pos,
+        vel,
+        &limits);
+    stationary_generator_.initialise(pos,
+        vel,
+        &limits);
     jerk_costs_.setCurrentVelocity(vel);
 
     result_traj_.cost_ = -7;
@@ -460,7 +492,7 @@ namespace dwa_local_planner {
       drive_velocities.setIdentity();
     } else {
       // add it to the jerk costs
-      jerk_costs_.setPreviousTrajectoryAndVelocity(&result_traj_, vel);
+      jerk_costs_.setPreviousTrajectoryAndVelocity(result_traj_, vel);
 
       tf::Vector3 start(result_traj_.xv_, result_traj_.yv_, 0);
       drive_velocities.setOrigin(start);

@@ -32,6 +32,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/DWAPlanner.cfg
+    cfg/DWAPlannerMode.cfg
 )
 
 catkin_package(

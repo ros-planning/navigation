@@ -371,7 +371,7 @@ void ObstructionLayer::updateBounds(double robot_x, double robot_y, double robot
   current_ = current;
 
   // raytrace freespace
-  ROS_DEBUG("In update bounds.  Have %d clearing and %d marking obs.", clearing_observations.size(), observations.size());
+  ROS_DEBUG("In update bounds.  Have %zu clearing and %zu marking obs.", clearing_observations.size(), observations.size());
   for (unsigned int i = 0; i < observations.size(); ++i)
   {
     checkObservation(observations[i], min_x, min_y, max_x, max_y);

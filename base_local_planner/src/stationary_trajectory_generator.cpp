@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2016, 6 River Systems
+ *  Copyright (c) 2017 6 River Systems.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,64 +32,82 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Daniel Grieneisen
+ * Author: dgrieneisen
  *********************************************************************/
 
-#ifndef JERK_COST_FUNCTION_H_
-#define JERK_COST_FUNCTION_H_
+#include <base_local_planner/stationary_trajectory_generator.h>
+#include <ros/ros.h>
+#include <cmath>
 
-#include <base_local_planner/trajectory_cost_function.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <Eigen/Core>
-
+#include <base_local_planner/velocity_iterator.h>
 
 namespace base_local_planner {
 
+void StationaryTrajectoryGenerator::initialise(
+    const Eigen::Vector3f& pos,
+    const Eigen::Vector3f& vel,
+    base_local_planner::LocalPlannerLimits* limits) {
+
+  // Stored
+  pos_ = pos;
+  vel_ = vel;
+  limits_ = limits;
+
+  trajectory_generated_ = false;
+}
+
 /**
- * This class provides cost based on the jerk of the robot
- *
+ * Whether this generator can create more trajectories
  */
-class JerkCostFunction: public base_local_planner::TrajectoryCostFunction {
-public:
-  /**
-   * Constructor
-   */
-  JerkCostFunction();
+bool StationaryTrajectoryGenerator::hasMoreTrajectories() {
+  return enabled_ && !trajectory_generated_;
+}
 
-  /**
-   * Destructor
-   */
-  ~JerkCostFunction() {}
+/**
+ * Create and return the next sample trajectory
+ */
+bool StationaryTrajectoryGenerator::nextTrajectory(Trajectory &comp_traj) {
+  bool result = false;
+  if (hasMoreTrajectories()) {
+    if (generateTrajectory(
+        pos_,
+        vel_,
+        comp_traj)) {
+      result = true;
+    }
+  }
+  return result;
+}
 
-  /**
-   * Prepare for operation.
-   * @return true if preparations were successful
-   */
-  bool prepare();
+/**
+ * @param pos current position of robot
+ * @param vel desired velocity for sampling
+ */
+bool StationaryTrajectoryGenerator::generateTrajectory(
+      Eigen::Vector3f pos,
+      Eigen::Vector3f vel,
+      base_local_planner::Trajectory& traj) {
 
-  /**
-   * Scores the trajectory.  Returns a negative value for rejected trajectories.
-   * @param traj The trajectory
-   * @return Non-negative value if the trajectory is valid, negative otherwise.
-   */
-  double scoreTrajectory(Trajectory &traj);
+  trajectory_generated_ = true;
+  traj.cost_   = 100.0; // placed here in case we return early
 
-  void setPreviousTrajectoryAndVelocity(const Trajectory& traj, const Eigen::Vector3f& vel);
-
-  void setCurrentVelocity(Eigen::Vector3f vel)
+  double epsilon = 0.01;
+  if (std::fabs(vel[0]) < epsilon &&
+      std::fabs(vel[1]) < epsilon &&
+      std::fabs(vel[2]) < epsilon)
   {
-    current_vel_ = vel;
-  };
+    ROS_DEBUG("Generating trajectory at %f, %f, %f.", pos[0], pos[1], pos[2]);
+    traj.resetPoints();
+    traj.addPoint(pos[0], pos[1], pos[2], 0.0, 0.0, 0.0);
+    traj.xv_ = 0.0;
+    traj.yv_ = 0.0;
+    traj.thetav_ = 0.0;
+    traj.time_delta_ = 0.1;
+    return true;
+  }
 
-private:
-  void calculateAccelerations(const Trajectory& traj, Eigen::Vector3f vel,
-    std::string msg, double& linear_accel, double& angular_accel);
-
-  double EPSILON;
-  double old_linear_accel_;
-  double old_angular_accel_;
-  Eigen::Vector3f current_vel_;
-};
+  return false;
+}
 
 } /* namespace base_local_planner */
-#endif /* HEADING_COST_FUNCTION_H_ */
+

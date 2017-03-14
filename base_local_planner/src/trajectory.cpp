@@ -50,22 +50,37 @@ namespace base_local_planner {
     th = th_pts_[index];
   }
 
-  void Trajectory::setPoint(unsigned int index, double x, double y, double th){
+  void Trajectory::getVelocity(unsigned int index, double& vx, double& vy, double& vth) const {
+    vx = vx_pts_[index];
+    vy = vy_pts_[index];
+    vth = vth_pts_[index];
+  }
+
+  void Trajectory::setPoint(unsigned int index, double x, double y, double th, double vx, double vy, double vth){
     x_pts_[index] = x;
     y_pts_[index] = y;
     th_pts_[index] = th;
+    vx_pts_[index] = vx;
+    vy_pts_[index] = vy;
+    vth_pts_[index] = vth;
   }
 
-  void Trajectory::addPoint(double x, double y, double th){
+  void Trajectory::addPoint(double x, double y, double th, double vx, double vy, double vth){
     x_pts_.push_back(x);
     y_pts_.push_back(y);
     th_pts_.push_back(th);
+    vx_pts_.push_back(vx);
+    vy_pts_.push_back(vy);
+    vth_pts_.push_back(vth);
   }
 
   void Trajectory::resetPoints(){
     x_pts_.clear();
     y_pts_.clear();
     th_pts_.clear();
+    vx_pts_.clear();
+    vy_pts_.clear();
+    vth_pts_.clear();
   }
 
   void Trajectory::getEndpoint(double& x, double& y, double& th) const {
@@ -74,6 +89,11 @@ namespace base_local_planner {
     th = th_pts_.back();
   }
 
+  void Trajectory::getEndVelocity(double& vx, double& vy, double& vth) const {
+    vx = vx_pts_.back();
+    vy = vy_pts_.back();
+    vth = vth_pts_.back();
+  }
   unsigned int Trajectory::getPointsSize() const {
     return x_pts_.size();
   }

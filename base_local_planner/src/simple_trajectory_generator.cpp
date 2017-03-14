@@ -155,7 +155,7 @@ void SimpleTrajectoryGenerator::setParameters(
  * Whether this generator can create more trajectories
  */
 bool SimpleTrajectoryGenerator::hasMoreTrajectories() {
-  return next_sample_index_ < sample_params_.size();
+  return enabled_ && next_sample_index_ < sample_params_.size();
 }
 
 /**
@@ -186,19 +186,18 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
       Eigen::Vector3f sample_target_vel,
       base_local_planner::Trajectory& traj) {
   double vmag = hypot(sample_target_vel[0], sample_target_vel[1]);
-  double eps = 1e-4;
-  traj.cost_   = -1.0; // placed here in case we return early
+  traj.cost_   = 0.0; // placed here in case we return early
   //trajectory might be reused so we'll make sure to reset it
   traj.resetPoints();
 
   // make sure that the robot would at least be moving with one of
   // the required minimum velocities for translation and rotation (if set)
-  if ((limits_->min_trans_vel >= 0 && vmag + eps < limits_->min_trans_vel) &&
-      (limits_->min_rot_vel >= 0 && fabs(sample_target_vel[2]) + eps < limits_->min_rot_vel)) {
+  if ((limits_->min_trans_vel >= 0 && vmag + EPSILON < limits_->min_trans_vel) &&
+      (limits_->min_rot_vel >= 0 && fabs(sample_target_vel[2]) + EPSILON < limits_->min_rot_vel)) {
     return false;
   }
   // make sure we do not exceed max diagonal (x+y) translational velocity (if set)
-  if (limits_->max_trans_vel >=0 && vmag - eps > limits_->max_trans_vel) {
+  if (limits_->max_trans_vel >=0 && vmag - EPSILON > limits_->max_trans_vel) {
     return false;
   }
 

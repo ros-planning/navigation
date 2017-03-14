@@ -78,6 +78,7 @@ catkin_package(
 
 add_library(base_local_planner
     src/euclidean_distance_cost_function.cpp
+    src/follower_trajectory_generator.cpp
     src/footprint_helper.cpp
     src/goal_functions.cpp
     src/heading_cost_function.cpp
@@ -96,6 +97,7 @@ add_library(base_local_planner
     src/costmap_model.cpp
     src/simple_scored_sampling_planner.cpp
     src/simple_trajectory_generator.cpp
+    src/stationary_trajectory_generator.cpp
     src/trajectory.cpp
     src/velocity_cost_function.cpp
     src/voxel_grid_model.cpp)
@@ -142,6 +144,7 @@ if(CATKIN_ENABLE_TESTING)
     test/velocity_iterator_test.cpp
     test/footprint_helper_test.cpp
     test/trajectory_generator_test.cpp
+    test/follower_trajectory_generator_test.cpp
     test/map_grid_test.cpp)
   target_link_libraries(base_local_planner_utest
       base_local_planner trajectory_planner_ros

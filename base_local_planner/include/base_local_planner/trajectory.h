@@ -73,13 +73,22 @@ namespace base_local_planner {
       void getPoint(unsigned int index, double& x, double& y, double& th) const;
 
       /**
+       * @brief  Get a point within the trajectory
+       * @param index The index of the point to get
+       * @param x Will be set to the x position of the point
+       * @param y Will be set to the y position of the point
+       * @param th Will be set to the theta position of the point
+       */
+      void getVelocity(unsigned int index, double& vx, double& vy, double& vth) const;
+
+      /**
        * @brief  Set a point within the trajectory
        * @param index The index of the point to set
        * @param x The x position
        * @param y The y position
        * @param th The theta position
        */
-      void setPoint(unsigned int index, double x, double y, double th);
+      void setPoint(unsigned int index, double x, double y, double th, double vx = 0.0, double vy = 0.0, double vth = 0.0);
 
       /**
        * @brief  Add a point to the end of a trajectory
@@ -87,7 +96,7 @@ namespace base_local_planner {
        * @param y The y position
        * @param th The theta position
        */
-      void addPoint(double x, double y, double th);
+      void addPoint(double x, double y, double th, double vx = 0.0, double vy = 0.0, double vth = 0.0);
 
       /**
        * @brief  Get the last point of the trajectory
@@ -97,6 +106,13 @@ namespace base_local_planner {
        */
       void getEndpoint(double& x, double& y, double& th) const;
 
+      /**
+       * @brief  Get the last point of the trajectory
+       * @param x Will be set to the x position of the point
+       * @param y Will be set to the y position of the point
+       * @param th Will be set to the theta position of the point
+       */
+      void getEndVelocity(double& vx, double& vy, double& vth) const;
       /**
        * @brief  Clear the trajectory's points
        */
@@ -112,7 +128,9 @@ namespace base_local_planner {
       std::vector<double> x_pts_; ///< @brief The x points in the trajectory
       std::vector<double> y_pts_; ///< @brief The y points in the trajectory
       std::vector<double> th_pts_; ///< @brief The theta points in the trajectory
-
+      std::vector<double> vx_pts_;
+      std::vector<double> vy_pts_;
+      std::vector<double> vth_pts_;
   };
 };
 #endif

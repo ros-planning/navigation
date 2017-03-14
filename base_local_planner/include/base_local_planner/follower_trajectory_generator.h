@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2017 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,88 +32,55 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: TKruse
+ * Author: dgrieneisen
  *********************************************************************/
 
-#ifndef SIMPLE_TRAJECTORY_GENERATOR_H_
-#define SIMPLE_TRAJECTORY_GENERATOR_H_
+#ifndef FOLLOWER_TRAJECTORY_GENERATOR_H_
+#define FOLLOWER_TRAJECTORY_GENERATOR_H_
 
 #include <base_local_planner/trajectory_sample_generator.h>
 #include <base_local_planner/local_planner_limits.h>
 #include <Eigen/Core>
+#include <geometry_msgs/PoseStamped.h>
 
 namespace base_local_planner {
 
 /**
- * generates trajectories based on equi-distant discretisation of the degrees of freedom.
- * This is supposed to be a simple and robust implementation of the TrajectorySampleGenerator
- * interface, more efficient implementations are thinkable.
- *
- * This can be used for both dwa and trajectory rollout approaches.
- * As an example, assuming these values:
- * sim_time = 1s, sim_period=200ms, dt = 200ms,
- * vsamples_x=5,
- * acc_limit_x = 1m/s^2, vel_x=0 (robot at rest, values just for easy calculations)
- * dwa_planner will sample max-x-velocities from 0m/s to 0.2m/s.
- * trajectory rollout approach will sample max-x-velocities 0m/s up to 1m/s
- * trajectory rollout approach does so respecting the acceleration limit, so it gradually increases velocity
+ * generates trajectories based a simple path following controller.
  */
-class SimpleTrajectoryGenerator: public base_local_planner::TrajectorySampleGenerator {
+class FollowerTrajectoryGenerator: public base_local_planner::TrajectorySampleGenerator {
 public:
 
-  SimpleTrajectoryGenerator() {
+  FollowerTrajectoryGenerator() {
     limits_ = NULL;
   }
 
-  ~SimpleTrajectoryGenerator() {}
+  ~FollowerTrajectoryGenerator() {}
 
   /**
    * @param pos current robot position
    * @param vel current robot velocity
    * @param limits Current velocity limits
-   * @param vsamples: in how many samples to divide the given dimension
-   * @param use_acceleration_limits: if true use physical model, else idealized robot model
-   * @param additional_samples (deprecated): Additional velocity samples to generate individual trajectories from.
-   * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
    */
   void initialise(
       const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel,
-      const Eigen::Vector3f& goal,
-      base_local_planner::LocalPlannerLimits* limits,
-      const Eigen::Vector3f& vsamples,
-      std::vector<Eigen::Vector3f> additional_samples,
-      bool discretize_by_time = false);
-
-  /**
-   * @param pos current robot position
-   * @param vel current robot velocity
-   * @param limits Current velocity limits
-   * @param vsamples: in how many samples to divide the given dimension
-   * @param use_acceleration_limits: if true use physical model, else idealized robot model
-   * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
-   */
-  void initialise(
-      const Eigen::Vector3f& pos,
-      const Eigen::Vector3f& vel,
-      const Eigen::Vector3f& goal,
-      base_local_planner::LocalPlannerLimits* limits,
-      const Eigen::Vector3f& vsamples,
-      bool discretize_by_time = false);
+      base_local_planner::LocalPlannerLimits* limits);
 
   /**
    * This function is to be called only when parameters change
    *
+   * @param sim_time length of time for the simulation
    * @param sim_granularity granularity of collision detection
-   * @param angular_sim_granularity angular granularity of collision detection
-   * @param use_dwa whether to use DWA or trajectory rollout
-   * @param sim_period distance between points in one trajectory
+   * @param kp_theta proportional controller constant on heading
+   * @param lookahead_distance distance ahead on the path to look for heading goal
+   * @param num_trajectories the number of different trajectories to create
    */
   void setParameters(double sim_time,
       double sim_granularity,
-      double angular_sim_granularity,
-      bool use_dwa = false,
-      double sim_period = 0.0);
+      double kp_theta,
+      double lookahead_distance,
+      double num_trajectories);
 
   /**
    * Whether this generator can create more trajectories
@@ -125,17 +92,17 @@ public:
    */
   bool nextTrajectory(Trajectory &traj);
 
-
   static Eigen::Vector3f computeNewPositions(const Eigen::Vector3f& pos,
       const Eigen::Vector3f& vel, double dt);
 
-  static Eigen::Vector3f computeNewVelocities(const Eigen::Vector3f& sample_target_vel,
-      const Eigen::Vector3f& vel, Eigen::Vector3f acclimits, double dt);
+  Eigen::Vector3f computeNewVelocities(const Eigen::Vector3f& position,
+      const Eigen::Vector3f& vel, Eigen::Vector3f acclimits, double dt,
+      unsigned int start_idx, unsigned int& closest_idx);
 
   bool generateTrajectory(
         Eigen::Vector3f pos,
         Eigen::Vector3f vel,
-        Eigen::Vector3f sample_target_vel,
+        double max_sim_time,
         base_local_planner::Trajectory& traj);
 
   virtual double getStartLinearVelocity() { return vel_[0];};
@@ -146,25 +113,47 @@ public:
     sim_time_ = sim_time;
   }
 
+  void setGlobalPlan(const std::vector<geometry_msgs::PoseStamped>& global_plan)
+  {
+    global_plan_ = global_plan;
+  }
+
+  static double distanceToLineSegment(const Eigen::Vector2f& pos,
+    const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+
+  static double distanceAlongLineSegment(const Eigen::Vector2f& pos,
+    const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+
+  static Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
+    const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+
 protected:
+
+  void getDesiredHeadingAndGoalDistance(const Eigen::Vector3f& pos,
+    unsigned int start_idx, unsigned int& closest_idx,
+    double& desired_heading, double& distance_to_goal);
+
+  Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose);
 
   unsigned int next_sample_index_;
   // to store sample params of each sample between init and generation
-  std::vector<Eigen::Vector3f> sample_params_;
+  std::vector<double> end_times_;
   base_local_planner::LocalPlannerLimits* limits_;
   Eigen::Vector3f pos_;
   Eigen::Vector3f vel_;
 
-  // whether velocity of trajectory changes over time or not
-  bool continued_acceleration_;
-  bool discretize_by_time_;
+  double sim_time_;
+  double sim_granularity_;
 
-  double sim_time_, sim_granularity_, angular_sim_granularity_;
-  bool use_dwa_;
-  double sim_period_; // only for dwa
+  double kp_theta_;
+  double lookahead_distance_;
+  unsigned int num_trajectories_;
 
-  static constexpr double EPSILON = 1e-4;
+  std::vector<geometry_msgs::PoseStamped> global_plan_;
+  base_local_planner::Trajectory stored_trajectory_;
+  double stored_trajectory_end_time_;
+  unsigned int stored_idx_;
 };
 
 } /* namespace base_local_planner */
-#endif /* SIMPLE_TRAJECTORY_GENERATOR_H_ */
+#endif /* FOLLOWER_TRAJECTORY_GENERATOR_H_ */

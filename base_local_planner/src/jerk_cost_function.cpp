@@ -44,10 +44,10 @@ JerkCostFunction::JerkCostFunction() : old_linear_accel_(0.0), old_angular_accel
   EPSILON(0.01), current_vel_(0.0, 0.0, 0.0)
 {}
 
-void JerkCostFunction::setPreviousTrajectoryAndVelocity(Trajectory* traj, Eigen::Vector3f vel)
+void JerkCostFunction::setPreviousTrajectoryAndVelocity(const Trajectory& traj, const Eigen::Vector3f& vel)
 {
   // Calculate the linear and angular velocity
-  calculateAccelerations(traj, vel, &old_linear_accel_, &old_angular_accel_, "prev");
+  calculateAccelerations(traj, vel, "prev", old_linear_accel_, old_angular_accel_);
 }
 
 bool JerkCostFunction::prepare()
@@ -72,8 +72,9 @@ double JerkCostFunction::scoreTrajectory(Trajectory &traj)
   }
 
   // Get the accelerations
-  double new_lin_accel, new_angular_accel;
-  calculateAccelerations(&traj, current_vel_, &new_lin_accel, &new_angular_accel, "scoreTraj");
+  double new_lin_accel = 0;
+  double new_angular_accel = 0;
+  calculateAccelerations(traj, current_vel_, "scoreTraj", new_lin_accel, new_angular_accel);
 
   if (old_linear_accel_ < 0)
   {
@@ -91,17 +92,17 @@ double JerkCostFunction::scoreTrajectory(Trajectory &traj)
   return cost;
 }
 
-void JerkCostFunction::calculateAccelerations(Trajectory* traj, Eigen::Vector3f vel,
-  double* linear_accel, double* angular_accel, std::string msg)
+void JerkCostFunction::calculateAccelerations(const Trajectory& traj, Eigen::Vector3f vel,
+  std::string msg, double& linear_accel, double& angular_accel)
 {
-  if (traj->time_delta_ > 0)
+  if (traj.time_delta_ > 0)
   {
-    (*linear_accel) = (traj->xv_ - vel[0]) / traj->time_delta_;
-    (*angular_accel) = (traj->thetav_ - vel[2]) / traj->time_delta_;
+    linear_accel = (traj.xv_ - vel[0]) / traj.time_delta_;
+    angular_accel = (traj.thetav_ - vel[2]) / traj.time_delta_;
   }
-  else
+  else if (traj.time_delta_ < 0)
   {
-    ROS_WARN("Non-positive time delta in jerk cost function. %f.  %s", traj->time_delta_, msg.c_str());
+    ROS_ERROR("Negative time delta in jerk cost function. %f.  %s", traj.time_delta_, msg.c_str());
   }
 }
 

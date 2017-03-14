@@ -64,7 +64,7 @@ namespace base_local_planner {
       msg->w = traj.thetav_;
     }
 
-    double traj_cost = 0;
+    double traj_cost = traj.cost_;
     int gen_id = 0;
     int k = -1;
     for(std::vector<TrajectoryCostFunction*>::iterator score_function = critics_.begin(); score_function != critics_.end(); ++score_function) {
@@ -146,7 +146,6 @@ namespace base_local_planner {
     critic_timing_.assign(critics_.size(), 0);
     srs::StopWatch stopWatch;
     for (std::vector<TrajectorySampleGenerator*>::iterator loop_gen = gen_list_.begin(); loop_gen != gen_list_.end(); ++loop_gen) {
-
       cost_msg.start_v = (*loop_gen)->getStartLinearVelocity();
       cost_msg.start_w = (*loop_gen)->getStartAngularVelocity();
 
@@ -212,10 +211,6 @@ namespace base_local_planner {
         }
       }
       ROS_DEBUG("Evaluated %d trajectories, found %d valid", count, count_valid);
-      if (best_traj_cost >= 0) {
-        // do not try fallback generators
-        break;
-      }
     }
 
     cost_msg.selected_v = traj.xv_;

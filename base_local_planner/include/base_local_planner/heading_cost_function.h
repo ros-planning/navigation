@@ -102,6 +102,9 @@ public:
    */
   double scoreTrajectory(Trajectory &traj);
 
+  void setPoseCaptureMinRadius(double radius){pose_capture_min_radius_ = radius;};
+  void setPoseCaptureMaxRadius(double radius){pose_capture_max_radius_ = radius;};
+
 private:
   /**
    * Calculates the square of the distance between two poses.

@@ -67,9 +67,15 @@ public:
   virtual double getStartLinearVelocity() { return 0;};
   virtual double getStartAngularVelocity() { return 0;};
 
+  void enable(bool val)
+  {
+    enabled_ = val;
+  }
+
 
 protected:
   TrajectorySampleGenerator() {}
+  bool enabled_ = false;
 
 };
 
