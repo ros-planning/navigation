@@ -130,6 +130,12 @@ void ObstacleLayer::onInitialize()
       source_node.getParam(raytrace_range_param_name, raytrace_range);
     }
 
+    double min_raytrace_range = 0.0;
+    if (source_node.searchParam("min_raytrace_range", raytrace_range_param_name))
+    {
+      source_node.getParam(raytrace_range_param_name, min_raytrace_range);
+    }
+
     ROS_DEBUG("Creating an observation buffer for source %s, topic %s, frame %s", source.c_str(), topic.c_str(),
               sensor_frame.c_str());
 
@@ -137,7 +143,7 @@ void ObstacleLayer::onInitialize()
     observation_buffers_.push_back(
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
-                                     max_obstacle_height, obstacle_range, raytrace_range, *tf_, global_frame_,
+                                     max_obstacle_height, obstacle_range, raytrace_range, min_raytrace_range, *tf_, global_frame_,
                                      sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers

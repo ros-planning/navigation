@@ -133,6 +133,12 @@ void ObstructionLayer::onInitialize()
       source_node.getParam(raytrace_range_param_name, raytrace_range);
     }
 
+    double min_raytrace_range = 0.0;
+    if (source_node.searchParam("min_raytrace_range", raytrace_range_param_name))
+    {
+      source_node.getParam(raytrace_range_param_name, min_raytrace_range);
+    }
+
     ROS_DEBUG("Creating an observation buffer for source %s, topic %s, frame %s", source.c_str(), topic.c_str(),
               sensor_frame.c_str());
 
@@ -140,7 +146,7 @@ void ObstructionLayer::onInitialize()
     observation_buffers_.push_back(
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
-                                     max_obstacle_height, obstacle_range, raytrace_range, *tf_, global_frame_,
+                                     max_obstacle_height, obstacle_range, raytrace_range, min_raytrace_range, *tf_, global_frame_,
                                      sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers
@@ -726,6 +732,7 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
   double map_end_x = origin_x + size_x_ * resolution_;
   double map_end_y = origin_y + size_y_ * resolution_;
 
+  double min_raytrace_dist = clearing_observation.min_raytrace_range_;
 
   touch(ox, oy, min_x, min_y, max_x, max_y);
 
@@ -739,6 +746,44 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     // to isn't off the costmap and scale if necessary
     double a = wx - ox;
     double b = wy - oy;
+
+    double ray_length = sqrt(a * a + b * b);
+    double ox1, oy1;
+    ox1 = ox + min_raytrace_dist * a / ray_length;
+    oy1 = oy + min_raytrace_dist * b / ray_length;
+
+    if (ox1 < origin_x)
+    {
+      double t = (origin_x - ox) / a;
+      ox1 = origin_x;
+      oy1 = oy + b * t;
+    }
+    if (oy1 < origin_y)
+    {
+      double t = (origin_y - oy) / b;
+      ox1 = ox + a * t;
+      oy1 = origin_y;
+    }
+
+    // the maximum value to raytrace to is the end of the map
+    if (ox1 > map_end_x)
+    {
+      double t = (map_end_x - ox) / a;
+      ox1 = map_end_x - .001;
+      oy1 = oy + b * t;
+    }
+    if (oy1 > map_end_y)
+    {
+      double t = (map_end_y - oy) / b;
+      ox1 = ox + a * t;
+      oy1 = map_end_y - .001;
+    }
+
+    unsigned int x2, y2;
+
+    // check for legality just in case
+    if (!worldToMap(ox1, oy1, x2, y2))
+      continue;
 
     // the minimum value to raytrace from is the origin
     if (wx < origin_x)
@@ -778,7 +823,7 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
     ClearObstructionCell marker(obstruction_map_);
     // and finally... we can execute our trace to clear obstacles along that line
-    raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
+    raytraceLine(marker, x2, y2, x1, y1, cell_raytrace_range);
   }
 }
 
