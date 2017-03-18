@@ -733,7 +733,6 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
   double map_end_y = origin_y + size_y_ * resolution_;
 
   double min_raytrace_dist = clearing_observation.min_raytrace_range_;
-
   touch(ox, oy, min_x, min_y, max_x, max_y);
 
   // for each point in the cloud, we want to trace a line from the origin and clear obstacles along it
@@ -747,43 +746,46 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     double a = wx - ox;
     double b = wy - oy;
 
+    // calculate raytrace starting point
     double ray_length = sqrt(a * a + b * b);
-    double ox1, oy1;
-    ox1 = ox + min_raytrace_dist * a / ray_length;
-    oy1 = oy + min_raytrace_dist * b / ray_length;
+    double raytrace_x = 0.0, raytrace_y = 0.0;
+    raytrace_x = ox + min_raytrace_dist * a / ray_length;
+    raytrace_y = oy + min_raytrace_dist * b / ray_length;
 
-    if (ox1 < origin_x)
+    // check if the raytrace starting point is within the map
+    if (raytrace_x < origin_x)
     {
       double t = (origin_x - ox) / a;
-      ox1 = origin_x;
-      oy1 = oy + b * t;
+      raytrace_x = origin_x;
+      raytrace_y = oy + b * t;
     }
-    if (oy1 < origin_y)
+
+    if (raytrace_y < origin_y)
     {
       double t = (origin_y - oy) / b;
-      ox1 = ox + a * t;
-      oy1 = origin_y;
+      raytrace_x = ox + a * t;
+      raytrace_y = origin_y;
     }
 
-    // the maximum value to raytrace to is the end of the map
-    if (ox1 > map_end_x)
+    if (raytrace_x > map_end_x)
     {
       double t = (map_end_x - ox) / a;
-      ox1 = map_end_x - .001;
-      oy1 = oy + b * t;
+      raytrace_x = map_end_x - .001;
+      raytrace_y = oy + b * t;
     }
-    if (oy1 > map_end_y)
+    if (raytrace_y > map_end_y)
     {
       double t = (map_end_y - oy) / b;
-      ox1 = ox + a * t;
-      oy1 = map_end_y - .001;
+      raytrace_x = ox + a * t;
+      raytrace_y = map_end_y - .001;
     }
 
-    unsigned int x2, y2;
+    unsigned int raytrace_x_map, raytrace_y_map;
 
     // check for legality just in case
-    if (!worldToMap(ox1, oy1, x2, y2))
+    if (!worldToMap(raytrace_x, raytrace_y, raytrace_x_map, raytrace_y_map)){
       continue;
+    }
 
     // the minimum value to raytrace from is the origin
     if (wx < origin_x)
@@ -823,7 +825,7 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
     ClearObstructionCell marker(obstruction_map_);
     // and finally... we can execute our trace to clear obstacles along that line
-    raytraceLine(marker, x2, y2, x1, y1, cell_raytrace_range);
+    raytraceLine(marker, raytrace_x_map, raytrace_y_map, x1, y1, cell_raytrace_range);
   }
 }
 
