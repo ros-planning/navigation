@@ -69,6 +69,30 @@ void CostmapLayer::updateWithMax(costmap_2d::Costmap2D& master_grid, int min_i, 
   }
 }
 
+void CostmapLayer::updateLethalIgnoreUnknown(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+{
+  if (!enabled_)
+    return;
+
+  unsigned char* master_array = master_grid.getCharMap();
+  unsigned int span = master_grid.getSizeInCellsX();
+
+  for (int j = min_j; j < max_j; j++)
+  {
+    unsigned int it = j * span + min_i;
+    for (int i = min_i; i < max_i; i++)
+    {
+      if (costmap_[it] == NO_INFORMATION || (master_array[it] == NO_INFORMATION && costmap_[it] != LETHAL_OBSTACLE)){
+        it++;
+        continue;
+      }
+
+      master_array[it] = costmap_[it];
+      it++;
+    }
+  }
+}
+
 void CostmapLayer::updateWithTrueOverwrite(costmap_2d::Costmap2D& master_grid, int min_i, int min_j,
                                            int max_i, int max_j)
 {

@@ -103,6 +103,16 @@ protected:
    * Updates the master_grid within the specified
    * bounding box using this layer's values.
    *
+   * Overwrites the master's grid values with the this layer's values, if
+   * this layer's value is not NO_INFORMATION. If the master's value is
+   * NO_INFORMATION it is only updated if this layer's value is LETHAL_OBSTACLE.
+   */
+  void updateLethalIgnoreUnknown(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+
+  /*
+   * Updates the master_grid within the specified
+   * bounding box using this layer's values.
+   *
    * Sets the new value to the sum of the master grid's value
    * and this layer's value. If the master value is NO_INFORMATION,
    * it is overwritten with the layer's value. If the layer's value
