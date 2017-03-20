@@ -113,6 +113,8 @@ namespace dwa_local_planner {
 
     oscillation_reset_plan_divergence_distance_ = config.oscillation_reset_plan_divergence_distance;
 
+    close_to_goal_range_ = config.close_to_goal_range;
+
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
@@ -217,8 +219,6 @@ namespace dwa_local_planner {
     generator_list.push_back(&follower_generator_);
 
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
-
-    private_nh.param("cheat_factor", cheat_factor_, 1.0);
   }
 
   void DWAPlanner::setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec)
@@ -334,7 +334,7 @@ namespace dwa_local_planner {
     goal_front_costs_.setTargetPoses(front_global_plan);
 
     // keeping the nose on the path
-    if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
+    if (sq_dist > close_to_goal_range_ * close_to_goal_range_) {
       double resolution = planner_util_->getCostmap()->getResolution();
       alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
       // costs for robot being aligned with path (nose on path, not ju

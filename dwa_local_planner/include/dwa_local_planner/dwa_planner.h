@@ -175,7 +175,7 @@ namespace dwa_local_planner {
       bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud
       bool publish_traj_pc_;
 
-      double cheat_factor_;
+      double close_to_goal_range_;
       double euclidean_distance_scale_;
       double minimum_simulation_time_factor_;
 
