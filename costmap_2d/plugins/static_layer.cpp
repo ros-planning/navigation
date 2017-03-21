@@ -70,7 +70,7 @@ void StaticLayer::onInitialize()
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
 
   nh.param("track_unknown_space", track_unknown_space_, true);
-  nh.param("use_maximum", use_maximum_, false);
+  nh.param("update_method", update_method_, std::string("overwrite"));
 
   int temp_lethal_threshold, temp_unknown_cost_value;
   nh.param("lethal_cost_threshold", temp_lethal_threshold, int(100));
@@ -296,10 +296,12 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
   if (!layered_costmap_->isRolling())
   {
     // if not rolling, the layered costmap (master_grid) has same coordinates as this layer
-    if (!use_maximum_)
+    if (update_method_ == "overwrite")
       updateWithTrueOverwrite(master_grid, min_i, min_j, max_i, max_j);
-    else
+    else if (update_method_ == "maximum")
       updateWithMax(master_grid, min_i, min_j, max_i, max_j);
+    else if (update_method_ == "lethal")
+      updateLethalIgnoreUnknown(master_grid, min_i, min_j, max_i, max_j);
   }
   else
   {
@@ -330,10 +332,20 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
         // Set master_grid with cell from map
         if (worldToMap(p.x(), p.y(), mx, my))
         {
-          if (!use_maximum_)
+          if (update_method_ == "overwrite")
+          {
             master_grid.setCost(i, j, getCost(mx, my));
-          else
+          }
+          else if (update_method_ == "maximum")
+          {
             master_grid.setCost(i, j, std::max(getCost(mx, my), master_grid.getCost(i, j)));
+          }
+          else if (update_method_ == "lethal")
+          {
+            unsigned char cost = getCost(mx, my);
+            if (cost == LETHAL_OBSTACLE || (cost != NO_INFORMATION && master_grid.getCost(i, j) != NO_INFORMATION))
+              master_grid.setCost(i, j, cost);
+          }
         }
       }
     }
