@@ -133,6 +133,7 @@ void ObstructionLayer::onInitialize()
       source_node.getParam(raytrace_range_param_name, raytrace_range);
     }
 
+    // get the minimum raytrace range for the sensor
     double min_raytrace_range = 0.0;
     if (source_node.searchParam("min_raytrace_range", raytrace_range_param_name))
     {
@@ -733,6 +734,7 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
   double map_end_y = origin_y + size_y_ * resolution_;
 
   double min_raytrace_dist = clearing_observation.min_raytrace_range_;
+
   touch(ox, oy, min_x, min_y, max_x, max_y);
 
   // for each point in the cloud, we want to trace a line from the origin and clear obstacles along it
@@ -752,7 +754,7 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     raytrace_x = ox + min_raytrace_dist * a / ray_length;
     raytrace_y = oy + min_raytrace_dist * b / ray_length;
 
-    // check if the raytrace starting point is within the map
+    // check if the raytrace starting point is within the map boundary
     if (raytrace_x < origin_x)
     {
       double t = (origin_x - ox) / a;
