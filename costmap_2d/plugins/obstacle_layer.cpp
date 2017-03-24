@@ -114,7 +114,7 @@ void ObstacleLayer::onInitialize()
       throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
     }
 
-    std::string raytrace_range_param_name, obstacle_range_param_name;
+    std::string raytrace_range_param_name, min_raytrace_range_param_name, obstacle_range_param_name;
 
     // get the obstacle range for the sensor
     double obstacle_range = 2.5;
@@ -131,9 +131,9 @@ void ObstacleLayer::onInitialize()
     }
 
     double min_raytrace_range = 0.0;
-    if (source_node.searchParam("min_raytrace_range", raytrace_range_param_name))
+    if (source_node.searchParam("min_raytrace_range", min_raytrace_range_param_name))
     {
-      source_node.getParam(raytrace_range_param_name, min_raytrace_range);
+      source_node.getParam(min_raytrace_range_param_name, min_raytrace_range);
     }
 
     ROS_DEBUG("Creating an observation buffer for source %s, topic %s, frame %s", source.c_str(), topic.c_str(),
