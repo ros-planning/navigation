@@ -51,7 +51,7 @@ public:
    * @brief  Creates an empty observation
    */
   Observation() :
-    cloud_(new pcl::PointCloud<pcl::PointXYZ>()), obstacle_range_(0.0), raytrace_range_(0.0)
+    cloud_(new pcl::PointCloud<pcl::PointXYZ>()), obstacle_range_(0.0), raytrace_range_(0.0), min_raytrace_range_(0.0)
   {
   }
 
@@ -68,7 +68,7 @@ public:
    * @param raytrace_range The range out to which an observation should be able to clear via raytracing
    */
   Observation(geometry_msgs::Point& origin, pcl::PointCloud<pcl::PointXYZ> cloud,
-              double obstacle_range, double raytrace_range, double min_raytrace_range) :
+              double obstacle_range, double raytrace_range, double min_raytrace_range = 0.0) :
       origin_(origin), cloud_(new pcl::PointCloud<pcl::PointXYZ>(cloud)),
       obstacle_range_(obstacle_range), raytrace_range_(raytrace_range), min_raytrace_range_(min_raytrace_range)
   {

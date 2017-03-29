@@ -523,6 +523,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   double map_end_x = origin_x + size_x_ * resolution_;
   double map_end_y = origin_y + size_y_ * resolution_;
 
+  double min_raytrace_dist = clearing_observation.min_raytrace_range_;
 
   touch(ox, oy, min_x, min_y, max_x, max_y);
 
@@ -536,6 +537,47 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
     // to isn't off the costmap and scale if necessary
     double a = wx - ox;
     double b = wy - oy;
+
+    // calculate raytrace starting point
+    double ray_length = sqrt(a * a + b * b);
+    double raytrace_x = 0.0, raytrace_y = 0.0;
+    raytrace_x = ox + min_raytrace_dist * a / ray_length;
+    raytrace_y = oy + min_raytrace_dist * b / ray_length;
+
+    // check if the raytrace starting point is within the map boundary
+    if (raytrace_x < origin_x)
+    {
+      double t = (origin_x - ox) / a;
+      raytrace_x = origin_x;
+      raytrace_y = oy + b * t;
+    }
+
+    if (raytrace_y < origin_y)
+    {
+      double t = (origin_y - oy) / b;
+      raytrace_x = ox + a * t;
+      raytrace_y = origin_y;
+    }
+
+    if (raytrace_x > map_end_x)
+    {
+      double t = (map_end_x - ox) / a;
+      raytrace_x = map_end_x - .001;
+      raytrace_y = oy + b * t;
+    }
+    if (raytrace_y > map_end_y)
+    {
+      double t = (map_end_y - oy) / b;
+      raytrace_x = ox + a * t;
+      raytrace_y = map_end_y - .001;
+    }
+
+    unsigned int raytrace_x_map, raytrace_y_map;
+
+    // check for legality just in case
+    if (!worldToMap(raytrace_x, raytrace_y, raytrace_x_map, raytrace_y_map)){
+      continue;
+    }
 
     // the minimum value to raytrace from is the origin
     if (wx < origin_x)
@@ -575,9 +617,9 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
     MarkCell marker(costmap_, FREE_SPACE);
     // and finally... we can execute our trace to clear obstacles along that line
-    raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
+    raytraceLine(marker, raytrace_x_map, raytrace_y_map, x1, y1, cell_raytrace_range);
 
-    updateRaytraceBounds(ox, oy, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
+    updateRaytraceBounds(raytrace_x, raytrace_y, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
   }
 }
 
