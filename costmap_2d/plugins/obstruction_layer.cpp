@@ -750,6 +750,13 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
 
     // calculate raytrace starting point
     double ray_length = sqrt(a * a + b * b);
+
+    // skip if the ray length is even shorter than min_raytrace_range
+    if(ray_length < min_raytrace_dist)
+    {
+      continue;
+    }
+
     double raytrace_x = 0.0, raytrace_y = 0.0;
     raytrace_x = ox + min_raytrace_dist * a / ray_length;
     raytrace_y = oy + min_raytrace_dist * b / ray_length;
@@ -784,7 +791,7 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
 
     unsigned int raytrace_x_map, raytrace_y_map;
 
-    // check for legality just in case
+    // check for legality of the raytrace starting point
     if (!worldToMap(raytrace_x, raytrace_y, raytrace_x_map, raytrace_y_map)){
       continue;
     }
