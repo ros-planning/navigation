@@ -54,6 +54,7 @@ namespace costmap_2d
 InflationLayer::InflationLayer()
   : inflation_radius_(0)
   , weight_(0)
+  , inflate_unknown_(false)
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
@@ -99,7 +100,7 @@ void InflationLayer::onInitialize()
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
-  setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
+  setInflationParameters(config.inflation_radius, config.cost_scaling_factor, config.inflate_unknown);
 
   if (enabled_ != config.enabled) {
     enabled_ = config.enabled;
@@ -255,7 +256,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
       // assign the cost associated with the distance from an obstacle to the cell
       unsigned char cost = costLookup(mx, my, sx, sy);
       unsigned char old_cost = master_array[index];
-      if (old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
+      if (old_cost == NO_INFORMATION && ((inflate_unknown_ && cost > FREE_SPACE) || (!inflate_unknown_ && cost >= INSCRIBED_INFLATED_OBSTACLE)))
         master_array[index] = cost;
       else
         master_array[index] = std::max(old_cost, cost);
@@ -362,9 +363,9 @@ void InflationLayer::deleteKernels()
   }
 }
 
-void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
+void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor, bool inflate_unknown)
 {
-  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius)
+  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius || inflate_unknown_ != inflate_unknown)
   {
     // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
     // when accessing the cached arrays
@@ -373,6 +374,7 @@ void InflationLayer::setInflationParameters(double inflation_radius, double cost
     inflation_radius_ = inflation_radius;
     cell_inflation_radius_ = cellDistance(inflation_radius_);
     weight_ = cost_scaling_factor;
+    inflate_unknown_ = inflate_unknown;
     need_reinflation_ = true;
     computeCaches();
   }

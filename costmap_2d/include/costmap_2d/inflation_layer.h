@@ -120,8 +120,9 @@ public:
    * @brief Change the values of the inflation radius parameters
    * @param inflation_radius The new inflation radius
    * @param cost_scaling_factor The new weight
+   * @param inflate_unknown Whether to inflate unknown cells
    */
-  void setInflationParameters(double inflation_radius, double cost_scaling_factor);
+  void setInflationParameters(double inflation_radius, double cost_scaling_factor, bool inflate_unknown);
 
 protected:
   virtual void onFootprintChanged();
@@ -171,6 +172,7 @@ private:
                       unsigned int src_x, unsigned int src_y);
 
   double inflation_radius_, inscribed_radius_, weight_;
+  bool inflate_unknown_;
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
   std::map<double, std::vector<CellData> > inflation_cells_;
