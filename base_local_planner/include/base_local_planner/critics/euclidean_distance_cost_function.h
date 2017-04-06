@@ -35,10 +35,10 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef HEADING_COST_FUNCTION_H_
-#define HEADING_COST_FUNCTION_H_
+#ifndef EUCLIDEAN_DISTANCE_COST_FUNCTION_H_
+#define EUCLIDEAN_DISTANCE_COST_FUNCTION_H_
 
-#include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/critics/trajectory_cost_function.h>
 #include <geometry_msgs/PoseStamped.h>
 
 namespace base_local_planner {
@@ -48,18 +48,18 @@ namespace base_local_planner {
  *
  * It will reject trajectories that are not turn in place if the path goes behind the robot.
  */
-class HeadingCostFunction: public base_local_planner::TrajectoryCostFunction {
+class EuclideanDistanceCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
   /**
    * Constructor
    * @param rejection_half_angle Sets the rejection_half_angle (see other comments)
    */
-  HeadingCostFunction(double rejection_half_angle=M_PI / 2);
+  EuclideanDistanceCostFunction();
 
   /**
    * Destructor
    */
-  ~HeadingCostFunction() {}
+  ~EuclideanDistanceCostFunction() {}
 
   /**
    * Set the target poses (global plan)
@@ -72,20 +72,6 @@ public:
    * @param pose The current pose
    */
   void setCurrentPose(geometry_msgs::PoseStamped pose) {current_pose_ = pose;}
-
-  /**
-   * Sets the rejection half angle (rha).
-   * This describes a region behind the robot of [PI - rha, PI + rha].  If the global path heading
-   * is in this region, all non turn in place trajectories are rejected.
-   * @param rejection_half_angle The rejection_half_angle
-   */
-  void setRejectionHalfAngle(double rejection_half_angle) {rejection_half_angle_ = rejection_half_angle;}
-
-  /**
-   * Sets the square of the distance to the goal.
-   * @param goal_distance_squared The goal distance squared.
-   */
-  void setGoalDistanceSquared(double goal_distance_squared) {goal_distance_squared_ = goal_distance_squared;}
 
   /**
    * Prepare for operation.
@@ -102,38 +88,11 @@ public:
    */
   double scoreTrajectory(Trajectory &traj);
 
-  void setPoseCaptureMinRadius(double radius){pose_capture_min_radius_ = radius;};
-  void setPoseCaptureMaxRadius(double radius){pose_capture_max_radius_ = radius;};
-
 private:
-  /**
-   * Calculates the square of the distance between two poses.
-   * @param p1 First pose
-   * @param p2 Second pose
-   * @return the squared distance between the poses.
-   */
-  double poseDistanceSquared(geometry_msgs::PoseStamped p1, geometry_msgs::PoseStamped p2)
-  {
-    double dx = p1.pose.position.x - p2.pose.position.x;
-    double dy = p1.pose.position.y - p2.pose.position.y;
-    return (dx*dx + dy*dy);
-  }
-
   std::vector<geometry_msgs::PoseStamped> target_poses_;
 
   geometry_msgs::PoseStamped current_pose_;
-
-  bool heading_violation_;
-
-  double pose_capture_min_radius_;
-  double pose_capture_max_radius_;
-
-  double rejection_half_angle_;
-  double path_start_heading_;
-  double goal_distance_squared_;
-  double min_goal_distance_;
-  double EPSILON;
 };
 
 } /* namespace base_local_planner */
-#endif /* HEADING_COST_FUNCTION_H_ */
+#endif /* EUCLIDEAN_DISTANCE_COST_FUNCTION_H_ */

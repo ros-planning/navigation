@@ -35,31 +35,53 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef JERK_COST_FUNCTION_H_
-#define JERK_COST_FUNCTION_H_
+#ifndef GLOBAL_PLAN_DISTANCE_COST_FUNCTION_H_
+#define GLOBAL_PLAN_DISTANCE_COST_FUNCTION_H_
 
-#include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/critics/trajectory_cost_function.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <Eigen/Core>
-
 
 namespace base_local_planner {
 
 /**
- * This class provides cost based on the jerk of the robot
+ * This class provides cost based on distance of the robot to the global plan
  *
+ * It will reject trajectories that are moving if the global plan is too far from the robot
  */
-class JerkCostFunction: public base_local_planner::TrajectoryCostFunction {
+class GlobalPlanDistanceCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
   /**
    * Constructor
+   * @param max_allowed_distance_from_plan Sets the max_allowed_distance_from_plan (see other comments)
    */
-  JerkCostFunction();
+  GlobalPlanDistanceCostFunction(double max_allowed_distance_from_plan = 0.5);
 
   /**
    * Destructor
    */
-  ~JerkCostFunction() {}
+  ~GlobalPlanDistanceCostFunction() {}
+
+  /**
+   * Set the target poses (global plan)
+   * @param target_poses The target poses
+   */
+  void setTargetPoses(std::vector<geometry_msgs::PoseStamped> target_poses);
+
+  /**
+   * Set the current pose of the robot
+   * @param pose The current pose
+   */
+  void setCurrentPose(geometry_msgs::PoseStamped pose) {current_pose_ = pose;}
+
+  /**
+   * Sets the global plan distance
+   * If the plan is farther than this from the robot, all trajectories with non-zero velocity are rejected.
+   * @param max_allowed_distance_from_plan The max_allowed_distance_from_plan
+   */
+  void setMaxAllowedDistanceFromPlan(double max_allowed_distance_from_plan)
+  {
+    max_allowed_distance_from_plan_ = max_allowed_distance_from_plan_;
+  }
 
   /**
    * Prepare for operation.
@@ -74,21 +96,29 @@ public:
    */
   double scoreTrajectory(Trajectory &traj);
 
-  void setPreviousTrajectoryAndVelocity(const Trajectory& traj, const Eigen::Vector3f& vel);
-
-  void setCurrentVelocity(Eigen::Vector3f vel)
-  {
-    current_vel_ = vel;
-  };
-
 private:
-  void calculateAccelerations(const Trajectory& traj, Eigen::Vector3f vel,
-    std::string msg, double& linear_accel, double& angular_accel);
+  /**
+   * Calculates the square of the distance between two poses.
+   * @param p1 First pose
+   * @param p2 Second pose
+   * @return the squared distance between the poses.
+   */
+  double poseDistanceSquared(geometry_msgs::PoseStamped p1, geometry_msgs::PoseStamped p2)
+  {
+    double dx = p1.pose.position.x - p2.pose.position.x;
+    double dy = p1.pose.position.y - p2.pose.position.y;
+    return (dx*dx + dy*dy);
+  }
 
-  double EPSILON;
-  double old_linear_accel_;
-  double old_angular_accel_;
-  Eigen::Vector3f current_vel_;
+  std::vector<geometry_msgs::PoseStamped> target_poses_;
+
+  geometry_msgs::PoseStamped current_pose_;
+
+  bool distance_violation_;
+
+  double max_allowed_distance_from_plan_;
+
+  constexpr static double EPSILON = 0.001;
 };
 
 } /* namespace base_local_planner */

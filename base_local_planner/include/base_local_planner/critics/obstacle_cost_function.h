@@ -35,51 +35,62 @@
  * Author: TKruse
  *********************************************************************/
 
-#ifndef VELOCITY_COST_FUNCTION_H_
-#define VELOCITY_COST_FUNCTION_H_
+#ifndef OBSTACLE_COST_FUNCTION_H_
+#define OBSTACLE_COST_FUNCTION_H_
 
-#include <base_local_planner/trajectory_cost_function.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <base_local_planner/critics/trajectory_cost_function.h>
+
+#include <base_local_planner/costmap_model.h>
+#include <costmap_2d/costmap_2d.h>
 
 namespace base_local_planner {
 
 /**
- * This class provides cost based on the heading of the robot relative to the trajectory.
- *
- * This can be used to favor trajectories which stay on a given path, or which
- * approach a given goal.
+ * class ObstacleCostFunction
+ * @brief Uses costmap 2d to assign negative costs if robot footprint
+ * is in obstacle on any point of the trajectory.
  */
-class VelocityCostFunction: public base_local_planner::TrajectoryCostFunction {
+class ObstacleCostFunction : public TrajectoryCostFunction {
+
 public:
-  VelocityCostFunction();
-
-  ~VelocityCostFunction() {}
-
-  void setMaxVelocity(double vel) {
-    max_linear_velocity_ = vel;
-  }
-
-  void setMinVelocity(double vel) {
-    min_linear_velocity_ = vel;
-  }
-
-
-  void setGoalDistanceSquared(double goal_distance_squared) {goal_distance_squared_ = goal_distance_squared;}
+  ObstacleCostFunction(costmap_2d::Costmap2D* costmap);
+  ~ObstacleCostFunction();
 
   bool prepare();
-
   double scoreTrajectory(Trajectory &traj);
 
+  void setSumScores(bool score_sums){ sum_scores_=score_sums; }
+
+  void setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed);
+
+  void setIgnoreSpeedCost(bool ignore)
+  {
+    ignore_speed_cost_ = ignore;
+  };
+
+  void setFootprint(std::vector<geometry_msgs::Point> footprint_spec);
+
+  // helper functions, made static for easy unit testing
+  static double getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor);
+  static double footprintCost(
+      const double& x,
+      const double& y,
+      const double& th,
+      double scale,
+      std::vector<geometry_msgs::Point> footprint_spec,
+      costmap_2d::Costmap2D* costmap,
+      base_local_planner::WorldModel* world_model);
+
 private:
-  std::vector<geometry_msgs::PoseStamped> target_poses_;
-
-  double max_linear_velocity_;
-  double min_linear_velocity_;
-  double goal_distance_squared_;
-  double min_goal_distance_squared_;
-
-  double EPSILON;
+  costmap_2d::Costmap2D* costmap_;
+  std::vector<geometry_msgs::Point> footprint_spec_;
+  base_local_planner::WorldModel* world_model_;
+  double max_trans_vel_;
+  bool sum_scores_;
+  //footprint scaling with velocity;
+  double max_scaling_factor_, scaling_speed_;
+  bool ignore_speed_cost_;
 };
 
 } /* namespace base_local_planner */
-#endif /* VELOCITY_COST_FUNCTION_H_ */
+#endif /* OBSTACLE_COST_FUNCTION_H_ */

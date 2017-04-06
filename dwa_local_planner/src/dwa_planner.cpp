@@ -106,6 +106,8 @@ namespace dwa_local_planner {
     heading_costs_.setPoseCaptureMaxRadius(config.heading_critic_capture_max_radius);
     heading_costs_.setRejectionHalfAngle(config.heading_critic_half_angle);
 
+    global_plan_distance_costs_.setMaxAllowedDistanceFromPlan(config.max_allowed_distance_from_global_plan);
+
     minimum_simulation_time_factor_ = config.minimum_simulation_time_factor;
 
     // obstacle costs can vary due to scaling footprint feature
@@ -201,6 +203,7 @@ namespace dwa_local_planner {
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
+    critics.push_back(&global_plan_distance_costs_); // discards trajectories that are moving if the global plan is too far from the robot
     critics.push_back(&heading_costs_); // discards trajectories that are not turn in place if path is behind robot
     critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
     critics.push_back(&velocity_costs_); // scales cost based on velocity
@@ -397,6 +400,9 @@ namespace dwa_local_planner {
     heading_costs_.setCurrentPose(global_pose_as_pose);
     heading_costs_.setTargetPoses(global_plan_);
     heading_costs_.setGoalDistanceSquared(sq_dist);
+
+    global_plan_distance_costs_.setCurrentPose(global_pose_as_pose);
+    global_plan_distance_costs_.setTargetPoses(global_plan_);
 
     velocity_costs_.setGoalDistanceSquared(sq_dist);
   }

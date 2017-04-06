@@ -51,6 +51,7 @@
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
 
+#include <base_local_planner/simple_scored_sampling_planner.h>
 #include <base_local_planner/trajectory.h>
 #include <base_local_planner/local_planner_limits.h>
 #include <base_local_planner/local_planner_util.h>
@@ -58,14 +59,15 @@
 #include <base_local_planner/follower_trajectory_generator.h>
 #include <base_local_planner/stationary_trajectory_generator.h>
 
-#include <base_local_planner/oscillation_cost_function.h>
-#include <base_local_planner/euclidean_distance_cost_function.h>
-#include <base_local_planner/heading_cost_function.h>
-#include <base_local_planner/jerk_cost_function.h>
-#include <base_local_planner/velocity_cost_function.h>
-#include <base_local_planner/map_grid_cost_function.h>
-#include <base_local_planner/obstacle_cost_function.h>
-#include <base_local_planner/simple_scored_sampling_planner.h>
+#include <base_local_planner/critics/oscillation_cost_function.h>
+#include <base_local_planner/critics/euclidean_distance_cost_function.h>
+#include <base_local_planner/critics/heading_cost_function.h>
+#include <base_local_planner/critics/global_plan_distance_cost_function.h>
+#include <base_local_planner/critics/jerk_cost_function.h>
+#include <base_local_planner/critics/velocity_cost_function.h>
+#include <base_local_planner/critics/map_grid_cost_function.h>
+#include <base_local_planner/critics/obstacle_cost_function.h>
+
 
 
 #include <nav_msgs/Path.h>
@@ -190,6 +192,7 @@ namespace dwa_local_planner {
 
       base_local_planner::OscillationCostFunction oscillation_costs_;
       base_local_planner::HeadingCostFunction heading_costs_;
+      base_local_planner::GlobalPlanDistanceCostFunction global_plan_distance_costs_;
       base_local_planner::EuclideanDistanceCostFunction euclidean_distance_costs_;
       base_local_planner::JerkCostFunction jerk_costs_;
       base_local_planner::VelocityCostFunction velocity_costs_;

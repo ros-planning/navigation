@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2016, 6 River Systems
+ *  Copyright (c) 2008, Willow Garage, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,13 +32,13 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Daniel Grieneisen
+ * Author: TKruse
  *********************************************************************/
 
-#ifndef EUCLIDEAN_DISTANCE_COST_FUNCTION_H_
-#define EUCLIDEAN_DISTANCE_COST_FUNCTION_H_
+#ifndef VELOCITY_COST_FUNCTION_H_
+#define VELOCITY_COST_FUNCTION_H_
 
-#include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/critics/trajectory_cost_function.h>
 #include <geometry_msgs/PoseStamped.h>
 
 namespace base_local_planner {
@@ -46,53 +46,40 @@ namespace base_local_planner {
 /**
  * This class provides cost based on the heading of the robot relative to the trajectory.
  *
- * It will reject trajectories that are not turn in place if the path goes behind the robot.
+ * This can be used to favor trajectories which stay on a given path, or which
+ * approach a given goal.
  */
-class EuclideanDistanceCostFunction: public base_local_planner::TrajectoryCostFunction {
+class VelocityCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
-  /**
-   * Constructor
-   * @param rejection_half_angle Sets the rejection_half_angle (see other comments)
-   */
-  EuclideanDistanceCostFunction();
+  VelocityCostFunction();
 
-  /**
-   * Destructor
-   */
-  ~EuclideanDistanceCostFunction() {}
+  ~VelocityCostFunction() {}
 
-  /**
-   * Set the target poses (global plan)
-   * @param target_poses The target poses
-   */
-  void setTargetPoses(std::vector<geometry_msgs::PoseStamped> target_poses);
+  void setMaxVelocity(double vel) {
+    max_linear_velocity_ = vel;
+  }
 
-  /**
-   * Set the current pose of the robot
-   * @param pose The current pose
-   */
-  void setCurrentPose(geometry_msgs::PoseStamped pose) {current_pose_ = pose;}
+  void setMinVelocity(double vel) {
+    min_linear_velocity_ = vel;
+  }
 
-  /**
-   * Prepare for operation.
-   * @return true if preparations were successful
-   */
+
+  void setGoalDistanceSquared(double goal_distance_squared) {goal_distance_squared_ = goal_distance_squared;}
+
   bool prepare();
 
-  /**
-   * Scores the trajectory.  Returns a negative value for rejected trajectories.
-   * @param traj The trajectory
-   * @return Non-negative value if the trajectory is valid, negative otherwise.
-   *     -1 indicates that there is no angular velocity and the heading is in violation
-   *     -2 indicates that there is some linear velocity and the heading is in violation
-   */
   double scoreTrajectory(Trajectory &traj);
 
 private:
   std::vector<geometry_msgs::PoseStamped> target_poses_;
 
-  geometry_msgs::PoseStamped current_pose_;
+  double max_linear_velocity_;
+  double min_linear_velocity_;
+  double goal_distance_squared_;
+  double min_goal_distance_squared_;
+
+  double EPSILON;
 };
 
 } /* namespace base_local_planner */
-#endif /* EUCLIDEAN_DISTANCE_COST_FUNCTION_H_ */
+#endif /* VELOCITY_COST_FUNCTION_H_ */

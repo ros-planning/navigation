@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2017, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,33 +32,80 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: TKruse
+ * Author: DGrieneisen
  *********************************************************************/
 
-#ifndef PREFER_FORWARD_COST_FUNCTION_H_
-#define PREFER_FORWARD_COST_FUNCTION_H_
-
-#include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/geometry_math_helpers.h>
+#include <ros/ros.h>
 
 namespace base_local_planner {
 
-class PreferForwardCostFunction: public base_local_planner::TrajectoryCostFunction {
-public:
+double distanceToLineSegment(const Eigen::Vector2f& pos,
+  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1)
+{
+  double l2 = (p1 - p0).squaredNorm();
+  if (l2 == 0.0)
+  {
+    ROS_DEBUG("dtLS early.p0 %f,%f p1 %f, %f, pos %f, %f",
+      p0[0], p0[1], p1[0], p1[1], pos[0], pos[1]);
+    return (pos - p1).norm();
+  }
+  double t = std::max(0.0, std::min(1.0, (pos - p0).dot(p1 - p0) / l2));
 
-  PreferForwardCostFunction(double penalty) : penalty_(penalty) {}
-  ~PreferForwardCostFunction() {}
+  Eigen::Vector2f projection = p0 + t * (p1 - p0);
 
-  double scoreTrajectory(Trajectory &traj);
+  ROS_DEBUG("dtLS: p0 %f,%f p1 %f, %f, pos %f, %f, t %f, proje %f %f",
+    p0[0], p0[1], p1[0], p1[1], pos[0], pos[1], t, projection[0], projection[1]);
+  return (pos - projection).norm();
+}
 
-  bool prepare() {return true;};
+double distanceAlongLineSegment(const Eigen::Vector2f& pos,
+  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1)
+{
+  double l = (p1 - p0).norm();
+  if (l == 0.0)
+  {
+    return 0.0;
+  }
+  return (pos - p0).dot(p1 - p0) / l;
+}
 
-  void setPenalty(double penalty) {
-    penalty_ = penalty;
+Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
+  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1)
+{
+  double l2 = (p1 - p0).squaredNorm();
+  if (l2 == 0.0)
+  {
+    return p1;
   }
 
-private:
-  double penalty_;
-};
+  double t = distance / l2;
 
-} /* namespace base_local_planner */
-#endif /* PREFER_FORWARD_COST_FUNCTION_H_ */
+  Eigen::Vector2f projection = p0 + t * (p1 - p0);
+
+  ROS_DEBUG("paDtLS: p0 %f,%f p1 %f, %f, dist %f, t %f, proje %f %f",
+    p0[0], p0[1], p1[0], p1[1], distance, t, projection[0], projection[1]);
+  return projection;
+}
+
+Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose)
+{
+  Eigen::Vector2f p = Eigen::Vector2f::Zero();
+  p[0] = pose.pose.position.x;
+  p[1] = pose.pose.position.y;
+  return p;
+}
+
+double angleMinusPiToPi(double val)
+{
+  while (val > M_PI)
+  {
+    val -= 2 * M_PI;
+  }
+  while (val < -M_PI)
+  {
+    val += 2 * M_PI;
+  }
+}
+
+}

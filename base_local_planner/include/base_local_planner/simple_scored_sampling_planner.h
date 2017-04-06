@@ -42,7 +42,7 @@
 
 #include <vector>
 #include <base_local_planner/trajectory.h>
-#include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/critics/trajectory_cost_function.h>
 #include <base_local_planner/trajectory_sample_generator.h>
 #include <base_local_planner/trajectory_search.h>
 #include <ros/ros.h>

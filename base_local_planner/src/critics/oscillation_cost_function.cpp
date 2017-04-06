@@ -35,7 +35,7 @@
  * Author: TKruse
  *********************************************************************/
 
-#include <base_local_planner/oscillation_cost_function.h>
+#include <base_local_planner/critics/oscillation_cost_function.h>
 #include <ros/ros.h>
 
 #include <cmath>

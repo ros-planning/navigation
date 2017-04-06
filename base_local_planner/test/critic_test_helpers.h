@@ -34,39 +34,27 @@
  *
  * Author: Daniel Grieneisen
  *********************************************************************/
+#ifndef BASE_LOCAL_PLANNER_CRITIC_TEST_HELPERS_H_
+#define BASE_LOCAL_PLANNER_CRITIC_TEST_HELPERS_H_
 
-#include <base_local_planner/euclidean_distance_cost_function.h>
+#include <base_local_planner/trajectory.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <tf/transform_datatypes.h>
+#include <Eigen/Core>
 
-namespace base_local_planner {
 
-EuclideanDistanceCostFunction::EuclideanDistanceCostFunction() {}
+geometry_msgs::PoseStamped createPoseStamped(float x, float y, float yaw);
 
-void EuclideanDistanceCostFunction::setTargetPoses(std::vector<geometry_msgs::PoseStamped> target_poses) {
-  target_poses_ = target_poses;
-}
+std::vector<geometry_msgs::PoseStamped> createGlobalPlan();
 
-bool EuclideanDistanceCostFunction::prepare() {
-  return true;
-}
+base_local_planner::Trajectory createTrajectory(double v, double w);
 
-double EuclideanDistanceCostFunction::scoreTrajectory(Trajectory &traj) {
+Eigen::Vector3f createVector(float x, float y, float yaw);
 
-  if (target_poses_.empty())
-  {
-    return 0.0;
-  }
+Eigen::Vector2f create2DVector(float x, float y);
 
-  if (traj.getPointsSize() == 0)
-  {
-    return 0.0;
-  }
-  // calculate the euclidean distance from trajectory endpoint to
-  double tx, ty, tyaw;
-  traj.getEndpoint(tx, ty, tyaw);
-  double dx = tx - target_poses_.back().pose.position.x;
-  double dy = ty - target_poses_.back().pose.position.y;
-  return std::sqrt(dx * dx + dy * dy);
-}
+bool vector2DEqual(Eigen::Vector2f a, Eigen::Vector2f b);
 
-} /* namespace base_local_planner */
+void printTrajectory(const base_local_planner::Trajectory& traj);
+
+#endif

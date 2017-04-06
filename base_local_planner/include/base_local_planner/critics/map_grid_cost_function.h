@@ -38,7 +38,7 @@
 #ifndef MAP_GRID_COST_FUNCTION_H_
 #define MAP_GRID_COST_FUNCTION_H_
 
-#include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/critics/trajectory_cost_function.h>
 
 #include <costmap_2d/costmap_2d.h>
 #include <base_local_planner/map_grid.h>

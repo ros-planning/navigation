@@ -40,6 +40,7 @@
 #include <cmath>
 
 #include <base_local_planner/velocity_iterator.h>
+#include <base_local_planner/geometry_math_helpers.h>
 
 namespace base_local_planner {
 
@@ -226,15 +227,7 @@ Eigen::Vector3f FollowerTrajectoryGenerator::computeNewVelocities(const Eigen::V
   }
 
   // Simple proportional control with limits
-  double heading_error = desired_heading - pos[2];
-  while (heading_error > M_PI)
-  {
-    heading_error -= 2 * M_PI;
-  }
-  while (heading_error < -M_PI)
-  {
-    heading_error += 2 * M_PI;
-  }
+  double heading_error = angleMinusPiToPi(desired_heading - pos[2]);
 
   double desired_angular_velocity = heading_error * kp_theta_;
   // limit it
@@ -336,61 +329,7 @@ void FollowerTrajectoryGenerator::getDesiredHeadingAndGoalDistance(const Eigen::
     pos2[0], pos2[1], pose_of_heading[0], pose_of_heading[1], desired_heading);
 }
 
-double FollowerTrajectoryGenerator::distanceToLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1)
-{
-  double l2 = (p1 - p0).squaredNorm();
-  if (l2 == 0.0)
-  {
-    ROS_DEBUG("dtLS early.p0 %f,%f p1 %f, %f, pos %f, %f",
-      p0[0], p0[1], p1[0], p1[1], pos[0], pos[1]);
-    return (pos - p1).norm();
-  }
-  double t = std::max(0.0, std::min(1.0, (pos - p0).dot(p1 - p0) / l2));
 
-  Eigen::Vector2f projection = p0 + t * (p1 - p0);
-
-  ROS_DEBUG("dtLS: p0 %f,%f p1 %f, %f, pos %f, %f, t %f, proje %f %f",
-    p0[0], p0[1], p1[0], p1[1], pos[0], pos[1], t, projection[0], projection[1]);
-  return (pos - projection).norm();
-}
-
-double FollowerTrajectoryGenerator::distanceAlongLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1)
-{
-  double l = (p1 - p0).norm();
-  if (l == 0.0)
-  {
-    return 0.0;
-  }
-  return (pos - p0).dot(p1 - p0) / l;
-}
-
-Eigen::Vector2f FollowerTrajectoryGenerator::poseAtDistanceAlongLineSegment(double distance,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1)
-{
-  double l2 = (p1 - p0).squaredNorm();
-  if (l2 == 0.0)
-  {
-    return p1;
-  }
-
-  double t = distance / l2;
-
-  Eigen::Vector2f projection = p0 + t * (p1 - p0);
-
-  ROS_DEBUG("paDtLS: p0 %f,%f p1 %f, %f, dist %f, t %f, proje %f %f",
-    p0[0], p0[1], p1[0], p1[1], distance, t, projection[0], projection[1]);
-  return projection;
-}
-
-Eigen::Vector2f FollowerTrajectoryGenerator::poseStampedToVector(geometry_msgs::PoseStamped pose)
-{
-  Eigen::Vector2f p = Eigen::Vector2f::Zero();
-  p[0] = pose.pose.position.x;
-  p[1] = pose.pose.position.y;
-  return p;
-}
 
 } /* namespace base_local_planner */
 

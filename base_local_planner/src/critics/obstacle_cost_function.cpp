@@ -35,7 +35,7 @@
  * Author: TKruse
  *********************************************************************/
 
-#include <base_local_planner/obstacle_cost_function.h>
+#include <base_local_planner/critics/obstacle_cost_function.h>
 #include <cmath>
 #include <Eigen/Core>
 #include <ros/console.h>

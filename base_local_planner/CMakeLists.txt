@@ -77,30 +77,33 @@ catkin_package(
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
 add_library(base_local_planner
-    src/euclidean_distance_cost_function.cpp
+    src/critics/euclidean_distance_cost_function.cpp
+    src/critics/velocity_cost_function.cpp
+    src/critics/heading_cost_function.cpp
+    src/critics/global_plan_distance_cost_function.cpp
+    src/critics/jerk_cost_function.cpp
+    src/critics/map_grid_cost_function.cpp
+    src/critics/obstacle_cost_function.cpp
+    src/critics/oscillation_cost_function.cpp
+    src/critics/prefer_forward_cost_function.cpp
     src/follower_trajectory_generator.cpp
     src/footprint_helper.cpp
+    src/geometry_math_helpers.cpp
     src/goal_functions.cpp
-    src/heading_cost_function.cpp
-    src/jerk_cost_function.cpp
     src/map_cell.cpp
     src/map_grid.cpp
     src/map_grid_visualizer.cpp
-    src/map_grid_cost_function.cpp
     src/latched_stop_rotate_controller.cpp
     src/local_planner_util.cpp
     src/odometry_helper_ros.cpp
-    src/obstacle_cost_function.cpp
-    src/oscillation_cost_function.cpp
-    src/prefer_forward_cost_function.cpp
     src/point_grid.cpp
     src/costmap_model.cpp
     src/simple_scored_sampling_planner.cpp
     src/simple_trajectory_generator.cpp
     src/stationary_trajectory_generator.cpp
     src/trajectory.cpp
-    src/velocity_cost_function.cpp
     src/voxel_grid_model.cpp)
+
 add_dependencies(base_local_planner base_local_planner_gencfg)
 add_dependencies(base_local_planner base_local_planner_gencpp)
 add_dependencies(base_local_planner nav_msgs_gencpp)
@@ -143,9 +146,13 @@ if(CATKIN_ENABLE_TESTING)
     test/utest.cpp
     test/velocity_iterator_test.cpp
     test/footprint_helper_test.cpp
+    test/geometry_math_helpers_test.cpp
     test/trajectory_generator_test.cpp
     test/follower_trajectory_generator_test.cpp
-    test/map_grid_test.cpp)
+    test/global_plan_distance_cost_function_test.cpp
+    test/map_grid_test.cpp
+    test/critic_test_helpers.cpp
+    )
   target_link_libraries(base_local_planner_utest
       base_local_planner trajectory_planner_ros
       )

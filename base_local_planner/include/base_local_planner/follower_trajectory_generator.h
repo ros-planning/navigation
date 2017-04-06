@@ -118,22 +118,11 @@ public:
     global_plan_ = global_plan;
   }
 
-  static double distanceToLineSegment(const Eigen::Vector2f& pos,
-    const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
-
-  static double distanceAlongLineSegment(const Eigen::Vector2f& pos,
-    const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
-
-  static Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
-    const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
-
 protected:
 
   void getDesiredHeadingAndGoalDistance(const Eigen::Vector3f& pos,
     unsigned int start_idx, unsigned int& closest_idx,
     double& desired_heading, double& distance_to_goal);
-
-  Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose);
 
   unsigned int next_sample_index_;
   // to store sample params of each sample between init and generation

@@ -35,62 +35,55 @@
  * Author: TKruse
  *********************************************************************/
 
-#ifndef OBSTACLE_COST_FUNCTION_H_
-#define OBSTACLE_COST_FUNCTION_H_
+#ifndef OSCILLATION_COST_FUNCTION_H_
+#define OSCILLATION_COST_FUNCTION_H_
 
-#include <base_local_planner/trajectory_cost_function.h>
-
-#include <base_local_planner/costmap_model.h>
-#include <costmap_2d/costmap_2d.h>
+#include <base_local_planner/critics/trajectory_cost_function.h>
+#include <Eigen/Core>
 
 namespace base_local_planner {
 
-/**
- * class ObstacleCostFunction
- * @brief Uses costmap 2d to assign negative costs if robot footprint
- * is in obstacle on any point of the trajectory.
- */
-class ObstacleCostFunction : public TrajectoryCostFunction {
-
+class OscillationCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
-  ObstacleCostFunction(costmap_2d::Costmap2D* costmap);
-  ~ObstacleCostFunction();
+  OscillationCostFunction();
+  virtual ~OscillationCostFunction();
 
-  bool prepare();
   double scoreTrajectory(Trajectory &traj);
 
-  void setSumScores(bool score_sums){ sum_scores_=score_sums; }
+  bool prepare() {return true;};
 
-  void setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed);
+  /**
+   * @brief  Reset the oscillation flags for the local planner
+   */
+  void resetOscillationFlags();
 
-  void setIgnoreSpeedCost(bool ignore)
-  {
-    ignore_speed_cost_ = ignore;
-  };
 
-  void setFootprint(std::vector<geometry_msgs::Point> footprint_spec);
+  void updateOscillationFlags(Eigen::Vector3f pos, base_local_planner::Trajectory* traj, double min_vel_trans);
 
-  // helper functions, made static for easy unit testing
-  static double getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor);
-  static double footprintCost(
-      const double& x,
-      const double& y,
-      const double& th,
-      double scale,
-      std::vector<geometry_msgs::Point> footprint_spec,
-      costmap_2d::Costmap2D* costmap,
-      base_local_planner::WorldModel* world_model);
+  void setOscillationResetDist(double dist, double angle);
 
 private:
-  costmap_2d::Costmap2D* costmap_;
-  std::vector<geometry_msgs::Point> footprint_spec_;
-  base_local_planner::WorldModel* world_model_;
-  double max_trans_vel_;
-  bool sum_scores_;
-  //footprint scaling with velocity;
-  double max_scaling_factor_, scaling_speed_;
-  bool ignore_speed_cost_;
+
+  void resetOscillationFlagsIfPossible(const Eigen::Vector3f& pos, const Eigen::Vector3f& prev);
+
+  /**
+   * @brief  Given a trajectory that's selected, set flags if needed to
+   * prevent the robot from oscillating
+   * @param  t The selected trajectory
+   * @return True if a flag was set, false otherwise
+   */
+  bool setOscillationFlags(base_local_planner::Trajectory* t, double min_vel_trans);
+
+  // flags
+  bool strafe_pos_only_, strafe_neg_only_, strafing_pos_, strafing_neg_;
+  bool rot_pos_only_, rot_neg_only_, rotating_pos_, rotating_neg_;
+  bool forward_pos_only_, forward_neg_only_, forward_pos_, forward_neg_;
+
+  // param
+  double oscillation_reset_dist_, oscillation_reset_angle_;
+
+  Eigen::Vector3f prev_stationary_pos_;
 };
 
 } /* namespace base_local_planner */
-#endif /* OBSTACLE_COST_FUNCTION_H_ */
+#endif /* OSCILLATION_COST_FUNCTION_H_ */

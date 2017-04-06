@@ -35,7 +35,7 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#include <base_local_planner/heading_cost_function.h>
+#include <base_local_planner/critics/heading_cost_function.h>
 #include <tf/transform_datatypes.h>
 
 namespace base_local_planner {

@@ -35,75 +35,41 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#include <base_local_planner/jerk_cost_function.h>
-#include <tf/transform_datatypes.h>
+#include <base_local_planner/critics/velocity_cost_function.h>
 
 namespace base_local_planner {
 
-JerkCostFunction::JerkCostFunction() : old_linear_accel_(0.0), old_angular_accel_(0.0),
-  EPSILON(0.01), current_vel_(0.0, 0.0, 0.0)
-{}
+VelocityCostFunction::VelocityCostFunction() :
+    goal_distance_squared_(16.0),
+    min_goal_distance_squared_(1.0),
+    max_linear_velocity_(0.0),
+    min_linear_velocity_(0.0),
+    EPSILON(0.001) {}
 
-void JerkCostFunction::setPreviousTrajectoryAndVelocity(const Trajectory& traj, const Eigen::Vector3f& vel)
-{
-  // Calculate the linear and angular velocity
-  calculateAccelerations(traj, vel, "prev", old_linear_accel_, old_angular_accel_);
-}
-
-bool JerkCostFunction::prepare()
-{
-  // do nothing
+bool VelocityCostFunction::prepare() {
+  // Don't prepare anything.
   return true;
 }
 
-double JerkCostFunction::scoreTrajectory(Trajectory &traj)
-{
-  // ROS_WARN("Scoring trajectory");
-  // Don't add any cost if the robot isn't moving yet.
-  if (std::fabs(current_vel_[0]) < EPSILON && std::fabs(current_vel_[2]) < EPSILON)
+double VelocityCostFunction::scoreTrajectory(Trajectory &traj) {
+  if (goal_distance_squared_ < min_goal_distance_squared_)
   {
-    return 0;
+    return 0.0;
   }
 
-  // Don't add any cost if the linear velocity is below a certain amount
-  if (std::fabs(current_vel_[0] < 0.2))
+  if (std::fabs(max_linear_velocity_) < EPSILON)
   {
-    return 0;
+    return 0.0;
   }
 
-  // Get the accelerations
-  double new_lin_accel = 0;
-  double new_angular_accel = 0;
-  calculateAccelerations(traj, current_vel_, "scoreTraj", new_lin_accel, new_angular_accel);
+  double ratio =  std::fabs(traj.xv_) / max_linear_velocity_;
 
-  if (old_linear_accel_ < 0)
+  if (ratio < 1)
   {
-    // Don't discourage accelerating if the robot is slowing.
-    return 0;
+    return 1.0 - ratio;
   }
 
-  // Compare to the old accelerations
-  double dLinearAccel = std::fabs(new_lin_accel - old_linear_accel_);
-  double dAngularAccel = std::fabs(new_angular_accel - old_angular_accel_);
-
-  // Map differences into cost.
-  double cost = (dLinearAccel + 0.1 * dAngularAccel);
-
-  return cost;
-}
-
-void JerkCostFunction::calculateAccelerations(const Trajectory& traj, Eigen::Vector3f vel,
-  std::string msg, double& linear_accel, double& angular_accel)
-{
-  if (traj.time_delta_ > 0)
-  {
-    linear_accel = (traj.xv_ - vel[0]) / traj.time_delta_;
-    angular_accel = (traj.thetav_ - vel[2]) / traj.time_delta_;
-  }
-  else if (traj.time_delta_ < 0)
-  {
-    ROS_ERROR("Negative time delta in jerk cost function. %f.  %s", traj.time_delta_, msg.c_str());
-  }
+  return 0.0;
 }
 
 } /* namespace base_local_planner */
