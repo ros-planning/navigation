@@ -120,9 +120,8 @@ public:
    * @brief Change the values of the inflation radius parameters
    * @param inflation_radius The new inflation radius
    * @param cost_scaling_factor The new weight
-   * @param inflate_unknown Whether to inflate unknown cells
    */
-  void setInflationParameters(double inflation_radius, double cost_scaling_factor, bool inflate_unknown);
+  void setInflationParameters(double inflation_radius, double cost_scaling_factor);
 
 protected:
   virtual void onFootprintChanged();

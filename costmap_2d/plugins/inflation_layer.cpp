@@ -100,10 +100,11 @@ void InflationLayer::onInitialize()
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
-  setInflationParameters(config.inflation_radius, config.cost_scaling_factor, config.inflate_unknown);
+  setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
 
-  if (enabled_ != config.enabled) {
+  if (enabled_ != config.enabled || inflate_unknown_ != inflate_unknown) {
     enabled_ = config.enabled;
+    inflate_unknown_ = config.inflate_unknown;
     need_reinflation_ = true;
   }
 }
@@ -363,9 +364,9 @@ void InflationLayer::deleteKernels()
   }
 }
 
-void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor, bool inflate_unknown)
+void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
 {
-  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius || inflate_unknown_ != inflate_unknown)
+  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius)
   {
     // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
     // when accessing the cached arrays
@@ -374,7 +375,6 @@ void InflationLayer::setInflationParameters(double inflation_radius, double cost
     inflation_radius_ = inflation_radius;
     cell_inflation_radius_ = cellDistance(inflation_radius_);
     weight_ = cost_scaling_factor;
-    inflate_unknown_ = inflate_unknown;
     need_reinflation_ = true;
     computeCaches();
   }
