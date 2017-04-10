@@ -102,7 +102,7 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
 {
   setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
 
-  if (enabled_ != config.enabled || inflate_unknown_ != inflate_unknown) {
+  if (enabled_ != config.enabled || inflate_unknown_ != config.inflate_unknown) {
     enabled_ = config.enabled;
     inflate_unknown_ = config.inflate_unknown;
     need_reinflation_ = true;
