@@ -98,14 +98,16 @@ Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose)
 
 double angleMinusPiToPi(double val)
 {
-  while (val > M_PI)
+  double output = val;
+  while (output > M_PI)
   {
-    val -= 2 * M_PI;
+    output -= 2 * M_PI;
   }
-  while (val < -M_PI)
+  while (output < -M_PI)
   {
-    val += 2 * M_PI;
+    output += 2 * M_PI;
   }
+  return output;
 }
 
 }
