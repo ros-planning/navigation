@@ -35,6 +35,7 @@
  * Author: TKruse
  *********************************************************************/
 
+#include <angles/angles.h>
 #include <base_local_planner/map_grid_cost_function.h>
 
 namespace base_local_planner {
@@ -110,6 +111,13 @@ double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
         return -2.0;
       }
     }
+
+    double px0, py0, pth0;
+    traj.getPoint(0, px0, py0, pth0);
+    double twirling_penalty = fabs(angles::shortest_angular_distance(pth, pth0));
+    //printf("grid_dist: %f\n", grid_dist);
+    //printf("twirling_penalty: %f\n", twirling_penalty);
+    grid_dist += twirling_penalty * 10.0;
 
     switch( aggregationType_ ) {
     case Last:
