@@ -743,20 +743,24 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     double wx = cloud.points[i].x;
     double wy = cloud.points[i].y;
 
-    // now we also need to make sure that the enpoint we're raytracing
-    // to isn't off the costmap and scale if necessary
     double a = wx - ox;
     double b = wy - oy;
-
-    // calculate raytrace starting point
     double ray_length = sqrt(a * a + b * b);
 
-    // skip if the ray length is even shorter than min_raytrace_range
+    // skip if the ray length is shorter than min_raytrace_range
     if(ray_length < min_raytrace_dist)
     {
       continue;
     }
 
+    // calculate raytrace starting point
+    // the raytrace range should be (rx, ry) -> (wx, wy)
+    // if min_raytrace_range is 0.0 or not specified, the range will become (ox, oy) -> (wx, wy) 
+    double rx = ox + min_raytrace_dist * a / ray_length;
+    double ry = oy + min_raytrace_dist * b / ray_length;
+
+    // now we need to make sure that the point we're raytracing
+    // to isn't off the costmap and scale if necessary
     checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, wx, wy);
     // now that the vector is scaled correctly... we'll get the map coordinates of its endpoint
     unsigned int x1, y1;
@@ -765,22 +769,20 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     if (!worldToMap(wx, wy, x1, y1))
       continue;
 
-    double raytrace_x = ox + min_raytrace_dist * a / ray_length;
-    double raytrace_y = oy + min_raytrace_dist * b / ray_length;
+    // same process for rx and ry
+    checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, rx, ry);
 
-    checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, raytrace_x, raytrace_y);
-
-    unsigned int raytrace_x_map, raytrace_y_map;
+    unsigned int rx_map, ry_map;
 
     // check for legality of the raytrace starting point
-    if (!worldToMap(raytrace_x, raytrace_y, raytrace_x_map, raytrace_y_map)){
+    if (!worldToMap(rx, ry, rx_map, ry_map)){
       continue;
     }
 
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
     ClearObstructionCell marker(obstruction_map_);
     // and finally... we can execute our trace to clear obstacles along that line
-    raytraceLine(marker, raytrace_x_map, raytrace_y_map, x1, y1, cell_raytrace_range);
+    raytraceLine(marker, rx_map, ry_map, x1, y1, cell_raytrace_range);
   }
 }
 

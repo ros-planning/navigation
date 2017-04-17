@@ -482,37 +482,37 @@ bool Costmap2D::saveMap(std::string file_name)
 }
 
 void Costmap2D::checkRaytracePoint(const double& origin_x, const double& origin_y, const double& map_end_x, const double& map_end_y, 
-                                   const double& ox, const double& oy, double& px, double& py)
+                                   const double& ox, const double& oy, double& rx, double& ry)
 {
-  double a = px - ox;
-  double b = py - oy;
+  double a = rx - ox;
+  double b = ry - oy;
 
   // check if the raytrace starting point is within the map boundary
-  if (px < origin_x)
+  if (rx < origin_x)
     {
       double t = (origin_x - ox) / a;
-      px = origin_x;
-      py = oy + b * t;
+      rx = origin_x;
+      ry = oy + b * t;
     }
 
-    if (py < origin_y)
+    if (ry < origin_y)
     {
       double t = (origin_y - oy) / b;
-      px = ox + a * t;
-      py = origin_y;
+      rx = ox + a * t;
+      ry = origin_y;
     }
 
-    if (px > map_end_x)
+    if (rx > map_end_x)
     {
       double t = (map_end_x - ox) / a;
-      px = map_end_x - .001;
-      py = oy + b * t;
+      rx = map_end_x - .001;
+      ry = oy + b * t;
     }
-    if (py > map_end_y)
+    if (ry > map_end_y)
     {
       double t = (map_end_y - oy) / b;
-      px = ox + a * t;
-      py = map_end_y - .001;
+      rx = ox + a * t;
+      ry = map_end_y - .001;
     }
 }
 
