@@ -1,13 +1,15 @@
 #ifndef COSTMAP_2D_TESTING_HELPER_H
 #define COSTMAP_2D_TESTING_HELPER_H
 
-#include<costmap_2d/cost_values.h>
-#include<costmap_2d/costmap_2d.h>
+#include <costmap_2d/cost_values.h>
+#include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/static_layer.h>
 #include <costmap_2d/static_layer_with_inflation.h>
 #include <costmap_2d/obstacle_layer.h>
 #include <costmap_2d/obstruction_layer.h>
 #include <costmap_2d/inflation_layer.h>
+
+#include <iomanip>
 
 const double MAX_Z(1.0);
 
@@ -35,12 +37,13 @@ char printableCost(unsigned char cost)
 
 void printMap(costmap_2d::Costmap2D& costmap)
 {
-  printf("map:\n");
+  // change printf() to std::cerr inorder to visualize the testing map
+  std::cerr<< "map:\n";
   for (int i = 0; i < costmap.getSizeInCellsY(); i++){
     for (int j = 0; j < costmap.getSizeInCellsX(); j++){
-      printf("%4d", int(costmap.getCost(j, i)));
+      std::cerr <<  std::setw(3) << std::setfill(' ') << int(costmap.getCost(j, i)) << " ";
     }
-    printf("\n\n");
+    std::cerr << "\n\n";
   }
 }
 
@@ -90,7 +93,7 @@ costmap_2d::ObstructionLayer* addObstructionLayer(costmap_2d::LayeredCostmap& la
 }
 
 void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, double z = 0.0,
-                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z){
+                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z, double min_raytrace_range = 0.0){
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
   cloud.points[0].x = x;
@@ -102,12 +105,13 @@ void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, doubl
   p.y = oy;
   p.z = oz;
 
-  costmap_2d::Observation obs(p, cloud, 100.0, 100.0);  // obstacle range = raytrace range = 100.0
+  // set minimum raytrace
+  costmap_2d::Observation obs(p, cloud, 100.0, 100.0, min_raytrace_range);  // obstacle range = raytrace range = 100.0
   olayer->addStaticObservation(obs, true, true);
 }
 
 void addObservation(costmap_2d::ObstructionLayer* olayer, double x, double y, double z = 0.0,
-                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z){
+                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z, double min_raytrace_range = 0.0){
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
   cloud.points[0].x = x;
@@ -119,7 +123,8 @@ void addObservation(costmap_2d::ObstructionLayer* olayer, double x, double y, do
   p.y = oy;
   p.z = oz;
 
-  costmap_2d::Observation obs(p, cloud, 100.0, 100.0);  // obstacle range = raytrace range = 100.0
+  // set minimum raytrace
+  costmap_2d::Observation obs(p, cloud, 100.0, 100.0, min_raytrace_range);  // obstacle range = raytrace range = 100.0
   olayer->addStaticObservation(obs, true, true);
 }
 

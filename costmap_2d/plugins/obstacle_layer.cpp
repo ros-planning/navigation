@@ -114,7 +114,7 @@ void ObstacleLayer::onInitialize()
       throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
     }
 
-    std::string raytrace_range_param_name, obstacle_range_param_name;
+    std::string raytrace_range_param_name, min_raytrace_range_param_name, obstacle_range_param_name;
 
     // get the obstacle range for the sensor
     double obstacle_range = 2.5;
@@ -130,6 +130,12 @@ void ObstacleLayer::onInitialize()
       source_node.getParam(raytrace_range_param_name, raytrace_range);
     }
 
+    double min_raytrace_range = 0.0;
+    if (source_node.searchParam("min_raytrace_range", min_raytrace_range_param_name))
+    {
+      source_node.getParam(min_raytrace_range_param_name, min_raytrace_range);
+    }
+
     ROS_DEBUG("Creating an observation buffer for source %s, topic %s, frame %s", source.c_str(), topic.c_str(),
               sensor_frame.c_str());
 
@@ -137,7 +143,7 @@ void ObstacleLayer::onInitialize()
     observation_buffers_.push_back(
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
-                                     max_obstacle_height, obstacle_range, raytrace_range, *tf_, global_frame_,
+                                     max_obstacle_height, obstacle_range, raytrace_range, min_raytrace_range, *tf_, global_frame_,
                                      sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers
@@ -517,6 +523,8 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   double map_end_x = origin_x + size_x_ * resolution_;
   double map_end_y = origin_y + size_y_ * resolution_;
 
+  // get min_raytrace_range if a value is specified
+  double min_raytrace_dist = clearing_observation.min_raytrace_range_;
 
   touch(ox, oy, min_x, min_y, max_x, max_y);
 
@@ -526,39 +534,25 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
     double wx = cloud.points[i].x;
     double wy = cloud.points[i].y;
 
-    // now we also need to make sure that the enpoint we're raytracing
-    // to isn't off the costmap and scale if necessary
     double a = wx - ox;
     double b = wy - oy;
+    double ray_length = sqrt(a * a + b * b);
 
-    // the minimum value to raytrace from is the origin
-    if (wx < origin_x)
+    // skip if the ray length is shorter than min_raytrace_range
+    if(ray_length < min_raytrace_dist)
     {
-      double t = (origin_x - ox) / a;
-      wx = origin_x;
-      wy = oy + b * t;
-    }
-    if (wy < origin_y)
-    {
-      double t = (origin_y - oy) / b;
-      wx = ox + a * t;
-      wy = origin_y;
+      continue;
     }
 
-    // the maximum value to raytrace to is the end of the map
-    if (wx > map_end_x)
-    {
-      double t = (map_end_x - ox) / a;
-      wx = map_end_x - .001;
-      wy = oy + b * t;
-    }
-    if (wy > map_end_y)
-    {
-      double t = (map_end_y - oy) / b;
-      wx = ox + a * t;
-      wy = map_end_y - .001;
-    }
+    // calculate raytrace starting point
+    // the raytrace range should be (rx, ry) -> (wx, wy)
+    // if min_raytrace_range is 0.0 or not specified, the range will become (ox, oy) -> (wx, wy) 
+    double rx = ox + min_raytrace_dist * a / ray_length;
+    double ry = oy + min_raytrace_dist * b / ray_length;
 
+    // now we need to make sure that the point we're raytracing
+    // to isn't off the costmap and scale if necessary
+    checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, wx, wy);
     // now that the vector is scaled correctly... we'll get the map coordinates of its endpoint
     unsigned int x1, y1;
 
@@ -566,12 +560,22 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
     if (!worldToMap(wx, wy, x1, y1))
       continue;
 
+    // same process for rx and ry
+    checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, rx, ry);
+
+    unsigned int rx_map, ry_map;
+
+    // check for legality of the raytrace starting point
+    if (!worldToMap(rx, ry, rx_map, ry_map)){
+      continue;
+    }
+
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
     MarkCell marker(costmap_, FREE_SPACE);
     // and finally... we can execute our trace to clear obstacles along that line
-    raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
+    raytraceLine(marker, rx_map, ry_map, x1, y1, cell_raytrace_range);
 
-    updateRaytraceBounds(ox, oy, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
+    updateRaytraceBounds(rx, ry, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
   }
 }
 

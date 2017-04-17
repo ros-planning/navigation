@@ -383,6 +383,20 @@ protected:
   virtual void initMaps(unsigned int size_x, unsigned int size_y);
 
   /**
+   * @brief  Checks the legality of the raytrace point that it's within the boundary of the map
+   * @param origin_x The x coordinate of the origin on the map 
+   * @param origin_y The y coordinate of the origin on the map 
+   * @param map_end_x The x coordinate of the boundary on the map 
+   * @param map_end_y The y coordinate of the boundary on the map 
+   * @param ox The x coordinate of the origin of the robot(sensor)
+   * @param oy The y coordinate of the origin of the robot(sensor)
+   * @param rx The x coordinate of the raytrace point
+   * @param ry The y coordinate of the raytrace point
+   */
+  virtual void checkRaytracePoint(const double& origin_x, const double& origin_y, const double& map_end_x, const double& map_end_y,
+                                   const double& ox, const double& oy, double& px, double& py);
+
+  /**
    * @brief  Raytrace a line and apply some action at each step
    * @param  at The action to take... a functor
    * @param  x0 The starting x coordinate

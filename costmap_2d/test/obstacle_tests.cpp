@@ -80,7 +80,6 @@ TEST(costmap, testRaytracing){
 
   // Add a point at 0, 0, 0
   addObservation(olayer, 0.0, 0.0, MAX_Z/2, 0, 0, MAX_Z/2);
-
   // This actually puts the LETHAL (254) point in the costmap at (0,0)
   layers.updateMap(0,0,0);  // 0, 0, 0 is robot pose
   //printMap(*(layers.getCostmap()));
@@ -92,10 +91,11 @@ TEST(costmap, testRaytracing){
 }
 
 /**
- * Test for ray tracing free space
+ * Test for ray tracing free space with default setting (min_raytrace_range = 0.0)
  */
 TEST(costmap, testRaytracing2){
   tf::TransformListener tf;
+
   LayeredCostmap layers("frame", false, false);
   addStaticLayer(layers, tf);
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
@@ -145,6 +145,142 @@ TEST(costmap, testRaytracing2){
   ASSERT_EQ(with_static, obs_after);
   // If 21 are filled, 79 should be free
   ASSERT_EQ(79, countValues(*(layers.getCostmap()), costmap_2d::FREE_SPACE));
+}
+
+/**
+ * Test for ray tracing free space with the constraint of min_raytrace_range
+ */
+TEST(costmap, testRaytracing3){
+  tf::TransformListener tf;
+
+  LayeredCostmap layers("frame", false, false);
+  addStaticLayer(layers, tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  //If we print map now, it is 10x10 all value 0
+  //printMap(*(layers.getCostmap()));
+
+  // Update will fill in the costmap with the static map
+  layers.updateMap(0,0,0);
+
+  //If we print the map now, we get the static map
+  //printMap(*(layers.getCostmap()));
+
+  // Static map has 20 LETHAL cells (see diagram above)
+  int obs_before = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
+  ASSERT_EQ(obs_before, 20);
+
+  // The sensor origin will be <0,0>. So if we add an obstacle at 9,9,
+  // we would expect cells <0, 0> thru <8, 8> to be traced through
+  // however the static map is not cleared by obstacle layer
+
+  // add an observation with min_raytrace_range = 3.0 which means the
+  // raytrace function should not clear out cost within the distance
+  addObservation(olayer, 9.5, 9.5, MAX_Z/2, 0.5, 0.5, MAX_Z/2, 3.0);
+  layers.updateMap(0, 0, 0);
+
+  // If we print map now, we have static map + <9,9> is LETHAL
+  //printMap(*(layers.getCostmap()));
+  int obs_after = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
+
+  // Change from previous test:
+  // No obstacles from the static map will be cleared, so the
+  // net change is +1.
+  ASSERT_EQ(obs_after, obs_before + 1);
+
+  // Fill in the diagonal, <7,7> and <9,9> already filled in, <0,0> is robot
+  for(int i = 0; i < olayer->getSizeInCellsY(); ++i)
+  {
+    olayer->setCost(i, i, LETHAL_OBSTACLE);
+  }
+  // This will updateBounds, which will raytrace the static observation added
+  // above, thus clearing out the diagonal again but the cost within 3.0 meters.
+  // The new raytrace starting point would be <2.12, 2.12> and is rounded to <2,2>.
+  // Therefore <0, 0>, <1, 1> should still be on the costmap
+  layers.updateMap(0, 0, 0);
+
+  printMap(*(layers.getCostmap()));
+
+  int with_static = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
+
+  // Should thus be the same
+  ASSERT_EQ(with_static, obs_after + 2);
+  // If 23 are filled, 79 should be free
+  ASSERT_EQ(77, countValues(*(layers.getCostmap()), costmap_2d::FREE_SPACE));
+
+  // If we add another observation with 0 min_raytrace_range, this observation should
+  // clear all the diagnal costs except <9, 9>.
+  addObservation(olayer, 9.5, 9.5, MAX_Z/2, 0.5, 0.5, MAX_Z/2, 0.0);
+  layers.updateMap(0, 0, 0);
+
+  //printMap(*(layers.getCostmap()));
+  int obs_final = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
+
+  // Should be only one LETHAL_OBSTACLE from obstacle layer and 20 from static layer
+  ASSERT_EQ(obs_final, obs_after);
+}
+
+/**
+ * Test for ray tracing free space with multiple observations and the constraint of
+ * min_raytrace_range
+ */
+TEST(costmap, testRaytracing4){
+  tf::TransformListener tf;
+
+  LayeredCostmap layers("frame", false, false);
+  addStaticLayer(layers, tf);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  //If we print map now, it is 10x10 all value 0
+  //printMap(*(layers.getCostmap()));
+
+  // Update will fill in the costmap with the static map
+  layers.updateMap(0,0,0);
+
+  //If we print the map now, we get the static map
+  //printMap(*(layers.getCostmap()));
+
+  // Static map has 20 LETHAL cells (see diagram above)
+  int obs_before = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
+  ASSERT_EQ(obs_before, 20);
+
+  // add three observations along x, y and diagnal axis
+  addObservation(olayer, 5.5, 0.5, MAX_Z/2, 0.5, 0.5, MAX_Z/2, 3.0);
+  addObservation(olayer, 0.5, 5.5, MAX_Z/2, 0.5, 0.5, MAX_Z/2, 3.0);
+  addObservation(olayer, 9.5, 9.5, MAX_Z/2, 0.5, 0.5, MAX_Z/2, 3.0);
+  layers.updateMap(0, 0, 0);
+
+  // If we print map now, we have static map + <5, 0> <0, 5> <9,9> is LETHAL
+  //printMap(*(layers.getCostmap()));
+  int obs_after = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
+
+  ASSERT_EQ(obs_after, obs_before + 3);
+
+  // Fill in the diagonal, a row (x = 0) and a column (y = 0) with LETHAL_OBSTACLE
+  for(int i = 0; i < olayer->getSizeInCellsY(); ++i)
+  {
+    olayer->setCost(i, i, LETHAL_OBSTACLE);
+  }
+
+  for(int i = 0; i < olayer->getSizeInCellsY(); ++i)
+  {
+    olayer->setCost(0, i, LETHAL_OBSTACLE);
+  }
+
+  for(int i = 0; i < olayer->getSizeInCellsX(); ++i)
+  {
+    olayer->setCost(i, 0, LETHAL_OBSTACLE);
+  }
+
+  // conduct raytrace function
+  layers.updateMap(0, 0, 0);
+
+  // print the map for better visualization
+  printMap(*(layers.getCostmap()));
+  int with_static = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
+
+  ASSERT_EQ(with_static, obs_after + 11);
+  ASSERT_EQ(66, countValues(*(layers.getCostmap()), costmap_2d::FREE_SPACE));
 }
 
 /**
