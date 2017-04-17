@@ -505,14 +505,14 @@ void Costmap2D::checkRaytracePoint(const double& origin_x, const double& origin_
     if (rx > map_end_x)
     {
       double t = (map_end_x - ox) / a;
-      rx = map_end_x - .001;
+      rx = map_end_x - 0.001;
       ry = oy + b * t;
     }
     if (ry > map_end_y)
     {
       double t = (map_end_y - oy) / b;
       rx = ox + a * t;
-      ry = map_end_y - .001;
+      ry = map_end_y - 0.001;
     }
 }
 
