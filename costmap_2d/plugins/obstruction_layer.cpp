@@ -757,37 +757,18 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
       continue;
     }
 
-    double raytrace_x = 0.0, raytrace_y = 0.0;
-    raytrace_x = ox + min_raytrace_dist * a / ray_length;
-    raytrace_y = oy + min_raytrace_dist * b / ray_length;
+    checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, wx, wy);
+    // now that the vector is scaled correctly... we'll get the map coordinates of its endpoint
+    unsigned int x1, y1;
 
-    // check if the raytrace starting point is within the map boundary
-    if (raytrace_x < origin_x)
-    {
-      double t = (origin_x - ox) / a;
-      raytrace_x = origin_x;
-      raytrace_y = oy + b * t;
-    }
+    // check for legality just in case
+    if (!worldToMap(wx, wy, x1, y1))
+      continue;
 
-    if (raytrace_y < origin_y)
-    {
-      double t = (origin_y - oy) / b;
-      raytrace_x = ox + a * t;
-      raytrace_y = origin_y;
-    }
+    double raytrace_x = ox + min_raytrace_dist * a / ray_length;
+    double raytrace_y = oy + min_raytrace_dist * b / ray_length;
 
-    if (raytrace_x > map_end_x)
-    {
-      double t = (map_end_x - ox) / a;
-      raytrace_x = map_end_x - .001;
-      raytrace_y = oy + b * t;
-    }
-    if (raytrace_y > map_end_y)
-    {
-      double t = (map_end_y - oy) / b;
-      raytrace_x = ox + a * t;
-      raytrace_y = map_end_y - .001;
-    }
+    checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, raytrace_x, raytrace_y);
 
     unsigned int raytrace_x_map, raytrace_y_map;
 
@@ -795,41 +776,6 @@ void ObstructionLayer::raytraceFreespace(const Observation& clearing_observation
     if (!worldToMap(raytrace_x, raytrace_y, raytrace_x_map, raytrace_y_map)){
       continue;
     }
-
-    // the minimum value to raytrace from is the origin
-    if (wx < origin_x)
-    {
-      double t = (origin_x - ox) / a;
-      wx = origin_x;
-      wy = oy + b * t;
-    }
-    if (wy < origin_y)
-    {
-      double t = (origin_y - oy) / b;
-      wx = ox + a * t;
-      wy = origin_y;
-    }
-
-    // the maximum value to raytrace to is the end of the map
-    if (wx > map_end_x)
-    {
-      double t = (map_end_x - ox) / a;
-      wx = map_end_x - .001;
-      wy = oy + b * t;
-    }
-    if (wy > map_end_y)
-    {
-      double t = (map_end_y - oy) / b;
-      wx = ox + a * t;
-      wy = map_end_y - .001;
-    }
-
-    // now that the vector is scaled correctly... we'll get the map coordinates of its endpoint
-    unsigned int x1, y1;
-
-    // check for legality just in case
-    if (!worldToMap(wx, wy, x1, y1))
-      continue;
 
     unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
     ClearObstructionCell marker(obstruction_map_);

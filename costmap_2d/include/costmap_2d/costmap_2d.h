@@ -382,6 +382,9 @@ protected:
    */
   virtual void initMaps(unsigned int size_x, unsigned int size_y);
 
+  virtual void checkRaytracePoint(const double& origin_x, const double& origin_y, const double& map_end_x, const double& map_end_y,
+                                   const double& ox, const double& oy, double& px, double& py);
+
   /**
    * @brief  Raytrace a line and apply some action at each step
    * @param  at The action to take... a functor
