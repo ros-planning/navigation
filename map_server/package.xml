@@ -19,6 +19,7 @@
     <build_depend>nav_msgs</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>rostest</build_depend>
+    <build_depend>sdl</build_depend>
     <build_depend>sdl-image</build_depend>
     <build_depend>yaml-cpp</build_depend>
 
@@ -26,6 +27,7 @@
     <run_depend>nav_msgs</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>rostest</run_depend>
+    <run_depend>sdl</run_depend>
     <run_depend>sdl-image</run_depend>
     <run_depend>yaml-cpp</run_depend>
 

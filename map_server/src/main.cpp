@@ -46,7 +46,7 @@
 #include "nav_msgs/MapMetaData.h"
 #include "yaml-cpp/yaml.h"
 
-#ifdef HAVE_NEW_YAMLCPP
+#ifdef HAVE_YAMLCPP_GT_0_5_0
 // The >> operator disappeared in yaml-cpp 0.5, so this function is
 // added to provide support for code written under the yaml-cpp 0.3 API.
 template<typename T>
@@ -62,7 +62,7 @@ class MapServer
     /** Trivial constructor */
     MapServer(const std::string& fname, double res)
     {
-      std::string mapfname = "";   
+      std::string mapfname = "";
       double origin[3];
       int negate;
       double occ_th, free_th;
@@ -79,7 +79,7 @@ class MapServer
           ROS_ERROR("Map_server could not open %s.", fname.c_str());
           exit(-1);
         }
-#ifdef HAVE_NEW_YAMLCPP
+#ifdef HAVE_YAMLCPP_GT_0_5_0
         // The document loading process changed in yaml-cpp 0.5.
         YAML::Node doc = YAML::Load(fin);
 #else
@@ -87,31 +87,31 @@ class MapServer
         YAML::Node doc;
         parser.GetNextDocument(doc);
 #endif
-        try { 
-          doc["resolution"] >> res; 
-        } catch (YAML::InvalidScalar) { 
+        try {
+          doc["resolution"] >> res;
+        } catch (YAML::InvalidScalar) {
           ROS_ERROR("The map does not contain a resolution tag or it is invalid.");
           exit(-1);
         }
-        try { 
-          doc["negate"] >> negate; 
-        } catch (YAML::InvalidScalar) { 
+        try {
+          doc["negate"] >> negate;
+        } catch (YAML::InvalidScalar) {
           ROS_ERROR("The map does not contain a negate tag or it is invalid.");
           exit(-1);
         }
-        try { 
-          doc["occupied_thresh"] >> occ_th; 
-        } catch (YAML::InvalidScalar) { 
+        try {
+          doc["occupied_thresh"] >> occ_th;
+        } catch (YAML::InvalidScalar) {
           ROS_ERROR("The map does not contain an occupied_thresh tag or it is invalid.");
           exit(-1);
         }
-        try { 
-          doc["free_thresh"] >> free_th; 
-        } catch (YAML::InvalidScalar) { 
+        try {
+          doc["free_thresh"] >> free_th;
+        } catch (YAML::InvalidScalar) {
           ROS_ERROR("The map does not contain a free_thresh tag or it is invalid.");
           exit(-1);
         }
-        try { 
+        try {
           std::string modeS = "";
           doc["mode"] >> modeS;
 
@@ -125,20 +125,20 @@ class MapServer
             ROS_ERROR("Invalid mode tag \"%s\".", modeS.c_str());
             exit(-1);
           }
-        } catch (YAML::Exception) { 
+        } catch (YAML::Exception) {
           ROS_DEBUG("The map does not contain a mode tag or it is invalid... assuming Trinary");
           mode = TRINARY;
         }
-        try { 
-          doc["origin"][0] >> origin[0]; 
-          doc["origin"][1] >> origin[1]; 
-          doc["origin"][2] >> origin[2]; 
-        } catch (YAML::InvalidScalar) { 
+        try {
+          doc["origin"][0] >> origin[0];
+          doc["origin"][1] >> origin[1];
+          doc["origin"][2] >> origin[2];
+        } catch (YAML::InvalidScalar) {
           ROS_ERROR("The map does not contain an origin tag or it is invalid.");
           exit(-1);
         }
-        try { 
-          doc["image"] >> mapfname; 
+        try {
+          doc["image"] >> mapfname;
           // TODO: make this path-handling more robust
           if(mapfname.size() == 0)
           {
@@ -152,7 +152,7 @@ class MapServer
             mapfname = std::string(dirname(fname_copy)) + '/' + mapfname;
             free(fname_copy);
           }
-        } catch (YAML::InvalidScalar) { 
+        } catch (YAML::InvalidScalar) {
           ROS_ERROR("The map does not contain an image tag or it is invalid.");
           exit(-1);
         }
@@ -181,7 +181,7 @@ class MapServer
       // Latched publisher for metadata
       metadata_pub= n.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
       metadata_pub.publish( meta_data_message_ );
-      
+
       // Latched publisher for data
       map_pub = n.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
       map_pub.publish( map_resp_.map );
