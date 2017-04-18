@@ -502,21 +502,21 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   double oy = clearing_observation.origin_.y;
   pcl::PointCloud < pcl::PointXYZ > cloud = *(clearing_observation.cloud_);
 
-  // get the map coordinates of the origin of the sensor
-  unsigned int x0, y0;
-  if (!worldToMap(ox, oy, x0, y0))
-  {
-    ROS_WARN_THROTTLE(
-        1.0, "The origin for the sensor at (%.2f, %.2f) is out of map bounds. So, the costmap cannot raytrace for it.",
-        ox, oy);
-    return;
-  }
-
   // we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
   double origin_x = origin_x_, origin_y = origin_y_;
   double map_end_x = origin_x + size_x_ * resolution_;
   double map_end_y = origin_y + size_y_ * resolution_;
 
+  // get the map coordinates of the origin of the sensor
+  unsigned int x0, y0;
+  if (!worldToMap(ox, oy, x0, y0))
+  {
+    ROS_WARN_STREAM_THROTTLE(
+        1.0, "The origin for the sensor at ( " << ox << ", " << oy << ") is out of map bounds. So, the costmap cannot raytrace for it.");
+    ROS_WARN_STREAM_THROTTLE(
+        1.0, "Map origin: " << origin_x << ", " << origin_y << ", map ends: " << map_end_x <<  ", " << map_end_y);
+    return;
+  }
 
   touch(ox, oy, min_x, min_y, max_x, max_y);
 
