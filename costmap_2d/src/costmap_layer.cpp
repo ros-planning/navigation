@@ -26,10 +26,11 @@ void CostmapLayer::clearArea(int start_x, int start_y, int end_x, int end_y, boo
 
     for(int y=0; y<(int)getSizeInCellsY(); y++){
       if((xrange && y>start_y && y<end_y)!=invert_area)
-        continue;
-      int index = getIndex(x,y);
-      if(grid[index]!=NO_INFORMATION){
-        grid[index] = NO_INFORMATION;
+      {
+        int index = getIndex(x,y);
+        if(grid[index]!=NO_INFORMATION){
+          grid[index] = NO_INFORMATION;
+        }
       }
     }
   }
