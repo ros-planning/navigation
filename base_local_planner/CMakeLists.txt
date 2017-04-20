@@ -90,6 +90,7 @@ add_library(base_local_planner
 	src/simple_scored_sampling_planner.cpp
 	src/simple_trajectory_generator.cpp
 	src/trajectory.cpp
+	src/twirling_cost_function.cpp
 	src/voxel_grid_model.cpp)
 add_dependencies(base_local_planner base_local_planner_gencfg)
 add_dependencies(base_local_planner base_local_planner_generate_messages_cpp)
