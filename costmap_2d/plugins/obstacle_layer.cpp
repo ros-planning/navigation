@@ -511,10 +511,12 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   unsigned int x0, y0;
   if (!worldToMap(ox, oy, x0, y0))
   {
-    ROS_WARN_STREAM_THROTTLE(
+    ROS_ERROR_STREAM_THROTTLE(
         1.0, "The origin for the sensor at ( " << ox << ", " << oy << ") is out of map bounds. So, the costmap cannot raytrace for it.");
     ROS_WARN_STREAM_THROTTLE(
         1.0, "Map origin: " << origin_x << ", " << origin_y << ", map ends: " << map_end_x <<  ", " << map_end_y);
+    ROS_WARN_STREAM_THROTTLE(
+        1.0, "Map: " << name_ << ", obstacle_range_: " << clearing_observation.obstacle_range_ <<  ", raytrace_range_:" << clearing_observation.raytrace_range_);
     return;
   }
 
