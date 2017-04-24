@@ -5,7 +5,9 @@ find_package(catkin REQUIRED
         COMPONENTS
             roscpp
             tf
+            actionlib
             nav_msgs
+            move_base_msgs
         )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -21,15 +23,20 @@ catkin_package(
         include
     LIBRARIES
         image_loader
+        map_generator
     CATKIN_DEPENDS
         roscpp
         tf
         nav_msgs
+        move_base_msgs
+        actionlib
 )
 
 include_directories( include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} )
 add_library(image_loader src/image_loader.cpp)
 target_link_libraries(image_loader SDL SDL_image ${Boost_LIBRARIES})
+
+add_library(map_generator src/map_generator.cpp)
 
 add_executable(map_server src/main.cpp)
 target_link_libraries(map_server
@@ -41,6 +48,7 @@ target_link_libraries(map_server
 add_executable(map_server-map_saver src/map_saver.cpp)
 set_target_properties(map_server-map_saver PROPERTIES OUTPUT_NAME map_saver)
 target_link_libraries(map_server-map_saver
+    map_generator
     ${catkin_LIBRARIES}
     )
 

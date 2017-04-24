@@ -1,6 +1,5 @@
 /*
- * map_saver
- * Copyright (c) 2008, Willow Garage, Inc.
+ * Copyright (c) 2017 Intermodalics bvba
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,7 +10,7 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <ORGANIZATION> nor the names of its
+ *     * Neither the name of the Willow Garage, Inc. nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
@@ -27,59 +26,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef MAP_GENERATOR_H
+#define MAP_GENERATOR_H
 
-#include <cstdio>
+/*
+ * Author: Dominick Vanthienen
+ */
+
 #include "ros/ros.h"
-#include "ros/console.h"
 #include "nav_msgs/GetMap.h"
-#include "tf/LinearMath/Matrix3x3.h"
-#include "geometry_msgs/Quaternion.h"
-#include <map_server/map_generator.h>
+#include <actionlib/server/simple_action_server.h>
+#include <move_base_msgs/SaveMapAction.h>
 
-using namespace std;
-
-#define USAGE "Usage: \n" \
-              "  map_saver -h\n"\
-              "  map_saver [-f <mapname>] [ROS remapping args]"
-
-int main(int argc, char** argv)
+/**
+ * @brief Map generation node.
+ */
+class MapGenerator
 {
-  ros::init(argc, argv, "map_saver");
-  std::string mapname = "map";
+ public:
+   MapGenerator(const std::string& default_map_name,
+                const std::string& action_name);
+   MapGenerator(const std::string& mapname);
 
-  for(int i=1; i<argc; i++)
-  {
-    if(!strcmp(argv[i], "-h"))
-    {
-      puts(USAGE);
-      return 0;
-    }
-    else if(!strcmp(argv[i], "-f"))
-    {
-      if(++i < argc)
-        mapname = argv[i];
-      else
-      {
-        puts(USAGE);
-        return 1;
-      }
-    }
-    else
-    {
-      puts(USAGE);
-      return 1;
-    }
-  }
+   void mapCallback(const nav_msgs::OccupancyGridConstPtr& map);
+   void saveMapActionCallback(const move_base_msgs::SaveMapGoalConstPtr &goal);
+   bool saved_map() {return saved_map_;}
+ private:
+   std::string mapname_;
+   std::string action_name_;
+   ros::Subscriber map_sub_;
+   bool saved_map_;
+   ros::NodeHandle n_;
+   actionlib::SimpleActionServer<move_base_msgs::SaveMapAction> as_;
+};
 
-  if(*mapname.rbegin() == '/')
-    mapname += "map";
-
-  MapGenerator mg(mapname);
-
-  while(!mg.saved_map() && ros::ok())
-    ros::spinOnce();
-
-  return 0;
-}
-
-
+#endif

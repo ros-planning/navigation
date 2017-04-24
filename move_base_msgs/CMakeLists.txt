@@ -8,12 +8,12 @@ find_package(catkin REQUIRED
         geometry_msgs
         )
 
-
 # actions
 add_action_files(
     DIRECTORY action
     FILES
         MoveBase.action
+        SaveMap.action
 )
 
 generate_messages(
