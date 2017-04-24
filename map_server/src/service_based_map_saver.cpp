@@ -1,6 +1,6 @@
 /*
- * map_saver
- * Copyright (c) 2008, Willow Garage, Inc.
+ * service_based_map_saver
+ * Copyright (c) 2017, Intermodalics, bvba
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * Author: Dominick Vanthienen
+ */
+
 #include <cstdio>
 #include "ros/ros.h"
 #include "ros/console.h"
@@ -38,48 +42,13 @@
 
 using namespace std;
 
-#define USAGE "Usage: \n" \
-              "  map_saver -h\n"\
-              "  map_saver [-f <mapname>] [ROS remapping args]"
-
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "map_saver");
-  std::string mapname = "map";
+  ros::init(argc, argv, "service_based_map_saver");
 
-  for(int i=1; i<argc; i++)
-  {
-    if(!strcmp(argv[i], "-h"))
-    {
-      puts(USAGE);
-      return 0;
-    }
-    else if(!strcmp(argv[i], "-f"))
-    {
-      if(++i < argc)
-        mapname = argv[i];
-      else
-      {
-        puts(USAGE);
-        return 1;
-      }
-    }
-    else
-    {
-      puts(USAGE);
-      return 1;
-    }
-  }
+  MapGenerator mg("default_map", "service_based_map_saver");
 
-  if(*mapname.rbegin() == '/')
-    mapname += "map";
-
-  MapGenerator mg(mapname);
-
-  while(!mg.saved_map() && ros::ok())
-    ros::spinOnce();
+  ros::spin();
 
   return 0;
 }
-
-
