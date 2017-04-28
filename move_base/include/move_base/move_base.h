@@ -174,6 +174,14 @@ namespace move_base {
        */
       void wakePlanner(const ros::TimerEvent& event);
 
+      size_t findClosestPlanIndex(std::vector<geometry_msgs::PoseStamped>& plan,
+                                  const geometry_msgs::PoseStamped& current_position);
+      bool preferPrevPlan(const geometry_msgs::PoseStamped& current_position);
+      ros::Time persistence_end_;
+      ros::Duration plan_persistence_timeout_;
+      const ros::Time PERSISTENCE_INITIAL; // Special value for first plan after getting new goal
+      const ros::Time PERSISTENCE_NEWPLAN; // Special value after accepting a new plan
+
       tf2_ros::Buffer& tf_;
 
       MoveBaseActionServer* as_;

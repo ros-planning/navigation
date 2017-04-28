@@ -56,7 +56,11 @@ namespace move_base {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"),
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
+    plan_persistence_timeout_(ros::Duration(10.0)),
+    PERSISTENCE_INITIAL(ros::Time(0, 0)),
+    PERSISTENCE_NEWPLAN(ros::Time(1, 0))
+  {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -679,6 +683,7 @@ namespace move_base {
     last_valid_plan_ = ros::Time::now();
     last_oscillation_reset_ = ros::Time::now();
     planning_retries_ = 0;
+    persistence_end_ = PERSISTENCE_INITIAL;
 
     ros::NodeHandle n;
     while(n.ok())
@@ -722,6 +727,7 @@ namespace move_base {
           last_valid_plan_ = ros::Time::now();
           last_oscillation_reset_ = ros::Time::now();
           planning_retries_ = 0;
+          persistence_end_ = PERSISTENCE_INITIAL;
         }
         else {
           //if we've been preempted explicitly we need to shut things down
@@ -799,6 +805,58 @@ namespace move_base {
     return hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
   }
 
+  size_t MoveBase::findClosestPlanIndex(std::vector<geometry_msgs::PoseStamped>& plan,
+                                        const geometry_msgs::PoseStamped& current_position)
+  {
+    size_t i;
+    size_t closest_i = 0;
+    double min_dist = 1000000000.0; // FIXME: infinity
+
+    for (i = 0; i < plan.size(); i += 4){
+      double dist = distance(current_position, plan[i]);
+      if (dist < min_dist){
+        min_dist = dist;
+        closest_i = i;
+      }
+    }
+    return closest_i;
+  }
+
+  /**
+   * Implement plan persisntence policy upon receipt of a new global plan.
+   * Returns true and put us in the PLANNING state if we prefer the previous
+   * plan over the new one. This causes it to replan again and again until it
+   * comes up with one that is good enough or the plan_persistence_timeout_
+   * expires.
+   */
+  bool MoveBase::preferPrevPlan(const geometry_msgs::PoseStamped& current_position)
+  {
+    size_t closest_i = findClosestPlanIndex(*controller_plan_, current_position);
+    size_t prev_plan_len = controller_plan_->size() - closest_i;
+    bool prefer_prev = prev_plan_len + 320 < latest_plan_->size();
+    std::ostringstream dbg;
+    ros::Time now(ros::Time::now());
+
+    dbg << "Prev plan len: " << prev_plan_len << ", New plan len: "
+      << latest_plan_->size();
+
+    if (prefer_prev & persistence_end_ != PERSISTENCE_INITIAL){
+      if (persistence_end_ == PERSISTENCE_NEWPLAN){
+        persistence_end_ = now + plan_persistence_timeout_;
+      }
+      if (now < persistence_end_){
+        ROS_ERROR_NAMED("plan_persist","%s. Using PREV. Time remain: %f",
+                       dbg.str().c_str(), (persistence_end_ - now).toSec());
+        state_ = PLANNING;
+        return true;
+      }
+    }
+    persistence_end_ = PERSISTENCE_NEWPLAN;
+    ROS_ERROR_NAMED("plan_persist","%s. Using NEW.", dbg.str().c_str());
+
+    return false;
+  }
+
   bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal){
     boost::recursive_mutex::scoped_lock ecl(configuration_mutex_);
     //we need to be able to publish velocity commands
@@ -833,7 +891,7 @@ namespace move_base {
     }
 
     //if we have a new plan then grab it and give it to the controller
-    if(new_global_plan_){
+    if(new_global_plan_ && !preferPrevPlan(current_position)){
       //make sure to set the new plan flag to false
       new_global_plan_ = false;
 
