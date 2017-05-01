@@ -257,7 +257,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
       // assign the cost associated with the distance from an obstacle to the cell
       unsigned char cost = costLookup(mx, my, sx, sy);
       unsigned char old_cost = master_array[index];
-      if (old_cost == NO_INFORMATION && ((inflate_unknown_ && cost > FREE_SPACE) || (!inflate_unknown_ && cost >= INSCRIBED_INFLATED_OBSTACLE)))
+      if (old_cost == NO_INFORMATION && (inflate_unknown_ ? (cost > FREE_SPACE) : (cost >= INSCRIBED_INFLATED_OBSTACLE)))
         master_array[index] = cost;
       else
         master_array[index] = std::max(old_cost, cost);
