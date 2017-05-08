@@ -47,6 +47,8 @@
 #include <nav_msgs/Path.h>
 
 #include <srslib_timing/ScopedTimingSampleRecorder.hpp>
+#include <srslib_timing/ScopedRollingTimingStatistics.hpp>
+
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
@@ -97,6 +99,7 @@ namespace dwa_local_planner {
       planner_util_.reconfigureCB(limits, config.restore_defaults);
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
+      // odom_helper_.setWheelbase(config.wheelbase);
 
       // update dwa specific configuration
       dp_->reconfigure(config);
@@ -286,10 +289,19 @@ namespace dwa_local_planner {
 
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
-    if ( ! costmap_ros_->getRobotPose(current_pose_)) {
-      ROS_ERROR("Could not get robot pose");
-      return false;
+    if (loopTimingStatistics_.isValid())
+    {
+      odom_helper_.setForwardEstimationTime(loopTimingStatistics_.getMedian());
+      ROS_DEBUG("Loop timing stats:  mean: %f, min: %f, median: %f, max: %f",
+        loopTimingStatistics_.getMean(),loopTimingStatistics_.getMin(),
+        loopTimingStatistics_.getMedian(),loopTimingStatistics_.getMax());
     }
+    else
+    {
+      odom_helper_.setForwardEstimationTime(0.0);
+    }
+    odom_helper_.getEstimatedOdomPose(current_pose_);
+
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     if ( ! planner_util_.getLocalPlan(current_pose_, transformed_plan)) {
       ROS_ERROR("Could not get local plan");
@@ -326,6 +338,8 @@ namespace dwa_local_planner {
           current_pose_,
           boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
     } else {
+      srs::ScopedRollingTimingStatistics scoped_timer(&loopTimingStatistics_);
+
       srs::ScopedTimingSampleRecorder stsr2(tdr_.getRecorder("-dwaComputeVelCommands"));
       bool isOk = dwaComputeVelocityCommands(current_pose_, robot_vel, cmd_vel);
       stsr2.stopSample();

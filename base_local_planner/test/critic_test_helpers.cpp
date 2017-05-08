@@ -35,15 +35,57 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 #include "critic_test_helpers.h"
+#include <base_local_planner/geometry_math_helpers.h>
+
+namespace base_local_planner
+{
+
+geometry_msgs::Pose createPose(float x, float y, float yaw)
+{
+  geometry_msgs::Pose p;
+  p.position.x = x;
+  p.position.y = y;
+  p.orientation = tf::createQuaternionMsgFromYaw(yaw);
+  return p;
+}
+
+
+geometry_msgs::PoseWithCovariance createPoseWithCovariance(float x, float y, float yaw)
+{
+  geometry_msgs::PoseWithCovariance p;
+  p.pose = createPose(x, y, yaw);
+  return p;
+}
 
 geometry_msgs::PoseStamped createPoseStamped(float x, float y, float yaw)
 {
   geometry_msgs::PoseStamped p;
-  p.pose.position.x = x;
-  p.pose.position.y = y;
-  p.pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+  p.pose = createPose(x, y, yaw);
   return p;
 }
+
+geometry_msgs::Twist createTwist(float v, float w)
+{
+  geometry_msgs::Twist t;
+  t.linear.x = v;
+  t.angular.z = w;
+  return t;
+}
+
+geometry_msgs::TwistStamped createTwistStamped(float v, float w)
+{
+  geometry_msgs::TwistStamped t;
+  t.twist = createTwist(v, w);
+  return t;
+}
+
+geometry_msgs::TwistWithCovariance createTwistWithCovariance(float v, float w)
+{
+  geometry_msgs::TwistWithCovariance t;
+  t.twist = createTwist(v, w);
+  return t;
+}
+
 
 std::vector<geometry_msgs::PoseStamped> createGlobalPlan()
 {
@@ -84,10 +126,62 @@ Eigen::Vector2f create2DVector(float x, float y)
   return out;
 }
 
+nav_msgs::Odometry createOdometry(double x, double y, double yaw, double v, double w)
+{
+  nav_msgs::Odometry odom;
+  odom.pose = createPoseWithCovariance(x, y, yaw);
+  odom.twist = createTwistWithCovariance(v, w);
+  return odom;
+}
+
 bool vector2DEqual(Eigen::Vector2f a, Eigen::Vector2f b)
 {
   double epsilon = 0.0001;
-  return (std::fabs(a[0] - b[0]) < epsilon && std::fabs(a[0] - b[0]) < epsilon);
+  return (std::fabs(a[0] - b[0]) < epsilon
+    && std::fabs(a[1] - b[1]) < epsilon);
+}
+
+bool vector3fEqual(Eigen::Vector3f a, Eigen::Vector3f b)
+{
+  std::cerr << "Comparing " << printVector3f(a) << " and " << printVector3f(b) << std::endl;;
+  double epsilon = 0.0001;
+  return (std::fabs(a[0] - b[0]) < epsilon
+    && std::fabs(a[1] - b[1]) < epsilon
+    && std::fabs(a[2] - b[2]) < epsilon);
+}
+
+bool poseEqual(geometry_msgs::Pose a, geometry_msgs::Pose b)
+{
+  return vector3fEqual(poseToVector3f(a), poseToVector3f(b));
+}
+
+bool twistEqual(geometry_msgs::Twist a, geometry_msgs::Twist b)
+{
+  return vector3fEqual(twistToVector3f(a), twistToVector3f(b));
+}
+
+bool odometryEqual(nav_msgs::Odometry a, nav_msgs::Odometry b)
+{
+  std::cerr << "Comparing " << printOdometry(a) << " and " << printOdometry(b) << std::endl;
+  return (poseEqual(a.pose.pose, b.pose.pose)
+    && twistEqual(a.twist.twist, b.twist.twist));
+}
+
+std::string printVector3f(Eigen::Vector3f a)
+{
+  std::stringstream ss;
+  ss << "[" << a[0] << ", " << a[1] << ", " << a[2] << "]";
+  return ss.str();
+}
+
+std::string printOdometry(nav_msgs::Odometry odom)
+{
+  std::stringstream ss;
+  ss << "[Odom: pose: " << printVector3f(poseToVector3f(odom.pose.pose))
+    << ", vel: " << printVector3f(twistToVector3f(odom.twist.twist))
+    << "]";
+
+  return ss.str();
 }
 
 void printTrajectory(const base_local_planner::Trajectory& traj)
@@ -108,4 +202,7 @@ void printTrajectory(const base_local_planner::Trajectory& traj)
       << vx << ", " << vy << ", " << vth << "]" << std::endl;
   }
   std::cerr << ss.str();
+}
+
+
 }

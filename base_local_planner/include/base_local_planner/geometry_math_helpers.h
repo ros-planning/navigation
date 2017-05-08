@@ -39,6 +39,9 @@
 #define BASE_LOCAL_PLANNER_GEOMETRY_MATH_HELPERS_H_
 
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Twist.h>
+#include <tf/tf.h>
 #include <Eigen/Core>
 
 namespace base_local_planner {
@@ -55,6 +58,12 @@ Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
 Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose);
 
 double angleMinusPiToPi(double val);
+
+Eigen::Vector3f poseToVector3f(const geometry_msgs::Pose& pose);
+Eigen::Vector3f twistToVector3f(const geometry_msgs::Twist& t);
+geometry_msgs::Pose vector3fToPose(const Eigen::Vector3f& vec);
+geometry_msgs::Twist vector3fToTwist(const Eigen::Vector3f& vec);
+
 }
 
 #endif

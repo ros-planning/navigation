@@ -110,4 +110,41 @@ double angleMinusPiToPi(double val)
   return output;
 }
 
+Eigen::Vector3f poseToVector3f(const geometry_msgs::Pose& pose)
+{
+  Eigen::Vector3f p = Eigen::Vector3f::Zero();
+  p[0] = pose.position.x;
+  p[1] = pose.position.y;
+  p[2] = tf::getYaw(pose.orientation);
+  return p;
+}
+
+Eigen::Vector3f twistToVector3f(const geometry_msgs::Twist& t)
+{
+  Eigen::Vector3f v = Eigen::Vector3f::Zero();
+  v[0] = t.linear.x;
+  v[1] = t.linear.y;
+  v[2] = t.angular.z;
+  return v;
+}
+
+
+geometry_msgs::Pose vector3fToPose(const Eigen::Vector3f& vec)
+{
+  geometry_msgs::Pose p;
+  p.position.x = vec[0];
+  p.position.y = vec[1];
+  p.orientation = tf::createQuaternionMsgFromYaw(vec[2]);
+  return p;
+}
+
+geometry_msgs::Twist vector3fToTwist(const Eigen::Vector3f& vec)
+{
+  geometry_msgs::Twist t;
+  t.linear.x = vec[0];
+  t.linear.y = vec[1];
+  t.angular.z = vec[2];
+  return t;
+}
+
 }

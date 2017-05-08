@@ -56,6 +56,7 @@
 
 #include <base_local_planner/odometry_helper_ros.h>
 #include <srslib_timing/MasterTimingDataRecorder.hpp>
+#include <srslib_timing/RollingTimingStatisticsCalculator.hpp>
 
 #include <dwa_local_planner/dwa_planner.h>
 
@@ -162,6 +163,7 @@ namespace dwa_local_planner {
       std::string odom_topic_;
 
       srs::MasterTimingDataRecorder tdr_;
+      srs::RollingTimingStatisticsCalculator loopTimingStatistics_;
   };
 };
 #endif
