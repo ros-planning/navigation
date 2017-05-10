@@ -24,7 +24,7 @@ bool setThreadAffinity(int core_id) {
    CPU_ZERO(&cpuset);
    CPU_SET(core_id, &cpuset);
 
-   ROS_WARN_STREAM("Setting core: " << core_id << " for thread " <<  syscall(SYS_gettid));
+   ROS_INFO_STREAM("Setting core: " << core_id << " for thread " <<  syscall(SYS_gettid));
 
    pthread_t current_thread = pthread_self();
 

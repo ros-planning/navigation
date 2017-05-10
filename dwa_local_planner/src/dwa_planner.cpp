@@ -335,13 +335,14 @@ namespace dwa_local_planner {
       sin(angle_to_goal);
 
     goal_front_costs_.setTargetPoses(front_global_plan);
+    // costs for robot being aligned with path (nose on path)
+    alignment_costs_.setTargetPoses(global_plan_);
+
 
     // keeping the nose on the path
     if (sq_dist > close_to_goal_range_ * close_to_goal_range_) {
       double resolution = planner_util_->getCostmap()->getResolution();
       alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
-      // costs for robot being aligned with path (nose on path, not ju
-      alignment_costs_.setTargetPoses(global_plan_);
 
       goal_front_costs_.setScale(resolution * gdist_scale_ * 0.5);
       goal_costs_.setScale(resolution * gdist_scale_ * 0.5);
