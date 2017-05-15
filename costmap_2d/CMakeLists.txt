@@ -104,7 +104,8 @@ add_library(costmap_2d
   src/footprint.cpp
   src/costmap_layer.cpp
 )
-add_dependencies(costmap_2d geometry_msgs_gencpp)
+add_dependencies(costmap_2d ${catkin_EXPORTED_TARGETS})
+
 target_link_libraries(costmap_2d
   ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
