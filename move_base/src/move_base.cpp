@@ -271,7 +271,11 @@ namespace move_base {
         planner_plan_->clear();
         latest_plan_->clear();
         controller_plan_->clear();
+        /******* This hack solves issue #374 ********/
+        lock.unlock();
         resetState();
+        lock.lock();
+        /******* EoH (End of Hack) ******************/
         planner_->initialize(bgp_loader_.getName(config.base_global_planner), planner_costmap_ros_);
 
         lock.unlock();
