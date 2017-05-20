@@ -32,6 +32,8 @@
     <build_depend>nav_core</build_depend>
     <build_depend>pcl_conversions</build_depend>
     <build_depend>pcl_ros</build_depend>
+    <!-- qtbase5-dev needed due to error in qt5 -->
+    <build_depend>qtbase5-dev</build_depend>
     <build_depend>eigen</build_depend>
     <build_depend>dynamic_reconfigure</build_depend>
     <build_depend>message_generation</build_depend>
@@ -43,6 +45,8 @@
     <run_depend>tf</run_depend>
     <run_depend>rospy</run_depend>
     <run_depend>pluginlib</run_depend>
+    <!-- qtbase5-dev needed due to error in qt5 -->
+    <run_depend>qtbase5-dev</run_depend>
     <run_depend>costmap_2d</run_depend>
     <run_depend>voxel_grid</run_depend>
     <run_depend>angles</run_depend>
