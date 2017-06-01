@@ -26,11 +26,15 @@ def add_generic_localplanner_params(gen):
     gen.add("max_rot_vel", double_t, 0, "The absolute value of the maximum rotational velocity for the robot in rad/s",  1.0, 0)
     gen.add("min_rot_vel", double_t, 0, "The absolute value of the minimum rotational velocity for the robot in rad/s", 0.4, 0)
 
+    gen.add("max_tip_vel", double_t, 0, "The absolute value of the maximum rotational velocity when turning in place in rad/s",  0.8, 0, 20.0)
+    gen.add("min_tip_vel", double_t, 0, "The absolute value of the minimum rotational velocity when turning in place in rad/s",  0.0, 0, 20.0)
+
     # acceleration
     gen.add("acc_lim_x", double_t, 0, "The acceleration limit of the robot in the x direction", 2.5, 0, 20.0)
     gen.add("acc_lim_y", double_t, 0, "The acceleration limit of the robot in the y direction", 2.5, 0, 20.0)
     gen.add("acc_lim_theta", double_t, 0, "The acceleration limit of the robot in the theta direction", 3.2, 0, 20.0)
     gen.add("acc_limit_trans", double_t, 0, "The absolute value of the maximum translational acceleration for the robot in m/s^2", 0.1, 0)
+    gen.add("acc_limit_tip", double_t, 0, "The acceleration limit of the robot turning in place", 0.8, 0, 20.0)
 
     #  # jerk
     #  gen.add("jerk_lim_trans", double_t, 0, "The absolute value of the maximum translational jerk for the robot in m/s^3", 0.1, 0)

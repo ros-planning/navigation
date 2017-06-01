@@ -72,6 +72,18 @@ namespace dwa_local_planner {
         config.follower_generator_num_trajectories
       );
 
+    cw_tip_generator_.setParameters(
+      config.sim_time,
+      config.sim_granularity,
+      config.tip_generator_num_trajectories
+    );
+
+    ccw_tip_generator_.setParameters(
+      config.tip_sim_time,
+      config.sim_granularity,
+      config.tip_generator_num_trajectories
+    );
+
     generator_sim_time_ = config.sim_time;
     double resolution = planner_util_->getCostmap()->getResolution();
     pdist_scale_ = config.path_distance_bias;
@@ -147,6 +159,8 @@ namespace dwa_local_planner {
     generator_.enable(config.enable_simple_trajectory_generator);
     follower_generator_.enable(config.enable_follower_trajectory_generator);
     stationary_generator_.enable(config.enable_stationary_trajectory_generator);
+    cw_tip_generator_.enable(config.enable_tip_trajectory_generator);
+    ccw_tip_generator_.enable(config.enable_tip_trajectory_generator);
   }
 
   DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util) :
@@ -220,6 +234,9 @@ namespace dwa_local_planner {
     generator_list.push_back(&generator_);
     generator_list.push_back(&stationary_generator_);
     generator_list.push_back(&follower_generator_);
+    generator_list.push_back(&cw_tip_generator_);
+    generator_list.push_back(&ccw_tip_generator_);
+
 
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
   }
@@ -443,6 +460,14 @@ namespace dwa_local_planner {
     stationary_generator_.initialise(pos,
         vel,
         &limits);
+    cw_tip_generator_.initialise(pos,
+        vel,
+        &limits,
+        true);
+    ccw_tip_generator_.initialise(pos,
+        vel,
+        &limits,
+        false);
     jerk_costs_.setCurrentVelocity(vel);
 
     result_traj_.cost_ = -7;
