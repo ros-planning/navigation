@@ -87,10 +87,13 @@ namespace dwa_local_planner {
       limits.min_vel_y = config.min_vel_y;
       limits.max_rot_vel = config.max_rot_vel;
       limits.min_rot_vel = config.min_rot_vel;
+      limits.max_tip_vel = config.max_tip_vel;
+      limits.min_tip_vel = config.min_tip_vel;
       limits.acc_lim_x = config.acc_lim_x;
       limits.acc_lim_y = config.acc_lim_y;
       limits.acc_lim_theta = config.acc_lim_theta;
       limits.acc_limit_trans = config.acc_limit_trans;
+      limits.acc_limit_tip = config.acc_limit_tip;
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
       limits.prune_plan = config.prune_plan;

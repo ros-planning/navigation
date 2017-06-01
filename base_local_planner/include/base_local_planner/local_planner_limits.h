@@ -52,10 +52,13 @@ public:
   double min_vel_y;
   double max_rot_vel;
   double min_rot_vel;
+  double max_tip_vel;
+  double min_tip_vel;
   double acc_lim_x;
   double acc_lim_y;
   double acc_lim_theta;
   double acc_limit_trans;
+  double acc_limit_tip;
 //  double jerk_lim_trans;
 //  double jerk_lim_rot;
   bool   prune_plan;
@@ -86,7 +89,10 @@ public:
 //      double njerk_lim_rot = -1,
       bool   nprune_plan = true,
       double ntrans_stopped_vel = 0.1,
-      double nrot_stopped_vel = 0.1):
+      double nrot_stopped_vel = 0.1,
+      double nmax_tip_vel = 0.5,
+      double nmin_tip_vel = 0.01,
+      double nacc_limit_tip = 0.5):
         max_trans_vel(nmax_trans_vel),
         min_trans_vel(nmin_trans_vel),
         max_vel_x(nmax_vel_x),
@@ -95,10 +101,13 @@ public:
         min_vel_y(nmin_vel_y),
         max_rot_vel(nmax_rot_vel),
         min_rot_vel(nmin_rot_vel),
+        max_tip_vel(nmax_tip_vel),
+        min_tip_vel(nmin_tip_vel),
         acc_lim_x(nacc_lim_x),
         acc_lim_y(nacc_lim_y),
         acc_lim_theta(nacc_lim_theta),
         acc_limit_trans(nacc_limit_trans),
+        acc_limit_tip(nacc_limit_tip),
 //        jerk_lim_trans(njerk_lim_trans),
 //        jerk_lim_rot(njerk_lim_rot),
         prune_plan(nprune_plan),

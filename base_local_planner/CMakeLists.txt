@@ -101,6 +101,7 @@ add_library(base_local_planner
     src/simple_scored_sampling_planner.cpp
     src/simple_trajectory_generator.cpp
     src/stationary_trajectory_generator.cpp
+    src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp
     src/voxel_grid_model.cpp)
 

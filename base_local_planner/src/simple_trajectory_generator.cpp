@@ -128,6 +128,9 @@ void SimpleTrajectoryGenerator::initialise(
         for(; !th_it.isFinished(); th_it++) {
           vel_samp[2] = th_it.getVelocity();
           //ROS_DEBUG("Sample %f, %f, %f", vel_samp[0], vel_samp[1], vel_samp[2]);
+          if (std::fabs(vel_samp[0]) < 0.0001 && std::fabs(vel_samp[1]) < 0.0001) {
+            continue;
+          }
           sample_params_.push_back(vel_samp);
         }
         th_it.reset();
