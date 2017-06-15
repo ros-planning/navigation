@@ -102,7 +102,7 @@ void JerkCostFunction::calculateAccelerations(const Trajectory& traj, Eigen::Vec
   }
   else if (traj.time_delta_ < 0)
   {
-    ROS_ERROR("Negative time delta in jerk cost function. %f.  %s", traj.time_delta_, msg.c_str());
+    ROS_DEBUG("Negative time delta in jerk cost function. %f.  %s", traj.time_delta_, msg.c_str());
   }
 }
 
