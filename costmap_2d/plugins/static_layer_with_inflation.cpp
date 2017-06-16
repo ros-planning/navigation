@@ -244,8 +244,8 @@ void StaticLayerWithInflation::incomingMap(const nav_msgs::OccupancyGridConstPtr
   if (!inflation_layer_){
     ROS_INFO("Creating inflation layer in static layer.");
 
-    boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance("costmap_2d::InflationLayer");
-    inflation_layer_ = boost::static_pointer_cast<InflationLayer>(plugin);
+    boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance("costmap_2d::VoronoiInflationLayer");
+    inflation_layer_ = boost::static_pointer_cast<VoronoiInflationLayer>(plugin);
     inflation_layer_->initialize(layered_costmap_, name_ + "/inflation", tf_);
   }
   needs_reinflation_ = true;
