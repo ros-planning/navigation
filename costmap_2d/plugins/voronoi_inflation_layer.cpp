@@ -57,9 +57,6 @@ VoronoiInflationLayer::VoronoiInflationLayer()
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
-  , seen_(NULL)
-  , obs_dist_(nullptr)
-  , vor_dist_(nullptr)
   , cached_distances_(NULL)
   , last_min_x_(-std::numeric_limits<float>::max())
   , last_min_y_(-std::numeric_limits<float>::max())
@@ -75,10 +72,6 @@ void VoronoiInflationLayer::onInitialize()
     boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
     ros::NodeHandle nh("~/" + name_), g_nh;
     current_ = true;
-    if (seen_)
-      delete[] seen_;
-    seen_ = NULL;
-    seen_size_ = 0;
     need_reinflation_ = false;
 
     dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
@@ -115,12 +108,6 @@ void VoronoiInflationLayer::matchSize()
   resolution_ = costmap->getResolution();
   cell_inflation_radius_ = cellDistance(inflation_radius_);
   computeCaches();
-
-  unsigned int size_x = costmap->getSizeInCellsX(), size_y = costmap->getSizeInCellsY();
-  if (seen_)
-    delete[] seen_;
-  seen_size_ = size_x * size_y;
-  seen_ = new bool[seen_size_];
 }
 
 void VoronoiInflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -164,7 +151,7 @@ void VoronoiInflationLayer::onFootprintChanged()
   cell_inflation_radius_ = cellDistance(inflation_radius_);
   computeCaches();
   need_reinflation_ = true;
-  ROS_DEBUG("InflationLayer::onFootprintChanged(): num footprint points: %lu,"
+  ROS_DEBUG("VoronoiInflationLayer::onFootprintChanged(): num footprint points: %lu,"
             " inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_);
 }
@@ -175,23 +162,21 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
   if (!enabled_)
     return;
 
-  // make sure the inflation list is empty at the beginning of the cycle (should always be true)
-  ROS_ASSERT_MSG(obs_cells_.empty(), "The inflation list must be empty at the beginning of inflation");
-
+  // Create all of the arrays and queues
   unsigned char* master_array = master_grid.getCharMap();
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
-  // new things:  make a couple arrays.
-  if (obs_dist_ != nullptr) {
-    delete[] obs_dist_;
-  }
-  obs_dist_ = new double[size_x * size_y];
-  std::fill_n(obs_dist_, size_x * size_y, -1.0);
-  if (vor_dist_ != nullptr) {
-    delete[] vor_dist_;
-  }
-  vor_dist_ = new double[size_x * size_y];
-  std::fill_n(vor_dist_, size_x * size_y, -1.0);
+  // Arrays to hold the distance calculations
+  double* obs_dist = new double[size_x * size_y];
+  std::fill_n(obs_dist, size_x * size_y, -1.0);
+
+  double* vor_dist = new double[size_x * size_y];
+  std::fill_n(vor_dist, size_x * size_y, -1.0);
+
+  // Maps to act as the queues for the search
+  std::map<double, std::vector<CellData> > obs_cells;
+  std::map<double, std::vector<CellData> > vor_cells;
+
 
   // We need to include in the inflation cells outside the bounding
   // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
@@ -209,7 +194,7 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
 
   // First, calculate the distance array.
   // Gather the lethal obstacles
-  auto& obs_bin = obs_cells_[0.0];
+  auto& obs_bin = obs_cells[0.0];
   for (int j = min_j; j < max_j; j++)
   {
     for (int i = min_i; i < max_i; i++)
@@ -227,7 +212,7 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
 
   // Process cells by increasing distance; new cells are appended to the corresponding distance bin, so they
   // can overtake previously inserted but farther away cells
-  for (auto& dist_bin: obs_cells_)
+  for (auto& dist_bin: obs_cells)
   {
     for (auto& current_cell: dist_bin.second)
     {
@@ -235,72 +220,70 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
       unsigned int index = current_cell.index_;
 
       // ignore if already visited
-      if (obs_dist_[index] >= -0.1)
+      if (obs_dist[index] >= -0.1)
       {
         continue;
       }
 
       // Put the distance for this cell into the array
-      obs_dist_[index] = dist_bin.first;
+      obs_dist[index] = dist_bin.first;
 
-      // If the distance is greater than allowed, mark in voronoi and continue
-      // Also, add to the list of voronoi inflation
-      if (dist_bin.first > cell_inflation_radius_)
-      {
-        vor_cells_[0.0].push_back(CellData(index, current_cell.x_, current_cell.y_, current_cell.x_, current_cell.y_));
-        // master_array[index] = 250;
-        continue;
-      }
-
-      // Check the surrounding cells to see if this is a local maxima.
       unsigned int mx = current_cell.x_;
       unsigned int my = current_cell.y_;
       unsigned int sx = current_cell.src_x_;
       unsigned int sy = current_cell.src_y_;
 
+      // If the distance is greater than allowed, mark in voronoi and continue
+      // Also, add to the list of voronoi inflation
+      if (dist_bin.first > cell_inflation_radius_ + 1)
+      {
+        vor_cells[0.0].push_back(CellData(index, mx, my, mx, my));
+        continue;
+      }
+
+      // Check the surrounding cells to see if this is a local maxima.
+
       if (mx > 0 && mx < size_x -1) {
-        if (obs_dist_[index - 1] <= dist_bin.first
-          && obs_dist_[index - 1] > -0.1
-          && obs_dist_[index + 1] <= dist_bin.first
-          && obs_dist_[index + 1] > -0.1) {
+        if (obs_dist[index - 1] <= dist_bin.first
+          && obs_dist[index - 1] > -0.1
+          && obs_dist[index + 1] <= dist_bin.first
+          && obs_dist[index + 1] > -0.1) {
           // Add to the voronoi diagram
-          vor_cells_[0.0].push_back(CellData(index, current_cell.x_, current_cell.y_, current_cell.x_, current_cell.y_));
-          // master_array[index] = 250;
+          vor_cells[0.0].push_back(CellData(index, mx, my, mx, my));
         }
       }
 
       if (my > 0 && my < size_y -1) {
-        if (obs_dist_[index - size_x] <= dist_bin.first
-          && obs_dist_[index - size_x] > -0.1
-          && obs_dist_[index + size_x] <= dist_bin.first
-          && obs_dist_[index + size_x] > -0.1) {
+        if (obs_dist[index - size_x] <= dist_bin.first
+          && obs_dist[index - size_x] > -0.1
+          && obs_dist[index + size_x] <= dist_bin.first
+          && obs_dist[index + size_x] > -0.1) {
           // Add to the voronoi diagram
-          vor_cells_[0.0].push_back(CellData(index, current_cell.x_, current_cell.y_, current_cell.x_, current_cell.y_));
-          // master_array[index] = 250;
+          vor_cells[0.0].push_back(CellData(index, mx, my, mx, my));
         }
       }
 
       // attempt to put the neighbors of the current cell onto the inflation list
       if (mx > 0)
-        enqueue(index - 1, mx - 1, my, sx, sy, obs_cells_);
+        enqueue(index - 1, mx - 1, my, sx, sy, obs_cells);
       if (my > 0)
-        enqueue(index - size_x, mx, my - 1, sx, sy, obs_cells_);
+        enqueue(index - size_x, mx, my - 1, sx, sy, obs_cells);
       if (mx < size_x - 1)
-        enqueue(index + 1, mx + 1, my, sx, sy, obs_cells_);
+        enqueue(index + 1, mx + 1, my, sx, sy, obs_cells);
       if (my < size_y - 1)
-        enqueue(index + size_x, mx, my + 1, sx, sy, obs_cells_);
+        enqueue(index + size_x, mx, my + 1, sx, sy, obs_cells);
     }
   }
 
-  obs_cells_.clear();
+  obs_cells.clear();
   ROS_INFO("Finished obstacle cells.");
-  ROS_INFO_STREAM("Gathered " << vor_cells_[0].size() << " voronoi cells to back inflate");
+  ROS_INFO_STREAM("Gathered " << vor_cells[0].size() << " voronoi cells to back inflate");
 // return;
   // Next, expand the voronoi cells and calculate the actual cost.
 
   // Process cells by increasing distance; new cells are appended to the corresponding distance bin, so they
   // can overtake previously inserted but farther away cells
-  for (auto& dist_bin: vor_cells_)
+  for (auto& dist_bin: vor_cells)
   {
     for (auto& current_cell: dist_bin.second)
     {
@@ -308,21 +291,20 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
       unsigned int index = current_cell.index_;
 
       // ignore if already visited
-      if (vor_dist_[index] >= -0.1)
+      if (vor_dist[index] >= -0.1)
       {
         continue;
       }
 
-
       // If the obstacle distance is < 0, ignore this point
-      if (obs_dist_[index] < 0 || master_array[index] == LETHAL_OBSTACLE)
+      if (obs_dist[index] < 0 || master_array[index] == LETHAL_OBSTACLE)
       {
         continue;
       }
 
 
       // Put the distance for this cell into the array
-      vor_dist_[index] = dist_bin.first;
+      vor_dist[index] = dist_bin.first;
 
       unsigned int mx = current_cell.x_;
       unsigned int my = current_cell.y_;
@@ -331,35 +313,42 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
 
       if (std::abs((int)mx - (int)sx) > cell_inflation_radius_ + 2) {
         ROS_INFO("od: %f, vd: %f, mx: %d, my %d, sx: %d, sy %d",
-         obs_dist_[index], vor_dist_[index],
+         obs_dist[index], vor_dist[index],
          mx, my, sx, sy);
       }
 
       // Calculate the cost for the final cost value.
-      unsigned char cost = costLookup(obs_dist_[index], vor_dist_[index]);
+      unsigned char cost = costLookup(obs_dist[index], vor_dist[index]);
       unsigned char old_cost = master_array[index];
       if (old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
         master_array[index] = cost;
       else
         master_array[index] = std::max(old_cost, cost);
 
-      // if (dist_bin.first > cell_inflation_radius_ + 1)
-      // {
-      //   continue;
-      // }
+      if (dist_bin.first > cell_inflation_radius_ + 1)
+      {
+        continue;
+      }
+
+
 
       // attempt to put the neighbors of the current cell onto the inflation list
       if (mx > 0)
-        enqueue(index - 1, mx - 1, my, sx, sy, vor_cells_);
+        enqueue(index - 1, mx - 1, my, sx, sy, vor_cells);
       if (my > 0)
-        enqueue(index - size_x, mx, my - 1, sx, sy, vor_cells_);
+        enqueue(index - size_x, mx, my - 1, sx, sy, vor_cells);
       if (mx < size_x - 1)
-        enqueue(index + 1, mx + 1, my, sx, sy, vor_cells_);
+        enqueue(index + 1, mx + 1, my, sx, sy, vor_cells);
       if (my < size_y - 1)
-        enqueue(index + size_x, mx, my + 1, sx, sy, vor_cells_);
+        enqueue(index + size_x, mx, my + 1, sx, sy, vor_cells);
     }
   }
-  vor_cells_.clear();
+  vor_cells.clear();
+
+  // Clean in all up.
+  delete[] obs_dist;
+  delete[] vor_dist;
+
 ROS_INFO("Finished voronoi cells.");
 }
 
@@ -400,12 +389,12 @@ void VoronoiInflationLayer::computeCaches()
 
     cached_costs_.clear();
 
-    cached_distances_ = new double*[cell_inflation_radius_ + 8];
+    cached_distances_ = new double*[cell_inflation_radius_ + 5];
 
-    for (unsigned int i = 0; i <= cell_inflation_radius_ + 7; ++i)
+    for (unsigned int i = 0; i <= cell_inflation_radius_ + 4; ++i)
     {
-      cached_distances_[i] = new double[cell_inflation_radius_ + 8];
-      for (unsigned int j = 0; j <= cell_inflation_radius_ + 7; ++j)
+      cached_distances_[i] = new double[cell_inflation_radius_ + 5];
+      for (unsigned int j = 0; j <= cell_inflation_radius_ + 4; ++j)
       {
         cached_distances_[i][j] = hypot(i, j);
       }
@@ -414,13 +403,13 @@ void VoronoiInflationLayer::computeCaches()
     cached_cell_inflation_radius_ = cell_inflation_radius_;
   }
 
-  for (unsigned int i = 0; i <= cell_inflation_radius_ + 7; ++i)
+  for (unsigned int i = 0; i <= cell_inflation_radius_ + 4; ++i)
   {
-    for (unsigned int j = 0; j <= cell_inflation_radius_ + 7; ++j)
+    for (unsigned int j = 0; j <= cell_inflation_radius_ + 4; ++j)
     {
-      for (unsigned int ii = 0; ii <= cell_inflation_radius_ + 7; ++ii)
+      for (unsigned int ii = 0; ii <= cell_inflation_radius_ + 4; ++ii)
       {
-        for (unsigned int jj = 0; jj <= cell_inflation_radius_ + 7; ++jj)
+        for (unsigned int jj = 0; jj <= cell_inflation_radius_ + 4; ++jj)
         {
           double d1 = cached_distances_[i][j];
           double d2 = cached_distances_[ii][jj];
@@ -435,7 +424,7 @@ void VoronoiInflationLayer::deleteKernels()
 {
   if (cached_distances_ != NULL)
   {
-    for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 1; ++i)
+    for (unsigned int i = 0; i <= cached_cell_inflation_radius_ + 4; ++i)
     {
       if (cached_distances_[i])
         delete[] cached_distances_[i];

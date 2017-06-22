@@ -113,7 +113,7 @@ private:
 
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
   pluginlib::ClassLoader<Layer> plugin_loader_;
-  boost::shared_ptr<VoronoiInflationLayer> inflation_layer_;
+  boost::shared_ptr<Layer> inflation_layer_;
   // InflationLayer* inflation_layer_;
   bool needs_reinflation_;
 

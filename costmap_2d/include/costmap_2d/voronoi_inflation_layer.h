@@ -59,6 +59,8 @@ public:
     deleteKernels();
     if (dsrv_)
         delete dsrv_;
+    if (inflation_access_)
+      delete inflation_access_;
   }
 
   virtual void onInitialize();
@@ -102,7 +104,7 @@ public:
    */
   void setInflationParameters(double inflation_radius, double cost_scaling_factor);
 
-  bool needsReinflation() {return need_reinflation_;};
+  virtual bool needsUpdate() {return need_reinflation_;};
 
 protected:
   virtual void onFootprintChanged();
@@ -153,18 +155,12 @@ private:
   double inflation_radius_, inscribed_radius_, weight_;
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
-  std::map<double, std::vector<CellData> > obs_cells_;
-  std::map<double, std::vector<CellData> > vor_cells_;
-  double* obs_dist_;
-  double* vor_dist_;
 
   std::map<double, std::map<double, unsigned char> > cached_costs_;
 
 
   double resolution_;
 
-  bool* seen_;
-  int seen_size_;
 
   double** cached_distances_;
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;

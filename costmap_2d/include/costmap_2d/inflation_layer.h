@@ -123,7 +123,7 @@ public:
    */
   void setInflationParameters(double inflation_radius, double cost_scaling_factor);
 
-  bool needsReinflation() {return need_reinflation_;};
+  virtual bool needsUpdate() {return need_reinflation_;};
 
 protected:
   virtual void onFootprintChanged();

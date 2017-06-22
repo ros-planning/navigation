@@ -112,6 +112,10 @@ public:
    * notified of changes to the robot's footprint. */
   virtual void onFootprintChanged() {}
 
+  virtual bool needsUpdate() {
+    return false;
+  }
+
 protected:
   /** @brief This is called at the end of initialize().  Override to
    * implement subclass-specific initialization.
