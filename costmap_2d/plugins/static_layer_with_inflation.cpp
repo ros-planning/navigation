@@ -83,7 +83,7 @@ void StaticLayerWithInflation::onInitialize()
   nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
   nh.param("trinary_costmap", trinary_costmap_, true);
 
-  nh.param("inflation_layer_type", inflation_layer_type_, std::string("costmap_2d::InflationLayer"));
+  nh.param("inflation_layer_type", inflation_layer_type_, std::string("costmap_2d::VoronoiInflationLayer"));
 
 
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
