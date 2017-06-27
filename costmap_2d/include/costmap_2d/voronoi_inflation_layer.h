@@ -58,9 +58,13 @@ public:
   {
     deleteKernels();
     if (dsrv_)
+    {
         delete dsrv_;
+    }
     if (inflation_access_)
+    {
       delete inflation_access_;
+    }
   }
 
   virtual void onInitialize();
@@ -83,11 +87,17 @@ public:
   {
     unsigned char cost = 0;
     if (obs_distance == 0)
+    {
       cost = LETHAL_OBSTACLE;
+    }
     else if (obs_distance * resolution_ <= inscribed_radius_)
+    {
       cost = INSCRIBED_INFLATED_OBSTACLE;
+    }
     else if (vor_distance <= 0.001)
+    {
       cost = 0;
+    }
     else
     {
       // make sure cost falls off by Euclidean distance
