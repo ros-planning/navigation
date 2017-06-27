@@ -113,6 +113,11 @@ void VoronoiInflationLayer::matchSize()
 void VoronoiInflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                            double* min_y, double* max_x, double* max_y)
 {
+  if (min_x == nullptr || min_y == nullptr || max_x == nullptr || max_y == nullptr)
+  {
+    ROS_ERROR("Received nullptrs in update bounds callback.  Not updating bounds.");
+    return;
+  }
   if (need_reinflation_)
   {
     last_min_x_ = *min_x;
