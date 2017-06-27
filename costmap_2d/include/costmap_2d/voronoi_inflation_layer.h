@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_2D_INFLATION_LAYER_H_
-#define COSTMAP_2D_INFLATION_LAYER_H_
+#ifndef COSTMAP_2D_VoronoiINFLATION_LAYER_H_
+#define COSTMAP_2D_VoronoiINFLATION_LAYER_H_
 
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
@@ -44,44 +44,27 @@
 #include <costmap_2d/InflationPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
+#include <costmap_2d/inflation_layer.h>
 
 namespace costmap_2d
 {
-/**
- * @class CellData
- * @brief Storage for cell information used during obstacle inflation
- */
-class CellData
+
+class VoronoiInflationLayer : public Layer
 {
 public:
-  /**
-   * @brief  Constructor for a CellData objects
-   * @param  i The index of the cell in the cost map
-   * @param  x The x coordinate of the cell in the cost map
-   * @param  y The y coordinate of the cell in the cost map
-   * @param  sx The x coordinate of the closest obstacle cell in the costmap
-   * @param  sy The y coordinate of the closest obstacle cell in the costmap
-   * @return
-   */
-  CellData(double i, unsigned int x, unsigned int y, unsigned int sx, unsigned int sy) :
-      index_(i), x_(x), y_(y), src_x_(sx), src_y_(sy)
-  {
-  }
-  unsigned int index_;
-  unsigned int x_, y_;
-  unsigned int src_x_, src_y_;
-};
+  VoronoiInflationLayer();
 
-class InflationLayer : public Layer
-{
-public:
-  InflationLayer();
-
-  virtual ~InflationLayer()
+  virtual ~VoronoiInflationLayer()
   {
     deleteKernels();
     if (dsrv_)
+    {
         delete dsrv_;
+    }
+    if (inflation_access_)
+    {
+      delete inflation_access_;
+    }
   }
 
   virtual void onInitialize();
@@ -97,19 +80,36 @@ public:
   virtual void reset() { onInitialize(); }
 
   /** @brief  Given a distance, compute a cost.
-   * @param  distance The distance from an obstacle in cells
+   * @param  obs_distance The distance from an obstacle in cells
+   * @param  vor_distance
    * @return A cost value for the distance */
-  inline unsigned char computeCost(double distance) const
+  inline unsigned char computeCost(double obs_distance, double vor_distance) const
   {
     unsigned char cost = 0;
-    if (distance == 0)
+    if (obs_distance == 0)
+    {
       cost = LETHAL_OBSTACLE;
-    else if (distance * resolution_ <= inscribed_radius_)
+    }
+    else if (obs_distance * resolution_ <= inscribed_radius_)
+    {
       cost = INSCRIBED_INFLATED_OBSTACLE;
+    }
+    else if (vor_distance <= 0.001)
+    {
+      cost = 0;
+    }
     else
     {
       // make sure cost falls off by Euclidean distance
-      double euclidean_distance = distance * resolution_;
+      double dO = obs_distance * resolution_ - inscribed_radius_;
+      double dV = vor_distance * resolution_;
+
+      // cost = (unsigned char) INSCRIBED_INFLATED_OBSTACLE
+      //   * (weight_ / (weight_ + dO))
+      //   * (dV / (dO + dV))
+      //   * pow((dO - inflation_radius_)/inflation_radius_, 2);
+
+      double euclidean_distance = obs_distance * resolution_;
       double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
       cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
     }
@@ -153,11 +153,9 @@ private:
    * @param src_y The y coordinate of the source cell
    * @return
    */
-  inline unsigned char costLookup(int mx, int my, int src_x, int src_y)
+  inline unsigned char costLookup(double obs_dist, double vor_dist)
   {
-    unsigned int dx = abs(mx - src_x);
-    unsigned int dy = abs(my - src_y);
-    return cached_costs_[dx][dy];
+    return cached_costs_[obs_dist][vor_dist];
   }
 
   void computeCaches();
@@ -170,19 +168,19 @@ private:
   }
 
   inline void enqueue(unsigned int index, unsigned int mx, unsigned int my,
-                      unsigned int src_x, unsigned int src_y);
+                      unsigned int src_x, unsigned int src_y,
+                      std::map<double, std::vector<CellData> >& queue_map);
 
   double inflation_radius_, inscribed_radius_, weight_;
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
-  std::map<double, std::vector<CellData> > inflation_cells_;
+
+  std::map<double, std::map<double, unsigned char> > cached_costs_;
+
 
   double resolution_;
 
-  bool* seen_;
-  int seen_size_;
 
-  unsigned char** cached_costs_;
   double** cached_distances_;
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;
 

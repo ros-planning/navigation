@@ -83,6 +83,9 @@ void StaticLayerWithInflation::onInitialize()
   nh.param("unknown_cost_value", temp_unknown_cost_value, int(-1));
   nh.param("trinary_costmap", trinary_costmap_, true);
 
+  nh.param("inflation_layer_type", inflation_layer_type_, std::string("costmap_2d::VoronoiInflationLayer"));
+
+
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
 
@@ -156,7 +159,7 @@ void StaticLayerWithInflation::matchSize()
     resizeMap(master->getSizeInCellsX(), master->getSizeInCellsY(), master->getResolution(),
               master->getOriginX(), master->getOriginY());
   }
-  // Either way, match the size in the inflation layer so it gets teh correct resolution
+  // Either way, match the size in the inflation layer so it gets the correct resolution
   if (inflation_layer_)
   {
     inflation_layer_->matchSize();
@@ -244,8 +247,9 @@ void StaticLayerWithInflation::incomingMap(const nav_msgs::OccupancyGridConstPtr
   if (!inflation_layer_){
     ROS_INFO("Creating inflation layer in static layer.");
 
-    boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance("costmap_2d::InflationLayer");
-    inflation_layer_ = boost::static_pointer_cast<InflationLayer>(plugin);
+    boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance(inflation_layer_type_);
+    // inflation_layer_ = boost::static_pointer_cast<VoronoiInflationLayer>(plugin);
+    inflation_layer_ = plugin;
     inflation_layer_->initialize(layered_costmap_, name_ + "/inflation", tf_);
   }
   needs_reinflation_ = true;
@@ -313,7 +317,7 @@ void StaticLayerWithInflation::updateBounds(double robot_x, double robot_y, doub
 
   if (inflation_layer_)
   {
-    if (inflation_layer_->needsReinflation())
+    if (inflation_layer_->needsUpdate())
     {
       needs_reinflation_ = true;
     }

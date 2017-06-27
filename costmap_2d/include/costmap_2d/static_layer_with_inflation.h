@@ -45,6 +45,7 @@
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/GenericPluginConfig.h>
 #include <costmap_2d/inflation_layer.h>
+#include <costmap_2d/voronoi_inflation_layer.h>
 #include <dynamic_reconfigure/server.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <map_msgs/OccupancyGridUpdate.h>
@@ -112,7 +113,8 @@ private:
 
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
   pluginlib::ClassLoader<Layer> plugin_loader_;
-  boost::shared_ptr<InflationLayer> inflation_layer_;
+  boost::shared_ptr<Layer> inflation_layer_;
+  std::string inflation_layer_type_;
   // InflationLayer* inflation_layer_;
   bool needs_reinflation_;
 

@@ -119,6 +119,7 @@ add_library(layers
   plugins/static_layer.cpp
   plugins/static_layer_with_inflation.cpp
   plugins/voxel_layer.cpp
+  plugins/voronoi_inflation_layer.cpp
   src/observation_buffer.cpp
 )
 target_link_libraries(layers
