@@ -306,6 +306,13 @@ protected:
   float inflation_radius_ = 1;
   float cost_scaling_factor_ = 1;
 
+  enum inflation_type {
+    EXPONENTIAL_INFLATION = 0,
+    TRINOMIAL_INFLATION = 1
+  };
+
+  int inflation_type_ = EXPONENTIAL_INFLATION;
+
   ros::Publisher obstruction_publisher_;  // Publisher of obstruction data
 
 private:

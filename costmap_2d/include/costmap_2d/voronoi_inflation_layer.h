@@ -86,13 +86,22 @@ public:
       cost = LETHAL_OBSTACLE;
     else if (obs_distance * resolution_ <= inscribed_radius_)
       cost = INSCRIBED_INFLATED_OBSTACLE;
+    else if (vor_distance <= 0.001)
+      cost = 0;
     else
     {
       // make sure cost falls off by Euclidean distance
       double dO = obs_distance * resolution_ - inscribed_radius_;
       double dV = vor_distance * resolution_;
 
-      cost = (unsigned char) INSCRIBED_INFLATED_OBSTACLE *(weight_ / (weight_ + dO)) * (dV / (dO + dV)) * pow((dO - inflation_radius_)/inflation_radius_,2);
+      // cost = (unsigned char) INSCRIBED_INFLATED_OBSTACLE
+      //   * (weight_ / (weight_ + dO))
+      //   * (dV / (dO + dV))
+      //   * pow((dO - inflation_radius_)/inflation_radius_, 2);
+
+      double euclidean_distance = obs_distance * resolution_;
+      double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
+      cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
     }
     return cost;
   }
