@@ -1,4 +1,6 @@
-<package>
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
     <name>carrot_planner</name>
     <version>1.14.0</version>
     <description>
@@ -16,28 +18,18 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <build_depend>roscpp</build_depend>
-    <build_depend>costmap_2d</build_depend>
-    <build_depend>pluginlib</build_depend>
-    <build_depend>nav_core</build_depend>
-    <build_depend>base_local_planner</build_depend>
-    <build_depend>tf</build_depend>
-    <!--<build_depend>angles</build_depend>-->
-    <build_depend>eigen</build_depend>
-
-    <run_depend>roscpp</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>nav_core</run_depend>
-    <run_depend>base_local_planner</run_depend>
-    <run_depend>tf</run_depend>
-    <!--<run_depend>angles</run_depend>-->
-    <run_depend>eigen</run_depend>
+    <depend>roscpp</depend>
+    <depend>costmap_2d</depend>
+    <depend>pluginlib</depend>
+    <depend>nav_core</depend>
+    <depend>base_local_planner</depend>
+    <depend>tf</depend>
+    <!--<depend>angles</depend>-->
+    <depend>eigen</depend>
 
     <export>
         <nav_core plugin="${prefix}/bgp_plugin.xml" />
     </export>
-
 </package>
 
 

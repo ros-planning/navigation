@@ -1,4 +1,6 @@
-<package>
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
     <name>costmap_2d</name>
     <version>1.14.0</version>
     <description>
@@ -22,42 +24,28 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>cmake_modules</build_depend>
-    <build_depend>dynamic_reconfigure</build_depend>
-    <build_depend>geometry_msgs</build_depend>
-    <build_depend>laser_geometry</build_depend>
-    <build_depend>libpcl-all-dev</build_depend>
-    <build_depend>map_msgs</build_depend>
-    <build_depend>message_filters</build_depend>
     <build_depend>message_generation</build_depend>
-    <build_depend>nav_msgs</build_depend>
-    <build_depend>pcl_conversions</build_depend>
-    <build_depend>pcl_ros</build_depend>
-    <build_depend>pluginlib</build_depend>
-    <build_depend>roscpp</build_depend>
-    <build_depend>sensor_msgs</build_depend>
-    <build_depend>std_msgs</build_depend>
-    <build_depend>tf</build_depend>
-    <build_depend>visualization_msgs</build_depend>
-    <build_depend>voxel_grid</build_depend>
 
-    <run_depend>dynamic_reconfigure</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>laser_geometry</run_depend>
-    <run_depend>libpcl-all-dev</run_depend>
-    <run_depend>map_msgs</run_depend>
-    <run_depend>message_filters</run_depend>
-    <run_depend>message_runtime</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>pcl_conversions</run_depend>
-    <run_depend>pcl_ros</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>rosconsole</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>sensor_msgs</run_depend>
-    <run_depend>std_msgs</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>visualization_msgs</run_depend>
-    <run_depend>voxel_grid</run_depend>
+    <exec_depend>message_runtime</exec_depend>
+
+    <depend>dynamic_reconfigure</depend>
+    <depend>geometry_msgs</depend>
+    <depend>laser_geometry</depend>
+    <depend>map_msgs</depend>
+    <depend>message_filters</depend>
+    <depend>nav_msgs</depend>
+    <depend>pcl_conversions</depend>
+    <depend>pcl_ros</depend>
+    <depend>pluginlib</depend>
+    <depend>libpcl-all-dev</depend>
+    <depend>rosconsole</depend>
+    <depend>roscpp</depend>
+    <depend>rostest</depend>
+    <depend>sensor_msgs</depend>
+    <depend>std_msgs</depend>
+    <depend>tf</depend>
+    <depend>visualization_msgs</depend>
+    <depend>voxel_grid</depend>
 
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>
