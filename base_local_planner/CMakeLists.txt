@@ -21,9 +21,7 @@ find_package(Boost REQUIRED
         )
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED)
-# For debian: https://github.com/ros-perception/perception_pcl/issues/139
-find_package(Qt5Widgets QUIET)
+find_package(PCL REQUIRED COMPONENTS common)
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 include_directories(
     include

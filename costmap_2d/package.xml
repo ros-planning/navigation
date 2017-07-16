@@ -32,8 +32,6 @@
     <build_depend>pcl_conversions</build_depend>
     <build_depend>pcl_ros</build_depend>
     <build_depend>pluginlib</build_depend>
-    <!-- qtbase5-dev needed due to error in qt5 -->
-    <build_depend>qtbase5-dev</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>rostest</build_depend>
     <build_depend>sensor_msgs</build_depend>
@@ -52,8 +50,6 @@
     <run_depend>pcl_conversions</run_depend>
     <run_depend>pcl_ros</run_depend>
     <run_depend>pluginlib</run_depend>
-    <!-- qtbase5-dev needed due to error in qt5 -->
-    <run_depend>qtbase5-dev</run_depend>
     <run_depend>rosconsole</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>rostest</run_depend>
