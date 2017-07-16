@@ -27,10 +27,10 @@
     <build_depend>message_filters</build_depend>
     <build_depend>rostest</build_depend>
 
-    <depend>rosbag</depend>
-    <depend>roscpp</depend>
     <depend>dynamic_reconfigure</depend>
     <depend>nav_msgs</depend>
+    <depend>rosbag</depend>
+    <depend>roscpp</depend>
     <depend>std_srvs</depend>
     <depend>tf</depend>
 

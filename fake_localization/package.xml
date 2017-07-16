@@ -15,12 +15,12 @@
 
     <build_depend>angles</build_depend>
 
-    <depend>roscpp</depend>
-    <depend>rosconsole</depend>
-    <depend>nav_msgs</depend>
     <depend>geometry_msgs</depend>
-    <depend>tf</depend>
     <depend>message_filters</depend>
+    <depend>nav_msgs</depend>
+    <depend>rosconsole</depend>
+    <depend>roscpp</depend>
     <depend>rospy</depend>
+    <depend>tf</depend>
 
 </package>

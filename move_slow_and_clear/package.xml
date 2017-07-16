@@ -19,11 +19,11 @@
 
     <build_depend>cmake_modules</build_depend>
 
-    <depend>roscpp</depend>
-    <depend>nav_core</depend>
     <depend>costmap_2d</depend>
     <depend>geometry_msgs</depend>
+    <depend>nav_core</depend>
     <depend>pluginlib</depend>
+    <depend>roscpp</depend>
 
     <export>
         <nav_core plugin="${prefix}/recovery_plugin.xml" />

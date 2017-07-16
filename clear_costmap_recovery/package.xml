@@ -19,12 +19,12 @@
 
     <build_depend>cmake_modules</build_depend>
 
-    <depend>roscpp</depend>
-    <depend>tf</depend>
     <depend>costmap_2d</depend>
+    <depend>eigen</depend>
     <depend>nav_core</depend>
     <depend>pluginlib</depend>
-    <depend>eigen</depend>
+    <depend>roscpp</depend>
+    <depend>tf</depend>
 
     <test_depend>rostest</test_depend>
 

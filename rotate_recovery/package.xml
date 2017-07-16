@@ -17,16 +17,15 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <build_depend>cmake_modules</build_depend>
     <build_depend>base_local_planner</build_depend>
+    <build_depend>cmake_modules</build_depend>
 
-    <depend>roscpp</depend>
-    <depend>tf</depend>
     <depend>costmap_2d</depend>
+    <depend>eigen</depend>
     <depend>nav_core</depend>
     <depend>pluginlib</depend>
-    <depend>eigen</depend>
-
+    <depend>roscpp</depend>
+    <depend>tf</depend>
 
     <export>
         <nav_core plugin="${prefix}/rotate_plugin.xml" />

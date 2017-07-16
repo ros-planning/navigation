@@ -18,14 +18,14 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <depend>roscpp</depend>
-    <depend>costmap_2d</depend>
-    <depend>pluginlib</depend>
-    <depend>nav_core</depend>
-    <depend>base_local_planner</depend>
-    <depend>tf</depend>
     <!--<depend>angles</depend>-->
+    <depend>base_local_planner</depend>
+    <depend>costmap_2d</depend>
     <depend>eigen</depend>
+    <depend>nav_core</depend>
+    <depend>pluginlib</depend>
+    <depend>roscpp</depend>
+    <depend>tf</depend>
 
     <export>
         <nav_core plugin="${prefix}/bgp_plugin.xml" />
