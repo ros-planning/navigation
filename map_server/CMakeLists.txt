@@ -5,6 +5,7 @@ find_package(catkin REQUIRED
         COMPONENTS
             roscpp
             nav_msgs
+            tf2
         )
 
 find_package(Bullet REQUIRED)
@@ -29,6 +30,7 @@ catkin_package(
     CATKIN_DEPENDS
         roscpp
         nav_msgs
+        tf2
 )
 
 include_directories(
