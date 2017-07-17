@@ -32,7 +32,7 @@
 #include "ros/ros.h"
 #include "ros/console.h"
 #include "nav_msgs/GetMap.h"
-#include "tf/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Matrix3x3.h"
 #include "geometry_msgs/Quaternion.h"
 
 using namespace std;
