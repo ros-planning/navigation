@@ -21,6 +21,7 @@
     <build_depend>rostest</build_depend>
     <build_depend>sdl</build_depend>
     <build_depend>sdl-image</build_depend>
+    <build_depend>tf2</build_depend>
     <build_depend>yaml-cpp</build_depend>
 
     <run_depend>bullet</run_depend>
@@ -29,6 +30,7 @@
     <run_depend>rostest</run_depend>
     <run_depend>sdl</run_depend>
     <run_depend>sdl-image</run_depend>
+    <run_depend>tf2</run_depend>
     <run_depend>yaml-cpp</run_depend>
 
     <test_depend>rospy</test_depend>
