@@ -102,7 +102,12 @@ free_thresh: 0.196
        */
 
       geometry_msgs::Quaternion orientation = map->info.origin.orientation;
-      tf::Matrix3x3 mat(tf::Quaternion(orientation.x, orientation.y, orientation.z, orientation.w));
+      tf2::Matrix3x3 mat(tf2::Quaternion(
+        orientation.x,
+        orientation.y,
+        orientation.z,
+        orientation.w
+      ));
       double yaw, pitch, roll;
       mat.getEulerYPR(yaw, pitch, roll);
 
