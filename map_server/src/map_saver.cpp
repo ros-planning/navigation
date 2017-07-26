@@ -37,7 +37,8 @@
 
 using namespace std;
 
-const float OCCUPIED_THRESHOLD = 70;
+const int OCCUPIED_THRESHOLD = 70;
+const int FREE_THRESHOLD = 1;
 
 /**
  * @brief Map generation node.
@@ -75,7 +76,7 @@ class MapGenerator
       for(unsigned int y = 0; y < map->info.height; y++) {
         for(unsigned int x = 0; x < map->info.width; x++) {
           unsigned int i = x + (map->info.height - y - 1) * map->info.width;
-          if (map->data[i] == 0) { //occ [0,0.1)
+          if (map->data[i] >= 0 && map->data[i] < FREE_THRESHOLD) { //occ [0,0.1)
             fputc(254, out);
           } else if (map->data[i] > OCCUPIED_THRESHOLD && map->data[i] <= +100) { //occ (0.65,1]
             fputc(000, out);
