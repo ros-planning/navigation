@@ -2,10 +2,10 @@
  * map_saver
  * Copyright (c) 2008, Willow Garage, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -14,7 +14,7 @@
  *     * Neither the name of the <ORGANIZATION> nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,11 +36,14 @@
 #include "geometry_msgs/Quaternion.h"
 
 using namespace std;
- 
+
+const int OCCUPIED_THRESHOLD = 70;
+const int FREE_THRESHOLD = 1;
+
 /**
  * @brief Map generation node.
  */
-class MapGenerator 
+class MapGenerator
 {
 
   public:
@@ -73,9 +76,9 @@ class MapGenerator
       for(unsigned int y = 0; y < map->info.height; y++) {
         for(unsigned int x = 0; x < map->info.width; x++) {
           unsigned int i = x + (map->info.height - y - 1) * map->info.width;
-          if (map->data[i] == 0) { //occ [0,0.1)
+          if (map->data[i] >= 0 && map->data[i] < FREE_THRESHOLD) { //occ [0,0.1)
             fputc(254, out);
-          } else if (map->data[i] == +100) { //occ (0.65,1]
+          } else if (map->data[i] > OCCUPIED_THRESHOLD && map->data[i] <= +100) { //occ (0.65,1]
             fputc(000, out);
           } else { //occ [0.1,0.65]
             fputc(205, out);
@@ -125,7 +128,7 @@ free_thresh: 0.196
               "  map_saver -h\n"\
               "  map_saver [-f <mapname>] [ROS remapping args]"
 
-int main(int argc, char** argv) 
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "map_saver");
   std::string mapname = "map";
@@ -153,7 +156,7 @@ int main(int argc, char** argv)
       return 1;
     }
   }
-  
+
   MapGenerator mg(mapname);
 
   while(!mg.saved_map_ && ros::ok())
