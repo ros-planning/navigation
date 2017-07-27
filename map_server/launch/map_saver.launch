@@ -1,0 +1,20 @@
+<!--
+  *
+  * (c) Copyright 2015-2016 River Systems, all rights reserved.
+  *
+  * This is proprietary software, unauthorized distribution is not permitted.
+  *
+-->
+<launch>
+  <arg name="filename" default="map" />
+  <arg name="free_threshold" default="1" />
+  <arg name="occupied_threshold" default="65" />
+
+  <node name="map_saver" pkg="map_server"
+      type="map_saver" args="
+          -f $(arg filename)"
+      output="screen">
+      <param name="occupied_threshold" value="$(arg occupied_threshold)" />
+      <param name="free_threshold" value="$(arg free_threshold)" />
+  </node>
+</launch>

@@ -37,9 +37,6 @@
 
 using namespace std;
 
-const int OCCUPIED_THRESHOLD = 70;
-const int FREE_THRESHOLD = 1;
-
 /**
  * @brief Map generation node.
  */
@@ -49,6 +46,11 @@ class MapGenerator
   public:
     MapGenerator(const std::string& mapname) : mapname_(mapname), saved_map_(false)
     {
+      ros::NodeHandle p_nh("~");
+      p_nh.param("free_threshold", free_threshold_, 1);
+      p_nh.param("occupied_threshold", occupied_threshold_, 65);
+      ROS_INFO("Using free threshold %d and occupied threshold %d.",
+        free_threshold_, occupied_threshold_);
       ros::NodeHandle n;
       ROS_INFO("Waiting for the map");
       map_sub_ = n.subscribe("map", 1, &MapGenerator::mapCallback, this);
@@ -76,9 +78,9 @@ class MapGenerator
       for(unsigned int y = 0; y < map->info.height; y++) {
         for(unsigned int x = 0; x < map->info.width; x++) {
           unsigned int i = x + (map->info.height - y - 1) * map->info.width;
-          if (map->data[i] >= 0 && map->data[i] < FREE_THRESHOLD) { //occ [0,0.1)
+          if (map->data[i] >= 0 && map->data[i] <= free_threshold_) { //occ [0,0.1)
             fputc(254, out);
-          } else if (map->data[i] > OCCUPIED_THRESHOLD && map->data[i] <= +100) { //occ (0.65,1]
+          } else if (map->data[i] > occupied_threshold_ && map->data[i] <= +100) { //occ (0.65,1]
             fputc(000, out);
           } else { //occ [0.1,0.65]
             fputc(205, out);
@@ -109,8 +111,9 @@ free_thresh: 0.196
       double yaw, pitch, roll;
       mat.getEulerYPR(yaw, pitch, roll);
 
-      fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n",
-              mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw);
+      fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: %f \nfree_thresh: %f\n\n",
+              mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw,
+              (float) occupied_threshold_ * 0.01, (float) free_threshold_ * 0.01);
 
       fclose(yaml);
 
@@ -121,6 +124,9 @@ free_thresh: 0.196
     std::string mapname_;
     ros::Subscriber map_sub_;
     bool saved_map_;
+
+    int free_threshold_;
+    int occupied_threshold_;
 
 };
 
