@@ -260,7 +260,7 @@ Eigen::Vector3f SimpleTrajectoryGenerator::computeNewPositions(const Eigen::Vect
 }
 
 /**
- * cheange vel using acceleration limits to converge towards sample_target-vel
+ * change vel using acceleration limits to converge towards sample_target-vel
  */
 Eigen::Vector3f SimpleTrajectoryGenerator::computeNewVelocities(const Eigen::Vector3f& sample_target_vel,
     const Eigen::Vector3f& vel, Eigen::Vector3f acclimits, double dt) {
