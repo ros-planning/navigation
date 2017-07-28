@@ -21,7 +21,6 @@ find_package(PCL REQUIRED)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    SYSTEM
     ${EIGEN_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
 )
