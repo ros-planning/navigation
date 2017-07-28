@@ -49,8 +49,12 @@ class MapGenerator
       ros::NodeHandle p_nh("~");
       p_nh.param("free_threshold", free_threshold_, 1);
       p_nh.param("occupied_threshold", occupied_threshold_, 65);
-      ROS_INFO("Using free threshold %d and occupied threshold %d.",
+      p_nh.param("binary_threshold", binary_threshold_, 60);
+
+      ROS_INFO("Using free threshold %d and occupied threshold %d for trinary map.",
         free_threshold_, occupied_threshold_);
+      ROS_INFO("Using threshold %d binary map.", binary_threshold_);
+
       ros::NodeHandle n;
       ROS_INFO("Waiting for the map");
       map_sub_ = n.subscribe("map", 1, &MapGenerator::mapCallback, this);
@@ -63,32 +67,78 @@ class MapGenerator
                map->info.height,
                map->info.resolution);
 
-
-      std::string mapdatafile = mapname_ + ".pgm";
-      ROS_INFO("Writing map occupancy data to %s", mapdatafile.c_str());
-      FILE* out = fopen(mapdatafile.c_str(), "w");
-      if (!out)
+      // Open each of the 3 output files
+      std::string trinaryMapdatafile = mapname_ + "-trinary.pgm";
+      ROS_INFO("Writing trinary map occupancy data to %s", trinaryMapdatafile.c_str());
+      FILE* outTrinary = fopen(trinaryMapdatafile.c_str(), "w");
+      if (!outTrinary)
       {
-        ROS_ERROR("Couldn't save map file to %s", mapdatafile.c_str());
+        ROS_ERROR("Couldn't save map file to %s", trinaryMapdatafile.c_str());
         return;
       }
 
-      fprintf(out, "P5\n# CREATOR: Map_generator.cpp %.3f m/pix\n%d %d\n255\n",
+      std::string binaryMapdatafile = mapname_ + "-binary.pgm";
+      ROS_INFO("Writing binary map occupancy data to %s", binaryMapdatafile.c_str());
+      FILE* outBinary = fopen(binaryMapdatafile.c_str(), "w");
+      if (!outBinary)
+      {
+        ROS_ERROR("Couldn't save binary map file to %s", binaryMapdatafile.c_str());
+        return;
+      }
+
+      std::string probabilityMapdatafile = mapname_ + "-probability.pgm";
+      ROS_INFO("Writing probability map occupancy data to %s", probabilityMapdatafile.c_str());
+      FILE* outProbability = fopen(probabilityMapdatafile.c_str(), "w");
+      if (!outProbability)
+      {
+        ROS_ERROR("Couldn't save probability map file to %s", probabilityMapdatafile.c_str());
+        return;
+      }
+
+      fprintf(outTrinary, "P5\n# CREATOR: Map_generator.cpp %.3f m/pix\n%d %d\n255\n",
               map->info.resolution, map->info.width, map->info.height);
+
+      fprintf(outBinary, "P5\n# CREATOR: Map_generator.cpp %.3f m/pix\n%d %d\n255\n",
+              map->info.resolution, map->info.width, map->info.height);
+
+      fprintf(outProbability, "P5\n# CREATOR: Map_generator.cpp %.3f m/pix\n%d %d\n255\n",
+              map->info.resolution, map->info.width, map->info.height);
+
       for(unsigned int y = 0; y < map->info.height; y++) {
         for(unsigned int x = 0; x < map->info.width; x++) {
           unsigned int i = x + (map->info.height - y - 1) * map->info.width;
+
+          // Write trinary
           if (map->data[i] >= 0 && map->data[i] <= free_threshold_) { //occ [0,0.1)
-            fputc(254, out);
+            fputc(255, outTrinary);
           } else if (map->data[i] > occupied_threshold_ && map->data[i] <= +100) { //occ (0.65,1]
-            fputc(000, out);
+            fputc(000, outTrinary);
           } else { //occ [0.1,0.65]
-            fputc(205, out);
+            fputc(205, outTrinary);
           }
+
+          // Write binary
+          if (map->data[i] >= 0 && map->data[i] < binary_threshold_) {
+            fputc(255, outBinary);
+          } else if (map->data[i] >= binary_threshold_ && map->data[i] <= +100) { //occ (0.65,1]
+            fputc(000, outBinary);
+          } else { // mark unknown as clear
+            fputc(255, outBinary);
+          }
+
+          // Write probability
+          if (map->data[i] >= 0 && map->data[i] <= +100) {
+            fputc((unsigned char) floor(255 - map->data[i] * 2.55), outProbability);
+          } else { // mark unknown as 50%
+            fputc(128, outProbability);
+          }
+
         }
       }
 
-      fclose(out);
+      fclose(outTrinary);
+      fclose(outBinary);
+      fclose(outProbability);
 
 
       std::string mapmetadatafile = mapname_ + ".yaml";
@@ -112,7 +162,7 @@ free_thresh: 0.196
       mat.getEulerYPR(yaw, pitch, roll);
 
       fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: %f \nfree_thresh: %f\n\n",
-              mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw,
+              trinaryMapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw,
               (float) occupied_threshold_ * 0.01, (float) free_threshold_ * 0.01);
 
       fclose(yaml);
@@ -127,7 +177,7 @@ free_thresh: 0.196
 
     int free_threshold_;
     int occupied_threshold_;
-
+    int binary_threshold_;
 };
 
 #define USAGE "Usage: \n" \
