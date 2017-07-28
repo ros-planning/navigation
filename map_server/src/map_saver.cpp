@@ -110,7 +110,7 @@ class MapGenerator
 
           // Write trinary
           if (map->data[i] >= 0 && map->data[i] <= free_threshold_) { //occ [0,0.1)
-            fputc(255, outTrinary);
+            fputc(254, outTrinary);
           } else if (map->data[i] > occupied_threshold_ && map->data[i] <= +100) { //occ (0.65,1]
             fputc(000, outTrinary);
           } else { //occ [0.1,0.65]
@@ -119,11 +119,11 @@ class MapGenerator
 
           // Write binary
           if (map->data[i] >= 0 && map->data[i] < binary_threshold_) {
-            fputc(255, outBinary);
+            fputc(254, outBinary);
           } else if (map->data[i] >= binary_threshold_ && map->data[i] <= +100) { //occ (0.65,1]
             fputc(000, outBinary);
           } else { // mark unknown as clear
-            fputc(255, outBinary);
+            fputc(254, outBinary);
           }
 
           // Write probability
