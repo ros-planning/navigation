@@ -9,6 +9,7 @@
   <arg name="filename" default="map" />
   <arg name="free_threshold" default="1" />
   <arg name="occupied_threshold" default="65" />
+  <arg name="binary_threshold" default="60" />
 
   <node name="map_saver" pkg="map_server"
       type="map_saver" args="
@@ -16,5 +17,6 @@
       output="screen">
       <param name="occupied_threshold" value="$(arg occupied_threshold)" />
       <param name="free_threshold" value="$(arg free_threshold)" />
+      <param name="binary_threshold" value="$(arg binary_threshold)" />
   </node>
 </launch>
