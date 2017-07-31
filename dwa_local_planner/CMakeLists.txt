@@ -16,7 +16,7 @@ find_package(catkin REQUIRED
         )
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common)
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 include_directories(
     include
