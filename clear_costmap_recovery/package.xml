@@ -30,6 +30,8 @@
     <run_depend>pluginlib</run_depend>
     <run_depend>eigen</run_depend>
 
+    <test_depend>rostest</test_depend>
+
     <export>
         <nav_core plugin="${prefix}/ccr_plugin.xml" />
     </export>

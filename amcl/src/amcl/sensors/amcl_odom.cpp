@@ -32,7 +32,7 @@
 #include <sys/types.h> // required by Darwin
 #include <math.h>
 
-#include "amcl_odom.h"
+#include "amcl/sensors/amcl_odom.h"
 
 using namespace amcl;
 

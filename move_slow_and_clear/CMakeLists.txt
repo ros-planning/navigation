@@ -4,12 +4,11 @@ project(move_slow_and_clear)
 find_package(catkin REQUIRED
     COMPONENTS
         cmake_modules
-        roscpp
-        nav_core
         costmap_2d
-        actionlib_msgs
-        std_msgs
+        geometry_msgs
+        nav_core
         pluginlib
+        roscpp
         )
 
 
@@ -28,13 +27,14 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES move_slow_and_clear
     CATKIN_DEPENDS
-        roscpp
-        pluginlib
+        geometry_msgs
         nav_core
+        pluginlib
+        roscpp
 )
 
 add_library(${PROJECT_NAME} src/move_slow_and_clear.cpp)
-add_dependencies(${PROJECT_NAME} geometry_msgs_gencpp)
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}

@@ -35,7 +35,12 @@ generate_messages(
 
 catkin_package(
     CATKIN_DEPENDS
+        geometry_msgs
+        message_runtime
+        nav_msgs
         roscpp
+        sensor_msgs
+        std_msgs
 )
 
 include_directories(
@@ -53,7 +58,7 @@ target_link_libraries(robot_pose_ekf
     ${Boost_LIBRARIES}
     ${BFL_LIBRARIES}
     )
-add_dependencies(robot_pose_ekf robot_pose_ekf_gencpp)
+add_dependencies(robot_pose_ekf ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 install(
     TARGETS
@@ -84,6 +89,7 @@ target_link_libraries(test_robot_pose_ekf
     ${BFL_LIBRARIES}
     gtest
     )
+add_dependencies(test_robot_pose_ekf ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_download_test_data(
   download_data_zero_covariance.bag
@@ -98,9 +104,10 @@ target_link_libraries(test_robot_pose_ekf_zero_covariance
     ${BFL_LIBRARIES}
     gtest
     )
+add_dependencies(test_robot_pose_ekf_zero_covariance ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # This has to be done after we've already built targets, or catkin variables get borked
-find_package(rostest)
+find_package(rostest REQUIRED)
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf.launch)
 add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/test/test_robot_pose_ekf_zero_covariance.launch)
 

@@ -29,6 +29,7 @@ catkin_package(
 )
 
 add_library(carrot_planner src/carrot_planner.cpp)
+add_dependencies(carrot_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(carrot_planner
     ${catkin_LIBRARIES}
     )
