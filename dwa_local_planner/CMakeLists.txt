@@ -26,8 +26,6 @@ include_directories(
     )
 add_definitions(${EIGEN3_DEFINITIONS})
 
-link_directories(${catkin_LIBRARY_DIRS})
-
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/DWAPlanner.cfg
@@ -38,14 +36,14 @@ catkin_package(
     LIBRARIES dwa_local_planner
     CATKIN_DEPENDS
         dynamic_reconfigure
+        nav_msgs
         pluginlib
         roscpp
 )
 
 add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)
+add_dependencies(dwa_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(dwa_local_planner ${catkin_LIBRARIES})
-add_dependencies(dwa_local_planner dwa_local_planner_gencfg)
-add_dependencies(dwa_local_planner nav_msgs_generate_messages_cpp)
 
 install(TARGETS dwa_local_planner
        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
