@@ -51,6 +51,8 @@
     <run_depend>tf</run_depend>
     <run_depend>visualization_msgs</run_depend>
 
+    <test_depend>rosunit</test_depend>
+
     <export>
         <nav_core plugin="${prefix}/bgp_plugin.xml" />
     </export>

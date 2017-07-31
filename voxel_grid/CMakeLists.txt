@@ -18,6 +18,7 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_library(voxel_grid src/voxel_grid.cpp)
+add_dependencies(voxel_grid ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(voxel_grid ${catkin_LIBRARIES})
 
 install(TARGETS voxel_grid
