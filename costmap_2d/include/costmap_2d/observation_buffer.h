@@ -70,6 +70,7 @@ public:
    * @param  max_obstacle_height The minimum height of a hitpoint to be considered legal
    * @param  obstacle_range The range to which the sensor should be trusted for inserting obstacles
    * @param  raytrace_range The range to which the sensor should be trusted for raytracing to clear out space
+   * @param  start_clearing_range The range to wich the sensor start to be trusted for clearing out space.
    * @param  tf A reference to a TransformListener
    * @param  global_frame The frame to transform PointClouds into
    * @param  sensor_frame The frame of the origin of the sensor, can be left blank to be read from the messages
@@ -77,8 +78,8 @@ public:
    */
   ObservationBuffer(std::string topic_name, double observation_keep_time, double expected_update_rate,
                     double min_obstacle_height, double max_obstacle_height, double obstacle_range,
-                    double raytrace_range, tf::TransformListener& tf, std::string global_frame,
-                    std::string sensor_frame, double tf_tolerance);
+                    double raytrace_range, double start_clearing_range, tf::TransformListener& tf,
+                    std::string global_frame, std::string sensor_frame, double tf_tolerance);
 
   /**
    * @brief  Destructor... cleans up
@@ -159,6 +160,7 @@ private:
   boost::recursive_mutex lock_;  ///< @brief A lock for accessing data in callbacks safely
   double obstacle_range_, raytrace_range_;
   double tf_tolerance_;
+  double start_clearing_range_;
 };
 }  // namespace costmap_2d
 #endif  // COSTMAP_2D_OBSERVATION_BUFFER_H_

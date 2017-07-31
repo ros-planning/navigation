@@ -114,7 +114,7 @@ void ObstacleLayer::onInitialize()
       throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
     }
 
-    std::string raytrace_range_param_name, obstacle_range_param_name;
+    std::string raytrace_range_param_name, obstacle_range_param_name, start_clearing_range_param_name;
 
     // get the obstacle range for the sensor
     double obstacle_range = 2.5;
@@ -130,6 +130,12 @@ void ObstacleLayer::onInitialize()
       source_node.getParam(raytrace_range_param_name, raytrace_range);
     }
 
+    double start_clearing_range = 0.0;
+    if (source_node.searchParam("start_clearing_range", start_clearing_range_param_name))
+    {
+      source_node.getParam(start_clearing_range_param_name, start_clearing_range);
+    }
+
     ROS_DEBUG("Creating an observation buffer for source %s, topic %s, frame %s", source.c_str(), topic.c_str(),
               sensor_frame.c_str());
 
@@ -137,8 +143,8 @@ void ObstacleLayer::onInitialize()
     observation_buffers_.push_back(
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
-                                     max_obstacle_height, obstacle_range, raytrace_range, *tf_, global_frame_,
-                                     sensor_frame, transform_tolerance)));
+                                     max_obstacle_height, obstacle_range, raytrace_range, start_clearing_range,
+                                     *tf_, global_frame_, sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers
     if (marking)
@@ -525,6 +531,31 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   {
     double wx = cloud.points[i].x;
     double wy = cloud.points[i].y;
+    if(clearing_observation.start_clearing_range_ > 0)
+    {
+      // If this sensor start seeing obstacle at a certain range, we must move x0,y0 at this
+      // range from the sensor (following the line going from the sensor to the point)
+      double obstacle_range = hypot(wx-ox, wy-oy);
+      if(obstacle_range < clearing_observation.start_clearing_range_)
+      {
+        // This may happens if parameter start_clearing_range was set to a range lesser than the minimal sensor range.
+        // In this particular case, we just don't set free spaces (after displaying a warning).
+        ROS_WARN_THROTTLE(
+                1.0, "Your start_clearing_range parameter seems to be too short because an observation was returned by"
+                "your sensor in this range. Cells between sensor and this observation was not cleared");
+        continue;
+      }
+      double scale_factor = clearing_observation.start_clearing_range_/obstacle_range;
+      double x_start_clearing = (wx-ox)*scale_factor;
+      double y_start_clearing = (wy-oy)*scale_factor;
+      if (!worldToMap(x_start_clearing, y_start_clearing, x0, y0))
+      {
+        ROS_WARN_THROTTLE(
+                1.0, "The start clearing point at (%.2f, %.2f) is out of map bounds. So, the costmap cannot raytrace for it.",
+                x_start_clearing, y_start_clearing);
+        continue;
+      }
+    }
 
     // now we also need to make sure that the enpoint we're raytracing
     // to isn't off the costmap and scale if necessary
