@@ -1,4 +1,6 @@
-<package>
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
     <name>nav_core</name>
     <version>1.14.0</version>
     <description>
@@ -15,15 +17,9 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <build_depend>std_msgs</build_depend>
-    <build_depend>geometry_msgs</build_depend>
-    <build_depend>costmap_2d</build_depend>
-    <build_depend>tf</build_depend>
+    <depend>costmap_2d</depend>
+    <depend>geometry_msgs</depend>
+    <depend>std_msgs</depend>
+    <depend>tf</depend>
 
-    <run_depend>std_msgs</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>tf</run_depend>
 </package>
-
-
