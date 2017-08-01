@@ -23,7 +23,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "map.h"
+#include "amcl/map/map.h"
 
 class CellData
 {

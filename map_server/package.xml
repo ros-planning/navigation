@@ -18,7 +18,6 @@
     <build_depend>bullet</build_depend>
     <build_depend>nav_msgs</build_depend>
     <build_depend>roscpp</build_depend>
-    <build_depend>rostest</build_depend>
     <build_depend>sdl</build_depend>
     <build_depend>sdl-image</build_depend>
     <build_depend>tf2</build_depend>
@@ -27,11 +26,12 @@
     <run_depend>bullet</run_depend>
     <run_depend>nav_msgs</run_depend>
     <run_depend>roscpp</run_depend>
-    <run_depend>rostest</run_depend>
     <run_depend>sdl</run_depend>
     <run_depend>sdl-image</run_depend>
     <run_depend>tf2</run_depend>
     <run_depend>yaml-cpp</run_depend>
 
     <test_depend>rospy</test_depend>
+    <test_depend>rostest</test_depend>
+    <test_depend>rosunit</test_depend>
 </package>
