@@ -30,7 +30,6 @@
     <depend>pluginlib</depend>
     <depend>roscpp</depend>
     <depend>rospy</depend>
-    <depend>std_msgs</depend>
     <depend>std_srvs</depend>
     <depend>tf</depend>
     <depend>visualization_msgs</depend>

@@ -25,7 +25,6 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>message_filters</build_depend>
-    <build_depend>rostest</build_depend>
 
     <depend>dynamic_reconfigure</depend>
     <depend>nav_msgs</depend>
@@ -34,6 +33,6 @@
     <depend>std_srvs</depend>
     <depend>tf</depend>
 
-    <test_depend>rostest</test_depend>
     <test_depend>map_server</test_depend>
+    <test_depend>rostest</test_depend>
 </package>

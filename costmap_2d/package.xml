@@ -26,8 +26,6 @@
     <build_depend>cmake_modules</build_depend>
     <build_depend>message_generation</build_depend>
 
-    <exec_depend>message_runtime</exec_depend>
-
     <depend>dynamic_reconfigure</depend>
     <depend>geometry_msgs</depend>
     <depend>laser_geometry</depend>
@@ -38,7 +36,6 @@
     <depend>pcl_ros</depend>
     <depend>pluginlib</depend>
     <depend>libpcl-all-dev</depend>
-    <depend>rosconsole</depend>
     <depend>roscpp</depend>
     <depend>rostest</depend>
     <depend>sensor_msgs</depend>
@@ -46,6 +43,9 @@
     <depend>tf</depend>
     <depend>visualization_msgs</depend>
     <depend>voxel_grid</depend>
+
+    <exec_depend>message_runtime</exec_depend>
+    <exec_depend>rosconsole</exec_depend>
 
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>
