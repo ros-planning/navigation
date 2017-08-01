@@ -197,10 +197,11 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
 
       assert(pz <= 1.0);
       assert(pz >= 0.0);
-      //      p *= pz;
+      // Instead of using the ad-hoc weight in a few lines later, this is what the textbook defines.
+      p *= pz;
       // here we have an ad-hoc weighting scheme for combining beam probs
       // works well, though...
-      p += pz*pz*pz;
+      // p += pz*pz*pz;
     }
 
     sample->weight *= p;
