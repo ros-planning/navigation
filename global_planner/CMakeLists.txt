@@ -48,13 +48,13 @@ add_library(${PROJECT_NAME}
   src/orientation_filter.cpp
   src/planner_core.cpp
 )
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
-
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 
 add_executable(planner
   src/plan_node.cpp
 )
+add_dependencies(planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(planner
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
