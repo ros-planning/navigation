@@ -214,8 +214,8 @@ namespace move_base {
 
       //set up the planner's thread
       bool runPlanner_;
-      boost::mutex planner_mutex_;
-      boost::condition_variable planner_cond_;
+      boost::recursive_mutex planner_mutex_;
+      boost::condition_variable_any planner_cond_;
       geometry_msgs::PoseStamped planner_goal_;
       boost::thread* planner_thread_;
 

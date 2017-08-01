@@ -265,7 +265,7 @@ namespace move_base {
         planner_ = bgp_loader_.createInstance(config.base_global_planner);
 
         // wait for the current planner to finish planning
-        boost::unique_lock<boost::mutex> lock(planner_mutex_);
+        boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
 
         // Clean up before initializing the new planner
         planner_plan_->clear();
@@ -609,7 +609,7 @@ namespace move_base {
     ros::NodeHandle n;
     ros::Timer timer;
     bool wait_for_wake = false;
-    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     while(n.ok()){
       //check if we should run the planner (the mutex is locked)
       while(wait_for_wake || !runPlanner_){
@@ -693,7 +693,7 @@ namespace move_base {
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
 
     //we have a goal so start the planner
-    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
     runPlanner_ = true;
     planner_cond_.notify_one();
@@ -878,7 +878,7 @@ namespace move_base {
       //do a pointer swap under mutex
       std::vector<geometry_msgs::PoseStamped>* temp_plan = controller_plan_;
 
-      boost::unique_lock<boost::mutex> lock(planner_mutex_);
+      boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
       controller_plan_ = latest_plan_;
       latest_plan_ = temp_plan;
       lock.unlock();
@@ -908,7 +908,7 @@ namespace move_base {
       //if we are in a planning state, then we'll attempt to make a plan
       case PLANNING:
         {
-          boost::mutex::scoped_lock lock(planner_mutex_);
+          boost::recursive_mutex::scoped_lock lock(planner_mutex_);
           runPlanner_ = true;
           planner_cond_.notify_one();
         }
@@ -925,7 +925,7 @@ namespace move_base {
           resetState();
 
           //disable the planner thread
-          boost::unique_lock<boost::mutex> lock(planner_mutex_);
+          boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
           runPlanner_ = false;
           lock.unlock();
 
@@ -973,7 +973,7 @@ namespace move_base {
             publishZeroVelocity();
 
             //enable the planner thread in case it isn't running on a clock
-            boost::unique_lock<boost::mutex> lock(planner_mutex_);
+            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
             runPlanner_ = true;
             planner_cond_.notify_one();
             lock.unlock();
@@ -1004,7 +1004,7 @@ namespace move_base {
         else{
           ROS_DEBUG_NAMED("move_base_recovery","All recovery behaviors have failed, locking the planner and disabling it.");
           //disable the planner thread
-          boost::unique_lock<boost::mutex> lock(planner_mutex_);
+          boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
           runPlanner_ = false;
           lock.unlock();
 
@@ -1030,7 +1030,7 @@ namespace move_base {
         ROS_ERROR("This case should never be reached, something is wrong, aborting");
         resetState();
         //disable the planner thread
-        boost::unique_lock<boost::mutex> lock(planner_mutex_);
+        boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
         runPlanner_ = false;
         lock.unlock();
         as_->setAborted(move_base_msgs::MoveBaseResult(), "Reached a case that should not be hit in move_base. This is a bug, please report it.");
@@ -1164,7 +1164,7 @@ namespace move_base {
 
   void MoveBase::resetState(){
     // Disable the planner thread
-    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     runPlanner_ = false;
     lock.unlock();
 
