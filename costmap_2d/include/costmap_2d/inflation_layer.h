@@ -131,6 +131,7 @@ protected:
   double inflation_radius_;
   double inscribed_radius_;
   double weight_;
+  bool inflate_unknown_;
 
 private:
   /**
