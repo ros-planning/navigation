@@ -54,6 +54,7 @@ namespace costmap_2d
 InflationLayer::InflationLayer()
   : inflation_radius_(0)
   , weight_(0)
+  , inflate_unknown_(false)
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
@@ -101,8 +102,9 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
 {
   setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
 
-  if (enabled_ != config.enabled) {
+  if (enabled_ != config.enabled || inflate_unknown_ != config.inflate_unknown) {
     enabled_ = config.enabled;
+    inflate_unknown_ = config.inflate_unknown;
     need_reinflation_ = true;
   }
 }
@@ -255,7 +257,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
       // assign the cost associated with the distance from an obstacle to the cell
       unsigned char cost = costLookup(mx, my, sx, sy);
       unsigned char old_cost = master_array[index];
-      if (old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
+      if (old_cost == NO_INFORMATION && (inflate_unknown_ ? (cost > FREE_SPACE) : (cost >= INSCRIBED_INFLATED_OBSTACLE)))
         master_array[index] = cost;
       else
         master_array[index] = std::max(old_cost, cost);
