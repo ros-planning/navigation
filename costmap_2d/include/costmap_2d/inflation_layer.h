@@ -171,6 +171,7 @@ private:
                       unsigned int src_x, unsigned int src_y);
 
   double inflation_radius_, inscribed_radius_, weight_;
+  bool inflate_unknown_;
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
   std::map<double, std::vector<CellData> > inflation_cells_;
