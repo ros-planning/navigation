@@ -561,11 +561,11 @@ namespace move_base {
         wait_for_wake = false;
       }
       ros::Time start_time = ros::Time::now();
-      lock.unlock();
 
       if(state_==PLANNING){
         //time to plan! get a copy of the goal and unlock the mutex
         geometry_msgs::PoseStamped temp_goal = planner_goal_;
+        lock.unlock();
         ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
         //run planner
@@ -614,6 +614,11 @@ namespace move_base {
 
           lock.unlock();
         }
+      }
+      else
+      {
+        //not planning, so just unlock the mutex
+        lock.unlock();
       }
 
       //take the mutex for the next iteration
