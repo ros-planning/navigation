@@ -4,12 +4,18 @@
     <name>nav_core</name>
     <version>1.14.0</version>
     <description>
-
-        This package provides common interfaces for navigation specific robot actions. Currently, this package provides the BaseGlobalPlanner, BaseLocalPlanner, and RecoveryBehavior interfaces, which can be used to build actions that can easily swap their planner, local controller, or recovery behavior for new versions adhering to the same interface.
-
+        This package provides common interfaces for navigation specific robot actions. Currently, this package provides
+        the BaseGlobalPlanner, BaseLocalPlanner, and RecoveryBehavior interfaces, which can be used to build actions
+        that can easily swap their planner, local controller, or recovery behavior for new versions adhering to the
+        same interface. Furthermore, it contains the AbstractGlobalPlanner, AbstractLocalPlanner and
+        AbstractRecoveryBehavior as more abstract base classes for the BaseGlobalPlanner, BaseLocalPlanner and
+        RecoveryBehavior. The abstract classes provides a more meaningful interface enabling the planners to return
+        additional information, e.g. why something went wring. The abstract interface also allow to implement planners
+        which do not use costmaps, e.g., for planning in 3D.
     </description>
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
+    <author email="spuetz@uni-osnabrueck.de">Sebastian Pütz</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
     <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
     <license>BSD</license>
