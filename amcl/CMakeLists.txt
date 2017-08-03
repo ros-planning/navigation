@@ -19,18 +19,16 @@ find_package(Boost REQUIRED)
 
 # dynamic reconfigure
 
-add_service_files(
-					FILES	
-					amcl_particles.srv
-)
+add_service_files(FILES	
+                   amcl_particles.srv
+        )
 generate_dynamic_reconfigure_options(
     cfg/AMCL.cfg
 )
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
+generate_messages(DEPENDENCIES
+                   std_msgs
+                   geometry_msgs
 )
 
 

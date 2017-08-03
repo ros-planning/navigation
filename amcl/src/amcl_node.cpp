@@ -1052,58 +1052,59 @@ pf_vector_t AmclNode::customPoseGenerator(void* arg)
 }
 
 
-bool AmclNode::setParticlesCallback(amcl::amcl_particles::Request& req,
-                                    amcl::amcl_particles::Response& res)
+bool 
+AmclNode::setParticlesCallback(amcl::amcl_particles::Request& req,
+                               amcl::amcl_particles::Response& res)
 {  
   int no_of_particles =  req.pose_array_msg.poses.size();
   ROS_INFO("Received set particles srv call, Pose Array Header seq = %i",req.pose_array_msg.header.seq);
   ROS_INFO("Received set particles srv call, Pose Array Header stamp = %0.4f",req.pose_array_msg.header.stamp.toSec());
   if (no_of_particles == max_particles_)
-	{
-		ROS_INFO("Received %i particles",no_of_particles);
-		ROS_INFO("First particle x:%0.2f & y:%0.2f",req.pose_array_msg.poses[0].position.x,req.pose_array_msg.poses[0].position.y);
-		
-		  // In case the client sent us a pose estimate in the past, integrate the
-		  // intervening odometric change.
-		  tf::StampedTransform tx_odom;
-		  try
-		  {
-			ros::Time now = ros::Time::now();
-			// wait a little for the latest tf to become available
-			tf_->waitForTransform(base_frame_id_, req.pose_array_msg.header.stamp,
-								 base_frame_id_, ros::Time(0),
-								 odom_frame_id_, ros::Duration(0.25));
-			tf_->lookupTransform(base_frame_id_, req.pose_array_msg.header.stamp,
-								 base_frame_id_, ros::Time(0),
-								 odom_frame_id_, tx_odom);
-		  }
-		  catch(tf::TransformException e)
-		  {
-			// If we've never sent a transform, then this is normal, because the
-			// global_frame_id_ frame doesn't exist.  We only care about in-time
-			// transformation for on-the-move pose-setting, so ignoring this
-			// startup condition doesn't really cost us anything.
-			if(sent_first_transform_)
-			  ROS_WARN("Failed to transform poses in time: (%s)", e.what());
-			tx_odom.setIdentity();
-		  }
+  {
+    ROS_INFO("Received %i particles",no_of_particles);
+    ROS_INFO("First particle x:%0.2f & y:%0.2f",req.pose_array_msg.poses[0].position.x,req.pose_array_msg.poses[0].position.y);
 
-		  tf::Pose pose_old, pose_new;
-		  
-		  for(int i=0;i<no_of_particles;i++)
-		  {
-			poseMsgToTF(req.pose_array_msg.poses[i],pose_old);
-			poseTFToMsg(pose_old * tx_odom,req.pose_array_msg.poses[i]);
-		  }
+    // In case the client sent us a poses in the past, integrate the intervening odometric change.
+    tf::StampedTransform tx_odom;
+    try
+    {
+      ros::Time now = ros::Time::now();
+      // wait a little for the latest tf to become available
+      tf_->waitForTransform(base_frame_id_, req.pose_array_msg.header.stamp,
+                              base_frame_id_, ros::Time(0),
+                              odom_frame_id_, ros::Duration(0.25));
+      tf_->lookupTransform(base_frame_id_, req.pose_array_msg.header.stamp,
+                           base_frame_id_, ros::Time(0),
+                           odom_frame_id_, tx_odom);
+    }
+    catch(tf::TransformException e)
+    {
+      // If we've never sent a transform, then this is normal, because the
+      // global_frame_id_ frame doesn't exist.  We only care about in-time
+      // transformation for on-the-move pose-setting, so ignoring this
+      // startup condition doesn't really cost us anything.
+      if(sent_first_transform_)
+        ROS_WARN("Failed to transform poses in time: (%s)", e.what());
+      tx_odom.setIdentity();
+    }
 
-		pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::customPoseGenerator, (void *) &req.pose_array_msg);
-		res.success = true;
-	}
+    tf::Pose pose_old, pose_new;
+  
+    for(int i=0;i<no_of_particles;i++)
+    {
+      poseMsgToTF(req.pose_array_msg.poses[i],pose_old);
+      poseTFToMsg(pose_old * tx_odom,req.pose_array_msg.poses[i]);
+    }
+
+    pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::customPoseGenerator, 
+                  (void *) &req.pose_array_msg);
+    res.success = true;
+  }
   else
-	{
-		ROS_ERROR("Number of recieved particles: %i not equal to max_particles: %i",no_of_particles,max_particles_);
-		res.success = false;
-	}
+  {
+    ROS_ERROR("Number of recieved particles: %i not equal to max_particles: %i",no_of_particles,max_particles_);
+    res.success = false;
+  }
   pf_init_ = false;
   ROS_INFO("Custom particles set!");
   
