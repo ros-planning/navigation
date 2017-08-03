@@ -89,18 +89,19 @@ public:
    * @param  expected_update_rate How often this buffer is expected to be updated, 0 means there is no limit
    * @param  min_obstacle_height The minimum height of a hitpoint to be considered legal
    * @param  max_obstacle_height The minimum height of a hitpoint to be considered legal
+   * @param  min_obstacle_range The range from which the sensor should be trusted for inserting obstacles
    * @param  max_obstacle_range The range to which the sensor should be trusted for inserting obstacles
-   * @param  min_raytrace_range The range to which the sensor start to be trusted for clearing out space.
-   * @param  raytrace_range The range to which the sensor should be trusted for raytracing to clear out space
+   * @param  min_raytrace_range The range from which the sensor start to be trusted for raytracing to clear out space
+   * @param  max_raytrace_range The range to which the sensor should be trusted for raytracing to clear out space
    * @param  tf A reference to a TransformListener
    * @param  global_frame The frame to transform PointClouds into
    * @param  sensor_frame The frame of the origin of the sensor, can be left blank to be read from the messages
    * @param  tf_tolerance The amount of time to wait for a transform to be available when setting a new global frame
    */
   ObservationBuffer(std::string topic_name, double observation_keep_time, double expected_update_rate,
-                    double min_obstacle_height, double max_obstacle_height, double max_obstacle_range,
-                    double min_raytrace_range, double max_raytrace_range, tf::TransformListener& tf,
-                    std::string global_frame, std::string sensor_frame, double tf_tolerance);
+                    double min_obstacle_height, double max_obstacle_height, double min_obstacle_range,
+                    double max_obstacle_range, double min_raytrace_range, double max_raytrace_range,
+                    tf::TransformListener& tf, std::string global_frame, std::string sensor_frame, double tf_tolerance);
 
   /**
    * @brief  Destructor... cleans up
@@ -179,7 +180,7 @@ private:
   std::string topic_name_;
   double min_obstacle_height_, max_obstacle_height_;
   boost::recursive_mutex lock_;  ///< @brief A lock for accessing data in callbacks safely
-  double max_obstacle_range_, min_raytrace_range_, max_raytrace_range_;
+  double min_obstacle_range_, max_obstacle_range_, min_raytrace_range_, max_raytrace_range_;
   double tf_tolerance_;
 };
 }  // namespace costmap_2d

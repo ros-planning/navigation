@@ -114,11 +114,18 @@ void ObstacleLayer::onInitialize()
       throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
     }
 
-    std::string max_raytrace_range_param_name, max_obstacle_range_param_name, min_raytrace_range_param_name;
+    std::string max_raytrace_range_param_name, max_obstacle_range_param_name, min_obstacle_range_param_name,
+            min_raytrace_range_param_name;
 
     // get the obstacle range for the sensor
     double max_obstacle_range = 2.5;
     ObstacleLayer::getParam(source_node, "obstacle_range", "max_obstacle_range", max_obstacle_range);
+
+    double min_obstacle_range = 0.0;
+    if (source_node.searchParam("min_obstacle_range", min_obstacle_range_param_name))
+    {
+      source_node.getParam(min_obstacle_range_param_name, min_obstacle_range);
+    }
 
     // get the max_raytrace range for the sensor
     double max_raytrace_range = 3.0;
@@ -137,8 +144,8 @@ void ObstacleLayer::onInitialize()
     observation_buffers_.push_back(
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
-                                     max_obstacle_height, max_obstacle_range, min_raytrace_range, max_raytrace_range,
-                                     *tf_, global_frame_, sensor_frame, transform_tolerance)));
+                                     max_obstacle_height, min_obstacle_range, max_obstacle_range, min_raytrace_range,
+                                     max_raytrace_range, *tf_, global_frame_, sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers
     if (marking)
@@ -391,6 +398,8 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 
     double sq_max_obstacle_range = obs.max_obstacle_range_ * obs.max_obstacle_range_;
 
+    double sq_min_obstacle_range = obs.min_obstacle_range_ * obs.min_obstacle_range_;
+
     for (unsigned int i = 0; i < cloud.points.size(); ++i)
     {
       double px = cloud.points[i].x, py = cloud.points[i].y, pz = cloud.points[i].z;
@@ -410,6 +419,12 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       if (sq_dist >= sq_max_obstacle_range)
       {
         ROS_DEBUG("The point is too far away");
+        continue;
+      }
+
+      if (sq_dist < sq_min_obstacle_range)
+      {
+        ROS_DEBUG("The point is too close ");
         continue;
       }
 

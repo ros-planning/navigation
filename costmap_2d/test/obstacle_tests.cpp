@@ -297,6 +297,29 @@ TEST(costmap, testMaxAndMinRayTranceRange){
   ASSERT_EQ(3, countValues(*costmap, costmap_2d::FREE_SPACE));
 }
 
+
+TEST(costmap, testMinObstacleRange){
+  tf::TransformListener tf;
+
+  // Start with an empty map, no rolling window, tracking unknown
+  LayeredCostmap layers("frame", false, true);
+  layers.resizeMap(10, 10, 1, 0, 0);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  // Lay out 1 obstacle at Y = 4m
+  addObservation(olayer, 0.0, 4.0, MAX_Z, 0, 0, MAX_Z, 0.0, 10.0, 5.0);
+  layers.updateMap(0,0,0);
+
+  Costmap2D* costmap = layers.getCostmap();
+  //printMap(*costmap);
+  // 0 obstacle cells is filled (because our min_obstacle_range is 5m, and our obstacle is at 4m).
+  // Cells <0,0>, <0,1>, <0,2>, <0,3> and <0,4> in "FREE_SPACE".
+  // <0,4> is considered as a free space, but hit is on this cell. In this test don't thrust hit if they are at less
+  // than 5m from the sensor.
+  ASSERT_EQ(0, countValues(*costmap, costmap_2d::LETHAL_OBSTACLE));
+  ASSERT_EQ(95, countValues(*costmap, costmap_2d::NO_INFORMATION));
+  ASSERT_EQ(5, countValues(*costmap, costmap_2d::FREE_SPACE));
+}
 int main(int argc, char** argv){
   ros::init(argc, argv, "obstacle_tests");
   testing::InitGoogleTest(&argc, argv);
