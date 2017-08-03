@@ -114,31 +114,15 @@ void ObstacleLayer::onInitialize()
       throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
     }
 
-    std::string max_raytrace_range_param_name, obstacle_range_param_name, min_raytrace_range_param_name;
+    std::string max_raytrace_range_param_name, max_obstacle_range_param_name, min_raytrace_range_param_name;
 
     // get the obstacle range for the sensor
-    double obstacle_range = 2.5;
-    if (source_node.searchParam("obstacle_range", obstacle_range_param_name))
-    {
-      source_node.getParam(obstacle_range_param_name, obstacle_range);
-    }
+    double max_obstacle_range = 2.5;
+    ObstacleLayer::getParam(source_node, "obstacle_range", "max_obstacle_range", max_obstacle_range);
 
     // get the max_raytrace range for the sensor
     double max_raytrace_range = 3.0;
-    // We first try with the new name.
-    if (!source_node.searchParam("max_raytrace_range", max_raytrace_range_param_name))
-    {
-      // if not found we try with the old name a print a warining if the old name was used.
-      if (source_node.searchParam("raytrace_range", max_raytrace_range_param_name))
-      {
-        ROS_WARN_STREAM("Parameter raytrace_range is deprecated. It was renamed in max_raytrace_range.");
-      }
-    }
-    if (!max_raytrace_range_param_name.empty())
-    {
-      // If one of both names was found, we get the parameter.
-      source_node.getParam(max_raytrace_range_param_name, max_raytrace_range);
-    }
+    ObstacleLayer::getParam(source_node, "raytrace_range", "max_raytrace_range", max_raytrace_range);
 
     double min_raytrace_range = 0.0;
     if (source_node.searchParam("min_raytrace_range", min_raytrace_range_param_name))
@@ -153,7 +137,7 @@ void ObstacleLayer::onInitialize()
     observation_buffers_.push_back(
         boost::shared_ptr < ObservationBuffer
             > (new ObservationBuffer(topic, observation_keep_time, expected_update_rate, min_obstacle_height,
-                                     max_obstacle_height, obstacle_range, min_raytrace_range, max_raytrace_range,
+                                     max_obstacle_height, max_obstacle_range, min_raytrace_range, max_raytrace_range,
                                      *tf_, global_frame_, sensor_frame, transform_tolerance)));
 
     // check if we'll add this buffer to our marking observation buffers
@@ -242,6 +226,24 @@ void ObstacleLayer::onInitialize()
 
   dsrv_ = NULL;
   setupDynamicReconfigure(nh);
+}
+
+void ObstacleLayer::getParam(ros::NodeHandle& nh, const std::string& oldName, const std::string& newName, double& value)
+{
+  // We first try with the new name.
+  std::string param_name;
+  if (!nh.searchParam(newName, param_name))
+  {
+    // if not found we try with the old name and print a warning if the old name was used.
+    if (!nh.searchParam(oldName, param_name))
+    {
+      ROS_WARN_STREAM("Parameter : " << oldName << " is deprecated. It was renamed : " << newName);
+    }
+  }
+  if (!param_name.empty())
+  {
+    nh.getParam(param_name, value);
+  }
 }
 
 void ObstacleLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
@@ -387,7 +389,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 
     const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
 
-    double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
+    double sq_max_obstacle_range = obs.max_obstacle_range_ * obs.max_obstacle_range_;
 
     for (unsigned int i = 0; i < cloud.points.size(); ++i)
     {
@@ -405,7 +407,7 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
           + (pz - obs.origin_.z) * (pz - obs.origin_.z);
 
       // if the point is far enough away... we won't consider it
-      if (sq_dist >= sq_obstacle_range)
+      if (sq_dist >= sq_max_obstacle_range)
       {
         ROS_DEBUG("The point is too far away");
         continue;
@@ -545,13 +547,13 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
     {
       // If this sensor start seeing obstacle at a certain range, we must move x0,y0 at this
       // range from the sensor (following the line going from the sensor to the point)
-      double obstacle_range = hypot(wx-ox, wy-oy);
-      if (obstacle_range < clearing_observation.min_raytrace_range_)
+      double max_obstacle_range = hypot(wx-ox, wy-oy);
+      if (max_obstacle_range < clearing_observation.min_raytrace_range_)
       {
         // This may happens if parameter start_clearing_range was set to a range lesser than the minimal sensor range.
         // In this particular case, we just don't set free spaces (after displaying a warning). We display the warning
-        // only if obstacle_range is > 0 to handle particular case of sensor returning 0 if they don't see anything.
-        if (obstacle_range > 0)
+        // only if max_obstacle_range is > 0 to handle particular case of sensor returning 0 if they don't see anything.
+        if (max_obstacle_range > 0)
         {
           ROS_WARN_THROTTLE(
                   60.0, "Your start_clearing_range parameter seems to be too short because an observation was returned by"
@@ -559,7 +561,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
         }
         continue;
       }
-      double scale_factor = clearing_observation.min_raytrace_range_/obstacle_range;
+      double scale_factor = clearing_observation.min_raytrace_range_/max_obstacle_range;
       double x_start_raytrace = ox+(wx-ox)*scale_factor;
       double y_start_raytrace = oy+(wy-oy)*scale_factor;
       if (!worldToMap(x_start_raytrace, y_start_raytrace, x0, y0))
