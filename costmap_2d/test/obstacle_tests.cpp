@@ -245,9 +245,9 @@ TEST(costmap, testMultipleAdditions){
 }
 
 /**
- * Test that minimal clearing distance is taken into account
+ * Test that minimal ray trace range is taken into account
  */
-TEST(costmap, testMinimalClearingDistance){
+TEST(costmap, testMinimalRayTraceRange){
   tf::TransformListener tf;
 
   // Start with an empty map, no rolling window, tracking unknown
@@ -256,15 +256,42 @@ TEST(costmap, testMinimalClearingDistance){
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
   // Lay out 1 obstacle
-  addObservation(olayer, 5.0, 5.0, MAX_Z, 0,0,MAX_Z,3.0);
+  addObservation(olayer, 5.0, 5.0, MAX_Z, 0, 0, MAX_Z, 3.0);
   layers.updateMap(0,0,0);
 
   Costmap2D* costmap = layers.getCostmap();
-  printMap(*costmap);
+  //printMap(*costmap);
   // 1 obstacle cells is filled <4,4>.
   // Because our minimal clearing distance is 3 meters, cells <0,0> and
   // <1,1>  (sqrt(3) = 1.7) must remain in "NO_INFORMATION". And cells <2,2>, <3,3>, <4,4>, in "FREE_SPACE".
   // And <5,5> is our lethal obstacle.
+  ASSERT_EQ(1, countValues(*costmap, costmap_2d::LETHAL_OBSTACLE));
+  ASSERT_EQ(96, countValues(*costmap, costmap_2d::NO_INFORMATION));
+  ASSERT_EQ(3, countValues(*costmap, costmap_2d::FREE_SPACE));
+}
+
+/**
+ * Test that maxRaytraceRange works when minRaytraceRange is not null.
+ */
+TEST(costmap, testMaxAndMinRayTranceRange){
+  tf::TransformListener tf;
+
+  // Start with an empty map, no rolling window, tracking unknown
+  LayeredCostmap layers("frame", false, true);
+  layers.resizeMap(10, 10, 1, 0, 0);
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  // Lay out 1 obstacle
+  addObservation(olayer, 0.0, 7.0, MAX_Z, 0, 0, MAX_Z, 3.0, 5.0);
+  layers.updateMap(0,0,0);
+
+  Costmap2D* costmap = layers.getCostmap();
+  //printMap(*costmap);
+  // 1 obstacle cells is filled <0,6>.
+  // Because our minimal raytrace range is 3 meters, cells <0,0> and <0,1> and <0,2> must remain in "NO_INFORMATION".
+  // Because our maximal raytrace range is 5 meters, cell <0,6> must remain in "NO_INFORMATION".
+  // And cells <0,3>, <0,4> and <0,5> in "FREE_SPACE".
+  // And <0,7> is our lethal obstacle.
   ASSERT_EQ(1, countValues(*costmap, costmap_2d::LETHAL_OBSTACLE));
   ASSERT_EQ(96, countValues(*costmap, costmap_2d::NO_INFORMATION));
   ASSERT_EQ(3, countValues(*costmap, costmap_2d::FREE_SPACE));

@@ -73,7 +73,8 @@ costmap_2d::ObstacleLayer* addObstacleLayer(costmap_2d::LayeredCostmap& layers, 
 }
 
 void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, double z = 0.0,
-                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z, double min_raytrace_range = 0.0){
+                    double ox = 0.0, double oy = 0.0, double oz = MAX_Z, double min_raytrace_range = 0.0,
+                    double max_raytrace_range = 100.){
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(1);
   cloud.points[0].x = x;
@@ -85,7 +86,7 @@ void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, doubl
   p.y = oy;
   p.z = oz;
 
-  costmap_2d::Observation obs(p, cloud, 100.0, min_raytrace_range, 100.0);  // obstacle range = raytrace range = 100.0
+  costmap_2d::Observation obs(p, cloud, 100.0, min_raytrace_range, max_raytrace_range); // obstacle range = 100.0
   olayer->addStaticObservation(obs, true, true);
 }
 
