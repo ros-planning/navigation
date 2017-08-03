@@ -546,8 +546,8 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
         continue;
       }
       double scale_factor = clearing_observation.start_clearing_range_/obstacle_range;
-      double x_start_clearing = (wx-ox)*scale_factor;
-      double y_start_clearing = (wy-oy)*scale_factor;
+      double x_start_clearing = ox+(wx-ox)*scale_factor;
+      double y_start_clearing = oy+(wy-oy)*scale_factor;
       if (!worldToMap(x_start_clearing, y_start_clearing, x0, y0))
       {
         ROS_WARN_THROTTLE(
