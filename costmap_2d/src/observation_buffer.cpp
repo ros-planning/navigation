@@ -50,13 +50,25 @@ namespace costmap_2d
 {
 ObservationBuffer::ObservationBuffer(string topic_name, double observation_keep_time, double expected_update_rate,
                                      double min_obstacle_height, double max_obstacle_height, double obstacle_range,
-                                     double raytrace_range, double start_clearing_range, TransformListener& tf,
+                                     double max_raytrace_range, TransformListener& tf, string global_frame,
+                                     string sensor_frame, double tf_tolerance) :
+    tf_(tf), observation_keep_time_(observation_keep_time), expected_update_rate_(expected_update_rate),
+    last_updated_(ros::Time::now()), global_frame_(global_frame), sensor_frame_(sensor_frame), topic_name_(topic_name),
+    min_obstacle_height_(min_obstacle_height), max_obstacle_height_(max_obstacle_height),
+    obstacle_range_(obstacle_range), min_raytrace_range_(0.0), max_raytrace_range_(max_raytrace_range),
+    tf_tolerance_(tf_tolerance)
+{
+}
+
+ObservationBuffer::ObservationBuffer(string topic_name, double observation_keep_time, double expected_update_rate,
+                                     double min_obstacle_height, double max_obstacle_height, double obstacle_range,
+                                     double min_raytrace_range, double max_raytrace_range, TransformListener& tf,
                                      string global_frame, string sensor_frame, double tf_tolerance) :
     tf_(tf), observation_keep_time_(observation_keep_time), expected_update_rate_(expected_update_rate),
     last_updated_(ros::Time::now()), global_frame_(global_frame), sensor_frame_(sensor_frame), topic_name_(topic_name),
     min_obstacle_height_(min_obstacle_height), max_obstacle_height_(max_obstacle_height),
-    obstacle_range_(obstacle_range), raytrace_range_(raytrace_range), tf_tolerance_(tf_tolerance),
-    start_clearing_range_(start_clearing_range)
+    obstacle_range_(obstacle_range), min_raytrace_range_(min_raytrace_range), max_raytrace_range_(max_raytrace_range),
+    tf_tolerance_(tf_tolerance)
 {
 }
 
@@ -149,9 +161,9 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
     observation_list_.front().origin_.z = global_origin.getZ();
 
     // make sure to pass on the raytrace/obstacle/start_clearing range of the observation buffer to the observations
-    observation_list_.front().raytrace_range_ = raytrace_range_;
+    observation_list_.front().max_raytrace_range_ = max_raytrace_range_;
     observation_list_.front().obstacle_range_ = obstacle_range_;
-    observation_list_.front().start_clearing_range_ = start_clearing_range_;
+    observation_list_.front().min_raytrace_range_ = min_raytrace_range_;
 
     pcl::PointCloud < pcl::PointXYZ > global_frame_cloud;
 
