@@ -60,10 +60,27 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
 }
 
 Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
-    layered_costmap_(NULL), name_(name), tf_(tf), stop_updates_(false), initialized_(true), stopped_(false),
-    robot_stopped_(false), map_update_thread_(NULL), last_publish_(0),
-    plugin_loader_("costmap_2d", "costmap_2d::Layer"), publisher_(NULL)
+    layered_costmap_(NULL),
+    name_(name),
+    tf_(tf),
+    transform_tolerance_(0.0),
+    map_update_thread_shutdown_(false),
+    stop_updates_(false),
+    initialized_(true),
+    stopped_(false),
+    robot_stopped_(false),
+    map_update_thread_(NULL),
+    last_publish_(0),
+    plugin_loader_("costmap_2d", "costmap_2d::Layer"),
+    publisher_(NULL),
+    dsrv_(NULL),
+    got_footprint_(false),
+    footprint_padding_(0.0)
 {
+  // Initialize old pose with something
+  old_pose_.setIdentity();
+  old_pose_.setOrigin(tf::Vector3(1e30, 1e30, 1e30));
+
   ros::NodeHandle private_nh("~/" + name);
   ros::NodeHandle g_nh;
 
