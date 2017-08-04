@@ -533,6 +533,7 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
 {
   double ox = clearing_observation.origin_.x;
   double oy = clearing_observation.origin_.y;
+  double oz = clearing_observation.origin_.z;
   pcl::PointCloud < pcl::PointXYZ > cloud = *(clearing_observation.cloud_);
 
   // get the map coordinates of the origin of the sensor
@@ -558,25 +559,26 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   {
     double wx = cloud.points[i].x;
     double wy = cloud.points[i].y;
+    double wz = cloud.points[i].z;
     if (clearing_observation.min_raytrace_range_ > 0)
     {
       // If this sensor start seeing obstacle at a certain range, we must move x0,y0 at this
       // range from the sensor (following the line going from the sensor to the point)
-      double max_obstacle_range = hypot(wx-ox, wy-oy);
-      if (max_obstacle_range < clearing_observation.min_raytrace_range_)
+      double obstacle_range = sqrt((wx-ox)*(wx-ox) + (wy-oy)*(wy-oy) + (wz-oz)*(wz-oz));
+      if (obstacle_range < clearing_observation.min_raytrace_range_)
       {
         // This may happens if parameter start_clearing_range was set to a range lesser than the minimal sensor range.
         // In this particular case, we just don't set free spaces (after displaying a warning). We display the warning
         // only if max_obstacle_range is > 0 to handle particular case of sensor returning 0 if they don't see anything.
-        if (max_obstacle_range > 0)
+        if (obstacle_range > 0)
         {
           ROS_WARN_THROTTLE(
-                  60.0, "Your start_clearing_range parameter seems to be too short because an observation was returned by"
-                  "your sensor in this range. Cells between sensor and this observation was not cleared");
+                  60.0, "Your min_raytrace_range_ parameter seems to be too short because an observation was returned by "
+                  "your sensor in this range. Cells between sensor and this observation was not cleared.");
         }
         continue;
       }
-      double scale_factor = clearing_observation.min_raytrace_range_/max_obstacle_range;
+      double scale_factor = clearing_observation.min_raytrace_range_/obstacle_range;
       double x_start_raytrace = ox+(wx-ox)*scale_factor;
       double y_start_raytrace = oy+(wy-oy)*scale_factor;
       if (!worldToMap(x_start_raytrace, y_start_raytrace, x0, y0))
