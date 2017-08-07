@@ -339,7 +339,7 @@ bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& po
 
 void Costmap2D::polygonOutlineCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells)
 {
-  PolygonOutlineCells cell_gatherer(*this, costmap_, polygon_cells);
+  PolygonOutlineCells cell_gatherer(*this, polygon_cells);
   for (unsigned int i = 0; i < polygon.size() - 1; ++i)
   {
     raytraceLine(cell_gatherer, polygon[i].x, polygon[i].y, polygon[i + 1].x, polygon[i + 1].y);

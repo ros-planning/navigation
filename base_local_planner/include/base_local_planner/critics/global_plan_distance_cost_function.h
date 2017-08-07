@@ -80,7 +80,7 @@ public:
    */
   void setMaxAllowedDistanceFromPlan(double max_allowed_distance_from_plan)
   {
-    max_allowed_distance_from_plan_ = max_allowed_distance_from_plan_;
+    max_allowed_distance_from_plan_ = max_allowed_distance_from_plan;
   }
 
   /**

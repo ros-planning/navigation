@@ -56,6 +56,8 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
     int n = path.size();
     if (n == 0) return;
     switch(omode_) {
+        case NONE:
+            break;
         case FORWARD:
             for(int i=0;i<n-1;i++){
                 pointToNext(path, i);
@@ -83,7 +85,7 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
             
             path[0].pose.orientation = start.pose.orientation;
             interpolate(path, i, n-1);
-            break;           
+            break;
     }
 }
     
