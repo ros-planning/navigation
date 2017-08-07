@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.1 (2017-08-07)
+-------------------
 * Merge pull request `#570 <https://github.com/ros-planning/navigation/issues/570>`_ from codebot/add_twirling_cost_function
 * Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
 * Add cost function to prevent unnecessary spinning
