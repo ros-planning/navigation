@@ -2,6 +2,11 @@
 Changelog for package voxel_grid
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Contributors: Martin Günther
+
 1.14.0 (2016-05-20)
 -------------------
 

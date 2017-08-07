@@ -2,6 +2,15 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add a max_planning_retries parameter to move_base [kinetic] (`#539 <https://github.com/ros-planning/navigation/issues/539>`_)
+* Fixed deadlock when changing global planner
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Added deps to amcl costmap_2d move_base (`#512 <https://github.com/ros-planning/navigation/issues/512>`_)
+* move_base: Add move_base_msgs to find_package.
+* Contributors: Jorge Santos Simón, Maarten de Vries, Martin Günther, Vincent Rabaud, mryellow, ne0
+
 1.14.0 (2016-05-20)
 -------------------
 

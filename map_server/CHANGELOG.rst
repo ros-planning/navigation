@@ -2,6 +2,17 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* refactor to not use tf version 1 (`#561 <https://github.com/ros-planning/navigation/issues/561>`_)
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Merge pull request `#560 <https://github.com/ros-planning/navigation/issues/560>`_ from wjwwood/map_server_fixup_cmake
+* update to support Python 2 and 3 (`#559 <https://github.com/ros-planning/navigation/issues/559>`_)
+* remove duplicate and unreferenced file (`#558 <https://github.com/ros-planning/navigation/issues/558>`_)
+* remove trailing whitespace from map_server package (`#557 <https://github.com/ros-planning/navigation/issues/557>`_)
+* fix cmake use of yaml-cpp and sdl / sdl-image
+* Contributors: Martin Günther, Michael Ferguson, Vincent Rabaud, William Woodall
+
 1.14.0 (2016-05-20)
 -------------------
 * Corrections to alpha channel detection and usage.

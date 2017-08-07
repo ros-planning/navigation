@@ -2,6 +2,14 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* port `#549 <https://github.com/ros-planning/navigation/issues/549>`_ (in alphabetical order)
+* address gcc6 build error
+* remove GCC warnings
+* Contributors: Lukas Bulwahn, Martin Günther, Michael Ferguson, Vincent Rabaud
+
 1.14.0 (2016-05-20)
 -------------------
 * navfn: make independent on costmap implementation

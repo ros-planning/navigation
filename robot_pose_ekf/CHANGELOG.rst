@@ -2,6 +2,12 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Initialization of filter with GPS and odometry.
+* Contributors: Martin Günther, Vincent Rabaud, azaganidis
+
 1.14.0 (2016-05-20)
 -------------------
 * add to install script/ directory

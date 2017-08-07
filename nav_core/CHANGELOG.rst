@@ -2,6 +2,11 @@
 Changelog for package nav_core
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* makePlan overload must return.
+* Contributors: Eric Tappan
+
 1.14.0 (2016-05-20)
 -------------------
 

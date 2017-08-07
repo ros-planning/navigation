@@ -2,6 +2,15 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#570 <https://github.com/ros-planning/navigation/issues/570>`_ from codebot/add_twirling_cost_function
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Add cost function to prevent unnecessary spinning
+* make rostest in CMakeLists optional (`ros/rosdistro#3010 <https://github.com/ros/rosdistro/issues/3010>`_)
+* remove GCC warnings
+* Contributors: Lukas Bulwahn, Martin Günther, Michael Ferguson, Morgan Quigley, Vincent Rabaud, lengly
+
 1.14.0 (2016-05-20)
 -------------------
 
