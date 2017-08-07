@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.0 (2017-08-07)
+-------------------
 * set message_generation build and runtime dependency
 * convert packages to format2
 * cleaner logic, fixes `#156 <https://github.com/ros-planning/navigation/issues/156>`_
