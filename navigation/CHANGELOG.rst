@@ -2,6 +2,11 @@
 Changelog for package navigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* convert packages to format2
+* Contributors: Mikael Arguedas
+
 1.14.0 (2016-05-20)
 -------------------
 

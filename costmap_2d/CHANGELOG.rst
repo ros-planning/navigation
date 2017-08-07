@@ -2,6 +2,34 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added parameter for allowing inflation in unknown cells (`#564 <https://github.com/ros-planning/navigation/issues/564>`_)
+* Inflation Layer protected members and virtual computeCost [ABI BREAKING]
+* Fix for `#517 <https://github.com/ros-planning/navigation/issues/517>`_: create a getRobotPose method on move_base instead of using that on the costmaps
+* don't update costs if inflation radius is zero
+* rebase fixups
+* convert packages to format2
+* Speedup (~60%) inflation layer update (`#525 <https://github.com/ros-planning/navigation/issues/525>`_)
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* add missing deps on libpcl
+* import only PCL common
+* pcl proagate -lQt5::Widgets flag so we need to find_package Qt5Widgets (`#578 <https://github.com/ros-planning/navigation/issues/578>`_)
+* Added deps to amcl costmap_2d move_base (`#512 <https://github.com/ros-planning/navigation/issues/512>`_)
+* remove GCC warnings
+* Fix CMake warnings
+* renamed targets for message generation (gencpp -> generate_messages_cpp) in order to avoid warnings for non-existing target dependencies
+* Fixed race condition with costmaps
+* Merge pull request `#491 <https://github.com/ros-planning/navigation/issues/491>`_ from alexhenning/kinetic-inflation-fix
+* Fixed sign error in inflation layer
+* Adds warning when a layer shrinks the bounds
+* Fixed bug with inflation layer that caused underinflation
+* Fixed bug with artifacts when not current
+* Fix bug with inflation artifacts being left behind
+* Fixes issue with costmaps shearing
+* Made costmap publishing truly lazy
+* Contributors: Alex Henning, Alexander Reimann, Hidde Wieringa, Jorge Santos, Jorge Santos Simón, Martin Günther, Michael Ferguson, Mikael Arguedas, Stephan Opfer, Vincent Rabaud, mryellow
+
 1.14.0 (2016-05-20)
 -------------------
 * Reordered initializer list to match order of declarations.

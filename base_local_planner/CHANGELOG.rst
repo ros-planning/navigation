@@ -2,6 +2,21 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* set message_generation build and runtime dependency
+* convert packages to format2
+* cleaner logic, fixes `#156 <https://github.com/ros-planning/navigation/issues/156>`_
+* Merge pull request `#596 <https://github.com/ros-planning/navigation/issues/596>`_ from ros-planning/lunar_548
+* Add cost function to prevent unnecessary spinning
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* add missing deps on libpcl
+* import only PCL common
+* pcl proagate -lQt5::Widgets flag so we need to find_package Qt5Widgets (`#578 <https://github.com/ros-planning/navigation/issues/578>`_)
+* make rostest in CMakeLists optional (`ros/rosdistro#3010 <https://github.com/ros/rosdistro/issues/3010>`_)
+* remove GCC warnings
+* Contributors: Lukas Bulwahn, Martin Günther, Michael Ferguson, Mikael Arguedas, Morgan Quigley, Vincent Rabaud, lengly
+
 1.14.0 (2016-05-20)
 -------------------
 

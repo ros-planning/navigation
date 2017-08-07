@@ -2,6 +2,14 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* convert packages to format2
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* import only PCL common
+* remove GCC warnings
+* Contributors: Martin Günther, Mikael Arguedas, Vincent Rabaud
+
 1.14.0 (2016-05-20)
 -------------------
 
