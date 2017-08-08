@@ -70,6 +70,7 @@ public:
     radius_ = kern.radius_;
 
     values_ = kern.values_;
+    ignore_freespace_ = kern.ignore_freespace_;
 
     return *this;
   };
@@ -85,6 +86,7 @@ public:
   float resolution_ = 1; // resolution of the costmap
   float radius_ = 1; // radius of affect of the costmap
   unsigned char max_cost_ = 255; // Maximum cost in the kernel
+  bool ignore_freespace_ = false; // Whether the kernel should ignore freespace when being applied
 };
 
 /**
@@ -101,13 +103,16 @@ public:
    * @param inflation_radius The max distance away from the kernel center for which there is cost
    * @param cost_scaling_factor The factor used in the exponential decay cost function
    * @param resolution The resolution of the grid
+   * @param ignore_freespace Do not overwrite freespace with this kernel
    */
   static std::shared_ptr<Kernel> generateRadialInflationKernel(unsigned char max_value, unsigned char inscribed_value,
-    double inscribed_radius, double inflation_radius, double cost_scaling_factor, double resolution)
+    double inscribed_radius, double inflation_radius, double cost_scaling_factor, double resolution,
+    bool ignore_freespace)
   {
 
     auto kernel = std::make_shared<Kernel>();
 
+    kernel->ignore_freespace_ = ignore_freespace;
     kernel->resolution_ = resolution;
     kernel->radius_ = inflation_radius;
     kernel->max_cost_ = max_value;
@@ -162,13 +167,16 @@ public:
    * @param inflation_radius The max distance away from the kernel center for which there is cost
    * @param cost_scaling_factor The factor used in the exponential decay cost function
    * @param resolution The resolution of the grid
+   * @param ignore_freespace Do not overwrite freespace with this kernel
    */
   static std::shared_ptr<Kernel> generateTrinomialRadialInflationKernel(unsigned char max_value, unsigned char inscribed_value,
-    double inscribed_radius, double inflation_radius, double cost_scaling_factor, double resolution)
+    double inscribed_radius, double inflation_radius, double cost_scaling_factor, double resolution,
+    bool ignore_freespace)
   {
 
     auto kernel = std::make_shared<Kernel>();
 
+    kernel->ignore_freespace_ = ignore_freespace;
     kernel->resolution_ = resolution;
     kernel->radius_ = inflation_radius;
     kernel->max_cost_ = max_value;

@@ -277,6 +277,12 @@ protected:
   // Generate all of the kernels
   void generateKernels();
 
+  void generateKernelsByType(ObstructionType type, float inflation_radius,
+    float cost_scaling_factor, int inflation_type);
+
+  ObstructionType getObstructionTypeFromIndex(unsigned int index);
+
+
   std::string global_frame_;  ///< @brief The global frame for the costmap
   double max_obstacle_height_;  ///< @brief Max Obstacle Height
 
@@ -298,20 +304,26 @@ protected:
   std::weak_ptr<Obstruction>* obstruction_map_;
   std::list<std::shared_ptr<Obstruction>> obstruction_list_;
 
-  std::vector<std::shared_ptr<Kernel>> kernels_; // vector of kernels for different obstruction levels
+  std::map<ObstructionType, std::vector<std::shared_ptr<Kernel>>> kernels_; // map of vector of kernels for different obstruction levels
 
   bool enable_decay_ = true; // Enalbe the decay of obstructions
   ros::Duration obstruction_half_life_ = ros::Duration(1); // The time to wait before decrementing the obstruction level by half.
   unsigned int num_obstruction_levels_ = 10;  // The number of levels the obstruction should go through before disappearing
-  float inflation_radius_ = 1;
-  float cost_scaling_factor_ = 1;
 
   enum inflation_type {
     EXPONENTIAL_INFLATION = 0,
     TRINOMIAL_INFLATION = 1
   };
 
-  int inflation_type_ = EXPONENTIAL_INFLATION;
+  float ss_inflation_radius_ = 1;
+  float ss_cost_scaling_factor_ = 1;
+
+  int ss_inflation_type_ = EXPONENTIAL_INFLATION;
+
+  float dyn_inflation_radius_ = 1;
+  float dyn_cost_scaling_factor_ = 1;
+  int dyn_inflation_type_ = EXPONENTIAL_INFLATION;
+
 
   ros::Publisher obstruction_publisher_;  // Publisher of obstruction data
 

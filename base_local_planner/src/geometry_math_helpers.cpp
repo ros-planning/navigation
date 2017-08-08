@@ -73,13 +73,13 @@ double distanceAlongLineSegment(const Eigen::Vector2f& pos,
 Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
   const Eigen::Vector2f& p0, const Eigen::Vector2f& p1)
 {
-  double l2 = (p1 - p0).squaredNorm();
-  if (l2 == 0.0)
+  double l = (p1 - p0).norm();
+  if (l == 0.0)
   {
     return p1;
   }
 
-  double t = distance / l2;
+  double t = distance / l;
 
   Eigen::Vector2f projection = p0 + t * (p1 - p0);
 

@@ -46,6 +46,14 @@
 
 namespace costmap_2d
 {
+
+enum class ObstructionType
+{
+  STATIC,
+  DYNAMIC,
+  SEMI_STATIC
+};
+
 /**
  * Struct to hold information about things in the world seen by sensors.
  */
@@ -57,11 +65,13 @@ struct Obstruction
    * Constructor
    * @param x The x location (in meters) of the obstruction
    * @param y The y location (in meters) of the obstruction
+   * @param type The type of obstruction
    * @param frame The frame in which the x and y params are defined
    */
-  Obstruction(float x, float y, std::string frame) : x_(x), y_(y), frame_(frame),
-    first_sighting_time_(ros::Time::now()), last_sighting_time_(ros::Time::now()),
-    last_level_time_(ros::Time::now()), seen_this_cycle_(true), updated_(true) {}
+  Obstruction(float x, float y, ObstructionType type, std::string frame) : x_(x), y_(y),
+    type_(type), frame_(frame), first_sighting_time_(ros::Time::now()),
+    last_sighting_time_(ros::Time::now()), last_level_time_(ros::Time::now()),
+    seen_this_cycle_(true), updated_(true) {}
 
   /**
    * Mark the obstruction as seen again.
@@ -85,6 +95,7 @@ struct Obstruction
   float x_ = 0.0; // x location of obstruction
   float y_ = 0.0; // y location of obstruction
   unsigned int level_ = 0; // obstruction level
+  ObstructionType type_ = ObstructionType::DYNAMIC; // type of the obstruction
   bool cleared_ = false; // flag to indicate if the obstruction is cleared and should be removed
   bool seen_this_cycle_ = false; // flag to indicate if the obstruction was seen this cycle
   bool updated_ = false; // flag to indicate if something about the obstruction was updated
@@ -110,6 +121,15 @@ public:
     msg.effective_radius = obs.radius_;
     msg.max_cost = obs.max_cost_;
     msg.frame_id = obs.frame_;
+    switch (obs.type_)
+    {
+      case ObstructionType::DYNAMIC:
+        msg.type = ObstructionMsg::DYNAMIC;
+        break;
+      case ObstructionType::SEMI_STATIC:
+        msg.type = ObstructionMsg::SEMI_STATIC;
+        break;
+    }
     if (obs.cleared_)
     {
       msg.updated = true;
