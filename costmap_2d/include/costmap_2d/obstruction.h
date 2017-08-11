@@ -76,12 +76,13 @@ struct Obstruction
   /**
    * Mark the obstruction as seen again.
    */
-  void touch()
+  void touch(ObstructionType type)
   {
     last_sighting_time_ = ros::Time::now();
     last_level_time_ = last_sighting_time_;
     cleared_ = false;
     seen_this_cycle_ = true;
+    type_ = type;
     if (level_ != 0)
     {
       level_ = 0;

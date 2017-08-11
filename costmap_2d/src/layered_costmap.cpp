@@ -64,6 +64,35 @@ LayeredCostmap::~LayeredCostmap()
   }
 }
 
+void LayeredCostmap::addPlugin(boost::shared_ptr<Layer> plugin)
+{
+  if (plugin->isStaticLayer()) {
+    static_layer_ = plugin;
+  }
+  plugins_.push_back(plugin);
+}
+
+std::shared_ptr<std::vector<double>> LayeredCostmap::getDistancesFromStaticMap()
+{
+  if (static_layer_) {
+    return static_layer_->getDistancesFromStaticMap();
+  } else {
+    return std::shared_ptr<std::vector<double>>();
+  }
+}
+
+double LayeredCostmap::getDistanceFromStaticMap(double px, double py)
+{
+  if (static_layer_)
+  {
+    return static_layer_->getDistanceFromStaticMap(px, py);
+  }
+  else
+  {
+    return -1.0;
+  }
+}
+
 void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
                                double origin_y, bool size_locked)
 {

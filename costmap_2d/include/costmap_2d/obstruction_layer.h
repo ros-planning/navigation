@@ -282,6 +282,7 @@ protected:
 
   ObstructionType getObstructionTypeFromIndex(unsigned int index);
 
+  ObstructionType getObstructionType(double px, double py);
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
   double max_obstacle_height_;  ///< @brief Max Obstacle Height
@@ -324,6 +325,9 @@ protected:
   float dyn_cost_scaling_factor_ = 1;
   int dyn_inflation_type_ = EXPONENTIAL_INFLATION;
 
+  double distance_threshold_ = 0.3;
+
+  std::shared_ptr<std::vector<double>> static_distance_map_;
 
   ros::Publisher obstruction_publisher_;  // Publisher of obstruction data
 

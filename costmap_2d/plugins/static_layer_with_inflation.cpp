@@ -344,6 +344,47 @@ void StaticLayerWithInflation::updateBounds(double robot_x, double robot_y, doub
   has_updated_data_ = false;
 }
 
+double StaticLayerWithInflation::getDistanceFromStaticMap(double px, double py)
+{
+  if (layered_costmap_->isRolling())
+  {
+    // If it is rolling, convert the points.
+    // If rolling window, the master_grid is unlikely to have same coordinates as this layer
+    unsigned int mx, my;
+    double wx, wy;
+    // Might even be in a different frame
+    tf::StampedTransform transform;
+    try
+    {
+      tf_->lookupTransform(map_frame_, global_frame_, ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      return -1.0;
+    }
+
+    tf::Point p(px, py, 0);
+    p = transform(p);
+    ROS_DEBUG("Original: %f, %f - transformed: %f, %f", px, py, p.x(), p.y());
+    px = p.x();
+    py = p.y();
+  }
+
+  unsigned int mx = 0;
+  unsigned int my = 0;
+
+  auto distance_map = inflation_layer_->getDistancesFromStaticMap();
+  if (distance_map && worldToMap(px, py, mx, my))
+  {
+    return (*distance_map)[getIndex(mx, my)];
+  }
+  else
+  {
+    return -1.0;
+  }
+}
+
 void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   srs::ScopedTimingSampleRecorder stsr_update_costs(timingDataRecorder_.getRecorder("-updateCosts", 1));

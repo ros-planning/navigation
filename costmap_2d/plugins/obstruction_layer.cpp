@@ -263,6 +263,7 @@ void ObstructionLayer::reconfigureCB(costmap_2d::ObstructionPluginConfig &config
   num_obstruction_levels_ = config.num_obstruction_levels;
   enable_decay_ = config.enable_decay;
 
+  distance_threshold_ = config.distance_threshold;
 
   dyn_inflation_type_ = config.dyn_inflation_type;
   dyn_inflation_radius_ = config.dyn_inflation_radius;
@@ -386,6 +387,9 @@ void ObstructionLayer::updateBounds(double robot_x, double robot_y, double robot
   // update the global current status
   current_ = current;
 
+  // update the static distance map
+  static_distance_map_ = layered_costmap_->getDistancesFromStaticMap();
+
   // raytrace freespace
   ROS_DEBUG("In update bounds.  Have %zu clearing and %zu marking obs.", clearing_observations.size(), observations.size());
   for (unsigned int i = 0; i < observations.size(); ++i)
@@ -464,6 +468,11 @@ void ObstructionLayer::updateObstructions(double* min_x, double* min_y, double* 
         obs->updated_ = true;
       }
     }
+    // If the obstruction has changed to static, clear it.
+    if (obs->type_ == ObstructionType::STATIC)
+    {
+      obs->cleared_ = true;
+    }
 
     // Touch with size extent
     touchWithRadius(obs->x_, obs->y_, obs->radius_, min_x, min_y, max_x, max_y);
@@ -525,22 +534,21 @@ void ObstructionLayer::checkObservation(const Observation& obs, double* min_x, d
 
     unsigned int index = getIndex(mx, my);
 
+    ObstructionType type = getObstructionType(px, py);
     // Check to see if there is already an obstruction there
     auto obstruction = obstruction_map_[index].lock();
     if (obstruction)
     {
       // Touch it.
       ROS_DEBUG("Touching obstacle at %f, %f, %d", px, py, index);
-      obstruction->touch();
+      obstruction->touch(type);
     }
     else
     {
-      // Get the type
-      ObstructionType type = getObstructionTypeFromIndex(index);
       // Check to see if it is in the master grid already.
       if (type != ObstructionType::STATIC)
       {
-        ROS_DEBUG("Creating new obstacle at %f, %f, %d", px, py, index);
+        ROS_INFO("Creating new obstacle at %f, %f, %d, type: %d", px, py, index, type);
         // Create a new one.  Store in list and map.
         auto obs = std::make_shared<Obstruction>(px, py, type, cloud.header.frame_id);
         obstruction_list_.push_back(obs);
@@ -554,16 +562,43 @@ void ObstructionLayer::checkObservation(const Observation& obs, double* min_x, d
   }
 }
 
-ObstructionType ObstructionLayer::getObstructionTypeFromIndex(unsigned int index)
+ObstructionType ObstructionLayer::getObstructionType(double px, double py)
 {
   ///// IMPLEMENT SOMEHOW
-  float distance_from_static = layered_costmap_->getStaticDistanceMap()[index];
+  double distance_from_static = layered_costmap_->getDistanceFromStaticMap(px, py) * resolution_;
 
-  if (distance == 0.0f)
+  ROS_INFO("Getting type at: %f, %f.  distance: %f, thresh: %f",
+    px, py, distance_from_static, distance_threshold_);
+
+  if (distance_from_static == 0.0)
   {
     return ObstructionType::STATIC;
   }
-  else if (distance > 0.0f && distance < distance_threshold_)
+  else if (distance_from_static > 0.0 && distance_from_static < distance_threshold_)
+  {
+    return ObstructionType::SEMI_STATIC;
+  }
+  else
+  {
+    return ObstructionType::DYNAMIC;
+  }
+}
+
+ObstructionType ObstructionLayer::getObstructionTypeFromIndex(unsigned int index)
+{
+  if (!static_distance_map_)
+  {
+    ROS_WARN_THROTTLE(1.0, "Static distance map not set - all obstructions are dynamic");
+    return ObstructionType::DYNAMIC;
+  }
+  ///// IMPLEMENT SOMEHOW
+  double distance_from_static = (*static_distance_map_)[index];
+
+  if (distance_from_static == 0.0)
+  {
+    return ObstructionType::STATIC;
+  }
+  else if (distance_from_static > 0.0 && distance_from_static < distance_threshold_)
   {
     return ObstructionType::SEMI_STATIC;
   }
@@ -687,7 +722,9 @@ void ObstructionLayer::applyKernelAtLocation(std::shared_ptr<Kernel> kernel, flo
         unsigned char grid_cost = grid[grid_idx];
         unsigned char kernel_cost = kernel->values_[kern_x_start + xx];
 
-        if (!(kernel->ignore_freespace_ && grid_cost == FREE_SPACE)
+        if (!(kernel->ignore_freespace_ && grid_cost == FREE_SPACE
+              && (kernel_cost != INSCRIBED_INFLATED_OBSTACLE
+                || kernel_cost != LETHAL_OBSTACLE))
           && (grid_cost < kernel_cost || grid_cost == NO_INFORMATION))
         {
           grid[grid_idx] = kernel_cost;
@@ -1000,6 +1037,9 @@ void ObstructionLayer::generateKernels()
   // Generate the semi-static obstacle kernels
   generateKernelsByType(ObstructionType::SEMI_STATIC, ss_inflation_radius_,
     ss_cost_scaling_factor_, ss_inflation_type_);
+
+  // Generate the static kernels (to avoid segfaults)
+  generateKernelsByType(ObstructionType::STATIC, 0, 1.0, EXPONENTIAL_INFLATION);
 }
 
 void ObstructionLayer::generateKernelsByType(ObstructionType type,

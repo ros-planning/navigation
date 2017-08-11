@@ -79,6 +79,16 @@ public:
 
   virtual void onFootprintChanged();
 
+  virtual bool isStaticLayer() {
+    return true;
+  }
+
+  virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {
+    return inflation_layer_->getDistancesFromStaticMap();
+  }
+
+  virtual double getDistanceFromStaticMap(double px, double py);
+
 private:
   /**
    * @brief  Callback to update the costmap's map from the map_server

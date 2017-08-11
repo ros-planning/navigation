@@ -110,10 +110,7 @@ public:
     return &plugins_;
   }
 
-  void addPlugin(boost::shared_ptr<Layer> plugin)
-  {
-    plugins_.push_back(plugin);
-  }
+  void addPlugin(boost::shared_ptr<Layer> plugin);
 
   bool isSizeLocked()
   {
@@ -155,6 +152,10 @@ public:
    * This is updated by setFootprint(). */
   double getInscribedRadius() { return inscribed_radius_; }
 
+  virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap();
+
+  double getDistanceFromStaticMap(double px, double py);
+
 private:
   Costmap2D costmap_;
   std::string global_frame_;
@@ -166,6 +167,8 @@ private:
   unsigned int bx0_, bxn_, by0_, byn_;
 
   std::vector<boost::shared_ptr<Layer> > plugins_;
+
+  boost::shared_ptr<Layer> static_layer_;
 
   bool initialized_;
   bool size_locked_;
