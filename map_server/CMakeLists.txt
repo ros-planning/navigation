@@ -21,12 +21,8 @@ endif()
 catkin_package(
     INCLUDE_DIRS
         include
-        ${SDL_INCLUDE_DIR}
-        ${SDL_IMAGE_INCLUDE_DIRS}
     LIBRARIES
         map_server_image_loader
-        ${SDL_LIBRARY}
-        ${SDL_IMAGE_LIBRARIES}
     CATKIN_DEPENDS
         roscpp
         nav_msgs
