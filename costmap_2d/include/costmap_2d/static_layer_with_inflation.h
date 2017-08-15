@@ -79,15 +79,15 @@ public:
 
   virtual void onFootprintChanged();
 
-  virtual bool isStaticLayer() {
+  virtual bool isStaticLayer() override {
     return true;
   }
 
-  virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {
+  virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() override {
     return inflation_layer_->getDistancesFromStaticMap();
   }
 
-  virtual double getDistanceFromStaticMap(double px, double py);
+  virtual double getDistanceFromStaticMap(double px, double py) override;
 
 private:
   /**
@@ -106,6 +106,9 @@ private:
   void updateCostmapFromStaticMap();
 
   unsigned char interpretValue(unsigned char value);
+
+  bool getTransform(tf::StampedTransform& transform,
+    std::string from_frame_id, std::string to_frame_id);
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
   std::string map_frame_;  /// @brief frame that map is located in

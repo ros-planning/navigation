@@ -354,13 +354,8 @@ double StaticLayerWithInflation::getDistanceFromStaticMap(double px, double py)
     double wx, wy;
     // Might even be in a different frame
     tf::StampedTransform transform;
-    try
+    if (!getTransform(transform, map_frame_, global_frame_))
     {
-      tf_->lookupTransform(map_frame_, global_frame_, ros::Time(0), transform);
-    }
-    catch (tf::TransformException ex)
-    {
-      ROS_ERROR("%s", ex.what());
       return -1.0;
     }
 
@@ -384,6 +379,7 @@ double StaticLayerWithInflation::getDistanceFromStaticMap(double px, double py)
     return -1.0;
   }
 }
+
 
 void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
@@ -414,13 +410,8 @@ void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, i
     double wx, wy;
     // Might even be in a different frame
     tf::StampedTransform transform;
-    try
+    if (!getTransform(transform, map_frame_, global_frame_))
     {
-      tf_->lookupTransform(map_frame_, global_frame_, ros::Time(0), transform);
-    }
-    catch (tf::TransformException ex)
-    {
-      ROS_ERROR("%s", ex.what());
       return;
     }
     // Copy map data given proper transformations
@@ -443,6 +434,28 @@ void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, i
         }
       }
     }
+  }
+}
+
+bool StaticLayerWithInflation::getTransform(tf::StampedTransform& transform,
+  std::string from_frame_id, std::string to_frame_id)
+{
+  try
+  {
+    if (tf_->waitForTransform(from_frame_id, to_frame_id, ros::Time(0), ros::Duration(0.1)))
+    {
+      tf_->lookupTransform(from_frame_id, to_frame_id, ros::Time(0), transform);
+    }
+    else
+    {
+      ROS_ERROR_THROTTLE(1.0, "Could not find transform from %s to %s", from_frame_id.c_str(), to_frame_id.c_str());
+      return false;
+    }
+  }
+  catch (tf::TransformException ex)
+  {
+    ROS_ERROR("%s", ex.what());
+    return false;
   }
 }
 

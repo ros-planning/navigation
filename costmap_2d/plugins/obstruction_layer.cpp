@@ -265,13 +265,13 @@ void ObstructionLayer::reconfigureCB(costmap_2d::ObstructionPluginConfig &config
 
   distance_threshold_ = config.distance_threshold;
 
-  dyn_inflation_type_ = config.dyn_inflation_type;
-  dyn_inflation_radius_ = config.dyn_inflation_radius;
-  dyn_cost_scaling_factor_ = config.dyn_cost_scaling_factor;
+  dynamic_inflation_type_ = config.dynamic_inflation_type;
+  dynamic_inflation_radius_ = config.dynamic_inflation_radius;
+  dynamic_cost_scaling_factor_ = config.dynamic_cost_scaling_factor;
 
-  ss_inflation_type_ = config.ss_inflation_type;
-  ss_inflation_radius_ = config.ss_inflation_radius;
-  ss_cost_scaling_factor_ = config.ss_cost_scaling_factor;
+  pseudostatic_inflation_type_ = config.pseudostatic_inflation_type;
+  pseudostatic_inflation_radius_ = config.pseudostatic_inflation_radius;
+  pseudostatic_cost_scaling_factor_ = config.pseudostatic_cost_scaling_factor;
 
   generateKernels();
 }
@@ -564,7 +564,6 @@ void ObstructionLayer::checkObservation(const Observation& obs, double* min_x, d
 
 ObstructionType ObstructionLayer::getObstructionType(double px, double py)
 {
-  ///// IMPLEMENT SOMEHOW
   double distance_from_static = layered_costmap_->getDistanceFromStaticMap(px, py) * resolution_;
 
   ROS_INFO("Getting type at: %f, %f.  distance: %f, thresh: %f",
@@ -576,38 +575,13 @@ ObstructionType ObstructionLayer::getObstructionType(double px, double py)
   }
   else if (distance_from_static > 0.0 && distance_from_static < distance_threshold_)
   {
-    return ObstructionType::SEMI_STATIC;
+    return ObstructionType::PSEUDOSTATIC;
   }
   else
   {
     return ObstructionType::DYNAMIC;
   }
 }
-
-ObstructionType ObstructionLayer::getObstructionTypeFromIndex(unsigned int index)
-{
-  if (!static_distance_map_)
-  {
-    ROS_WARN_THROTTLE(1.0, "Static distance map not set - all obstructions are dynamic");
-    return ObstructionType::DYNAMIC;
-  }
-  ///// IMPLEMENT SOMEHOW
-  double distance_from_static = (*static_distance_map_)[index];
-
-  if (distance_from_static == 0.0)
-  {
-    return ObstructionType::STATIC;
-  }
-  else if (distance_from_static > 0.0 && distance_from_static < distance_threshold_)
-  {
-    return ObstructionType::SEMI_STATIC;
-  }
-  else
-  {
-    return ObstructionType::DYNAMIC;
-  }
-}
-
 
 void ObstructionLayer::updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                                     double* max_x, double* max_y)
@@ -722,10 +696,13 @@ void ObstructionLayer::applyKernelAtLocation(std::shared_ptr<Kernel> kernel, flo
         unsigned char grid_cost = grid[grid_idx];
         unsigned char kernel_cost = kernel->values_[kern_x_start + xx];
 
-        if (!(kernel->ignore_freespace_ && grid_cost == FREE_SPACE
-              && (kernel_cost != INSCRIBED_INFLATED_OBSTACLE
-                || kernel_cost != LETHAL_OBSTACLE))
-          && (grid_cost < kernel_cost || grid_cost == NO_INFORMATION))
+        bool kernel_cost_beyond_obstacle = kernel_cost != INSCRIBED_INFLATED_OBSTACLE
+                || kernel_cost != LETHAL_OBSTACLE;
+        bool ignore_kernel_cost = kernel->ignore_freespace_
+              && grid_cost == FREE_SPACE
+              && kernel_cost_beyond_obstacle;
+
+        if (!ignore_kernel_cost && (grid_cost < kernel_cost || grid_cost == NO_INFORMATION))
         {
           grid[grid_idx] = kernel_cost;
         }
@@ -1031,12 +1008,12 @@ void ObstructionLayer::generateKernels()
   boost::unique_lock < boost::recursive_mutex > lock(*getMutex());
 
   // Generate the dynamic obstacle kernels
-  generateKernelsByType(ObstructionType::DYNAMIC, dyn_inflation_radius_,
-    dyn_cost_scaling_factor_, dyn_inflation_type_);
+  generateKernelsByType(ObstructionType::DYNAMIC, dynamic_inflation_radius_,
+    dynamic_cost_scaling_factor_, dynamic_inflation_type_);
 
-  // Generate the semi-static obstacle kernels
-  generateKernelsByType(ObstructionType::SEMI_STATIC, ss_inflation_radius_,
-    ss_cost_scaling_factor_, ss_inflation_type_);
+  // Generate the pseudostatic obstacle kernels
+  generateKernelsByType(ObstructionType::PSEUDOSTATIC, pseudostatic_inflation_radius_,
+    pseudostatic_cost_scaling_factor_, pseudostatic_inflation_type_);
 
   // Generate the static kernels (to avoid segfaults)
   generateKernelsByType(ObstructionType::STATIC, 0, 1.0, EXPONENTIAL_INFLATION);
@@ -1054,7 +1031,7 @@ void ObstructionLayer::generateKernelsByType(ObstructionType type,
     return;
   }
 
-  bool ignore_freespace = (type == ObstructionType::SEMI_STATIC);
+  bool ignore_freespace = (type == ObstructionType::PSEUDOSTATIC);
 
   // Create all the new kernels that are needed.
   kernels_[type] = std::vector<std::shared_ptr<Kernel>>();

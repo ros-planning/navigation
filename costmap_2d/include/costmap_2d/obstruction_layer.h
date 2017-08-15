@@ -280,8 +280,6 @@ protected:
   void generateKernelsByType(ObstructionType type, float inflation_radius,
     float cost_scaling_factor, int inflation_type);
 
-  ObstructionType getObstructionTypeFromIndex(unsigned int index);
-
   ObstructionType getObstructionType(double px, double py);
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
@@ -316,14 +314,14 @@ protected:
     TRINOMIAL_INFLATION = 1
   };
 
-  float ss_inflation_radius_ = 1;
-  float ss_cost_scaling_factor_ = 1;
+  float pseudostatic_inflation_radius_ = 1;
+  float pseudostatic_cost_scaling_factor_ = 1;
 
-  int ss_inflation_type_ = EXPONENTIAL_INFLATION;
+  int pseudostatic_inflation_type_ = EXPONENTIAL_INFLATION;
 
-  float dyn_inflation_radius_ = 1;
-  float dyn_cost_scaling_factor_ = 1;
-  int dyn_inflation_type_ = EXPONENTIAL_INFLATION;
+  float dynamic_inflation_radius_ = 1;
+  float dynamic_cost_scaling_factor_ = 1;
+  int dynamic_inflation_type_ = EXPONENTIAL_INFLATION;
 
   double distance_threshold_ = 0.3;
 

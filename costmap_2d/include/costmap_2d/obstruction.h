@@ -51,7 +51,7 @@ enum class ObstructionType
 {
   STATIC,
   DYNAMIC,
-  SEMI_STATIC
+  PSEUDOSTATIC
 };
 
 /**
@@ -127,8 +127,11 @@ public:
       case ObstructionType::DYNAMIC:
         msg.type = ObstructionMsg::DYNAMIC;
         break;
-      case ObstructionType::SEMI_STATIC:
-        msg.type = ObstructionMsg::SEMI_STATIC;
+      case ObstructionType::PSEUDOSTATIC:
+        msg.type = ObstructionMsg::PSEUDOSTATIC;
+        break;
+      case ObstructionType::STATIC:
+        msg.type = ObstructionMsg::STATIC;
         break;
     }
     if (obs.cleared_)

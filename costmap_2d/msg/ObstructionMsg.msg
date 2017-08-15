@@ -23,4 +23,4 @@ uint8 max_cost
 uint8 type
 uint8 STATIC = 0
 uint8 DYNAMIC = 1
-uint8 SEMI_STATIC = 2
+uint8 PSEUDOSTATIC = 2
