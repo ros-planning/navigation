@@ -2,6 +2,9 @@
 Changelog for package nav_core
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.1 (2017-08-07)
 -------------------
 * makePlan overload must return.
