@@ -215,6 +215,7 @@ namespace base_local_planner {
 
     cost_msg.selected_v = traj.xv_;
     cost_msg.selected_w = traj.thetav_;
+
     cost_publisher_.publish(cost_msg);
 
     std::stringstream ss;
