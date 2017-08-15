@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.2 (2017-08-14)
+-------------------
 * remove offending library export (fixes `#612 <https://github.com/ros-planning/navigation/issues/612>`_)
 * Contributors: Michael Ferguson
 
