@@ -2,6 +2,11 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove offending library export (fixes `#612 <https://github.com/ros-planning/navigation/issues/612>`_)
+* Contributors: Michael Ferguson
+
 1.15.0 (2017-08-07)
 -------------------
 * Fix compiler warning for GCC 8.
