@@ -1040,20 +1040,23 @@ void ObstructionLayer::generateKernelsByType(ObstructionType type,
   // Start.
   for (unsigned int k = 0; k < num_obstruction_levels_; ++k)
   {
-    if (inflation_type == EXPONENTIAL_INFLATION)
-    {
-      kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
-       (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-       inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
-    } else if (inflation_type == TRINOMIAL_INFLATION) {
-      kernels_[type].push_back(KernelFactory::generateTrinomialRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
-       (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-       inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
-    } else {
-      ROS_WARN("Kernel type unknown for obstruction layer.  Defaulting to exponential inflation");
-      kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
-       (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-       inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+    switch (inflation_type) {
+      case EXPONENTIAL_INFLATION:
+        kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
+         (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+        break;
+      case TRINOMIAL_INFLATION:
+        kernels_[type].push_back(KernelFactory::generateTrinomialRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
+         (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+        break;
+      default:
+        ROS_ERROR("Kernel type unknown for obstruction layer.  Defaulting to exponential inflation");
+        kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
+         (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+        break;
     }
   }
 }
