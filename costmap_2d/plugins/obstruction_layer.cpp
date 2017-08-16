@@ -262,9 +262,18 @@ void ObstructionLayer::reconfigureCB(costmap_2d::ObstructionPluginConfig &config
   obstruction_half_life_ = ros::Duration(config.obstruction_half_life);
   num_obstruction_levels_ = config.num_obstruction_levels;
   enable_decay_ = config.enable_decay;
-  inflation_type_ = config.inflation_type;
 
-  setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
+  distance_threshold_ = config.distance_threshold;
+
+  dynamic_inflation_type_ = config.dynamic_inflation_type;
+  dynamic_inflation_radius_ = config.dynamic_inflation_radius;
+  dynamic_cost_scaling_factor_ = config.dynamic_cost_scaling_factor;
+
+  pseudostatic_inflation_type_ = config.pseudostatic_inflation_type;
+  pseudostatic_inflation_radius_ = config.pseudostatic_inflation_radius;
+  pseudostatic_cost_scaling_factor_ = config.pseudostatic_cost_scaling_factor;
+
+  generateKernels();
 }
 
 void ObstructionLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& message,
@@ -378,6 +387,9 @@ void ObstructionLayer::updateBounds(double robot_x, double robot_y, double robot
   // update the global current status
   current_ = current;
 
+  // update the static distance map
+  static_distance_map_ = layered_costmap_->getDistancesFromStaticMap();
+
   // raytrace freespace
   ROS_DEBUG("In update bounds.  Have %zu clearing and %zu marking obs.", clearing_observations.size(), observations.size());
   for (unsigned int i = 0; i < observations.size(); ++i)
@@ -425,8 +437,8 @@ void ObstructionLayer::updateObstructions(double* min_x, double* min_y, double* 
       obs->seen_this_cycle_ = false;
     }
 
-    obs->radius_ = kernels_[obs->level_]->radius_;
-    obs->max_cost_ = kernels_[obs->level_]->max_cost_;
+    obs->radius_ = kernels_[obs->type_][obs->level_]->radius_;
+    obs->max_cost_ = kernels_[obs->type_][obs->level_]->max_cost_;
 
     // Check to see if the obstruction is still on the map - if not it should get cleared.
     unsigned int dummyx, dummyy;
@@ -450,11 +462,16 @@ void ObstructionLayer::updateObstructions(double* min_x, double* min_y, double* 
       }
       else
       {
-        obs->radius_ = std::max(kernels_[obs->level_]->radius_, obs->radius_);
-        obs->max_cost_ = kernels_[obs->level_]->max_cost_;
+        obs->radius_ = std::max(kernels_[obs->type_][obs->level_]->radius_, obs->radius_);
+        obs->max_cost_ = kernels_[obs->type_][obs->level_]->max_cost_;
 
         obs->updated_ = true;
       }
+    }
+    // If the obstruction has changed to static, clear it.
+    if (obs->type_ == ObstructionType::STATIC)
+    {
+      obs->cleared_ = true;
     }
 
     // Touch with size extent
@@ -517,30 +534,52 @@ void ObstructionLayer::checkObservation(const Observation& obs, double* min_x, d
 
     unsigned int index = getIndex(mx, my);
 
+    ObstructionType type = getObstructionType(px, py);
     // Check to see if there is already an obstruction there
     auto obstruction = obstruction_map_[index].lock();
     if (obstruction)
     {
       // Touch it.
       ROS_DEBUG("Touching obstacle at %f, %f, %d", px, py, index);
-      obstruction->touch();
+      obstruction->touch(type);
     }
     else
     {
       // Check to see if it is in the master grid already.
-      if (layered_costmap_->getCostmap()->getCharMap()[index] != LETHAL_OBSTACLE)
+      if (type != ObstructionType::STATIC)
       {
-        ROS_DEBUG("Creating new obstacle at %f, %f, %d", px, py, index);
+        ROS_INFO("Creating new obstacle at %f, %f, %d, type: %d", px, py, index, type);
         // Create a new one.  Store in list and map.
-        auto obs = std::make_shared<Obstruction>(px, py, cloud.header.frame_id);
+        auto obs = std::make_shared<Obstruction>(px, py, type, cloud.header.frame_id);
         obstruction_list_.push_back(obs);
         obstruction_map_[index] = obs;
       }
       else
       {
-        ROS_DEBUG("Obstacle in char map already.");
+        ROS_DEBUG("Obstacle is static.");
       }
     }
+  }
+}
+
+ObstructionType ObstructionLayer::getObstructionType(double px, double py)
+{
+  double distance_from_static = layered_costmap_->getDistanceFromStaticMap(px, py) * resolution_;
+
+  ROS_INFO("Getting type at: %f, %f.  distance: %f, thresh: %f",
+    px, py, distance_from_static, distance_threshold_);
+
+  if (distance_from_static == 0.0)
+  {
+    return ObstructionType::STATIC;
+  }
+  else if (distance_from_static > 0.0 && distance_from_static < distance_threshold_)
+  {
+    return ObstructionType::PSEUDOSTATIC;
+  }
+  else
+  {
+    return ObstructionType::DYNAMIC;
   }
 }
 
@@ -582,7 +621,7 @@ void ObstructionLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i
 
   for (auto obs_ptr : obstruction_list_)
   {
-    applyKernelAtLocation(kernels_[obs_ptr->level_], obs_ptr->x_, obs_ptr->y_, master_grid);
+    applyKernelAtLocation(kernels_[obs_ptr->type_][obs_ptr->level_], obs_ptr->x_, obs_ptr->y_, master_grid);
   }
 }
 
@@ -656,7 +695,14 @@ void ObstructionLayer::applyKernelAtLocation(std::shared_ptr<Kernel> kernel, flo
         unsigned int grid_idx = grid_x_start + grid_x;
         unsigned char grid_cost = grid[grid_idx];
         unsigned char kernel_cost = kernel->values_[kern_x_start + xx];
-        if (grid_cost < kernel_cost || grid_cost == NO_INFORMATION)
+
+        bool kernel_cost_beyond_obstacle = kernel_cost != INSCRIBED_INFLATED_OBSTACLE
+                || kernel_cost != LETHAL_OBSTACLE;
+        bool ignore_kernel_cost = kernel->ignore_freespace_
+              && grid_cost == FREE_SPACE
+              && kernel_cost_beyond_obstacle;
+
+        if (!ignore_kernel_cost && (grid_cost < kernel_cost || grid_cost == NO_INFORMATION))
         {
           grid[grid_idx] = kernel_cost;
         }
@@ -951,61 +997,66 @@ void ObstructionLayer::deleteMaps()
   obstruction_map_ = NULL;
 }
 
-
-void ObstructionLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
-{
-  ROS_DEBUG_STREAM("Obstruction Calling set inflation params with " << inflation_radius << " and " << cost_scaling_factor);
-  if (cost_scaling_factor_ != cost_scaling_factor || inflation_radius_ != inflation_radius)
-  {
-    // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
-    // when accessing the cached arrays
-    boost::unique_lock < boost::recursive_mutex > lock(*getMutex());
-
-    inflation_radius_ = inflation_radius;
-    cost_scaling_factor_ = cost_scaling_factor;
-    generateKernels();
-  }
-}
-
 void ObstructionLayer::onFootprintChanged()
 {
-  boost::unique_lock < boost::recursive_mutex > lock(*getMutex());
   generateKernels();
   ROS_DEBUG("Got a footprint change in obstruction layer.");
 }
 
 void ObstructionLayer::generateKernels()
 {
+  boost::unique_lock < boost::recursive_mutex > lock(*getMutex());
+
+  // Generate the dynamic obstacle kernels
+  generateKernelsByType(ObstructionType::DYNAMIC, dynamic_inflation_radius_,
+    dynamic_cost_scaling_factor_, dynamic_inflation_type_);
+
+  // Generate the pseudostatic obstacle kernels
+  generateKernelsByType(ObstructionType::PSEUDOSTATIC, pseudostatic_inflation_radius_,
+    pseudostatic_cost_scaling_factor_, pseudostatic_inflation_type_);
+
+  // Generate the static kernels (to avoid segfaults)
+  generateKernelsByType(ObstructionType::STATIC, 0, 1.0, EXPONENTIAL_INFLATION);
+}
+
+void ObstructionLayer::generateKernelsByType(ObstructionType type,
+  float inflation_radius, float cost_scaling_factor, int inflation_type)
+{
   // Do some checks
   ROS_DEBUG("Generating kerns with: number of levels %d, inflation_radius %f, cost_scaling_factor %f, resolution %f",
-    num_obstruction_levels_, inflation_radius_, cost_scaling_factor_, resolution_);
+    num_obstruction_levels_, inflation_radius, cost_scaling_factor, resolution_);
   if (num_obstruction_levels_ == 0)
   {
     ROS_WARN("Cannot set up kernels without obstruction levels");
     return;
   }
 
+  bool ignore_freespace = (type == ObstructionType::PSEUDOSTATIC);
+
   // Create all the new kernels that are needed.
-  kernels_.clear();
-  kernels_.reserve(num_obstruction_levels_);
+  kernels_[type] = std::vector<std::shared_ptr<Kernel>>();
+  kernels_[type].reserve(num_obstruction_levels_);
 
   // Start.
   for (unsigned int k = 0; k < num_obstruction_levels_; ++k)
   {
-    if (inflation_type_ == EXPONENTIAL_INFLATION)
-    {
-      kernels_.push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
-       (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-       inflation_radius_, cost_scaling_factor_, resolution_));
-    } else if (inflation_type_ == TRINOMIAL_INFLATION) {
-      kernels_.push_back(KernelFactory::generateTrinomialRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
-       (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-       inflation_radius_, cost_scaling_factor_, resolution_));
-    } else {
-      ROS_WARN("Kernel type unknown for obstruction layer.  Defaulting to exponential inflation");
-      kernels_.push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
-       (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-       inflation_radius_, cost_scaling_factor_, resolution_));
+    switch (inflation_type) {
+      case EXPONENTIAL_INFLATION:
+        kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
+         (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+        break;
+      case TRINOMIAL_INFLATION:
+        kernels_[type].push_back(KernelFactory::generateTrinomialRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
+         (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+        break;
+      default:
+        ROS_ERROR("Kernel type unknown for obstruction layer.  Defaulting to exponential inflation");
+        kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
+         (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+        break;
     }
   }
 }

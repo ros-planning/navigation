@@ -161,6 +161,8 @@ namespace dwa_local_planner {
     stationary_generator_.enable(config.enable_stationary_trajectory_generator);
     cw_tip_generator_.enable(config.enable_tip_trajectory_generator);
     ccw_tip_generator_.enable(config.enable_tip_trajectory_generator);
+
+    publish_traj_pc_ = config.publish_traj_pc;
   }
 
   DWAPlanner::DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util) :

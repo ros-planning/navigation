@@ -172,8 +172,12 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
   // Arrays to hold the distance calculations
-  double* obs_dist = new double[size_x * size_y];
-  std::fill_n(obs_dist, size_x * size_y, -1.0);
+  if (!obstacle_distance_map_)
+  {
+    obstacle_distance_map_ = std::make_shared<std::vector<double>>();
+  }
+  obstacle_distance_map_->clear();
+  obstacle_distance_map_->resize(size_x * size_y, -1.0);
 
   double* vor_dist = new double[size_x * size_y];
   std::fill_n(vor_dist, size_x * size_y, -1.0);
@@ -225,13 +229,13 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
       unsigned int index = current_cell.index_;
 
       // ignore if already visited
-      if (obs_dist[index] >= -0.1)
+      if ((*obstacle_distance_map_)[index] >= -0.1)
       {
         continue;
       }
 
       // Put the distance for this cell into the array
-      obs_dist[index] = dist_bin.first;
+      (*obstacle_distance_map_)[index] = dist_bin.first;
 
       unsigned int mx = current_cell.x_;
       unsigned int my = current_cell.y_;
@@ -249,20 +253,20 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
       // Check the surrounding cells to see if this is a local maxima.
 
       if (mx > 0 && mx < size_x -1) {
-        if (obs_dist[index - 1] <= dist_bin.first
-          && obs_dist[index - 1] > -0.1
-          && obs_dist[index + 1] <= dist_bin.first
-          && obs_dist[index + 1] > -0.1) {
+        if ((*obstacle_distance_map_)[index - 1] <= dist_bin.first
+          && (*obstacle_distance_map_)[index - 1] > -0.1
+          && (*obstacle_distance_map_)[index + 1] <= dist_bin.first
+          && (*obstacle_distance_map_)[index + 1] > -0.1) {
           // Add to the voronoi diagram
           vor_cells[0.0].push_back(CellData(index, mx, my, mx, my));
         }
       }
 
       if (my > 0 && my < size_y -1) {
-        if (obs_dist[index - size_x] <= dist_bin.first
-          && obs_dist[index - size_x] > -0.1
-          && obs_dist[index + size_x] <= dist_bin.first
-          && obs_dist[index + size_x] > -0.1) {
+        if ((*obstacle_distance_map_)[index - size_x] <= dist_bin.first
+          && (*obstacle_distance_map_)[index - size_x] > -0.1
+          && (*obstacle_distance_map_)[index + size_x] <= dist_bin.first
+          && (*obstacle_distance_map_)[index + size_x] > -0.1) {
           // Add to the voronoi diagram
           vor_cells[0.0].push_back(CellData(index, mx, my, mx, my));
         }
@@ -302,7 +306,7 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
       }
 
       // If the obstacle distance is < 0, ignore this point
-      if (obs_dist[index] < 0 || master_array[index] == LETHAL_OBSTACLE)
+      if ((*obstacle_distance_map_)[index] < 0 || master_array[index] == LETHAL_OBSTACLE)
       {
         continue;
       }
@@ -318,12 +322,12 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
 
       if (std::abs((int)mx - (int)sx) > cell_inflation_radius_ + 2) {
         ROS_INFO("od: %f, vd: %f, mx: %d, my %d, sx: %d, sy %d",
-         obs_dist[index], vor_dist[index],
+         (*obstacle_distance_map_)[index], vor_dist[index],
          mx, my, sx, sy);
       }
 
       // Calculate the cost for the final cost value.
-      unsigned char cost = costLookup(obs_dist[index], vor_dist[index]);
+      unsigned char cost = costLookup((*obstacle_distance_map_)[index], vor_dist[index]);
       unsigned char old_cost = master_array[index];
       if (old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
         master_array[index] = cost;
@@ -351,7 +355,6 @@ void VoronoiInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int 
   vor_cells.clear();
 
   // Clean in all up.
-  delete[] obs_dist;
   delete[] vor_dist;
 
 ROS_INFO("Finished voronoi cells.");

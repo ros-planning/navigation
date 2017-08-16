@@ -18,3 +18,9 @@ bool updated
 float32 effective_radius
 # Max cost within the kernel
 uint8 max_cost
+
+# The type of the obstruction
+uint8 type
+uint8 STATIC = 0
+uint8 DYNAMIC = 1
+uint8 PSEUDOSTATIC = 2

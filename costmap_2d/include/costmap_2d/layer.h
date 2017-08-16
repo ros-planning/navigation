@@ -116,6 +116,18 @@ public:
     return false;
   }
 
+  virtual bool isStaticLayer() {
+    return false;
+  }
+
+  virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {
+    return std::shared_ptr<std::vector<double>>();
+  }
+
+  virtual double getDistanceFromStaticMap(double px, double py) {
+    return -1.0;
+  }
+
 protected:
   /** @brief This is called at the end of initialize().  Override to
    * implement subclass-specific initialization.

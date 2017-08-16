@@ -125,6 +125,10 @@ public:
 
   virtual bool needsUpdate() {return need_reinflation_;};
 
+  virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {
+    return obstacle_distance_map_;
+  }
+
 protected:
   virtual void onFootprintChanged();
   boost::recursive_mutex* inflation_access_;
@@ -180,6 +184,7 @@ private:
 
   double resolution_;
 
+  std::shared_ptr<std::vector<double>> obstacle_distance_map_;
 
   double** cached_distances_;
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;

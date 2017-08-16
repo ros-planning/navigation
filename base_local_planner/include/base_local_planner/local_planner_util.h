@@ -43,6 +43,7 @@
 #include <boost/thread.hpp>
 
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_listener.h>
 
@@ -62,12 +63,11 @@ private:
   std::string name_;
   std::string global_frame_;
 
-  costmap_2d::Costmap2D* costmap_;
+  costmap_2d::Costmap2DROS* costmap_;
+
   tf::TransformListener* tf_;
 
-
   std::vector<geometry_msgs::PoseStamped> global_plan_;
-
 
   boost::mutex limits_configuration_mutex_;
   bool setup_;
@@ -76,7 +76,6 @@ private:
   bool initialized_;
 
 public:
-
   /**
    * @brief  Callback to update the local planner's parameters
    */
@@ -88,7 +87,7 @@ public:
   }
 
   void initialize(tf::TransformListener* tf,
-      costmap_2d::Costmap2D* costmap,
+      costmap_2d::Costmap2DROS* costmap,
       std::string global_frame);
 
   bool getGoal(tf::Stamped<tf::Pose>& goal_pose);

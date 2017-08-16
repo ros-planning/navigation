@@ -128,10 +128,7 @@ namespace dwa_local_planner {
       costmap_ros_ = costmap_ros;
       costmap_ros_->getRobotPose(current_pose_);
 
-      // make sure to update the costmap we'll use for this cycle
-      costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
-
-      planner_util_.initialize(tf, costmap, costmap_ros_->getGlobalFrameID());
+      planner_util_.initialize(tf, costmap_ros_, costmap_ros_->getGlobalFrameID());
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));

@@ -52,7 +52,6 @@ class EuclideanDistanceCostFunction: public base_local_planner::TrajectoryCostFu
 public:
   /**
    * Constructor
-   * @param rejection_half_angle Sets the rejection_half_angle (see other comments)
    */
   EuclideanDistanceCostFunction();
 

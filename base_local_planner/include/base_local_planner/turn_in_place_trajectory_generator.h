@@ -109,6 +109,9 @@ public:
     sim_time_ = sim_time;
   }
 
+  virtual double getStartLinearVelocity() { return vel_[0];};
+  virtual double getStartAngularVelocity() { return vel_[2];};
+
 protected:
 
   unsigned int next_sample_index_;
