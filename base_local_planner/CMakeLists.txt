@@ -23,7 +23,7 @@ find_package(Boost REQUIRED
         thread
         )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 include_directories(
     include
@@ -112,7 +112,6 @@ target_link_libraries(base_local_planner
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
     ${Boost_LIBRARIES}
-    ${Eigen_LIBRARIES}
     )
 
 add_library(trajectory_planner_ros
