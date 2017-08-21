@@ -17,7 +17,7 @@ find_package(catkin REQUIRED
         visualization_msgs
         )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 include_directories(
     include

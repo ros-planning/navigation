@@ -15,7 +15,7 @@ find_package(catkin REQUIRED
         tf
         srslib_timing
 )
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})
 
 # dynamic reconfigure

@@ -548,7 +548,7 @@ void ObstructionLayer::checkObservation(const Observation& obs, double* min_x, d
       // Check to see if it is in the master grid already.
       if (type != ObstructionType::STATIC)
       {
-        ROS_INFO("Creating new obstacle at %f, %f, %d, type: %d", px, py, index, type);
+        ROS_INFO("Creating new obstacle at %f, %f, %d, type: %d", px, py, index, static_cast<int>(type));
         // Create a new one.  Store in list and map.
         auto obs = std::make_shared<Obstruction>(px, py, type, cloud.header.frame_id);
         obstruction_list_.push_back(obs);
