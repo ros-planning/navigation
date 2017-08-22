@@ -244,7 +244,7 @@ bool ObservationBuffer::isCurrent() const
   bool current = (ros::Time::now() - last_updated_).toSec() <= expected_update_rate_.toSec();
   if (!current)
   {
-    ROS_WARN(
+    ROS_WARN_THROTTLE(10.0,
         "The %s observation buffer has not been updated for %.2f seconds, and it should be updated every %.2f seconds.",
         topic_name_.c_str(), (ros::Time::now() - last_updated_).toSec(), expected_update_rate_.toSec());
   }
