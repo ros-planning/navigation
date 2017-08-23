@@ -151,6 +151,7 @@ protected:
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
   double max_obstacle_height_;  ///< @brief Max Obstacle Height
+  double cutoff_distance_;    ///< @brief Points are excluded, if their distance value is exceeding this threshold.
 
   laser_geometry::LaserProjection projector_;  ///< @brief Used to project laser scans into point clouds
 
