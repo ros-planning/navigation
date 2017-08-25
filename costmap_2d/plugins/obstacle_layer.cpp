@@ -245,6 +245,7 @@ void ObstacleLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint
 {
   enabled_ = config.enabled;
   footprint_clearing_enabled_ = config.footprint_clearing_enabled;
+  min_obstacle_height_ = config.min_obstacle_height;
   max_obstacle_height_ = config.max_obstacle_height;
   combination_method_ = config.combination_method;
 }
@@ -378,9 +379,9 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
       double px = cloud.points[i].x, py = cloud.points[i].y, pz = cloud.points[i].z;
 
       // if the obstacle is too high or too far away from the robot we won't add it
-      if (pz > max_obstacle_height_)
+      if (pz > max_obstacle_height_ || pz < min_obstacle_height_)
       {
-        ROS_DEBUG("The point is too high");
+        ROS_DEBUG("The point is too high or too low");
         continue;
       }
 
