@@ -445,6 +445,8 @@ bool StaticLayerWithInflation::getTransform(tf::StampedTransform& transform,
     if (tf_->waitForTransform(from_frame_id, to_frame_id, ros::Time(0), ros::Duration(0.1)))
     {
       tf_->lookupTransform(from_frame_id, to_frame_id, ros::Time(0), transform);
+
+      return true;
     }
     else
     {
