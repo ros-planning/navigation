@@ -114,7 +114,7 @@ void ObstacleLayer::onInitialize()
       throw std::runtime_error("Only topics that use point clouds or laser scans are currently supported");
     }
 
-    std::string raytrace_range_param_name, obstacle_range_param_name, cutoff_distance_param_name;
+    std::string raytrace_range_param_name, obstacle_range_param_name;
 
     // get the obstacle range for the sensor
     double obstacle_range = 2.5;
@@ -128,13 +128,6 @@ void ObstacleLayer::onInitialize()
     if (source_node.searchParam("raytrace_range", raytrace_range_param_name))
     {
       source_node.getParam(raytrace_range_param_name, raytrace_range);
-    }
-
-    // get the cutoff distance
-    cutoff_distance_ = -1.0;
-    if (source_node.searchParam("cutoff_distance", cutoff_distance_param_name))
-    {
-      source_node.getParam(cutoff_distance_param_name, cutoff_distance_);
     }
 
     ROS_DEBUG("Creating an observation buffer for source %s, topic %s, frame %s", source.c_str(), topic.c_str(),
@@ -266,13 +259,13 @@ void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& mess
   // project the scan into a point cloud
   try
   {
-    projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_, cutoff_distance_);
+    projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_, buffer->getRaytraceRange());
   }
   catch (tf::TransformException &ex)
   {
     ROS_WARN("High fidelity enabled, but TF returned a transform exception to frame %s: %s", global_frame_.c_str(),
              ex.what());
-    projector_.projectLaser(*message, cloud, cutoff_distance_);
+    projector_.projectLaser(*message, cloud, buffer->getRaytraceRange());
   }
 
   // buffer the point cloud
@@ -303,13 +296,13 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
   // project the scan into a point cloud
   try
   {
-    projector_.transformLaserScanToPointCloud(message.header.frame_id, message, cloud, *tf_, cutoff_distance_);
+    projector_.transformLaserScanToPointCloud(message.header.frame_id, message, cloud, *tf_, buffer->getRaytraceRange());
   }
   catch (tf::TransformException &ex)
   {
     ROS_WARN("High fidelity enabled, but TF returned a transform exception to frame %s: %s",
              global_frame_.c_str(), ex.what());
-    projector_.projectLaser(message, cloud, cutoff_distance_);
+    projector_.projectLaser(message, cloud, buffer->getRaytraceRange());
   }
 
   // buffer the point cloud

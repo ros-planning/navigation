@@ -141,6 +141,12 @@ public:
    */
   void resetLastUpdated();
 
+  /**
+   * @brief Used to gain access to the raytrace range
+   * @return the raytrace_range_ attribute
+   */
+  double getRaytraceRange();
+
 private:
   /**
    * @brief  Removes any stale observations from the buffer list

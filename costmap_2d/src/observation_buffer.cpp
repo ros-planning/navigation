@@ -254,5 +254,10 @@ void ObservationBuffer::resetLastUpdated()
 {
   last_updated_ = ros::Time::now();
 }
+
+double ObservationBuffer::getRaytraceRange()
+{
+  return raytrace_range_;
+}
 }  // namespace costmap_2d
 
