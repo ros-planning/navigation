@@ -125,6 +125,13 @@ namespace dwa_local_planner {
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
 
+    speed_costs_.setMaxLinearVelocity(config.max_vel_x);
+    speed_costs_.setMinLinearVelocity(config.min_slow_vel_x);
+    speed_costs_.setAcceleration(config.acc_lim_x);
+    speed_costs_.setXBuffer(config.speed_cost_x_buffer);
+    speed_costs_.setYBuffer(config.speed_cost_y_buffer);
+    speed_costs_.setHalfAngle(config.speed_cost_half_angle);
+
     oscillation_reset_plan_divergence_distance_ = config.oscillation_reset_plan_divergence_distance;
 
     close_to_goal_range_ = config.close_to_goal_range;
@@ -216,12 +223,16 @@ namespace dwa_local_planner {
     traj_cloud_pub_.advertise(private_nh, "trajectory_cloud", 1);
     private_nh.param("publish_traj_pc", publish_traj_pc_, false);
 
+
+    speed_costs_.setWorldFrameId(frame_id);
+
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
     critics.push_back(&global_plan_distance_costs_); // discards trajectories that are moving if the global plan is too far from the robot
     critics.push_back(&heading_costs_); // discards trajectories that are not turn in place if path is behind robot
     critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
+    critics.push_back(&speed_costs_); // discards trajectories that are too fast
     critics.push_back(&velocity_costs_); // scales cost based on velocity
     critics.push_back(&obstacle_costs_); // discards trajectories that move into obstacles
     critics.push_back(&goal_front_costs_); // prefers trajectories that make the nose go towards (local) nose goal
@@ -369,7 +380,7 @@ namespace dwa_local_planner {
       // costs for going fast near obstacles
       obstacle_costs_.setIgnoreSpeedCost(false);
       if (!always_use_euclidean_goal_distance_)
-      {
+    {
         euclidean_distance_costs_.setScale(0.0);
       }
       else
@@ -425,6 +436,11 @@ namespace dwa_local_planner {
     global_plan_distance_costs_.setTargetPoses(global_plan_);
 
     velocity_costs_.setGoalDistanceSquared(sq_dist);
+
+    // speed_costs_.setCircumscribedRadius(planner_util_->getCostmap2DROS()->getLayeredCostmap()->getCircumscribedRadius());
+    speed_costs_.setFootprint(planner_util_->getCostmap2DROS()->getRobotFootprint());
+    speed_costs_.setObstructions(planner_util_->getCostmap2DROS()->getLayeredCostmap()->getObstructions());
+    speed_costs_.setCurrentPose(global_pose_as_pose);
   }
 
 

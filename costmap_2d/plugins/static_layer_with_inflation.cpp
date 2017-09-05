@@ -100,7 +100,7 @@ void StaticLayerWithInflation::onInitialize()
   if (map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
     // we'll subscribe to the latched topic that the map server uses
-    ROS_INFO("Requesting the map...");
+    ROS_INFO("Requesting the map on topic %s", map_topic.c_str());
     map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayerWithInflation::incomingMap, this);
     map_received_ = false;
     has_updated_data_ = false;
@@ -459,6 +459,7 @@ bool StaticLayerWithInflation::getTransform(tf::StampedTransform& transform,
     ROS_ERROR("%s", ex.what());
     return false;
   }
+  return true;
 }
 
 void StaticLayerWithInflation::onFootprintChanged()

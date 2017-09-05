@@ -420,6 +420,9 @@ void ObstructionLayer::updateObstructions(double* min_x, double* min_y, double* 
     return;
   }
 
+  // Clear the stored obstruction messages
+  auto obstruction_msgs = std::make_shared<std::vector<ObstructionMsg>>();
+
   ObstructionListMsg msg;
   msg.costmap_name = name_;
 
@@ -479,6 +482,7 @@ void ObstructionLayer::updateObstructions(double* min_x, double* min_y, double* 
 
     // Collect for publishing
     msg.obstructions.push_back(ObstructionAdapter::obstructionToMsg(*obs));
+    obstruction_msgs->push_back(msg.obstructions.back());
 
     // Remove cleared ones
     if (obs->cleared_)
@@ -494,6 +498,11 @@ void ObstructionLayer::updateObstructions(double* min_x, double* min_y, double* 
 
   // Publish obstructions
   obstruction_publisher_.publish(msg);
+
+  {
+    std::lock_guard<std::mutex> lock(obstruction_lock_);
+    obstruction_msgs_ = obstruction_msgs;
+  }
 }
 
 void ObstructionLayer::checkObservation(const Observation& obs, double* min_x, double* min_y, double* max_x, double* max_y)

@@ -69,7 +69,26 @@ void LayeredCostmap::addPlugin(boost::shared_ptr<Layer> plugin)
   if (plugin->isStaticLayer()) {
     static_layer_ = plugin;
   }
+  if (plugin->isObstructionLayer()) {
+    obstruction_layers_.push_back(plugin);
+  }
   plugins_.push_back(plugin);
+}
+
+std::shared_ptr<std::vector<ObstructionMsg>> LayeredCostmap::getObstructions()
+{
+  auto output = std::make_shared<std::vector<ObstructionMsg>>();
+
+  for (auto layer : obstruction_layers_)
+  {
+    auto obs = layer->getObstructions();
+    if (obs)
+    {
+      output->insert(output->end(), obs->begin(), obs->end());
+    }
+  }
+
+  return output;
 }
 
 std::shared_ptr<std::vector<double>> LayeredCostmap::getDistancesFromStaticMap()

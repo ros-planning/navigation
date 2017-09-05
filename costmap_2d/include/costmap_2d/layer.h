@@ -42,6 +42,8 @@
 #include <string>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <costmap_2d/ObstructionMsg.h>
+
 
 namespace costmap_2d
 {
@@ -118,6 +120,14 @@ public:
 
   virtual bool isStaticLayer() {
     return false;
+  }
+
+  virtual bool isObstructionLayer() {
+    return false;
+  }
+
+  virtual std::shared_ptr<std::vector<ObstructionMsg>> getObstructions() {
+    return std::shared_ptr<std::vector<ObstructionMsg>>();
   }
 
   virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {

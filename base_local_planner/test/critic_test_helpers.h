@@ -38,12 +38,14 @@
 #define BASE_LOCAL_PLANNER_CRITIC_TEST_HELPERS_H_
 
 #include <base_local_planner/trajectory.h>
+#include <geometry_msgs/Point.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseWithCovariance.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TwistWithCovariance.h>
 #include <geometry_msgs/TwistStamped.h>
+#include <costmap_2d/ObstructionMsg.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
 #include <Eigen/Core>
@@ -61,6 +63,8 @@ geometry_msgs::TwistStamped createTwistStamped(float v, float w);
 
 nav_msgs::Odometry createOdometry(double x, double y, double yaw, double v, double w);
 
+std::vector<geometry_msgs::Point> createFootprint(double length, double width);
+
 std::vector<geometry_msgs::PoseStamped> createGlobalPlan();
 
 base_local_planner::Trajectory createTrajectory(double v, double w);
@@ -68,6 +72,8 @@ base_local_planner::Trajectory createTrajectory(double v, double w);
 Eigen::Vector3f createVector(float x, float y, float yaw);
 
 Eigen::Vector2f create2DVector(float x, float y);
+
+costmap_2d::ObstructionMsg createObstructionMsg(double x, double y, std::string frame_id, int type, bool cleared);
 
 bool vector2DEqual(Eigen::Vector2f a, Eigen::Vector2f b);
 bool vector3fEqual(Eigen::Vector3f a, Eigen::Vector3f b);

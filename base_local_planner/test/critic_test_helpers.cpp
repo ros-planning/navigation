@@ -126,12 +126,51 @@ Eigen::Vector2f create2DVector(float x, float y)
   return out;
 }
 
+costmap_2d::ObstructionMsg createObstructionMsg(double x, double y, std::string frame, int type, bool cleared)
+{
+  costmap_2d::ObstructionMsg out;
+  out.x = x;
+  out.y = y;
+  out.type = type;
+  out.cleared = cleared;
+  out.frame_id = frame;
+  return out;
+}
+
 nav_msgs::Odometry createOdometry(double x, double y, double yaw, double v, double w)
 {
   nav_msgs::Odometry odom;
   odom.pose = createPoseWithCovariance(x, y, yaw);
   odom.twist = createTwistWithCovariance(v, w);
   return odom;
+}
+
+std::vector<geometry_msgs::Point> createFootprint(double length, double width)
+{
+    std::vector<geometry_msgs::Point> out;
+    geometry_msgs::Point p0;
+    p0.x = -length / 2;
+    p0.y = -width / 2;
+
+    geometry_msgs::Point p1;
+    p1.x = -length / 2;
+    p1.y = width / 2;
+
+    geometry_msgs::Point p2;
+    p2.x = length / 2;
+    p2.y = width / 2;
+
+    geometry_msgs::Point p3;
+    p3.x = length / 2;
+    p3.y = -width / 2;
+
+    out.push_back(p0);
+    out.push_back(p1);
+    out.push_back(p2);
+    out.push_back(p3);
+    out.push_back(p0);
+
+    return out;
 }
 
 bool vector2DEqual(Eigen::Vector2f a, Eigen::Vector2f b)

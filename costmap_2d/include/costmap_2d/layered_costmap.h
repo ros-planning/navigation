@@ -44,6 +44,7 @@
 #include <vector>
 #include <string>
 #include <srslib_timing/MasterTimingDataRecorder.hpp>
+#include <costmap_2d/ObstructionMsg.h>
 
 namespace costmap_2d
 {
@@ -156,6 +157,8 @@ public:
 
   double getDistanceFromStaticMap(double px, double py);
 
+  std::shared_ptr<std::vector<ObstructionMsg>> getObstructions();
+
 private:
   Costmap2D costmap_;
   std::string global_frame_;
@@ -167,6 +170,7 @@ private:
   unsigned int bx0_, bxn_, by0_, byn_;
 
   std::vector<boost::shared_ptr<Layer> > plugins_;
+  std::vector<boost::shared_ptr<Layer> > obstruction_layers_;
 
   boost::shared_ptr<Layer> static_layer_;
 

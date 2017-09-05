@@ -43,6 +43,7 @@
 #include <cmath>
 #include <memory>
 #include <cstddef>
+#include <mutex>
 
 #include <ros/ros.h>
 #include <costmap_2d/costmap_layer.h>
@@ -172,6 +173,15 @@ public:
   virtual void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
 
   virtual void updateOrigin(double new_origin_x, double new_origin_y);
+
+  virtual bool isObstructionLayer() override {
+    return true;
+  }
+
+  virtual std::shared_ptr<std::vector<ObstructionMsg>> getObstructions() override {
+    std::lock_guard<std::mutex> lock(obstruction_lock_);
+    return obstruction_msgs_;
+  }
 
 protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
@@ -326,6 +336,7 @@ protected:
   double distance_threshold_ = 0.3;
 
   std::shared_ptr<std::vector<double>> static_distance_map_;
+  std::shared_ptr<std::vector<ObstructionMsg>> obstruction_msgs_;
 
   ros::Publisher obstruction_publisher_;  // Publisher of obstruction data
 
@@ -334,6 +345,8 @@ private:
 
   // Add timing data recorder
   srs::MasterTimingDataRecorder timingDataRecorder_;
+
+  std::mutex obstruction_lock_;
 };
 
 }  // namespace costmap_2d
