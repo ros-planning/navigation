@@ -314,7 +314,11 @@ namespace dwa_local_planner {
         &limits,
         vsamples_,
         true);
-    generator_.generateTrajectory(pos, vel, vel_samples, traj);
+    if (!generator_.generateTrajectory(pos, vel, vel_samples, traj, true))
+    {
+      ROS_WARN("Could not generate trajectory %f, %f, %f", vel_samples[0], vel_samples[1], vel_samples[2]);
+      return false;
+    }
     double cost = scored_sampling_planner_.scoreTrajectory(traj, -1, nullptr);
     //if the trajectory is a legal one... the check passes
     if(cost >= 0) {

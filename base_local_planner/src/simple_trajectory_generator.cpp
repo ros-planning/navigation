@@ -187,7 +187,8 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
       Eigen::Vector3f pos,
       Eigen::Vector3f vel,
       Eigen::Vector3f sample_target_vel,
-      base_local_planner::Trajectory& traj) {
+      base_local_planner::Trajectory& traj,
+      bool ignore_min_limits) {
   double vmag = hypot(sample_target_vel[0], sample_target_vel[1]);
   traj.cost_   = 0.0; // placed here in case we return early
   //trajectory might be reused so we'll make sure to reset it
@@ -195,12 +196,14 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
 
   // make sure that the robot would at least be moving with one of
   // the required minimum velocities for translation and rotation (if set)
-  if ((limits_->min_trans_vel >= 0 && vmag + EPSILON < limits_->min_trans_vel) &&
+  if (!ignore_min_limits && (limits_->min_trans_vel >= 0 && vmag + EPSILON < limits_->min_trans_vel) &&
       (limits_->min_rot_vel >= 0 && fabs(sample_target_vel[2]) + EPSILON < limits_->min_rot_vel)) {
+    ROS_DEBUG("Failed rot lims");
     return false;
   }
   // make sure we do not exceed max diagonal (x+y) translational velocity (if set)
   if (limits_->max_trans_vel >=0 && vmag - EPSILON > limits_->max_trans_vel) {
+    ROS_DEBUG("Failed trans lims");
     return false;
   }
 
@@ -251,7 +254,6 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     pos = computeNewPositions(pos, loop_vel, dt);
 
   } // end for simulation steps
-
   return num_steps > 0; // true if trajectory has at least one point
 }
 

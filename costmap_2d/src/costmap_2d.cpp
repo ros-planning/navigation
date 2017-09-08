@@ -95,7 +95,9 @@ void Costmap2D::resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsi
   boost::unique_lock<mutex_t> lock(*(access_));
   unsigned int len = xn - x0;
   for (unsigned int y = y0 * size_x_ + x0; y < yn * size_x_ + x0; y += size_x_)
+  {
     memset(costmap_ + y, default_value_, len * sizeof(unsigned char));
+  }
 }
 
 bool Costmap2D::copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x,
@@ -481,7 +483,7 @@ bool Costmap2D::saveMap(std::string file_name)
   return true;
 }
 
-void Costmap2D::checkRaytracePoint(const double& origin_x, const double& origin_y, const double& map_end_x, const double& map_end_y, 
+void Costmap2D::checkRaytracePoint(const double& origin_x, const double& origin_y, const double& map_end_x, const double& map_end_y,
                                    const double& ox, const double& oy, double& rx, double& ry)
 {
   double a = rx - ox;

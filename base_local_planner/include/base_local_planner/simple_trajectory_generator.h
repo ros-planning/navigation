@@ -136,7 +136,8 @@ public:
         Eigen::Vector3f pos,
         Eigen::Vector3f vel,
         Eigen::Vector3f sample_target_vel,
-        base_local_planner::Trajectory& traj);
+        base_local_planner::Trajectory& traj,
+        bool ignore_min_limits = false);
 
   virtual double getStartLinearVelocity() { return vel_[0];};
   virtual double getStartAngularVelocity() { return vel_[2];};
