@@ -625,62 +625,55 @@ namespace move_base {
       }
       ros::Time start_time = ros::Time::now();
 
-      if(state_==PLANNING){
-        //time to plan! get a copy of the goal and unlock the mutex
-        geometry_msgs::PoseStamped temp_goal = planner_goal_;
+      //time to plan! get a copy of the goal and unlock the mutex
+      geometry_msgs::PoseStamped temp_goal = planner_goal_;
+      lock.unlock();
+      ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
+
+      //run planner
+      planner_plan_->clear();
+      bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
+
+      if(gotPlan){
+        ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
+        //pointer swap the plans under mutex (the controller will pull from latest_plan_)
+        std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
+
+        lock.lock();
+        planner_plan_ = latest_plan_;
+        latest_plan_ = temp_plan;
+        last_valid_plan_ = ros::Time::now();
+        planning_retries_ = 0;
+        new_global_plan_ = true;
+
+        ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
+
+        //make sure we only start the controller if we still haven't reached the goal
+        if(runPlanner_)
+          state_ = CONTROLLING;
+        if(planner_frequency_ <= 0)
+          runPlanner_ = false;
         lock.unlock();
-        ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
-
-        //run planner
-        planner_plan_->clear();
-        bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
-
-        if(gotPlan){
-          ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
-          //pointer swap the plans under mutex (the controller will pull from latest_plan_)
-          std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
-
-          lock.lock();
-          planner_plan_ = latest_plan_;
-          latest_plan_ = temp_plan;
-          last_valid_plan_ = ros::Time::now();
-          planning_retries_ = 0;
-          new_global_plan_ = true;
-
-          ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
-
-          //make sure we only start the controller if we still haven't reached the goal
-          if(runPlanner_)
-            state_ = CONTROLLING;
-          if(planner_frequency_ <= 0)
-            runPlanner_ = false;
-          lock.unlock();
-        }
-        //if we didn't get a plan and we are in the planning state (the robot isn't moving)
-        else{
-          ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
-          ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
-
-          //check if we've tried to make a plan for over our time limit or our maximum number of retries
-          //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
-          //is negative (the default), it is just ignored and we have the same behavior as ever
-          lock.lock();
-          planning_retries_++;
-          if(runPlanner_ &&
-             (ros::Time::now() > attempt_end || planning_retries_ > uint32_t(max_planning_retries_))){
-            //we'll move into our obstacle clearing mode
-            state_ = CLEARING;
-            wait_for_wake = true;
-            publishZeroVelocity();
-            recovery_trigger_ = PLANNING_R;
-          }
-
-          lock.unlock();
-        }
       }
-      else
-      {
-        //not planning, so just unlock the mutex
+      //if we didn't get a plan and we are in the planning state (the robot isn't moving)
+      else if(state_==PLANNING){
+        ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
+        ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
+
+        //check if we've tried to make a plan for over our time limit or our maximum number of retries
+        //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
+        //is negative (the default), it is just ignored and we have the same behavior as ever
+        lock.lock();
+        planning_retries_++;
+        if(runPlanner_ &&
+           (ros::Time::now() > attempt_end || planning_retries_ > uint32_t(max_planning_retries_))){
+          //we'll move into our obstacle clearing mode
+          state_ = CLEARING;
+          runPlanner_ = false;  // proper solution for issue #523
+          publishZeroVelocity();
+          recovery_trigger_ = PLANNING_R;
+        }
+
         lock.unlock();
       }
 
