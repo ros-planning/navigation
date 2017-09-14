@@ -1,8 +1,8 @@
-#ifndef VOXEL_GRID_CACHED_CLEARER_H_
-#define VOXEL_GRID_CACHED_CLEARER_H_
+#ifndef VOXEL_GRID_CACHE_CLEARER_H_
+#define VOXEL_GRID_CACHE_CLEARER_H_
 
 #include <list>
-#include <utility> // std::pair, std::make_pair
+#include <utility>
 #include <boost/shared_ptr.hpp>
 #include <geometry_msgs/Point32.h>
 #include <sensor_msgs/PointCloud.h>
@@ -13,66 +13,78 @@
 namespace voxel_grid
 {
 
-class CachedClearer : public AbstractGridUpdater
+class CacheClearer : public AbstractGridUpdater
 {
 public:
-  CachedClearer(uint32_t* voxel_grid_data, unsigned char* costmap, unsigned int costmap_size_x,
-                unsigned int costmap_size_y, unsigned int cache_width, bool z_is_offset,
-                unsigned int unknown_clear_threshold, unsigned int marked_clear_threshold, unsigned char free_cost = 0,
-                unsigned char unknown_cost = 255) :
-      AbstractGridUpdater(voxel_grid_data, costmap, unknown_clear_threshold, marked_clear_threshold, free_cost,
-                          unknown_cost)
+  CacheClearer(uint32_t* voxel_grid_data, unsigned char* costmap, unsigned int costmap_size_x,
+	       unsigned int costmap_size_y, unsigned int cache_width,
+	       unsigned int unknown_clear_threshold,
+	       unsigned int marked_clear_threshold,
+	       bool clear_corners = false,
+	       unsigned char free_cost = 0, unsigned char unknown_cost = 255) :
+     AbstractGridUpdater(voxel_grid_data, costmap, unknown_clear_threshold,
+			 marked_clear_threshold, clear_corners, free_cost, unknown_cost)
   {
     costmap_size_x_ = costmap_size_x;
     costmap_size_y_ = costmap_size_y;
 
-    //should be overwritten later
-    current_offset_from_costmap_x_ = costmap_size_x * 0.5;
-    current_offset_from_costmap_y_ = costmap_size_y * 0.5;
+    current_offset_from_costmap_x_ = 0;
+    current_offset_from_costmap_y_ = 0;
 
     cache_width_ = cache_width;
-    z_is_offset_ = z_is_offset;
+    z_is_offset_ = update_corners_;
 
-    updated_cells_indices_ = boost::shared_ptr < std::list<std::pair<unsigned int, unsigned int> >
-        > (new std::list<std::pair<unsigned int, unsigned int> >);
+    updated_cells_indices_ = boost::shared_ptr<std::list<CostmapXY> > (new std::list<CostmapXY>);
   }
 
-  virtual boost::shared_ptr<uint32_t[]> getNewCache()
+  virtual uint32_t* clearCache(unsigned int cache_size, uint32_t* cache)
   {
-    unsigned int cache_size = cache_width_ * cache_width_;
-    boost::shared_ptr<uint32_t[]> cache(new uint32_t[cache_size]);
     uint32_t empty_mask = (uint32_t)0;
     for (int i = 0; i < cache_size; ++i)
       cache[i] = empty_mask;
     return cache;
   }
 
+  virtual uint32_t* getNewCache(unsigned int cache_width)
+  {
+    unsigned int cache_size = cache_width * cache_width;
+    uint32_t* cache = new uint32_t[cache_size];
+    return clearCache(cache_size, cache);
+  }
+
+  virtual void setSensorCache(int offset_x, int offset_y)
+  {
+    CostmapOffsetXY sensor_offset(offset_x, offset_y);
+    if (sensor_clearing_caches_[sensor_offset] == NULL ||
+	sensor_clearing_caches_.find(sensor_offset) == sensor_clearing_caches_.end()) {
+      sensor_clearing_caches_[sensor_offset] = CacheData(this->getNewCache(cache_width_));
+    }
+  }
+
   virtual void setCostmapOffsets(int offset_from_costmap_x, int offset_from_costmap_y)
   {
-    std::pair<int, int> costmap_offset(offset_from_costmap_x, offset_from_costmap_y);
-    if (sensor_clearing_caches_.find(costmap_offset) == sensor_clearing_caches_.end())
-    {
-      sensor_clearing_caches_[costmap_offset] = getNewCache();
-    }
+    setSensorCache(offset_from_costmap_x, offset_from_costmap_y);
     current_offset_from_costmap_x_ = offset_from_costmap_x;
     current_offset_from_costmap_y_ = offset_from_costmap_y;
   }
 
   inline virtual void operator()(unsigned int offset, uint32_t z_mask)
   {
-    sensor_clearing_caches_[std::make_pair(current_offset_from_costmap_x_,
-                                           current_offset_from_costmap_y_)][offset] |= z_mask;
+    setSensorCache(current_offset_from_costmap_x_, current_offset_from_costmap_y_);
+    CostmapOffsetXY sensor_offset(current_offset_from_costmap_x_, current_offset_from_costmap_y_);
+    CacheData cache = sensor_clearing_caches_[sensor_offset];
+    cache.get()[offset] |= z_mask;
   }
 
   virtual void update()
   {
     updated_cells_indices_->clear();
     cleared_voxels_ = sensor_msgs::PointCloud();
-    std::map<std::pair<int, int>, boost::shared_ptr<uint32_t[]> >::iterator it;
+    SensorCaches::iterator it;
     for (it=sensor_clearing_caches_.begin(); it!=sensor_clearing_caches_.end(); ++it)
     {
-      unsigned int cache_size_x = cache_width_; //for readability
-      unsigned int cache_size_y = cache_width_; //for readability
+      unsigned int cache_size_x = cache_width_;
+      unsigned int cache_size_y = cache_width_;
       unsigned int linear_cache_index = 0;
       unsigned int linear_costmap_index = 0;
       int costmap_x = 0;
@@ -202,11 +214,17 @@ private:
   unsigned int cache_width_;
   bool z_is_offset_;
 
-  std::map<std::pair<int, int>, boost::shared_ptr<uint32_t[]> > sensor_clearing_caches_; // a cache per sensor location
-  boost::shared_ptr<std::list<std::pair<unsigned int, unsigned int> > > updated_cells_indices_;
+
+  typedef boost::shared_ptr<uint32_t[]> CacheData;
+  typedef std::pair<int, int> CostmapOffsetXY;
+  typedef std::map<CostmapOffsetXY, CacheData> SensorCaches;
+  typedef std::pair<unsigned int, unsigned int> CostmapXY;
+  typedef boost::shared_ptr<std::list<CostmapXY> > UpdateIndices;
+  SensorCaches sensor_clearing_caches_;
+  UpdateIndices updated_cells_indices_;
   sensor_msgs::PointCloud cleared_voxels_;
 };
 
 } //end namespace
 
-#endif /* VOXEL_GRID_CACHED_CLEARER_H_ */
+#endif /* VOXEL_GRID_CACHE_CLEARER_H_ */

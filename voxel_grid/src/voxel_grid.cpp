@@ -37,8 +37,8 @@
 #include <voxel_grid/voxel_grid.h>
 #include <sys/time.h>
 #include <ros/console.h>
-#include <voxel_grid/plain_clearer.h>
-#include <voxel_grid/plain_marker.h>
+#include <voxel_grid/basic_marker.h>
+#include <voxel_grid/basic_clearer.h>
 
 namespace voxel_grid {
   VoxelGrid::VoxelGrid(unsigned int size_x, unsigned int size_y, unsigned int size_z)
@@ -104,33 +104,66 @@ namespace voxel_grid {
     }
   }
 
-  void VoxelGrid::markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
+  int VoxelGrid::getRaytraceAxis(double x0, double y0, double z0,
+				 double x1, double y1, double z1) {
+    double abs_dx = std::abs(x1 - x0);
+    double abs_dy = std::abs(y1 - y0);
+    double abs_dz = std::abs(z1 - z0);
+    if (abs_dy >= abs_dx && abs_dy >= abs_dz) return 1;
+    if (abs_dz >= abs_dx && abs_dz >= abs_dy) return 2;
+    return 0;
+  }
+
+  int VoxelGrid::getNumSteps(double x0, double y0, double z0,
+			     double x1, double y1, double z1) {
+    int axis = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    switch (axis) {
+      case 0: return static_cast <int> (std::abs(std::floor(x1) - std::floor(x0)));
+      case 1: return static_cast <int> (std::abs(std::floor(y1) - std::floor(y0)));
+      case 2: return static_cast <int> (std::abs(std::floor(z1) - std::floor(z0)));
+    }
+  }
+
+  void VoxelGrid::markVoxelLine(double x0, double y0, double z0,
+				double x1, double y1, double z1,
+				unsigned int max_length){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
       ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
           size_x_, size_y_, size_z_);
       return;
     }
-
-    PlainMarker plain_marker(data_);
-    raytraceLine(&plain_marker, x0, y0, z0, x1, y1, z1, size_x_, max_length, false);
+    BasicMarker basic_marker(data_);
+    int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    unsigned int width = std::min(max_length, size_x_);
+    raytraceLine(&basic_marker, x0, y0, z0, x1, y1, z1, width, xyz, num_steps);
   }
 
-  void VoxelGrid::clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
+  void VoxelGrid::clearVoxelLine(double x0, double y0, double z0,
+				 double x1, double y1, double z1,
+				 unsigned int max_length){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
       ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
           size_x_, size_y_, size_z_);
       return;
     }
-
-    PlainClearer plain_clearer(data_);
-    raytraceLine(&plain_clearer, x0, y0, z0, x1, y1, z1, size_x_, max_length, false);
+    BasicClearer basic_clearer(data_);
+    int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    unsigned int width = std::min(max_length, size_x_);
+    raytraceLine(&basic_clearer, x0, y0, z0, x1, y1, z1, width, xyz, num_steps);
   }
 
-  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0, double dx, double dy, double dz,
-                                      unsigned char *map_2d, AbstractGridUpdater* clearer,
-                                      unsigned int area_width, int xyz, int number_of_steps, bool include_corner_cases)
+  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0,
+				      double x1, double y1, double z1,
+				      AbstractGridUpdater* clearer,
+				      unsigned int max_length)
   {
-    raytraceLine(clearer, x0, y0, z0, dx, dy, dz, area_width, xyz, number_of_steps, include_corner_cases);
+    int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    unsigned int width = std::min(max_length, size_x_);
+    raytraceLine(clearer, x0, y0, z0, x1, y1, z1, width, xyz,
+		 num_steps);
   }
 
   VoxelStatus VoxelGrid::getVoxel(unsigned int x, unsigned int y, unsigned int z)
@@ -140,7 +173,7 @@ namespace voxel_grid {
       return UNKNOWN;
     }
     uint32_t full_mask = ((uint32_t)1<<z<<16) | (1<<z);
-    uint32_t result = data_[y * size_x_ + x] & full_mask; 
+    uint32_t result = data_[y * size_x_ + x] & full_mask;
     unsigned int bits = numBits(result);
 
     // known marked: 11 = 2 bits, unknown: 01 = 1 bit, known free: 00 = 0 bits

@@ -38,8 +38,10 @@
 #include <costmap_2d/voxel_layer.h>
 #include <pluginlib/class_list_macros.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <voxel_grid/simple_clearer.h>
-#include <voxel_grid/cached_clearer.h>
+#include <voxel_grid/basic_clearer.h>
+#include <voxel_grid/basic_marker.h>
+#include <voxel_grid/plain_clearer.h>
+#include <voxel_grid/cache_clearer.h>
 
 #define VOXEL_BITS 16
 PLUGINLIB_EXPORT_CLASS(costmap_2d::VoxelLayer, costmap_2d::Layer)
@@ -73,7 +75,6 @@ void VoxelLayer::onInitialize()
   private_nh.param("use_cached_updating", use_cached_updating_, false);
   cleared_points_pub_ = private_nh.advertise<sensor_msgs::PointCloud>("cleared_voxels", 1);
 
-  //we need to use cached updating in case of clearing corners, or else we get overflows
   if (clear_corner_cases_)
     use_cached_updating_ = true;
   combination_method_ = 1;
@@ -298,15 +299,17 @@ void VoxelLayer::clear(std::vector<Observation>& observations, double* min_x, do
     update_area_center = max_raytrace_range_in_cells + 1; // +1 to have a buffer
     unsigned int cached_update_area_width = update_area_center * 2 + 1; //+1 to have a center point
 
-    voxel_clearer = boost::shared_ptr<voxel_grid::CachedClearer>(
-        new voxel_grid::CachedClearer(voxel_grid_.getData(), costmap_, voxel_grid_.sizeX(), voxel_grid_.sizeY(),
-                                      cached_update_area_width, clear_corner_cases_,
-                                      unknown_threshold_, mark_threshold_, FREE_SPACE, NO_INFORMATION));
+    voxel_clearer = boost::shared_ptr<voxel_grid::CacheClearer>(
+        new voxel_grid::CacheClearer(voxel_grid_.getData(), costmap_, voxel_grid_.sizeX(), voxel_grid_.sizeY(),
+				     cached_update_area_width,
+				     unknown_threshold_, mark_threshold_,
+				     clear_corner_cases_,
+				     FREE_SPACE, NO_INFORMATION));
   }
   else
   {
-    voxel_clearer = boost::shared_ptr<voxel_grid::SimpleClearer>(
-        new voxel_grid::SimpleClearer(voxel_grid_.getData(), costmap_, unknown_threshold_, mark_threshold_, FREE_SPACE,
+    voxel_clearer = boost::shared_ptr<voxel_grid::PlainClearer>(
+        new voxel_grid::PlainClearer(voxel_grid_.getData(), costmap_, unknown_threshold_, mark_threshold_, FREE_SPACE,
                                       NO_INFORMATION));
   }
 
@@ -323,7 +326,7 @@ void VoxelLayer::clear(std::vector<Observation>& observations, double* min_x, do
 
   if (use_cached_updating_)
   {
-    boost::shared_ptr<voxel_grid::CachedClearer> cached_clearer = boost::static_pointer_cast<voxel_grid::CachedClearer>(
+    boost::shared_ptr<voxel_grid::CacheClearer> cached_clearer = boost::static_pointer_cast<voxel_grid::CacheClearer>(
         voxel_clearer);
 
     cached_clearer->update();
@@ -399,7 +402,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
     start_offset_x = update_area_center + fabs(modf(sensor_x, &temp));
     start_offset_y = update_area_center + fabs(modf(sensor_y, &temp));
 
-    boost::shared_ptr<voxel_grid::CachedClearer> cached_clearer = boost::static_pointer_cast<voxel_grid::CachedClearer>(
+    boost::shared_ptr<voxel_grid::CacheClearer> cached_clearer = boost::static_pointer_cast<voxel_grid::CacheClearer>(
         voxel_clearer);
 
     cached_clearer->setCostmapOffsets(offset_x, offset_y);
@@ -483,32 +486,24 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
     dy = dy * scaling;
     dz = dz * scaling;
 
-    ///TODO make enum, and / or a wrapping function for each case
-    int xyz = 0; //selects axis along which we raytrace
-    double number_of_steps = std::abs(std::floor(sensor_x + dx) - std::floor(sensor_x)); ///TODO change to int
-
-    //we raytrace along the axis with the highest slope
-    if (abs_dy >= abs_dx && abs_dy >= abs_dz)
-    {
-      xyz = 1;
-      number_of_steps = std::abs(std::floor(sensor_y + dy) - std::floor(sensor_y));
-    }
-    if (abs_dz >= abs_dx && abs_dz >= abs_dy)
-    {
-      xyz = 2;
-      number_of_steps = std::abs(std::floor(sensor_z + dz) - std::floor(sensor_z));
-    }
-
     if (use_cached_updating_)
     {
       //the line goes from the start point to the end point which is start point + distance
-      voxel_grid_.clearVoxelLineInMap(start_offset_x, start_offset_y, sensor_z, dx, dy, dz, costmap_, &(*voxel_clearer),
-                                      cached_update_area_width, xyz, number_of_steps, clear_corner_cases_);
+      double x1 = start_offset_x + dx;
+      double y1 = start_offset_y + dy;
+      double z1 = sensor_z + dz;
+      voxel_grid_.clearVoxelLineInMap(start_offset_x, start_offset_y, sensor_z,
+				      x1, y1, z1, &(*voxel_clearer),
+				      cached_update_area_width);
     }
     else
     {
-      voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z, dx, dy, dz, costmap_, &(*voxel_clearer),
-                                      voxel_grid_.sizeX(), xyz, number_of_steps, clear_corner_cases_);
+      double x1 = sensor_x + dx;
+      double y1 = sensor_y + dy;
+      double z1 = sensor_z + dz;
+      voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z,
+				      x1, y1, z1, &(*voxel_clearer),
+				      voxel_grid_.sizeX());
     }
 
     wpx = origin_x_ + (sensor_x + dx) * resolution_;

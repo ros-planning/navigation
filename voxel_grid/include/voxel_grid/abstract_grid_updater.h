@@ -7,19 +7,25 @@ namespace voxel_grid
 class AbstractGridUpdater
 {
 public:
-  AbstractGridUpdater(uint32_t* voxel_grid_data, unsigned char* costmap, unsigned int unknown_clear_threshold,
-                  unsigned int marked_clear_threshold, unsigned char free_cost = 0, unsigned char unknown_cost = 255) :
+  AbstractGridUpdater(uint32_t* voxel_grid_data, unsigned char* costmap,
+		      unsigned int unknown_clear_threshold,
+		      unsigned int marked_clear_threshold,
+		      bool update_corners = false,
+		      unsigned char free_cost = 0, unsigned char unknown_cost = 255) :
       voxel_grid_data_(voxel_grid_data), costmap_(costmap)
   {
     unknown_clear_threshold_ = unknown_clear_threshold;
     marked_clear_threshold_ = marked_clear_threshold;
     free_cost_ = free_cost;
     unknown_cost_ = unknown_cost;
+    update_corners_ = update_corners;
   }
 
   virtual ~AbstractGridUpdater() {};
 
   virtual void operator()(unsigned int offset, uint32_t z_mask) =0;
+
+  virtual bool update_corners() {return update_corners_;}
 
 protected:
   static inline bool bitsBelowThreshold(unsigned int bits, unsigned int bit_threshold)
@@ -41,6 +47,7 @@ protected:
   unsigned char* costmap_;
   unsigned int unknown_clear_threshold_, marked_clear_threshold_;
   unsigned char free_cost_, unknown_cost_;
+  bool update_corners_;
 };
 
 } //end namespace
