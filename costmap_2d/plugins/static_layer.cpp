@@ -236,11 +236,6 @@ void StaticLayer::incomingUpdate(const map_msgs::OccupancyGridUpdateConstPtr& up
       costmap_[index] = interpretValue(update->data[di++]);
     }
   }
-  x_ = update->x;
-  y_ = update->y;
-  width_ = update->width;
-  height_ = update->height;
-  has_updated_data_ = true;
 }
 
 void StaticLayer::activate()
