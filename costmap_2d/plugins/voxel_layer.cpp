@@ -388,7 +388,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
 
   double start_offset_x;
   double start_offset_y;
-  unsigned int cached_update_area_width = update_area_center * 2 + 1;
+  unsigned int cached_update_area_width = update_area_center * 2 + 1; // per-sensor clearing width
   bool publish_clearing_points = (clearing_endpoints_pub_.getNumSubscribers() > 0);
 
   if (use_cached_updating_)
@@ -396,7 +396,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
     int offset_x = update_area_center - (int)sensor_x;
     int offset_y = update_area_center - (int)sensor_y;
 
-    //we raytrace in the cache to skip the "slow" transformation between real world and cache coordinates
+    //raytrace in the cache
     //sub-cell accuracy of start point has to be the same, so add the fractional part
     double temp = 0;
     start_offset_x = update_area_center + fabs(modf(sensor_x, &temp));
@@ -411,7 +411,6 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
   // we can pre-compute the enpoints of the map outside of the inner loop... we'll need these later
   double map_end_x = origin_x_ + size_x_ * resolution_;
   double map_end_y = origin_y_ + size_y_ * resolution_;
-  double epsilon = 0.0001;
 
   for (unsigned int i = 0; i < clearing_observation.cloud_->points.size(); ++i)
   {
@@ -435,10 +434,7 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
     double abs_dy = std::abs(dy);
     double abs_dz = std::abs(dz);
 
-    //We might go outside of the voxel grid in any direction. We need to stop before that.
-    //Normally raytracing stops in front of the obstacle (does not clear the end point cell / obstacle cell).
-    //In the case we go outside, we want to go all the way to the border (and also clear the cell at the border).
-    //Because of this we crop at 0.0 - epsilon and size (which is max index +1), "setting the obstacle cell just outside of the border".
+    //Crop clearing endpoints to stay within raytrace bounds
     double cropped_distance = 0.0;
 
     // Initialize scale based on raytrace range.
@@ -451,10 +447,10 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
     //Check if we go outside, and set the scaling factor accordingly
     if (point_x < 0.0)
     {
-      cropped_distance = std::abs(-epsilon - sensor_x);
+      cropped_distance = std::abs(-sensor_x);
       scaling = std::min(scaling, cropped_distance / abs_dx);
     }
-    else if (point_x > size_x_)
+    else if (point_x >= size_x_)
     {
       cropped_distance = std::abs(size_x_ - sensor_x);
       scaling = std::min(scaling, cropped_distance / abs_dx);
@@ -462,10 +458,10 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
 
     if (point_y < 0.0)
     {
-      cropped_distance = std::abs(-epsilon - sensor_y);
+      cropped_distance = std::abs(-sensor_y);
       scaling = std::min(scaling, cropped_distance / abs_dy);
     }
-    else if (point_y > size_y_)
+    else if (point_y >= size_y_)
     {
       cropped_distance = std::abs(size_y_ - sensor_y);
       scaling = std::min(scaling, cropped_distance / abs_dy);
@@ -473,10 +469,10 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, boos
 
     if (point_z < 0.0)
     {
-      cropped_distance = std::abs((origin_z_ / z_resolution_) - epsilon - sensor_z);
+      cropped_distance = std::abs((origin_z_ / z_resolution_) - sensor_z);
       scaling = std::min(scaling, cropped_distance / abs_dz);
     }
-    else if (point_z > size_z_)
+    else if (point_z >= size_z_)
     {
       cropped_distance = std::abs(max_obstacle_height_ / z_resolution_ - sensor_z);
       scaling = std::min(scaling, cropped_distance / abs_dz);

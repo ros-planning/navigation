@@ -114,13 +114,13 @@ namespace voxel_grid {
     return 0;
   }
 
-  int VoxelGrid::getNumSteps(double x0, double y0, double z0,
-			     double x1, double y1, double z1) {
+  unsigned int VoxelGrid::getNumSteps(double x0, double y0, double z0,
+				      double x1, double y1, double z1) {
     int axis = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
     switch (axis) {
-      case 0: return static_cast <int> (std::abs(std::floor(x1) - std::floor(x0)));
-      case 1: return static_cast <int> (std::abs(std::floor(y1) - std::floor(y0)));
-      case 2: return static_cast <int> (std::abs(std::floor(z1) - std::floor(z0)));
+      case 0: return static_cast <unsigned int> (std::floor(std::abs(x1 - x0)) + 1);
+      case 1: return static_cast <unsigned int> (std::floor(std::abs(y1 - y0)) + 1);
+      case 2: return static_cast <unsigned int> (std::floor(std::abs(z1 - z0)) + 1);
     }
   }
 
@@ -134,7 +134,7 @@ namespace voxel_grid {
     }
     BasicMarker basic_marker(data_);
     int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
-    int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
     unsigned int width = std::min(max_length, size_x_);
     raytraceLine(&basic_marker, x0, y0, z0, x1, y1, z1, width, xyz, num_steps);
   }
@@ -149,7 +149,7 @@ namespace voxel_grid {
     }
     BasicClearer basic_clearer(data_);
     int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
-    int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
     unsigned int width = std::min(max_length, size_x_);
     raytraceLine(&basic_clearer, x0, y0, z0, x1, y1, z1, width, xyz, num_steps);
   }
@@ -160,8 +160,8 @@ namespace voxel_grid {
 				      unsigned int max_length)
   {
     int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
-    int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
-    unsigned int width = std::min(max_length, size_x_);
+    unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    unsigned int width = std::min(max_length, size_x_*10);
     raytraceLine(clearer, x0, y0, z0, x1, y1, z1, width, xyz,
 		 num_steps);
   }

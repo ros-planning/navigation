@@ -91,17 +91,14 @@ public:
       int costmap_y = 0;
       int sensor_offset_x = it->first.first;
       int sensor_offset_y = it->first.second;
-
       for (unsigned int y_index = 0; y_index < cache_size_y; ++y_index)
       {
         linear_cache_index = y_index * cache_size_x;
         costmap_y = y_index - sensor_offset_y;
 
-        if (costmap_y < 0)
-          continue;
+        if (costmap_y < 0) continue;
 
-        if (costmap_y >= costmap_size_y_)
-          break;
+        if (costmap_y >= costmap_size_y_) break;
 
         costmap_x = -sensor_offset_x;
 
@@ -110,7 +107,6 @@ public:
         for (unsigned int x_index = 0; x_index < cache_size_x; ++x_index)
         {
           uint32_t clearing_mask = it->second[linear_cache_index];
-
           if (clearing_mask == (uint32_t)0)
           { //not updated
             costmap_x++;
@@ -121,7 +117,7 @@ public:
 
           if (z_is_offset_)
             clearing_mask = undoClearingMaskOffset(clearing_mask);
-
+	  
           if (costmap_x < 0)
           { //In case of underflow because of corner cases
             costmap_x++;

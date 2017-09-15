@@ -230,8 +230,8 @@ public:
   int getRaytraceAxis(double x0, double y0, double z0,
 		      double x1, double y1, double z1);
 
-  int getNumSteps(double x0, double y0, double z0,
-		  double x1, double y1, double z1);
+  unsigned int getNumSteps(double x0, double y0, double z0,
+			   double x1, double y1, double z1);
 
   /* void markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, */
   /* 		     AbstractGridUpdater* marker); */
@@ -265,7 +265,7 @@ public:
   **/
   inline void raytraceLine(AbstractGridUpdater* clearer, double x0, double y0, double z0,
 			   double x1, double y1, double z1, unsigned int width,
-			   int xyz, int number_of_steps)
+			   int xyz, unsigned int number_of_steps)
   {
     double dx = x1 - x0;
     double dy = y1 - y0;
@@ -286,7 +286,6 @@ public:
     int offset_dx = sign(dx);
     int offset_dy = sign(dy) * width;
     int offset_dz = sign(dz);
-
     unsigned int z_mask = ((1 << 16) | 1) << (unsigned int)z0;
     if(clear_corners)
       z_mask <<= 1; //to prevent underflows, is undone later
@@ -354,48 +353,48 @@ private:
     for (unsigned int i = 0; i < number_of_steps; ++i)
     {
       (*updater)(offset, z_mask);
+      if (i == number_of_steps - 1) break; // set the final voxel and return
       off_a(offset_a);
       bool b_offset = false;
       if (error_b >= 0)
       {
-	if (clear_corners)
-	{
-	  (*updater)(offset, z_mask); //set voxel on the same row
-	  off_b(offset_b); //forward along b direction
-	  off_a(-offset_a); //back along a direction
-	  (*updater)(offset, z_mask); //set voxel
-	  off_a(offset_a); //forward along a direction
-	}
-	else off_b(offset_b);
+    	if (clear_corners)
+    	{
+    	  (*updater)(offset, z_mask); //set voxel on the same row
+    	  off_b(offset_b); //forward along b direction
+    	  off_a(-offset_a); //back along a direction
+    	  (*updater)(offset, z_mask); //set voxel
+    	  off_a(offset_a); //forward along a direction
+    	}
+    	else off_b(offset_b);
         error_b -= abs_da;
-	b_offset = true;
+    	b_offset = true;
       }
       if (error_c >= 0)
       {
-	if (clear_corners)
-	{
-	  (*updater)(offset, z_mask); //set voxel on the same row
-	  off_c(offset_c); //forward along c direction
-	  off_a(-offset_a); //back along a direction
-	  (*updater)(offset, z_mask); //set voxel
-	  if (b_offset) // correctly set all 3d corners, including b direction
-	  {
-	    off_b(-offset_b); //back along b direction
-	    (*updater)(offset, z_mask); //set voxel
-	    off_a(offset_a); //forward along a direction
-	    (*updater)(offset, z_mask); //set voxel
-	    off_a(-offset_a); //back along a direction
-	    off_b(offset_b); //forward along b direction
- 	  }
-	  off_a(offset_a); //forward along a direction
-	}
-	else off_c(offset_c);
-	error_c -= abs_da;
+    	if (clear_corners)
+    	{
+    	  (*updater)(offset, z_mask); //set voxel on the same row
+    	  off_c(offset_c); //forward along c direction
+    	  off_a(-offset_a); //back along a direction
+    	  (*updater)(offset, z_mask); //set voxel
+    	  if (b_offset) // correctly set all 3d corners, including b direction
+    	  {
+    	    off_b(-offset_b); //back along b direction
+    	    (*updater)(offset, z_mask); //set voxel
+    	    off_a(offset_a); //forward along a direction
+    	    (*updater)(offset, z_mask); //set voxel
+    	    off_a(-offset_a); //back along a direction
+    	    off_b(offset_b); //forward along b direction
+    	  }
+    	  off_a(offset_a); //forward along a direction
+    	}
+    	else off_c(offset_c);
+    	error_c -= abs_da;
       }
       error_b += abs_db;
       error_c += abs_dc;
     }
-    (*updater)(offset, z_mask);
   }
 
   inline int sign(double i)
