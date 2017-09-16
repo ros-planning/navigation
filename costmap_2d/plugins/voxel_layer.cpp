@@ -291,10 +291,9 @@ void VoxelLayer::clear(std::vector<Observation>& observations, double* min_x, do
 {
   boost::shared_ptr<voxel_grid::AbstractGridUpdater> voxel_clearer;
   unsigned int update_area_center = 0;
-
   if (use_cached_updating_)
   {
-    unsigned int max_raytrace_range_in_cells = std::floor(max_raytrace_range_ / resolution_);
+    unsigned int max_raytrace_range_in_cells = cellDistance(max_raytrace_range_);
 
     update_area_center = max_raytrace_range_in_cells + 1; // +1 to have a buffer
     unsigned int cached_update_area_width = update_area_center * 2 + 1; //+1 to have a center point

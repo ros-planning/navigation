@@ -126,7 +126,7 @@ namespace voxel_grid {
 
   void VoxelGrid::markVoxelLine(double x0, double y0, double z0,
 				double x1, double y1, double z1,
-				unsigned int max_length){
+				unsigned int cell_width){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
       ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
           size_x_, size_y_, size_z_);
@@ -135,13 +135,13 @@ namespace voxel_grid {
     BasicMarker basic_marker(data_);
     int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
     unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
-    unsigned int width = std::min(max_length, size_x_);
-    raytraceLine(&basic_marker, x0, y0, z0, x1, y1, z1, width, xyz, num_steps);
+    raytraceLine(&basic_marker, x0, y0, z0, x1, y1, z1, cell_width, xyz,
+		 num_steps);
   }
 
   void VoxelGrid::clearVoxelLine(double x0, double y0, double z0,
 				 double x1, double y1, double z1,
-				 unsigned int max_length){
+				 unsigned int cell_width){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
       ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
           size_x_, size_y_, size_z_);
@@ -150,19 +150,18 @@ namespace voxel_grid {
     BasicClearer basic_clearer(data_);
     int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
     unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
-    unsigned int width = std::min(max_length, size_x_);
-    raytraceLine(&basic_clearer, x0, y0, z0, x1, y1, z1, width, xyz, num_steps);
+    raytraceLine(&basic_clearer, x0, y0, z0, x1, y1, z1, cell_width, xyz,
+		 num_steps);
   }
 
   void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0,
 				      double x1, double y1, double z1,
 				      AbstractGridUpdater* clearer,
-				      unsigned int max_length)
+				      unsigned int cell_width)
   {
     int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
     unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
-    unsigned int width = std::min(max_length, size_x_*10);
-    raytraceLine(clearer, x0, y0, z0, x1, y1, z1, width, xyz,
+    raytraceLine(clearer, x0, y0, z0, x1, y1, z1, cell_width, xyz,
 		 num_steps);
   }
 

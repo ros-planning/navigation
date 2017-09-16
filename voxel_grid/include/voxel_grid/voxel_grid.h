@@ -237,11 +237,11 @@ public:
   /* 		     AbstractGridUpdater* marker); */
   /* void clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, */
   /* 		      AbstractGridUpdater* clearer, bool clear_corners = false); */
-  void markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length = UINT_MAX);
-  void clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length = UINT_MAX);
+  void markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int cell_width);
+  void clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int cell_width);
   void clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1,
 			   AbstractGridUpdater* clearer,
-			   unsigned int max_length = UINT_MAX);
+			   unsigned int cell_width);
 
   VoxelStatus getVoxel(unsigned int x, unsigned int y, unsigned int z);
 
