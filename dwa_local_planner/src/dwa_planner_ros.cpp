@@ -45,6 +45,7 @@
 
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
+#include <base_local_planner/speed_limiter.h>
 
 #include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 #include <srslib_timing/ScopedRollingTimingStatistics.hpp>
@@ -100,6 +101,20 @@ namespace dwa_local_planner {
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.rot_stopped_vel = config.rot_stopped_vel;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
+
+      base_local_planner::SpeedLimiterParams sp_params;
+      sp_params.max_linear_velocity_ = config.max_vel_x;
+      sp_params.min_linear_velocity_ = config.min_slow_vel_x;
+      sp_params.linear_acceleration_ = config.acc_lim_x;
+      sp_params.x_buffer_ = config.speed_cost_x_buffer;
+      sp_params.y_buffer_ = config.speed_cost_y_buffer;
+      sp_params.half_angle_ = config.speed_cost_half_angle;
+
+      sp_params.min_angular_velocity_effect_distance_ = config.speed_cost_min_angular_vel_effect_dist;
+      sp_params.max_angular_velocity_effect_distance_ = config.speed_cost_max_angular_vel_effect_dist;
+      sp_params.min_angular_velocity_ = config.min_slow_angular_vel;
+      sp_params.max_angular_velocity_ = config.max_rot_vel;
+      planner_util_.setSpeedLimiterParams(sp_params);
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
       // odom_helper_.setWheelbase(config.wheelbase);
@@ -316,6 +331,9 @@ namespace dwa_local_planner {
 
     tf::Stamped<tf::Pose> robot_vel;
     odom_helper_.getEstimatedRobotVel(robot_vel);
+
+    // Update the speed limits
+    planner_util_.updateLimits();
 
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
     srs::ScopedTimingSampleRecorder stsr(tdr_.getRecorder("-UpdatePlanCosts"));

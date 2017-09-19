@@ -57,6 +57,9 @@ geometry_msgs::Pose createPose(float x, float y, float yaw);
 geometry_msgs::PoseWithCovariance createPoseWithCovariance(float x, float y, float yaw);
 geometry_msgs::PoseStamped createPoseStamped(float x, float y, float yaw);
 
+tf::Pose createTfPose(float x, float y, float yaw);
+tf::Stamped<tf::Pose> createTfPoseStamped(float x, float y, float yaw, std::string frame = "");
+
 geometry_msgs::Twist createTwist(float v, float w);
 geometry_msgs::TwistWithCovariance createTwistWithCovariance(float v, float w);
 geometry_msgs::TwistStamped createTwistStamped(float v, float w);

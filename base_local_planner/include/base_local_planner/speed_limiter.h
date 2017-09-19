@@ -15,7 +15,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *   * Neither the name of 6 River Systems. nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -35,8 +35,8 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef SPEED_COST_FUNCTION_H_
-#define SPEED_COST_FUNCTION_H_
+#ifndef SPEED_LIMITER_H_
+#define SPEED_LIMITER_H_
 
 #include <base_local_planner/critics/trajectory_cost_function.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -45,22 +45,36 @@
 
 namespace base_local_planner {
 
+struct SpeedLimiterParams {
+  double max_linear_velocity_ = 1.0;
+  double min_linear_velocity_ = 0.3;
+  double linear_acceleration_ = 0.7;
+  double half_angle_ = 1.6;
+  double x_buffer_ = 0.5;
+  double y_buffer_ = 0.3;
+
+  double min_angular_velocity_effect_distance_ = 0.2;
+  double max_angular_velocity_effect_distance_ = 0.5;
+  double max_angular_velocity_ = 1.0;
+  double min_angular_velocity_ = 0.3;
+};
+
 /**
  * This class provides cost speed and distance from dynamic obstacles
  *
  * It will reject trajectories that are over a speed curve given distance to obstacles
  */
-class SpeedCostFunction: public base_local_planner::TrajectoryCostFunction {
+class SpeedLimiter {
 public:
   /**
    * Constructor
    */
-  SpeedCostFunction();
+  SpeedLimiter();
 
   /**
    * Destructor
    */
-  ~SpeedCostFunction() {}
+  ~SpeedLimiter() {}
 
   /**
    * Set the obstructions
@@ -74,34 +88,15 @@ public:
    * Set the current pose of the robot
    * @param pose The current pose
    */
-  void setCurrentPose(geometry_msgs::PoseStamped pose);
+  void setCurrentPose(tf::Stamped<tf::Pose> pose);
   /**
    * Prepare for operation.
    * @return true if preparations were successful
    */
-  bool prepare();
+  bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
-  /**
-   * Scores the trajectory.  Returns a negative value for rejected trajectories.
-   * @param traj The trajectory
-   * @return Non-negative value if the trajectory is valid, negative otherwise.
-   *     -1 indicates that it is in violation of the distance to obstruction metric
-   */
-  double scoreTrajectory(Trajectory &traj);
-
-  void setMaxLinearVelocity(double vel) {
-    max_linear_velocity_ = vel;
-    calculateStopDistances();
-  }
-
-  void setMinLinearVelocity(double vel) {
-    min_linear_velocity_ = vel;
-    calculateStopDistances();
-  }
-
-  void setAcceleration(double accel)
-  {
-    linear_acceleration_ = accel;
+  void setParams(SpeedLimiterParams params) {
+    params_ = params;
     calculateStopDistances();
   }
 
@@ -110,31 +105,24 @@ public:
     world_frame_id_ = id;
   }
 
+  void setBodyFrameId(std::string id)
+  {
+    body_frame_id_ = id;
+  }
+
+
   void setFootprint(std::vector<geometry_msgs::Point> footprint)
   {
     calculateFootprintBounds(footprint);
-  }
-
-  void setYBuffer(double buffer)
-  {
-    y_buffer_ = buffer;
-  }
-
-  void setXBuffer(double buffer)
-  {
-    x_buffer_ = buffer;
-  }
-
-  void setHalfAngle(double val)
-  {
-    half_angle_ = val;
   }
 
 private:
 
   double getBearingToObstacle(costmap_2d::ObstructionMsg obs);
 
-  double calculateAllowedSpeed(costmap_2d::ObstructionMsg obs);
+  double calculateAllowedLinearSpeed(costmap_2d::ObstructionMsg obs);
+
+  double calculateAllowedAngularSpeed(costmap_2d::ObstructionMsg obs);
 
   costmap_2d::ObstructionMsg obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in);
 
@@ -142,26 +130,20 @@ private:
 
   void calculateFootprintBounds(std::vector<geometry_msgs::Point> footprint);
 
-
   std::vector<geometry_msgs::PoseStamped> target_poses_;
   std::shared_ptr<std::vector<costmap_2d::ObstructionMsg>>  obstructions_;
 
-  double max_allowed_vel_;
   double min_distance_to_stop_;
   double max_distance_to_stop_;
 
   // All of these params need to be filled out.
-  double max_linear_velocity_;
-  double min_linear_velocity_;
-  double linear_acceleration_;
-  double half_angle_;
-  double x_buffer_;
-  double y_buffer_;
+  SpeedLimiterParams params_;
 
   double footprint_min_x_;
   double footprint_max_x_;
   double footprint_min_y_;
   double footprint_max_y_;
+  double circumscribed_radius_;
 
   tf::Transform current_pose_inv_tf_;
 
@@ -170,4 +152,4 @@ private:
 };
 
 } /* namespace base_local_planner */
-#endif /* SPEED_COST_FUNCTION_H_ */
+#endif /* SPEED_LIMITER_H_ */

@@ -67,7 +67,7 @@ void LocalPlannerUtil::reconfigureCB(LocalPlannerLimits &config, bool restore_de
     setup_ = true;
   }
   boost::mutex::scoped_lock l(limits_configuration_mutex_);
-  limits_ = LocalPlannerLimits(config);
+  nominal_limits_ = LocalPlannerLimits(config);
 }
 
 costmap_2d::Costmap2D* LocalPlannerUtil::getCostmap() {
@@ -76,7 +76,7 @@ costmap_2d::Costmap2D* LocalPlannerUtil::getCostmap() {
 
 LocalPlannerLimits LocalPlannerUtil::getCurrentLimits() {
   boost::mutex::scoped_lock l(limits_configuration_mutex_);
-  return limits_;
+  return active_limits_;
 }
 
 
@@ -149,10 +149,69 @@ bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vec
   }
 
   //now we'll prune the plan based on the position of the robot
-  if(limits_.prune_plan) {
+  if(active_limits_.prune_plan) {
     base_local_planner::prunePlan(global_pose, transformed_plan, global_plan_);
   }
   return true;
+}
+
+void LocalPlannerUtil::updateLimits() {
+  boost::mutex::scoped_lock l(limits_configuration_mutex_);
+  active_limits_ = nominal_limits_;
+
+  // Set up the limiter.
+  speed_limiter_.setFootprint(costmap_->getRobotFootprint());
+  speed_limiter_.setObstructions(costmap_->getLayeredCostmap()->getObstructions());
+  speed_limiter_.setWorldFrameId(costmap_->getGlobalFrameID());
+  speed_limiter_.setBodyFrameId(costmap_->getBaseFrameID());
+
+  // Get the pose somehow
+  tf::Stamped<tf::Pose> robot_pose;
+  if (!costmap_->getRobotPose(robot_pose)) {
+    ROS_WARN("Could not get robot pose to calculate speed limits");
+    return;
+  }
+  speed_limiter_.setCurrentPose(robot_pose);
+
+  // Use the speed limiter to update the limits.
+  double v_lim = 0, w_lim = 0;
+  if (!speed_limiter_.calculateLimits(v_lim, w_lim)) {
+    ROS_WARN("Could not calculate updated speed limits.");
+    return;
+  }
+
+  // Make sure the limits are respected
+  if (active_limits_.max_rot_vel > w_lim) {
+    active_limits_.max_rot_vel = w_lim;
+  }
+
+  if (active_limits_.min_rot_vel > w_lim) {
+    active_limits_.min_rot_vel = w_lim;
+  }
+
+  if (active_limits_.max_tip_vel > w_lim) {
+    active_limits_.max_tip_vel = w_lim;
+  }
+
+  if (active_limits_.min_tip_vel > w_lim) {
+    active_limits_.min_tip_vel = w_lim;
+  }
+
+  if (active_limits_.max_trans_vel > v_lim) {
+    active_limits_.max_trans_vel = v_lim;
+  }
+
+  if (active_limits_.min_trans_vel > v_lim) {
+    active_limits_.min_trans_vel = v_lim;
+  }
+
+  if (active_limits_.max_vel_x > v_lim) {
+    active_limits_.max_vel_x = v_lim;
+  }
+
+  if (active_limits_.min_vel_x > v_lim) {
+    active_limits_.min_vel_x = v_lim;
+  }
 }
 
 } // namespace

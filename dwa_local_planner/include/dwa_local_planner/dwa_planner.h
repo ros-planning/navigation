@@ -68,7 +68,6 @@
 #include <base_local_planner/critics/velocity_cost_function.h>
 #include <base_local_planner/critics/map_grid_cost_function.h>
 #include <base_local_planner/critics/obstacle_cost_function.h>
-#include <base_local_planner/critics/speed_cost_function.h>
 
 
 
@@ -201,7 +200,6 @@ namespace dwa_local_planner {
       base_local_planner::JerkCostFunction jerk_costs_;
       base_local_planner::VelocityCostFunction velocity_costs_;
       base_local_planner::ObstacleCostFunction obstacle_costs_;
-      base_local_planner::SpeedCostFunction speed_costs_;
       base_local_planner::MapGridCostFunction path_costs_;
       base_local_planner::MapGridCostFunction goal_costs_;
       base_local_planner::MapGridCostFunction goal_front_costs_;

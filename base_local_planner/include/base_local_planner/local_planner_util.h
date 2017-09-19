@@ -48,6 +48,7 @@
 #include <tf/transform_listener.h>
 
 #include <base_local_planner/local_planner_limits.h>
+#include <base_local_planner/speed_limiter.h>
 
 
 namespace base_local_planner {
@@ -72,7 +73,11 @@ private:
   boost::mutex limits_configuration_mutex_;
   bool setup_;
   LocalPlannerLimits default_limits_;
-  LocalPlannerLimits limits_;
+  LocalPlannerLimits nominal_limits_;
+  LocalPlannerLimits active_limits_;
+
+  SpeedLimiter speed_limiter_;
+
   bool initialized_;
 
 public:
@@ -102,11 +107,17 @@ public:
     return costmap_;
   }
 
+  void updateLimits();
+
   LocalPlannerLimits getCurrentLimits();
 
   std::string getGlobalFrame(){ return global_frame_; }
 
   double distanceToPlanDivergence(const std::vector<geometry_msgs::PoseStamped>& new_plan);
+
+  void setSpeedLimiterParams(SpeedLimiterParams params) {
+    speed_limiter_.setParams(params);
+  }
 
 };
 

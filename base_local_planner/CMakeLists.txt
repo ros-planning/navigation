@@ -86,7 +86,6 @@ add_library(base_local_planner
     src/critics/obstacle_cost_function.cpp
     src/critics/oscillation_cost_function.cpp
     src/critics/prefer_forward_cost_function.cpp
-    src/critics/speed_cost_function.cpp
     src/follower_trajectory_generator.cpp
     src/footprint_helper.cpp
     src/geometry_math_helpers.cpp
@@ -101,6 +100,7 @@ add_library(base_local_planner
     src/costmap_model.cpp
     src/simple_scored_sampling_planner.cpp
     src/simple_trajectory_generator.cpp
+    src/speed_limiter.cpp
     src/stationary_trajectory_generator.cpp
     src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp
@@ -151,7 +151,7 @@ if(CATKIN_ENABLE_TESTING)
     test/trajectory_generator_test.cpp
     test/follower_trajectory_generator_test.cpp
     test/global_plan_distance_cost_function_test.cpp
-    test/speed_cost_function_test.cpp
+    test/speed_limiter_test.cpp
     test/map_grid_test.cpp
     test/critic_test_helpers.cpp
     test/odometry_helper_ros_test.cpp

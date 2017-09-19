@@ -78,6 +78,8 @@ void ObstructionLayer::onInitialize()
   nh.param("observation_sources", topics_string, std::string(""));
   ROS_INFO("    Subscribed to Topics: %s", topics_string.c_str());
 
+  timingDataRecorder_ = srs::MasterTimingDataRecorder(global_frame_ + "-" + name_);
+
   // get our tf prefix
   ros::NodeHandle prefix_nh;
   const std::string tf_prefix = tf::getPrefixParam(prefix_nh);
@@ -413,6 +415,8 @@ void ObstructionLayer::updateBounds(double robot_x, double robot_y, double robot
 
 void ObstructionLayer::updateObstructions(double* min_x, double* min_y, double* max_x, double* max_y)
 {
+  srs::ScopedTimingSampleRecorder lockwait(timingDataRecorder_.getRecorder("-updateObs", 1));
+
   // First, make sure the kernels have been created.
   if (kernels_.empty())
   {

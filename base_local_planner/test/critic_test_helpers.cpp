@@ -49,7 +49,6 @@ geometry_msgs::Pose createPose(float x, float y, float yaw)
   return p;
 }
 
-
 geometry_msgs::PoseWithCovariance createPoseWithCovariance(float x, float y, float yaw)
 {
   geometry_msgs::PoseWithCovariance p;
@@ -61,6 +60,22 @@ geometry_msgs::PoseStamped createPoseStamped(float x, float y, float yaw)
 {
   geometry_msgs::PoseStamped p;
   p.pose = createPose(x, y, yaw);
+  return p;
+}
+
+tf::Pose createTfPose(float x, float y, float yaw)
+{
+  tf::Pose transform;
+  transform.setOrigin(tf::Vector3(x, y, 0.0));
+  tf::Quaternion q;
+  q.setRPY(0, 0, yaw);
+  transform.setRotation(q);
+  return transform;
+}
+
+tf::Stamped<tf::Pose> createTfPoseStamped(float x, float y, float yaw, std::string frame)
+{
+  tf::Stamped<tf::Pose> p(createTfPose(x, y, yaw), ros::Time(0), frame);
   return p;
 }
 
