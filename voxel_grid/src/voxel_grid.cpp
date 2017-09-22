@@ -125,6 +125,11 @@ namespace voxel_grid {
   }
 
   void VoxelGrid::markVoxelLine(double x0, double y0, double z0,
+				double x1, double y1, double z1){
+    markVoxelLine(x0, y0, z0, x1, y1, z1, size_x_);
+  }
+
+  void VoxelGrid::markVoxelLine(double x0, double y0, double z0,
 				double x1, double y1, double z1,
 				unsigned int cell_width){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
@@ -140,6 +145,10 @@ namespace voxel_grid {
   }
 
   void VoxelGrid::clearVoxelLine(double x0, double y0, double z0,
+				 double x1, double y1, double z1){
+    clearVoxelLine(x0, y0, z0, x1, y1, z1, size_x_);
+  }
+  void VoxelGrid::clearVoxelLine(double x0, double y0, double z0,
 				 double x1, double y1, double z1,
 				 unsigned int cell_width){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
@@ -154,6 +163,11 @@ namespace voxel_grid {
 		 num_steps);
   }
 
+  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0,
+				      double x1, double y1, double z1,
+				      AbstractGridUpdater* clearer){
+    clearVoxelLineInMap(x0, y0, z0, x1, y1, z1, clearer, size_x_);
+  }
   void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0,
 				      double x1, double y1, double z1,
 				      AbstractGridUpdater* clearer,
