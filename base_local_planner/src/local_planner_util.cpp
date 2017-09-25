@@ -66,8 +66,11 @@ void LocalPlannerUtil::reconfigureCB(LocalPlannerLimits &config, bool restore_de
     default_limits_ = config;
     setup_ = true;
   }
-  boost::mutex::scoped_lock l(limits_configuration_mutex_);
-  nominal_limits_ = LocalPlannerLimits(config);
+  {
+    boost::mutex::scoped_lock l(limits_configuration_mutex_);
+    nominal_limits_ = LocalPlannerLimits(config);
+  }
+  updateLimits();
 }
 
 costmap_2d::Costmap2D* LocalPlannerUtil::getCostmap() {
