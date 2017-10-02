@@ -8,15 +8,16 @@
 #include <base_local_planner/costmap_model.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
+#include <costmap_2d/footprint.h>
 
 namespace move_backwards_recovery{
- 
+
   class MoveBackRecovery : public nav_core::RecoveryBehavior {
     public:
-    
+
       MoveBackRecovery();
 
-      void initialize(std::string name, tf::TransformListener* tf, 
+      void initialize(std::string name, tf::TransformListener* tf,
           costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap);
 
       void runBehavior();
@@ -31,10 +32,11 @@ namespace move_backwards_recovery{
       bool initialized_;
       double distance_backwards_;
       double backwards_velocity_;
- 
-      base_local_planner::CostmapModel* world_model_;     
+      std::vector<geometry_msgs::Point> footprint_;
+
+      base_local_planner::CostmapModel* world_model_;
       static constexpr auto RECOVERY_VELOCITY_CMD = "/cmd_vel";
- 
+
   };
 };
-#endif  
+#endif
