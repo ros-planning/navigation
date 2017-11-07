@@ -380,7 +380,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     int x = MAP_GXWX(self->map, sample->pose.v[0]);
     int y = MAP_GXWX(self->map, sample->pose.v[1]);
 
-    if(self->map->cells[MAP_INDEX(self->map, x, y)].occ_state > -1)
+    if(!MAP_VALID(self->map, x, y) || self->map->cells[MAP_INDEX(self->map, x, y)].occ_state > -1)
     {
       sample->weight = 0;
     }
