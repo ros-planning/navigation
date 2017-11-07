@@ -352,16 +352,20 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
   //realloc indicates if we need to reallocate the temp data structure needed to do beamskipping 
   bool realloc = false; 
 
-  if(do_beamskip){
-    if(self->max_obs < self->max_beams){
+  if(do_beamskip)
+  {
+    if(self->max_obs < self->max_beams)
+    {
       realloc = true;
     }
 
-    if(self->max_samples < set->sample_count){
+    if(self->max_samples < set->sample_count)
+    {
       realloc = true;
     }
 
-    if(realloc){
+    if(realloc)
+    {
       self->reallocTempData(set->sample_count, self->max_beams);     
       fprintf(stderr, "Reallocing temp weights %d - %d\n", self->max_samples, self->max_obs);
     }
@@ -373,72 +377,91 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     sample = set->samples + j;
     pose = sample->pose;
 
-    // Take account of the laser pose relative to the robot
-    pose = pf_vector_coord_add(self->laser_pose, pose);
+    int x = MAP_GXWX(self->map, sample->pose.v[0]);
+    int y = MAP_GXWX(self->map, sample->pose.v[1]);
 
-    log_p = 0;
-    
-    beam_ind = 0;
-    
-    for (i = 0; i < data->range_count; i += step, beam_ind++)
+    if(self->map->cells[MAP_INDEX(self->map, x, y)].occ_state > -1)
     {
-      obs_range = data->ranges[i][0];
-      obs_bearing = data->ranges[i][1];
+      sample->weight = 0;cd
+    }
+    else
+    {
 
-      // This model ignores max range readings
-      if(obs_range >= data->range_max){
-        continue;
-      }
+      // Take account of the laser pose relative to the robot
+      pose = pf_vector_coord_add(self->laser_pose, pose);
 
-      // Check for NaN
-      if(obs_range != obs_range){
-        continue;
-      }
+      log_p = 0;
 
-      pz = 0.0;
+      beam_ind = 0;
 
-      // Compute the endpoint of the beam
-      hit.v[0] = pose.v[0] + obs_range * cos(pose.v[2] + obs_bearing);
-      hit.v[1] = pose.v[1] + obs_range * sin(pose.v[2] + obs_bearing);
+      for (i = 0; i < data->range_count; i += step, beam_ind++)
+      {
+        obs_range = data->ranges[i][0];
+        obs_bearing = data->ranges[i][1];
 
-      // Convert to map grid coords.
-      int mi, mj;
-      mi = MAP_GXWX(self->map, hit.v[0]);
-      mj = MAP_GYWY(self->map, hit.v[1]);
-      
-      // Part 1: Get distance from the hit to closest obstacle.
-      // Off-map penalized as max distance
-      
-      if(!MAP_VALID(self->map, mi, mj)){
-	pz += self->z_hit * max_dist_prob;
-      }
-      else{
-	z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
-	if(z < beam_skip_distance){
-	  obs_count[beam_ind] += 1;
-	}
-	pz += self->z_hit * exp(-(z * z) / z_hit_denom);
-      }
-       
-      // Gaussian model
-      // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
-      
-      // Part 2: random measurements
-      pz += self->z_rand * z_rand_mult;
+        // This model ignores max range readings
+        if(obs_range >= data->range_max)
+        {
+          continue;
+        }
 
-      assert(pz <= 1.0); 
-      assert(pz >= 0.0);
+        // Check for NaN
+        if(obs_range != obs_range)
+        {
+          continue;
+        }
 
-      // TODO: outlier rejection for short readings
-            
-      if(!do_beamskip){
-	log_p += log(pz);
-      }
-      else{
-	self->temp_obs[j][beam_ind] = pz; 
+        pz = 0.0;
+
+        // Compute the endpoint of the beam
+        hit.v[0] = pose.v[0] + obs_range * cos(pose.v[2] + obs_bearing);
+        hit.v[1] = pose.v[1] + obs_range * sin(pose.v[2] + obs_bearing);
+
+        // Convert to map grid coords.
+        int mi, mj;
+        mi = MAP_GXWX(self->map, hit.v[0]);
+        mj = MAP_GYWY(self->map, hit.v[1]);
+
+        // Part 1: Get distance from the hit to closest obstacle.
+        // Off-map penalized as max distance
+
+        if(!MAP_VALID(self->map, mi, mj))
+        {
+          pz += self->z_hit * max_dist_prob;
+        }
+        else
+        {
+          z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+          if(z < beam_skip_distance)
+          {
+            obs_count[beam_ind] += 1;
+          }
+          pz += self->z_hit * exp(-(z * z) / z_hit_denom);
+        }
+
+        // Gaussian model
+        // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
+
+        // Part 2: random measurements
+        pz += self->z_rand * z_rand_mult;
+
+        assert(pz <= 1.0);
+        assert(pz >= 0.0);
+
+        // TODO: outlier rejection for short readings
+        if(!do_beamskip)
+        {
+          log_p += log(pz);
+        }
+        else
+        {
+          self->temp_obs[j][beam_ind] = pz;
+        }
       }
     }
-    if(!do_beamskip){
+
+    if(!do_beamskip)
+    {
       sample->weight *= exp(log_p);
       total_weight += sample->weight;
     }
