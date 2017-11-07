@@ -382,7 +382,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
     if(self->map->cells[MAP_INDEX(self->map, x, y)].occ_state > -1)
     {
-      sample->weight = 0;cd
+      sample->weight = 0;
     }
     else
     {
