@@ -39,33 +39,43 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include "nav_core/abstract_global_planner.h"
 
 namespace nav_core {
   /**
    * @class BaseGlobalPlanner
    * @brief Provides an interface for global planners used in navigation. All global planners written as plugins for the navigation stack must adhere to this interface.
    */
-  class BaseGlobalPlanner{
+  class BaseGlobalPlanner : public AbstractGlobalPlanner{
     public:
-      /**
-       * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose 
-       * @param goal The goal pose 
-       * @param plan The plan... filled by the planner
-       * @return True if a valid plan was found, false otherwise
-       */
-      virtual bool makePlan(const geometry_msgs::PoseStamped& start, 
-          const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan) = 0;
+
+      typedef boost::shared_ptr< ::nav_core::BaseGlobalPlanner > Ptr;
+
 
       /**
        * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose 
-       * @param goal The goal pose 
+       * @param start The start pose
+       * @param goal The goal pose
+       * @param plan The plan... filled by the planner
+       * @return True if a valid plan was found, false otherwise
+       *
+       * @deprecated This method is deprecated in move_base_flex in favor of the one providing detailed result.
+       */
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start,
+          const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan) = 0;
+
+
+      /**
+       * @brief Given a goal pose in the world, compute a plan
+       * @param start The start pose
+       * @param goal The goal pose
        * @param plan The plan... filled by the planner
        * @param cost The plans calculated cost
        * @return True if a valid plan was found, false otherwise
+       *
+       * @deprecated This method is deprecated in move_base_flex in favor of the one providing detailed result.
        */
-      virtual bool makePlan(const geometry_msgs::PoseStamped& start, 
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start,
                             const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan,
                             double& cost)
       {
@@ -74,9 +84,38 @@ namespace nav_core {
       }
 
       /**
-       * @brief  Initialization function for the BaseGlobalPlanner
-       * @param  name The name of this planner
-       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+       * @brief Given a goal pose in the world, compute a plan
+       * @param start The start pose
+       * @param goal The goal pose
+       * @param tolerance The tolerance to the goal pose
+       * @param plan The plan... filled by the planner
+       * @param cost The cost for the the plan
+       * @param plugin_code More detailed outcome; will be defaulted to DO_NOT_APPLY on planners
+       * implementing the old move_base API
+       * @param plugin_msg More detailed outcome as a string message
+       * @return True if a valid plan was found, false otherwise
+       */
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
+                            double tolerance, std::vector<geometry_msgs::PoseStamped>& plan, double& cost,
+                            uint8_t& plugin_code, std::string& plugin_msg)
+      {
+        plugin_code = 255;  // DO_NOT_APPLY
+        return makePlan(start, goal, plan, cost);
+      }
+
+      /**
+       * @brief Requests the planner to cancel, e.g. if it takes to much time.
+       * @return True if a cancel has been successfully requested, false if not implemented.
+       */
+      virtual bool cancel()
+      {
+        return false;
+      }
+
+      /**
+       * @brief Initialization function for the BaseGlobalPlanner
+       * @param name The name of this planner
+       * @param costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
        */
       virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 

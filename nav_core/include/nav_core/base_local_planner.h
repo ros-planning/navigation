@@ -41,26 +41,56 @@
 #include <geometry_msgs/Twist.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf/transform_listener.h>
+#include "nav_core/abstract_local_planner.h"
 
 namespace nav_core {
   /**
    * @class BaseLocalPlanner
    * @brief Provides an interface for local planners used in navigation. All local planners written as plugins for the navigation stack must adhere to this interface.
    */
-  class BaseLocalPlanner{
+  class BaseLocalPlanner : public AbstractLocalPlanner{
     public:
-      /**
-       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid velocity command was found, false otherwise
-       */
-      virtual bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel) = 0;
+
+      typedef boost::shared_ptr< ::nav_core::BaseLocalPlanner > Ptr;
 
       /**
-       * @brief  Check if the goal pose has been achieved by the local planner
+       * @brief  Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base.
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @return True if a valid velocity command was found, false otherwise
+       *
+       * @deprecated This method is deprecated in move_base_flex in favor of the one providing detailed result.
+       */
+      virtual bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
+      {
+        throw "Neither old nor flex APIs computeVelocityCommands method overridden";
+      }
+
+      /**
+       * @brief Given the current position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base.
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @param plugin_code More detailed outcome; will be defaulted to DO_NOT_APPLY on planners
+       * implementing the old move_base API
+       * @param plugin_msg More detailed outcome as a string message
+       * @return True if a valid velocity command was found, false otherwise
+       */
+      virtual bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel,
+                                           uint8_t& plugin_code, std::string& plugin_msg)
+      {
+        plugin_code = 255;  // DO_NOT_APPLY
+        return computeVelocityCommands(cmd_vel);
+      }
+
+      /**
+       * @brief Check if the goal pose has been achieved by the local planner
        * @return True if achieved, false otherwise
        */
       virtual bool isGoalReached() = 0;
+
+      virtual bool isGoalReached(double dist_tolerance, double angle_tolerance)
+      {
+        return isGoalReached();
+      }
 
       /**
        * @brief  Set the plan that the local planner is following
@@ -70,7 +100,16 @@ namespace nav_core {
       virtual bool setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) = 0;
 
       /**
-       * @brief  Constructs the local planner
+       * @brief Requests the planner to cancel, e.g. if it takes to much time.
+       * @return True if a cancel has been successfully requested, false if not implemented.
+       */
+      virtual bool cancel()
+      {
+        return false;
+      }
+
+      /**
+       * @brief Constructs the local planner
        * @param name The name to give this instance of the local planner
        * @param tf A pointer to a transform listener
        * @param costmap_ros The cost map to use for assigning costs to local plans
