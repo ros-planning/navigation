@@ -107,6 +107,8 @@ class AMCLLaser : public AMCLSensor
 
   private: void reallocTempData(int max_samples, int max_obs);
 
+  private: bool isValidSample(pf_sample_t* sample);
+
   private: laser_model_t model_type;
 
   // Current data timestamp
