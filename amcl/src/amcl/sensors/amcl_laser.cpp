@@ -371,6 +371,8 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     }
   }
 
+  int invalidPoses = 0;
+
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
@@ -383,6 +385,8 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     if(!MAP_VALID(self->map, x, y) || self->map->cells[MAP_INDEX(self->map, x, y)].occ_state > -1)
     {
       sample->weight = 0;
+
+      invalidPoses++;
     }
     else
     {
@@ -467,15 +471,19 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     }
   }
   
-  if(do_beamskip){
+  if(do_beamskip)
+  {
     int skipped_beam_count = 0; 
-    for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
-      if((obs_count[beam_ind] / static_cast<double>(set->sample_count)) > beam_skip_threshold){
-	obs_mask[beam_ind] = true;
+    for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++)
+    {
+      if((obs_count[beam_ind] / static_cast<double>(set->sample_count)) > beam_skip_threshold)
+      {
+        obs_mask[beam_ind] = true;
       }
-      else{
-	obs_mask[beam_ind] = false;
-	skipped_beam_count++; 
+      else
+      {
+	      obs_mask[beam_ind] = false;
+	      skipped_beam_count++;
       }
     }
 
@@ -485,28 +493,31 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     //the right solution
     bool error = false; 
 
-    if(skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold)){
+    if(skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold))
+    {
       fprintf(stderr, "Over %f%% of the observations were not in the map - pf may have converged to wrong pose - integrating all observations\n", (100 * self->beam_skip_error_threshold));
       error = true; 
     }
 
     for (j = 0; j < set->sample_count; j++)
+    {
+	    sample = set->samples + j;
+	    pose = sample->pose;
+
+      log_p = 0;
+
+      for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++)
       {
-	sample = set->samples + j;
-	pose = sample->pose;
+        if(error || obs_mask[beam_ind])
+        {
+          log_p += log(self->temp_obs[j][beam_ind]);
+        }
+      }
 
-	log_p = 0;
+      sample->weight *= exp(log_p);
 
-	for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
-	  if(error || obs_mask[beam_ind]){
-	    log_p += log(self->temp_obs[j][beam_ind]);
-	  }
-	}
-	
-	sample->weight *= exp(log_p);
-	
-	total_weight += sample->weight;
-      }      
+      total_weight += sample->weight;
+    }
   }
 
   delete [] obs_count; 
