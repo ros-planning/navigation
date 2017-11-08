@@ -553,11 +553,13 @@ void AMCLLaser::reallocTempData(int new_max_samples, int new_max_obs){
   }
 }
 
-bool isValidSample(pf_sample_t* sample){
-  int x = MAP_GXWX(map, sample->pose.v[0]);
-  int y = MAP_GYWY(map, sample->pose.v[1]);
+bool AMCLLaser::isValidSample(AMCLLaserData *data, pf_sample_t* sample){
+  AMCLLaser *self = (AMCLLaser*) data->sensor;
 
-  if(!MAP_VALID(map, x, y) || map->cells[MAP_INDEX(map, x, y)].occ_state > -1)
+  int x = MAP_GXWX(self->map, sample->pose.v[0]);
+  int y = MAP_GYWY(self->map, sample->pose.v[1]);
+
+  if(!MAP_VALID(self->map, x, y) || self->map->cells[MAP_INDEX(self->map, x, y)].occ_state > -1)
   {
     sample->weight = 0;
 

@@ -105,9 +105,9 @@ class AMCLLaser : public AMCLSensor
   private: static double LikelihoodFieldModelProb(AMCLLaserData *data, 
 					     pf_sample_set_t* set);
 
-  private: void reallocTempData(int max_samples, int max_obs);
+  private: static bool isValidSample(AMCLLaserData *data, pf_sample_t* sample);
 
-  private: bool isValidSample(pf_sample_t* sample);
+  private: void reallocTempData(int max_samples, int max_obs);
 
   private: laser_model_t model_type;
 
