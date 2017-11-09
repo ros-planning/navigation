@@ -163,7 +163,7 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
     sample = set->samples + j;
     pose = sample->pose;
 
-    if(!isValidSample(sample))
+    if(!isValidSample(self, sample))
     {
       invalidSamples++;
 
@@ -243,7 +243,7 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     sample = set->samples + j;
     pose = sample->pose;
 
-    if(!isValidSample(sample))
+    if(!isValidSample(self, sample))
     {
       invalidSamples++;
 
@@ -397,7 +397,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     sample = set->samples + j;
     pose = sample->pose;
 
-    if(!isValidSample(sample))
+    if(!isValidSample(self, sample))
     {
       invalidSamples++;
 
@@ -553,13 +553,11 @@ void AMCLLaser::reallocTempData(int new_max_samples, int new_max_obs){
   }
 }
 
-bool AMCLLaser::isValidSample(AMCLLaserData *data, pf_sample_t* sample){
-  AMCLLaser *self = (AMCLLaser*) data->sensor;
+bool AMCLLaser::isValidSample(AMCLLaser* laser, pf_sample_t* sample){
+  int x = MAP_GXWX(laser->map, sample->pose.v[0]);
+  int y = MAP_GYWY(laser->map, sample->pose.v[1]);
 
-  int x = MAP_GXWX(self->map, sample->pose.v[0]);
-  int y = MAP_GYWY(self->map, sample->pose.v[1]);
-
-  if(!MAP_VALID(self->map, x, y) || self->map->cells[MAP_INDEX(self->map, x, y)].occ_state > -1)
+  if(!MAP_VALID(laser->map, x, y) || laser->map->cells[MAP_INDEX(laser->map, x, y)].occ_state > -1)
   {
     sample->weight = 0;
 
