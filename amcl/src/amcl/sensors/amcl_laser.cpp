@@ -155,11 +155,20 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
 
   total_weight = 0.0;
 
+  int invalidSamples = 0;
+
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
     sample = set->samples + j;
     pose = sample->pose;
+
+    if(!isValidSample(self, sample))
+    {
+      invalidSamples++;
+
+      continue;
+    }
 
     // Take account of the laser pose relative to the robot
     pose = pf_vector_coord_add(self->laser_pose, pose);
@@ -207,6 +216,8 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
     total_weight += sample->weight;
   }
 
+  ROS_WARN("AMCL particles passed over obstacle and have been invalidated: %d", invalidSamples);
+
   return(total_weight);
 }
 
@@ -226,11 +237,20 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
 
   total_weight = 0.0;
 
+  int invalidSamples = 0;
+
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
     sample = set->samples + j;
     pose = sample->pose;
+
+    if(!isValidSample(self, sample))
+    {
+      invalidSamples++;
+
+      continue;
+    }
 
     // Take account of the laser pose relative to the robot
     pose = pf_vector_coord_add(self->laser_pose, pose);
@@ -297,6 +317,8 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     total_weight += sample->weight;
   }
 
+  ROS_WARN("AMCL particles passed over obstacle and have been invalidated: %d", invalidSamples);
+
   return(total_weight);
 }
 
@@ -352,20 +374,26 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
   //realloc indicates if we need to reallocate the temp data structure needed to do beamskipping 
   bool realloc = false; 
 
-  if(do_beamskip){
-    if(self->max_obs < self->max_beams){
+  if(do_beamskip)
+  {
+    if(self->max_obs < self->max_beams)
+    {
       realloc = true;
     }
 
-    if(self->max_samples < set->sample_count){
+    if(self->max_samples < set->sample_count)
+    {
       realloc = true;
     }
 
-    if(realloc){
+    if(realloc)
+    {
       self->reallocTempData(set->sample_count, self->max_beams);     
       fprintf(stderr, "Reallocing temp weights %d - %d\n", self->max_samples, self->max_obs);
     }
   }
+
+  int invalidSamples = 0;
 
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
@@ -373,25 +401,34 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     sample = set->samples + j;
     pose = sample->pose;
 
+    if(!isValidSample(self, sample))
+    {
+      invalidSamples++;
+
+      continue;
+    }
+
     // Take account of the laser pose relative to the robot
     pose = pf_vector_coord_add(self->laser_pose, pose);
 
     log_p = 0;
-    
+
     beam_ind = 0;
-    
+
     for (i = 0; i < data->range_count; i += step, beam_ind++)
     {
       obs_range = data->ranges[i][0];
       obs_bearing = data->ranges[i][1];
 
       // This model ignores max range readings
-      if(obs_range >= data->range_max){
+      if(obs_range >= data->range_max)
+      {
         continue;
       }
 
       // Check for NaN
-      if(obs_range != obs_range){
+      if(obs_range != obs_range)
+      {
         continue;
       }
 
@@ -405,54 +442,64 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
       int mi, mj;
       mi = MAP_GXWX(self->map, hit.v[0]);
       mj = MAP_GYWY(self->map, hit.v[1]);
-      
+
       // Part 1: Get distance from the hit to closest obstacle.
       // Off-map penalized as max distance
-      
-      if(!MAP_VALID(self->map, mi, mj)){
-	pz += self->z_hit * max_dist_prob;
+
+      if(!MAP_VALID(self->map, mi, mj))
+      {
+        pz += self->z_hit * max_dist_prob;
       }
-      else{
-	z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
-	if(z < beam_skip_distance){
-	  obs_count[beam_ind] += 1;
-	}
-	pz += self->z_hit * exp(-(z * z) / z_hit_denom);
+      else
+      {
+        z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
+        if(z < beam_skip_distance)
+        {
+          obs_count[beam_ind] += 1;
+        }
+        pz += self->z_hit * exp(-(z * z) / z_hit_denom);
       }
-       
+
       // Gaussian model
       // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
-      
+
       // Part 2: random measurements
       pz += self->z_rand * z_rand_mult;
 
-      assert(pz <= 1.0); 
+      assert(pz <= 1.0);
       assert(pz >= 0.0);
 
       // TODO: outlier rejection for short readings
-            
-      if(!do_beamskip){
-	log_p += log(pz);
+      if(!do_beamskip)
+      {
+        log_p += log(pz);
       }
-      else{
-	self->temp_obs[j][beam_ind] = pz; 
+      else
+      {
+        self->temp_obs[j][beam_ind] = pz;
       }
     }
-    if(!do_beamskip){
+
+    if(!do_beamskip)
+    {
       sample->weight *= exp(log_p);
       total_weight += sample->weight;
     }
   }
   
-  if(do_beamskip){
+  if(do_beamskip)
+  {
     int skipped_beam_count = 0; 
-    for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
-      if((obs_count[beam_ind] / static_cast<double>(set->sample_count)) > beam_skip_threshold){
-	obs_mask[beam_ind] = true;
+    for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++)
+    {
+      if((obs_count[beam_ind] / static_cast<double>(set->sample_count)) > beam_skip_threshold)
+      {
+        obs_mask[beam_ind] = true;
       }
-      else{
-	obs_mask[beam_ind] = false;
-	skipped_beam_count++; 
+      else
+      {
+	      obs_mask[beam_ind] = false;
+	      skipped_beam_count++;
       }
     }
 
@@ -462,32 +509,38 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     //the right solution
     bool error = false; 
 
-    if(skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold)){
+    if(skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold))
+    {
       fprintf(stderr, "Over %f%% of the observations were not in the map - pf may have converged to wrong pose - integrating all observations\n", (100 * self->beam_skip_error_threshold));
       error = true; 
     }
 
     for (j = 0; j < set->sample_count; j++)
+    {
+	    sample = set->samples + j;
+	    pose = sample->pose;
+
+      log_p = 0;
+
+      for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++)
       {
-	sample = set->samples + j;
-	pose = sample->pose;
+        if(error || obs_mask[beam_ind])
+        {
+          log_p += log(self->temp_obs[j][beam_ind]);
+        }
+      }
 
-	log_p = 0;
+      sample->weight *= exp(log_p);
 
-	for (beam_ind = 0; beam_ind < self->max_beams; beam_ind++){
-	  if(error || obs_mask[beam_ind]){
-	    log_p += log(self->temp_obs[j][beam_ind]);
-	  }
-	}
-	
-	sample->weight *= exp(log_p);
-	
-	total_weight += sample->weight;
-      }      
+      total_weight += sample->weight;
+    }
   }
 
   delete [] obs_count; 
   delete [] obs_mask;
+
+  ROS_WARN("AMCL particles passed over obstacle and have been invalidated: %d", invalidSamples);
+
   return(total_weight);
 }
 
@@ -505,4 +558,18 @@ void AMCLLaser::reallocTempData(int new_max_samples, int new_max_obs){
   for(int k=0; k < max_samples; k++){
     temp_obs[k] = new double[max_obs]();
   }
+}
+
+bool AMCLLaser::isValidSample(AMCLLaser* laser, pf_sample_t* sample){
+  int x = MAP_GXWX(laser->map, sample->pose.v[0]);
+  int y = MAP_GYWY(laser->map, sample->pose.v[1]);
+
+  if(!MAP_VALID(laser->map, x, y) || laser->map->cells[MAP_INDEX(laser->map, x, y)].occ_state > -1)
+  {
+    sample->weight = 0;
+
+    return false;
+  }
+
+  return true;
 }
