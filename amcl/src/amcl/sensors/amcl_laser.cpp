@@ -169,13 +169,6 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
 
     pose = sample->pose;
 
-    if(!isValidSample(self, sample))
-    {
-      invalidSamples++;
-
-      continue;
-    }
-
     // Take account of the laser pose relative to the robot
     pose = pf_vector_coord_add(self->laser_pose, pose);
 
@@ -254,13 +247,6 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     }
 
     pose = sample->pose;
-
-    if(!isValidSample(self, sample))
-    {
-      invalidSamples++;
-
-      continue;
-    }
 
     // Take account of the laser pose relative to the robot
     pose = pf_vector_coord_add(self->laser_pose, pose);
@@ -414,13 +400,6 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
     }
 
     pose = sample->pose;
-
-    if(!isValidSample(self, sample))
-    {
-      invalidSamples++;
-
-      continue;
-    }
 
     // Take account of the laser pose relative to the robot
     pose = pf_vector_coord_add(self->laser_pose, pose);
