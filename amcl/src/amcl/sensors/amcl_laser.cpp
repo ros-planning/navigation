@@ -155,8 +155,6 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
 
   total_weight = 0.0;
 
-  int invalidSamples = 0;
-
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
@@ -233,8 +231,6 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
   self = (AMCLLaser*) data->sensor;
 
   total_weight = 0.0;
-
-  int invalidSamples = 0;
 
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
@@ -386,8 +382,6 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
       fprintf(stderr, "Reallocing temp weights %d - %d\n", self->max_samples, self->max_obs);
     }
   }
-
-  int invalidSamples = 0;
 
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
