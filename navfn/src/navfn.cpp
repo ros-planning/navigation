@@ -1011,7 +1011,7 @@ namespace navfn {
 
         if (potarr[n-nx] < POT_HIGH)
           dy = -COST_OBS;
-        else if (potarr[nx+1] < POT_HIGH)
+        else if (potarr[n+nx] < POT_HIGH)
           dy = COST_OBS;
       }
 

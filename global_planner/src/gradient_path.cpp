@@ -282,7 +282,7 @@ float GradientPath::gradCell(float* potential, int n) {
 
         if (potential[n - xs_] < POT_HIGH)
             dy = -lethal_cost_;
-        else if (potential[xs_ + 1] < POT_HIGH)
+        else if (potential[n + xs_] < POT_HIGH)
             dy = lethal_cost_;
     }
 
