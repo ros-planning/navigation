@@ -39,7 +39,7 @@
 #include <vector>
 
 //register this planner as a RecoveryBehavior plugin
-PLUGINLIB_DECLARE_CLASS(clear_costmap_recovery, ClearCostmapRecovery, clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
+PLUGINLIB_EXPORT_CLASS(clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
 
 using costmap_2d::NO_INFORMATION;
 
