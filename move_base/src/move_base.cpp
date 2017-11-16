@@ -343,17 +343,22 @@ namespace move_base {
       ROS_ERROR("move_base cannot make a plan for you because it doesn't have a costmap");
       return false;
     }
-    tf::Stamped<tf::Pose> global_pose;
-    if(!getRobotPose(global_pose, planner_costmap_ros_)){
-      ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
-      return false;
-    }
+
     geometry_msgs::PoseStamped start;
     //if the user does not specify a start pose, identified by an empty frame id, then use the robot's pose
-    if(req.start.header.frame_id == "")
-      tf::poseStampedTFToMsg(global_pose, start);
+    if(req.start.header.frame_id.empty())
+    {
+        tf::Stamped<tf::Pose> global_pose;
+        if(!planner_costmap_ros_->getRobotPose(global_pose)){
+          ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
+          return false;
+        }
+        tf::poseStampedTFToMsg(global_pose, start);
+    }
     else
-      start = req.start;
+    {
+        start = req.start;
+    }
 
     //update the copy of the costmap the planner uses
     clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
