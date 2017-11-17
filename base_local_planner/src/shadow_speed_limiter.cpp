@@ -85,7 +85,7 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
     ROS_WARN("Uhhhh...");
     //we're off the map
   }
-  ROS_INFO("Cost at goal: %f.  Goal %f, %f", map_grid_(px,py).target_dist, map_grid_.goal_x_,map_grid_.goal_y_);
+  ROS_DEBUG("Cost at goal: %f.  Goal %f, %f", map_grid_(px,py).target_dist, map_grid_.goal_x_,map_grid_.goal_y_);
 
 
   // Find nearest object via brushfire distance
@@ -118,7 +118,7 @@ double ShadowSpeedLimiter::getMapGridDistance(geometry_msgs::Point obj)
   double grid_dist = map_grid_(px, py).target_dist;
   double out_dist = grid_dist * costmap_->getResolution();
 
-  ROS_INFO("x: %f, y: %f, grid_dist %f, out_dist %f", obj.x, obj.y, grid_dist, out_dist);
+  ROS_DEBUG("x: %f, y: %f, grid_dist %f, out_dist %f", obj.x, obj.y, grid_dist, out_dist);
   return out_dist;
 }
 
@@ -146,7 +146,7 @@ void ShadowSpeedLimiter::setCurrentPose(tf::Stamped<tf::Pose> pose)
   // Covert the pose into the necessary form.
   geometry_msgs::Pose pose_msg;
   tf::poseTFToMsg(pose, pose_msg);
-  ROS_INFO("Setting current pose to %f, %f", pose_msg.position.x, pose_msg.position.y);
+  ROS_DEBUG("Setting current pose to %f, %f", pose_msg.position.x, pose_msg.position.y);
   current_pose_as_array_.clear();
   geometry_msgs::PoseStamped pose_stamped_msg;
   pose_stamped_msg.pose = pose_msg;
