@@ -126,8 +126,16 @@ public:
     return false;
   }
 
+  virtual bool isShadowLayer() {
+    return false;
+  }
+
   virtual std::shared_ptr<std::vector<ObstructionMsg>> getObstructions() {
     return std::shared_ptr<std::vector<ObstructionMsg>>();
+  }
+
+  virtual std::shared_ptr<std::vector<geometry_msgs::Point>> getShadowedObjects() {
+    return std::shared_ptr<std::vector<geometry_msgs::Point>>();
   }
 
   virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {

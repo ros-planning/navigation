@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, 2013, Willow Garage, Inc.
+ *  Copyright (c) 2017 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -15,7 +15,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *   * Neither the name of 6 River Systems nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,16 +32,16 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Eitan Marder-Eppstein
- *         David V. Lu!!
+ * Author: Daniel Grieneisen
  *********************************************************************/
 #include <costmap_2d/shadow_layer.h>
 #include <costmap_2d/costmap_math.h>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(costmap_2d::ShadowLayer, costmap_2d::Layer)
+#include <visualization_msgs/Marker.h>
 
-using costmap_2d::LETHAL_OBSTACLE;
+
+PLUGINLIB_EXPORT_CLASS(costmap_2d::ShadowLayer, costmap_2d::Layer)
 
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;
@@ -51,6 +51,7 @@ namespace costmap_2d
 
 void ShadowLayer::onInitialize()
 {
+  ROS_INFO("Initializing shadow layer");
   ros::NodeHandle nh("~/" + name_), g_nh;
   rolling_window_ = layered_costmap_->isRolling();
 
@@ -63,6 +64,9 @@ void ShadowLayer::onInitialize()
 
   dsrv_ = NULL;
   setupDynamicReconfigure(nh);
+
+  visualization_publisher_ = nh.advertise<visualization_msgs::Marker> ("shadow_points", 1);
+
 }
 
 void ShadowLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
@@ -75,20 +79,30 @@ void ShadowLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
 
 ShadowLayer::~ShadowLayer()
 {
-    if (dsrv_)
-        delete dsrv_;
+  if (dsrv_) 
+  {
+    delete dsrv_;      
+  }
 }
-void ShadowLayer::reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level)
+
+void ShadowLayer::reconfigureCB(costmap_2d::ShadowPluginConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
-  max_raytrace_range_ = config.max_raytrace_range;
-  min_shadow_size_ = config.min_shadow_size_;
+  shadow_scan_range_ = config.shadow_scan_range;
+  shadow_scan_angular_resolution_ = config.shadow_scan_angular_resolution;
+  shadow_scan_half_angle_ = config.shadow_scan_half_angle;
+  min_shadow_size_ = config.min_shadow_size;
+  shadow_half_width_ = min_shadow_size_ / resolution_;
+
+  publish_shadow_objects_ = config.publish_shadow_objects;
+  write_into_costmap_ = config.write_into_costmap;
 }
 
 
 void ShadowLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
+  ROS_INFO("Updating bounds for shadow layer");
   if (rolling_window_) {
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   }
@@ -102,15 +116,20 @@ void ShadowLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 
 
   // generate the observation to be used
-  generateMaxShadowObservation();
+  generateMaxShadowObservation(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 }
 
 void ShadowLayer::generateMaxShadowObservation(double robot_x, double robot_y, double robot_yaw,
                                           double* min_x, double* min_y, double* max_x, double* max_y)
 {
+  ROS_INFO("Generating max shadow observation");
   // Should this be based on the lidar scan?
   // For now, just generate some points.
   shadow_observation_ = std::make_shared<Observation>();
+  geometry_msgs::Point origin;
+  origin.x = robot_x;
+  origin.y = robot_y;
+  shadow_observation_->origin_ = origin;
   
   pcl::PointCloud <pcl::PointXYZ> &observation_cloud = *(shadow_observation_->cloud_);
 
@@ -123,17 +142,20 @@ void ShadowLayer::generateMaxShadowObservation(double robot_x, double robot_y, d
     angle <= angle_end; 
     angle += shadow_scan_angular_resolution_)
   {
-    observation_cloud.push_back(pcl::PointXYZ(
-      cos(angle) * shadow_scan_range_ + robot_x,
-      sin(angle) * shadow_scan_range_ + robot_y,
-      0.0)
+    double x = cos(angle) * shadow_scan_range_ + robot_x;
+    double y = sin(angle) * shadow_scan_range_ + robot_y;
+    observation_cloud.push_back(pcl::PointXYZ(x, y, 0.0)
     );
+
+    touch(x, y, min_x, min_y, max_x, max_y);
   }
+  ROS_INFO("Resized to %f, %f, %f, %f", *min_x, *min_y, *max_x, *max_y);
 }
 
 
 void ShadowLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
+  ROS_INFO("Updating shadow layer costs");
   if (!enabled_) {
     return;
   }
@@ -143,19 +165,102 @@ void ShadowLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
 
 void ShadowLayer::calculateShadows(costmap_2d::Costmap2D& master_grid)
 {
+  ROS_INFO("Calculating shadows");
   // First, reset the costmap.
   resetMaps();
 
   // Raytrace the observations into the map
-  raytraceShadowObservation(costmap_2d::Costmap2D& master_grid);
+  raytraceShadowObservation(master_grid);
 
   // Calculate all of the spots where there could be a shadow.
-  calculateShadowSpots();
+  calculateShadowedObjects();
+
+  if (publish_shadow_objects_)
+  {
+    publishShadowObjects();
+  }
 }
 
 
+// void ShadowLayer::publishShadowRegions()
+// {
+//   if (!shadowed_objects_)
+//   {
+//     return;
+//   }
+
+//   ROS_INFO("Publishing display objects");
+//   visualization_msgs::Marker sphere_list;
+//   sphere_list.header.frame_id= global_frame_;
+//   sphere_list.header.stamp= ros::Time::now();
+//   sphere_list.ns= "shadows";
+//   sphere_list.action= visualization_msgs::Marker::ADD;
+//   sphere_list.pose.orientation.w= 1.0;
+
+//   sphere_list.id = 0;
+
+//   sphere_list.type = visualization_msgs::Marker::SPHERE_LIST;
+
+
+//   // POINTS markers use x and y scale for width/height respectively
+//   sphere_list.scale.x = min_shadow_size_;
+//   sphere_list.scale.y = min_shadow_size_;
+//   sphere_list.scale.z = min_shadow_size_;
+
+//   // Points are green
+//   sphere_list.color.r = 1.0f;
+//   sphere_list.color.a = 1.0;
+
+//   for (auto pt : (*shadowed_objects_))
+//   {
+//     sphere_list.points.push_back(pt);
+//   }
+//   visualization_publisher_.publish(sphere_list);
+// }
+
+
+void ShadowLayer::publishShadowObjects()
+{
+  if (!shadowed_objects_)
+  {
+    return;
+  }
+
+  ROS_INFO("Publishing display objects");
+  visualization_msgs::Marker sphere_list;
+  sphere_list.header.frame_id= global_frame_;
+  sphere_list.header.stamp= ros::Time::now();
+  sphere_list.ns= "shadows";
+  sphere_list.action= visualization_msgs::Marker::ADD;
+  sphere_list.pose.orientation.w= 1.0;
+
+  sphere_list.id = 0;
+
+  sphere_list.type = visualization_msgs::Marker::SPHERE_LIST;
+
+
+  // POINTS markers use x and y scale for width/height respectively
+  sphere_list.scale.x = min_shadow_size_;
+  sphere_list.scale.y = min_shadow_size_;
+  sphere_list.scale.z = min_shadow_size_;
+
+  // Points are green
+  sphere_list.color.r = 1.0f;
+  sphere_list.color.a = 1.0;
+
+  for (auto pt : (*shadowed_objects_))
+  {
+    sphere_list.points.push_back(pt);
+  }
+  visualization_publisher_.publish(sphere_list);
+}
+
 void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
 {
+  if (!shadowed_points_)
+  {
+    shadowed_points_ = std::make_shared<std::vector<unsigned int>>();
+  }
   // Clear out the old shadow points
   shadowed_points_->clear();
 
@@ -167,9 +272,9 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
   }
 
   // 
-  double ox = observation.origin_.x;
-  double oy = observation.origin_.y;
-  pcl::PointCloud < pcl::PointXYZ > cloud = *(observation.cloud_);
+  double ox = shadow_observation_->origin_.x;
+  double oy = shadow_observation_->origin_.y;
+  pcl::PointCloud < pcl::PointXYZ > cloud = *(shadow_observation_->cloud_);
 
   // get the map coordinates of the origin of the sensor
   unsigned int x0, y0;
@@ -186,10 +291,6 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
   double map_end_x = origin_x + size_x_ * resolution_;
   double map_end_y = origin_y + size_y_ * resolution_;
 
-  // get min_raytrace_range if a value is specified
-  double min_raytrace_dist = observation.min_raytrace_range_;
-
-  touch(ox, oy, min_x, min_y, max_x, max_y);
 
   // for each point in the cloud, we want to trace a line from the origin and clear obstacles along it
   for (unsigned int i = 0; i < cloud.points.size(); ++i)
@@ -227,87 +328,48 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
       continue;
     }
 
-    unsigned int cell_raytrace_range = cellDistance(observation.raytrace_range_);
-
-    ShadowMarker(costmap_, master_grid, shadowed_points_,
+    ShadowMarker marker(costmap_, master_grid.getCharMap(), shadowed_points_,
       VISIBLE, SHADOW, OBSTACLE);
 
 
     // and finally... we can execute our trace to clear obstacles along that line
-    raytraceLine(marker, rx_map, ry_map, x1, y1, cell_raytrace_range);
+    raytraceLine(marker, rx_map, ry_map, x1, y1);
   }
 }
 
 
-  /// TODO - move to header.
-  class ShadowMarker
-  {
-  public:
-    ShadowMarker(unsigned char* costmap, unsigned char* master_grid,
-      std::shared_ptr<std::vector> shadow_points,
-      unsigned char visible_value_, unsigned char shadow_value_,
-      unsigned char obstacle_value_) :
-        costmap_(costmap), master_grid_(master_grid),
-        shadow_points_(shadow_points),
-        visible_value_(visible_value), shadow_value_(shadow_value),
-        obstacle_value_(obstacle_value),
-        passed_obstacle_(false)
-    {
-    }
-    inline void operator()(unsigned int offset)
-    {
-      if (master_grid_[offset] == costmap_2d::LETHAL_OBSTACLE)
-      {
-        costmap_[offset] = obstacle_value_;
-        passed_obstacle_ = true;
-      }
-      else if (passed_obstacle_)
-      {
-        costmap_[offset] = shadow_value_;
-        // Gather all the shadow points
-        shadow_points_->append(offset);
-      }
-      else
-      {
-        costmap_[offset] = visible_value_;
-      }
-    }
-  private:
-    unsigned char* costmap_;
-    unsigned char* master_grid_;
-    std::shared_ptr<std::vector<unsigned int>> shadow_points_;
-    unsigned char visible_value_;
-    unsigned char shadow_value_;
-    unsigned char obstacle_value_;
-    bool passed_obstacle_;
-
-  };
-
-void ShadowLayer::calculateShadowedObjetcs()
+void ShadowLayer::calculateShadowedObjects()
 {
-  shadowed_objects->clear();
 
+  if (!shadowed_objects_)
+  {
+    shadowed_objects_ = std::make_shared<std::vector<geometry_msgs::Point>>();
+  }
+  shadowed_objects_->clear();
+  ROS_INFO("Checking %d shadowed points", shadowed_points_->size());
   // Iterate over all of the shadowed_points_
   for (auto it : (*shadowed_points_))
   {
-    if (checkForShadowedObjectAtIndex(*it))
+    if (checkForShadowedObjectAtIndex(it))
     {
-      shadowed_objects_->push_back(createPointFromIndex(*it));
+      shadowed_objects_->push_back(createPointFromIndex(it));
     }
   }
+  ROS_INFO("Returned %d shadowed objects", shadowed_objects_->size());
 }
 
 bool ShadowLayer::checkForShadowedObjectAtIndex(unsigned int idx)
 {
-  unsigned int half_width = resolution_ * min_shadow_size_;
   unsigned int idx_x, idx_y;
   indexToCells(idx, idx_x, idx_y);
 
   // calculate the square to check
-  unsigned int start_x = idx_x > half_width ? idx_x - half_width : 0;
-  unsigned int start_y = idx_y > half_width ? idx_y - half_width : 0;
-  unsigned int end_x = idx < getSizeInCellsX() - 1 - half_width ? idx_x + half_width : getSizeInCellsX() - 1;
-  unsigned int end_x = idx < getSizeInCellsY() - 1 - half_width ? idx_y + half_width : getSizeInCellsY() - 1;
+  unsigned int start_x = idx_x > shadow_half_width_ ? idx_x - shadow_half_width_ : 0;
+  unsigned int start_y = idx_y > shadow_half_width_ ? idx_y - shadow_half_width_ : 0;
+  unsigned int end_x = idx_x < getSizeInCellsX() - 1 - shadow_half_width_ 
+    ? idx_x + shadow_half_width_ : getSizeInCellsX() - 1;
+  unsigned int end_y = idx_y < getSizeInCellsY() - 1 - shadow_half_width_ 
+    ? idx_y + shadow_half_width_ : getSizeInCellsY() - 1;
 
   // Iterate over the square and see if there are any CLEAR or OBSTACLE values
   for (unsigned int y_val = start_y; y_val <= end_y; ++y_val)
@@ -324,6 +386,7 @@ bool ShadowLayer::checkForShadowedObjectAtIndex(unsigned int idx)
       }
     }
   }
+  return true;
 }
 
 geometry_msgs::Point ShadowLayer::createPointFromIndex(unsigned int idx)
@@ -334,8 +397,6 @@ geometry_msgs::Point ShadowLayer::createPointFromIndex(unsigned int idx)
   mapToWorld(mx, my, pt.x, pt.y);
   return pt;
 }
-
-
 
 void ShadowLayer::updateRaytraceBounds(double ox, double oy, double wx, double wy, double range,
                                          double* min_x, double* min_y, double* max_x, double* max_y)

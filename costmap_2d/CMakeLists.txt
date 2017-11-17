@@ -62,6 +62,7 @@ generate_dynamic_reconfigure_options(
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
   cfg/VoxelPlugin.cfg
+  cfg/ShadowPlugin.cfg
 )
 
 catkin_package(
@@ -119,6 +120,7 @@ add_library(layers
   plugins/static_layer_with_inflation.cpp
   plugins/voxel_layer.cpp
   plugins/voronoi_inflation_layer.cpp
+  plugins/shadow_layer.cpp
   src/observation_buffer.cpp
 )
 target_link_libraries(layers

@@ -159,6 +159,9 @@ public:
 
   std::shared_ptr<std::vector<ObstructionMsg>> getObstructions();
 
+  std::shared_ptr<std::vector<geometry_msgs::Point>> getShadowedObjects();
+
+
 private:
   Costmap2D costmap_;
   std::string global_frame_;
@@ -173,6 +176,7 @@ private:
   std::vector<boost::shared_ptr<Layer> > obstruction_layers_;
 
   boost::shared_ptr<Layer> static_layer_;
+  boost::shared_ptr<Layer> shadow_layer_;  
 
   bool initialized_;
   bool size_locked_;

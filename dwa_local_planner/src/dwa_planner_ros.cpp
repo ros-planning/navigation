@@ -45,7 +45,6 @@
 
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
-#include <base_local_planner/speed_limiter.h>
 
 #include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 #include <srslib_timing/ScopedRollingTimingStatistics.hpp>
