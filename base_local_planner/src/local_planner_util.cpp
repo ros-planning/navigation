@@ -49,6 +49,7 @@ void LocalPlannerUtil::initialize(
     tf_ = tf;
     costmap_ = costmap;
     global_frame_ = global_frame;
+    shadow_speed_limiter_.initialize(costmap->getCostmap());
     initialized_ = true;
   }
   else{
@@ -177,11 +178,22 @@ void LocalPlannerUtil::updateLimits() {
   speed_limiter_.setCurrentPose(robot_pose);
 
   // Use the speed limiter to update the limits.
-  double v_lim = 0, w_lim = 0;
-  if (!speed_limiter_.calculateLimits(v_lim, w_lim)) {
+  double sp_v_lim = 0, sp_w_lim = 0;
+  if (!speed_limiter_.calculateLimits(sp_v_lim, sp_w_lim)) {
     ROS_WARN("Could not calculate updated speed limits.");
     return;
   }
+
+  shadow_speed_limiter_.setShadowedObjects(costmap_->getLayeredCostmap()->getShadowedObjects());
+  shadow_speed_limiter_.setCurrentPose(robot_pose);
+  // Use the speed limiter to update the limits.
+  double sh_v_lim = 0, sh_w_lim = 0;
+  if (!shadow_speed_limiter_.calculateLimits(sh_v_lim, sh_w_lim)) {
+    ROS_WARN("Could not calculate updated speed limits.");
+    return;
+  }
+  double v_lim = std::min(sp_v_lim, sh_v_lim);
+  double w_lim = std::min(sp_w_lim, sh_w_lim);
 
   // Make sure the limits are respected
   if (active_limits_.max_rot_vel > w_lim) {

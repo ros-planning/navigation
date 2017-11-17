@@ -95,14 +95,13 @@ void ShadowLayer::reconfigureCB(costmap_2d::ShadowPluginConfig &config, uint32_t
   shadow_half_width_ = min_shadow_size_ / resolution_;
 
   publish_shadow_objects_ = config.publish_shadow_objects;
-  write_into_costmap_ = config.write_into_costmap;
 }
 
 
 void ShadowLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
-  ROS_INFO("Updating bounds for shadow layer");
+  ROS_DEBUG("Updating bounds for shadow layer");
   if (rolling_window_) {
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   }
@@ -122,7 +121,7 @@ void ShadowLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 void ShadowLayer::generateMaxShadowObservation(double robot_x, double robot_y, double robot_yaw,
                                           double* min_x, double* min_y, double* max_x, double* max_y)
 {
-  ROS_INFO("Generating max shadow observation");
+  ROS_DEBUG("Generating max shadow observation");
   // Should this be based on the lidar scan?
   // For now, just generate some points.
   shadow_observation_ = std::make_shared<Observation>();
@@ -149,13 +148,13 @@ void ShadowLayer::generateMaxShadowObservation(double robot_x, double robot_y, d
 
     touch(x, y, min_x, min_y, max_x, max_y);
   }
-  ROS_INFO("Resized to %f, %f, %f, %f", *min_x, *min_y, *max_x, *max_y);
+  ROS_DEBUG("Resized to %f, %f, %f, %f", *min_x, *min_y, *max_x, *max_y);
 }
 
 
 void ShadowLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
-  ROS_INFO("Updating shadow layer costs");
+  ROS_DEBUG("Updating shadow layer costs");
   if (!enabled_) {
     return;
   }
@@ -165,7 +164,7 @@ void ShadowLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
 
 void ShadowLayer::calculateShadows(costmap_2d::Costmap2D& master_grid)
 {
-  ROS_INFO("Calculating shadows");
+  ROS_DEBUG("Calculating shadows");
   // First, reset the costmap.
   resetMaps();
 
@@ -226,7 +225,7 @@ void ShadowLayer::publishShadowObjects()
     return;
   }
 
-  ROS_INFO("Publishing display objects");
+  ROS_DEBUG("Publishing display objects");
   visualization_msgs::Marker sphere_list;
   sphere_list.header.frame_id= global_frame_;
   sphere_list.header.stamp= ros::Time::now();
@@ -346,7 +345,7 @@ void ShadowLayer::calculateShadowedObjects()
     shadowed_objects_ = std::make_shared<std::vector<geometry_msgs::Point>>();
   }
   shadowed_objects_->clear();
-  ROS_INFO("Checking %d shadowed points", shadowed_points_->size());
+  ROS_DEBUG("Checking %d shadowed points", shadowed_points_->size());
   // Iterate over all of the shadowed_points_
   for (auto it : (*shadowed_points_))
   {
@@ -355,7 +354,7 @@ void ShadowLayer::calculateShadowedObjects()
       shadowed_objects_->push_back(createPointFromIndex(it));
     }
   }
-  ROS_INFO("Returned %d shadowed objects", shadowed_objects_->size());
+  ROS_DEBUG("Returned %d shadowed objects", shadowed_objects_->size());
 }
 
 bool ShadowLayer::checkForShadowedObjectAtIndex(unsigned int idx)

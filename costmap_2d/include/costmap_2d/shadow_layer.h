@@ -72,6 +72,10 @@ public:
     return shadowed_objects_;
   }
 
+  virtual bool isShadowLayer() {
+    return true;
+  }
+
 protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
 
@@ -148,7 +152,6 @@ protected:
   unsigned int shadow_half_width_ = 2;
 
   bool publish_shadow_objects_ = false;
-  bool write_into_costmap_ = false;
 
   static const unsigned char OBSTACLE = 240;
   static const unsigned char SHADOW = 130;
