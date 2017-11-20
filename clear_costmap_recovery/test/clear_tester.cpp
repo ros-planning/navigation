@@ -3,8 +3,10 @@
 #include <clear_costmap_recovery/clear_costmap_recovery.h>
 
 #include <costmap_2d/testing_helper.h>
+#include <tf2_ros/transform_listener.h>
 
-tf::TransformListener* transformer;
+tf2_ros::Buffer* transformer;
+tf2_ros::TransformListener* tfl;
 
 using costmap_2d::LETHAL_OBSTACLE;
 
@@ -87,6 +89,7 @@ TEST(ClearTester, clearBothTest2){
 int main(int argc, char** argv){
   ros::init(argc, argv, "clear_tests");
   testing::InitGoogleTest(&argc, argv);
-  transformer = new tf::TransformListener(ros::Duration(10));
+  transformer = new tf2_ros::Buffer(ros::Duration(10));
+  tfl = new tf2_ros::TransformListener(*transformer);
   return RUN_ALL_TESTS();
 }

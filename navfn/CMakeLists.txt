@@ -14,7 +14,7 @@ find_package(catkin REQUIRED
         pluginlib
         rosconsole
         roscpp
-        tf
+        tf2_ros
         visualization_msgs
         )
 

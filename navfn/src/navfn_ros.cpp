@@ -36,7 +36,6 @@
 *********************************************************************/
 #include <navfn/navfn_ros.h>
 #include <pluginlib/class_list_macros.h>
-#include <tf/transform_listener.h>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
 
@@ -82,10 +81,6 @@ namespace navfn {
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
       private_nh.param("default_tolerance", default_tolerance_, 0.0);
-
-      //get the tf prefix
-      ros::NodeHandle prefix_nh;
-      tf_prefix_ = tf::getPrefixParam(prefix_nh);
 
       make_plan_srv_ =  private_nh.advertiseService("make_plan", &NavfnROS::makePlanService, this);
 
@@ -172,7 +167,7 @@ namespace navfn {
     return planner_->calcNavFnDijkstra();
   }
 
-  void NavfnROS::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my){
+  void NavfnROS::clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my){
     if(!initialized_){
       ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
       return;
@@ -215,15 +210,15 @@ namespace navfn {
     ros::NodeHandle n;
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(goal.header.frame_id != global_frame_){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                global_frame_.c_str(), goal.header.frame_id.c_str());
       return false;
     }
 
-    if(tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(start.header.frame_id != global_frame_){
       ROS_ERROR("The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
+                global_frame_.c_str(), start.header.frame_id.c_str());
       return false;
     }
 
@@ -237,9 +232,7 @@ namespace navfn {
     }
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
-    tf::Stamped<tf::Pose> start_pose;
-    tf::poseStampedMsgToTF(start, start_pose);
-    clearRobotCell(start_pose, mx, my);
+    clearRobotCell(start, mx, my);
 
 #if 0
     {
@@ -394,9 +387,9 @@ namespace navfn {
     plan.clear();
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(goal.header.frame_id != global_frame_){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                global_frame_.c_str(), goal.header.frame_id.c_str());
       return false;
     }
 
