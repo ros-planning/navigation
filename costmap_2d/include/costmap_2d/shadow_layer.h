@@ -150,6 +150,7 @@ protected:
   double shadow_scan_half_angle_ = M_PI / 2;
   double min_shadow_size_ = 0.1;
   unsigned int shadow_half_width_ = 2;
+  double sensor_x_offset_ = 0.5;
 
   bool publish_shadow_objects_ = false;
 

@@ -120,6 +120,7 @@ namespace dwa_local_planner {
       sh_params.min_linear_velocity_ = config.shadow_speed_limit_min_slow_vel_x;
       sh_params.max_effective_range_ = config.shadow_speed_limit_max_effective_range;
       sh_params.min_effective_range_ = config.shadow_speed_limit_min_effective_range;
+      sh_params.forward_offset_ = config.shadow_speed_limit_forward_offset;
       planner_util_.setShadowSpeedLimiterParams(sh_params);
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);

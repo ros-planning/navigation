@@ -52,7 +52,7 @@ struct ShadowSpeedLimiterParams {
 
   double max_effective_range_ = 1.5;
   double min_effective_range_ = 0.5;
-
+  double forward_offset_ = 0.5;
   double max_angular_velocity_ = 1.0;
 };
 

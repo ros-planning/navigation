@@ -76,16 +76,22 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
 
   // calculate the brushfire grid.
   map_grid_.resetPathDist();
-  map_grid_.setUnadjustedGoal(*costmap_, current_pose_as_array_[0]);
+  // Adjust the pose to be at the front of the robot.
+  geometry_msgs::PoseStamped pose = current_pose_as_array_[0];
+  double pose_yaw = tf::getYaw(pose.pose.orientation);
+  pose.pose.position.x += cos(pose_yaw) * params_.forward_offset_;
+  pose.pose.position.y += sin(pose_yaw) * params_.forward_offset_;
+
+  map_grid_.setUnadjustedGoal(*costmap_, pose);
 
 
-  unsigned int px, py;
-  if (!costmap_->worldToMap(current_pose_as_array_[0].pose.position.x, current_pose_as_array_[0].pose.position.y, px, py)) 
-  {
-    ROS_WARN("Uhhhh...");
-    //we're off the map
-  }
-  ROS_DEBUG("Cost at goal: %f.  Goal %f, %f", map_grid_(px,py).target_dist, map_grid_.goal_x_,map_grid_.goal_y_);
+  // unsigned int px, py;
+  // if (!costmap_->worldToMap(current_pose_as_array_[0].pose.position.x, current_pose_as_array_[0].pose.position.y, px, py)) 
+  // {
+  //   ROS_WARN("Uhhhh...");
+  //   //we're off the map
+  // }
+  // ROS_DEBUG("Cost at goal: %f.  Goal %f, %f", map_grid_(px,py).target_dist, map_grid_.goal_x_,map_grid_.goal_y_);
 
 
   // Find nearest object via brushfire distance
@@ -100,7 +106,7 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
     max_allowed_linear_vel = (velocity < max_allowed_linear_vel) ? velocity : max_allowed_linear_vel;
   }
 
-  ROS_INFO_THROTTLE(0.2, "Setting shadow max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
+  ROS_DEBUG_THROTTLE(0.2, "Setting shadow max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
 
   return true;
 }

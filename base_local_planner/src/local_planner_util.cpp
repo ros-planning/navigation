@@ -192,6 +192,9 @@ void LocalPlannerUtil::updateLimits() {
     ROS_WARN("Could not calculate updated speed limits.");
     return;
   }
+
+  ROS_INFO_THROTTLE(0.2, "Speed limits - obs: %f, shad: %f", sp_v_lim, sh_v_lim);
+
   double v_lim = std::min(sp_v_lim, sh_v_lim);
   double w_lim = std::min(sp_w_lim, sh_w_lim);
 

@@ -93,6 +93,7 @@ void ShadowLayer::reconfigureCB(costmap_2d::ShadowPluginConfig &config, uint32_t
   shadow_scan_half_angle_ = config.shadow_scan_half_angle;
   min_shadow_size_ = config.min_shadow_size;
   shadow_half_width_ = min_shadow_size_ / resolution_;
+  sensor_x_offset_ = config.sensor_x_offset;
 
   publish_shadow_objects_ = config.publish_shadow_objects;
 }
@@ -126,8 +127,9 @@ void ShadowLayer::generateMaxShadowObservation(double robot_x, double robot_y, d
   // For now, just generate some points.
   shadow_observation_ = std::make_shared<Observation>();
   geometry_msgs::Point origin;
-  origin.x = robot_x;
-  origin.y = robot_y;
+  // Move the origin forwards
+  origin.x = robot_x + cos(robot_yaw) * sensor_x_offset_;
+  origin.y = robot_y + sin(robot_yaw) * sensor_x_offset_;
   shadow_observation_->origin_ = origin;
   
   pcl::PointCloud <pcl::PointXYZ> &observation_cloud = *(shadow_observation_->cloud_);
@@ -141,8 +143,8 @@ void ShadowLayer::generateMaxShadowObservation(double robot_x, double robot_y, d
     angle <= angle_end; 
     angle += shadow_scan_angular_resolution_)
   {
-    double x = cos(angle) * shadow_scan_range_ + robot_x;
-    double y = sin(angle) * shadow_scan_range_ + robot_y;
+    double x = cos(angle) * shadow_scan_range_ + origin.x;
+    double y = sin(angle) * shadow_scan_range_ + origin.y;
     observation_cloud.push_back(pcl::PointXYZ(x, y, 0.0)
     );
 
