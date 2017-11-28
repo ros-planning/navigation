@@ -182,7 +182,7 @@ bool LocalPlannerUtil::calculateSpeedLimits(double& v_lim, double& w_lim) {
   if (speed_limiter_.calculateLimits(sp_v_lim, sp_w_lim) 
     && shadow_speed_limiter_.calculateLimits(sh_v_lim, sh_w_lim)) {
 
-    ROS_INFO_THROTTLE(0.2, "Speed limits - obs: %f, shad: %f", sp_v_lim, sh_v_lim);
+    ROS_DEBUG_THROTTLE(0.2, "Speed limits - obs: %f, shad: %f", sp_v_lim, sh_v_lim);
 
     v_lim = std::min(sp_v_lim, sh_v_lim);
     w_lim = std::min(sp_w_lim, sh_w_lim);

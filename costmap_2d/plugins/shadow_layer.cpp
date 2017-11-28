@@ -225,7 +225,6 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
     return;
   }
 
-  // 
   double ox = shadow_observation_->origin_.x;
   double oy = shadow_observation_->origin_.y;
   pcl::PointCloud < pcl::PointXYZ > cloud = *(shadow_observation_->cloud_);
@@ -251,11 +250,6 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
   {
     double wx = cloud.points[i].x;
     double wy = cloud.points[i].y;
-
-    double a = wx - ox;
-    double b = wy - oy;
-    double ray_length = sqrt(a * a + b * b);
-
 
     // calculate raytrace starting point
     // the raytrace range should be (rx, ry) -> (wx, wy)
