@@ -269,8 +269,10 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
     unsigned int x1, y1;
 
     // check for legality just in case
-    if (!worldToMap(wx, wy, x1, y1))
+    if (!worldToMap(wx, wy, x1, y1)) 
+    {
       continue;
+    }
 
     // same process for rx and ry
     checkRaytracePoint(origin_x, origin_y, map_end_x, map_end_y, ox, oy, rx, ry);
@@ -278,7 +280,8 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
     unsigned int rx_map, ry_map;
 
     // check for legality of the raytrace starting point
-    if (!worldToMap(rx, ry, rx_map, ry_map)){
+    if (!worldToMap(rx, ry, rx_map, ry_map)) 
+    {
       continue;
     }
 
