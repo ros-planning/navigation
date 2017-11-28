@@ -334,8 +334,6 @@ bool ShadowLayer::checkForShadowedObjectAtIndex(unsigned int idx)
         case VISIBLE:
         case OBSTACLE:
           return false;
-        default:
-          continue;
       }
     }
   }
