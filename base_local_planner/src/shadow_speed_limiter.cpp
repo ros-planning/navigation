@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2016, 6 River Systems
+ *  Copyright (c) 2017, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -65,45 +65,34 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
   if (!objects_)
   {
     ROS_WARN_THROTTLE(1.0, "No objects in shadow speed limiter");
-    return true;
+    return false;
   }
 
-  if (current_pose_as_array_.empty())
+  if (!current_pose_)
   {
     ROS_WARN_THROTTLE(1.0, "No pose in shadow speed limiter");
-    return true;
+    return false;
   }
 
   // calculate the brushfire grid.
   map_grid_.resetPathDist();
   // Adjust the pose to be at the front of the robot.
-  geometry_msgs::PoseStamped pose = current_pose_as_array_[0];
+  geometry_msgs::PoseStamped pose = (*current_pose_);
   double pose_yaw = tf::getYaw(pose.pose.orientation);
   pose.pose.position.x += cos(pose_yaw) * params_.forward_offset_;
   pose.pose.position.y += sin(pose_yaw) * params_.forward_offset_;
 
   map_grid_.setUnadjustedGoal(*costmap_, pose);
 
-
-  // unsigned int px, py;
-  // if (!costmap_->worldToMap(current_pose_as_array_[0].pose.position.x, current_pose_as_array_[0].pose.position.y, px, py)) 
-  // {
-  //   ROS_WARN("Uhhhh...");
-  //   //we're off the map
-  // }
-  // ROS_DEBUG("Cost at goal: %f.  Goal %f, %f", map_grid_(px,py).target_dist, map_grid_.goal_x_,map_grid_.goal_y_);
-
-
   // Find nearest object via brushfire distance
-
-  for (auto obj : (*objects_))
+  for (const auto& obj : (*objects_))
   {
     // Get the brushfire distance to the obstacle
     double distance = getMapGridDistance(obj);
     // Convert it to a velocity
     double velocity = distanceToVelocity(distance);
 
-    max_allowed_linear_vel = (velocity < max_allowed_linear_vel) ? velocity : max_allowed_linear_vel;
+    max_allowed_linear_vel = std::min(velocity, max_allowed_linear_vel);
   }
 
   ROS_DEBUG_THROTTLE(0.2, "Setting shadow max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
@@ -148,15 +137,13 @@ double ShadowSpeedLimiter::distanceToVelocity(double dist)
 
 void ShadowSpeedLimiter::setCurrentPose(tf::Stamped<tf::Pose> pose)
 {
-
+  if (!current_pose_)
+  {
+    current_pose_ = std::make_shared<geometry_msgs::PoseStamped>();
+  }
   // Covert the pose into the necessary form.
-  geometry_msgs::Pose pose_msg;
-  tf::poseTFToMsg(pose, pose_msg);
-  ROS_DEBUG("Setting current pose to %f, %f", pose_msg.position.x, pose_msg.position.y);
-  current_pose_as_array_.clear();
-  geometry_msgs::PoseStamped pose_stamped_msg;
-  pose_stamped_msg.pose = pose_msg;
-  current_pose_as_array_.push_back(pose_stamped_msg);
+  tf::poseTFToMsg(pose, current_pose_->pose);
+  ROS_DEBUG("Setting current pose to %f, %f", current_pose_->pose.position.x, current_pose_->pose.position.y);
 }
 
 } /* namespace base_local_planner */

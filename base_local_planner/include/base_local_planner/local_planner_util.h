@@ -111,6 +111,8 @@ public:
 
   void updateLimits();
 
+  bool calculateSpeedLimits(double& v_lim, double& w_lim);
+
   LocalPlannerLimits getCurrentLimits();
 
   std::string getGlobalFrame(){ return global_frame_; }

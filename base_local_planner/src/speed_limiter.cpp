@@ -57,8 +57,8 @@ bool SpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_a
 
   if (!obstructions_)
   {
-    ROS_WARN_THROTTLE(1.0, "No obstructions");
-    return true;
+    ROS_WARN_THROTTLE(1.0, "No obstructions in speed limiter");
+    return false;
   }
 
   // Find the nearest obstruction to the robot that is within the allowed range

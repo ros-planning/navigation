@@ -66,13 +66,11 @@ LayeredCostmap::~LayeredCostmap()
 
 void LayeredCostmap::addPlugin(boost::shared_ptr<Layer> plugin)
 {
-  if (plugin->isStaticLayer()) {
+  if (plugin->getLayerType() == LayerType::STATIC) {
     static_layer_ = plugin;
-  }
-  if (plugin->isObstructionLayer()) {
+  } else if (plugin->getLayerType() == LayerType::OBSTRUCTION) {
     obstruction_layers_.push_back(plugin);
-  }
-  if (plugin->isShadowLayer()) {
+  } else if (plugin->getLayerType() == LayerType::SHADOW) {
     shadow_layer_ = plugin;
   }
   plugins_.push_back(plugin);

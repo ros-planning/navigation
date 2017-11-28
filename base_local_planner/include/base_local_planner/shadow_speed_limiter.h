@@ -105,7 +105,7 @@ private:
   costmap_2d::Costmap2D* costmap_;
   base_local_planner::MapGrid map_grid_;
   
-  std::vector<geometry_msgs::PoseStamped> current_pose_as_array_;
+  std::shared_ptr<geometry_msgs::PoseStamped> current_pose_;
   std::shared_ptr<std::vector<geometry_msgs::Point>>  objects_;
 
   bool initialized_ = false;

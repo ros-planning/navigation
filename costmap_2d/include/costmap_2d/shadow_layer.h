@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, 2013, Willow Garage, Inc.
+ *  Copyright (c) 2017 6 River Systems.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -15,7 +15,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *   * Neither the name of 6 River Systems. nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -34,8 +34,8 @@
  *
  * Author: Daniel Grieneisen
  *********************************************************************/
-#ifndef COSTMAP_2D_OBSTACLE_LAYER_H_
-#define COSTMAP_2D_OBSTACLE_LAYER_H_
+#ifndef COSTMAP_2D_SHADOW_LAYER_H_
+#define COSTMAP_2D_SHADOW_LAYER_H_
 
 #include <ros/ros.h>
 #include <costmap_2d/costmap_layer.h>
@@ -72,16 +72,13 @@ public:
     return shadowed_objects_;
   }
 
-  virtual bool isShadowLayer() {
-    return true;
-  }
+  virtual LayerType getLayerType() {
+    return LayerType::SHADOW;
+  } 
+
 
 protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);
-
-
-  void updateRaytraceBounds(double ox, double oy, double wx, double wy, double range, double* min_x, double* min_y,
-                            double* max_x, double* max_y);
 
   void generateMaxShadowObservation(double robot_x, double robot_y, double robot_yaw,
                                           double* min_x, double* min_y, double* max_x, double* max_y);
@@ -100,9 +97,11 @@ protected:
       std::shared_ptr<std::vector<unsigned int>> shadow_points,
       unsigned char visible_value, unsigned char shadow_value,
       unsigned char obstacle_value) :
-        costmap_(costmap), master_grid_(master_grid),
+        costmap_(costmap), 
+        master_grid_(master_grid),
         shadow_points_(shadow_points),
-        visible_value_(visible_value), shadow_value_(shadow_value),
+        visible_value_(visible_value), 
+        shadow_value_(shadow_value),
         obstacle_value_(obstacle_value),
         passed_obstacle_(false)
     {
@@ -172,4 +171,4 @@ private:
 
 }  // namespace costmap_2d
 
-#endif  // COSTMAP_2D_OBSTACLE_LAYER_H_
+#endif  // COSTMAP_2D_SHADOW_LAYER_H_

@@ -79,10 +79,7 @@ void ShadowLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
 
 ShadowLayer::~ShadowLayer()
 {
-  if (dsrv_) 
-  {
-    delete dsrv_;      
-  }
+  delete dsrv_;      
 }
 
 void ShadowLayer::reconfigureCB(costmap_2d::ShadowPluginConfig &config, uint32_t level)
@@ -110,10 +107,6 @@ void ShadowLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
   if (!enabled_) {
     return;
   }
-
-  // Bounds do not need to be updated b/c we are not adding cost to the costmap. yet.
-  /// TODO: update bounds when this functionality is added.
-
 
   // generate the observation to be used
   generateMaxShadowObservation(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
@@ -182,44 +175,6 @@ void ShadowLayer::calculateShadows(costmap_2d::Costmap2D& master_grid)
   }
 }
 
-
-// void ShadowLayer::publishShadowRegions()
-// {
-//   if (!shadowed_objects_)
-//   {
-//     return;
-//   }
-
-//   ROS_INFO("Publishing display objects");
-//   visualization_msgs::Marker sphere_list;
-//   sphere_list.header.frame_id= global_frame_;
-//   sphere_list.header.stamp= ros::Time::now();
-//   sphere_list.ns= "shadows";
-//   sphere_list.action= visualization_msgs::Marker::ADD;
-//   sphere_list.pose.orientation.w= 1.0;
-
-//   sphere_list.id = 0;
-
-//   sphere_list.type = visualization_msgs::Marker::SPHERE_LIST;
-
-
-//   // POINTS markers use x and y scale for width/height respectively
-//   sphere_list.scale.x = min_shadow_size_;
-//   sphere_list.scale.y = min_shadow_size_;
-//   sphere_list.scale.z = min_shadow_size_;
-
-//   // Points are green
-//   sphere_list.color.r = 1.0f;
-//   sphere_list.color.a = 1.0;
-
-//   for (auto pt : (*shadowed_objects_))
-//   {
-//     sphere_list.points.push_back(pt);
-//   }
-//   visualization_publisher_.publish(sphere_list);
-// }
-
-
 void ShadowLayer::publishShadowObjects()
 {
   if (!shadowed_objects_)
@@ -229,9 +184,9 @@ void ShadowLayer::publishShadowObjects()
 
   ROS_DEBUG("Publishing display objects");
   visualization_msgs::Marker sphere_list;
-  sphere_list.header.frame_id= global_frame_;
-  sphere_list.header.stamp= ros::Time::now();
-  sphere_list.ns= "shadows";
+  sphere_list.header.frame_id = global_frame_;
+  sphere_list.header.stamp = ros::Time::now();
+  sphere_list.ns = "shadows/" + global_frame_;
   sphere_list.action= visualization_msgs::Marker::ADD;
   sphere_list.pose.orientation.w= 1.0;
 
@@ -239,14 +194,12 @@ void ShadowLayer::publishShadowObjects()
 
   sphere_list.type = visualization_msgs::Marker::SPHERE_LIST;
 
-
-  // POINTS markers use x and y scale for width/height respectively
   sphere_list.scale.x = min_shadow_size_;
   sphere_list.scale.y = min_shadow_size_;
   sphere_list.scale.z = min_shadow_size_;
 
-  // Points are green
   sphere_list.color.r = 1.0f;
+  sphere_list.color.g = 1.0f;  
   sphere_list.color.a = 1.0;
 
   for (auto pt : (*shadowed_objects_))
@@ -332,7 +285,6 @@ void ShadowLayer::raytraceShadowObservation(costmap_2d::Costmap2D& master_grid)
     ShadowMarker marker(costmap_, master_grid.getCharMap(), shadowed_points_,
       VISIBLE, SHADOW, OBSTACLE);
 
-
     // and finally... we can execute our trace to clear obstacles along that line
     raytraceLine(marker, rx_map, ry_map, x1, y1);
   }
@@ -349,7 +301,7 @@ void ShadowLayer::calculateShadowedObjects()
   shadowed_objects_->clear();
   ROS_DEBUG("Checking %d shadowed points", shadowed_points_->size());
   // Iterate over all of the shadowed_points_
-  for (auto it : (*shadowed_points_))
+  for (const auto& it : (*shadowed_points_))
   {
     if (checkForShadowedObjectAtIndex(it))
     {
@@ -397,16 +349,6 @@ geometry_msgs::Point ShadowLayer::createPointFromIndex(unsigned int idx)
   indexToCells(idx, mx, my);
   mapToWorld(mx, my, pt.x, pt.y);
   return pt;
-}
-
-void ShadowLayer::updateRaytraceBounds(double ox, double oy, double wx, double wy, double range,
-                                         double* min_x, double* min_y, double* max_x, double* max_y)
-{
-  double dx = wx-ox, dy = wy-oy;
-  double full_distance = hypot(dx, dy);
-  double scale = std::min(1.0, range / full_distance);
-  double ex = ox + dx * scale, ey = oy + dy * scale;
-  touch(ex, ey, min_x, min_y, max_x, max_y);
 }
 
 void ShadowLayer::reset()
