@@ -79,9 +79,10 @@ public:
 
   virtual void onFootprintChanged();
 
-  virtual bool isStaticLayer() override {
-    return true;
-  }
+  virtual LayerType getLayerType() {
+    return LayerType::STATIC;
+  } 
+
 
   virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() override {
     return inflation_layer_->getDistancesFromStaticMap();

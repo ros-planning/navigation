@@ -38,12 +38,12 @@ using namespace std;
 namespace base_local_planner{
 
   MapGrid::MapGrid()
-    : size_x_(0), size_y_(0)
+    : size_x_(0), size_y_(0), reject_inscribed_cost_(true)
   {
   }
 
   MapGrid::MapGrid(unsigned int size_x, unsigned int size_y) 
-    : size_x_(size_x), size_y_(size_y)
+    : size_x_(size_x), size_y_(size_y), reject_inscribed_cost_(true)
   {
     commonInit();
   }
@@ -52,6 +52,7 @@ namespace base_local_planner{
     size_y_ = mg.size_y_;
     size_x_ = mg.size_x_;
     map_ = mg.map_;
+    reject_inscribed_cost_ = mg.reject_inscribed_cost_;
   }
 
   void MapGrid::commonInit(){
@@ -107,7 +108,7 @@ namespace base_local_planner{
     unsigned char cost = costmap.getCost(check_cell->cx, check_cell->cy);
     if(! getCell(check_cell->cx, check_cell->cy).within_robot &&
         (cost == costmap_2d::LETHAL_OBSTACLE ||
-         cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
+         (cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE && reject_inscribed_cost_)||
          cost == costmap_2d::NO_INFORMATION)){
       check_cell->target_dist = obstacleCosts();
       return false;
@@ -238,6 +239,38 @@ namespace base_local_planner{
       ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");
       return;
     }
+
+    queue<MapCell*> path_dist_queue;
+    if (local_goal_x >= 0 && local_goal_y >= 0) {
+      MapCell& current = getCell(local_goal_x, local_goal_y);
+      costmap.mapToWorld(local_goal_x, local_goal_y, goal_x_, goal_y_);
+      current.target_dist = 0.0;
+      current.target_mark = true;
+      path_dist_queue.push(&current);
+    }
+
+    computeTargetDistance(path_dist_queue, costmap);
+  }
+
+  //mark the point of the costmap as local goal where global_plan first leaves the area (or its last point)
+  void MapGrid::setUnadjustedGoal(const costmap_2d::Costmap2D& costmap,
+      const geometry_msgs::PoseStamped& goal) {
+    sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
+
+    int local_goal_x = -1;
+    int local_goal_y = -1;
+
+    double g_x = goal.pose.position.x;
+    double g_y = goal.pose.position.y;
+    unsigned int map_x, map_y;
+    if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+      local_goal_x = map_x;
+      local_goal_y = map_y;
+    } else {
+      ROS_ERROR("Goal is not in the local costmap, goal point too far from robot");
+      return;
+    } 
+
 
     queue<MapCell*> path_dist_queue;
     if (local_goal_x >= 0 && local_goal_y >= 0) {

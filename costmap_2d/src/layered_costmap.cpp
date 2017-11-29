@@ -66,11 +66,12 @@ LayeredCostmap::~LayeredCostmap()
 
 void LayeredCostmap::addPlugin(boost::shared_ptr<Layer> plugin)
 {
-  if (plugin->isStaticLayer()) {
+  if (plugin->getLayerType() == LayerType::STATIC) {
     static_layer_ = plugin;
-  }
-  if (plugin->isObstructionLayer()) {
+  } else if (plugin->getLayerType() == LayerType::OBSTRUCTION) {
     obstruction_layers_.push_back(plugin);
+  } else if (plugin->getLayerType() == LayerType::SHADOW) {
+    shadow_layer_ = plugin;
   }
   plugins_.push_back(plugin);
 }
@@ -89,6 +90,18 @@ std::shared_ptr<std::vector<ObstructionMsg>> LayeredCostmap::getObstructions()
   }
 
   return output;
+}
+
+std::shared_ptr<std::vector<geometry_msgs::Point>> LayeredCostmap::getShadowedObjects()
+{
+  if (shadow_layer_)
+  {
+    return shadow_layer_->getShadowedObjects();
+  }
+  else
+  {
+    return std::shared_ptr<std::vector<geometry_msgs::Point>>();
+  }
 }
 
 std::shared_ptr<std::vector<double>> LayeredCostmap::getDistancesFromStaticMap()

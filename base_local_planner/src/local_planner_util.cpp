@@ -49,6 +49,7 @@ void LocalPlannerUtil::initialize(
     tf_ = tf;
     costmap_ = costmap;
     global_frame_ = global_frame;
+    shadow_speed_limiter_.initialize(costmap->getCostmap());
     initialized_ = true;
   }
   else{
@@ -158,9 +159,7 @@ bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vec
   return true;
 }
 
-void LocalPlannerUtil::updateLimits() {
-  boost::mutex::scoped_lock l(limits_configuration_mutex_);
-  active_limits_ = nominal_limits_;
+bool LocalPlannerUtil::calculateSpeedLimits(double& v_lim, double& w_lim) {
 
   // Set up the limiter.
   speed_limiter_.setFootprint(costmap_->getRobotFootprint());
@@ -172,16 +171,37 @@ void LocalPlannerUtil::updateLimits() {
   tf::Stamped<tf::Pose> robot_pose;
   if (!costmap_->getRobotPose(robot_pose)) {
     ROS_WARN("Could not get robot pose to calculate speed limits");
-    return;
+    return false;
   }
   speed_limiter_.setCurrentPose(robot_pose);
+  shadow_speed_limiter_.setShadowedObjects(costmap_->getLayeredCostmap()->getShadowedObjects());
+  shadow_speed_limiter_.setCurrentPose(robot_pose);
 
   // Use the speed limiter to update the limits.
-  double v_lim = 0, w_lim = 0;
-  if (!speed_limiter_.calculateLimits(v_lim, w_lim)) {
-    ROS_WARN("Could not calculate updated speed limits.");
-    return;
+  double sp_v_lim = 0, sp_w_lim = 0, sh_v_lim = 0, sh_w_lim = 0;
+  if (speed_limiter_.calculateLimits(sp_v_lim, sp_w_lim) 
+    && shadow_speed_limiter_.calculateLimits(sh_v_lim, sh_w_lim)) {
+
+    ROS_DEBUG_THROTTLE(0.2, "Speed limits - obs: %f, shad: %f", sp_v_lim, sh_v_lim);
+
+    v_lim = std::min(sp_v_lim, sh_v_lim);
+    w_lim = std::min(sp_w_lim, sh_w_lim);
+    return true;
   }
+  return false;
+}
+
+void LocalPlannerUtil::updateLimits() {
+
+  double v_lim = 0, w_lim = 0;
+  if (!calculateSpeedLimits(v_lim, w_lim)) {
+    ROS_WARN_THROTTLE(1, "Could not calculate speed limits");
+    v_lim = 0;
+    w_lim = 0;
+  }
+
+  boost::mutex::scoped_lock l(limits_configuration_mutex_);
+  active_limits_ = nominal_limits_;
 
   // Make sure the limits are respected
   if (active_limits_.max_rot_vel > w_lim) {

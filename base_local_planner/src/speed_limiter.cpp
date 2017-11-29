@@ -57,8 +57,8 @@ bool SpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_a
 
   if (!obstructions_)
   {
-    ROS_WARN_THROTTLE(1.0, "No obstructions");
-    return true;
+    ROS_WARN_THROTTLE(1.0, "No obstructions in speed limiter");
+    return false;
   }
 
   // Find the nearest obstruction to the robot that is within the allowed range
@@ -85,7 +85,7 @@ bool SpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_a
       max_allowed_angular_vel = angular_speed;
     }
   }
-  ROS_INFO_THROTTLE(0.2, "Setting max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
+  ROS_DEBUG_THROTTLE(0.2, "Setting max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
 
   return true;
 }

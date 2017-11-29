@@ -49,6 +49,14 @@ namespace costmap_2d
 {
 class LayeredCostmap;
 
+enum class LayerType
+{
+  UNKNOWN,
+  STATIC,
+  OBSTRUCTION,
+  SHADOW,
+};
+
 class Layer
 {
 public:
@@ -118,16 +126,16 @@ public:
     return false;
   }
 
-  virtual bool isStaticLayer() {
-    return false;
-  }
-
-  virtual bool isObstructionLayer() {
-    return false;
-  }
+  virtual LayerType getLayerType() {
+    return LayerType::UNKNOWN;
+  } 
 
   virtual std::shared_ptr<std::vector<ObstructionMsg>> getObstructions() {
     return std::shared_ptr<std::vector<ObstructionMsg>>();
+  }
+
+  virtual std::shared_ptr<std::vector<geometry_msgs::Point>> getShadowedObjects() {
+    return std::shared_ptr<std::vector<geometry_msgs::Point>>();
   }
 
   virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {
