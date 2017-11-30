@@ -395,7 +395,7 @@ namespace move_base {
 
                     //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
                     //(the reachable goal should have been added by the global planner)
-                    global_plan.push_back(req.goal);
+                    //global_plan.push_back(req.goal);
 
                     found_legal = true;
                     ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
