@@ -39,6 +39,7 @@
 #define SHADOW_SPEED_LIMITER_H_
 
 #include <base_local_planner/speed_limiters/speed_limiter.h>
+#include <base_local_planner/ShadowSpeedLimiterConfig.h>
 #include <base_local_planner/map_grid.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
@@ -56,14 +57,14 @@ public:
   /**
    * Constructor
    */
-  ShadowSpeedLimiter();
+  ShadowSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
 
   /**
    * Destructor
    */
   virtual ~ShadowSpeedLimiter() {}
 
-  virtual void initialize();
+  virtual void initialize(std::string name);
 
   /**
    * Set the current pose of the robot
@@ -92,7 +93,7 @@ private:
   bool initialized_ = false;
 
   // All of these params need to be filled out.
-  ShadowSpeedLimiterCfg params_;
+  ShadowSpeedLimiterConfig params_;
 
 };
 

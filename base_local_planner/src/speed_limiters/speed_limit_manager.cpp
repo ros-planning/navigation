@@ -35,9 +35,6 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef SPEED_LIMIT_MANAGER_H_
-#define SPEED_LIMIT_MANAGER_H_
-
 #include <base_local_planner/speed_limiters/speed_limit_manager.h>
 #include <base_local_planner/speed_limiters/obstacle_speed_limiter.h>
 #include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
@@ -45,24 +42,24 @@
 
 namespace base_local_planner {
 
-void SpeedLimitManager::intialize(costmap_2d::Costmap2D* costmap) {
+void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
   std::string name = "~/speed_limiters";
   // Create the limiters
   limiters_.clear();
 
   // Obstacle
-  auto obs_limiter = std::make_shared<ObstacleSpeedLimiter(costmap);
-  obs_limiter->intialize(name);
+  auto obs_limiter = std::make_shared<ObstacleSpeedLimiter>(costmap);
+  obs_limiter->initialize(name);
   limiters_.push_back(obs_limiter);
 
   // Shadow
-  auto shadow_limiter = std::make_shared<ShadowSpeedLimiter(costmap);
-  shadow_limiter->intialize(name);
+  auto shadow_limiter = std::make_shared<ShadowSpeedLimiter>(costmap);
+  shadow_limiter->initialize(name);
   limiters_.push_back(shadow_limiter);
 
   // Path
-  auto path_limiter = std::make_shared<PathSpeedLimiter(costmap);
-  path_limiter->intialize(name);
+  auto path_limiter = std::make_shared<PathSpeedLimiter>(costmap);
+  path_limiter->initialize(name);
   limiters_.push_back(path_limiter);
 };
 
@@ -108,4 +105,3 @@ void SpeedLimitManager::setMaxLimits(double linear, double angular) {
 
 
 } /* namespace base_local_planner */
-#endif /* SPEED_LIMIT_MANAGER_H_ */

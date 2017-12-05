@@ -52,14 +52,14 @@ public:
   /**
    * Constructor
    */
-  PathSpeedLimiter();
+  PathSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
 
   /**
    * Destructor
    */
   virtual ~PathSpeedLimiter() {}
 
-  virtual void intialize(std::string name);
+  virtual void initialize(std::string name);
 
   /**
    * Prepare for operation.

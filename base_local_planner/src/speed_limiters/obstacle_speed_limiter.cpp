@@ -42,9 +42,7 @@
 
 namespace base_local_planner {
 
-ObstacleSpeedLimiter::ObstacleSpeedLimiter() {}
-
-void initialize(std::string name) {
+void ObstacleSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/obstacle");
   configServer_ = std::make_shared<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1, _2));
@@ -145,9 +143,9 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(costmap_2d::Obstruction
 
   return threeLevelInterpolation(distance_to_obstruction,     
     params_.min_range, params_.nominal_range_min,
-    params_.nominal_range_max_, params_.max_range,
+    params_.nominal_range_max, params_.max_range,
     std::min(params_.min_linear_velocity, max_linear_velocity_),
-    std::min(params_.nominal_linear_velocity_, max_linear_velocity_),
+    std::min(params_.nominal_linear_velocity, max_linear_velocity_),
     max_linear_velocity_);
 }
 

@@ -38,7 +38,7 @@
 #ifndef SPEED_LIMITER_H_
 #define SPEED_LIMITER_H_
 
-#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf/tf.h>
 
@@ -52,14 +52,14 @@ public:
   /**
    * Constructor
    */
-  SpeedLimiter(costmap_2d::Costmap2D* costmap) : costmap_(costmap);
+  SpeedLimiter(costmap_2d::Costmap2DROS* costmap) : costmap_(costmap) {};
 
   /**
    * Destructor
    */
   virtual ~SpeedLimiter() {}
 
-  virtual void intialize(std::string name) = 0;
+  virtual void initialize(std::string name) = 0;
 
   /**
    * Calculate limits
@@ -87,12 +87,12 @@ protected:
     return robot_pose;  
   }
 
-  costmap_2d::Costmap2D* costmap_;
+  costmap_2d::Costmap2DROS* costmap_;
 
   std::vector<geometry_msgs::PoseStamped> plan_;
 
-  double max_linear_velocity = 1.0;
-  double max_angular_velocity = 1.0;
+  double max_linear_velocity_ = 1.0;
+  double max_angular_velocity_ = 1.0;
 };
 
 } /* namespace base_local_planner */

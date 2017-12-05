@@ -41,9 +41,7 @@
 
 namespace base_local_planner {
 
-PathSpeedLimiter::PathSpeedLimiter() {}
-
-void initialize(std::string name) {
+void PathSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/path");
   configServer_ = std::make_shared<dynamic_reconfigure::Server<PathSpeedLimiterConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&PathSpeedLimiter::reconfigure, this, _1, _2));
@@ -68,7 +66,7 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
   }
   // Adjust the pose to be at the front of the robot.
   geometry_msgs::PoseStamped pose;
-  tf::poseStampedTFToMsg(*current_pose, pose.pose);
+  tf::poseStampedTFToMsg(*current_pose, pose);
 
   // Determine the closest point on the global plan.
   // Then look forwards along the path a fixed distance.
@@ -140,8 +138,8 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
 double PathSpeedLimiter::calculateAllowedLinearSpeed(double heading_diff)
 {
   return twoLevelInterpolation(heading_diff, 
-    params_.min_heading_difference_, params_.max_heading_difference,
-    std::min(params_.max_linear_velocity, max_linear_velocity_),
+    params_.min_heading_difference, params_.max_heading_difference,
+    max_linear_velocity_,
     std::min(params_.min_linear_velocity, max_linear_velocity_)
     );
 }

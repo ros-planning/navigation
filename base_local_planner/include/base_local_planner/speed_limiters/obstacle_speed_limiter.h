@@ -50,19 +50,19 @@ namespace base_local_planner {
  *
  * It will reject trajectories that are over a speed curve given distance to obstacles
  */
-class ObstacleSpeedLimiter {
+class ObstacleSpeedLimiter : public SpeedLimiter {
 public:
   /**
    * Constructor
    */
-  ObstacleSpeedLimiter();
+  ObstacleSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
 
   /**
    * Destructor
    */
   virtual ~ObstacleSpeedLimiter() {}
 
-  virtual void intialize(std::string name);
+  virtual void initialize(std::string name);
 
   /**
    * Prepare for operation.

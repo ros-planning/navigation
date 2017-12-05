@@ -42,12 +42,9 @@
 
 namespace base_local_planner {
 
-ShadowSpeedLimiter::ShadowSpeedLimiter() {}
-
-
 void ShadowSpeedLimiter::initialize(std::string name)
 {
-  map_grid_ = MapGrid(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
+  map_grid_ = MapGrid(costmap_->getCostmap()->getSizeInCellsX(), costmap_->getCostmap()->getSizeInCellsY());
   map_grid_.reject_inscribed_cost_ = false;
 
   ros::NodeHandle private_nh(name + "/shadow");
@@ -82,7 +79,7 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
   }
   // Adjust the pose to be at the front of the robot.
   geometry_msgs::PoseStamped pose;
-  tf::poseStampedTFToMsg(*current_pose, pose.pose);
+  tf::poseStampedTFToMsg(*current_pose, pose);
 
   double pose_yaw = tf::getYaw(pose.pose.orientation);
   pose.pose.position.x += cos(pose_yaw) * params_.forward_offset;
@@ -90,7 +87,7 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
 
   // calculate the brushfire grid.
   map_grid_.resetPathDist();
-  map_grid_.setUnadjustedGoal(*costmap_, pose);
+  map_grid_.setUnadjustedGoal(*(costmap_->getCostmap()), pose);
 
   // Find nearest object via brushfire distance
   for (const auto& obj : (*objects))
@@ -112,14 +109,14 @@ double ShadowSpeedLimiter::getMapGridDistance(geometry_msgs::Point obj)
 {
 
   unsigned int px, py;
-  if (!costmap_->worldToMap(obj.x, obj.y, px, py)) 
+  if (!costmap_->getCostmap()->worldToMap(obj.x, obj.y, px, py)) 
   {
     //we're off the map
     ROS_WARN("Off Map %f, %f", obj.x, obj.y);
     return std::numeric_limits<double>::max();
   }
   double grid_dist = map_grid_(px, py).target_dist;
-  double out_dist = grid_dist * costmap_->getResolution();
+  double out_dist = grid_dist * costmap_->getCostmap()->getResolution();
 
   ROS_DEBUG("x: %f, y: %f, grid_dist %f, out_dist %f", obj.x, obj.y, grid_dist, out_dist);
   return out_dist;
@@ -132,7 +129,7 @@ double ShadowSpeedLimiter::distanceToVelocity(double dist)
     params_.nominal_range_max, params_.max_range,
     std::min(params_.min_linear_velocity, max_linear_velocity_),
     std::min(params_.nominal_linear_velocity, max_linear_velocity_),
-    std::min(params_.max_linear_velocity, max_linear_velocity_)
+    max_linear_velocity_
     );
 }
 
