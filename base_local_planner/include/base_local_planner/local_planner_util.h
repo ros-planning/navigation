@@ -50,6 +50,7 @@
 #include <base_local_planner/local_planner_limits.h>
 #include <base_local_planner/speed_limiter.h>
 #include <base_local_planner/shadow_speed_limiter.h>
+#include <base_local_planner/path_speed_limiter.h>
 
 
 namespace base_local_planner {
@@ -79,6 +80,7 @@ private:
 
   SpeedLimiter speed_limiter_;
   ShadowSpeedLimiter shadow_speed_limiter_;
+  PathSpeedLimiter path_speed_limiter_;
 
   bool initialized_;
 
@@ -125,6 +127,10 @@ public:
 
   void setShadowSpeedLimiterParams(ShadowSpeedLimiterParams params) {
     shadow_speed_limiter_.setParams(params);
+  }
+
+  void setPathSpeedLimiterParams(PathSpeedLimiterParams params) {
+    path_speed_limiter_.setParams(params);
   }
 
 };

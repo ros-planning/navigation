@@ -96,6 +96,7 @@ add_library(base_local_planner
     src/latched_stop_rotate_controller.cpp
     src/local_planner_util.cpp
     src/odometry_helper_ros.cpp
+    src/path_speed_limiter.cpp
     src/point_grid.cpp
     src/costmap_model.cpp
     src/simple_scored_sampling_planner.cpp

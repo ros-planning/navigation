@@ -177,15 +177,24 @@ bool LocalPlannerUtil::calculateSpeedLimits(double& v_lim, double& w_lim) {
   shadow_speed_limiter_.setShadowedObjects(costmap_->getLayeredCostmap()->getShadowedObjects());
   shadow_speed_limiter_.setCurrentPose(robot_pose);
 
+  std::vector<geometry_msgs::PoseStamped> transformed_plan;
+  if (!getLocalPlan(robot_pose, transformed_plan)) {
+    ROS_WARN("No plan for plan checking limiter.");
+    //////////////////// DO STUFF
+  }
+  path_speed_limiter_.setPlan(transformed_plan);
+  path_speed_limiter_.setCurrentPose(robot_pose);
+
   // Use the speed limiter to update the limits.
-  double sp_v_lim = 0, sp_w_lim = 0, sh_v_lim = 0, sh_w_lim = 0;
+  double sp_v_lim = 0, sp_w_lim = 0, sh_v_lim = 0, sh_w_lim = 0, p_v_lim = 0, p_w_lim = 0;
   if (speed_limiter_.calculateLimits(sp_v_lim, sp_w_lim) 
-    && shadow_speed_limiter_.calculateLimits(sh_v_lim, sh_w_lim)) {
+    && shadow_speed_limiter_.calculateLimits(sh_v_lim, sh_w_lim)
+    && path_speed_limiter_.calculateLimits(p_v_lim, p_w_lim)) {
 
-    ROS_DEBUG_THROTTLE(0.2, "Speed limits - obs: %f, shad: %f", sp_v_lim, sh_v_lim);
+    ROS_INFO_THROTTLE(0.2, "Speed limits - obs: %f, shad: %f, path: %f", sp_v_lim, sh_v_lim, p_v_lim);
 
-    v_lim = std::min(sp_v_lim, sh_v_lim);
-    w_lim = std::min(sp_w_lim, sh_w_lim);
+    v_lim = std::min({sp_v_lim, sh_v_lim, p_v_lim});
+    w_lim = std::min({sp_w_lim, sh_w_lim, p_w_lim});
     return true;
   }
   return false;

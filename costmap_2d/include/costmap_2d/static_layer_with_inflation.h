@@ -80,7 +80,8 @@ public:
   virtual void onFootprintChanged();
 
   virtual LayerType getLayerType() {
-    return LayerType::STATIC;
+    return LayerType::STATIC_IMPASSIBLE;
+    // return impassible_ ? LayerType::STATIC_IMPASSIBLE : LayerType::STATIC_KEEPOUT;
   } 
 
 
@@ -129,8 +130,9 @@ private:
   pluginlib::ClassLoader<Layer> plugin_loader_;
   boost::shared_ptr<Layer> inflation_layer_;
   std::string inflation_layer_type_;
-  // InflationLayer* inflation_layer_;
   bool needs_reinflation_;
+
+  bool impassible_;
 
   unsigned char* static_map_;
 

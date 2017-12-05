@@ -38,7 +38,7 @@
 #ifndef SHADOW_SPEED_LIMITER_H_
 #define SHADOW_SPEED_LIMITER_H_
 
-#include <costmap_2d/costmap_2d.h>
+#include <base_local_planner/speed_limiters/speed_limiter.h>
 #include <base_local_planner/map_grid.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
@@ -46,22 +46,12 @@
 
 namespace base_local_planner {
 
-struct ShadowSpeedLimiterParams {
-  double max_linear_velocity_ = 1.0;
-  double min_linear_velocity_ = 0.3;
-
-  double max_effective_range_ = 1.5;
-  double min_effective_range_ = 0.5;
-  double forward_offset_ = 0.5;
-  double max_angular_velocity_ = 1.0;
-};
-
 /**
  * This class provides cost speed and distance from shadow obstacles
  *
  * It will reject trajectories that are over a speed curve given distance to obstacles
  */
-class ShadowSpeedLimiter {
+class ShadowSpeedLimiter : public SpeedLimiter {
 public:
   /**
    * Constructor
@@ -71,16 +61,9 @@ public:
   /**
    * Destructor
    */
-  ~ShadowSpeedLimiter() {}
-  void initialize(costmap_2d::Costmap2D* costmap);
+  virtual ~ShadowSpeedLimiter() {}
 
-  /**
-   * Set the obstructions
-   * @param obstructions
-   */
-  void setShadowedObjects(std::shared_ptr<std::vector<geometry_msgs::Point>> obs) {
-    objects_ = obs;
-  }
+  virtual void initialize();
 
   /**
    * Set the current pose of the robot
@@ -93,25 +76,21 @@ public:
    */
   bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
-  void setParams(ShadowSpeedLimiterParams params) {
-    params_ = params;
+private:
+
+  void reconfigure(ShadowSpeedLimiterConfig &cfg, uint32_t level) {
+    params_ = cfg;
   }
 
-private:
   double getMapGridDistance(geometry_msgs::Point obj);
   double distanceToVelocity(double dist);
 
-
-  costmap_2d::Costmap2D* costmap_;
-  base_local_planner::MapGrid map_grid_;
+  MapGrid map_grid_;
   
-  std::shared_ptr<geometry_msgs::PoseStamped> current_pose_;
-  std::shared_ptr<std::vector<geometry_msgs::Point>>  objects_;
-
   bool initialized_ = false;
 
   // All of these params need to be filled out.
-  ShadowSpeedLimiterParams params_;
+  ShadowSpeedLimiterCfg params_;
 
 };
 
