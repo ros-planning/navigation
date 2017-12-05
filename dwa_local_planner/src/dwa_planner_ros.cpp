@@ -81,7 +81,7 @@ namespace dwa_local_planner {
       base_local_planner::LocalPlannerLimits limits;
       limits.max_trans_vel = config.max_trans_vel;
       limits.min_trans_vel = config.min_trans_vel;
-      limits.max_vel_x = std::min(main_config.max_vel_x, config.max_vel_x);
+      limits.max_vel_x = config.max_vel_x;
       limits.min_vel_x = config.min_vel_x;
       limits.max_vel_y = config.max_vel_y;
       limits.min_vel_y = config.min_vel_y;
@@ -100,47 +100,6 @@ namespace dwa_local_planner {
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.rot_stopped_vel = config.rot_stopped_vel;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
-
-      base_local_planner::SpeedLimiterParams sp_params;
-      sp_params.max_linear_velocity_ = config.max_vel_x;
-      sp_params.nominal_linear_velocity_ = config.obstacle_speed_limit_nominal_linear_velocity;
-      sp_params.min_linear_velocity_ = config.obstacle_speed_limit_min_linear_velocity;
-      sp_params.max_range_ = config.obstacle_speed_limit_max_range;
-      sp_params.nominal_range_max_ = config.obstacle_speed_limit_nominal_range_max;
-      sp_params.nominal_range_min_ = config.obstacle_speed_limit_nominal_range_min;
-      sp_params.min_range_ = config.obstacle_speed_limit_min_range;
-      sp_params.x_buffer_ = config.obstacle_speed_limit_x_buffer;
-      sp_params.y_buffer_ = config.obstacle_speed_limit_y_buffer;
-      sp_params.half_angle_ = config.obstacle_speed_limit_half_angle;
-
-      sp_params.min_angular_velocity_effect_distance_ = config.obstacle_speed_limit_min_angular_vel_effect_dist;
-      sp_params.max_angular_velocity_effect_distance_ = config.obstacle_speed_limit_max_angular_vel_effect_dist;
-      sp_params.min_angular_velocity_ = config.obstacle_speed_limit_min_angular_velocity;
-      sp_params.max_angular_velocity_ = config.max_rot_vel;
-      planner_util_.setSpeedLimiterParams(sp_params);
-
-      base_local_planner::ShadowSpeedLimiterParams sh_params;
-      sh_params.max_linear_velocity_ = config.max_vel_x;
-      sh_params.nominal_linear_velocity_ = config.shadow_speed_limit_nominal_linear_velocity;      
-      sh_params.min_linear_velocity_ = config.shadow_speed_limit_min_linear_velocity;
-      sh_params.max_range_ = config.shadow_speed_limit_max_range;
-      sh_params.nominal_range_max_ = config.shadow_speed_limit_nominal_range_max;
-      sh_params.nominal_range_min_ = config.shadow_speed_limit_nominal_range_min;
-      sh_params.min_range_ = config.shadow_speed_limit_min_range;
-      sh_params.forward_offset_ = config.shadow_speed_limit_forward_offset;
-      planner_util_.setShadowSpeedLimiterParams(sh_params);
-
-
-      base_local_planner::PathSpeedLimiterParams path_params;
-      path_params.max_linear_velocity_ = config.max_vel_x;
-      path_params.min_linear_velocity_ = config.path_speed_limit_min_linear_velocity;
-      path_params.min_lookahead_distance_ = config.path_speed_limit_min_lookahead_distance;
-      path_params.max_lookahead_distance_ = config.path_speed_limit_max_lookahead_distance;
-      path_params.max_heading_difference_ = config.path_speed_limit_max_heading_difference;
-      path_params.min_heading_difference_ = config.path_speed_limit_min_heading_difference;
-      path_params.max_angular_velocity_ = config.max_rot_vel;
-      planner_util_.setPathSpeedLimiterParams(path_params);
-
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
       // odom_helper_.setWheelbase(config.wheelbase);

@@ -62,6 +62,8 @@ public:
    */
   virtual ~ObstacleSpeedLimiter() {}
 
+  virtual void intialize(std::string name);
+
   /**
    * Prepare for operation.
    * @return true if preparations were successful
@@ -84,7 +86,7 @@ private:
 
   void calculateFootprintBounds(std::vector<geometry_msgs::Point> footprint);
 
-  // All of these params need to be filled out.
+  std::shared_ptr<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>> configServer_;
   ObstacleSpeedLimiterConfig params_;
 
   double footprint_min_x_ = -0.4;

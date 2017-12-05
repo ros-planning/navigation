@@ -35,7 +35,7 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#include <base_local_planner/shadow_speed_limiter.h>
+#include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
 #include <base_local_planner/geometry_math_helpers.h>
 #include <tf/transform_datatypes.h>
 #include <costmap_2d/footprint.h>
@@ -45,10 +45,14 @@ namespace base_local_planner {
 ShadowSpeedLimiter::ShadowSpeedLimiter() {}
 
 
-void ShadowSpeedLimiter::initialize()
+void ShadowSpeedLimiter::initialize(std::string name)
 {
   map_grid_ = MapGrid(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
   map_grid_.reject_inscribed_cost_ = false;
+
+  ros::NodeHandle private_nh(name + "/shadow");
+  configServer_ = std::make_shared<dynamic_reconfigure::Server<ShadowSpeedLimiterConfig>>(private_nh);
+  configServer_->setCallback(boost::bind(&ShadowSpeedLimiter::reconfigure, this, _1, _2));
 
   initialized_ = true;
 }

@@ -35,13 +35,19 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#include <base_local_planner/path_speed_limiter.h>
+#include <base_local_planner/speed_limiters/path_speed_limiter.h>
 #include <base_local_planner/geometry_math_helpers.h>
 #include <tf/transform_datatypes.h>
 
 namespace base_local_planner {
 
 PathSpeedLimiter::PathSpeedLimiter() {}
+
+void initialize(std::string name) {
+  ros::NodeHandle private_nh(name + "/path");
+  configServer_ = std::make_shared<dynamic_reconfigure::Server<PathSpeedLimiterConfig>>(private_nh);
+  configServer_->setCallback(boost::bind(&PathSpeedLimiter::reconfigure, this, _1, _2));
+}
 
 bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
   // Reset the maximum allowed velocity

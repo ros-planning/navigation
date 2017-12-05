@@ -35,7 +35,7 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#include <base_local_planner/obstacle_speed_limiter.h>
+#include <base_local_planner/speed_limiters/obstacle_speed_limiter.h>
 #include <base_local_planner/geometry_math_helpers.h>
 #include <tf/transform_datatypes.h>
 #include <costmap_2d/footprint.h>
@@ -43,6 +43,12 @@
 namespace base_local_planner {
 
 ObstacleSpeedLimiter::ObstacleSpeedLimiter() {}
+
+void initialize(std::string name) {
+  ros::NodeHandle private_nh(name + "/obstacle");
+  configServer_ = std::make_shared<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>>(private_nh);
+  configServer_->setCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1, _2));
+}
 
 bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
   // Reset the maximum allowed velocity

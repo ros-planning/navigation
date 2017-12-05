@@ -52,6 +52,10 @@ generate_messages(
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/BaseLocalPlanner.cfg
+    cfg/SpeedLimitManager.cfg
+    cfg/ObstacleSpeedLimiter.cfg
+    cfg/PathSpeedLimiter.cfg
+    cfg/ShadowSpeedLimiter.cfg
 )
 
 catkin_package(
@@ -96,13 +100,14 @@ add_library(base_local_planner
     src/latched_stop_rotate_controller.cpp
     src/local_planner_util.cpp
     src/odometry_helper_ros.cpp
-    src/path_speed_limiter.cpp
     src/point_grid.cpp
     src/costmap_model.cpp
     src/simple_scored_sampling_planner.cpp
     src/simple_trajectory_generator.cpp
-    src/speed_limiter.cpp
-    src/shadow_speed_limiter.cpp    
+    src/speed_limiters/speed_limit_manager.cpp
+    src/speed_limiters/shadow_speed_limiter.cpp
+    src/speed_limiters/path_speed_limiter.cpp
+    src/speed_limiters/obstacle_speed_limiter.cpp
     src/stationary_trajectory_generator.cpp
     src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp

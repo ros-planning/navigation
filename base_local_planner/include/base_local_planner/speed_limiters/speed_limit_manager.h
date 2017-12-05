@@ -35,65 +35,54 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef SPEED_LIMITER_H_
-#define SPEED_LIMITER_H_
+#ifndef SPEED_LIMIT_MANAGER_H_
+#define SPEED_LIMIT_MANAGER_H_
 
-#include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <tf/tf.h>
+#include <base_local_planner/speed_limiters/speed_limiter.h>
+#include <base_local_planner/SpeedLimitManagerConfig.h>
 
 namespace base_local_planner {
 
 /**
  * This class limits the velocity of the robot
  */
-class SpeedLimiter {
+class SpeedLimitManager {
 public:
   /**
    * Constructor
    */
-  SpeedLimiter(costmap_2d::Costmap2D* costmap) : costmap_(costmap);
+  SpeedLimitManager() {};
 
   /**
    * Destructor
    */
-  virtual ~SpeedLimiter() {}
+  ~SpeedLimitManager() {}
 
-  virtual void intialize(std::string name) = 0;
+  void intialize(costmap_2d::Costmap2D* costmap);
 
   /**
    * Calculate limits
    * @return true if preparations were successful
    */
-  virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) = 0;
-
+  bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
   
-  void setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
-    plan_ = plan;
-  };
+  void setPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
 
-  void setMaxLimits(double linear, double angular) {
-    max_linear_velocity_ = linear;
-    max_angular_velocity_ = angular;
-  };
+  void setMaxLimits(double linear, double angular);
 
 protected:
-  std::shared_ptr<tf::Stamped<tf::Pose>> getCurrentPose() {
-    auto robot_pose = std::make_shared<tf::Stamped<tf::Pose>>();
-    if (!costmap_->getRobotPose(*robot_pose)) {
-      ROS_WARN("Could not get robot pose to calculate speed limits");
-      return nullptr;
-    }  
-    return robot_pose;  
+  void reconfigure(PathSpeedLimiterConfig &cfg, uint32_t level) {
+    setMaxLimits(cfg.max_linear_velocity, cfg.max_angular_velocity);
   }
-
-  costmap_2d::Costmap2D* costmap_;
-
-  std::vector<geometry_msgs::PoseStamped> plan_;
+  std::vector<std::shared_ptr<SpeedLimiter>> limiters_;
+  
+  std::shared_ptr<dynamic_reconfigure::Server<SpeedLimitManagerConfig>> configServer_;
+  SpeedLimitManagerConfig params_;
 
   double max_linear_velocity = 1.0;
   double max_angular_velocity = 1.0;
 };
 
 } /* namespace base_local_planner */
-#endif /* SPEED_LIMITER_H_ */
+#endif /* SPEED_LIMIT_MANAGER_H_ */

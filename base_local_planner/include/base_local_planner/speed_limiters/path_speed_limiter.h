@@ -59,7 +59,7 @@ public:
    */
   virtual ~PathSpeedLimiter() {}
 
-  virtual initialize() {};
+  virtual void intialize(std::string name);
 
   /**
    * Prepare for operation.
@@ -74,7 +74,7 @@ private:
 
   double calculateAllowedLinearSpeed(double heading_diff);
 
-  // All of these params need to be filled out.
+  std::shared_ptr<dynamic_reconfigure::Server<PathSpeedLimiterConfig>> configServer_;
   PathSpeedLimiterConfig params_;
 };
 

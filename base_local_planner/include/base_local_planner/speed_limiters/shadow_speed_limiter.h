@@ -85,6 +85,8 @@ private:
   double getMapGridDistance(geometry_msgs::Point obj);
   double distanceToVelocity(double dist);
 
+  std::shared_ptr<dynamic_reconfigure::Server<ShadowSpeedLimiterConfig>> configServer_;
+
   MapGrid map_grid_;
   
   bool initialized_ = false;
