@@ -110,6 +110,7 @@ add_library(base_local_planner
     src/speed_limiters/shadow_speed_limiter.cpp
     src/speed_limiters/path_speed_limiter.cpp
     src/speed_limiters/obstacle_speed_limiter.cpp
+    src/speed_limiters/external_speed_limiter.cpp    
     src/stationary_trajectory_generator.cpp
     src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp

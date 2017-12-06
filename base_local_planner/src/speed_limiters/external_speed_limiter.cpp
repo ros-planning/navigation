@@ -56,16 +56,16 @@ bool ExternalSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
   max_allowed_angular_vel = max_angular_velocity_;
 
   if (ros::Time::now() - last_msg_time_ > ros::Duration(params_.timeout)) {
-    ROS_INFO_THROTTLE(0.5, "External speed limiter timeout.");
+    ROS_DEBUG_THROTTLE(0.5, "External speed limiter timeout.");
     return true;
   }
 
-  if (msg.max_linear_velocity >= 0) {
-    max_allowed_linear_vel = std::min(last_msg_.max_linear_velocity, max_linear_velocity_);  
+  if (last_msg_.max_linear_velocity >= 0) {
+    max_allowed_linear_vel = std::min(last_msg_.max_linear_velocity, (float)max_linear_velocity_);  
   }
   
-  if (msg.max_angular_velocity >= 0) {
-    max_allowed_angular_vel = std::min(last_msg_.max_angular_velocity, max_angular_velocity_);
+  if (last_msg_.max_angular_velocity >= 0) {
+    max_allowed_angular_vel = std::min(last_msg_.max_angular_velocity, (float)max_angular_velocity_);
   }
 
   ROS_DEBUG_THROTTLE(0.2, "Setting external max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);

@@ -39,6 +39,7 @@
 #include <base_local_planner/speed_limiters/obstacle_speed_limiter.h>
 #include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
 #include <base_local_planner/speed_limiters/path_speed_limiter.h>
+#include <base_local_planner/speed_limiters/external_speed_limiter.h>
 
 namespace base_local_planner {
 
@@ -61,6 +62,16 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
   auto path_limiter = std::make_shared<PathSpeedLimiter>(costmap);
   path_limiter->initialize(name);
   limiters_.push_back(path_limiter);
+
+  // External
+  auto external_limiter = std::make_shared<ExternalSpeedLimiter>(costmap);
+  external_limiter->initialize(name);
+  limiters_.push_back(external_limiter);
+
+  // Create the dynamic reconfigure
+  ros::NodeHandle private_nh(name);
+  configServer_ = std::make_shared<dynamic_reconfigure::Server<SpeedLimitManagerConfig>>(private_nh);
+  configServer_->setCallback(boost::bind(&SpeedLimitManager::reconfigure, this, _1, _2));
 };
 
 /**
@@ -84,6 +95,7 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
     max_allowed_linear_vel = std::min(max_allowed_linear_vel, linear);
     max_allowed_angular_vel = std::min(max_allowed_angular_vel, angular);
   }
+  ROS_INFO_THROTTLE(0.2, "Limits: %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
   return true;
 }
 
