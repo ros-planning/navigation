@@ -161,7 +161,6 @@ if(CATKIN_ENABLE_TESTING)
     test/trajectory_generator_test.cpp
     test/follower_trajectory_generator_test.cpp
     test/global_plan_distance_cost_function_test.cpp
-    test/speed_limiter_test.cpp
     test/map_grid_test.cpp
     test/critic_test_helpers.cpp
     test/odometry_helper_ros_test.cpp
