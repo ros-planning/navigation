@@ -64,7 +64,7 @@ Eigen::Vector3f twistToVector3f(const geometry_msgs::Twist& t);
 geometry_msgs::Pose vector3fToPose(const Eigen::Vector3f& vec);
 geometry_msgs::Twist vector3fToTwist(const Eigen::Vector3f& vec);
 
-double lerp(double value, double min_value, double max_value, double min_output, double max_output);
+double linearInterpolation(double value, double min_value, double max_value, double min_output, double max_output);
 
 double twoLevelInterpolation(double value, 
   double min_value, double max_value, 

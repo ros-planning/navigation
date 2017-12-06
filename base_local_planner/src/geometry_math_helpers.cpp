@@ -148,10 +148,10 @@ geometry_msgs::Twist vector3fToTwist(const Eigen::Vector3f& vec)
 }
 
 
-double lerp(double value, double min_value, double max_value, double min_output, double max_output)
+double linearInterpolation(double value, double min_value, double max_value, double min_output, double max_output)
 {
-    double ratio = (value - min_value) / (max_value - min_value);
-    return ratio * max_output + (1.0 - ratio) * min_output;
+  double ratio = (value - min_value) / (max_value - min_value);
+  return ratio * max_output + (1.0 - ratio) * min_output;
 }
 
 double twoLevelInterpolation(double value, 
@@ -165,7 +165,7 @@ double twoLevelInterpolation(double value,
   }
   else if (value >= min_value && value < max_value)
   {
-    return lerp(value, min_value, max_value, min_output, max_output);
+    return linearInterpolation(value, min_value, max_value, min_output, max_output);
   }
   else
   {
@@ -186,7 +186,7 @@ double threeLevelInterpolation(double value,
   }
   else if (value >= min_value && value < nominal_value_low)
   {
-    return lerp(value, min_value, nominal_value_low, min_output, nominal_output);
+    return linearInterpolation(value, min_value, nominal_value_low, min_output, nominal_output);
   }
   else if (value >= nominal_value_low && value < nominal_value_high)
   {
@@ -194,7 +194,7 @@ double threeLevelInterpolation(double value,
   }
   else if (value >= nominal_value_high && value < max_value)
   {
-    return lerp(value, nominal_value_high, max_value, nominal_output, max_output);
+    return linearInterpolation(value, nominal_value_high, max_value, nominal_output, max_output);
   }
   else
   {
