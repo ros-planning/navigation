@@ -57,7 +57,9 @@ public:
   /**
    * Destructor
    */
-  virtual ~SpeedLimiter() {}
+  virtual ~SpeedLimiter() {
+    // NOTE: costmap_ is not deleted here.  Responsibility for deletion is in move_base
+  }
 
   virtual void initialize(std::string name) = 0;
 
@@ -78,13 +80,12 @@ public:
   };
 
 protected:
-  std::shared_ptr<tf::Stamped<tf::Pose>> getCurrentPose() {
-    auto robot_pose = std::make_shared<tf::Stamped<tf::Pose>>();
-    if (!costmap_->getRobotPose(*robot_pose)) {
+  bool getCurrentPose(tf::Stamped<tf::Pose> pose) {
+    if (!costmap_->getRobotPose(pose)) {
       ROS_WARN("Could not get robot pose to calculate speed limits");
-      return nullptr;
+      return false;
     }  
-    return robot_pose;  
+    return true;  
   }
 
   costmap_2d::Costmap2DROS* costmap_;

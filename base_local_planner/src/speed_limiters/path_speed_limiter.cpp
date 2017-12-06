@@ -58,15 +58,15 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
     return false;
   }
 
-  auto current_pose = getCurrentPose();
-  if (!current_pose)
+  tf::Stamped<tf::Pose> current_pose;
+  if (!getCurrentPose(current_pose))
   {
     ROS_WARN_THROTTLE(1.0, "No pose in shadow speed limiter");
     return false;
   }
   // Adjust the pose to be at the front of the robot.
   geometry_msgs::PoseStamped pose;
-  tf::poseStampedTFToMsg(*current_pose, pose);
+  tf::poseStampedTFToMsg(current_pose, pose);
 
   // Determine the closest point on the global plan.
   // Then look forwards along the path a fixed distance.

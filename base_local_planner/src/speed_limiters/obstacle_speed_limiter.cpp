@@ -63,14 +63,14 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
     return false;
   }
 
-  auto current_pose = getCurrentPose();
-  if (!current_pose)
+  tf::Stamped<tf::Pose> current_pose;
+  if (!getCurrentPose(current_pose))
   {
     ROS_WARN_THROTTLE(1.0, "No pose in shadow speed limiter");
     return false;
   }
 
-  tf::Pose current_pose_inv_tf = current_pose->inverse();
+  tf::Pose current_pose_inv_tf = current_pose.inverse();
 
   // Find the nearest obstruction to the robot that is within the allowed range
   // Loop over all of the obstructions
@@ -101,12 +101,12 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
   return true;
 }
 
-double ObstacleSpeedLimiter::getBearingToObstacle(costmap_2d::ObstructionMsg obs)
+double ObstacleSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionMsg& obs)
 {
   return atan2(obs.y, obs.x);
 }
 
-double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(costmap_2d::ObstructionMsg obs)
+double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs)
 {
   // Check if the bearing to the obstacle is acceptable
   if (std::fabs(getBearingToObstacle(obs)) > params_.half_angle)
@@ -150,7 +150,7 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(costmap_2d::Obstruction
 }
 
 
-double ObstacleSpeedLimiter::calculateAllowedAngularSpeed(costmap_2d::ObstructionMsg obs)
+double ObstacleSpeedLimiter::calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs)
 {
   double distance_to_obstruction = std::sqrt(obs.x * obs.x + obs.y * obs.y) - circumscribed_radius_;
 
@@ -162,7 +162,7 @@ double ObstacleSpeedLimiter::calculateAllowedAngularSpeed(costmap_2d::Obstructio
 
 
 costmap_2d::ObstructionMsg ObstacleSpeedLimiter::obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in,
-  tf::Pose current_pose_inv_tf)
+  const tf::Pose& current_pose_inv_tf)
 {
   if (in.frame_id == costmap_->getBaseFrameID())
   {
@@ -188,7 +188,7 @@ costmap_2d::ObstructionMsg ObstacleSpeedLimiter::obstructionToBodyFrame(const co
   return out;
 }
 
-void ObstacleSpeedLimiter::calculateFootprintBounds(std::vector<geometry_msgs::Point> footprint)
+void ObstacleSpeedLimiter::calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint)
 {
   if (footprint.empty())
   {

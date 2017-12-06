@@ -75,16 +75,16 @@ private:
     params_ = cfg;
   };
 
-  double getBearingToObstacle(costmap_2d::ObstructionMsg obs);
+  double getBearingToObstacle(const costmap_2d::ObstructionMsg& obs);
 
-  double calculateAllowedLinearSpeed(costmap_2d::ObstructionMsg obs);
+  double calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs);
 
-  double calculateAllowedAngularSpeed(costmap_2d::ObstructionMsg obs);
+  double calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs);
 
   costmap_2d::ObstructionMsg obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in,
-    tf::Pose current_pose_inv_tf);
+    const tf::Pose& current_pose_inv_tf);
 
-  void calculateFootprintBounds(std::vector<geometry_msgs::Point> footprint);
+  void calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint);
 
   std::shared_ptr<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>> configServer_;
   ObstacleSpeedLimiterConfig params_;
