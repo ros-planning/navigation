@@ -55,7 +55,7 @@ bool ExternalSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
 
-  if (ros::Time::now() - last_msg_time_ > ros::Duration(params_.timeout)) {
+  if (params_.timeout > 0 && (ros::Time::now() - last_msg_time_ > ros::Duration(params_.timeout))) {
     ROS_DEBUG_THROTTLE(0.5, "External speed limiter timeout.");
     return true;
   }
