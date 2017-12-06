@@ -246,7 +246,7 @@ namespace navfn {
       static int n = 0;
       static char filename[1000];
       snprintf( filename, 1000, "navfnros-makeplan-costmapB-%04d.pgm", n++ );
-      costmap->saveRawMap( std::string( filename ));
+      costmap_->saveMap( std::string( filename ));
     }
 #endif
 
