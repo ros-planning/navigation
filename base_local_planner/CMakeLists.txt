@@ -42,6 +42,7 @@ add_message_files(
         Position2DInt.msg
         CriticCosts.msg
         ScoredSamplingPlannerCosts.msg
+        SpeedLimitRequest.msg
 )
 
 generate_messages(
@@ -53,6 +54,7 @@ generate_messages(
 generate_dynamic_reconfigure_options(
     cfg/BaseLocalPlanner.cfg
     cfg/SpeedLimitManager.cfg
+    cfg/ExternalSpeedLimiter.cfg
     cfg/ObstacleSpeedLimiter.cfg
     cfg/PathSpeedLimiter.cfg
     cfg/ShadowSpeedLimiter.cfg
