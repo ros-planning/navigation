@@ -2,3 +2,5 @@ geometry_msgs/PoseStamped target_pose
 ---
 ---
 geometry_msgs/PoseStamped base_position
+float32 path_distance_to_goal
+float32 path_time_to_goal
