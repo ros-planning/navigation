@@ -95,7 +95,7 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
     max_allowed_linear_vel = std::min(max_allowed_linear_vel, linear);
     max_allowed_angular_vel = std::min(max_allowed_angular_vel, angular);
   }
-  ROS_INFO_THROTTLE(0.2, "Limits: %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
+  ROS_DEBUG_THROTTLE(0.2, "Limits: %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
   return true;
 }
 

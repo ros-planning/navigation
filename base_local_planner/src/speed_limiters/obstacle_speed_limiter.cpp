@@ -74,7 +74,7 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
 
   // Find the nearest obstruction to the robot that is within the allowed range
   // Loop over all of the obstructions
-  for (auto obs : (*obstructions))
+  for (const auto& obs : (*obstructions))
   {
     // Skip non-dynamic things or things that have been cleared
     if (obs.type != costmap_2d::ObstructionMsg::DYNAMIC || obs.cleared)
@@ -136,7 +136,6 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::Obstr
 
   double x_dist_with_buffer = std::max(0.0, abs_x_dist - params_.x_buffer);
   double y_dist_with_buffer = std::max(0.0, abs_y_dist - params_.y_buffer);
-
 
   double distance_to_obstruction = std::sqrt(x_dist_with_buffer * x_dist_with_buffer + y_dist_with_buffer * y_dist_with_buffer);
   ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);

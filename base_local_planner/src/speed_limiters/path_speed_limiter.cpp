@@ -87,7 +87,7 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
 
   // Other storage
   double distance_from_robot = 0;
-  double minimum_distance = 0.5; // it needs to be at least this close
+  double minimum_distance = param_.max_distance_from_path; // it needs to be at least this close
   double max_heading_diff = 0;
 
   Eigen::Vector3f plan_vec = poseToVector3f(plan_[0].pose);
@@ -127,7 +127,7 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
     }
   }
 
-  ROS_DEBUG("Max heading diff: %f", max_heading_diff);
+  ROS_DEBUG_THROTTLE(0.2, "Max heading diff: %f", max_heading_diff);
   max_allowed_linear_vel = calculateAllowedLinearSpeed(max_heading_diff);
 
   ROS_DEBUG_THROTTLE(0.2, "Setting path max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
