@@ -78,42 +78,6 @@ double pf_ran_gaussian(double sigma);
 // Generate a sample from the the pdf.
 pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf);
 
-
-#if 0
-
-/**************************************************************************
- * Discrete
- *************************************************************************/
-
-// Discrete PDF info
-typedef struct
-{
-  // The list of discrete probs
-  int prob_count;
-  double *probs;
-
-  // A random number generator
-  gsl_rng *rng;
-
-  // The discrete prob generator
-  gsl_ran_discrete_t *ran;
-
-} pf_pdf_discrete_t;
-
-
-// Create a discrete pdf
-pf_pdf_discrete_t *pf_pdf_discrete_alloc(int count, double *probs);
-
-// Destroy the pdf
-void pf_pdf_discrete_free(pf_pdf_discrete_t *pdf);
-
-// Compute the value of the probability of some element [i]
-double pf_pdf_discrete_value(pf_pdf_discrete_t *pdf, int i);
-
-// Generate a sample from the the pdf.
-int pf_pdf_discrete_sample(pf_pdf_discrete_t *pdf);
-#endif
-
 #ifdef __cplusplus
 }
 #endif
