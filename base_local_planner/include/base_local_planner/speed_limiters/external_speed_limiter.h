@@ -35,85 +35,56 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef SHADOW_SPEED_LIMITER_H_
-#define SHADOW_SPEED_LIMITER_H_
+#ifndef EXTERNAL_SPEED_LIMITER_H_
+#define EXTERNAL_SPEED_LIMITER_H_
 
-#include <costmap_2d/costmap_2d.h>
-#include <base_local_planner/map_grid.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Point.h>
-#include <tf/tf.h>
+#include <base_local_planner/speed_limiters/speed_limiter.h>
+#include <base_local_planner/ExternalSpeedLimiterConfig.h>
+#include <base_local_planner/SpeedLimitRequest.h>
 
 namespace base_local_planner {
 
-struct ShadowSpeedLimiterParams {
-  double max_linear_velocity_ = 1.0;
-  double min_linear_velocity_ = 0.3;
-
-  double max_effective_range_ = 1.5;
-  double min_effective_range_ = 0.5;
-  double forward_offset_ = 0.5;
-  double max_angular_velocity_ = 1.0;
-};
-
 /**
- * This class provides cost speed and distance from shadow obstacles
+ * This class slows down the robot from some external limit
  *
- * It will reject trajectories that are over a speed curve given distance to obstacles
  */
-class ShadowSpeedLimiter {
+class ExternalSpeedLimiter : public SpeedLimiter {
 public:
   /**
    * Constructor
    */
-  ShadowSpeedLimiter();
+  ExternalSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
 
   /**
    * Destructor
    */
-  ~ShadowSpeedLimiter() {}
-  void initialize(costmap_2d::Costmap2D* costmap);
+  virtual ~ExternalSpeedLimiter() {}
 
-  /**
-   * Set the obstructions
-   * @param obstructions
-   */
-  void setShadowedObjects(std::shared_ptr<std::vector<geometry_msgs::Point>> obs) {
-    objects_ = obs;
-  }
+  virtual void initialize(std::string name);
 
-  /**
-   * Set the current pose of the robot
-   * @param pose The current pose
-   */
-  void setCurrentPose(tf::Stamped<tf::Pose> pose);
   /**
    * Prepare for operation.
    * @return true if preparations were successful
    */
-  bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
-
-  void setParams(ShadowSpeedLimiterParams params) {
-    params_ = params;
-  }
+  virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
 private:
-  double getMapGridDistance(geometry_msgs::Point obj);
-  double distanceToVelocity(double dist);
+  void reconfigure(ExternalSpeedLimiterConfig &cfg, uint32_t level) {
+    params_ = cfg;
+  }
 
+  void msgCallback(base_local_planner::SpeedLimitRequest msg) {
+    last_msg_ = msg;
+    last_msg_time_ = ros::Time::now();
+  }
 
-  costmap_2d::Costmap2D* costmap_;
-  base_local_planner::MapGrid map_grid_;
-  
-  std::shared_ptr<geometry_msgs::PoseStamped> current_pose_;
-  std::shared_ptr<std::vector<geometry_msgs::Point>>  objects_;
+  std::shared_ptr<dynamic_reconfigure::Server<ExternalSpeedLimiterConfig>> configServer_;
+  ExternalSpeedLimiterConfig params_;
 
-  bool initialized_ = false;
-
-  // All of these params need to be filled out.
-  ShadowSpeedLimiterParams params_;
-
+  ros::Subscriber subscriber_;
+  base_local_planner::SpeedLimitRequest last_msg_;
+  ros::Time last_msg_time_ = ros::Time(0);
 };
 
 } /* namespace base_local_planner */
-#endif /* SHADOW_SPEED_LIMITER_H_ */
+#endif /* PATH_SPEED_LIMITER_H_ */

@@ -66,7 +66,8 @@ LayeredCostmap::~LayeredCostmap()
 
 void LayeredCostmap::addPlugin(boost::shared_ptr<Layer> plugin)
 {
-  if (plugin->getLayerType() == LayerType::STATIC) {
+  if (plugin->getLayerType() == LayerType::STATIC_IMPASSIBLE
+    && !static_layer_) {
     static_layer_ = plugin;
   } else if (plugin->getLayerType() == LayerType::OBSTRUCTION) {
     obstruction_layers_.push_back(plugin);

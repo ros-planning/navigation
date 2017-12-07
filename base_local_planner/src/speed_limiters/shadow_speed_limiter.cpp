@@ -35,20 +35,21 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#include <base_local_planner/shadow_speed_limiter.h>
+#include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
+#include <base_local_planner/geometry_math_helpers.h>
 #include <tf/transform_datatypes.h>
 #include <costmap_2d/footprint.h>
 
 namespace base_local_planner {
 
-ShadowSpeedLimiter::ShadowSpeedLimiter() {}
-
-
-void ShadowSpeedLimiter::initialize(costmap_2d::Costmap2D* costmap)
+void ShadowSpeedLimiter::initialize(std::string name)
 {
-  costmap_ = costmap;
-  map_grid_ = MapGrid(costmap->getSizeInCellsX(), costmap->getSizeInCellsY());
+  map_grid_ = MapGrid(costmap_->getCostmap()->getSizeInCellsX(), costmap_->getCostmap()->getSizeInCellsY());
   map_grid_.reject_inscribed_cost_ = false;
+
+  ros::NodeHandle private_nh(name + "/shadow");
+  configServer_ = std::make_shared<dynamic_reconfigure::Server<ShadowSpeedLimiterConfig>>(private_nh);
+  configServer_->setCallback(boost::bind(&ShadowSpeedLimiter::reconfigure, this, _1, _2));
 
   initialized_ = true;
 }
@@ -59,33 +60,37 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
     return false;
   }
   // Reset the maximum allowed velocity
-  max_allowed_linear_vel = params_.max_linear_velocity_;
-  max_allowed_angular_vel = params_.max_angular_velocity_;
+  max_allowed_linear_vel = max_linear_velocity_;
+  max_allowed_angular_vel = max_angular_velocity_;
 
-  if (!objects_)
+  // Get the objects
+  auto objects = costmap_->getLayeredCostmap()->getShadowedObjects();
+  if (!objects)
   {
     ROS_WARN_THROTTLE(1.0, "No objects in shadow speed limiter");
     return false;
   }
 
-  if (!current_pose_)
+  tf::Stamped<tf::Pose> current_pose;
+  if (!getCurrentPose(current_pose))
   {
     ROS_WARN_THROTTLE(1.0, "No pose in shadow speed limiter");
     return false;
   }
+  // Adjust the pose to be at the front of the robot.
+  geometry_msgs::PoseStamped pose;
+  tf::poseStampedTFToMsg(current_pose, pose);
+
+  double pose_yaw = tf::getYaw(pose.pose.orientation);
+  pose.pose.position.x += cos(pose_yaw) * params_.forward_offset;
+  pose.pose.position.y += sin(pose_yaw) * params_.forward_offset;
 
   // calculate the brushfire grid.
   map_grid_.resetPathDist();
-  // Adjust the pose to be at the front of the robot.
-  geometry_msgs::PoseStamped pose = (*current_pose_);
-  double pose_yaw = tf::getYaw(pose.pose.orientation);
-  pose.pose.position.x += cos(pose_yaw) * params_.forward_offset_;
-  pose.pose.position.y += sin(pose_yaw) * params_.forward_offset_;
-
-  map_grid_.setUnadjustedGoal(*costmap_, pose);
+  map_grid_.setUnadjustedGoal(*(costmap_->getCostmap()), pose);
 
   // Find nearest object via brushfire distance
-  for (const auto& obj : (*objects_))
+  for (const auto& obj : (*objects))
   {
     // Get the brushfire distance to the obstacle
     double distance = getMapGridDistance(obj);
@@ -104,14 +109,14 @@ double ShadowSpeedLimiter::getMapGridDistance(geometry_msgs::Point obj)
 {
 
   unsigned int px, py;
-  if (!costmap_->worldToMap(obj.x, obj.y, px, py)) 
+  if (!costmap_->getCostmap()->worldToMap(obj.x, obj.y, px, py)) 
   {
     //we're off the map
     ROS_WARN("Off Map %f, %f", obj.x, obj.y);
     return std::numeric_limits<double>::max();
   }
   double grid_dist = map_grid_(px, py).target_dist;
-  double out_dist = grid_dist * costmap_->getResolution();
+  double out_dist = grid_dist * costmap_->getCostmap()->getResolution();
 
   ROS_DEBUG("x: %f, y: %f, grid_dist %f, out_dist %f", obj.x, obj.y, grid_dist, out_dist);
   return out_dist;
@@ -119,31 +124,13 @@ double ShadowSpeedLimiter::getMapGridDistance(geometry_msgs::Point obj)
 
 double ShadowSpeedLimiter::distanceToVelocity(double dist)
 {
-  
-  if (dist <= params_.min_effective_range_)
-  {
-    return params_.min_linear_velocity_;
-  }
-  else if (dist >= params_.max_effective_range_)
-  {
-    return params_.max_linear_velocity_;
-  }
-  else
-  {
-    double ratio = (dist - params_.min_effective_range_) / (params_.max_effective_range_ - params_.min_effective_range_);
-    return ratio * params_.max_linear_velocity_  + (1.0 - ratio) * params_.min_linear_velocity_;
-  }
-}
-
-void ShadowSpeedLimiter::setCurrentPose(tf::Stamped<tf::Pose> pose)
-{
-  if (!current_pose_)
-  {
-    current_pose_ = std::make_shared<geometry_msgs::PoseStamped>();
-  }
-  // Covert the pose into the necessary form.
-  tf::poseTFToMsg(pose, current_pose_->pose);
-  ROS_DEBUG("Setting current pose to %f, %f", current_pose_->pose.position.x, current_pose_->pose.position.y);
+  return threeLevelInterpolation(dist, 
+    params_.min_range, params_.nominal_range_min,
+    params_.nominal_range_max, params_.max_range,
+    std::min(params_.min_linear_velocity, max_linear_velocity_),
+    std::min(params_.nominal_linear_velocity, max_linear_velocity_),
+    max_linear_velocity_
+    );
 }
 
 } /* namespace base_local_planner */

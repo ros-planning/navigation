@@ -35,54 +35,36 @@
  * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef SPEED_LIMITER_H_
-#define SPEED_LIMITER_H_
+#ifndef SHADOW_SPEED_LIMITER_H_
+#define SHADOW_SPEED_LIMITER_H_
 
-#include <base_local_planner/critics/trajectory_cost_function.h>
+#include <base_local_planner/speed_limiters/speed_limiter.h>
+#include <base_local_planner/ShadowSpeedLimiterConfig.h>
+#include <base_local_planner/map_grid.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <costmap_2d/ObstructionMsg.h>
+#include <geometry_msgs/Point.h>
 #include <tf/tf.h>
 
 namespace base_local_planner {
 
-struct SpeedLimiterParams {
-  double max_linear_velocity_ = 1.0;
-  double min_linear_velocity_ = 0.3;
-  double linear_acceleration_ = 0.7;
-  double half_angle_ = 1.6;
-  double x_buffer_ = 0.5;
-  double y_buffer_ = 0.3;
-
-  double min_angular_velocity_effect_distance_ = 0.2;
-  double max_angular_velocity_effect_distance_ = 0.5;
-  double max_angular_velocity_ = 1.0;
-  double min_angular_velocity_ = 0.3;
-};
-
 /**
- * This class provides cost speed and distance from dynamic obstacles
+ * This class provides cost speed and distance from shadow obstacles
  *
  * It will reject trajectories that are over a speed curve given distance to obstacles
  */
-class SpeedLimiter {
+class ShadowSpeedLimiter : public SpeedLimiter {
 public:
   /**
    * Constructor
    */
-  SpeedLimiter();
+  ShadowSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
 
   /**
    * Destructor
    */
-  ~SpeedLimiter() {}
+  virtual ~ShadowSpeedLimiter() {}
 
-  /**
-   * Set the obstructions
-   * @param obstructions
-   */
-  void setObstructions(std::shared_ptr<std::vector<costmap_2d::ObstructionMsg>> obstructions) {
-    obstructions_ = obstructions;
-  }
+  virtual void initialize(std::string name);
 
   /**
    * Set the current pose of the robot
@@ -95,61 +77,25 @@ public:
    */
   bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
-  void setParams(SpeedLimiterParams params) {
-    params_ = params;
-    calculateStopDistances();
-  }
-
-  void setWorldFrameId(std::string id)
-  {
-    world_frame_id_ = id;
-  }
-
-  void setBodyFrameId(std::string id)
-  {
-    body_frame_id_ = id;
-  }
-
-
-  void setFootprint(std::vector<geometry_msgs::Point> footprint)
-  {
-    calculateFootprintBounds(footprint);
-  }
-
 private:
 
-  double getBearingToObstacle(costmap_2d::ObstructionMsg obs);
+  void reconfigure(ShadowSpeedLimiterConfig &cfg, uint32_t level) {
+    params_ = cfg;
+  }
 
-  double calculateAllowedLinearSpeed(costmap_2d::ObstructionMsg obs);
+  double getMapGridDistance(geometry_msgs::Point obj);
+  double distanceToVelocity(double dist);
 
-  double calculateAllowedAngularSpeed(costmap_2d::ObstructionMsg obs);
+  std::shared_ptr<dynamic_reconfigure::Server<ShadowSpeedLimiterConfig>> configServer_;
 
-  costmap_2d::ObstructionMsg obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in);
-
-  void calculateStopDistances();
-
-  void calculateFootprintBounds(std::vector<geometry_msgs::Point> footprint);
-
-  std::vector<geometry_msgs::PoseStamped> target_poses_;
-  std::shared_ptr<std::vector<costmap_2d::ObstructionMsg>>  obstructions_;
-
-  double min_distance_to_stop_;
-  double max_distance_to_stop_;
+  MapGrid map_grid_;
+  
+  bool initialized_ = false;
 
   // All of these params need to be filled out.
-  SpeedLimiterParams params_;
+  ShadowSpeedLimiterConfig params_;
 
-  double footprint_min_x_;
-  double footprint_max_x_;
-  double footprint_min_y_;
-  double footprint_max_y_;
-  double circumscribed_radius_;
-
-  tf::Transform current_pose_inv_tf_;
-
-  std::string body_frame_id_;
-  std::string world_frame_id_;
 };
 
 } /* namespace base_local_planner */
-#endif /* SPEED_LIMITER_H_ */
+#endif /* SHADOW_SPEED_LIMITER_H_ */

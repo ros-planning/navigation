@@ -85,6 +85,8 @@ void StaticLayerWithInflation::onInitialize()
 
   nh.param("inflation_layer_type", inflation_layer_type_, std::string("costmap_2d::VoronoiInflationLayer"));
 
+  nh.param("impassible", impassible_, true);
+
 
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;

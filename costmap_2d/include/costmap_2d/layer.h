@@ -52,7 +52,8 @@ class LayeredCostmap;
 enum class LayerType
 {
   UNKNOWN,
-  STATIC,
+  STATIC_IMPASSIBLE,
+  STATIC_KEEPOUT,
   OBSTRUCTION,
   SHADOW,
 };

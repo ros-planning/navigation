@@ -42,6 +42,7 @@ add_message_files(
         Position2DInt.msg
         CriticCosts.msg
         ScoredSamplingPlannerCosts.msg
+        SpeedLimitRequest.msg
 )
 
 generate_messages(
@@ -52,6 +53,11 @@ generate_messages(
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/BaseLocalPlanner.cfg
+    cfg/SpeedLimitManager.cfg
+    cfg/ExternalSpeedLimiter.cfg
+    cfg/ObstacleSpeedLimiter.cfg
+    cfg/PathSpeedLimiter.cfg
+    cfg/ShadowSpeedLimiter.cfg
 )
 
 catkin_package(
@@ -100,8 +106,11 @@ add_library(base_local_planner
     src/costmap_model.cpp
     src/simple_scored_sampling_planner.cpp
     src/simple_trajectory_generator.cpp
-    src/speed_limiter.cpp
-    src/shadow_speed_limiter.cpp    
+    src/speed_limiters/speed_limit_manager.cpp
+    src/speed_limiters/shadow_speed_limiter.cpp
+    src/speed_limiters/path_speed_limiter.cpp
+    src/speed_limiters/obstacle_speed_limiter.cpp
+    src/speed_limiters/external_speed_limiter.cpp    
     src/stationary_trajectory_generator.cpp
     src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp
@@ -152,7 +161,6 @@ if(CATKIN_ENABLE_TESTING)
     test/trajectory_generator_test.cpp
     test/follower_trajectory_generator_test.cpp
     test/global_plan_distance_cost_function_test.cpp
-    test/speed_limiter_test.cpp
     test/map_grid_test.cpp
     test/critic_test_helpers.cpp
     test/odometry_helper_ros_test.cpp

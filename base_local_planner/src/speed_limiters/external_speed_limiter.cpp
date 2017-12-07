@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2017 6 River Systems
+ *  Copyright (c) 2016, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,49 +32,45 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: dgrieneisen
+ * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef BASE_LOCAL_PLANNER_GEOMETRY_MATH_HELPERS_H_
-#define BASE_LOCAL_PLANNER_GEOMETRY_MATH_HELPERS_H_
-
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Twist.h>
-#include <tf/tf.h>
-#include <Eigen/Core>
+#include <base_local_planner/speed_limiters/external_speed_limiter.h>
+#include <base_local_planner/geometry_math_helpers.h>
+#include <tf/transform_datatypes.h>
 
 namespace base_local_planner {
 
-double distanceToLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+void ExternalSpeedLimiter::initialize(std::string name) {
+  ros::NodeHandle private_nh(name + "/external");
+  configServer_ = std::make_shared<dynamic_reconfigure::Server<ExternalSpeedLimiterConfig>>(private_nh);
+  configServer_->setCallback(boost::bind(&ExternalSpeedLimiter::reconfigure, this, _1, _2));
 
-double distanceAlongLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
-
-Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
-
-Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose);
-
-double angleMinusPiToPi(double val);
-
-Eigen::Vector3f poseToVector3f(const geometry_msgs::Pose& pose);
-Eigen::Vector3f twistToVector3f(const geometry_msgs::Twist& t);
-geometry_msgs::Pose vector3fToPose(const Eigen::Vector3f& vec);
-geometry_msgs::Twist vector3fToTwist(const Eigen::Vector3f& vec);
-
-double linearInterpolation(double value, double min_value, double max_value, double min_output, double max_output);
-
-double twoLevelInterpolation(double value, 
-  double min_value, double max_value, 
-  double min_output, double max_output);
-
-double threeLevelInterpolation(double value, 
-  double min_value, double nominal_value_low, 
-  double nominal_value_high, double max_value,
-  double min_output, double nominal_output, double max_output);
-
+  // Create the subscriber
+  subscriber_ = private_nh.subscribe("limit", 10, &ExternalSpeedLimiter::msgCallback, this);
 }
 
-#endif
+bool ExternalSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
+  // Reset the maximum allowed velocity
+  max_allowed_linear_vel = max_linear_velocity_;
+  max_allowed_angular_vel = max_angular_velocity_;
+
+  if (params_.timeout > 0 && (ros::Time::now() - last_msg_time_ > ros::Duration(params_.timeout))) {
+    ROS_DEBUG_THROTTLE(0.5, "External speed limiter timeout.");
+    return true;
+  }
+
+  if (last_msg_.max_linear_velocity >= 0) {
+    max_allowed_linear_vel = std::min(last_msg_.max_linear_velocity, (float)max_linear_velocity_);  
+  }
+  
+  if (last_msg_.max_angular_velocity >= 0) {
+    max_allowed_angular_vel = std::min(last_msg_.max_angular_velocity, (float)max_angular_velocity_);
+  }
+
+  ROS_DEBUG_THROTTLE(0.2, "Setting external max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
+
+  return true;
+}
+
+} /* namespace base_local_planner */
