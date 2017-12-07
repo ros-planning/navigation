@@ -80,7 +80,7 @@ public:
   };
 
 protected:
-  bool getCurrentPose(tf::Stamped<tf::Pose> pose) {
+  bool getCurrentPose(tf::Stamped<tf::Pose>& pose) {
     if (!costmap_->getRobotPose(pose)) {
       ROS_WARN("Could not get robot pose to calculate speed limits");
       return false;
