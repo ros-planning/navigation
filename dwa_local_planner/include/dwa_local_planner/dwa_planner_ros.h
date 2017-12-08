@@ -95,7 +95,7 @@ namespace dwa_local_planner {
        */
       bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
 
-      bool getDistanceAndTimeToGo(double& distance, double& time);
+      bool getDistanceAndTimeEstimates(double& distance, double& time);
 
       /**
        * @brief  Given the current position, orientation, and velocity of the robot,

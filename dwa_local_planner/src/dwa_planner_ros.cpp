@@ -357,9 +357,9 @@ namespace dwa_local_planner {
     }
   }
 
-  bool DWAPlannerROS::getDistanceAndTimeToGo(double& distance, double& time)
+  bool DWAPlannerROS::getDistanceAndTimeEstimates(double& distance, double& time)
   {
-    return dp_->getDistanceAndTimeToGo(current_pose_, distance, time);
+    return dp_->getDistanceAndTimeEstimates(current_pose_, distance, time);
   }
 
 };

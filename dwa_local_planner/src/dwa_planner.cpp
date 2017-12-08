@@ -432,7 +432,7 @@ namespace dwa_local_planner {
     velocity_costs_.setGoalDistanceSquared(sq_dist);
   }
 
-  bool DWAPlanner::getDistanceAndTimeToGo(const tf::Stamped<tf::Pose>& poseTf, double& distance, double& time)
+  bool DWAPlanner::getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf, double& distance, double& time)
   {
     // Get the current plan and pose.
     if (global_plan_.empty())

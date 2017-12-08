@@ -78,7 +78,7 @@ namespace nav_core {
       virtual void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros) = 0;
 
 
-      virtual bool getDistanceAndTimeToGo(double& distance, double& time) {return false;};
+      virtual bool getDistanceAndTimeEstimates(double& distance, double& time) {return false;};
 
       /**
        * @brief  Virtual destructor for the interface

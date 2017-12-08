@@ -907,7 +907,7 @@ namespace move_base {
 
     //update feedback to correspond to estimated time / distance to goal
     double distance_to_go = 0, time_to_go = 0;
-    if (!tc_->getDistanceAndTimeToGo(distance_to_go, time_to_go))
+    if (!tc_->getDistanceAndTimeEstimates(distance_to_go, time_to_go))
     {
       distance_to_go = -1;
       time_to_go = -1;
