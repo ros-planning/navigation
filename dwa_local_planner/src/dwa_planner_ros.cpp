@@ -356,4 +356,10 @@ namespace dwa_local_planner {
       return isOk;
     }
   }
+
+  bool DWAPlannerROS::getDistanceAndTimeEstimates(double& distance, double& time)
+  {
+    return dp_->getDistanceAndTimeEstimates(current_pose_, distance, time);
+  }
+
 };
