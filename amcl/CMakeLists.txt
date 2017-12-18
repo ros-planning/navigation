@@ -98,10 +98,10 @@ if(CATKIN_ENABLE_TESTING)
     http://download.ros.org/data/amcl/small_loop_prf_indexed.bag
     DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/test
     MD5 e4ef0fc006872b43f12ed8a7ce7dcd81)
-  catkin_download_test_data(${PROJECT_NAME}_small_loop_crazy_driving_prg_indexed.bag
-    http://download.ros.org/data/amcl/small_loop_crazy_driving_prg_indexed.bag
-    DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/test
-    MD5 4a58d1a7962914009d99000d06e5939c)
+#  catkin_download_test_data(${PROJECT_NAME}_small_loop_crazy_driving_prg_indexed.bag
+#    http://download.ros.org/data/amcl/small_loop_crazy_driving_prg_indexed.bag
+#    DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/test
+#    MD5 4a58d1a7962914009d99000d06e5939c)
 #  catkin_download_test_data(${PROJECT_NAME}_texas_greenroom_loop_indexed.bag
 #    http://download.ros.org/data/amcl/texas_greenroom_loop_indexed.bag
 #    DESTINATION ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_SHARE_DESTINATION}/test
@@ -130,7 +130,7 @@ if(CATKIN_ENABLE_TESTING)
   add_rostest(test/set_initial_pose_delayed.xml)
   add_rostest(test/basic_localization_stage.xml)
   add_rostest(test/small_loop_prf.xml)
-  add_rostest(test/small_loop_crazy_driving_prg.xml)
+#  add_rostest(test/small_loop_crazy_driving_prg.xml)
 #  add_rostest(test/texas_greenroom_loop.xml)
 #  add_rostest(test/rosie_multilaser.xml)
 #  add_rostest(test/texas_willow_hallway_loop.xml)
