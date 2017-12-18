@@ -70,6 +70,8 @@ bool GlobalPlanDistanceCostFunction::prepare() {
     // Pull out the datas
     p0 = poseStampedToVector(target_poses_[k]);
     p1 = poseStampedToVector(target_poses_[k + 1]);
+    double distance = distanceToLineSegment(current_pose_vector, p0, p1);
+    ROS_ERROR("Global plan distance: %f %f", distance, max_allowed_distance_from_plan_);
     if (distanceToLineSegment(current_pose_vector, p0, p1) < max_allowed_distance_from_plan_)
     {
       distance_violation_ = false;

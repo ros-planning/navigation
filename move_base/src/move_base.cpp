@@ -534,6 +534,7 @@ namespace move_base {
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
 
+    ROS_INFO("Making plan with goal frame %s", goal.header.frame_id.c_str());
     //make sure to set the plan to be empty initially
     plan.clear();
 
@@ -620,7 +621,7 @@ namespace move_base {
 
     geometry_msgs::PoseStamped global_pose_msg;
     tf::poseStampedTFToMsg(global_pose, global_pose_msg);
-    return global_pose_msg;
+    return goal_pose_msg;//global_pose_msg;
   }
 
   void MoveBase::wakePlanner(const ros::TimerEvent& event)
@@ -745,6 +746,7 @@ namespace move_base {
       }
     }
 
+    ROS_INFO("Executing goal with frame %s", move_base_goal->target_pose.header.frame_id.c_str());
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
 
     //we have a goal so start the planner

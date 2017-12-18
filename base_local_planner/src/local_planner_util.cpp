@@ -99,7 +99,7 @@ bool LocalPlannerUtil::setPlan(const std::vector<geometry_msgs::PoseStamped>& or
 
   //reset the global plan
   global_plan_.clear();
-
+  ROS_INFO("Setting global plan with length %d", orig_global_plan.size());
   global_plan_ = orig_global_plan;
 
   return true;
