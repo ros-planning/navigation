@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.14 (2017-12-19)
+--------------------
 * Only do a getRobotPose when no start pose is given (`#628 <https://github.com/ros-planning/navigation/issues/628>`_)
 * Merge pull request `#524 <https://github.com/ros-planning/navigation/issues/524>`_ from corot/call_less_the_planner
   Fix for `#523 <https://github.com/ros-planning/navigation/issues/523>`_: global planner called much more times than expected
