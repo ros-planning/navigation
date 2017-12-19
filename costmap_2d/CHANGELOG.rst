@@ -2,6 +2,13 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* don't update costs if inflation radius is zero
+* Speedup (~60%) inflation layer update (`#525 <https://github.com/ros-planning/navigation/issues/525>`_)
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Contributors: Jorge Santos Simón, Martin Günther, Michael Ferguson
+
 1.12.13 (2016-08-15)
 --------------------
 * Fixed race condition with costmaps

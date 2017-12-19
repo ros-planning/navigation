@@ -2,6 +2,12 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* fix order of parameters (closes `#553 <https://github.com/ros-planning/navigation/issues/553>`_)
+* Contributors: Martin Günther, Michael Ferguson
+
 1.12.13 (2016-08-15)
 --------------------
 

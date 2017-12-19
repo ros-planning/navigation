@@ -2,6 +2,17 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Only do a getRobotPose when no start pose is given (`#628 <https://github.com/ros-planning/navigation/issues/628>`_)
+* Merge pull request `#524 <https://github.com/ros-planning/navigation/issues/524>`_ from corot/call_less_the_planner
+  Fix for `#523 <https://github.com/ros-planning/navigation/issues/523>`_: global planner called much more times than expected
+* Merge pull request `#501 <https://github.com/ros-planning/navigation/issues/501>`_ from selvasamuel/indigo-devel
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Fix: global planner called much more times than max_planning_retries or time allowed by planner_patiente
+* Fixed deadlock when changing global planner
+* Contributors: Jorge Santos Simón, Martin Günther, Michael Ferguson, ne0
+
 1.12.13 (2016-08-15)
 --------------------
 * Merge pull request `#495 <https://github.com/ros-planning/navigation/issues/495>`_ from corot/patch-3
