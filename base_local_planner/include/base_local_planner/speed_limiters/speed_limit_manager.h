@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2017 6 River Systems
+ *  Copyright (c) 2016, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -15,7 +15,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *   * Neither the name of 6 River Systems. nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,49 +32,58 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: dgrieneisen
+ * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef BASE_LOCAL_PLANNER_GEOMETRY_MATH_HELPERS_H_
-#define BASE_LOCAL_PLANNER_GEOMETRY_MATH_HELPERS_H_
+#ifndef SPEED_LIMIT_MANAGER_H_
+#define SPEED_LIMIT_MANAGER_H_
 
 #include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Twist.h>
-#include <tf/tf.h>
-#include <Eigen/Core>
+#include <base_local_planner/speed_limiters/speed_limiter.h>
+#include <base_local_planner/SpeedLimitManagerConfig.h>
+#include <costmap_2d/costmap_2d_ros.h>
 
 namespace base_local_planner {
 
-double distanceToLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+/**
+ * This class limits the velocity of the robot
+ */
+class SpeedLimitManager {
+public:
+  /**
+   * Constructor
+   */
+  SpeedLimitManager() {};
 
-double distanceAlongLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+  /**
+   * Destructor
+   */
+  ~SpeedLimitManager() {}
 
-Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+  void initialize(costmap_2d::Costmap2DROS* costmap);
 
-Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose);
+  /**
+   * Calculate limits
+   * @return true if preparations were successful
+   */
+  bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
+  
+  void setPlan(const std::vector<geometry_msgs::PoseStamped>& plan);
 
-double angleMinusPiToPi(double val);
+  void setMaxLimits(double linear, double angular);
 
-Eigen::Vector3f poseToVector3f(const geometry_msgs::Pose& pose);
-Eigen::Vector3f twistToVector3f(const geometry_msgs::Twist& t);
-geometry_msgs::Pose vector3fToPose(const Eigen::Vector3f& vec);
-geometry_msgs::Twist vector3fToTwist(const Eigen::Vector3f& vec);
+protected:
+  void reconfigure(SpeedLimitManagerConfig &cfg, uint32_t level) {
+    setMaxLimits(cfg.max_linear_velocity, cfg.max_angular_velocity);
+  }
+  std::vector<std::shared_ptr<SpeedLimiter>> limiters_;
+  
+  std::shared_ptr<dynamic_reconfigure::Server<SpeedLimitManagerConfig>> configServer_;
+  SpeedLimitManagerConfig params_;
 
-double linearInterpolation(double value, double min_value, double max_value, double min_output, double max_output);
+  double max_linear_velocity_ = 1.0;
+  double max_angular_velocity_ = 1.0;
+};
 
-double twoLevelInterpolation(double value, 
-  double min_value, double max_value, 
-  double min_output, double max_output);
-
-double threeLevelInterpolation(double value, 
-  double min_value, double nominal_value_low, 
-  double nominal_value_high, double max_value,
-  double min_output, double nominal_output, double max_output);
-
-}
-
-#endif
+} /* namespace base_local_planner */
+#endif /* SPEED_LIMIT_MANAGER_H_ */

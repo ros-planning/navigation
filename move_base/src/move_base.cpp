@@ -907,9 +907,19 @@ namespace move_base {
     geometry_msgs::PoseStamped current_position;
     tf::poseStampedTFToMsg(global_pose, current_position);
 
+    //update feedback to correspond to estimated time / distance to goal
+    double distance_to_go = 0, time_to_go = 0;
+    if (!tc_->getDistanceAndTimeEstimates(distance_to_go, time_to_go))
+    {
+      distance_to_go = -1;
+      time_to_go = -1;
+    }
+
     //push the feedback out
     move_base_msgs::MoveBaseFeedback feedback;
     feedback.base_position = current_position;
+    feedback.path_distance_to_goal = distance_to_go;
+    feedback.path_time_to_goal = time_to_go;
     as_->publishFeedback(feedback);
 
     //check to see if we've moved far enough to reset our oscillation timeout

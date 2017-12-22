@@ -45,7 +45,6 @@
 
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
-#include <base_local_planner/speed_limiter.h>
 
 #include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 #include <srslib_timing/ScopedRollingTimingStatistics.hpp>
@@ -82,7 +81,7 @@ namespace dwa_local_planner {
       base_local_planner::LocalPlannerLimits limits;
       limits.max_trans_vel = config.max_trans_vel;
       limits.min_trans_vel = config.min_trans_vel;
-      limits.max_vel_x = std::min(main_config.max_vel_x, config.max_vel_x);
+      limits.max_vel_x = config.max_vel_x;
       limits.min_vel_x = config.min_vel_x;
       limits.max_vel_y = config.max_vel_y;
       limits.min_vel_y = config.min_vel_y;
@@ -101,20 +100,6 @@ namespace dwa_local_planner {
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.rot_stopped_vel = config.rot_stopped_vel;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
-
-      base_local_planner::SpeedLimiterParams sp_params;
-      sp_params.max_linear_velocity_ = config.max_vel_x;
-      sp_params.min_linear_velocity_ = config.min_slow_vel_x;
-      sp_params.linear_acceleration_ = config.acc_lim_x;
-      sp_params.x_buffer_ = config.speed_cost_x_buffer;
-      sp_params.y_buffer_ = config.speed_cost_y_buffer;
-      sp_params.half_angle_ = config.speed_cost_half_angle;
-
-      sp_params.min_angular_velocity_effect_distance_ = config.speed_cost_min_angular_vel_effect_dist;
-      sp_params.max_angular_velocity_effect_distance_ = config.speed_cost_max_angular_vel_effect_dist;
-      sp_params.min_angular_velocity_ = config.min_slow_angular_vel;
-      sp_params.max_angular_velocity_ = config.max_rot_vel;
-      planner_util_.setSpeedLimiterParams(sp_params);
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
       // odom_helper_.setWheelbase(config.wheelbase);
@@ -371,4 +356,10 @@ namespace dwa_local_planner {
       return isOk;
     }
   }
+
+  bool DWAPlannerROS::getDistanceAndTimeEstimates(double& distance, double& time)
+  {
+    return dp_->getDistanceAndTimeEstimates(current_pose_, distance, time);
+  }
+
 };

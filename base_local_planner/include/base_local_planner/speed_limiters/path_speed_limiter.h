@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2017 6 River Systems
+ *  Copyright (c) 2016, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -15,7 +15,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
+ *   * Neither the name of 6 River Systems. nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,49 +32,51 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: dgrieneisen
+ * Author: Daniel Grieneisen
  *********************************************************************/
 
-#ifndef BASE_LOCAL_PLANNER_GEOMETRY_MATH_HELPERS_H_
-#define BASE_LOCAL_PLANNER_GEOMETRY_MATH_HELPERS_H_
+#ifndef PATH_SPEED_LIMITER_H_
+#define PATH_SPEED_LIMITER_H_
 
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/Twist.h>
-#include <tf/tf.h>
-#include <Eigen/Core>
+#include <base_local_planner/speed_limiters/speed_limiter.h>
+#include <base_local_planner/PathSpeedLimiterConfig.h>
 
 namespace base_local_planner {
 
-double distanceToLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+/**
+ * This class slows down the robot when approaching a turn
+ *
+ */
+class PathSpeedLimiter : public SpeedLimiter {
+public:
+  /**
+   * Constructor
+   */
+  PathSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
 
-double distanceAlongLineSegment(const Eigen::Vector2f& pos,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+  /**
+   * Destructor
+   */
+  virtual ~PathSpeedLimiter() {}
 
-Eigen::Vector2f poseAtDistanceAlongLineSegment(double distance,
-  const Eigen::Vector2f& p0, const Eigen::Vector2f& p1);
+  virtual void initialize(std::string name);
 
-Eigen::Vector2f poseStampedToVector(geometry_msgs::PoseStamped pose);
+  /**
+   * Prepare for operation.
+   * @return true if preparations were successful
+   */
+  virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
-double angleMinusPiToPi(double val);
+private:
+  void reconfigure(PathSpeedLimiterConfig &cfg, uint32_t level) {
+    params_ = cfg;
+  }
 
-Eigen::Vector3f poseToVector3f(const geometry_msgs::Pose& pose);
-Eigen::Vector3f twistToVector3f(const geometry_msgs::Twist& t);
-geometry_msgs::Pose vector3fToPose(const Eigen::Vector3f& vec);
-geometry_msgs::Twist vector3fToTwist(const Eigen::Vector3f& vec);
+  double calculateAllowedLinearSpeed(double heading_diff);
 
-double linearInterpolation(double value, double min_value, double max_value, double min_output, double max_output);
+  std::shared_ptr<dynamic_reconfigure::Server<PathSpeedLimiterConfig>> configServer_;
+  PathSpeedLimiterConfig params_;
+};
 
-double twoLevelInterpolation(double value, 
-  double min_value, double max_value, 
-  double min_output, double max_output);
-
-double threeLevelInterpolation(double value, 
-  double min_value, double nominal_value_low, 
-  double nominal_value_high, double max_value,
-  double min_output, double nominal_output, double max_output);
-
-}
-
-#endif
+} /* namespace base_local_planner */
+#endif /* PATH_SPEED_LIMITER_H_ */

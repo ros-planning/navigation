@@ -48,7 +48,7 @@
 #include <tf/transform_listener.h>
 
 #include <base_local_planner/local_planner_limits.h>
-#include <base_local_planner/speed_limiter.h>
+#include <base_local_planner/speed_limiters/speed_limit_manager.h>
 
 
 namespace base_local_planner {
@@ -76,7 +76,7 @@ private:
   LocalPlannerLimits nominal_limits_;
   LocalPlannerLimits active_limits_;
 
-  SpeedLimiter speed_limiter_;
+  SpeedLimitManager speed_limit_manager_;
 
   bool initialized_;
 
@@ -109,16 +109,13 @@ public:
 
   void updateLimits();
 
+  bool calculateSpeedLimits(double& v_lim, double& w_lim);
+
   LocalPlannerLimits getCurrentLimits();
 
   std::string getGlobalFrame(){ return global_frame_; }
 
   double distanceToPlanDivergence(const std::vector<geometry_msgs::PoseStamped>& new_plan);
-
-  void setSpeedLimiterParams(SpeedLimiterParams params) {
-    speed_limiter_.setParams(params);
-  }
-
 };
 
 

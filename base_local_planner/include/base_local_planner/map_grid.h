@@ -186,9 +186,14 @@ namespace base_local_planner{
       void setLocalGoal(const costmap_2d::Costmap2D& costmap,
             const std::vector<geometry_msgs::PoseStamped>& global_plan);
 
+      void setUnadjustedGoal(const costmap_2d::Costmap2D& costmap,
+          const geometry_msgs::PoseStamped& goal);
+
       double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
 
       unsigned int size_x_, size_y_; ///< @brief The dimensions of the grid
+
+      bool reject_inscribed_cost_;
 
     private:
 

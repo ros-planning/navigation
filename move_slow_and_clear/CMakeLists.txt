@@ -15,7 +15,7 @@ find_package(catkin REQUIRED
 
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED)
+find_package(PCL 1.8 REQUIRED QUIET)
 find_package(Boost REQUIRED COMPONENTS thread)
 include_directories(
     include

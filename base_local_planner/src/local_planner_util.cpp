@@ -49,6 +49,7 @@ void LocalPlannerUtil::initialize(
     tf_ = tf;
     costmap_ = costmap;
     global_frame_ = global_frame;
+    speed_limit_manager_.initialize(costmap);
     initialized_ = true;
   }
   else{
@@ -158,30 +159,26 @@ bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vec
   return true;
 }
 
+
 void LocalPlannerUtil::updateLimits() {
-  boost::mutex::scoped_lock l(limits_configuration_mutex_);
-  active_limits_ = nominal_limits_;
 
-  // Set up the limiter.
-  speed_limiter_.setFootprint(costmap_->getRobotFootprint());
-  speed_limiter_.setObstructions(costmap_->getLayeredCostmap()->getObstructions());
-  speed_limiter_.setWorldFrameId(costmap_->getGlobalFrameID());
-  speed_limiter_.setBodyFrameId(costmap_->getBaseFrameID());
-
-  // Get the pose somehow
   tf::Stamped<tf::Pose> robot_pose;
   if (!costmap_->getRobotPose(robot_pose)) {
     ROS_WARN("Could not get robot pose to calculate speed limits");
-    return;
   }
-  speed_limiter_.setCurrentPose(robot_pose);
 
-  // Use the speed limiter to update the limits.
-  double v_lim = 0, w_lim = 0;
-  if (!speed_limiter_.calculateLimits(v_lim, w_lim)) {
-    ROS_WARN("Could not calculate updated speed limits.");
-    return;
+  std::vector<geometry_msgs::PoseStamped> transformed_plan;
+  if (!getLocalPlan(robot_pose, transformed_plan)) {
+    ROS_WARN("No plan for speed limiters.");
   }
+  speed_limit_manager_.setPlan(transformed_plan);
+
+  double v_lim = 0, w_lim = 0;
+  speed_limit_manager_.calculateLimits(v_lim, w_lim);
+
+
+  boost::mutex::scoped_lock l(limits_configuration_mutex_);
+  active_limits_ = nominal_limits_;
 
   // Make sure the limits are respected
   if (active_limits_.max_rot_vel > w_lim) {

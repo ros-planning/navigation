@@ -174,9 +174,10 @@ public:
 
   virtual void updateOrigin(double new_origin_x, double new_origin_y);
 
-  virtual bool isObstructionLayer() override {
-    return true;
-  }
+  virtual LayerType getLayerType() {
+    return LayerType::OBSTRUCTION;
+  } 
+
 
   virtual std::shared_ptr<std::vector<ObstructionMsg>> getObstructions() override {
     std::lock_guard<std::mutex> lock(obstruction_lock_);

@@ -21,6 +21,9 @@
     <class type="costmap_2d::VoxelLayer"     base_class_type="costmap_2d::Layer">
       <description>Similar to obstacle costmap, but uses 3D voxel grid to store data.</description>
     </class>
+    <class type="costmap_2d::ShadowLayer"     base_class_type="costmap_2d::Layer">
+      <description>Calculate shadows.</description>
+    </class>    
   </library>
 </class_libraries>
 

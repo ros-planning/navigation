@@ -67,7 +67,6 @@ if(CATKIN_ENABLE_TESTING)
       gtest
       ${catkin_LIBRARIES}
   )
-  add_dependencies(rtest nav_msgs_gencpp)
 
   # This has to be done after we've already built targets, or catkin variables get borked
   find_package(rostest)

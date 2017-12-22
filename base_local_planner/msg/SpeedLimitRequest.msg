@@ -1,0 +1,2 @@
+float32 max_linear_velocity
+float32 max_angular_velocity
