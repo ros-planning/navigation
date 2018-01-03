@@ -1,13 +1,16 @@
 #include <move_backwards_recovery/move_backwards_recovery.h>
 #include <pluginlib/class_list_macros.h>
 #include <math.h>
+#include <angles/angles.h>
 
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_DECLARE_CLASS(move_backwards_recovery, MoveBackRecovery, move_backwards_recovery::MoveBackRecovery, nav_core::RecoveryBehavior)
 
 namespace move_backwards_recovery {
 MoveBackRecovery::MoveBackRecovery(): global_costmap_(NULL), local_costmap_(NULL),
-  tf_(NULL), initialized_(false), world_model_(NULL){}
+  tf_(NULL), initialized_(false), world_model_(NULL),
+  lastEndingX_(0), lastEndingY_(0), lastEndingTheta_(0),
+  linearStartTolerance_(-1), angularStartTolerance_(-1), runOnce_(false) {}
 
 void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
@@ -22,6 +25,8 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
 
     private_nh.param("distance_backward", distance_backwards_, 0.15);
     private_nh.param("backwards_velocity", backwards_velocity_, -0.05);
+    private_nh.param("linear_start_tolerance", linearStartTolerance_, 0.05);
+    private_nh.param("angular_start_tolerance", angularStartTolerance_, 0.1);
 
     footprint_ = costmap_2d::makeFootprintFromParams(private_nh);
     if (footprint_.size() < 3) {
@@ -81,6 +86,20 @@ void MoveBackRecovery::runBehavior(){
   // the original location
   double originX = global_pose.getOrigin().x();
   double originY = global_pose.getOrigin().y();
+  double originTheta = tf::getYaw(global_pose.getRotation());
+
+  // check to see if the robot has moved since the last backup recovery.
+  // if not, return.
+  if (runOnce_
+    && std::fabs(originX - lastEndingX_) < linearStartTolerance_
+    && std::fabs(originY - lastEndingY_) < linearStartTolerance_
+    && std::fabs(angles::normalize_angle(originTheta - lastEndingTheta_)) < angularStartTolerance_)
+  {
+    ROS_INFO_NAMED("move_backwards_recovery",
+      "Not moving backwards because the robot has not moved since the recovery last triggered.");
+    return;
+  }
+  runOnce_ = true;
 
   double distance_traveled_sq = 0.0;
   double distance_max_sq = distance_backwards_ * distance_backwards_;
@@ -96,6 +115,12 @@ void MoveBackRecovery::runBehavior(){
     double cur_x = global_pose.getOrigin().x();
     double cur_y = global_pose.getOrigin().y();
     double cur_theta = tf::getYaw(global_pose.getRotation());
+
+    // Store thet values for reset check later.
+    lastEndingX_ = cur_x;
+    lastEndingY_ = cur_y;
+    lastEndingTheta_ = cur_theta;
+
 
     distance_traveled_sq = (cur_x - originX) * (cur_x - originX) + (cur_y - originY) * (cur_y - originY);
 

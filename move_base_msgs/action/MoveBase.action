@@ -1,5 +1,16 @@
 geometry_msgs/PoseStamped target_pose
 ---
+# Failure codes used when result is aborted
+uint16 failure_code
+uint16 NONE = 0
+uint16 INVALID_QUATERNION = 1
+uint16 NODE_KILLED = 2
+uint16 FAILED_TO_PASS_PLAN_TO_CONTROLLER = 3
+uint16 NO_VALID_CONTROL = 4
+uint16 NO_VALID_PLAN = 5
+uint16 OSCILLATION = 6
+uint16 UNREACHABLE_CASE = 7
+
 ---
 geometry_msgs/PoseStamped base_position
 float32 path_distance_to_goal

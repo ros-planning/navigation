@@ -164,7 +164,7 @@ namespace move_base {
 
       void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
 
-      bool isQuaternionValid(const geometry_msgs::Quaternion& q);  
+      bool isQuaternionValid(const geometry_msgs::Quaternion& q);
 
       double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
 
@@ -174,6 +174,8 @@ namespace move_base {
        * @brief This is used to wake the planner at periodic intervals.
        */
       void wakePlanner(const ros::TimerEvent& event);
+
+      move_base_msgs::MoveBaseResult buildResult(unsigned int failure_code);
 
       tf::TransformListener& tf_;
 
