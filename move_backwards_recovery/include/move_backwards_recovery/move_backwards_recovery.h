@@ -34,6 +34,13 @@ namespace move_backwards_recovery{
       double backwards_velocity_;
       std::vector<geometry_msgs::Point> footprint_;
 
+      double lastEndingX_;
+      double lastEndingY_;
+      double lastEndingTheta_;
+      double linearStartTolerance_;
+      double angularStartTolerance_;
+      bool runOnce_;
+
       base_local_planner::CostmapModel* world_model_;
       static constexpr auto RECOVERY_VELOCITY_CMD = "/cmd_vel";
 

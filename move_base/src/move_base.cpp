@@ -730,7 +730,8 @@ namespace move_base {
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
-      as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+      as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::INVALID_QUATERNION),
+        "Aborting on goal because it was sent with an invalid quaternion");
       return;
     }
 
@@ -790,7 +791,8 @@ namespace move_base {
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
 
           if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+            as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::INVALID_QUATERNION),
+              "Aborting on goal because it was sent with an invalid quaternion");
             return;
           }
 
@@ -887,7 +889,8 @@ namespace move_base {
     lock.unlock();
 
     //if the node is killed then we'll abort and return
-    as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on the goal because the node has been killed");
+    as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::NODE_KILLED),
+      "Aborting on the goal because the node has been killed");
     return;
   }
 
@@ -965,7 +968,8 @@ namespace move_base {
         runPlanner_ = false;
         lock.unlock();
 
-        as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to pass global plan to the controller.");
+        as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::FAILED_TO_PASS_PLAN_TO_CONTROLLER),
+          "Failed to pass global plan to the controller.");
         return true;
       }
 
@@ -1085,15 +1089,18 @@ namespace move_base {
 
           if(recovery_trigger_ == CONTROLLING_R){
             ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
+            as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::NO_VALID_CONTROL),
+              "Failed to find a valid control. Even after executing recovery behaviors.");
           }
           else if(recovery_trigger_ == PLANNING_R){
             ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
+            as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::NO_VALID_PLAN),
+              "Failed to find a valid plan. Even after executing recovery behaviors.");
           }
           else if(recovery_trigger_ == OSCILLATION_R){
             ROS_ERROR("Aborting because the robot appears to be oscillating over and over. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Robot is oscillating. Even after executing recovery behaviors.");
+            as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::OSCILLATION),
+              "Robot is oscillating. Even after executing recovery behaviors.");
           }
           resetState();
           return true;
@@ -1106,7 +1113,8 @@ namespace move_base {
         boost::unique_lock<boost::mutex> lock(planner_mutex_);
         runPlanner_ = false;
         lock.unlock();
-        as_->setAborted(move_base_msgs::MoveBaseResult(), "Reached a case that should not be hit in move_base. This is a bug, please report it.");
+        as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::UNREACHABLE_CASE),
+          "Reached a case that should not be hit in move_base. This is a bug, please report it.");
         return true;
     }
 
@@ -1264,4 +1272,11 @@ namespace move_base {
       controller_costmap_ros_->stop();
     }
   }
+
+  move_base_msgs::MoveBaseResult MoveBase::buildResult(unsigned int failure_code) {
+    move_base_msgs::MoveBaseResult output;
+    output.failure_code = failure_code;
+    return output;
+  }
+
 };
