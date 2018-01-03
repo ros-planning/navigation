@@ -481,7 +481,7 @@ namespace dwa_local_planner {
     }
 
     distance = distance_from_robot;
-    time = distance_from_robot * planner_util_->getCurrentLimits().max_vel_x;
+    time = distance_from_robot / planner_util_->getCurrentLimits().max_vel_x;
     return true;
   }
 
