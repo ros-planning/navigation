@@ -220,8 +220,7 @@ namespace dwa_local_planner {
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
-    ROS_ERROR("NOT using global plan distance costs");
-    //critics.push_back(&global_plan_distance_costs_); // discards trajectories that are moving if the global plan is too far from the robot
+    critics.push_back(&global_plan_distance_costs_); // discards trajectories that are moving if the global plan is too far from the robot
     critics.push_back(&heading_costs_); // discards trajectories that are not turn in place if path is behind robot
     critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
     critics.push_back(&velocity_costs_); // scales cost based on velocity
