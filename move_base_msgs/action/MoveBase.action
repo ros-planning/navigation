@@ -1,4 +1,5 @@
 geometry_msgs/PoseStamped target_pose
+bool use_target_frame
 ---
 # Failure codes used when result is aborted
 uint16 failure_code

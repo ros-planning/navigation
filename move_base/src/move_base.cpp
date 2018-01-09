@@ -534,7 +534,7 @@ namespace move_base {
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
 
-    ROS_INFO("Making plan with goal frame %s", goal.header.frame_id.c_str());
+    ROS_DEBUG("Making plan with goal frame %s", goal.header.frame_id.c_str());
     //make sure to set the plan to be empty initially
     plan.clear();
 
@@ -621,7 +621,7 @@ namespace move_base {
 
     geometry_msgs::PoseStamped global_pose_msg;
     tf::poseStampedTFToMsg(global_pose, global_pose_msg);
-    return goal_pose_msg;//global_pose_msg;
+    return global_pose_msg;
   }
 
   void MoveBase::wakePlanner(const ros::TimerEvent& event)
@@ -747,8 +747,13 @@ namespace move_base {
       }
     }
 
-    ROS_INFO("Executing goal with frame %s", move_base_goal->target_pose.header.frame_id.c_str());
-    geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+    ROS_DEBUG("Executing goal with frame %s", move_base_goal->target_pose.header.frame_id.c_str());
+    geometry_msgs::PoseStamped goal;
+    if (move_base_goal->use_target_frame) {
+      goal = move_base_goal->target_pose;
+    } else {
+      goal = goalToGlobalFrame(move_base_goal->target_pose);
+    }
 
     //we have a goal so start the planner
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
@@ -796,7 +801,11 @@ namespace move_base {
             return;
           }
 
-          goal = goalToGlobalFrame(new_goal.target_pose);
+          if (move_base_goal->use_target_frame) {
+            goal = new_goal.target_pose;
+          } else {
+            goal = goalToGlobalFrame(new_goal.target_pose);
+          }
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
@@ -834,7 +843,9 @@ namespace move_base {
 
       //we also want to check if we've changed global frames because we need to transform our goal pose
       if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
-        goal = goalToGlobalFrame(goal);
+        if (move_base_goal->use_target_frame) {
+          goal = goalToGlobalFrame(goal);
+        }
 
         //we want to go back to the planning state for the next execution cycle
         recovery_index_ = 0;
