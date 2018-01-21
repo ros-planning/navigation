@@ -8,12 +8,13 @@ services:
 before_install:
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/install-package.sh
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/build-package.sh
+  - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/packages.sh
   # Determine packages modified in this commit
-  - PACKAGES=`git diff-tree --name-only $TRAVIS_COMMIT | xargs ls -dl 2>/dev/null |  grep "^d" | grep -v "\." | awk '{print $NF}' `
+  - source packages.sh
 
-script: 
+script:
   - 'for PACKAGE in $PACKAGES;
-     do 
+     do
      bash install-package.sh --package=$PACKAGE --branch=$TRAVIS_BRANCH --commit=$TRAVIS_COMMIT --pullrequest=$TRAVIS_PULL_REQUEST &&
      bash build-package.sh --package=$PACKAGE;
      done'
