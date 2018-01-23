@@ -65,13 +65,21 @@ bool GlobalPlanDistanceCostFunction::prepare() {
   Eigen::Vector2f p0 = Eigen::Vector2f::Zero();
   Eigen::Vector2f p1 = Eigen::Vector2f::Zero();
 
-  for (size_t k = 0; k < target_poses_.size() - 1; ++k)
+  // if there is only one point, don't use point to line distance
+  if (target_poses_.size() == 1) {
+    p0 = poseStampedToVector(target_poses_[0]);
+    double distance = (p0 - current_pose_vector).squaredNorm();
+    if (distance < max_allowed_distance_from_plan_) {
+      distance_violation_ = false;
+      return true;
+    }
+  }
+
+  for (size_t k = 0; k < target_poses_.size(); ++k)
   {
     // Pull out the datas
     p0 = poseStampedToVector(target_poses_[k]);
     p1 = poseStampedToVector(target_poses_[k + 1]);
-    double distance = distanceToLineSegment(current_pose_vector, p0, p1);
-    ROS_ERROR("Global plan distance: %f %f", distance, max_allowed_distance_from_plan_);
     if (distanceToLineSegment(current_pose_vector, p0, p1) < max_allowed_distance_from_plan_)
     {
       distance_violation_ = false;
