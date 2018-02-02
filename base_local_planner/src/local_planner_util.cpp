@@ -70,6 +70,7 @@ void LocalPlannerUtil::reconfigureCB(LocalPlannerLimits &config, bool restore_de
   {
     boost::mutex::scoped_lock l(limits_configuration_mutex_);
     nominal_limits_ = LocalPlannerLimits(config);
+    ROS_INFO("Nominal limits tolerance: %f", nominal_limits_.xy_goal_tolerance);
   }
   updateLimits();
 }

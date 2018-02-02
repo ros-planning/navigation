@@ -21,8 +21,8 @@ namespace base_local_planner {
 
 LatchedStopRotateController::LatchedStopRotateController(const std::string& name) {
   ros::NodeHandle private_nh("~/" + name);
-  private_nh.param("latch_xy_goal_tolerance", latch_xy_goal_tolerance_, false);
-
+  //private_nh.param("latch_xy_goal_tolerance", latch_xy_goal_tolerance_, false);
+  latch_xy_goal_tolerance_ = false;
   rotating_to_goal_ = false;
 }
 
@@ -99,7 +99,7 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
     if (fabs(angle) <= limits.yaw_goal_tolerance) {
       //make sure that we're actually stopped before returning success
       if (base_local_planner::stopped(base_odom, rot_stopped_vel, trans_stopped_vel)) {
-        ROS_INFO("Finally stopped at (%f, %f, %f) for goal (%f, %f)", global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), angle, goal_x, goal_y);
+        ROS_INFO("Finally stopped at (%f, %f, %f) for goal (%f, %f) with tolerance %f", global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), angle, goal_x, goal_y, xy_goal_tolerance);
         return true;
       }
     }
