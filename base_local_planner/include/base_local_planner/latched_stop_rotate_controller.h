@@ -35,6 +35,10 @@ public:
     xy_tolerance_latch_ = false;
   }
 
+  void setLatch(bool latch_xy_goal_tolerance) {
+    latch_xy_goal_tolerance_ = latch_xy_goal_tolerance;
+  }
+
   /**
    * @brief Stop the robot taking into account acceleration limits
    * @param  global_pose The pose of the robot in the global frame
