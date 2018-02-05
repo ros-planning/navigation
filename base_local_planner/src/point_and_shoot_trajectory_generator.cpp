@@ -71,6 +71,7 @@ void PointAndShootTrajectoryGenerator::initialise(
       end_times_.push_back(k * step_t);
     }
   }
+  new_try_ = true;
   ROS_DEBUG("PASTG intialized with %d times and end time %f", num_trajectories_, sim_time_);
 }
 
@@ -232,15 +233,21 @@ Eigen::Vector3f PointAndShootTrajectoryGenerator::computeNewVelocities(const Eig
     new_vel[2] = std::max(desired_angular_velocity, vel[2] - tip_accel * dt);
   }
 
-  double desired_linear_velocity = std::max(1.0 - bearing, 0.0) * std::min(kp_linear_ * range, max_lin_vel);
+  double lin_bear_factor = std::max(1.0 - bearing, 0.0);
+  double lin_factor = std::min(kp_linear_ * range, max_lin_vel);
+  double desired_linear_velocity = lin_bear_factor * lin_factor;
   // Add accel limit
   if (vel[0] < desired_linear_velocity) {
     new_vel[0] = std::min(desired_linear_velocity, vel[0] + lin_accel * dt);
   } else {
     new_vel[0] = std::max(desired_linear_velocity, vel[0] - lin_accel * dt);
   }
-  ROS_INFO_NAMED("PASTG", "range: %f, bearing: %f, des v,w: %f,%f",
-    range, bearing, desired_linear_velocity, desired_angular_velocity);
+  if (new_try_) {
+  ROS_INFO_NAMED("PASTG", "range: %f, bearing: %f, des v,w: %f,%f, (lin bear: %f, lin: %f)",
+    range, bearing, desired_linear_velocity, desired_angular_velocity,
+    lin_bear_factor, lin_factor);
+    new_try_ = false;
+  }
   return new_vel;
 }
 

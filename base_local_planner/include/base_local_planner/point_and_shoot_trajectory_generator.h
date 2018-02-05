@@ -139,6 +139,8 @@ protected:
 
   double kp_angular_;
   double kp_linear_;
+
+  bool new_try_ = true;
 };
 
 } /* namespace base_local_planner */
