@@ -233,7 +233,7 @@ Eigen::Vector3f PointAndShootTrajectoryGenerator::computeNewVelocities(const Eig
     new_vel[2] = std::max(desired_angular_velocity, vel[2] - tip_accel * dt);
   }
 
-  double lin_bear_factor = std::max(1.0 - bearing, 0.0);
+  double lin_bear_factor = std::max(1.0 - std::fabs(bearing), 0.0);
   double lin_factor = std::min(kp_linear_ * range, max_lin_vel);
   double desired_linear_velocity = lin_bear_factor * lin_factor;
   // Add accel limit
