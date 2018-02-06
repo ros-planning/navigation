@@ -94,6 +94,7 @@ namespace dwa_local_planner {
       limits.acc_lim_theta = config.acc_lim_theta;
       limits.acc_limit_trans = config.acc_limit_trans;
       limits.acc_limit_tip = config.acc_limit_tip;
+      ROS_INFO("Config xy tolerance: %f", config.xy_goal_tolerance);
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
       limits.prune_plan = config.prune_plan;
@@ -103,6 +104,10 @@ namespace dwa_local_planner {
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
       // odom_helper_.setWheelbase(config.wheelbase);
+
+      // update latched stop rotate controller configuration
+      ROS_INFO("Updating latching to  %d", config.latch_xy_goal_tolerance);
+      latchedStopRotateController_.setLatch(config.latch_xy_goal_tolerance);
 
       // update dwa specific configuration
       dp_->reconfigure(config);
