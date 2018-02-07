@@ -36,8 +36,7 @@ public:
   }
 
   void setLatch(bool latch_xy_goal_tolerance) {
-    //latch_xy_goal_tolerance_ = latch_xy_goal_tolerance;
-    latch_xy_goal_tolerance_ = false;
+    latch_xy_goal_tolerance_ = latch_xy_goal_tolerance;
   }
 
   /**
