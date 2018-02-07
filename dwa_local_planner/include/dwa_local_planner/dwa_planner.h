@@ -57,6 +57,7 @@
 #include <base_local_planner/local_planner_util.h>
 #include <base_local_planner/simple_trajectory_generator.h>
 #include <base_local_planner/follower_trajectory_generator.h>
+#include <base_local_planner/point_and_shoot_trajectory_generator.h>
 #include <base_local_planner/stationary_trajectory_generator.h>
 #include <base_local_planner/turn_in_place_trajectory_generator.h>
 
@@ -195,6 +196,7 @@ namespace dwa_local_planner {
       base_local_planner::StationaryTrajectoryGenerator stationary_generator_;
       base_local_planner::TurnInPlaceTrajectoryGenerator cw_tip_generator_;
       base_local_planner::TurnInPlaceTrajectoryGenerator ccw_tip_generator_;
+      base_local_planner::PointAndShootTrajectoryGenerator pas_generator_;
 
       base_local_planner::OscillationCostFunction oscillation_costs_;
       base_local_planner::HeadingCostFunction heading_costs_;

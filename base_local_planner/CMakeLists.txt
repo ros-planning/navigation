@@ -103,6 +103,7 @@ add_library(base_local_planner
     src/latched_stop_rotate_controller.cpp
     src/local_planner_util.cpp
     src/odometry_helper_ros.cpp
+    src/point_and_shoot_trajectory_generator.cpp
     src/point_grid.cpp
     src/costmap_model.cpp
     src/simple_scored_sampling_planner.cpp
@@ -111,7 +112,7 @@ add_library(base_local_planner
     src/speed_limiters/shadow_speed_limiter.cpp
     src/speed_limiters/path_speed_limiter.cpp
     src/speed_limiters/obstacle_speed_limiter.cpp
-    src/speed_limiters/external_speed_limiter.cpp    
+    src/speed_limiters/external_speed_limiter.cpp
     src/stationary_trajectory_generator.cpp
     src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp
