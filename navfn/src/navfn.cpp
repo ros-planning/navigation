@@ -289,12 +289,6 @@ namespace navfn {
   bool
     NavFn::calcNavFnDijkstra(bool atStart)
     {
-#if 0
-      static char costmap_filename[1000];
-      static int file_number = 0;
-      snprintf( costmap_filename, 1000, "navfn-dijkstra-costmap-%04d", file_number++ );
-      savemap( costmap_filename );
-#endif
       setupNavFn(true);
 
       // calculate the nav fn and path
@@ -352,37 +346,6 @@ namespace navfn {
   float *NavFn::getPathX() { return pathx; }
   float *NavFn::getPathY() { return pathy; }
   int    NavFn::getPathLen() { return npath; }
-
-
-  //
-  // simple obstacle setup for tests
-  //
-
-  void
-    NavFn::setObs()
-    {
-#if 0
-      // set up a simple obstacle
-      ROS_INFO("[NavFn] Setting simple obstacle\n");
-      int xx = nx/3;
-      for (int i=ny/3; i<ny; i++)
-        costarr[i*nx + xx] = COST_OBS;
-      xx = 2*nx/3;
-      for (int i=ny/3; i<ny; i++)
-        costarr[i*nx + xx] = COST_OBS;
-
-      xx = nx/4;
-      for (int i=20; i<ny-ny/3; i++)
-        costarr[i*nx + xx] = COST_OBS;
-      xx = nx/2;
-      for (int i=20; i<ny-ny/3; i++)
-        costarr[i*nx + xx] = COST_OBS;
-      xx = 3*nx/4;
-      for (int i=20; i<ny-ny/3; i++)
-        costarr[i*nx + xx] = COST_OBS;
-#endif
-    }
-
 
   // inserting onto the priority blocks
 #define push_cur(n)  { if (n>=0 && n<ns && !pending[n] && \

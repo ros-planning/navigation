@@ -203,9 +203,6 @@ positions at about 1/2 cell resolution; else returns 0.
        */
       void initCost(int k, float v); /**< initialize cell <k> with cost <v>, for propagation */
 
-      /** simple obstacle for testing */
-      void setObs();
-
       /** propagation */
 
       /**
