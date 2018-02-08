@@ -842,10 +842,9 @@ namespace move_base {
       }
 
       //we also want to check if we've changed global frames because we need to transform our goal pose
-      if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
-        if (!move_base_goal->use_target_frame) {
-          goal = goalToGlobalFrame(goal);
-        }
+      if(!move_base_goal->use_target_frame
+        && goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
+        goal = goalToGlobalFrame(goal);
 
         //we want to go back to the planning state for the next execution cycle
         recovery_index_ = 0;
