@@ -61,7 +61,7 @@ void ClearCostmapRecovery::initialize(std::string name, tf::TransformListener* t
     private_nh.param("reset_distance", reset_distance_, 3.0);
     
     std::vector<std::string> clearable_layers_default, clearable_layers;
-    clearable_layers_default.push_back( std::string("obstacles") );
+    clearable_layers_default.push_back( std::string("obstacle_layer") );
     private_nh.param("layer_names", clearable_layers, clearable_layers_default);
 
     for(unsigned i=0; i < clearable_layers.size(); i++) {
