@@ -735,6 +735,14 @@ namespace move_base {
       return;
     }
 
+    if (move_base_goal->use_target_frame &&
+      move_base_goal->target_pose.header.frame_id.empty())
+    {
+      as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::INVALID_GOAL_FRAME),
+        "Aborting on goal because it was sent with use_target_frame = true, but no target frame");
+      return;
+    }
+
     if (controller_thread_affinity_ >= 0)
     {
       if (setThreadAffinity(controller_thread_affinity_))

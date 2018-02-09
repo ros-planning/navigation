@@ -114,6 +114,7 @@ namespace dwa_local_planner {
 
     stop_time_buffer_ = config.stop_time_buffer;
     oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist, config.oscillation_reset_angle);
+    oscillation_costs_.setEnabled(config.oscillation_critic_enabled);
     forward_point_distance_ = config.forward_point_distance;
     goal_front_costs_.setXShift(forward_point_distance_);
     alignment_costs_.setXShift(forward_point_distance_);
