@@ -107,9 +107,7 @@ namespace base_local_planner {
   }
 
   //calculate the cost of a ray-traced line
-  double CostmapModel::lineCost(int x0, int x1, 
-      int y0, int y1){
-    
+  double CostmapModel::lineCost(int x0, int x1, int y0, int y1) const {
     double line_cost = 0.0;
     double point_cost = -1.0;
 
@@ -127,7 +125,7 @@ namespace base_local_planner {
     return line_cost;
   }
 
-  double CostmapModel::pointCost(int x, int y){
+  double CostmapModel::pointCost(int x, int y) const {
     unsigned char cost = costmap_.getCost(x, y);
     //if the cell is in an obstacle the path is invalid
     //if(cost == LETHAL_OBSTACLE){
