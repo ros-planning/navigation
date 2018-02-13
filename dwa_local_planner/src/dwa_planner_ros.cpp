@@ -94,7 +94,6 @@ namespace dwa_local_planner {
       limits.acc_lim_theta = config.acc_lim_theta;
       limits.acc_limit_trans = config.acc_limit_trans;
       limits.acc_limit_tip = config.acc_limit_tip;
-      ROS_INFO("Config xy tolerance: %f", config.xy_goal_tolerance);
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
       limits.prune_plan = config.prune_plan;
