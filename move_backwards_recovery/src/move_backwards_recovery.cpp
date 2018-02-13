@@ -30,7 +30,7 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     private_nh.param("linear_start_tolerance", linearStartTolerance_, 0.05);
     private_nh.param("angular_start_tolerance", angularStartTolerance_, 0.1);
     private_nh.param("max_recoveries_per_goal", maxRecoveriesPerGoal_, 3);
-    private_nh.param("max_recoveries_reset_distance", maxRecoveriesResetDistance_, 1.0);
+    private_nh.param("max_recoveries_reset_distance", maxRecoveriesResetDistance_, 1.5);
 
     footprint_ = costmap_2d::makeFootprintFromParams(private_nh);
     if (footprint_.size() < 3) {
