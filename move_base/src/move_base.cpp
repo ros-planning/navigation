@@ -743,6 +743,8 @@ namespace move_base {
       return;
     }
 
+    notifyRecoveriesOfNewGoal();
+
     if (controller_thread_affinity_ >= 0)
     {
       if (setThreadAffinity(controller_thread_affinity_))
@@ -1295,6 +1297,12 @@ namespace move_base {
     move_base_msgs::MoveBaseResult output;
     output.failure_code = failure_code;
     return output;
+  }
+
+  void MoveBase::notifyRecoveriesOfNewGoal() {
+    for (auto behavior : recovery_behaviors_) {
+      behavior->newGoalReceived();
+    }
   }
 
 };

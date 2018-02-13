@@ -49,8 +49,8 @@ namespace nav_core {
       /**
        * @brief  Initialization function for the RecoveryBehavior
        * @param tf A pointer to a transform listener
-       * @param global_costmap A pointer to the global_costmap used by the navigation stack 
-       * @param local_costmap A pointer to the local_costmap used by the navigation stack 
+       * @param global_costmap A pointer to the global_costmap used by the navigation stack
+       * @param local_costmap A pointer to the local_costmap used by the navigation stack
        */
       virtual void initialize(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap) = 0;
 
@@ -63,6 +63,11 @@ namespace nav_core {
        * @brief  Virtual destructor for the interface
        */
       virtual ~RecoveryBehavior(){}
+
+      /**
+       * @brief   Indicates that a new goal has been received, allowing behaviors to be reset
+       */
+      virtual void newGoalReceived() {};
 
     protected:
       RecoveryBehavior(){}
