@@ -24,6 +24,8 @@ namespace move_backwards_recovery{
 
       ~MoveBackRecovery();
 
+      void newGoalReceived();
+
     private:
       costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
       costmap_2d::Costmap2D costmap_;
@@ -40,6 +42,10 @@ namespace move_backwards_recovery{
       double linearStartTolerance_;
       double angularStartTolerance_;
       bool runOnce_;
+
+      int numRecoveriesSinceLastGoal_;
+      int maxRecoveriesPerGoal_;
+      double maxRecoveriesResetDistance_;
 
       base_local_planner::CostmapModel* world_model_;
       static constexpr auto RECOVERY_VELOCITY_CMD = "/cmd_vel";
