@@ -219,7 +219,8 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
   {
     XmlRpc::XmlRpcValue footprint_xmlrpc;
     nh.getParam(full_param_name, footprint_xmlrpc);
-    if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString)
+    if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString &&
+        footprint_xmlrpc != "" && footprint_xmlrpc != "[]")
     {
       if (makeFootprintFromString(std::string(footprint_xmlrpc), points))
       {
