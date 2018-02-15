@@ -73,7 +73,6 @@ namespace base_local_planner {
       virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius);
 
-    private:
       /**
        * @brief  Rasterizes a line in the costmap grid and checks for collisions
        * @param x0 The x position of the first cell in grid coordinates
@@ -82,7 +81,7 @@ namespace base_local_planner {
        * @param y1 The y position of the second cell in grid coordinates
        * @return A positive cost for a legal line... negative otherwise
        */
-      double lineCost(int x0, int x1, int y0, int y1);
+      double lineCost(int x0, int x1, int y0, int y1) const;
 
       /**
        * @brief  Checks the cost of a point in the costmap
@@ -90,8 +89,9 @@ namespace base_local_planner {
        * @param y The y position of the point in cell coordinates 
        * @return A positive cost for a legal point... negative otherwise
        */
-      double pointCost(int x, int y);
+      double pointCost(int x, int y) const;
 
+    private:
       const costmap_2d::Costmap2D& costmap_; ///< @brief Allows access of costmap obstacle information
 
   };
