@@ -143,13 +143,15 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
                             pcl_conversions::fromPCL(cloud.header).stamp, origin_frame);
     tf_.waitForTransform(global_frame_, local_origin.frame_id_, local_origin.stamp_, ros::Duration(0.5));
     tf_.transformPoint(global_frame_, local_origin, global_origin);
-    observation_list_.front().origin_.x = global_origin.getX();
-    observation_list_.front().origin_.y = global_origin.getY();
-    observation_list_.front().origin_.z = global_origin.getZ();
+    
+    Observation &observation_front = observation_list_.front();
+    observation_front.origin_.x = global_origin.getX();
+    observation_front.origin_.y = global_origin.getY();
+    observation_front.origin_.z = global_origin.getZ();
 
     // make sure to pass on the raytrace/obstacle range of the observation buffer to the observations
-    observation_list_.front().raytrace_range_ = raytrace_range_;
-    observation_list_.front().obstacle_range_ = obstacle_range_;
+    observation_front.raytrace_range_ = raytrace_range_;
+    observation_front.obstacle_range_ = obstacle_range_;
 
     pcl::PointCloud < pcl::PointXYZ > global_frame_cloud;
 
@@ -158,8 +160,8 @@ void ObservationBuffer::bufferCloud(const pcl::PointCloud<pcl::PointXYZ>& cloud)
     global_frame_cloud.header.stamp = cloud.header.stamp;
 
     // now we need to remove observations from the cloud that are below or above our height thresholds
-    pcl::PointCloud < pcl::PointXYZ > &observation_cloud = *(observation_list_.front().cloud_);
-    std::vector<bool> &in_range = observation_list_.front().within_range_;
+    pcl::PointCloud < pcl::PointXYZ > &observation_cloud = *(observation_front.cloud_);
+    std::vector<bool> &in_range = observation_front.within_range_;
 
     unsigned int cloud_size = global_frame_cloud.points.size();
     observation_cloud.points = global_frame_cloud.points; // copy all the points

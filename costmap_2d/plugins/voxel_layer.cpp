@@ -152,14 +152,15 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
     for (unsigned int i = 0; i < cloud.points.size(); ++i)
     {
+      const pcl::PointXYZ& point = cloud.points[i];
       // if the obstacle is too high or too far away from the robot we won't add it
-      if (in_range[i] == false || cloud.points[i].z > max_obstacle_height_)
+      if (in_range[i] == false || point.z > max_obstacle_height_ )
         continue;
 
       // compute the squared distance from the hitpoint to the pointcloud's origin
-      double sq_dist = (cloud.points[i].x - obs.origin_.x) * (cloud.points[i].x - obs.origin_.x)
-          + (cloud.points[i].y - obs.origin_.y) * (cloud.points[i].y - obs.origin_.y)
-          + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
+      double sq_dist = (point.x - obs.origin_.x) * (point.x - obs.origin_.x)
+          + (point.y - obs.origin_.y) * (point.y - obs.origin_.y)
+          + (point.z - obs.origin_.z) * (point.z - obs.origin_.z);
 
       // if the point is far enough away... we won't consider it
       if (sq_dist >= sq_obstacle_range)
@@ -167,12 +168,12 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
       // now we need to compute the map coordinates for the observation
       unsigned int mx, my, mz;
-      if (cloud.points[i].z < origin_z_)
+      if (point.z < origin_z_)
       {
-        if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, origin_z_, mx, my, mz))
+        if (!worldToMap3D(point.x, point.y, origin_z_, mx, my, mz))
           continue;
       }
-      else if (!worldToMap3D(cloud.points[i].x, cloud.points[i].y, cloud.points[i].z, mx, my, mz))
+      else if (!worldToMap3D(point.x, point.y, point.z, mx, my, mz))
       {
         continue;
       }
@@ -183,7 +184,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
         unsigned int index = getIndex(mx, my);
 
         costmap_[index] = LETHAL_OBSTACLE;
-        touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
+        touch((double)point.x, (double)point.y, min_x, min_y, max_x, max_y);
       }
     }
   }
