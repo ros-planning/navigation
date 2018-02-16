@@ -146,13 +146,14 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
     const Observation& obs = *it;
 
     const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
+    const std::vector<bool>& in_range = obs.within_range_;
 
     double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
 
     for (unsigned int i = 0; i < cloud.points.size(); ++i)
     {
       // if the obstacle is too high or too far away from the robot we won't add it
-      if (cloud.points[i].z > max_obstacle_height_)
+      if (in_range[i] == false || cloud.points[i].z > max_obstacle_height_)
         continue;
 
       // compute the squared distance from the hitpoint to the pointcloud's origin
@@ -313,10 +314,11 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
     double t = 1.0;
 
     // we can only raytrace to a maximum z height
-    if (wpz > max_obstacle_height_)
+    const double max_z = std::min(max_obstacle_height_, size_z_ * z_resolution_ );
+    if (wpz > max_z)
     {
       // we know we want the vector's z value to be max_z
-      t = std::max(0.0, std::min(t, (max_obstacle_height_ - 0.01 - oz) / c));
+      t = std::max(0.0, std::min(t, (max_z - 0.01 - oz) / c));
     }
     // and we can only raytrace down to the floor
     else if (wpz < origin_z_)
