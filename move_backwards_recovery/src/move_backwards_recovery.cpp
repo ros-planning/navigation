@@ -12,7 +12,8 @@ MoveBackRecovery::MoveBackRecovery(): global_costmap_(NULL), local_costmap_(NULL
   lastEndingX_(0), lastEndingY_(0), lastEndingTheta_(0),
   linearStartTolerance_(-1), angularStartTolerance_(-1), runOnce_(false),
   maxRecoveriesPerGoal_(-1), numRecoveriesSinceLastGoal_(0),
-  maxRecoveriesResetDistance_(1.0) {}
+  maxRecoveriesResetDistance_(1.0), inPlaceRecoveryCount_(0),
+  maxInPlaceRecoveries_(2) {}
 
 void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
@@ -31,6 +32,7 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     private_nh.param("angular_start_tolerance", angularStartTolerance_, 0.1);
     private_nh.param("max_recoveries_per_goal", maxRecoveriesPerGoal_, 3);
     private_nh.param("max_recoveries_reset_distance", maxRecoveriesResetDistance_, 1.5);
+    private_nh.param("max_in_place_recoveries", maxInPlaceRecoveries_, 2);
 
     footprint_ = costmap_2d::makeFootprintFromParams(private_nh);
     if (footprint_.size() < 3) {
@@ -99,9 +101,17 @@ void MoveBackRecovery::runBehavior(){
     && std::fabs(originY - lastEndingY_) < linearStartTolerance_
     && std::fabs(angles::normalize_angle(originTheta - lastEndingTheta_)) < angularStartTolerance_)
   {
-    ROS_INFO_NAMED("move_backwards_recovery",
-      "Not moving backwards because the robot has not moved since the recovery last triggered.");
-    return;
+    if (inPlaceRecoveryCount_ >= maxInPlaceRecoveries_)
+    {
+      ROS_INFO_NAMED("move_backwards_recovery",
+        "Not moving backwards because the robot has not moved since the recovery last triggered.");
+      return;
+    }
+    inPlaceRecoveryCount_++;
+  }
+  else
+  {
+    inPlaceRecoveryCount_ = 0;
   }
   runOnce_ = true;
 

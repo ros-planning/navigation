@@ -46,6 +46,8 @@ namespace move_backwards_recovery{
       int numRecoveriesSinceLastGoal_;
       int maxRecoveriesPerGoal_;
       double maxRecoveriesResetDistance_;
+      int inPlaceRecoveryCount_;
+      int maxInPlaceRecoveries_;
 
       base_local_planner::CostmapModel* world_model_;
       static constexpr auto RECOVERY_VELOCITY_CMD = "/cmd_vel";
