@@ -76,6 +76,7 @@ namespace move_base {
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
     private_nh.param("global_costmap/global_frame", global_frame_, std::string("map"));
     private_nh.param("planner_frequency", planner_frequency_, 0.0);
+    private_nh.param("planner_retry_frequency", planner_retry_frequency_, 10.0);
     private_nh.param("controller_frequency", controller_frequency_, 20.0);
     private_nh.param("planner_patience", planner_patience_, 5.0);
     private_nh.param("controller_patience", controller_patience_, 15.0);
@@ -214,6 +215,7 @@ namespace move_base {
       c_freq_change_ = true;
     }
 
+    planner_retry_frequency_ = config.planner_retry_frequency;
     planner_patience_ = config.planner_patience;
     controller_patience_ = config.controller_patience;
     max_planning_retries_ = config.max_planning_retries;
@@ -642,8 +644,14 @@ namespace move_base {
       lock.lock();
 
       //setup sleep interface if needed
-      if(planner_frequency_ > 0){
-        ros::Duration sleep_time = (start_time + ros::Duration(1.0/planner_frequency_)) - ros::Time::now();
+      {
+        ros::Duration sleep_time = ros::Duration(0.0);
+        if(planner_frequency_ > 0){
+          sleep_time = (start_time + ros::Duration(1.0/planner_frequency_)) - ros::Time::now();
+        }
+        else if(planner_retry_frequency_ > 0 && runPlanner_){
+          sleep_time = (start_time + ros::Duration(1.0/planner_retry_frequency_)) - ros::Time::now();
+        }
         if (sleep_time > ros::Duration(0.0)){
           wait_for_wake = true;
           timer = n.createTimer(sleep_time, &MoveBase::wakePlanner, this);
