@@ -1,0 +1,7 @@
+<library path="lib/libomg_local_planner">
+  <class name="omg_local_planner/OMGPlannerROS" type="omg_local_planner::OMGPlannerROS" base_class_type="nav_core::BaseLocalPlanner">
+    <description>
+      Implementation of a local planner using omg-tools.
+    </description>
+  </class>
+</library>
