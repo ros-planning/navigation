@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>omg_local_planner</name>
+  <version>0.0.0</version>
+  <description>The omg_local_planner package</description>
+
+  <maintainer email="niko@intermodalics.eu">niko</maintainer>
+
+
+  <license>Closed</license>
+
+
+  <author email="niko@intermodalics.eu">Nikolaos Tsiogkas</author> 
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>base_local_planner</depend>
+  <depend>costmap_2d</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_core</depend>
+  <depend>nav_msgs</depend>
+  <depend>omg_ros_nav_bridge</depend>
+  <depend>pluginlib</depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>tf</depend>
+  <depend>rosconsole</depend>
+
+  <export>
+    <nav_core plugin="${prefix}/blp_plugin.xml" />
+  </export>
+</package>
