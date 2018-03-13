@@ -1263,11 +1263,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
   if(resampled || force_publication)
   {
-    if (!resampled)
-    {
-	    // re-compute the cluster statistics
-	    pf_cluster_stats(pf_, pf_->sets);
-    }
     // Read out the current hypotheses
     double max_weight = 0.0;
     int max_weight_hyp = -1;
