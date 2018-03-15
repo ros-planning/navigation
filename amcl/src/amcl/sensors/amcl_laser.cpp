@@ -297,7 +297,7 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
 
             // Gaussian model
             p += pow(z, 2.0);
-            assert(! std::isnan(p));
+            assert(! isnan(p));
         }
 
         assert( p >= 0.0 );
@@ -337,21 +337,21 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
 
         if (sample->score > 1.0) assert( stepped_count <= expected_count );
         if (sample->score < 0.0) { printf("Score < 0!!! = %.10e\n", sample->score);  assert(false);}
-        assert(! std::isnan(sample->score));
-        assert(! std::isnan(sample->weight));
+        assert(! isnan(sample->score));
+        assert(! isnan(sample->weight));
 
         // use averaged to calculate prob accumulated
         p = pow ( self->z_hit * score + z_rand_pz, stepped_count) * pow(0.5 + z_rand_pz, (double)(expected_count - stepped_count));
         sample->weight *= p;
 
-        assert(! std::isnan(sample->weight));
+        assert(! isnan(sample->weight));
         total_weight += sample->weight;
 
 #ifdef BUILD_DEBUG
         if (p > max_p) max_p = p;
         for (i = 0; i < data->range_count; i += step)
         {
-            if (std::isnan(data->pz[i])) data->pz[i] = 0.0;
+            if (isnan(data->pz[i])) data->pz[i] = 0.0;
             data->pz[i] += sample->weight * rays_pz[i];
         }
 #endif

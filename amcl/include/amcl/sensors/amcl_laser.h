@@ -32,9 +32,7 @@
 #include "amcl_sensor.h"
 #include "../map/map.h"
 
-#ifdef BUILD_DEBUG
 #include <vector>
-#endif
 
 namespace amcl
 {
