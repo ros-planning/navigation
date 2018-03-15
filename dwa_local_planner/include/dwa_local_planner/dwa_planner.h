@@ -118,7 +118,8 @@ namespace dwa_local_planner {
        * @param  new_plan The new global plan
        */
       void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose,
-          const std::vector<geometry_msgs::PoseStamped>& new_plan);
+          const std::vector<geometry_msgs::PoseStamped>& new_plan,
+          std::vector<geometry_msgs::Point> footprint_spec);
 
       /**
        * @brief Get the period at which the local planner is expected to run
