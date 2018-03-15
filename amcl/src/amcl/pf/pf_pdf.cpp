@@ -33,7 +33,7 @@
 //#include <gsl/gsl_randist.h>
 
 #include "pf_pdf.h"
-
+#include <random>
 // Random number generator seed value
 static unsigned int pf_pdf_seed;
 
@@ -41,6 +41,7 @@ static unsigned int pf_pdf_seed;
 /**************************************************************************
  * Gaussian
  *************************************************************************/
+std::default_random_engine generator;
 
 // Create a gaussian pdf
 pf_pdf_gaussian_t *pf_pdf_gaussian_alloc(pf_vector_t x, pf_matrix_t cx)
@@ -48,7 +49,7 @@ pf_pdf_gaussian_t *pf_pdf_gaussian_alloc(pf_vector_t x, pf_matrix_t cx)
   pf_matrix_t cd;
   pf_pdf_gaussian_t *pdf;
 
-  pdf = calloc(1, sizeof(pf_pdf_gaussian_t));
+  pdf = (pf_pdf_gaussian_t *)calloc(1, sizeof(pf_pdf_gaussian_t));
 
   pdf->x = x;
   pdf->cx = cx;
@@ -61,10 +62,30 @@ pf_pdf_gaussian_t *pf_pdf_gaussian_alloc(pf_vector_t x, pf_matrix_t cx)
   pdf->cd.v[1] = sqrt(cd.m[1][1]);
   pdf->cd.v[2] = sqrt(cd.m[2][2]);
 
+#ifdef BUILD_DEBUG
+  printf("\n[pf_pdf_gaussian_alloc] pdf mean = %lf, %lf, yaw %lf\n", x.v[0], x.v[1], x.v[2]);
+  printf("\t cov = \n");
+  for (int r = 0; r < 3; ++r) {
+      printf("\t\t");
+      for (int c = 0; c < 3; ++c) {
+          printf("%lf\t", cx.m[r][c]);
+      }
+      printf("\n");
+  }
+  printf("\n[pf_pdf_gaussian_alloc]\ncd.m = \n");
+  for (int i = 0; i < 3; i++)
+  {
+    for (int j = 0; j < 3; j++) {
+      printf("%lf\t", i, j, cd.m[i][j]);
+    }
+    printf("\n");
+  }
+#endif
+
   // Initialize the random number generator
-  //pdf->rng = gsl_rng_alloc(gsl_rng_taus);
-  //gsl_rng_set(pdf->rng, ++pf_pdf_seed);
+  generator.seed(pf_pdf_seed);
   srand48(++pf_pdf_seed);
+
 
   return pdf;
 }
@@ -78,29 +99,6 @@ void pf_pdf_gaussian_free(pf_pdf_gaussian_t *pdf)
   return;
 }
 
-
-/*
-// Compute the value of the pdf at some point [x].
-double pf_pdf_gaussian_value(pf_pdf_gaussian_t *pdf, pf_vector_t x)
-{
-  int i, j;
-  pf_vector_t z;
-  double zz, p;
-
-  z = pf_vector_sub(x, pdf->x);
-
-  zz = 0;
-  for (i = 0; i < 3; i++)
-    for (j = 0; j < 3; j++)
-      zz += z.v[i] * pdf->cxi.m[i][j] * z.v[j];
-
-  p =  1 / (2 * M_PI * pdf->cxdet) * exp(-zz / 2);
-
-  return p;
-}
-*/
-
-
 // Generate a sample from the the pdf.
 pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf)
 {
@@ -111,8 +109,10 @@ pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf)
   // Generate a random vector
   for (i = 0; i < 3; i++)
   {
-    //r.v[i] = gsl_ran_gaussian(pdf->rng, pdf->cd.v[i]);
     r.v[i] = pf_ran_gaussian(pdf->cd.v[i]);
+// #ifdef BUILD_DEBUG
+//     printf("r.v[%d] = %lf  ", i, r.v[i]);
+// #endif
   }
 
   for (i = 0; i < 3; i++)
@@ -122,6 +122,9 @@ pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf)
       x.v[i] += pdf->cr.m[i][j] * r.v[j];
   }
 
+  // double temp = x.v[2];
+  // x.v[2] = x.v[0];
+  // x.v[0] = temp;
   return x;
 }
 
@@ -129,82 +132,8 @@ pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf)
 // deviation sigma.
 // We use the polar form of the Box-Muller transformation, explained here:
 //   http://www.taygeta.com/random/gaussian.html
-double pf_ran_gaussian(double sigma)
+double pf_ran_gaussian(double stddev)
 {
-  double x1, x2, w, r;
-
-  do
-  {
-    do { r = drand48(); } while (r==0.0);
-    r = 2.0* drand48() - 1.0;
-    x1 = 2.0 * r - 1.0;
-    do { r = drand48(); } while (r==0.0);
-    x2 = 2.0 * r - 1.0;
-    w = x1*x1 + x2*x2;
-  } while(w > 1.0 || w==0.0);
-
-  return(sigma * x2 * sqrt(-2.0*log(w)/w));
+  std::normal_distribution<double> noise(0.0, stddev);
+  return noise(generator);
 }
-
-#if 0
-
-/**************************************************************************
- * Discrete
- * Note that GSL v1.3 and earlier contains a bug in the discrete
- * random generator.  A patched version of the the generator is included
- * in gsl_discrete.c.
- *************************************************************************/
-
-
-// Create a discrete pdf
-pf_pdf_discrete_t *pf_pdf_discrete_alloc(int count, double *probs)
-{
-  pf_pdf_discrete_t *pdf;
-
-  pdf = calloc(1, sizeof(pf_pdf_discrete_t));
-
-  pdf->prob_count = count;
-  pdf->probs = malloc(count * sizeof(double));
-  memcpy(pdf->probs, probs, count * sizeof(double));
-
-  // Initialize the random number generator
-  pdf->rng = gsl_rng_alloc(gsl_rng_taus);
-  gsl_rng_set(pdf->rng, ++pf_pdf_seed);
-
-  // Initialize the discrete distribution generator
-  pdf->ran = gsl_ran_discrete_preproc(count, probs);
-
-  return pdf;
-}
-
-
-// Destroy the pdf
-void pf_pdf_discrete_free(pf_pdf_discrete_t *pdf)
-{
-  gsl_ran_discrete_free(pdf->ran);
-  gsl_rng_free(pdf->rng);
-  free(pdf->probs);
-  free(pdf);
-  return;
-}
-
-
-// Compute the value of the probability of some element [i]
-double pf_pdf_discrete_value(pf_pdf_discrete_t *pdf, int i)
-{
-  return pdf->probs[i];
-}
-
-
-// Generate a sample from the the pdf.
-int pf_pdf_discrete_sample(pf_pdf_discrete_t *pdf)
-{
-  int i;
-
-  i = gsl_ran_discrete(pdf->rng, pdf->ran);
-  assert(i >= 0 && i < pdf->prob_count);
-
-  return i;
-}
-
-#endif

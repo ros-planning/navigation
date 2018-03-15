@@ -2,20 +2,6 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.14.2 (2017-08-14)
--------------------
-
-1.14.1 (2017-08-07)
--------------------
-* Reference Issue `#592 <https://github.com/ros-planning/navigation/issues/592>`_ Added warning to AMCL when map is published on ... (`#604 <https://github.com/ros-planning/navigation/issues/604>`_)
-* recompute cluster stat when force_publication
-* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
-* amcl: fix compilation with gcc v7
-* Added deps to amcl costmap_2d move_base (`#512 <https://github.com/ros-planning/navigation/issues/512>`_)
-* fix order of parameters (closes `#553 <https://github.com/ros-planning/navigation/issues/553>`_)
-* Fix potential string overflow and resource leak
-* Contributors: Dmitry Rozhkov, Laurent GEORGE, Martin Günther, Michael Ferguson, Peter Harliman Liem, mryellow, vik748
-
 1.14.0 (2016-05-20)
 -------------------
 * Allow AMCL to run from bag file to allow very fast testing.

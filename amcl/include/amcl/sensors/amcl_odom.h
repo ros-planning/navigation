@@ -34,6 +34,29 @@
 
 namespace amcl
 {
+double normalize(double z)
+{
+  return atan2(sin(z),cos(z));
+}
+
+double angle_diff(double a, double b)
+{
+  // double d1, d2;
+  a = normalize(a);
+  b = normalize(b);
+  // d1 = a-b;
+  // d2 = 2*M_PI - fabs(d1);
+  // if(d1 > 0)
+  //   d2 *= -1.0;
+  // if(fabs(d1) < fabs(d2))
+  //   return(d1);
+  // else
+  //   return(d2);
+  if (a < 0) a += 2*M_PI;
+  if (b < 0) b += 2*M_PI;
+
+  return normalize(a - b);
+}
 
 typedef enum
 {
@@ -58,16 +81,16 @@ class AMCLOdomData : public AMCLSensorData
 class AMCLOdom : public AMCLSensor
 {
   // Default constructor
-  public: AMCLOdom();
+  public: AMCLOdom(double _a_thresh = M_PI, double _d_thresh = 0);
 
-  public: void SetModelDiff(double alpha1, 
-                            double alpha2, 
-                            double alpha3, 
+  public: void SetModelDiff(double alpha1,
+                            double alpha2,
+                            double alpha3,
                             double alpha4);
 
-  public: void SetModelOmni(double alpha1, 
-                            double alpha2, 
-                            double alpha3, 
+  public: void SetModelOmni(double alpha1,
+                            double alpha2,
+                            double alpha3,
                             double alpha4,
                             double alpha5);
 
@@ -84,12 +107,16 @@ class AMCLOdom : public AMCLSensor
 
   // Current data timestamp
   private: double time;
-  
+
   // Model type
   private: odom_model_t model_type;
 
   // Drift parameters
   private: double alpha1, alpha2, alpha3, alpha4, alpha5;
+
+  private:
+    const double a_thresh;
+    const double d_thresh;
 };
 
 
