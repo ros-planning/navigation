@@ -12,9 +12,9 @@ find_package(catkin REQUIRED
 
 find_package(Boost REQUIRED)
 
-set(MRPT_DONT_USE_DBG_LIBS true)
-find_package( MRPT 1.4.0 EXACT REQUIRED base )
-
+# option to extrapolate between updates using odometry;
+# current implementation requires MRPT
+option(BUILD_EXTRAPOLATION "Build pose extrapolation" OFF)
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
@@ -67,17 +67,30 @@ add_library(amcl_sensors
 
 target_link_libraries(amcl_sensors amcl_map amcl_pf)
 
-add_executable(amcl
-                    src/pose_extrapolate.cpp
-                    src/amcl_node.cpp)
-add_dependencies(amcl amcl_gencfg)
+# build the main add_executable
 
-target_link_libraries(amcl
+set(AMCL_LINK_LIBS
     amcl_sensors amcl_map amcl_pf
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
-    ${MRPT_LIBS}
 )
+
+set(AMCL_SRCS
+    src/amcl_node.cpp
+)
+
+if (BUILD_EXTRAPOLATION)
+    set(MRPT_DONT_USE_DBG_LIBS true)
+    find_package( MRPT 1.4.0 EXACT REQUIRED base ) # haven't tested with other versions yet
+    list(APPEND AMCL_SRCS src/pose_extrapolate.cpp)
+    list(APPEND AMCL_LINK_LIBS ${MRPT_LIBS})
+endif (BUILD_EXTRAPOLATION)
+
+add_executable(amcl ${AMCL_SRCS})
+
+add_dependencies(amcl amcl_gencfg)
+
+target_link_libraries(amcl ${AMCL_LINK_LIBS})
 
 install( TARGETS
     amcl amcl_sensors amcl_map amcl_pf
