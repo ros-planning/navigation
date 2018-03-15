@@ -78,8 +78,11 @@ AmclNode::AmclNode() :
     private_nh_("~"),
     initial_pose_hyp_(NULL),
     first_map_received_(false),
-    first_reconfigure_call_(true),
+    first_reconfigure_call_(true)
+#ifdef BUILD_EXTRAPOLATION
+    ,
     pose_extrapolator_ptr(boost::make_shared<PoseExtrapolator>("amcl"))
+#endif
 {
     boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
@@ -524,7 +527,9 @@ AmclNode::checkLaserReceived(const ros::TimerEvent& event)
     ROS_WARN("No laser scan received (and thus no pose updates have been published) for %f seconds.  Verify that data is being published on the %s topic.",
         d.toSec(),
         ros::names::resolve(scan_topic_).c_str());
+#ifdef BUILD_EXTRAPOLATION
     pose_extrapolator_ptr->pause();
+#endif
 }
 
 void
@@ -815,7 +820,7 @@ AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
             int lendx = i + len_rows;
             int rlendx = rotateIndex(rotate90x, i, j, map_msg.info.width, map_msg.info.height);
             ROS_ASSERT(rlendx < map_elem);
-            
+
             if(map_msg.data[lendx] == 0) map->cells[rlendx].occ_state = -1;
             else if(map_msg.data[lendx] == 100) map->cells[rlendx].occ_state = +1;
             else map->cells[rlendx].occ_state = 0;
@@ -834,7 +839,9 @@ AmclNode::~AmclNode()
 {
     freeMapDependentMemory();
 
+#ifdef BUILD_EXTRAPOLATION
     if (pose_extrapolator_ptr) pose_extrapolator_ptr->shutdown();
+#endif
     delete tfb_;
     delete tf_;
     delete laser_scan_sub_;
@@ -945,7 +952,9 @@ nav_msgs::SetMap::Response& res)
 void
 AmclNode::odomReceived(const nav_msgs::Odometry& odom)
 {
+#ifdef BUILD_EXTRAPOLATION
     pose_extrapolator_ptr->newOdom(odom);
+#endif
 }
 
 void
@@ -1265,7 +1274,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
             }
 
             pose_pub_.publish(p);
+#ifdef BUILD_EXTRAPOLATION
             pose_extrapolator_ptr->newEstimate(p);
+#endif
 
             ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",
                 hyps[max_weight_hyp].pf_pose_mean.v[0],
@@ -1400,7 +1411,9 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
         return;
     }
 
+#ifdef BUILD_EXTRAPOLATION
     pose_extrapolator_ptr->newInit(msg);
+#endif
 
     // In case the client sent us a pose estimate in the past, integrate the
     // intervening odometric change.

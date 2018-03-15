@@ -13,7 +13,12 @@
 #include "pf/pf.h"
 #include "sensors/amcl_odom.h"
 #include "sensors/amcl_laser.h"
+
+#ifdef BUILD_EXTRAPOLATION
+// NOTE MRPT dependency
+// - if undesirable, replace calculaiton via MRPT pose classes with another library
 #include "pose_extrapolate.hpp"
+#endif
 
 #include "ros/assert.h"
 
@@ -217,7 +222,9 @@ private:
 
     // To publish poses  between tf update by cancatenating last published tf with incoming odoms
     ros::Subscriber odom_sub_;
+#ifdef BUILD_EXTRAPOLATION
     boost::shared_ptr<PoseExtrapolator> pose_extrapolator_ptr;
+#endif
 
     amcl_hyp_t* initial_pose_hyp_;
     bool first_map_received_;

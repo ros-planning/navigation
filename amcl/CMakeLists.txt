@@ -40,20 +40,20 @@ if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|re
 endif()
 
 add_library(amcl_pf
-                    src/amcl/pf/pf.c
-                    src/amcl/pf/pf_kdtree.c
-                    src/amcl/pf/pf_sampling.cpp
-                    src/amcl/pf/pf_pdf.cpp # normal distrubition rewrote; original file is .c
-                    src/amcl/pf/pf_vector.c
-                    src/amcl/pf/eig3.c
-                    src/amcl/pf/pf_draw.c)
+    src/amcl/pf/pf.c
+    src/amcl/pf/pf_kdtree.c
+    src/amcl/pf/pf_sampling.cpp
+    src/amcl/pf/pf_pdf.cpp # normal distrubition rewrote; original file is .c
+    src/amcl/pf/pf_vector.c
+    src/amcl/pf/eig3.c
+    src/amcl/pf/pf_draw.c)
 
 add_library(amcl_map
-                    src/amcl/map/map.c
-                    src/amcl/map/map_cspace.cpp
-                    src/amcl/map/map_range.c
-                    src/amcl/map/map_store.c
-                    src/amcl/map/map_draw.c)
+    src/amcl/map/map.c
+    src/amcl/map/map_cspace.cpp
+    src/amcl/map/map_range.c
+    src/amcl/map/map_store.c
+    src/amcl/map/map_draw.c)
 
 if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|relwithdebinfo)")
     add_library(amcl_debugger src/amcl/amcl_debug_msgs.cpp)
@@ -62,9 +62,9 @@ if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|re
 endif()
 
 add_library(amcl_sensors
-                    src/amcl/sensors/amcl_sensor.cpp
-                    src/amcl/sensors/amcl_odom.cpp
-                    src/amcl/sensors/amcl_laser.cpp)
+    src/amcl/sensors/amcl_sensor.cpp
+    src/amcl/sensors/amcl_odom.cpp
+    src/amcl/sensors/amcl_laser.cpp)
 
 target_link_libraries(amcl_sensors amcl_map amcl_pf)
 
@@ -83,6 +83,7 @@ set(AMCL_SRCS
 if (BUILD_EXTRAPOLATION)
     set(MRPT_DONT_USE_DBG_LIBS true)
     find_package( MRPT 1.4.0 EXACT REQUIRED base ) # haven't tested with other versions yet
+    add_definitions(-DBUILD_EXTRAPOLATION)
     list(APPEND AMCL_SRCS src/pose_extrapolate.cpp)
     list(APPEND AMCL_LINK_LIBS ${MRPT_LIBS})
 endif (BUILD_EXTRAPOLATION)
