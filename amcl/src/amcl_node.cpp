@@ -811,9 +811,11 @@ AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
         int len_rows = j * map_msg.info.width;
         for(int i = 0; i < map_msg.info.width;++i)
         {
+            // Ensure to rotate according to orientation in map_msg.info
             int lendx = i + len_rows;
             int rlendx = rotateIndex(rotate90x, i, j, map_msg.info.width, map_msg.info.height);
             ROS_ASSERT(rlendx < map_elem);
+            
             if(map_msg.data[lendx] == 0) map->cells[rlendx].occ_state = -1;
             else if(map_msg.data[lendx] == 100) map->cells[rlendx].occ_state = +1;
             else map->cells[rlendx].occ_state = 0;
@@ -856,7 +858,7 @@ const ros::Time& t, const std::string& f)
     catch(tf::TransformException e)
     {
         size_t t_count = t.toNSec();
-        ROS_WARN("Failed to get odom pose @ t = %lu (%s)", t_count, e.what());
+        ROS_WARN("Failed to get odom pose @ t = %lu, skipping scan (error: %s)", t_count, e.what());
         return false;
     }
     x = odom_pose.getOrigin().x();
@@ -920,13 +922,13 @@ std_srvs::Empty::Response& res)
     return true;
 }
 
-// force nomotion updates (amcl updating without requiring motion)
+// force no-motion updates (amcl updating without requiring motion)
 bool
 AmclNode::nomotionUpdateCallback(std_srvs::Empty::Request& req,
 std_srvs::Empty::Response& res)
 {
     m_force_update = true;
-    ROS_INFO("Requesting no-motion update");
+    ROS_INFO("Requesting forced no-motion update");
     return true;
 }
 
@@ -1145,9 +1147,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
             r = ldata.range_max;
             else
             r = laser_scan->ranges[i];
-            ldata.ranges[i].push_back(r);
+            ldata.ranges[i].emplace_back(r);
             // Compute bearing
-            ldata.ranges[i].push_back(angle_min + (i * angle_increment));
+            ldata.ranges[i].emplace_back(angle_min + (i * angle_increment));
         }
 
         lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata);

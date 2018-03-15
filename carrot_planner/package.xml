@@ -10,7 +10,8 @@
     <author>Sachin Chitta</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/carrot_planner</url>
 
