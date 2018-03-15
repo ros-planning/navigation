@@ -1,10 +1,11 @@
-#include <random>
-#include <assert.h>
-
 #include "pf.h"
 #include "pf_pdf.h"
 #include "pf_kdtree.h"
 
+#include <random>
+#include <cmath>
+#include <vector>
+#include <assert.h>
 
 // Compute the required number of samples, given that there are k bins
 // with samples in them.
