@@ -32,6 +32,9 @@
 #include "rtk.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Info for a node in the tree
 typedef struct pf_kdtree_node
@@ -78,7 +81,7 @@ typedef struct
 
 
 // Create a tree
-extern pf_kdtree_t *pf_kdtree_alloc(int max_size);
+extern pf_kdtree_t *pf_kdtree_alloc(int max_size, double cell_size, double angular_size);
 
 // Destroy a tree
 extern void pf_kdtree_free(pf_kdtree_t *self);
@@ -104,6 +107,10 @@ extern int pf_kdtree_get_cluster(pf_kdtree_t *self, pf_vector_t pose);
 // Draw the tree
 extern void pf_kdtree_draw(pf_kdtree_t *self, rtk_fig_t *fig);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

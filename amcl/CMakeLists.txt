@@ -1,19 +1,21 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(amcl)
 
+set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -std=gnu++11" )
 find_package(catkin REQUIRED
         COMPONENTS
-            message_filters
             rosbag
             roscpp
-            std_srvs
             tf
             dynamic_reconfigure
             nav_msgs
-            std_srvs
-        )
+            std_srvs)
 
 find_package(Boost REQUIRED)
+
+# option to extrapolate between updates using odometry;
+# current implementation requires MRPT
+option(BUILD_EXTRAPOLATION "Build pose extrapolation" OFF)
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
@@ -26,45 +28,71 @@ catkin_package(
         roscpp
         dynamic_reconfigure
         tf
-  CATKIN_DEPENDS nav_msgs std_srvs
   INCLUDE_DIRS include
   LIBRARIES amcl_sensors amcl_map amcl_pf
 )
 
-include_directories(include)
+include_directories(include/amcl include/amcl/map include/amcl/sensors include/amcl/pf)
 include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
+if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|relwithdebinfo)")
+    add_definitions(-DBUILD_DEBUG) ## for additional debug visualization as ros messages
+endif()
+
 add_library(amcl_pf
-                    src/amcl/pf/pf.c
-                    src/amcl/pf/pf_kdtree.c
-                    src/amcl/pf/pf_pdf.c
-                    src/amcl/pf/pf_vector.c
-                    src/amcl/pf/eig3.c
-                    src/amcl/pf/pf_draw.c)
+    src/amcl/pf/pf.c
+    src/amcl/pf/pf_kdtree.c
+    src/amcl/pf/pf_sampling.cpp
+    src/amcl/pf/pf_pdf.cpp # normal distrubition rewrote; original file is .c
+    src/amcl/pf/pf_vector.c
+    src/amcl/pf/eig3.c
+    src/amcl/pf/pf_draw.c)
 
 add_library(amcl_map
-                    src/amcl/map/map.c
-                    src/amcl/map/map_cspace.cpp
-                    src/amcl/map/map_range.c
-                    src/amcl/map/map_store.c
-                    src/amcl/map/map_draw.c)
+    src/amcl/map/map.c
+    src/amcl/map/map_cspace.cpp
+    src/amcl/map/map_range.c
+    src/amcl/map/map_store.c
+    src/amcl/map/map_draw.c)
+
+if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|relwithdebinfo)")
+    add_library(amcl_debugger src/amcl/amcl_debug_msgs.cpp)
+    find_package(OpenCV REQUIRED)
+    target_link_libraries(amcl_map amcl_debugger ${OpenCV_LIBS})
+endif()
 
 add_library(amcl_sensors
-                    src/amcl/sensors/amcl_sensor.cpp
-                    src/amcl/sensors/amcl_odom.cpp
-                    src/amcl/sensors/amcl_laser.cpp)
+    src/amcl/sensors/amcl_sensor.cpp
+    src/amcl/sensors/amcl_odom.cpp
+    src/amcl/sensors/amcl_laser.cpp)
+
 target_link_libraries(amcl_sensors amcl_map amcl_pf)
 
+# build the main add_executable
 
-add_executable(amcl
-                       src/amcl_node.cpp)
-add_dependencies(amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-target_link_libraries(amcl
+set(AMCL_LINK_LIBS
     amcl_sensors amcl_map amcl_pf
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
 )
+
+set(AMCL_SRCS
+    src/amcl_node.cpp
+)
+
+if (BUILD_EXTRAPOLATION)
+    set(MRPT_DONT_USE_DBG_LIBS true)
+    find_package( MRPT 1.4.0 EXACT REQUIRED base ) # haven't tested with other versions yet
+    add_definitions(-DBUILD_EXTRAPOLATION)
+    list(APPEND AMCL_SRCS src/pose_extrapolate.cpp)
+    list(APPEND AMCL_LINK_LIBS ${MRPT_LIBS})
+endif (BUILD_EXTRAPOLATION)
+
+add_executable(amcl ${AMCL_SRCS})
+
+add_dependencies(amcl amcl_gencfg)
+
+target_link_libraries(amcl ${AMCL_LINK_LIBS})
 
 install( TARGETS
     amcl amcl_sensors amcl_map amcl_pf

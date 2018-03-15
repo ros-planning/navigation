@@ -31,8 +31,8 @@
 #include <string.h>
 
 
-#include "amcl/pf/pf_vector.h"
-#include "amcl/pf/pf_kdtree.h"
+#include "pf_vector.h"
+#include "pf_kdtree.h"
 
 
 // Compare keys to see if they are equal
@@ -63,15 +63,21 @@ static void pf_kdtree_draw_node(pf_kdtree_t *self, pf_kdtree_node_t *node, rtk_f
 
 ////////////////////////////////////////////////////////////////////////////////
 // Create a tree
-pf_kdtree_t *pf_kdtree_alloc(int max_size)
+pf_kdtree_t *pf_kdtree_alloc(int max_size, double cell_size, double angular_size)
 {
   pf_kdtree_t *self;
 
   self = calloc(1, sizeof(pf_kdtree_t));
 
-  self->size[0] = 0.50;
-  self->size[1] = 0.50;
-  self->size[2] = (10 * M_PI / 180);
+  // self->size[0] = 0.50;
+  // self->size[1] = 0.50;
+  // self->size[2] = (10 * M_PI / 180); // THIS constant bucket size causes drastic downsampling regardless of cell resolution!
+  self->size[0] = cell_size;
+  self->size[1] = cell_size;
+  self->size[2] = angular_size;
+#ifdef BUILD_DEBUG
+  printf("k-D tree cell size set to %3.f and angula %3.f", cell_size, angular_size);
+#endif
 
   self->root = NULL;
 

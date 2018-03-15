@@ -37,11 +37,11 @@ extern "C" {
 // Forward declarations
 struct _rtk_fig_t;
 
-  
+
 // Limits
 #define MAP_WIFI_MAX_LEVELS 8
 
-  
+
 // Description for a single map cell.
 typedef struct
 {
@@ -62,20 +62,20 @@ typedef struct
 {
   // Map origin; the map is a viewport onto a conceptual larger map.
   double origin_x, origin_y;
-  
+
   // Map scale (m/cell)
   double scale;
 
   // Map dimensions (number of cells)
   int size_x, size_y;
-  
+
   // The map data, stored as a grid
   map_cell_t *cells;
 
   // Max distance at which we care about obstacles, for constructing
   // likelihood field
   double max_occ_dist;
-  
+
 } map_t;
 
 
@@ -129,13 +129,14 @@ void map_draw_wifi(map_t *map, struct _rtk_fig_t *fig, int index);
  * Map manipulation macros
  **************************************************************************/
 
+#define HALF(len) ((float)len/2.0)
 // Convert from map index to world coords
-#define MAP_WXGX(map, i) (map->origin_x + ((i) - map->size_x / 2) * map->scale)
-#define MAP_WYGY(map, j) (map->origin_y + ((j) - map->size_y / 2) * map->scale)
+#define MAP_WXGX(map, i) (map->origin_x + (float(i) + 0.5 - HALF(map->size_x)) * map->scale)
+#define MAP_WYGY(map, j) (map->origin_y + (float(j) + 0.5 - HALF(map->size_y)) * map->scale)
 
 // Convert from world coords to map coords
-#define MAP_GXWX(map, x) (floor((x - map->origin_x) / map->scale + 0.5) + map->size_x / 2)
-#define MAP_GYWY(map, y) (floor((y - map->origin_y) / map->scale + 0.5) + map->size_y / 2)
+#define MAP_GXWX(map, x) (floor((x - map->origin_x) / map->scale + HALF(map->size_x)))
+#define MAP_GYWY(map, y) (floor((y - map->origin_y) / map->scale + HALF(map->size_y)))
 
 // Test to see if the given map coords lie within the absolute map bounds.
 #define MAP_VALID(map, i, j) ((i >= 0) && (i < map->size_x) && (j >= 0) && (j < map->size_y))

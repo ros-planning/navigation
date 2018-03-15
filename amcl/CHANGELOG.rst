@@ -1,6 +1,9 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+1.14.2 (2018-03-15)
+-------------------
+* Reference Pull Request `#680 <https://github.com/ros-planning/navigation/pull/680>`
 
 1.14.2 (2017-08-14)
 -------------------
