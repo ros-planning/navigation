@@ -104,6 +104,7 @@ namespace base_local_planner {
       const tf::Stamped<tf::Pose>& global_robot_pose,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
+      const ros::Time& time,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan);
 
   /**
@@ -117,6 +118,7 @@ namespace base_local_planner {
   bool getGoalPose(const tf::TransformListener& tf,
   		  const std::vector<geometry_msgs::PoseStamped>& global_plan,
   		  const std::string& global_frame,
+        const ros::Time& time,
   		  tf::Stamped<tf::Pose> &goal_pose);
 
   /**
@@ -136,6 +138,7 @@ namespace base_local_planner {
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
+      const ros::Time& time,
       tf::Stamped<tf::Pose>& global_pose,
       const nav_msgs::Odometry& base_odom,
       double rot_stopped_vel, double trans_stopped_vel,
