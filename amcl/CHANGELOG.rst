@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.3 (2018-03-16)
+-------------------
 * Merge pull request `#678 <https://github.com/ros-planning/navigation/issues/678>`_ from SammysHP/patch-1
   Fix minor typo
 * Merge pull request `#666 <https://github.com/ros-planning/navigation/issues/666>`_ from SteveMacenski/kinetic-devel

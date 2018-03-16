@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.3 (2018-03-16)
+-------------------
 * Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
   update maintainer email (kinetic)
 * Fixes `#206 <https://github.com/ros-planning/navigation/issues/206>`_ for kinetic (`#663 <https://github.com/ros-planning/navigation/issues/663>`_)

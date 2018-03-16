@@ -2,8 +2,8 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.3 (2018-03-16)
+-------------------
 * Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
   update maintainer email (kinetic)
 * Fixes `#313 <https://github.com/ros-planning/navigation/issues/313>`_ (kinetic) (`#654 <https://github.com/ros-planning/navigation/issues/654>`_)
