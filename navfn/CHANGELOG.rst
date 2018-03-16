@@ -2,6 +2,28 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* added message_generation to build deps to prevent failing generation of GetStatus, MakeNavPlan and SetCostmap (`#640 <https://github.com/ros-planning/navigation/issues/640>`_)
+* Rebase PRs from Indigo (`#636 <https://github.com/ros-planning/navigation/issues/636>`_)
+  * Update gradient_path.cpp (`#576 <https://github.com/ros-planning/navigation/issues/576>`_)
+  * Update gradient_path.cpp
+  * Update navfn.cpp
+  * Only do a getRobotPose when no start pose is given (`#628 <https://github.com/ros-planning/navigation/issues/628>`_)
+  Omit the unnecessary call to getRobotPose when the start pose was
+  already given, so that move_base can also generate a path in
+  situations where getRobotPose would fail.
+  This is actually to work around an issue of getRobotPose randomly
+  failing.
+* update to use non deprecated pluginlib macro (`#630 <https://github.com/ros-planning/navigation/issues/630>`_)
+  * update to use non deprecated pluginlib macro
+  * multiline version as well
+* Contributors: Aaron Hoy, David V. Lu!!, Leroy Rügemer, Michael Ferguson, Mikael Arguedas
+
 1.14.2 (2017-08-14)
 -------------------
 

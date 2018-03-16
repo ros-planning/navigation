@@ -2,6 +2,15 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* Print SDL error on IMG_Load failure in server_map (`#631 <https://github.com/ros-planning/navigation/issues/631>`_)
+* Contributors: Aaron Hoy, Aurélien Labate, Michael Ferguson
+
 1.14.2 (2017-08-14)
 -------------------
 * remove offending library export (fixes `#612 <https://github.com/ros-planning/navigation/issues/612>`_)

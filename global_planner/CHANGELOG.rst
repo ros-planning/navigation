@@ -2,6 +2,24 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* Rebase PRs from Indigo (`#636 <https://github.com/ros-planning/navigation/issues/636>`_)
+  * Update gradient_path.cpp (`#576 <https://github.com/ros-planning/navigation/issues/576>`_)
+  * Update gradient_path.cpp
+  * Update navfn.cpp
+  * Only do a getRobotPose when no start pose is given (`#628 <https://github.com/ros-planning/navigation/issues/628>`_)
+  Omit the unnecessary call to getRobotPose when the start pose was
+  already given, so that move_base can also generate a path in
+  situations where getRobotPose would fail.
+  This is actually to work around an issue of getRobotPose randomly
+  failing.
+* Contributors: Aaron Hoy, David V. Lu!!, Michael Ferguson
+
 1.14.2 (2017-08-14)
 -------------------
 
