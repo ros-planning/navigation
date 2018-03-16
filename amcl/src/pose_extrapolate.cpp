@@ -15,6 +15,8 @@ typedef mrpt::poses::CPose3D Pose3D;
 typedef mrpt::math::CMatrixDouble66 Cov3D;
 typedef mrpt::poses::CPose3DPDFGaussian Pose3DWithCov;
 
+// helper functions
+
 Pose3D makePose3D(double x, double y, double yaw)
 {
     return Pose3D (x, y, 0.0, yaw, 0.0, 0.0);
@@ -89,6 +91,8 @@ void SortQueue(std::vector< objT >& vec )
         });
 }
 
+// class methods
+
 void PoseExtrapolator::initPoses()
 {
     last_odom_pose = Pose3DWithCov(makePose3D(0,0,0));
@@ -105,7 +109,7 @@ void PoseExtrapolator::pause()
 
 void PoseExtrapolator::cleanup()
 {
-    if (! started) return;
+    if (! started_csv) return;
 
     queue_processing.notify_all();
 
@@ -137,12 +141,12 @@ void PoseExtrapolator::shutdown()
 {
     finished = true;
     cleanup();
-    if (started && the_thread.joinable())
+    if (started_csv && the_thread.joinable())
     {
         DEBUG_INFO("[shutdown] Waiting to join thread in PoseExtrapolator to finished...\n");
         the_thread.join();
     }
-    started = false;
+    started_csv = false;
     DEBUG_INFO("[shutdown] PoseExtrapolator has been shutdown\n");
 }
 
@@ -275,10 +279,11 @@ void PoseExtrapolator::startCSVWriter()
 {
     {
         std::lock_guard<std::mutex> lock(csv_lock);
-        if (started) return;
-        started = true;
+        if (started_csv) return;
+        started_csv = true;
         std::ostringstream csv_name("");
-        csv_name << src_name << "_extrapolated_pose_" << last_est_stamp.toNSec() << ".csv";
+        csv_name << src_name << "_extrapolated_pose_"
+            << last_est_stamp.toNSec() << ".csv";
         csv_name_str = csv_name.str();
         std::cout << "Will write to " << csv_name_str << std::endl;
         pose_csv.open(csv_name_str, std::fstream::out | std::fstream::trunc);
@@ -294,19 +299,24 @@ void PoseExtrapolator::threadMain()
     int wait_count = 0;
 
     std::thread recycling_thread(&PoseExtrapolator::queueRecycling, this);
-    std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~ [Retro Thread] started" << std::endl;
+    std::cout << "~~~~~~~~~~~~~~~~~~~~~~ [Retro Thread] started csv" << std::endl;
 
     while (! finished)
     {
         purgeQueue(wait_count);
         queue_recyling.notify_all();
     }
-    if (started) DEBUG_INFO("[Retro Thread] Poses written to %s\n", csv_name_str.c_str());
+
+    if (started_csv)
+        DEBUG_INFO("[Retro Thread] Poses written to %s\n", csv_name_str.c_str());
+
     queue_recyling.notify_all();
     recycling_thread.join();
+
     std::lock_guard<std::mutex> lock(csv_lock);
     DEBUG_INFO("Closing csv...\n");
     pose_csv.close();
+
     DEBUG_INFO("[Retro Thread] finished\n");
 }
 
@@ -319,19 +329,21 @@ void PoseExtrapolator::purgeQueue(int& wait_count)
         [this, &wait_count]
         {
             bool continue_waiting = ! odom_queue.size();// && (odom_queue.back().header.stamp >= newest_est_stamp);
-            if (! odom_queue.size()) DEBUG_INFO("[Retro Thread] Spurious waiting skipped %d - no new odom\n", wait_count);
+            if (! odom_queue.size())
+                DEBUG_INFO("[Retro Thread] Spurious waiting skipped %d - no new odom\n", wait_count);
 
             std::lock_guard<std::mutex> lock(est_lock);
+            // no new tf update yet OR when it's 1st estimate -> can't extrapolate
             if (! new_est.load() || est_seq <= 1) return false;
+            // paused by pause() -> continue waiting
             if (paused) return false;
             paused = (newest_est_stamp == last_est_stamp);
 
             continue_waiting |= paused;
             //if (newest_est_stamp == last_est_stamp) DEBUG_INFO("[Retro Thread] Spurious waiting skipped %ld - no new estimate\n", wait_count);
             return ! continue_waiting;
-        }
-        )
-    ) return;
+        })
+        ) return;
 
     DEBUG_INFO("[Retro Thread] ~~~~~~~~~~~~~~~~~ Finished waiting %d -------- %s seq = %lu @ t = %ld %c last odom in queue seq# %d @ t = %ld with queue size = %lu\n",
         wait_count, src_name.c_str(), (est_seq-1), newest_est_stamp.toNSec(), (newest_est_stamp > odom_queue.back().header.stamp ?'>':'<'), odom_queue.back().header.seq, odom_queue.back().header.stamp.toNSec(), odom_queue.size());
@@ -349,7 +361,7 @@ void PoseExtrapolator::queueRecycling()
         backup_odom_queue.clear();
         DEBUG_INFO("[Recycling Thread] ... Clearing done.\n");
     }
-    if (started) DEBUG_INFO("[Recycling Thread] finished\n");
+    if (started_csv) DEBUG_INFO("[Recycling Thread] finished\n");
 }
 
 void PoseExtrapolator::retroCorrect()
