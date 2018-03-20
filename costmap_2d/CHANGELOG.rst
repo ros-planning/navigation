@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.15 (2018-03-20)
+--------------------
 * Merge pull request `#671 <https://github.com/ros-planning/navigation/issues/671>`_ from ros-planning/email_update_indigo
   update maintainer email (indigo)
 * fix 'enable' for static_layer with rolling window (`#659 <https://github.com/ros-planning/navigation/issues/659>`_) (`#664 <https://github.com/ros-planning/navigation/issues/664>`_)

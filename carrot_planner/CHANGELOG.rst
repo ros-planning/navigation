@@ -2,8 +2,8 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.15 (2018-03-20)
+--------------------
 * Merge pull request `#671 <https://github.com/ros-planning/navigation/issues/671>`_ from ros-planning/email_update_indigo
   update maintainer email (indigo)
 * Merge pull request `#647 <https://github.com/ros-planning/navigation/issues/647>`_ from aaronhoy/indigo_add_ahoy

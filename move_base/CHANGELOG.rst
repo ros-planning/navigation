@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.15 (2018-03-20)
+--------------------
 * Merge pull request `#684 <https://github.com/ros-planning/navigation/issues/684>`_ from DLu/fix_523
   [indigo] Respect planner_frequency intended behavior [backport]
 * Respect planner_frequency intended behavior (`#622 <https://github.com/ros-planning/navigation/issues/622>`_)

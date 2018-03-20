@@ -2,8 +2,8 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.15 (2018-03-20)
+--------------------
 * Merge pull request `#671 <https://github.com/ros-planning/navigation/issues/671>`_ from ros-planning/email_update_indigo
   update maintainer email (indigo)
 * Fixes `#313 <https://github.com/ros-planning/navigation/issues/313>`_ (indigo) (`#653 <https://github.com/ros-planning/navigation/issues/653>`_)
