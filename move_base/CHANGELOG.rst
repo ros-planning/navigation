@@ -2,6 +2,17 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#684 <https://github.com/ros-planning/navigation/issues/684>`_ from DLu/fix_523
+  [indigo] Respect planner_frequency intended behavior [backport]
+* Respect planner_frequency intended behavior (`#622 <https://github.com/ros-planning/navigation/issues/622>`_)
+* Merge pull request `#671 <https://github.com/ros-planning/navigation/issues/671>`_ from ros-planning/email_update_indigo
+  update maintainer email (indigo)
+* Merge pull request `#647 <https://github.com/ros-planning/navigation/issues/647>`_ from aaronhoy/indigo_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, Jorge Santos Simón, Michael Ferguson
+
 1.12.14 (2017-12-19)
 --------------------
 * Only do a getRobotPose when no start pose is given (`#628 <https://github.com/ros-planning/navigation/issues/628>`_)

@@ -2,6 +2,15 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#671 <https://github.com/ros-planning/navigation/issues/671>`_ from ros-planning/email_update_indigo
+  update maintainer email (indigo)
+* fix 'enable' for static_layer with rolling window (`#659 <https://github.com/ros-planning/navigation/issues/659>`_) (`#664 <https://github.com/ros-planning/navigation/issues/664>`_)
+* Merge pull request `#647 <https://github.com/ros-planning/navigation/issues/647>`_ from aaronhoy/indigo_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, Jannik Abbenseth, Michael Ferguson
+
 1.12.14 (2017-12-19)
 --------------------
 * don't update costs if inflation radius is zero

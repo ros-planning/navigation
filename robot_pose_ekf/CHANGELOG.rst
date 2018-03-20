@@ -2,6 +2,15 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#671 <https://github.com/ros-planning/navigation/issues/671>`_ from ros-planning/email_update_indigo
+  update maintainer email (indigo)
+* Fixes `#313 <https://github.com/ros-planning/navigation/issues/313>`_ (indigo) (`#653 <https://github.com/ros-planning/navigation/issues/653>`_)
+* Merge pull request `#647 <https://github.com/ros-planning/navigation/issues/647>`_ from aaronhoy/indigo_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, David V. Lu!!, Michael Ferguson
+
 1.12.14 (2017-12-19)
 --------------------
 * Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
