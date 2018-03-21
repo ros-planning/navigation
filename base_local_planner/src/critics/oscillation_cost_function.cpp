@@ -42,7 +42,7 @@
 
 namespace base_local_planner {
 
-OscillationCostFunction::OscillationCostFunction() {
+OscillationCostFunction::OscillationCostFunction() : enabled_(true) {
 }
 
 OscillationCostFunction::~OscillationCostFunction() {
@@ -179,12 +179,13 @@ bool OscillationCostFunction::setOscillationFlags(base_local_planner::Trajectory
 }
 
 double OscillationCostFunction::scoreTrajectory(Trajectory &traj) {
-  if ((forward_pos_only_ && traj.xv_ < 0.0) ||
+  if (enabled_ &&
+    ((forward_pos_only_ && traj.xv_ < 0.0) ||
       (forward_neg_only_ && traj.xv_ > 0.0) ||
       (strafe_pos_only_  && traj.yv_ < 0.0) ||
       (strafe_neg_only_  && traj.yv_ > 0.0) ||
       (rot_pos_only_     && traj.thetav_ < 0.0) ||
-      (rot_neg_only_     && traj.thetav_ > 0.0)) {
+      (rot_neg_only_     && traj.thetav_ > 0.0))) {
     return -5.0;
   }
   return 0.0;

@@ -104,6 +104,10 @@ namespace dwa_local_planner {
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
       // odom_helper_.setWheelbase(config.wheelbase);
 
+      // update latched stop rotate controller configuration
+      ROS_INFO("Updating latching to  %d", config.latch_xy_goal_tolerance);
+      latchedStopRotateController_.setLatch(config.latch_xy_goal_tolerance);
+
       // update dwa specific configuration
       dp_->reconfigure(config);
   }

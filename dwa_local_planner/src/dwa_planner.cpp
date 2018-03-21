@@ -73,6 +73,15 @@ namespace dwa_local_planner {
         config.follower_generator_num_trajectories
       );
 
+    pas_generator_.setParameters(
+      config.sim_time,
+      config.sim_granularity,
+      config.pas_generator_num_trajectories,
+      config.pas_generator_kp_angular,
+      config.pas_generator_kp_linear
+    );
+
+
     cw_tip_generator_.setParameters(
       config.sim_time,
       config.sim_granularity,
@@ -105,6 +114,7 @@ namespace dwa_local_planner {
 
     stop_time_buffer_ = config.stop_time_buffer;
     oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist, config.oscillation_reset_angle);
+    oscillation_costs_.setEnabled(config.oscillation_critic_enabled);
     forward_point_distance_ = config.forward_point_distance;
     goal_front_costs_.setXShift(forward_point_distance_);
     alignment_costs_.setXShift(forward_point_distance_);
@@ -162,6 +172,7 @@ namespace dwa_local_planner {
     stationary_generator_.enable(config.enable_stationary_trajectory_generator);
     cw_tip_generator_.enable(config.enable_tip_trajectory_generator);
     ccw_tip_generator_.enable(config.enable_tip_trajectory_generator);
+    pas_generator_.enable(config.enable_pas_trajectory_generator);
 
     publish_traj_pc_ = config.publish_traj_pc;
   }
@@ -237,6 +248,7 @@ namespace dwa_local_planner {
     generator_list.push_back(&generator_);
     generator_list.push_back(&stationary_generator_);
     generator_list.push_back(&follower_generator_);
+    generator_list.push_back(&pas_generator_);
     generator_list.push_back(&cw_tip_generator_);
     generator_list.push_back(&ccw_tip_generator_);
 
@@ -529,6 +541,11 @@ namespace dwa_local_planner {
         &limits,
         false);
     jerk_costs_.setCurrentVelocity(vel);
+
+    pas_generator_.setGlobalPlan(global_plan_);
+    pas_generator_.initialise(pos,
+        vel,
+        &limits);
 
     result_traj_.cost_ = -7;
     // find best trajectory by sampling and scoring the samples

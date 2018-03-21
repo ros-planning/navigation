@@ -177,6 +177,8 @@ namespace move_base {
 
       move_base_msgs::MoveBaseResult buildResult(unsigned int failure_code);
 
+      void notifyRecoveriesOfNewGoal();
+
       tf::TransformListener& tf_;
 
       MoveBaseActionServer* as_;

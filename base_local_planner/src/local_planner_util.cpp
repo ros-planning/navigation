@@ -70,6 +70,7 @@ void LocalPlannerUtil::reconfigureCB(LocalPlannerLimits &config, bool restore_de
   {
     boost::mutex::scoped_lock l(limits_configuration_mutex_);
     nominal_limits_ = LocalPlannerLimits(config);
+    ROS_INFO("Nominal limits tolerance: %f", nominal_limits_.xy_goal_tolerance);
   }
   updateLimits();
 }
@@ -100,7 +101,7 @@ bool LocalPlannerUtil::setPlan(const std::vector<geometry_msgs::PoseStamped>& or
 
   //reset the global plan
   global_plan_.clear();
-
+  ROS_DEBUG_NAMED("local_planner_util", "Setting global plan with length %d", orig_global_plan.size());
   global_plan_ = orig_global_plan;
 
   return true;

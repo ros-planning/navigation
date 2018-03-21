@@ -62,6 +62,10 @@ public:
 
   void setOscillationResetDist(double dist, double angle);
 
+  void setEnabled(bool enabled) {
+    enabled_ = enabled;
+  }
+
 private:
 
   void resetOscillationFlagsIfPossible(const Eigen::Vector3f& pos, const Eigen::Vector3f& prev);
@@ -81,6 +85,8 @@ private:
 
   // param
   double oscillation_reset_dist_, oscillation_reset_angle_;
+
+  bool enabled_;
 
   Eigen::Vector3f prev_stationary_pos_;
 };

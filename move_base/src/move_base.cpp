@@ -534,6 +534,7 @@ namespace move_base {
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
 
+    ROS_DEBUG("Making plan with goal frame %s", goal.header.frame_id.c_str());
     //make sure to set the plan to be empty initially
     plan.clear();
 
@@ -734,6 +735,16 @@ namespace move_base {
       return;
     }
 
+    if (move_base_goal->use_target_frame &&
+      move_base_goal->target_pose.header.frame_id.empty())
+    {
+      as_->setAborted(buildResult(move_base_msgs::MoveBaseResult::INVALID_GOAL_FRAME),
+        "Aborting on goal because it was sent with use_target_frame = true, but no target frame");
+      return;
+    }
+
+    notifyRecoveriesOfNewGoal();
+
     if (controller_thread_affinity_ >= 0)
     {
       if (setThreadAffinity(controller_thread_affinity_))
@@ -746,7 +757,13 @@ namespace move_base {
       }
     }
 
-    geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+    ROS_DEBUG("Executing goal with frame %s", move_base_goal->target_pose.header.frame_id.c_str());
+    geometry_msgs::PoseStamped goal;
+    if (move_base_goal->use_target_frame) {
+      goal = move_base_goal->target_pose;
+    } else {
+      goal = goalToGlobalFrame(move_base_goal->target_pose);
+    }
 
     //we have a goal so start the planner
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
@@ -794,7 +811,11 @@ namespace move_base {
             return;
           }
 
-          goal = goalToGlobalFrame(new_goal.target_pose);
+          if (move_base_goal->use_target_frame) {
+            goal = new_goal.target_pose;
+          } else {
+            goal = goalToGlobalFrame(new_goal.target_pose);
+          }
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
@@ -831,7 +852,8 @@ namespace move_base {
       }
 
       //we also want to check if we've changed global frames because we need to transform our goal pose
-      if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
+      if(!move_base_goal->use_target_frame
+        && goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
         goal = goalToGlobalFrame(goal);
 
         //we want to go back to the planning state for the next execution cycle
@@ -1275,6 +1297,12 @@ namespace move_base {
     move_base_msgs::MoveBaseResult output;
     output.failure_code = failure_code;
     return output;
+  }
+
+  void MoveBase::notifyRecoveriesOfNewGoal() {
+    for (auto behavior : recovery_behaviors_) {
+      behavior->newGoalReceived();
+    }
   }
 
 };
