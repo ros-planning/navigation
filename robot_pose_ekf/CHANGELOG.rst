@@ -2,8 +2,8 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.2 (2018-03-22)
+-------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar
   update maintainer email (lunar)
 * Fixes `#313 <https://github.com/ros-planning/navigation/issues/313>`_ (Lunar) (`#655 <https://github.com/ros-planning/navigation/issues/655>`_)

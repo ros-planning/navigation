@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.2 (2018-03-22)
+-------------------
 * Fix minor typo (`#682 <https://github.com/ros-planning/navigation/issues/682>`_)
   This typo caused some confusion because we were searching for a semicolon in our configuration.
 * Merge pull request `#677 <https://github.com/ros-planning/navigation/issues/677>`_ from ros-planning/lunar_634
