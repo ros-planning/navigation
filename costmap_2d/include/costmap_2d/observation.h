@@ -80,7 +80,8 @@ public:
    */
   Observation(const Observation& obs) :
       origin_(obs.origin_), cloud_(new pcl::PointCloud<pcl::PointXYZ>(*(obs.cloud_))),
-      obstacle_range_(obs.obstacle_range_), raytrace_range_(obs.raytrace_range_)
+      obstacle_range_(obs.obstacle_range_), raytrace_range_(obs.raytrace_range_),
+      within_range_(obs.within_range_)
   {
   }
 
@@ -97,6 +98,7 @@ public:
   geometry_msgs::Point origin_;
   pcl::PointCloud<pcl::PointXYZ>* cloud_;
   double obstacle_range_, raytrace_range_;
+  std::vector<bool> within_range_;
 };
 
 }  // namespace costmap_2d
