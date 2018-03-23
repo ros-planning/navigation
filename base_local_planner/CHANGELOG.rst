@@ -2,6 +2,19 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar
+  update maintainer email (lunar)
+* CostmapModel: Make lineCost and pointCost public (`#658 <https://github.com/ros-planning/navigation/issues/658>`_)
+  Make the methods `lineCost` and `pointCost` of the CostmapModel class
+  public so they can be used outside of the class.
+  Both methods are not changing the instance, so this should not cause any
+  problems.  To emphasise their constness, add the actual `const` keyword.
+* Merge pull request `#649 <https://github.com/ros-planning/navigation/issues/649>`_ from aaronhoy/lunar_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, Felix Widmaier, Michael Ferguson
+
 1.15.1 (2017-08-14)
 -------------------
 

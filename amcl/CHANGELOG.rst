@@ -2,6 +2,21 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix minor typo (`#682 <https://github.com/ros-planning/navigation/issues/682>`_)
+  This typo caused some confusion because we were searching for a semicolon in our configuration.
+* Merge pull request `#677 <https://github.com/ros-planning/navigation/issues/677>`_ from ros-planning/lunar_634
+  removing recomputation of cluster stats causing assertion error (`#634 <https://github.com/ros-planning/navigation/issues/634>`_)
+* Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar
+  update maintainer email (lunar)
+* Remove Dead Code [Lunar] (`#646 <https://github.com/ros-planning/navigation/issues/646>`_)
+  * Clean up navfn
+  * Cleanup amcl
+* Merge pull request `#649 <https://github.com/ros-planning/navigation/issues/649>`_ from aaronhoy/lunar_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, David V. Lu!!, Michael Ferguson, stevemacenski
+
 1.15.1 (2017-08-14)
 -------------------
 

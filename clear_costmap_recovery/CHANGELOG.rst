@@ -2,6 +2,29 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar
+  update maintainer email (lunar)
+* Merge pull request `#649 <https://github.com/ros-planning/navigation/issues/649>`_ from aaronhoy/lunar_add_ahoy
+  Add myself as a maintainer.
+* Rebase PRs from Indigo/Kinetic (`#637 <https://github.com/ros-planning/navigation/issues/637>`_)
+  * Respect planner_frequency intended behavior (`#622 <https://github.com/ros-planning/navigation/issues/622>`_)
+  * Only do a getRobotPose when no start pose is given (`#628 <https://github.com/ros-planning/navigation/issues/628>`_)
+  Omit the unnecessary call to getRobotPose when the start pose was
+  already given, so that move_base can also generate a path in
+  situations where getRobotPose would fail.
+  This is actually to work around an issue of getRobotPose randomly
+  failing.
+  * Update gradient_path.cpp (`#576 <https://github.com/ros-planning/navigation/issues/576>`_)
+  * Update gradient_path.cpp
+  * Update navfn.cpp
+  * update to use non deprecated pluginlib macro (`#630 <https://github.com/ros-planning/navigation/issues/630>`_)
+  * update to use non deprecated pluginlib macro
+  * multiline version as well
+  * Print SDL error on IMG_Load failure in server_map (`#631 <https://github.com/ros-planning/navigation/issues/631>`_)
+* Contributors: Aaron Hoy, David V. Lu!!, Michael Ferguson
+
 1.15.1 (2017-08-14)
 -------------------
 
