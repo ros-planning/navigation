@@ -100,59 +100,15 @@ namespace base_local_planner {
     }
 
     const geometry_msgs::PoseStamped& plan_pose = global_plan[0];
+    tf::StampedTransform plan_to_global_transform;
     try {
       // get plan_to_global_transform from plan frame to global_frame
-      tf::StampedTransform plan_to_global_transform;
       tf.waitForTransform(global_frame, ros::Time::now(),
                           plan_pose.header.frame_id, plan_pose.header.stamp,
                           plan_pose.header.frame_id, ros::Duration(0.5));
       tf.lookupTransform(global_frame, ros::Time(),
                          plan_pose.header.frame_id, plan_pose.header.stamp, 
                          plan_pose.header.frame_id, plan_to_global_transform);
-
-      //let's get the pose of the robot in the frame of the plan
-      tf::Stamped<tf::Pose> robot_pose;
-      tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
-
-      //we'll discard points on the plan that are outside the local costmap
-      double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
-                                       costmap.getSizeInCellsY() * costmap.getResolution() / 2.0);
-
-      unsigned int i = 0;
-      double sq_dist_threshold = dist_threshold * dist_threshold;
-      double sq_dist = 0;
-
-      //we need to loop to a point on the plan that is within a certain distance of the robot
-      while(i < (unsigned int)global_plan.size()) {
-        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
-        sq_dist = x_diff * x_diff + y_diff * y_diff;
-        if (sq_dist <= sq_dist_threshold) {
-          break;
-        }
-        ++i;
-      }
-
-      tf::Stamped<tf::Pose> tf_pose;
-      geometry_msgs::PoseStamped newer_pose;
-
-      //now we'll transform until points are outside of our distance threshold
-      while(i < (unsigned int)global_plan.size() && sq_dist <= sq_dist_threshold) {
-        const geometry_msgs::PoseStamped& pose = global_plan[i];
-        poseStampedMsgToTF(pose, tf_pose);
-        tf_pose.setData(plan_to_global_transform * tf_pose);
-        tf_pose.stamp_ = plan_to_global_transform.stamp_;
-        tf_pose.frame_id_ = global_frame;
-        poseStampedTFToMsg(tf_pose, newer_pose);
-
-        transformed_plan.push_back(newer_pose);
-
-        double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-        double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
-        sq_dist = x_diff * x_diff + y_diff * y_diff;
-
-        ++i;
-      }
     }
     catch(tf::LookupException& ex) {
       ROS_ERROR("No Transform available Error: %s\n", ex.what());
@@ -164,10 +120,52 @@ namespace base_local_planner {
     }
     catch(tf::ExtrapolationException& ex) {
       ROS_ERROR("Extrapolation Error: %s\n", ex.what());
-      if (!global_plan.empty())
-        ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
-
+      ROS_ERROR("Global Frame: %s Plan Frame size %zu: %s\n", global_frame.c_str(), global_plan.size(), global_plan[0].header.frame_id.c_str());
       return false;
+    }
+
+    //let's get the pose of the robot in the frame of the plan
+    tf::Stamped<tf::Pose> robot_pose;
+    tf.transformPose(plan_pose.header.frame_id, global_pose, robot_pose);
+
+    //we'll discard points on the plan that are outside the local costmap
+    double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
+        costmap.getSizeInCellsY() * costmap.getResolution() / 2.0);
+
+    unsigned int i = 0;
+    double sq_dist_threshold = dist_threshold * dist_threshold;
+    double sq_dist = 0;
+
+    //we need to loop to a point on the plan that is within a certain distance of the robot
+    while(i < (unsigned int)global_plan.size()) {
+      double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
+      double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+      sq_dist = x_diff * x_diff + y_diff * y_diff;
+      if (sq_dist <= sq_dist_threshold) {
+        break;
+      }
+      ++i;
+    }
+
+    tf::Stamped<tf::Pose> tf_pose;
+    geometry_msgs::PoseStamped newer_pose;
+
+    //now we'll transform until points are outside of our distance threshold
+    while(i < (unsigned int)global_plan.size() && sq_dist <= sq_dist_threshold) {
+      const geometry_msgs::PoseStamped& pose = global_plan[i];
+      poseStampedMsgToTF(pose, tf_pose);
+      tf_pose.setData(plan_to_global_transform * tf_pose);
+      tf_pose.stamp_ = plan_to_global_transform.stamp_;
+      tf_pose.frame_id_ = global_frame;
+      poseStampedTFToMsg(tf_pose, newer_pose);
+
+      transformed_plan.push_back(newer_pose);
+
+      double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
+      double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+      sq_dist = x_diff * x_diff + y_diff * y_diff;
+
+      ++i;
     }
 
     return true;
@@ -183,20 +181,14 @@ namespace base_local_planner {
     }
 
     const geometry_msgs::PoseStamped& plan_goal_pose = global_plan.back();
-    try{
       tf::StampedTransform transform;
+    try{
       tf.waitForTransform(global_frame, ros::Time::now(),
                           plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
                           plan_goal_pose.header.frame_id, ros::Duration(0.5));
       tf.lookupTransform(global_frame, ros::Time(),
                          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
                          plan_goal_pose.header.frame_id, transform);
-
-      poseStampedMsgToTF(plan_goal_pose, goal_pose);
-      goal_pose.setData(transform * goal_pose);
-      goal_pose.stamp_ = transform.stamp_;
-      goal_pose.frame_id_ = global_frame;
-
     }
     catch(tf::LookupException& ex) {
       ROS_ERROR("No Transform available Error: %s\n", ex.what());
@@ -208,11 +200,15 @@ namespace base_local_planner {
     }
     catch(tf::ExtrapolationException& ex) {
       ROS_ERROR("Extrapolation Error: %s\n", ex.what());
-      if (global_plan.size() > 0)
-        ROS_ERROR("Global Frame: %s Plan Frame size %d: %s\n", global_frame.c_str(), (unsigned int)global_plan.size(), global_plan[0].header.frame_id.c_str());
-
+      ROS_ERROR("Global Frame: %s Plan Frame size %zu: %s\n", global_frame.c_str(), global_plan.size(), global_plan[0].header.frame_id.c_str());
       return false;
     }
+
+    poseStampedMsgToTF(plan_goal_pose, goal_pose);
+    goal_pose.setData(transform * goal_pose);
+    goal_pose.stamp_ = transform.stamp_;
+    goal_pose.frame_id_ = global_frame;
+
     return true;
   }
 
