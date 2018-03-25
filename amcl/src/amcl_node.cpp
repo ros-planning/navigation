@@ -371,7 +371,7 @@ AmclNode::AmclNode() :
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
   }
   else if(tmp_model_type == "custom_beam")
-    laser_model_type_ = LASER_MODEL_CUSTOM_FIELD;
+    laser_model_type_ = LASER_MODEL_CUSTOM_BEAM;
   else if(tmp_model_type == "delta")
     laser_model_type_ = LASER_MODEL_DELTA;
   else
@@ -512,8 +512,8 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
   else if(config.laser_model_type == "likelihood_field_prob")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
-  else if (config.laser_model_type == "custom_field")
-    laser_model_type_ = LASER_MODEL_CUSTOM_FIELD;
+  else if (config.laser_model_type == "custom_beam")
+    laser_model_type_ = LASER_MODEL_CUSTOM_BEAM;
   else if (config.laser_model_type == "delta")
     laser_model_type_ = LASER_MODEL_DELTA;
 
@@ -590,9 +590,9 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
                                     laser_likelihood_max_dist_);
     ROS_INFO("Done initializing likelihood field model.");
   }
-  else if(laser_model_type_ == LASER_MODEL_CUSTOM_FIELD){
+  else if(laser_model_type_ == LASER_MODEL_CUSTOM_BEAM){
     ROS_INFO("Initializing custom beam model");
-    laser_->SetModelCustomField(z_hit_, z_short_, z_max_, z_rand_,
+    laser_->SetModelCustomBeam(z_hit_, z_short_, z_max_, z_rand_,
       sigma_hit_, lambda_short_, 0.0);
   }
   else if(laser_model_type_ == LASER_MODEL_DELTA){
@@ -892,10 +892,10 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
                                     laser_likelihood_max_dist_);
     ROS_INFO("Done initializing likelihood field model.");
   }
-  else if(laser_model_type_ == LASER_MODEL_CUSTOM_FIELD)
+  else if(laser_model_type_ == LASER_MODEL_CUSTOM_BEAM)
   {
     ROS_INFO("Initializing custom beam model");
-    laser_->SetModelCustomField(z_hit_, z_short_, z_max_, z_rand_,
+    laser_->SetModelCustomBeam(z_hit_, z_short_, z_max_, z_rand_,
       sigma_hit_, lambda_short_, 0.0);
   }
   else if(laser_model_type_ == LASER_MODEL_DELTA)

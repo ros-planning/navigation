@@ -29,6 +29,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "amcl/map/map.h"
 
@@ -84,45 +85,52 @@ double map_calc_range(map_t *map, double ox, double oy, double oa, double max_ra
   else
     ystep = -1;
 
-  if(steep)
-  {
-    if(map->cells[MAP_INDEX(map,y,x)].occ_state > -1)
-    return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
-  else if(!MAP_VALID(map,y,x))
-    return max_range;
-  }
-  else
-  {
-    if(map->cells[MAP_INDEX(map,x,y)].occ_state > -1)
-      return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
-    else if(!MAP_VALID(map,x,y))
-      return max_range;
-  }
-
-  while(x != (x1 + xstep * 1))
-  {
-    x += xstep;
-    error += deltaerr;
-    if(2*error >= deltax)
-    {
-      y += ystep;
-      error -= deltax;
-    }
-
     if(steep)
     {
-      if(map->cells[MAP_INDEX(map,y,x)].occ_state > -1)
-        return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
-      else if(!MAP_VALID(map,y,x))
+      if(!MAP_VALID(map,y,x))
         return max_range;
+      else if(map->cells[MAP_INDEX(map,y,x)].occ_state > -1)
+        return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
+    
     }
     else
     {
-      if(map->cells[MAP_INDEX(map,x,y)].occ_state > -1)
-      return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
-    else if(!MAP_VALID(map,x,y))
-      return max_range;
+      if(!MAP_VALID(map,x,y))
+        return max_range;
+      else if(map->cells[MAP_INDEX(map,x,y)].occ_state > -1)
+        return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
+
     }
-  }
-  return max_range;
+  
+    while(x != (x1 + xstep * 1))
+    {
+      x += xstep;
+      error += deltaerr;
+      if(2*error >= deltax)
+      {
+        y += ystep;
+        error -= deltax;
+      }
+      
+      if(steep)
+      {
+        if(!MAP_VALID(map,y,x))
+        return max_range;
+      
+        else if(map->cells[MAP_INDEX(map,y,x)].occ_state > -1){
+          return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
+        }
+          
+          
+      }
+      else
+      {
+        if(!MAP_VALID(map,x,y))
+          return max_range;
+        else if(map->cells[MAP_INDEX(map,x,y)].occ_state > -1)
+          return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
+      
+      }
+    }
+    return max_range;
 }

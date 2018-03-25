@@ -40,7 +40,7 @@ typedef enum
   LASER_MODEL_BEAM,
   LASER_MODEL_LIKELIHOOD_FIELD,
   LASER_MODEL_LIKELIHOOD_FIELD_PROB,
-  LASER_MODEL_CUSTOM_FIELD,
+  LASER_MODEL_CUSTOM_BEAM,
   LASER_MODEL_DELTA
 } laser_model_t;
 
@@ -88,7 +88,7 @@ class AMCLLaser : public AMCLSensor
 					   double beam_skip_threshold, 
 					   double beam_skip_error_threshold);
 
-  public: void SetModelCustomField(double z_hit,
+  public: void SetModelCustomBeam(double z_hit,
     double z_short,
     double z_max,
     double z_rand,
@@ -124,7 +124,7 @@ class AMCLLaser : public AMCLSensor
 					     pf_sample_set_t* set);
 
   // Determine the probability for the given pose - custom model 
-  private: static double CustomFieldModel(AMCLLaserData *data, 
+  private: static double CustomBeamModel(AMCLLaserData *data, 
     pf_sample_set_t* set);
 
   private: static double DeltaModel(AMCLLaserData *data, 

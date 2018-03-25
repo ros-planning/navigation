@@ -121,7 +121,7 @@ AMCLLaser::SetModelLikelihoodFieldProb(double z_hit,
 }
 
 void 
-AMCLLaser::SetModelCustomField(double z_hit,
+AMCLLaser::SetModelCustomBeam(double z_hit,
                         double z_short,
                         double z_max,
                         double z_rand,
@@ -129,7 +129,7 @@ AMCLLaser::SetModelCustomField(double z_hit,
                         double lambda_short,
                         double chi_outlier)
 {
-  this->model_type = LASER_MODEL_CUSTOM_FIELD;
+  this->model_type = LASER_MODEL_CUSTOM_BEAM;
   this->z_hit = z_hit;
   this->z_short = z_short;
   this->z_max = z_max;
@@ -172,8 +172,8 @@ bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
     pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModel, data);  
   else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD_PROB)
     pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModelProb, data);  
-  else if(this->model_type == LASER_MODEL_CUSTOM_FIELD)
-    pf_update_sensor(pf, (pf_sensor_model_fn_t) CustomFieldModel, data);
+  else if(this->model_type == LASER_MODEL_CUSTOM_BEAM)
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) CustomBeamModel, data);
   else
     pf_update_sensor(pf, (pf_sensor_model_fn_t) DeltaModel, data);
   return true;
@@ -214,6 +214,10 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
     {
       obs_range = data->ranges[i][0];
       obs_bearing = data->ranges[i][1];
+
+      // Check for NaN
+      if(obs_range != obs_range)
+      continue;
 
       // Compute the range according to the map
       map_range = map_calc_range(self->map, pose.v[0], pose.v[1],
@@ -535,7 +539,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
   return(total_weight);
 }
 
-double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
+double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
 {
   AMCLLaser *self;
   int i, j, step;
@@ -556,8 +560,8 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
 
   // ROS_DEBUG("CUSTOM FIELD");
   // fprintf(stdout, "CUSTOM FIELD");
-  fprintf(stderr, "TESTING\n");
-  fprintf(stderr, "%f, %f\n", obs_range, map_range);
+  // fprintf(stderr, "TESTING\n");
+  // fprintf(stderr, "%f, %f\n", obs_range, map_range);
 
   self = (AMCLLaser*) data->sensor;
   obs_array = new double[data->range_count];
@@ -567,19 +571,91 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
   step = (data->range_count - 1) / (self->max_beams - 1);  
 
   for (int idx=0; idx < data->range_count; idx += step){
-    obs_array[idx] = data->ranges[idx][0];
     if(isnan(data->ranges[idx][0]))
+    {
+      obs_array[idx] = 0;
       continue;
+    }
     else
       counter++;
-    obs_range_mean += obs_array[idx]; 
+    obs_array[idx] = data->ranges[idx][0];
+    // obs_range_mean += obs_array[idx]; 
+    // if (obs_range_max < obs_array[idx])
+    //   obs_range_max = obs_array[idx];
+  }
+
+
+  // Mean Filtering for Observation Array
+/*   for (int idx = 0; idx < data->range_count; idx += step){
+    if (idx == 0){
+      for (int j = 0; j < 10*step; j += step)
+        mean_filter += obs_array[idx+j];
+      mean_filter /= 10;
+      obs_array[idx] = mean_filter;
+    }
+    else if (idx == (data->range_count/step)*step - 9*step){
+      mean_filter *= 10;
+      mean_filter -= obs_array[idx - step];
+      mean_filter += obs_array[idx + 9*step];
+      mean_filter /= 10;
+      obs_array[idx] = mean_filter;
+      // change it in the future!!!!
+      for (int j = 0; j < 10*step; j += step){
+        mean_filter -= obs_array[j - step];
+        mean_filter /= 10 - j;
+        obs_array[j] = mean_filter;
+      }
+        
+    }
+    else{
+      mean_filter *= 10;
+      mean_filter -= obs_array[idx - step];
+      mean_filter += obs_array[idx + 9*step];
+      mean_filter /= 10;
+      obs_array[idx] = mean_filter;
+    }
+
+  } */
+
+  // Mean Filtering for Observation Array     
+for (int idx = 0; idx < data->range_count; idx += step)
+{
+  if (idx <= step*5) 
+ {
+    if(idx==0) 
+   {
+      for (int j = 0; j < 11*step; j += step)
+      {
+        mean_filter += obs_array[j];
+      }
+      mean_filter /= 11; 
+   }
+    obs_array[idx] = mean_filter;
+  }
+  else if (idx <= (data->range_count/step)*step - 5*step && idx >= step*5)
+  {
+    mean_filter *= 11;
+    mean_filter -= obs_array[idx - 4*step];
+    mean_filter += obs_array[idx + 4*step];
+    mean_filter /= 11;
+    obs_array[idx] = mean_filter;
+   }
+  else
+  {
+    obs_array[idx] = mean_filter;
+            }     
+}
+
+  // fprintf(stderr, "MEAN FILTERED\n");
+  for (int idx=0; idx < data->range_count; idx += step){
+    obs_range_mean += obs_array[idx];
     if (obs_range_max < obs_array[idx])
-      obs_range_max = obs_array[idx];
+    obs_range_max = obs_array[idx];
   }
   obs_range_mean = obs_range_mean / counter;
   if(isnan(obs_range_mean))
     return total_weight; 
-
+  // fprintf(stderr, "MEAN COUNTED\n");
   counter = 0;
   for (int idx=0; idx < data->range_count; idx += step){
     if(isnan(obs_array[idx]))
@@ -590,6 +666,7 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
     obs_range_var += (obs_array[idx] - obs_range_mean) * (obs_array[idx] - obs_range_mean);
   }
   obs_range_var /= counter;
+  // fprintf(stderr, "VARIANCE COUNTED\n");  
   // fprintf(stderr, "mean, var, max = %f, %f, %f \n", obs_range_mean, obs_range_var, obs_range_max);
   if(isnan(obs_range_var)){
     fprintf(stderr, "SKIPPED\n");
@@ -607,37 +684,6 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
 
   // fprintf(stderr, "mean, var, max = %f, %f, %f \n", obs_range_mean, obs_range_var, obs_range_max);
 
-      // Mean Filtering for Observation Array
-      for (int idx = 0; idx < data->range_count; idx += step){
-        if (idx == 0){
-          for (int j = 0; j < 10*step; j += step)
-            mean_filter += obs_array[idx+j];
-           mean_filter /= 10;
-           obs_array[idx] = mean_filter;
-        }
-        else if (idx == (data->range_count/step)*step - 9*step){
-          mean_filter *= 10;
-          mean_filter -= obs_array[idx - step];
-          mean_filter += obs_array[idx + 9*step];
-          mean_filter /= 10;
-          obs_array[idx] = mean_filter;
-          // change it in the future!!!!
-          for (int j = 0; j < 10*step; j += step){
-            mean_filter -= obs_array[j - step];
-            mean_filter /= 10 - j;
-            obs_array[j] = mean_filter;
-          }
-            
-        }
-        else{
-          mean_filter *= 10;
-          mean_filter -= obs_array[idx - step];
-          mean_filter += obs_array[idx + 9*step];
-          mean_filter /= 10;
-          obs_array[idx] = mean_filter;
-        }
-  
-      }
   // for (int idx=0; idx < data->range_count; idx += step){
   //   fprintf(stderr, "obs_array[%d], %f\n", idx, obs_array[idx]);
   // }
@@ -650,7 +696,7 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
 
     // Take account of the laser pose relative to the robot
     pose = pf_vector_coord_add(self->laser_pose, pose);
-    pose.v[0]=0; pose.v[1]=0;pose.v[2]=0;
+    // pose.v[0]=0; pose.v[1]=0;pose.v[2]=0;
     
     p = 1.0;
     
@@ -660,10 +706,9 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
 
     for (int idx = 0; idx < data->range_count; idx += step){
       obs_bearing = data->ranges[idx][1];
-
       map_array[idx] = map_calc_range(self->map, pose.v[0], pose.v[1],
         pose.v[2] + obs_bearing, data->range_max);
-    
+      // fprintf(stderr, "%f\n", map_array[idx]);    
       if(map_range_max < map_array[idx] && map_array[idx] != data->range_max)
         map_range_max = map_array[idx];
     }
@@ -677,37 +722,64 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
     // }
     // fprintf(stderr, "MAP ARRAY ASSIGNMENTS\n");
     // Mean Filtering for Map Array
-    for (int idx = 0; idx < data->range_count; idx += step){
-      if (idx == 0){
-        for (int j = 0; j < 10*step; j += step)
-          mean_filter += map_array[idx+j];
-         mean_filter /= 10;
-         map_array[idx] = mean_filter;
-      }
-      else if (idx == (data->range_count/step)*step - 9*step){
-        mean_filter *= 10;
-        mean_filter -= map_array[idx - step];
-        mean_filter += map_array[idx + 9*step];
-        mean_filter /= 10;
-        map_array[idx] = mean_filter;
-        // change it in the future!!!! ask dr duff
-        for (int j = 0; j < 10*step; j += step){
-          mean_filter -= map_array[j - step];
-          mean_filter /= 10 - j;
-          map_array[j] = mean_filter;
-        }
+    // for (int idx = 0; idx < data->range_count; idx += step){
+    //   if (idx == 0){
+    //     for (int j = 0; j < 10*step; j += step)
+    //       mean_filter += map_array[idx+j];
+    //      mean_filter /= 10;
+    //      map_array[idx] = mean_filter;
+    //   }
+    //   else if (idx == (data->range_count/step)*step - 9*step){
+    //     mean_filter *= 10;
+    //     mean_filter -= map_array[idx - step];
+    //     mean_filter += map_array[idx + 9*step];
+    //     mean_filter /= 10;
+    //     map_array[idx] = mean_filter;
+    //     // change it in the future!!!! ask dr duff
+    //     for (int j = 0; j < 10*step; j += step){
+    //       mean_filter -= map_array[j - step];
+    //       mean_filter /= 10 - j;
+    //       map_array[j] = mean_filter;
+    //     }
           
-      }
-      else{
-        mean_filter *= 10;
-        mean_filter -= map_array[idx - step];
-        mean_filter += map_array[idx + 9*step];
-        mean_filter /= 10;
-        map_array[idx] = mean_filter;
-      }
+    //   }
+    //   else{
+    //     mean_filter *= 10;
+    //     mean_filter -= map_array[idx - step];
+    //     mean_filter += map_array[idx + 9*step];
+    //     mean_filter /= 10;
+    //     map_array[idx] = mean_filter;
+    //   }
 
-    } 
-
+    // } 
+  // Mean Filtering for Observation Array     
+  for (int idx = 0; idx < data->range_count; idx += step)
+  {
+    if (idx <= step*5) 
+   {
+      if(idx==0) 
+     {
+        for (int j = 0; j < 11*step; j += step)
+        {
+          mean_filter += map_array[j];
+        }
+        mean_filter /= 11; 
+     }
+      map_array[idx] = mean_filter;
+    }
+    else if (idx <= (data->range_count/step)*step - 5*step && idx >= step*5)
+    {
+      mean_filter *= 11;
+      mean_filter -= map_array[idx - 4*step];
+      mean_filter += map_array[idx + 4*step];
+      mean_filter /= 11;
+      map_array[idx] = mean_filter;
+     }
+    else
+    {
+      map_array[idx] = mean_filter;
+              }     
+  }
     // Mean Calculation
     for (int idx = 0; idx < data->range_count; idx += step){
       map_range_mean += map_array[idx];
@@ -723,16 +795,16 @@ double AMCLLaser::CustomFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
     }
 
     map_range_var /= (counter - 1);//why minus one?
-    fprintf(stderr, "RAW\n");
-    fprintf(stderr, "map, obs ,%f,%f,%f\n", pose.v[0], pose.v[1],
-    pose.v[2] );
-    for (int idx=0; idx < data->range_count; idx += step){
+    // fprintf(stderr, "RAW\n");
+    // fprintf(stderr, "map, obs ,%f,%f,%f\n", pose.v[0], pose.v[1],
+    // pose.v[2] );
+/*     for (int idx=0; idx < data->range_count; idx += step){
       if(isnan(obs_array[idx]))
         continue;
       fprintf(stderr, "%f, %f\n", map_array[idx], obs_array[idx]);
-    }
-    fprintf(stderr, "NORMALIZED\n");
-    fprintf(stderr, "map, obs\n");
+    } */
+    // fprintf(stderr, "NORMALIZED\n");
+    // fprintf(stderr, "map, obs\n");
     for (i = 0; i < data->range_count; i += step)
     {
       // obs_range = data->ranges[i][0];
