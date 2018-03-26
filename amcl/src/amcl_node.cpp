@@ -370,6 +370,10 @@ AmclNode::AmclNode() :
   else if(tmp_model_type == "likelihood_field_prob"){
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
   }
+  else if(tmp_model_type == "custom_beam")
+    laser_model_type_ = LASER_MODEL_CUSTOM_BEAM;
+  else if(tmp_model_type == "delta")
+    laser_model_type_ = LASER_MODEL_DELTA;
   else
   {
     ROS_WARN("Unknown laser model type \"%s\"; defaulting to likelihood_field model",
@@ -508,6 +512,10 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD;
   else if(config.laser_model_type == "likelihood_field_prob")
     laser_model_type_ = LASER_MODEL_LIKELIHOOD_FIELD_PROB;
+  else if (config.laser_model_type == "custom_beam")
+    laser_model_type_ = LASER_MODEL_CUSTOM_BEAM;
+  else if (config.laser_model_type == "delta")
+    laser_model_type_ = LASER_MODEL_DELTA;
 
   if(config.odom_model_type == "diff")
     odom_model_type_ = ODOM_MODEL_DIFF;
@@ -581,6 +589,16 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
     laser_->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
                                     laser_likelihood_max_dist_);
     ROS_INFO("Done initializing likelihood field model.");
+  }
+  else if(laser_model_type_ == LASER_MODEL_CUSTOM_BEAM){
+    ROS_INFO("Initializing custom beam model");
+    laser_->SetModelCustomBeam(z_hit_, z_short_, z_max_, z_rand_,
+      sigma_hit_, lambda_short_, 0.0);
+  }
+  else if(laser_model_type_ == LASER_MODEL_DELTA){
+    ROS_INFO("Initializing **Delta** model");
+    laser_->SetModelDelta(z_hit_, z_short_, z_max_, z_rand_,
+      sigma_hit_, lambda_short_, 0.0);
   }
 
   odom_frame_id_ = config.odom_frame_id;
@@ -867,12 +885,24 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
 					beam_skip_threshold_, beam_skip_error_threshold_);
     ROS_INFO("Done initializing likelihood field model.");
   }
-  else
+  else if(laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD)
   {
     ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
     laser_->SetModelLikelihoodField(z_hit_, z_rand_, sigma_hit_,
                                     laser_likelihood_max_dist_);
     ROS_INFO("Done initializing likelihood field model.");
+  }
+  else if(laser_model_type_ == LASER_MODEL_CUSTOM_BEAM)
+  {
+    ROS_INFO("Initializing custom beam model");
+    laser_->SetModelCustomBeam(z_hit_, z_short_, z_max_, z_rand_,
+      sigma_hit_, lambda_short_, 0.0);
+  }
+  else if(laser_model_type_ == LASER_MODEL_DELTA)
+  {
+    ROS_INFO("Initializing **Delta** model");
+    laser_->SetModelDelta(z_hit_, z_short_, z_max_, z_rand_,
+      sigma_hit_, lambda_short_, 0.0);
   }
 
   // In case the initial pose message arrived before the first map,
