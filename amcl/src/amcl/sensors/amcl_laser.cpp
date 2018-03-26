@@ -36,6 +36,7 @@
 #include <ros/console.h>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include "amcl/sensors/amcl_laser.h"
 
@@ -549,7 +550,8 @@ double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
   double p;
   double map_range;
   double obs_range, obs_bearing;
-  double total_weight; 
+  double total_weight;
+  bool print = true;
   pf_sample_t *sample;
   pf_vector_t pose;
   double *obs_array;
@@ -559,6 +561,7 @@ double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
   double mean_filter=0;//assigned initial value
   int counter = 0;
   ofstream output_file;
+  ostringstream obs_scan_string, map_scan_string, norm_obs_sstr, norm_map_sstr, score_str;
   // freopen( "output.txt", "w", stdout );
 
   // ROS_DEBUG("CUSTOM FIELD");
@@ -582,6 +585,9 @@ double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
     else
       counter++;
     obs_array[idx] = data->ranges[idx][0];
+    if (print){
+      obs_scan_string << obs_array[idx] << ",";
+    }
     // obs_range_mean += obs_array[idx]; 
     // if (obs_range_max < obs_array[idx])
     //   obs_range_max = obs_array[idx];
@@ -823,13 +829,19 @@ for (int idx = 0; idx < data->range_count; idx += step)
 
     sample->weight *= p;
     total_weight += sample->weight;
-    char buffer[64]; // The filename buffer.
-    snprintf(buffer, sizeof(char) * 64, "/home/imad/projects/data/file%d.csv", j);
-    output_file.open(buffer, std::ios_base::app);
-    output_file << j;
-    output_file << "," << pose.v[0] <<  "," << pose.v[1] << "," << pose.v[2];
-    output_file << endl;
-    output_file.close();
+    if (print){
+      char buffer[64]; // The filename buffer.
+      snprintf(buffer, sizeof(char) * 64, "/home/imad/projects/data/file%d.csv", j);
+      score_str << sample->weight;
+      output_file.open(buffer, std::ios_base::app);
+      output_file << j;
+      output_file << "," << pose.v[0] <<  "," << pose.v[1] << "," << pose.v[2];
+      output_file << "," << obs_scan_string.str();
+      output_file << score_str.str();
+      output_file << endl;
+      output_file.close();
+    }
+      
   }
   
   delete [] obs_array;
