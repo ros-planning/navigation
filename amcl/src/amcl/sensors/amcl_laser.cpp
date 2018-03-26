@@ -824,9 +824,11 @@ for (int idx = 0; idx < data->range_count; idx += step)
     sample->weight *= p;
     total_weight += sample->weight;
     char buffer[64]; // The filename buffer.
-    snprintf(buffer, sizeof(char) * 64, "/home/imad/projects/data/file%d.txt", j);
+    snprintf(buffer, sizeof(char) * 64, "/home/imad/projects/data/file%d.csv", j);
     output_file.open(buffer, std::ios_base::app);
-    output_file << "Particles" << j << endl;
+    output_file << j;
+    output_file << "," << pose.v[0] <<  "," << pose.v[1] << "," << pose.v[2];
+    output_file << endl;
     output_file.close();
   }
   
