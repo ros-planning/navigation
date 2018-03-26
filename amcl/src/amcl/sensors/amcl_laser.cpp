@@ -34,6 +34,8 @@
 #include <unistd.h>
 #include <cstdio>
 #include <ros/console.h>
+#include <fstream>
+#include <iostream>
 
 #include "amcl/sensors/amcl_laser.h"
 
@@ -556,6 +558,7 @@ double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
   double map_range_mean=0, map_range_var=0, map_range_max=-1;
   double mean_filter=0;//assigned initial value
   int counter = 0;
+  ofstream output_file;
   // freopen( "output.txt", "w", stdout );
 
   // ROS_DEBUG("CUSTOM FIELD");
@@ -583,39 +586,6 @@ double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
     // if (obs_range_max < obs_array[idx])
     //   obs_range_max = obs_array[idx];
   }
-
-
-  // Mean Filtering for Observation Array
-/*   for (int idx = 0; idx < data->range_count; idx += step){
-    if (idx == 0){
-      for (int j = 0; j < 10*step; j += step)
-        mean_filter += obs_array[idx+j];
-      mean_filter /= 10;
-      obs_array[idx] = mean_filter;
-    }
-    else if (idx == (data->range_count/step)*step - 9*step){
-      mean_filter *= 10;
-      mean_filter -= obs_array[idx - step];
-      mean_filter += obs_array[idx + 9*step];
-      mean_filter /= 10;
-      obs_array[idx] = mean_filter;
-      // change it in the future!!!!
-      for (int j = 0; j < 10*step; j += step){
-        mean_filter -= obs_array[j - step];
-        mean_filter /= 10 - j;
-        obs_array[j] = mean_filter;
-      }
-        
-    }
-    else{
-      mean_filter *= 10;
-      mean_filter -= obs_array[idx - step];
-      mean_filter += obs_array[idx + 9*step];
-      mean_filter /= 10;
-      obs_array[idx] = mean_filter;
-    }
-
-  } */
 
   // Mean Filtering for Observation Array     
 for (int idx = 0; idx < data->range_count; idx += step)
@@ -752,34 +722,33 @@ for (int idx = 0; idx < data->range_count; idx += step)
     //   }
 
     // } 
-  // Mean Filtering for Observation Array     
-  for (int idx = 0; idx < data->range_count; idx += step)
-  {
-    if (idx <= step*5) 
-   {
-      if(idx==0) 
-     {
-        for (int j = 0; j < 11*step; j += step)
-        {
-          mean_filter += map_array[j];
-        }
-        mean_filter /= 11; 
-     }
-      map_array[idx] = mean_filter;
+    // Mean Filtering for Map Array     
+    for (int idx = 0; idx < data->range_count; idx += step)
+    {
+      if (idx <= step*5) {
+        if(idx==0) {
+          for (int j = 0; j < 11*step; j += step){
+            mean_filter += map_array[j];
+          }
+          mean_filter /= 11; 
+      }
+        map_array[idx] = mean_filter;
+      }
+      
+      else if (idx <= (data->range_count/step)*step - 5*step && idx >= step*5)
+      {
+        mean_filter *= 11;
+        mean_filter -= map_array[idx - 4*step];
+        mean_filter += map_array[idx + 4*step];
+        mean_filter /= 11;
+        map_array[idx] = mean_filter;
+      }
+      else
+      {
+        map_array[idx] = mean_filter;
+      }     
     }
-    else if (idx <= (data->range_count/step)*step - 5*step && idx >= step*5)
-    {
-      mean_filter *= 11;
-      mean_filter -= map_array[idx - 4*step];
-      mean_filter += map_array[idx + 4*step];
-      mean_filter /= 11;
-      map_array[idx] = mean_filter;
-     }
-    else
-    {
-      map_array[idx] = mean_filter;
-              }     
-  }
+
     // Mean Calculation
     for (int idx = 0; idx < data->range_count; idx += step){
       map_range_mean += map_array[idx];
@@ -854,8 +823,13 @@ for (int idx = 0; idx < data->range_count; idx += step)
 
     sample->weight *= p;
     total_weight += sample->weight;
+    char buffer[64]; // The filename buffer.
+    snprintf(buffer, sizeof(char) * 64, "/home/imad/projects/data/file%d.txt", j);
+    output_file.open(buffer, std::ios_base::app);
+    output_file << "Particles" << j << endl;
+    output_file.close();
   }
-
+  
   delete [] obs_array;
   delete [] map_array;
   return(total_weight);
