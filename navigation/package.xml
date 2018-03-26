@@ -1,13 +1,14 @@
 <package>
     <name>navigation</name>
-    <version>1.14.2</version>
+    <version>1.14.3</version>
     <description>
         A 2D navigation stack that takes in information from odometry, sensor
         streams, and a goal pose and outputs safe velocity commands that are sent
         to a mobile base.
     </description>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <author>contradict@gmail.com</author>
     <author>Eitan Marder-Eppstein</author>
     <license>BSD,LGPL,LGPL (amcl)</license>  

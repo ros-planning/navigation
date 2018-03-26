@@ -2,6 +2,17 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Fixes `#206 <https://github.com/ros-planning/navigation/issues/206>`_ for kinetic (`#663 <https://github.com/ros-planning/navigation/issues/663>`_)
+  * Fixes `#206 <https://github.com/ros-planning/navigation/issues/206>`_ for kinetic
+* fix 'enable' for static_layer with rolling window (`#659 <https://github.com/ros-planning/navigation/issues/659>`_)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, David V. Lu!!, Jannik Abbenseth, Michael Ferguson
+
 1.14.2 (2017-08-14)
 -------------------
 

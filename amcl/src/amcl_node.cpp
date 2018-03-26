@@ -822,7 +822,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
            msg.info.resolution);
   
   if(msg.header.frame_id != global_frame_id_)
-    ROS_WARN("Frame_id of map received:'%s' doesn't match global_frame_id:'%s;'. This could cause issues with reading published topics",
+    ROS_WARN("Frame_id of map received:'%s' doesn't match global_frame_id:'%s'. This could cause issues with reading published topics",
              msg.header.frame_id.c_str(),
              global_frame_id_.c_str());
 
@@ -1293,11 +1293,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
   if(resampled || force_publication)
   {
-    if (!resampled)
-    {
-	    // re-compute the cluster statistics
-	    pf_cluster_stats(pf_, pf_->sets);
-    }
     // Read out the current hypotheses
     double max_weight = 0.0;
     int max_weight_hyp = -1;

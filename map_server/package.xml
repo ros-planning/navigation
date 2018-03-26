@@ -1,6 +1,6 @@
 <package>
     <name>map_server</name>
-    <version>1.14.2</version>
+    <version>1.14.3</version>
     <description>
 
         map_server provides the <tt>map_server</tt> ROS <a href="http://www.ros.org/wiki/Nodes">Node</a>, which offers map data as a ROS <a href="http://www.ros.org/wiki/Services">Service</a>. It also provides the <tt>map_saver</tt> command-line utility, which allows dynamically generated maps to be saved to file.
@@ -9,7 +9,8 @@
     <author>Brian Gerkey, Tony Pratkanis</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <url>http://wiki.ros.org/map_server</url>
     <license>BSD</license>
 
