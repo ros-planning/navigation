@@ -48,7 +48,22 @@ namespace costmap_2d
 {
 
 LayeredCostmap::LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown) :
-    costmap_(), global_frame_(global_frame), rolling_window_(rolling_window), initialized_(false), size_locked_(false)
+    costmap_(),
+    global_frame_(global_frame),
+    rolling_window_(rolling_window),
+    current_(false),
+    minx_(0.0),
+    miny_(0.0),
+    maxx_(0.0),
+    maxy_(0.0),
+    bx0_(0),
+    bxn_(0),
+    by0_(0),
+    byn_(0),
+    initialized_(false),
+    size_locked_(false),
+    circumscribed_radius_(1.0),
+    inscribed_radius_(0.1)
 {
   if (track_unknown)
     costmap_.setDefaultValue(255);
