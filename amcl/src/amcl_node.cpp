@@ -482,6 +482,17 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   laser_min_range_ = config.laser_min_range;
   laser_max_range_ = config.laser_max_range;
 
+  const double epsilon = 1e-5;
+  if(std::fabs(config.gui_publish_rate - 0.0) <= epsilon)
+  {
+    ROS_ERROR("You've set gui_publish_rate nearly zero. This isn't allowed so it will be set now to default value.");
+    config.gui_publish_rate = config.__getDefault__().gui_publish_rate;
+  }
+  if(std::fabs(config.save_pose_rate - 0.0) <= epsilon)
+  {
+    ROS_ERROR("You've set save_pose_rate nearly zero. This isn't allowed so it will be set now to default value.");
+    config.save_pose_rate = config.__getDefault__().save_pose_rate;
+  }
   gui_publish_period = ros::Duration(1.0/config.gui_publish_rate);
   save_pose_period = ros::Duration(1.0/config.save_pose_rate);
 
