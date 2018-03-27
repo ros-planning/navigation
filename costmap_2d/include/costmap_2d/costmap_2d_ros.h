@@ -260,7 +260,6 @@ private:
 
   ros::Subscriber footprint_sub_;
   ros::Publisher footprint_pub_;
-  bool got_footprint_;
   std::vector<geometry_msgs::Point> unpadded_footprint_;
   std::vector<geometry_msgs::Point> padded_footprint_;
   float footprint_padding_;
