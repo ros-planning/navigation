@@ -15,6 +15,7 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>angles</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
 
     <depend>geometry_msgs</depend>
     <depend>message_filters</depend>
@@ -22,6 +23,6 @@
     <depend>rosconsole</depend>
     <depend>roscpp</depend>
     <depend>rospy</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
 
 </package>
