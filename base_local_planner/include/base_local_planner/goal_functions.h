@@ -116,10 +116,10 @@ namespace base_local_planner {
      * @return True if achieved, false otherwise
      */
   bool getGoalPose(const tf::TransformListener& tf,
-  		  const std::vector<geometry_msgs::PoseStamped>& global_plan,
-  		  const std::string& global_frame,
-        const ros::Time& time,
-  		  tf::Stamped<tf::Pose> &goal_pose);
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const std::string& global_frame,
+      const ros::Time& time,
+      tf::Stamped<tf::Pose> &goal_pose);
 
   /**
    * @brief  Check if the goal pose has been achieved
