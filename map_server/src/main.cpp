@@ -174,6 +174,8 @@ class MapServer
           ROS_ERROR("%s", e.what());
           exit(-1);
       }
+      // To make sure get a consistent time in simulation
+      ros::Time::waitForValid();
       map_resp_.map.info.map_load_time = ros::Time::now();
       map_resp_.map.header.frame_id = frame_id;
       map_resp_.map.header.stamp = ros::Time::now();
