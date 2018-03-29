@@ -560,8 +560,10 @@ double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
   double map_range_mean=0, map_range_var=0, map_range_max=-1;
   double mean_filter=0;//assigned initial value
   int counter = 0;
+  const static int print_steps = -1;
   ofstream output_file;
   ostringstream obs_scan_string, map_scan_string, norm_obs_sstr, norm_map_sstr, score_str;
+  ostringstream mean_obs_sstr, mean_map_sstr;
   // freopen( "output.txt", "w", stdout );
 
   // ROS_DEBUG("CUSTOM FIELD");
@@ -585,9 +587,6 @@ double AMCLLaser::CustomBeamModel(AMCLLaserData *data, pf_sample_set_t* set)
     else
       counter++;
     obs_array[idx] = data->ranges[idx][0];
-    if (print){
-      obs_scan_string << obs_array[idx] << ",";
-    }
     // obs_range_mean += obs_array[idx]; 
     // if (obs_range_max < obs_array[idx])
     //   obs_range_max = obs_array[idx];
@@ -619,7 +618,9 @@ for (int idx = 0; idx < data->range_count; idx += step)
   else
   {
     obs_array[idx] = mean_filter;
-            }     
+  }     
+
+  
 }
 
   // fprintf(stderr, "MEAN FILTERED\n");
@@ -788,10 +789,20 @@ for (int idx = 0; idx < data->range_count; idx += step)
       
       // TODO: Kinect -> obs_range_max, NN -> skip
       if(isnan(obs_array[i]))
+      {
+        if (print){
+          obs_scan_string << "nan" << ",";
+          norm_obs_sstr << "nan" << ",";
+        }
         continue;
+      }
         // obs_range = obs_range_max;
-      
       obs_range = (obs_array[i]- obs_range_mean) / sqrt(obs_range_var);
+      if (print){
+        obs_scan_string << obs_array[idx] << ",";
+        norm_obs_sstr << obs_range << ",";
+      }
+
       // ROS_INFO("%f", obs_range);
       
       // In a kinect mode if it is NaN set it to 0
@@ -837,6 +848,7 @@ for (int idx = 0; idx < data->range_count; idx += step)
       output_file << j;
       output_file << "," << pose.v[0] <<  "," << pose.v[1] << "," << pose.v[2];
       output_file << "," << obs_scan_string.str();
+      output_file << "," << norm_obs_sstr.str();
       output_file << score_str.str();
       output_file << endl;
       output_file.close();
