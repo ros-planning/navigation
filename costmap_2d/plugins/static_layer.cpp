@@ -82,8 +82,9 @@ void StaticLayer::onInitialize()
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
 
-  // Only resubscribe if topic has changed
-  if (map_sub_.getTopic() != ros::names::resolve(map_topic))
+  // Even when first_map_only is set, we should still subscribe to new map if
+  // the map_topic name has changed.
+  if (!first_map_only_ || map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
     // we'll subscribe to the latched topic that the map server uses
     ROS_INFO("Requesting the map...");
