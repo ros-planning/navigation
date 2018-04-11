@@ -44,7 +44,8 @@ class MapGenerator
 {
 
   public:
-    MapGenerator(const std::string& mapname) : mapname_(mapname), saved_map_(false)
+    MapGenerator(const std::string& mapname, int threshold = 100)
+      : mapname_(mapname), saved_map_(false), threshold_(threshold)
     {
       ros::NodeHandle n;
       ROS_INFO("Waiting for the map");
@@ -75,7 +76,7 @@ class MapGenerator
           unsigned int i = x + (map->info.height - y - 1) * map->info.width;
           if (map->data[i] == 0) { //occ [0,0.1)
             fputc(254, out);
-          } else if (map->data[i] == +100) { //occ (0.65,1]
+          } else if (map->data[i] >= threshold_) { //occ (0.65,1]
             fputc(000, out);
           } else { //occ [0.1,0.65]
             fputc(205, out);
@@ -123,17 +124,19 @@ free_thresh: 0.196
     std::string mapname_;
     ros::Subscriber map_sub_;
     bool saved_map_;
+    int threshold_;
 
 };
 
 #define USAGE "Usage: \n" \
               "  map_saver -h\n"\
-              "  map_saver [-f <mapname>] [ROS remapping args]"
+              "  map_saver [-t <threshold>] [-f <mapname>] [ROS remapping args]"
 
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "map_saver");
   std::string mapname = "map";
+  int threshold = 100;
 
   for(int i=1; i<argc; i++)
   {
@@ -152,6 +155,24 @@ int main(int argc, char** argv)
         return 1;
       }
     }
+    else if (!strcmp(argv[i], "-t"))
+    {
+      if (++i < argc)
+      {
+        threshold = std::atoi(argv[i]);
+        if (threshold < 1 || threshold > 100)
+        {
+          ROS_ERROR("Threshold must be between 1 and 100");
+          return 1;
+        }
+
+      }
+      else
+      {
+        puts(USAGE);
+        return 1;
+      }
+    }
     else
     {
       puts(USAGE);
@@ -159,7 +180,7 @@ int main(int argc, char** argv)
     }
   }
 
-  MapGenerator mg(mapname);
+  MapGenerator mg(mapname, threshold);
 
   while(!mg.saved_map_ && ros::ok())
     ros::spinOnce();
