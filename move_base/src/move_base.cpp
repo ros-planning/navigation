@@ -842,25 +842,27 @@ namespace move_base {
     size_t closest_i = findClosestPlanIndex(*controller_plan_, current_position);
     size_t prev_plan_len = controller_plan_->size() - closest_i;
     bool prefer_prev = prev_plan_len + 320 < latest_plan_->size();
-    std::ostringstream dbg;
     ros::Time now(ros::Time::now());
 
-    dbg << "Prev plan len: " << prev_plan_len << ", New plan len: "
-      << latest_plan_->size();
-
-    if (prefer_prev & persistence_end_ != PERSISTENCE_INITIAL){
-      if (persistence_end_ == PERSISTENCE_NEWPLAN){
+    if (prefer_prev & persistence_end_ != PERSISTENCE_INITIAL)
+    {
+      if (persistence_end_ == PERSISTENCE_NEWPLAN)
+      {
         persistence_end_ = now + plan_persistence_timeout_;
       }
-      if (now < persistence_end_){
-        ROS_ERROR_NAMED("plan_persist","%s. Using PREV. Time remain: %f",
-                       dbg.str().c_str(), (persistence_end_ - now).toSec());
+      if (now < persistence_end_)
+      {
+        ROS_DEBUG_STREAM("Keeping PREV plan. Time remain="
+            << (persistence_end_ - now).toSec()
+            << " Prev plan len: " << prev_plan_len
+            << ", New plan len: " << latest_plan_->size());
         state_ = PLANNING;
         return true;
       }
     }
     persistence_end_ = PERSISTENCE_NEWPLAN;
-    ROS_ERROR_NAMED("plan_persist","%s. Using NEW.", dbg.str().c_str());
+    ROS_DEBUG_STREAM("Using NEW plan. Prev plan len: " << prev_plan_len
+        << ", New plan len: " << latest_plan_->size());
 
     return false;
   }
