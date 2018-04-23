@@ -25,7 +25,7 @@ find_package(catkin REQUIRED
             srslib_timing
         )
 
-find_package(PCL 1.8 REQUIRED QUIET)
+find_package(PCL 1.8 REQUIRED QUIET COMPONENTS io)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
