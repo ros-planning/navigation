@@ -383,7 +383,9 @@ void pf_update_resample(pf_t* pf)
             // Naive discrete event sampler
             double r;
             r = drand48();
-            for (int i = 0; i < set_a->sample_count; i++)
+
+            int i;
+            for (i = 0; i < set_a->sample_count; i++)
             {
                 if ((c[i] <= r) && (r < c[i+1]))
                 {
@@ -391,7 +393,6 @@ void pf_update_resample(pf_t* pf)
                     break;
                 }
             }
-
 
             pf_sample_t* sample_a = set_a->samples + i;
             assert(sample_a->weight > 0);
