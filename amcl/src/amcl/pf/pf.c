@@ -214,6 +214,7 @@ int pf_update_converged(pf_t* pf)
     mean_x /= set->sample_count;
     mean_y /= set->sample_count;
 
+    pf_sample_t* sample;
     for (int i = 0; i < set->sample_count; i++)
     {
         sample = set->samples + i;
@@ -252,7 +253,7 @@ void pf_update_sensor(pf_t* pf, pf_sensor_model_fn_t sensor_fn, void* sensor_dat
     if (total <= 0.0)
     {
         // Handle zero total
-        for (i = 0; i < set->sample_count; i++)
+        for (int i = 0; i < set->sample_count; i++)
         {
             sample = set->samples + i;
             sample->weight = 1.0 / set->sample_count;
@@ -342,9 +343,11 @@ void pf_update_resample(pf_t* pf)
     m = 0;
     */
     double total = 0;
+    pf_sample_t* sample_b;
+
     while (set_b->sample_count < pf->max_samples)
     {
-        pf_sample_t* sample_b = set_b->samples + set_b->sample_count++;
+        sample_b = set_b->samples + set_b->sample_count++;
 
         if (drand48() < w_diff)
         {
@@ -382,9 +385,13 @@ void pf_update_resample(pf_t* pf)
             r = drand48();
             for (int i = 0; i < set_a->sample_count; i++)
             {
-                if ((c[i] <= r) && (r < c[i+1])) break;
+                if ((c[i] <= r) && (r < c[i+1]))
+                {
+                    assert(i < set_a->sample_count);
+                    break;
+                }
             }
-            assert(i < set_a->sample_count);
+
 
             pf_sample_t* sample_a = set_a->samples + i;
             assert(sample_a->weight > 0);
