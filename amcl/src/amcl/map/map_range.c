@@ -35,24 +35,25 @@
 // Extract a single range reading from the map.  Unknown cells and/or
 // out-of-bound cells are treated as occupied, which makes it easy to
 // use Stage bitmap files.
-double map_calc_range(map_t* map, double ox, double oy, double oa,
-        double max_range)
+double map_calc_range(map_t* map,
+                      double ox, double oy, double oa,
+                      double max_range)
 {
     // Bresenham raytracing
-    int x0,x1,y0,y1;
     int x,y;
     int xstep, ystep;
-    char steep;
     int tmp;
-    int deltax, deltay, error, deltaerr;
+    int deltax, deltay, deltaerr;
 
-    x0 = MAP_GXWX(map,ox);
-    y0 = MAP_GYWY(map,oy);
+    int error = 0;
 
-    x1 = MAP_GXWX(map,ox + max_range * cos(oa));
-    y1 = MAP_GYWY(map,oy + max_range * sin(oa));
+    int x0 = MAP_GXWX(map,ox);
+    int y0 = MAP_GYWY(map,oy);
 
-    steep = (abs(y1-y0) > abs(x1-x0)) ? 1 : 0;
+    int x1 = MAP_GXWX(map,ox + max_range * cos(oa));
+    int y1 = MAP_GYWY(map,oy + max_range * sin(oa));
+
+    char steep = (abs(y1-y0) > abs(x1-x0)) ? 1 : 0;
 
     if (steep)
     {
@@ -67,7 +68,6 @@ double map_calc_range(map_t* map, double ox, double oy, double oa,
 
     deltax = abs(x1-x0);
     deltay = abs(y1-y0);
-    error = 0;
     deltaerr = deltay;
 
     x = x0;
