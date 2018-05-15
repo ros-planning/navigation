@@ -120,8 +120,7 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
           occ = 0;
       }
 
-      if (!MAP_VALID(map, i, j))
-        continue;
+      if (!MAP_VALID(map, i, j)) continue;
 
       cell = map->cells + MAP_INDEX(map, i, j);
       cell->occ_state = occ;

@@ -64,7 +64,7 @@ public:
       delete[] distances_;
     }
   }
-  double** distances_;
+  double** distances_; // TODO change this to use vector!
   double scale_;
   double max_dist_;
   int cell_radius_;
@@ -84,7 +84,7 @@ CachedDistanceMap* get_distance_map(double scale, double max_dist)
   if (!cdm || (cdm->scale_ != scale) || (cdm->max_dist_ != max_dist))
   {
     if (cdm) delete cdm;
-    cdm = new CachedDistanceMap(scale, max_dist);
+    cdm = new CachedDistanceMap(scale, max_dist); // FIXME is this ever deleted?!?!?!
   }
 
   return cdm;

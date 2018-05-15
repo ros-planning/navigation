@@ -76,31 +76,26 @@ double map_calc_range(map_t* map,
   xstep = (x0 < x1) ? 1 : -1;
   ystep = (y0 < y1) ? 1 : -1;
 
-  if (steep)
-  {
-    if (!MAP_VALID(map,y,x) || map->cells[MAP_INDEX(map,y,x)].occ_state > -1)
-      return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
-  }
-  else if (!MAP_VALID(map,x,y) || map->cells[MAP_INDEX(map,x,y)].occ_state > -1)
-        return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
 
-  while (x != (x1 + xstep * 1))
+  do
   {
     x += xstep;
     error += deltaerr;
-    if (2*error >= deltax)
+    if (2 * error >= deltax)
     {
       y += ystep;
       error -= deltax;
     }
 
-    if (steep)
+
+    char occupied = steep
+                      ? (!MAP_VALID(map,y,x) || map->cells[MAP_INDEX(map,y,x)].occ_state > -1)
+                      : (!MAP_VALID(map,x,y) || map->cells[MAP_INDEX(map,x,y)].occ_state > -1);
+    if (occupied)
     {
-      if (!MAP_VALID(map,y,x) || map->cells[MAP_INDEX(map,y,x)].occ_state > -1)
-        return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
+      return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
     }
-    else if (!MAP_VALID(map,x,y) || map->cells[MAP_INDEX(map,x,y)].occ_state > -1)
-          return sqrt((x-x0)*(x-x0) + (y-y0)*(y-y0)) * map->scale;
-  }
+  } while (x != (x1 + xstep * 1));
+
   return max_range;
 }
