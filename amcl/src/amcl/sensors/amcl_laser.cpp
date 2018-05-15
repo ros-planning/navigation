@@ -468,7 +468,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
     if (skipped_beam_count >= (beam_ind * self->beam_skip_error_threshold))
     {
-      std::cerr << "Over " << (100 * self->beam_skip_error_threshold))
+      std::cerr << "Over " << 100 * self->beam_skip_error_threshold
         << " of the observations were not in the map"
         << "- pf may have converged to wrong pose - integrating all observations"
         << std::endl;
