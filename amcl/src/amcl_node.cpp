@@ -1121,7 +1121,7 @@ void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
   last_laser_received_ts_ = ros::Time::now();
-  if (!map_ == NULL) return;
+  if (!map_) return;
 
   boost::recursive_mutex::scoped_lock lr(configuration_mutex_);
   int laser_index = -1;
