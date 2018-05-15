@@ -36,11 +36,13 @@
 *********************************************************************/
 #include <rotate_recovery/rotate_recovery.h>
 #include <pluginlib/class_list_macros.h>
+#include <nav_core/parameter_magic.h>
 
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
 namespace rotate_recovery {
+
 RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
   tf_(NULL), initialized_(false), world_model_(NULL) {} 
 
@@ -60,9 +62,9 @@ void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
     private_nh.param("frequency", frequency_, 20.0);
 
-    blp_nh.param("acc_lim_th", acc_lim_th_, 3.2);
-    blp_nh.param("max_rotational_vel", max_rotational_vel_, 1.0);
-    blp_nh.param("min_in_place_rotational_vel", min_rotational_vel_, 0.4);
+    acc_lim_th_ = nav_core::loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
+    max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
+    min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
     blp_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
 
     world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
