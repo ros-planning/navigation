@@ -91,9 +91,9 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
   }
 
   // Read in the image
-  for (int j = height - 1; j >= 0; j--)
+  for (int j = height - 1; j >= 0; --j)
   {
-    for (int i = 0; i < width; i++)
+    for (int i = 0; i < width; ++i)
     {
       ch = fgetc(file);
 

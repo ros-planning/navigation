@@ -44,9 +44,9 @@ void map_draw(map_t* map, rtk_fig_t* fig, void* col_function)
   int col;
   map_cell_t* cell;
   uint16_t* pixel;
-  for (int j = 0; j < map->size_y; j++)
+  for (int j = 0; j < map->size_y; ++j)
   {
-    for (int i =  0; i < map->size_x; i++)
+    for (int i =  0; i < map->size_x; ++i)
     {
       cell = map->cells + MAP_INDEX(map, i, j);
       pixel = image + (j * map->size_x + i);
@@ -102,9 +102,9 @@ void map_draw_wifi(map_t* map, rtk_fig_t* fig, int index)
   uint16_t* mask = malloc(map->size_x * map->size_y * sizeof(mask[0]));
 
   // Draw wifi levels
-  for (int j = 0; j < map->size_y; j++)
+  for (int j = 0; j < map->size_y; ++j)
   {
-    for (int i =  0; i < map->size_x; i++)
+    for (int i =  0; i < map->size_x; ++i)
     {
       map_cell_t* cell = map->cells + MAP_INDEX(map, i, j);
       uint16_t* ipix = image + (j * map->size_x + i);
