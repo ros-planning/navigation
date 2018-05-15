@@ -50,8 +50,6 @@ public:
     }
   }
 
-  ~CachedDistanceMap();
-
   double scale_;
   double max_dist_;
   int cell_radius_;
