@@ -108,31 +108,28 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
   {
   case ODOM_MODEL_OMNI:
   {
-    double delta_trans, delta_rot, delta_bearing;
-    double delta_trans_hat, delta_rot_hat, delta_strafe_hat;
-
     double delta_trans = sqrt(ndata->delta.v[0]*ndata->delta.v[0] +
                               ndata->delta.v[1]*ndata->delta.v[1]);
-    delta_rot = ndata->delta.v[2];
+    double delta_rot = ndata->delta.v[2];
 
     // Precompute a couple of things
     double trans_hat_stddev = alpha3 * delta_trans * delta_trans + alpha1 * delta_rot * delta_rot;
-    double rot_hat_stddev = alpha4 * delta_rot * delta_rot) + alpha2 * delta_trans * delta_trans;
+    double rot_hat_stddev = alpha4 * delta_rot * delta_rot + alpha2 * delta_trans * delta_trans;
     double strafe_hat_stddev = alpha1 * delta_rot * delta_rot + alpha5 * delta_trans * delta_trans;
 
     for (int i = 0; i < set->sample_count; i++)
     {
       pf_sample_t* sample = set->samples + i;
 
-      delta_bearing = angle_diff(atan2(ndata->delta.v[1], ndata->delta.v[0]),
-      old_pose.v[2]) + sample->pose.v[2];
+      double delta_bearing = angle_diff(atan2(ndata->delta.v[1], ndata->delta.v[0]),
+                                        old_pose.v[2]) + sample->pose.v[2];
       double cs_bearing = cos(delta_bearing);
       double sn_bearing = sin(delta_bearing);
 
       // Sample pose differences
-      delta_trans_hat = delta_trans + pf_ran_gaussian(trans_hat_stddev);
-      delta_rot_hat = delta_rot + pf_ran_gaussian(rot_hat_stddev);
-      delta_strafe_hat = 0 + pf_ran_gaussian(strafe_hat_stddev);
+      double delta_trans_hat = delta_trans + pf_ran_gaussian(trans_hat_stddev);
+      double delta_rot_hat = delta_rot + pf_ran_gaussian(rot_hat_stddev);
+      double delta_strafe_hat = 0 + pf_ran_gaussian(strafe_hat_stddev);
       // Apply sampled update to particle pose
       sample->pose.v[0] += (delta_trans_hat * cs_bearing + delta_strafe_hat * sn_bearing);
       sample->pose.v[1] += (delta_trans_hat * sn_bearing - delta_strafe_hat * cs_bearing);
@@ -237,7 +234,7 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
     {
       delta_rot1 = angle_diff(atan2(ndata->delta.v[1], ndata->delta.v[0]), old_pose.v[2]);
     }
-    
+
     delta_trans = sqrt(ndata->delta.v[0]*ndata->delta.v[0] +
                        ndata->delta.v[1]*ndata->delta.v[1]);
     delta_rot2 = angle_diff(ndata->delta.v[2], delta_rot1);
