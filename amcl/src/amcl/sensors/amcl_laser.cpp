@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
+#include <iostream>
 
 #include "amcl/sensors/amcl_laser.h"
 
