@@ -40,7 +40,6 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
 {
   FILE* file;
   char magic[3];
-  int i, j;
   int ch, occ;
   int width, height, depth;
   map_cell_t* cell;
@@ -92,9 +91,9 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
   }
 
   // Read in the image
-  for (j = height - 1; j >= 0; j--)
+  for (int j = height - 1; j >= 0; j--)
   {
-    for (i = 0; i < width; i++)
+    for (int i = 0; i < width; i++)
     {
       ch = fgetc(file);
 
