@@ -46,7 +46,7 @@
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <dynamic_reconfigure/server.h>
-#include <pluginlib/class_loader.h>
+#include <pluginlib/class_loader.hpp>
 
 class SuperValue : public XmlRpc::XmlRpcValue
 {
