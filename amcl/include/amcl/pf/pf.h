@@ -46,7 +46,7 @@ typedef pf_vector_t (*pf_init_model_fn_t) (void* init_data);
 
 // Function prototype for the action model; generates a sample pose from
 // an appropriate distribution
-typedef void (*pf_action_model_fn_t) (void* action_data, 
+typedef void (*pf_action_model_fn_t) (void* action_data,
                                       struct _pf_sample_set_t* set);
 
 // Function prototype for the sensor model; determines the probability
@@ -58,11 +58,11 @@ typedef double (*pf_sensor_model_fn_t) (void* sensor_data,
 // Information for a single sample
 typedef struct
 {
-    // Pose represented by this sample
-    pf_vector_t pose;
+  // Pose represented by this sample
+  pf_vector_t pose;
 
-    // Weight for this pose
-    double weight;
+  // Weight for this pose
+  double weight;
 
 } pf_sample_t;
 
@@ -70,18 +70,18 @@ typedef struct
 // Information for a cluster of samples
 typedef struct
 {
-    // Number of samples
-    int count;
+  // Number of samples
+  int count;
 
-    // Total weight of samples in this cluster
-    double weight;
+  // Total weight of samples in this cluster
+  double weight;
 
-    // Cluster statistics
-    pf_vector_t mean;
-    pf_matrix_t cov;
+  // Cluster statistics
+  pf_vector_t mean;
+  pf_matrix_t cov;
 
-    // Workspace
-    double m[4], c[2][2];
+  // Workspace
+  double m[4], c[2][2];
 
 } pf_cluster_t;
 
@@ -89,50 +89,50 @@ typedef struct
 // Information for a set of samples
 typedef struct _pf_sample_set_t
 {
-    // The samples
-    int sample_count;
-    pf_sample_t* samples;
+  // The samples
+  int sample_count;
+  pf_sample_t* samples;
 
-    // A kdtree encoding the histogram
-    pf_kdtree_t* kdtree;
+  // A kdtree encoding the histogram
+  pf_kdtree_t* kdtree;
 
-    // Clusters
-    int cluster_count, cluster_max_count;
-    pf_cluster_t* clusters;
+  // Clusters
+  int cluster_count, cluster_max_count;
+  pf_cluster_t* clusters;
 
-    // Filter statistics
-    pf_vector_t mean;
-    pf_matrix_t cov;
-    int converged;
+  // Filter statistics
+  pf_vector_t mean;
+  pf_matrix_t cov;
+  int converged;
 } pf_sample_set_t;
 
 
 // Information for an entire filter
 typedef struct _pf_t
 {
-    // This min and max number of samples
-    int min_samples, max_samples;
+  // This min and max number of samples
+  int min_samples, max_samples;
 
-    // Population size parameters
-    double pop_err, pop_z;
+  // Population size parameters
+  double pop_err, pop_z;
 
-    // The sample sets.  We keep two sets and use [current_set]
-    // to identify the active set.
-    int current_set;
-    pf_sample_set_t sets[2];
+  // The sample sets.  We keep two sets and use [current_set]
+  // to identify the active set.
+  int current_set;
+  pf_sample_set_t sets[2];
 
-    // Running averages, slow and fast, of likelihood
-    double w_slow, w_fast;
+  // Running averages, slow and fast, of likelihood
+  double w_slow, w_fast;
 
-    // Decay rates for running averages
-    double alpha_slow, alpha_fast;
+  // Decay rates for running averages
+  double alpha_slow, alpha_fast;
 
-    // Function used to draw random pose samples
-    pf_init_model_fn_t random_pose_fn;
-    void* random_pose_data;
+  // Function used to draw random pose samples
+  pf_init_model_fn_t random_pose_fn;
+  void* random_pose_data;
 
-    double dist_threshold; //distance threshold in each axis over which the pf is considered to not be converged
-    int converged;
+  double dist_threshold; //distance threshold in each axis over which the pf is considered to not be converged
+  int converged;
 } pf_t;
 
 

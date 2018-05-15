@@ -45,14 +45,14 @@ struct _rtk_fig_t;
 // Description for a single map cell.
 typedef struct
 {
-    // Occupancy state (-1 = free, 0 = unknown, +1 = occ)
-    int occ_state;
+  // Occupancy state (-1 = free, 0 = unknown, +1 = occ)
+  int occ_state;
 
-    // Distance to the nearest occupied cell
-    double occ_dist;
+  // Distance to the nearest occupied cell
+  double occ_dist;
 
-    // Wifi levels
-    //int wifi_levels[MAP_WIFI_MAX_LEVELS];
+  // Wifi levels
+  //int wifi_levels[MAP_WIFI_MAX_LEVELS];
 
 } map_cell_t;
 
@@ -60,21 +60,21 @@ typedef struct
 // Description for a map
 typedef struct
 {
-    // Map origin; the map is a viewport onto a conceptual larger map.
-    double origin_x, origin_y;
+  // Map origin; the map is a viewport onto a conceptual larger map.
+  double origin_x, origin_y;
 
-    // Map scale (m/cell)
-    double scale;
+  // Map scale (m/cell)
+  double scale;
 
-    // Map dimensions (number of cells)
-    int size_x, size_y;
+  // Map dimensions (number of cells)
+  int size_x, size_y;
 
-    // The map data, stored as a grid
-    map_cell_t* cells;
+  // The map data, stored as a grid
+  map_cell_t* cells;
 
-    // Max distance at which we care about obstacles, for constructing
-    // likelihood field
-    double max_occ_dist;
+  // Max distance at which we care about obstacles, for constructing
+  // likelihood field
+  double max_occ_dist;
 
 } map_t;
 

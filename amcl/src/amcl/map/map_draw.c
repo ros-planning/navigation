@@ -40,34 +40,34 @@
 // Draw the occupancy map
 void map_draw_occ(map_t* map, rtk_fig_t* fig)
 {
-    int i, j;
-    int col;
-    map_cell_t* cell;
-    uint16_t* image;
-    uint16_t* pixel;
+  int i, j;
+  int col;
+  map_cell_t* cell;
+  uint16_t* image;
+  uint16_t* pixel;
 
-    image = malloc(map->size_x * map->size_y * sizeof(image[0]));
+  image = malloc(map->size_x * map->size_y * sizeof(image[0]));
 
-    // Draw occupancy
-    for (j = 0; j < map->size_y; j++)
+  // Draw occupancy
+  for (j = 0; j < map->size_y; j++)
+  {
+    for (i =  0; i < map->size_x; i++)
     {
-        for (i =  0; i < map->size_x; i++)
-        {
-            cell = map->cells + MAP_INDEX(map, i, j);
-            pixel = image + (j * map->size_x + i);
+      cell = map->cells + MAP_INDEX(map, i, j);
+      pixel = image + (j * map->size_x + i);
 
-            col = 127 - 127 * cell->occ_state;
-            *pixel = RTK_RGB16(col, col, col);
-        }
+      col = 127 - 127 * cell->occ_state;
+      *pixel = RTK_RGB16(col, col, col);
     }
+  }
 
-    // Draw the entire occupancy map as an image
-    rtk_fig_image(fig, map->origin_x, map->origin_y, 0,
-        map->scale, map->size_x, map->size_y, 16, image, NULL);
+  // Draw the entire occupancy map as an image
+  rtk_fig_image(fig, map->origin_x, map->origin_y, 0,
+    map->scale, map->size_x, map->size_y, 16, image, NULL);
 
-    free(image);
+  free(image);
 
-    return;
+  return;
 }
 
 
@@ -75,35 +75,35 @@ void map_draw_occ(map_t* map, rtk_fig_t* fig)
 // Draw the cspace map
 void map_draw_cspace(map_t* map, rtk_fig_t* fig)
 {
-    int i, j;
-    int col;
-    map_cell_t* cell;
-    uint16_t* image;
-    uint16_t* pixel;
+  int i, j;
+  int col;
+  map_cell_t* cell;
+  uint16_t* image;
+  uint16_t* pixel;
 
-    image = malloc(map->size_x * map->size_y * sizeof(image[0]));
+  image = malloc(map->size_x * map->size_y * sizeof(image[0]));
 
-    // Draw occupancy
-    for (j = 0; j < map->size_y; j++)
+  // Draw occupancy
+  for (j = 0; j < map->size_y; j++)
+  {
+    for (i =  0; i < map->size_x; i++)
     {
-        for (i =  0; i < map->size_x; i++)
-        {
-            cell = map->cells + MAP_INDEX(map, i, j);
-            pixel = image + (j * map->size_x + i);
+      cell = map->cells + MAP_INDEX(map, i, j);
+      pixel = image + (j * map->size_x + i);
 
-            col = 255 * cell->occ_dist / map->max_occ_dist;
+      col = 255 * cell->occ_dist / map->max_occ_dist;
 
-            *pixel = RTK_RGB16(col, col, col);
-        }
+      *pixel = RTK_RGB16(col, col, col);
     }
+  }
 
-    // Draw the entire occupancy map as an image
-    rtk_fig_image(fig, map->origin_x, map->origin_y, 0,
-        map->scale, map->size_x, map->size_y, 16, image, NULL);
+  // Draw the entire occupancy map as an image
+  rtk_fig_image(fig, map->origin_x, map->origin_y, 0,
+    map->scale, map->size_x, map->size_y, 16, image, NULL);
 
-    free(image);
+  free(image);
 
-    return;
+  return;
 }
 
 
@@ -111,41 +111,41 @@ void map_draw_cspace(map_t* map, rtk_fig_t* fig)
 // Draw a wifi map
 void map_draw_wifi(map_t* map, rtk_fig_t* fig, int index)
 {
-    uint16_t* image = malloc(map->size_x * map->size_y * sizeof(image[0]));
-    uint16_t* mask = malloc(map->size_x * map->size_y * sizeof(mask[0]));
+  uint16_t* image = malloc(map->size_x * map->size_y * sizeof(image[0]));
+  uint16_t* mask = malloc(map->size_x * map->size_y * sizeof(mask[0]));
 
-    // Draw wifi levels
-    for (int j = 0; j < map->size_y; j++)
+  // Draw wifi levels
+  for (int j = 0; j < map->size_y; j++)
+  {
+    for (int i =  0; i < map->size_x; i++)
     {
-        for (int i =  0; i < map->size_x; i++)
-        {
-            map_cell_t* cell = map->cells + MAP_INDEX(map, i, j);
-            uint16_t* ipix = image + (j * map->size_x + i);
-            uint16_t* mpix = mask + (j * map->size_x + i);
+      map_cell_t* cell = map->cells + MAP_INDEX(map, i, j);
+      uint16_t* ipix = image + (j * map->size_x + i);
+      uint16_t* mpix = mask + (j * map->size_x + i);
 
-            int level = cell->wifi_levels[index];
+      int level = cell->wifi_levels[index];
 
-            if (cell->occ_state == -1 && level != 0)
-            {
-                int col = 255 * (100 + level) / 100;
-                *ipix = RTK_RGB16(col, col, col);
-                *mpix = 1;
-            }
-            else
-            {
-                *mpix = 0;
-            }
-        }
+      if (cell->occ_state == -1 && level != 0)
+      {
+        int col = 255 * (100 + level) / 100;
+        *ipix = RTK_RGB16(col, col, col);
+        *mpix = 1;
+      }
+      else
+      {
+        *mpix = 0;
+      }
     }
+  }
 
-    // Draw the entire occupancy map as an image
-    rtk_fig_image(fig, map->origin_x, map->origin_y, 0,
-        map->scale, map->size_x, map->size_y, 16, image, mask);
+  // Draw the entire occupancy map as an image
+  rtk_fig_image(fig, map->origin_x, map->origin_y, 0,
+    map->scale, map->size_x, map->size_y, 16, image, mask);
 
-    free(mask);
-    free(image);
+  free(mask);
+  free(image);
 
-    return;
+  return;
 }
 
 

@@ -37,14 +37,14 @@ extern "C" {
 // The basic vector
 typedef struct
 {
-    double v[3];
+  double v[3];
 } pf_vector_t;
 
 
 // The basic matrix
 typedef struct
 {
-    double m[3][3];
+  double m[3][3];
 } pf_matrix_t;
 
 
