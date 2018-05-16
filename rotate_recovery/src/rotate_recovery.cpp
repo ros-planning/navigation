@@ -41,6 +41,34 @@
 PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
 namespace rotate_recovery {
+
+/**
+ * @brief Load a parameter from one of two namespaces. Complain if it uses the old name.
+ * @param nh NodeHandle to look for the parameter in
+ * @param current_name Parameter name that is current, i.e. not deprecated
+ * @param old_name Deprecated parameter name
+ * @param default_value If neither parameter is present, return this value
+ * @return The value of the parameter or the default value
+ */
+template<class param_t>
+param_t loadParameterWithDeprecation(const ros::NodeHandle& nh, const std::string current_name,
+                                     const std::string old_name, const param_t& default_value)
+{
+  param_t value;
+  if (nh.hasParam(current_name))
+  {
+    nh.getParam(current_name, value);
+    return value;
+  }
+  if (nh.hasParam(old_name))
+  {
+    ROS_WARN("Parameter %s is deprecated. Please use the name %s instead.", old_name.c_str(), current_name.c_str());
+    nh.getParam(old_name, value);
+    return value;
+  }
+  return default_value;
+}
+
 RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
   tf_(NULL), initialized_(false), world_model_(NULL) {} 
 
@@ -60,9 +88,9 @@ void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
     private_nh.param("frequency", frequency_, 20.0);
 
-    blp_nh.param("acc_lim_th", acc_lim_th_, 3.2);
-    blp_nh.param("max_rotational_vel", max_rotational_vel_, 1.0);
-    blp_nh.param("min_in_place_rotational_vel", min_rotational_vel_, 0.4);
+    acc_lim_th_ = loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
+    max_rotational_vel_ = loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
+    min_rotational_vel_ = loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
     blp_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
 
     world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
