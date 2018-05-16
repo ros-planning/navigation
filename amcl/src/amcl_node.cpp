@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <memory>
 
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>

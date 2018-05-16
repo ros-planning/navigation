@@ -53,7 +53,7 @@
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GetPlan.h>
 
-#include <pluginlib/class_loader.h>
+#include <pluginlib/class_loader.hpp>
 #include <std_srvs/Empty.h>
 
 #include <dynamic_reconfigure/server.h>

@@ -170,6 +170,7 @@ int main(int argc, char** argv)
   base_rel_map.child_frame_id_ = "/base_link";
   base_rel_map.frame_id_ = "/map";
   base_rel_map.stamp_ = ros::Time::now();
+  base_rel_map.setIdentity();
   tf_->setTransform( base_rel_map );
 
   testing::InitGoogleTest(&argc, argv);
