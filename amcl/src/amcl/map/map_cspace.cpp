@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "amcl/map/map.h"
+#include <vector>
 
 class CellData
 {
@@ -37,37 +38,22 @@ class CachedDistanceMap
 {
 public:
   CachedDistanceMap(double scale, double max_dist)
-  : distances_(NULL), scale_(scale), max_dist_(max_dist)
+  : scale_(scale), max_dist_(max_dist), cell_radius_(max_dist / scale),
+    distances_(cell_radius_+2, std::vector<double>(cell_radius_+2))
   {
-    cell_radius_ = max_dist / scale;
-    distances_ = new double *[cell_radius_+2]; // TODO correct memory allocation??
-    for (int i = 0; i <= cell_radius_+1; i++)
+    for (size_t i = 0; i < distances_.size(); ++i)
     {
-      distances_[i] = new double[cell_radius_+2];
-
-      for (int j = 0; j <= cell_radius_+1; j++)
+      for (size_t j = 0; j <= distances_[i].size(); ++j)
       {
         distances_[i][j] = sqrt(i*i + j*j);
       }
     }
   }
 
-  ~CachedDistanceMap()
-  {
-    if (distances_)
-    {
-      for(int i = 0; i <= cell_radius_+1; i++)
-      {
-        delete[] distances_[i];
-      }
-
-      delete[] distances_;
-    }
-  }
-  double** distances_; // TODO change this to use vector!
   double scale_;
   double max_dist_;
   int cell_radius_;
+  std::vector< std::vector<double> > distances_;
 };
 
 
@@ -77,32 +63,19 @@ bool operator<(const CellData& a, const CellData& b)
            a.map_->cells[MAP_INDEX(b.map_, b.i_, b.j_)].occ_dist );
 }
 
-CachedDistanceMap* get_distance_map(double scale, double max_dist)
-{
-  static CachedDistanceMap* cdm = NULL;
-
-  if (!cdm || (cdm->scale_ != scale) || (cdm->max_dist_ != max_dist))
-  {
-    if (cdm) delete cdm;
-    cdm = new CachedDistanceMap(scale, max_dist); // FIXME is this ever deleted?!?!?!
-  }
-
-  return cdm;
-}
-
 void enqueue(map_t* map, int i, int j,
              int src_i, int src_j,
              std::priority_queue<CellData>& Q,
-             CachedDistanceMap* cdm,
-             unsigned char* marked)
+             const CachedDistanceMap& cdm,
+             std::vector<bool>& marked)
 {
   if (marked[MAP_INDEX(map, i, j)]) return;
 
   int di = abs(i - src_i);
   int dj = abs(j - src_j);
-  double distance = cdm->distances_[di][dj];
+  double distance = cdm.distances_[di][dj];
 
-  if (distance > cdm->cell_radius_) return;
+  if (distance > cdm.cell_radius_) return;
 
   map->cells[MAP_INDEX(map, i, j)].occ_dist = distance * map->scale;
 
@@ -115,36 +88,33 @@ void enqueue(map_t* map, int i, int j,
 
   Q.push(cell);
 
-  marked[MAP_INDEX(map, i, j)] = 1;
+  marked[MAP_INDEX(map, i, j)] = true;
 }
 
 // Update the cspace distance values
 void map_update_cspace(map_t* map, double max_occ_dist)
 {
-  unsigned char* marked;
+  std::vector<bool> marked(MAP_INDEX(map, map->size_x, map->size_y)+1, false);
   std::priority_queue<CellData> Q;
-
-  marked = new unsigned char[map->size_x*map->size_y];
-  memset(marked, 0, sizeof(unsigned char) * map->size_x*map->size_y);
 
   map->max_occ_dist = max_occ_dist;
 
-  CachedDistanceMap* cdm = get_distance_map(map->scale, map->max_occ_dist);
+  CachedDistanceMap cdm(map->scale, map->max_occ_dist);
 
   // Enqueue all the obstacle cells
   CellData cell;
   cell.map_ = map;
-  for (int i = 0; i < map->size_x; i++)
+  for (int i = 0; i < map->size_x; ++i)
   {
     cell.src_i_ = cell.i_ = i;
 
-    for (int j=0; j<map->size_y; j++)
+    for (int j = 0; j < map->size_y; ++j)
     {
       if (map->cells[MAP_INDEX(map, i, j)].occ_state == +1)
       {
         map->cells[MAP_INDEX(map, i, j)].occ_dist = 0.0;
         cell.src_j_ = cell.j_ = j;
-        marked[MAP_INDEX(map, i, j)] = 1;
+        marked[MAP_INDEX(map, i, j)] = true;
         Q.push(cell);
       }
       else
@@ -181,5 +151,4 @@ void map_update_cspace(map_t* map, double max_occ_dist)
     Q.pop();
   }
 
-  delete[] marked;
 }
