@@ -26,13 +26,14 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>message_filters</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
 
     <depend>dynamic_reconfigure</depend>
     <depend>nav_msgs</depend>
     <depend>rosbag</depend>
     <depend>roscpp</depend>
     <depend>std_srvs</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
 
     <test_depend>map_server</test_depend>
     <test_depend>rostest</test_depend>

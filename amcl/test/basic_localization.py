@@ -8,8 +8,8 @@ import unittest
 import rospy
 import rostest
 
-from tf.msg import tfMessage
-from tf.transformations import euler_from_quaternion
+from tf2_msgs.msg import TFMessage
+import PyKDL
 from std_srvs.srv import Empty
 
 
@@ -32,7 +32,7 @@ class TestBasicLocalization(unittest.TestCase):
 
     def compute_angle_diff(self):
         rot = self.tf.rotation
-        a = euler_from_quaternion([rot.x, rot.y, rot.z, rot.w])[2]
+        a = PyKDL.Rotation.Quaternion(rot.x, rot.y, rot.z, rot.w).GetRPY()[2]
         d_a = self.target_a
 
         return (a, abs(fmod(a - d_a + 5*pi, 2*pi) - pi))
@@ -58,7 +58,7 @@ class TestBasicLocalization(unittest.TestCase):
             time.sleep(0.1)
         start_time = rospy.rostime.get_time()
         # TODO: This should be replace by a pytf listener
-        rospy.Subscriber('/tf', tfMessage, self.tf_cb)
+        rospy.Subscriber('/tf', TFMessage, self.tf_cb)
 
         while (rospy.rostime.get_time() - start_time) < target_time:
             #print 'Waiting for end time %.6f (current: %.6f)'%(target_time,(rospy.rostime.get_time() - start_time))
