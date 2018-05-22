@@ -81,7 +81,7 @@ namespace dwa_local_planner {
     alignment_costs_.setXShift(forward_point_distance_);
  
     // obstacle costs can vary due to scaling footprint feature
-    obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
+    obstacle_costs_.setParams(config.max_vel_trans, config.max_scaling_factor, config.scaling_speed);
 
     twirling_costs_.setScale(config.twirling_scale);
 
@@ -357,7 +357,7 @@ namespace dwa_local_planner {
     }
 
     // debrief stateful scoring functions
-    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_->getCurrentLimits().min_trans_vel);
+    oscillation_costs_.updateOscillationFlags(pos, &result_traj_, planner_util_->getCurrentLimits().min_vel_trans);
 
     //if we don't have a legal trajectory, we'll just command zero
     if (result_traj_.cost_ < 0) {

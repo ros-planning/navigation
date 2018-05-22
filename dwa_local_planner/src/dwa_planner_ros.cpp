@@ -46,6 +46,8 @@
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
 
+#include <nav_core/parameter_magic.h>
+
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
 
@@ -63,23 +65,23 @@ namespace dwa_local_planner {
 
       // update generic local planner params
       base_local_planner::LocalPlannerLimits limits;
-      limits.max_trans_vel = config.max_trans_vel;
-      limits.min_trans_vel = config.min_trans_vel;
+      limits.max_vel_trans = config.max_vel_trans;
+      limits.min_vel_trans = config.min_vel_trans;
       limits.max_vel_x = config.max_vel_x;
       limits.min_vel_x = config.min_vel_x;
       limits.max_vel_y = config.max_vel_y;
       limits.min_vel_y = config.min_vel_y;
-      limits.max_rot_vel = config.max_rot_vel;
-      limits.min_rot_vel = config.min_rot_vel;
+      limits.max_vel_theta = config.max_vel_theta;
+      limits.min_vel_theta = config.min_vel_theta;
       limits.acc_lim_x = config.acc_lim_x;
       limits.acc_lim_y = config.acc_lim_y;
       limits.acc_lim_theta = config.acc_lim_theta;
-      limits.acc_limit_trans = config.acc_limit_trans;
+      limits.acc_lim_trans = config.acc_lim_trans;
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
       limits.prune_plan = config.prune_plan;
       limits.trans_stopped_vel = config.trans_stopped_vel;
-      limits.rot_stopped_vel = config.rot_stopped_vel;
+      limits.theta_stopped_vel = config.theta_stopped_vel;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
 
       // update dwa specific configuration
@@ -118,6 +120,14 @@ namespace dwa_local_planner {
       }
       
       initialized_ = true;
+
+      // Warn about deprecated parameters -- remove this block in N-turtle
+      nav_core::warnRenamedParameter(private_nh, "max_vel_trans", "max_trans_vel");
+      nav_core::warnRenamedParameter(private_nh, "min_vel_trans", "min_trans_vel");
+      nav_core::warnRenamedParameter(private_nh, "max_vel_theta", "max_rot_vel");
+      nav_core::warnRenamedParameter(private_nh, "min_vel_theta", "min_rot_vel");
+      nav_core::warnRenamedParameter(private_nh, "acc_lim_trans", "acc_limit_trans");
+      nav_core::warnRenamedParameter(private_nh, "theta_stopped_vel", "rot_stopped_vel");
 
       dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
       dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = boost::bind(&DWAPlannerROS::reconfigureCB, this, _1, _2);
