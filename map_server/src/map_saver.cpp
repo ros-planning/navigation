@@ -131,7 +131,7 @@ free_thresh: 0.196
 
 #define USAGE "Usage: \n" \
               "  map_saver -h\n"\
-              "  map_saver [-to <threshold_occupied>] [-tf <threshold_free>] [-f <mapname>] [ROS remapping args]"
+              "  map_saver [--occ <threshold_occupied>] [--free <threshold_free>] [-f <mapname>] [ROS remapping args]"
 
 int main(int argc, char** argv)
 {
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
         return 1;
       }
     }
-    else if (!strcmp(argv[i], "-to"))
+    else if (!strcmp(argv[i], "--occ"))
     {
       if (++i < argc)
       {
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
         return 1;
       }
     }
-    else if (!strcmp(argv[i], "-tf"))
+    else if (!strcmp(argv[i], "--free"))
     {
       if (++i < argc)
       {
