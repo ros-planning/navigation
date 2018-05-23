@@ -534,7 +534,12 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   do_beamskip_= config.do_beamskip; 
   beam_skip_distance_ = config.beam_skip_distance; 
   beam_skip_threshold_ = config.beam_skip_threshold; 
-
+  
+  if( pf_ != NULL )
+  {
+    pf_free( pf_ );
+    pf_ = NULL;
+  }	
   pf_ = pf_alloc(min_particles_, max_particles_,
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
