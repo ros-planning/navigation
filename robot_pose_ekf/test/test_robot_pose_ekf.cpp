@@ -144,7 +144,7 @@ TEST_F(TestEKF, test)
     d.sleep();
   ROS_INFO("Detected that bag is playing");
 
-  ROS_INFO("Waiting untile end time is reached");
+  ROS_INFO("Waiting until end time is reached");
   while( odom_end_->header.stamp.toSec() < time_end){
     d.sleep();
   }
