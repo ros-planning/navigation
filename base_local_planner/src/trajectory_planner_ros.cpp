@@ -50,7 +50,7 @@
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
 
-
+#include <nav_core/parameter_magic.h>
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
@@ -195,7 +195,10 @@ namespace base_local_planner {
       private_nh.param("max_rotational_vel", max_rotational_vel, 1.0);
       max_vel_th_ = max_rotational_vel;
       min_vel_th_ = -1.0 * max_rotational_vel;
-      private_nh.param("min_in_place_rotational_vel", min_in_place_vel_th_, 0.4);
+
+      min_in_place_vel_th_ = nav_core::loadParameterWithDeprecation(private_nh,
+                                                                    "min_in_place_vel_theta",
+                                                                    "min_in_place_rotational_vel", 0.4);
       reached_goal_ = false;
       backup_vel = -0.1;
       if(private_nh.getParam("backup_vel", backup_vel))

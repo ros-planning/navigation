@@ -67,7 +67,7 @@ void SimpleTrajectoryGenerator::initialise(
   /*
    * We actually generate all velocity sample vectors here, from which to generate trajectories later on
    */
-  double max_vel_th = limits->max_rot_vel;
+  double max_vel_th = limits->max_vel_theta;
   double min_vel_th = -1.0 * max_vel_th;
   discretize_by_time_ = discretize_by_time;
   Eigen::Vector3f acc_lim = limits->getAccLimits();
@@ -190,12 +190,12 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
 
   // make sure that the robot would at least be moving with one of
   // the required minimum velocities for translation and rotation (if set)
-  if ((limits_->min_trans_vel >= 0 && vmag + eps < limits_->min_trans_vel) &&
-      (limits_->min_rot_vel >= 0 && fabs(sample_target_vel[2]) + eps < limits_->min_rot_vel)) {
+  if ((limits_->min_vel_trans >= 0 && vmag + eps < limits_->min_vel_trans) &&
+      (limits_->min_vel_theta >= 0 && fabs(sample_target_vel[2]) + eps < limits_->min_vel_theta)) {
     return false;
   }
   // make sure we do not exceed max diagonal (x+y) translational velocity (if set)
-  if (limits_->max_trans_vel >=0 && vmag - eps > limits_->max_trans_vel) {
+  if (limits_->max_vel_trans >=0 && vmag - eps > limits_->max_vel_trans) {
     return false;
   }
 
