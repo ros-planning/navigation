@@ -168,7 +168,7 @@ namespace base_local_planner {
 
       bool meter_scoring;
       if ( ! private_nh.hasParam("meter_scoring")) {
-        ROS_WARN("Trajectory Rollout planner initialized with param meter_scoring not set. Set it to true to make your settins robust against changes of costmap resolution.");
+        ROS_WARN("Trajectory Rollout planner initialized with param meter_scoring not set. Set it to true to make your settings robust against changes of costmap resolution.");
       } else {
         private_nh.param("meter_scoring", meter_scoring, false);
 
@@ -179,7 +179,7 @@ namespace base_local_planner {
           pdist_scale *= resolution;
           occdist_scale *= resolution;
         } else {
-          ROS_WARN("Trajectory Rollout planner initialized with param meter_scoring set to false. Set it to true to make your settins robust against changes of costmap resolution.");
+          ROS_WARN("Trajectory Rollout planner initialized with param meter_scoring set to false. Set it to true to make your settings robust against changes of costmap resolution.");
         }
       }
 
