@@ -124,7 +124,7 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
 
   if (!private_nh.hasParam("plugins"))
   {
-    resetOldParameters(private_nh);
+    loadOldParameters(private_nh);
   }
 
   if (private_nh.hasParam("plugins"))
@@ -201,7 +201,7 @@ Costmap2DROS::~Costmap2DROS()
   delete dsrv_;
 }
 
-void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
+void Costmap2DROS::loadOldParameters(ros::NodeHandle& nh)
 {
   ROS_INFO("Loading from pre-hydro parameter style");
   bool flag;
