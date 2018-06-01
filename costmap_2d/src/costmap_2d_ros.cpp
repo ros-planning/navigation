@@ -125,6 +125,8 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
   if (!private_nh.hasParam("plugins"))
   {
     loadOldParameters(private_nh);
+  } else {
+    warnForOldParameters(private_nh);
   }
 
   if (private_nh.hasParam("plugins"))
@@ -272,6 +274,18 @@ void Costmap2DROS::loadOldParameters(ros::NodeHandle& nh)
 
   super_array.setArray(&plugins);
   nh.setParam("plugins", super_array);
+}
+
+void Costmap2DROS::warnForOldParameters(ros::NodeHandle& nh)
+{
+  checkOldParam(nh, "static_map");
+  checkOldParam(nh, "map_type");
+}
+
+void Costmap2DROS::checkOldParam(ros::NodeHandle& nh, const std::string &param_name){
+  if(nh.hasParam(param_name)){
+    ROS_WARN("%s: Pre-Hydro parameter \"%s\" unused since \"plugins\" is provided", name_.c_str(), param_name.c_str());
+  }
 }
 
 void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level)

@@ -242,6 +242,8 @@ private:
                                const costmap_2d::Costmap2DConfig &old_config);
 
   void loadOldParameters(ros::NodeHandle& nh);
+  void warnForOldParameters(ros::NodeHandle& nh);
+  void checkOldParam(ros::NodeHandle& nh, const std::string &param_name);
   void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
   void movementCB(const ros::TimerEvent &event);
   void mapUpdateLoop(double frequency);
