@@ -101,7 +101,7 @@ double pf_pdf_gaussian_value(pf_pdf_gaussian_t *pdf, pf_vector_t x)
 */
 
 
-// Generate a sample from the the pdf.
+// Generate a sample from the pdf.
 pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf)
 {
   int i, j;
