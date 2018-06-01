@@ -139,6 +139,8 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
       std::string type = static_cast<std::string>(my_list[i]["type"]);
       ROS_INFO("%s: Using plugin \"%s\"", name_.c_str(), pname.c_str());
 
+      copyParentParameters(pname, type, private_nh);
+
       boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance(type);
       layered_costmap_->addPlugin(plugin);
       plugin->initialize(layered_costmap_, name + "/" + pname, &tf_);
@@ -274,6 +276,40 @@ void Costmap2DROS::loadOldParameters(ros::NodeHandle& nh)
 
   super_array.setArray(&plugins);
   nh.setParam("plugins", super_array);
+}
+
+void Costmap2DROS::copyParentParameters(const std::string& plugin_name, const std::string& plugin_type, ros::NodeHandle& nh)
+{
+  ros::NodeHandle target_layer(nh, plugin_name);
+
+  if(plugin_type == "costmap_2d::StaticLayer")
+  {
+    move_parameter(nh, target_layer, "map_topic", false);
+    move_parameter(nh, target_layer, "unknown_cost_value", false);
+    move_parameter(nh, target_layer, "lethal_cost_threshold", false);
+    move_parameter(nh, target_layer, "track_unknown_space", false);
+  }
+  else if(plugin_type == "costmap_2d::VoxelLayer")
+  {
+    move_parameter(nh, target_layer, "origin_z", false);
+    move_parameter(nh, target_layer, "z_resolution", false);
+    move_parameter(nh, target_layer, "z_voxels", false);
+    move_parameter(nh, target_layer, "mark_threshold", false);
+    move_parameter(nh, target_layer, "unknown_threshold", false);
+    move_parameter(nh, target_layer, "publish_voxel_map", false);
+  }
+  else if(plugin_type == "costmap_2d::ObstacleLayer")
+  {
+    move_parameter(nh, target_layer, "max_obstacle_height", false);
+    move_parameter(nh, target_layer, "raytrace_range", false);
+    move_parameter(nh, target_layer, "obstacle_range", false);
+    move_parameter(nh, target_layer, "track_unknown_space", false);
+  }
+  else if(plugin_type == "costmap_2d::InflationLayer")
+  {
+    move_parameter(nh, target_layer, "cost_scaling_factor", false);
+    move_parameter(nh, target_layer, "inflation_radius", false);
+  }
 }
 
 void Costmap2DROS::warnForOldParameters(ros::NodeHandle& nh)
