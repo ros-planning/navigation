@@ -40,7 +40,7 @@
 
 namespace global_planner {
 
-enum OrientationMode { NONE, FORWARD, INTERPOLATE, FORWARDTHENINTERPOLATE };
+enum OrientationMode { NONE, FORWARD, INTERPOLATE, FORWARDTHENINTERPOLATE, BACKWARD, LEFTWARD, RIGHTWARD };
 
 class OrientationFilter {
     public:

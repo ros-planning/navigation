@@ -60,6 +60,24 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
                 pointToNext(path, i);
             }
             break;
+        case BACKWARD:
+            for(int i=0;i<n-1;i++){
+                pointToNext(path, i);
+                set_angle(&path[i], angles::normalize_angle(getYaw(path[i]) + M_PI));
+            }
+            break;
+        case LEFTWARD:
+            for(int i=0;i<n-1;i++){
+                pointToNext(path, i);
+                set_angle(&path[i], angles::normalize_angle(getYaw(path[i]) - M_PI_2));
+            }
+            break;
+        case RIGHTWARD:
+            for(int i=0;i<n-1;i++){
+                pointToNext(path, i);
+                set_angle(&path[i], angles::normalize_angle(getYaw(path[i]) + M_PI_2));
+            }
+            break;
         case INTERPOLATE:
             path[0].pose.orientation = start.pose.orientation;
             interpolate(path, 0, n-1);
