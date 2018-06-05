@@ -89,6 +89,16 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
   unknown_threshold_ = config.unknown_threshold + (VOXEL_BITS - size_z_);
   mark_threshold_ = config.mark_threshold;
   combination_method_ = config.combination_method;
+
+  // If we want to start timing out obstacles, we need to first clear the map,
+  // otherwise those obstacles will never get cleared.
+  if (obstacle_timeout_ == 0 && config.obstacle_timeout > 0.0)
+    reset();
+  // If we no longer need to timeout obstacles, then clear the buffer.
+  if (obstacle_timeout_ > 0 && config.obstacle_timeout == 0)
+    voxel_insertion_times_.clear();
+  obstacle_timeout_ = config.obstacle_timeout;
+
   matchSize();
 }
 
@@ -133,6 +143,51 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
   // update the global current status
   current_ = current;
+
+  // clear obstacles based on timeout
+  if (obstacle_timeout_ > 0.0)
+  {
+    // Get the time of the latest message in an observation buffer.
+    ros::Time latest_obs_stamp;
+    for (size_t i = 0; i < observations.size(); i++)
+    {
+      ros::Time cur_obs_stamp =
+          pcl_conversions::fromPCL(observations[i].cloud_->header).stamp;
+      if (cur_obs_stamp > latest_obs_stamp)
+      {
+        latest_obs_stamp = cur_obs_stamp;
+      }
+    }
+
+    // Make sure we're trying to clear obstacles at a time > 0.
+    if (latest_obs_stamp.toSec() - obstacle_timeout_ > 0.0)
+    {
+      ros::Time expiry_time =
+          latest_obs_stamp - ros::Duration(obstacle_timeout_);
+      std::map<VoxelIndex, ros::Time>::iterator voxel_it;
+      voxel_it = voxel_insertion_times_.begin();
+      while (voxel_it != voxel_insertion_times_.end())
+      {
+        std::map<VoxelIndex, ros::Time>::iterator next_it;
+        next_it = voxel_it;
+        ++next_it;
+        if (voxel_it->second < expiry_time) {
+          unsigned int mx = boost::get<0>(voxel_it->first);
+          unsigned int my = boost::get<1>(voxel_it->first);
+          unsigned int mz = boost::get<2>(voxel_it->first);
+          voxel_grid_.clearVoxelInMap(mx, my, mz,
+                                      unknown_threshold_, mark_threshold_);
+
+          double wx, wy, wz;
+          mapToWorld3D(mx, my, mz, wx, wy, wz);
+          touch(wx, wy, min_x, min_y, max_x, max_y);
+
+          voxel_insertion_times_.erase(voxel_it);
+        }
+        voxel_it = next_it;
+      }
+    }
+  }
 
   // raytrace freespace
   for (unsigned int i = 0; i < clearing_observations.size(); ++i)
@@ -183,6 +238,15 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
         costmap_[index] = LETHAL_OBSTACLE;
         touch((double)cloud.points[i].x, (double)cloud.points[i].y, min_x, min_y, max_x, max_y);
+      }
+
+      // Add the voxel to the timeout buffer, if needed. Overwrite element
+      // if it already exists.
+      if (obstacle_timeout_ > 0.0)
+      {
+        VoxelIndex voxel_index(mx, my, mz);
+        voxel_insertion_times_[voxel_index] =
+            pcl_conversions::fromPCL(obs.cloud_->header).stamp;
       }
     }
   }

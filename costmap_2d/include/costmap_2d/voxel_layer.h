@@ -38,6 +38,9 @@
 #ifndef COSTMAP_2D_VOXEL_LAYER_H_
 #define COSTMAP_2D_VOXEL_LAYER_H_
 
+#include <map>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
@@ -101,8 +104,12 @@ private:
   voxel_grid::VoxelGrid voxel_grid_;
   double z_resolution_, origin_z_;
   unsigned int unknown_threshold_, mark_threshold_, size_z_;
+  double obstacle_timeout_;
   ros::Publisher clearing_endpoints_pub_;
   sensor_msgs::PointCloud clearing_endpoints_;
+
+  typedef boost::tuple<unsigned int, unsigned int, unsigned int> VoxelIndex;
+  std::map<VoxelIndex, ros::Time> voxel_insertion_times_;
 
   inline bool worldToMap3DFloat(double wx, double wy, double wz, double& mx, double& my, double& mz)
   {
