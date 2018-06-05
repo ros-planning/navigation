@@ -135,6 +135,12 @@ public:
 
   inline void clearVoxelInMap(unsigned int x, unsigned int y, unsigned int z)
   {
+    clearVoxelInMap(x, y, z, 1, 1);
+  }
+
+  inline void clearVoxelInMap(unsigned int x, unsigned int y, unsigned int z,
+                              unsigned int unknown_threshold, unsigned int mark_threshold)
+  {
     if(x >= size_x_ || y >= size_y_ || z >= size_z_)
     {
       ROS_DEBUG("Error, voxel out of bounds.\n");
@@ -149,7 +155,8 @@ public:
     unsigned int marked_bits = *col>>16;
 
     //make sure the number of bits in each is below our thesholds
-    if (bitsBelowThreshold(unknown_bits, 1) && bitsBelowThreshold(marked_bits, 1))
+    if (bitsBelowThreshold(unknown_bits, unknown_threshold) &&
+        bitsBelowThreshold(marked_bits, mark_threshold))
     {
       costmap[index] = 0;
     }
