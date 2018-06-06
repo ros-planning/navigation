@@ -498,6 +498,22 @@ void VoxelLayer::updateOrigin(double new_origin_x, double new_origin_y)
   copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
   copyMapRegion(local_voxel_map, 0, 0, cell_size_x, voxel_map, start_x, start_y, size_x_, cell_size_x, cell_size_y);
 
+  // Shift the indices of obstacles in the voxel_insertion_time data structure.
+  if (obstacle_timeout_ > 0.0)
+  {
+    std::map<VoxelIndex, ros::Time> local_voxel_insertion_times;
+    for (std::map<VoxelIndex, ros::Time>::iterator voxel_it = voxel_insertion_times_.begin();
+         voxel_it != voxel_insertion_times_.end(); ++voxel_it)
+    {
+      unsigned int mx = boost::get<0>(voxel_it->first);
+      unsigned int my = boost::get<1>(voxel_it->first);
+      unsigned int mz = boost::get<2>(voxel_it->first);
+      VoxelIndex new_index(mx - cell_ox, my - cell_oy, mz);
+      local_voxel_insertion_times[new_index] = voxel_it->second;
+    }
+    voxel_insertion_times_ = local_voxel_insertion_times;
+  }
+
   // make sure to clean up
   delete[] local_map;
   delete[] local_voxel_map;
