@@ -92,10 +92,10 @@ void VoxelLayer::reconfigureCB(costmap_2d::VoxelPluginConfig &config, uint32_t l
 
   // If we want to start timing out obstacles, we need to first clear the map,
   // otherwise those obstacles will never get cleared.
-  if (obstacle_timeout_ == 0 && config.obstacle_timeout > 0.0)
+  if (obstacle_timeout_ == 0.0 && config.obstacle_timeout > 0.0)
     reset();
   // If we no longer need to timeout obstacles, then clear the buffer.
-  if (obstacle_timeout_ > 0 && config.obstacle_timeout == 0)
+  if (obstacle_timeout_ > 0.0 && config.obstacle_timeout == 0.0)
     voxel_insertion_times_.clear();
   obstacle_timeout_ = config.obstacle_timeout;
 
