@@ -2,6 +2,18 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Allow specification of free/occupied thresholds for map_saver (`#708 <https://github.com/ros-planning/navigation/issues/708>`_)
+  * add occupied threshold command line parameter to map_saver (--occ)
+  * add free threshold command line parameter to map_saver (--free)
+* Map server wait for a valid time, fix `#573 <https://github.com/ros-planning/navigation/issues/573>`_ (`#700 <https://github.com/ros-planning/navigation/issues/700>`_)
+  When launching the map_server with Gazebo, the current time is picked
+  before the simulation is started and then has a value of 0.
+  Later when querying the stamp of the map, a value of has a special
+  signification on tf transform for example.
+* Contributors: Romain Reignier, ipa-fez
+
 1.14.3 (2018-03-16)
 -------------------
 * Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
