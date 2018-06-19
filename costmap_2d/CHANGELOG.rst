@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.16 (2018-06-19)
+--------------------
 * Merge pull request `#695 <https://github.com/ros-planning/navigation/issues/695>`_ from ros-planning/indigo_675
   Fixed race condition with costmaps in LayeredCostmap::resizeMap() (backport `#675 <https://github.com/ros-planning/navigation/issues/675>`_)
   LayeredCostmap::updateMap() and LayeredCostmap::resizeMap() write to the master grid costmap.
