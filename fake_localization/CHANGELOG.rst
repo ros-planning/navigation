@@ -2,8 +2,8 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.4 (2018-06-19)
+-------------------
 * Merge pull request `#609 <https://github.com/ros-planning/navigation/issues/609>`_ from vrabaud/more_tf2
   switch fake_localization to tf2.
 * Contributors: Michael Ferguson, Vincent Rabaud

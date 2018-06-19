@@ -2,8 +2,8 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.4 (2018-06-19)
+-------------------
 * Merge pull request `#713 <https://github.com/ros-planning/navigation/issues/713>`_ from garethellis0/kinetic-devel
   Added handling for NaN linear.z components of GPS in `robot_pose_ekf`
   Added a check in `odom_estimation_node.cpp` that checks if `linear.z`

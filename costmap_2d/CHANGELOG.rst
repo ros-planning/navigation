@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.4 (2018-06-19)
+-------------------
 * Merge pull request `#693 <https://github.com/ros-planning/navigation/issues/693>`_ from ros-planning/kinetic_691
   costmap variable init & cleanup (forward port of `#691 <https://github.com/ros-planning/navigation/issues/691>`_)
 * remove unused got_footprint\_

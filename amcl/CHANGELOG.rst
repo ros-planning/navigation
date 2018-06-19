@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.4 (2018-06-19)
+-------------------
 * Merge pull request `#731 <https://github.com/ros-planning/navigation/issues/731>`_ from maracuya-robotics/kinetic/amcl-dynamic-reconfigure
   AMCL dynamic reconfigure: Extend parameter range
 * In Addition to `#696 <https://github.com/ros-planning/navigation/issues/696>`_, which checks the input arguments, this extends the
