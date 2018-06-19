@@ -2,6 +2,22 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#695 <https://github.com/ros-planning/navigation/issues/695>`_ from ros-planning/indigo_675
+  Fixed race condition with costmaps in LayeredCostmap::resizeMap() (backport `#675 <https://github.com/ros-planning/navigation/issues/675>`_)
+  LayeredCostmap::updateMap() and LayeredCostmap::resizeMap() write to the master grid costmap.
+  And these two functions can be called by different threads at the same time.
+  One example of these cases is a race condition between subscriber callback thread
+  dealing with dynamically-size-changing static_layer and periodical updateMap() calls from Costmap2DROS thread.
+  Under the situation the master grid costmap is not thread-safe.
+  LayeredCostmap::updateMap() already used the master grid costmap's lock.
+* Merge pull request `#692 <https://github.com/ros-planning/navigation/issues/692>`_ from ros-planning/remove_got_footprint
+  remove unused got_footprint\_
+* Merge pull request `#691 <https://github.com/ros-planning/navigation/issues/691>`_ from ros-planning/rehash_620
+  initialize all costmap variables
+* Contributors: Jaeyoung Lee, Michael Ferguson
+
 1.12.15 (2018-03-20)
 --------------------
 * Merge pull request `#671 <https://github.com/ros-planning/navigation/issues/671>`_ from ros-planning/email_update_indigo
