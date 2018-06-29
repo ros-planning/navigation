@@ -62,17 +62,17 @@ namespace dwa_local_planner {
         sim_period_);
 
     double resolution = planner_util_->getCostmap()->getResolution();
-    pdist_scale_ = config.path_distance_bias;
+    pdist_scale_ = resolution * config.path_distance_bias;
     // pdistscale used for both path and alignment, set  forward_point_distance to zero to discard alignment
-    path_costs_.setScale(resolution * pdist_scale_ * 0.5);
-    alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
+    path_costs_.setScale(pdist_scale_);
+    alignment_costs_.setScale(pdist_scale_);
 
-    gdist_scale_ = config.goal_distance_bias;
-    goal_costs_.setScale(resolution * gdist_scale_ * 0.5);
-    goal_front_costs_.setScale(resolution * gdist_scale_ * 0.5);
+    gdist_scale_ = resolution * config.goal_distance_bias;
+    goal_costs_.setScale(gdist_scale_);
+    goal_front_costs_.setScale(gdist_scale_);
 
     occdist_scale_ = config.occdist_scale;
-    obstacle_costs_.setScale(resolution * occdist_scale_);
+    obstacle_costs_.setScale(occdist_scale_);
 
     stop_time_buffer_ = config.stop_time_buffer;
     oscillation_costs_.setOscillationResetDist(config.oscillation_reset_dist, config.oscillation_reset_angle);
@@ -196,10 +196,9 @@ namespace dwa_local_planner {
       return false;
     }
 
-    double resolution = planner_util_->getCostmap()->getResolution();
     total_cost =
-        pdist_scale_ * resolution * path_cost +
-        gdist_scale_ * resolution * goal_cost +
+        pdist_scale_ * path_cost +
+        gdist_scale_ * goal_cost +
         occdist_scale_ * occ_cost;
     return true;
   }
@@ -278,8 +277,7 @@ namespace dwa_local_planner {
     
     // keeping the nose on the path
     if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
-      double resolution = planner_util_->getCostmap()->getResolution();
-      alignment_costs_.setScale(resolution * pdist_scale_ * 0.5);
+      alignment_costs_.setScale(pdist_scale_);
       // costs for robot being aligned with path (nose on path, not ju
       alignment_costs_.setTargetPoses(global_plan_);
     } else {
