@@ -644,7 +644,8 @@ namespace move_base {
     }
 
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
-
+  
+    publishZeroVelocity();
     //we have a goal so start the planner
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
