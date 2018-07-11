@@ -66,6 +66,9 @@
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
 
+// Custom particle service
+#include "amcl/amcl_particles.h"
+
 #define NEW_UNIFORM_SAMPLING 1
 
 using namespace amcl;
@@ -140,12 +143,15 @@ class AmclNode
     // Pose-generating function used to uniformly distribute particles over
     // the map
     static pf_vector_t uniformPoseGenerator(void* arg);
+    static pf_vector_t customPoseGenerator(void* arg);
 #if NEW_UNIFORM_SAMPLING
     static std::vector<std::pair<int,int> > free_space_indices;
 #endif
     // Callbacks
     bool globalLocalizationCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
+    bool setParticlesCallback(amcl::amcl_particles::Request& req,
+                                    amcl::amcl_particles::Response& res);
     bool nomotionUpdateCallback(std_srvs::Empty::Request& req,
                                     std_srvs::Empty::Response& res);
     bool setMapCallback(nav_msgs::SetMap::Request& req,
@@ -234,6 +240,7 @@ class AmclNode
     ros::Publisher pose_pub_;
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
+    ros::ServiceServer set_particles_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
     ros::ServiceServer set_map_srv_;
     ros::Subscriber initial_pose_sub_old_;
@@ -424,6 +431,7 @@ AmclNode::AmclNode() :
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
+  set_particles_srv_ = nh_.advertiseService("amcl/set_particles", &AmclNode::setParticlesCallback, this);
   nomotion_update_srv_= nh_.advertiseService("request_nomotion_update", &AmclNode::nomotionUpdateCallback, this);
   set_map_srv_= nh_.advertiseService("set_map", &AmclNode::setMapCallback, this);
 
@@ -1019,6 +1027,97 @@ AmclNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
   pf_init_ = false;
   return true;
 }
+
+/*
+ * 
+ * name: customPoseGenerator
+ * Sample from a custom set of particles equal to the Max Number of particles
+ * @gemetry_msgs::PoseArray
+ * @pf_vector_t
+ * 
+ */
+
+pf_vector_t AmclNode::customPoseGenerator(void* arg)
+{
+  geometry_msgs::PoseArray* parray = (geometry_msgs::PoseArray*) arg;
+  geometry_msgs::Pose le = parray->poses.back();
+  tfScalar roll, pitch, yaw ;
+  
+  tf::Quaternion quat(le.orientation.x,le.orientation.y,le.orientation.z,le.orientation.w);
+  tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+  
+  //std::cout<<"Size of array "<<parray->poses.size()<<std::endl;
+  
+  parray->poses.pop_back();
+  
+  pf_vector_t p;
+  p.v[0] = le.position.x;
+  p.v[1] = le.position.y;
+  p.v[2] = (double)yaw;//drand48() * 2 * M_PI - M_PI;
+  
+  return p;
+}
+
+
+bool AmclNode::setParticlesCallback(amcl::amcl_particles::Request& req,
+                                    amcl::amcl_particles::Response& res)
+{  
+  int no_of_particles =  req.pose_array_msg.poses.size();
+  ROS_INFO("Received set particles srv call, Pose Array Header seq = %i",req.pose_array_msg.header.seq);
+  ROS_INFO("Received set particles srv call, Pose Array Header stamp = %0.4f",req.pose_array_msg.header.stamp.toSec());
+  if (no_of_particles == max_particles_)
+	{
+		ROS_INFO("Received %i particles",no_of_particles);
+		ROS_INFO("First particle x:%0.2f & y:%0.2f",req.pose_array_msg.poses[0].position.x,req.pose_array_msg.poses[0].position.y);
+		
+		  // In case the client sent us a pose estimate in the past, integrate the
+		  // intervening odometric change.
+		  tf::StampedTransform tx_odom;
+		  ROS_INFO("Stamp of transform: %0.4f Diff to now: %0.4f",req.pose_array_msg.header.stamp.toSec(), ros::Time::now().toSec()-req.pose_array_msg.header.stamp.toSec());
+		  try
+		  {
+			ros::Time now = ros::Time::now();
+			// wait a little for the latest tf to become available
+			tf_->waitForTransform(base_frame_id_, req.pose_array_msg.header.stamp,
+								 base_frame_id_, ros::Time(0),
+								 odom_frame_id_, ros::Duration(0.25));
+			tf_->lookupTransform(base_frame_id_, req.pose_array_msg.header.stamp,
+								 base_frame_id_, ros::Time(0),
+								 odom_frame_id_, tx_odom);
+		  }
+		  catch(tf::TransformException e)
+		  {
+			// If we've never sent a transform, then this is normal, because the
+			// global_frame_id_ frame doesn't exist.  We only care about in-time
+			// transformation for on-the-move pose-setting, so ignoring this
+			// startup condition doesn't really cost us anything.
+			if(sent_first_transform_)
+			  ROS_WARN("Failed to transform poses in time: (%s)", e.what());
+			tx_odom.setIdentity();
+		  }
+
+		  tf::Pose pose_old, pose_new;
+		  
+		  for(int i=0;i<no_of_particles;i++)
+		  {
+			poseMsgToTF(req.pose_array_msg.poses[i],pose_old);
+			poseTFToMsg(pose_old * tx_odom,req.pose_array_msg.poses[i]);
+		  }
+
+		pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::customPoseGenerator, (void *) &req.pose_array_msg);
+		res.success = true;
+	}
+  else
+	{
+		ROS_ERROR("Number of recieved particles: %i not equal to max_particles: %i",no_of_particles,max_particles_);
+		res.success = false;
+	}
+  pf_init_ = false;
+  ROS_INFO("Custom particles set!");
+  
+  return true;
+}
+
 
 // force nomotion updates (amcl updating without requiring motion)
 bool 
