@@ -1048,6 +1048,8 @@ void ObstructionLayer::generateKernelsByType(ObstructionType type,
 
   bool ignore_freespace = (type == ObstructionType::PSEUDOSTATIC);
 
+  double dynamic_kernel_inflation = (type == ObstructionType::DYNAMIC) ? dynamic_kernel_inflation_ : 0.0;
+
   // Create all the new kernels that are needed.
   kernels_[type] = std::vector<std::shared_ptr<Kernel>>();
   kernels_[type].reserve(num_obstruction_levels_);
@@ -1059,18 +1061,18 @@ void ObstructionLayer::generateKernelsByType(ObstructionType type,
       case EXPONENTIAL_INFLATION:
         kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
          (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace, dynamic_kernel_inflation));
         break;
       case TRINOMIAL_INFLATION:
         kernels_[type].push_back(KernelFactory::generateTrinomialRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
          (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace, dynamic_kernel_inflation));
         break;
       default:
         ROS_ERROR("Kernel type unknown for obstruction layer.  Defaulting to exponential inflation");
         kernels_[type].push_back(KernelFactory::generateRadialInflationKernel((LETHAL_OBSTACLE / (k + 1)),
          (INSCRIBED_INFLATED_OBSTACLE / (k + 1)), layered_costmap_->getInscribedRadius(),
-         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace));
+         inflation_radius, cost_scaling_factor, resolution_, ignore_freespace, dynamic_kernel_inflation));
         break;
     }
   }
