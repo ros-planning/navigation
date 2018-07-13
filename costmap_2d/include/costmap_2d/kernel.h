@@ -169,10 +169,11 @@ public:
    * @param cost_scaling_factor The factor used in the exponential decay cost function
    * @param resolution The resolution of the grid
    * @param ignore_freespace Do not overwrite freespace with this kernel
+   * @param dynamic_kernel_inflation The inflation to add to the inscribed radius for all dynamic obstacle kernels.
    */
   static std::shared_ptr<Kernel> generateTrinomialRadialInflationKernel(unsigned char max_value, unsigned char inscribed_value,
     double inscribed_radius, double inflation_radius, double cost_scaling_factor, double resolution,
-    bool ignore_freespace)
+    bool ignore_freespace, double dynamic_kernel_inflation)
   {
 
     auto kernel = std::make_shared<Kernel>();
@@ -203,7 +204,7 @@ public:
         ROS_DEBUG("yy %d, xx %d, cell_dist %f", yy, xx, cell_distance);
 
         unsigned char cost = 0;
-        if (cell_distance == 0)
+        if (cell_distance <= dynamic_kernel_inflation)
         {
           cost = max_value;
         }
