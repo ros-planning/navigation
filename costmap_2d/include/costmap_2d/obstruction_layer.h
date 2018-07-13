@@ -331,7 +331,7 @@ protected:
   float dynamic_kernel_inflation_ = 0.0;
 
   int pseudostatic_inflation_type_ = EXPONENTIAL_INFLATION;
-pseudostatic_cost_scaling_factor_
+
   float dynamic_inflation_radius_ = 1;
   float dynamic_cost_scaling_factor_ = 1;
   int dynamic_inflation_type_ = EXPONENTIAL_INFLATION;
