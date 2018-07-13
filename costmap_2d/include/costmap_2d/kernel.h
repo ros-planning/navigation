@@ -190,8 +190,8 @@ public:
     int center_x = kernel->size_x_ / 2 + 1;
     int center_y = kernel->size_y_ / 2 + 1;
 
-    ROS_DEBUG("Inflating: max_val %d, insc val %d, cell rad %d, size %d, center_x: %d, center_y: %d",
-      max_value, inscribed_value, cell_inflation_radius, size, center_x, center_y);
+    ROS_DEBUG("Inflating: max_val %d, insc val %d, cell rad %d, size %d, center_x: %d, center_y: %d, dynamic_kernel_inflation: %f",
+      max_value, inscribed_value, cell_inflation_radius, size, center_x, center_y, dynamic_kernel_inflation);
 
     kernel->values_.resize(kernel->size_x_ * kernel->size_y_);
 
