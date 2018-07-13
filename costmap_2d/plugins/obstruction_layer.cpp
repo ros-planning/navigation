@@ -275,6 +275,8 @@ void ObstructionLayer::reconfigureCB(costmap_2d::ObstructionPluginConfig &config
   pseudostatic_inflation_radius_ = config.pseudostatic_inflation_radius;
   pseudostatic_cost_scaling_factor_ = config.pseudostatic_cost_scaling_factor;
 
+  dynamic_kernel_inflation_ = config.dynamic_kernel_inflation;
+
   generateKernels();
 }
 
