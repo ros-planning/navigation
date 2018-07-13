@@ -190,8 +190,10 @@ public:
     int center_x = kernel->size_x_ / 2 + 1;
     int center_y = kernel->size_y_ / 2 + 1;
 
-    ROS_DEBUG("Inflating: max_val %d, insc val %d, cell rad %d, size %d, center_x: %d, center_y: %d, dynamic_kernel_inflation: %f",
-      max_value, inscribed_value, cell_inflation_radius, size, center_x, center_y, dynamic_kernel_inflation);
+    unsigned int cell_dynamic_kernel_inflation = (unsigned int) std::max(0.0, ceil(dynamic_kernel_inflation / resolution));
+
+    ROS_DEBUG("Inflating: max_val %d, insc val %d, cell rad %d, size %d, center_x: %d, center_y: %d, dynamic_kernel_inflation: %d",
+      max_value, inscribed_value, cell_inflation_radius, size, center_x, center_y, cell_dynamic_kernel_inflation);
 
     kernel->values_.resize(kernel->size_x_ * kernel->size_y_);
 
@@ -204,7 +206,7 @@ public:
         ROS_DEBUG("yy %d, xx %d, cell_dist %f", yy, xx, cell_distance);
 
         unsigned char cost = 0;
-        if (cell_distance <= dynamic_kernel_inflation)
+        if (cell_distance <= cell_dynamic_kernel_inflation)
         {
           cost = max_value;
         }
