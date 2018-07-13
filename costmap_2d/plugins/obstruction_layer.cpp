@@ -78,6 +78,8 @@ void ObstructionLayer::onInitialize()
   nh.param("observation_sources", topics_string, std::string(""));
   ROS_INFO("Subscribed to Topics: %s", topics_string.c_str());
 
+  nh.param<int>("dynamic_kernel_inflation", dynamic_kernel_inflation_, 0.05);
+
   timingDataRecorder_ = srs::MasterTimingDataRecorder(global_frame_ + "-" + name_);
 
   // get our tf prefix
@@ -1047,9 +1049,7 @@ void ObstructionLayer::generateKernelsByType(ObstructionType type,
   }
 
   bool ignore_freespace = (type == ObstructionType::PSEUDOSTATIC);
-
   double dynamic_kernel_inflation = (type == ObstructionType::DYNAMIC) ? dynamic_kernel_inflation_ : 0.0;
-  ROS_INFO("dynamic_kernel_inflation is set to %f", dynamic_kernel_inflation_);
 
   // Create all the new kernels that are needed.
   kernels_[type] = std::vector<std::shared_ptr<Kernel>>();
