@@ -104,10 +104,11 @@ public:
    * @param cost_scaling_factor The factor used in the exponential decay cost function
    * @param resolution The resolution of the grid
    * @param ignore_freespace Do not overwrite freespace with this kernel
+   * @param dynamic_kernel_inflation The inflation to add to the inscribed radius for all dynamic obstacle kernels.
    */
   static std::shared_ptr<Kernel> generateRadialInflationKernel(unsigned char max_value, unsigned char inscribed_value,
     double inscribed_radius, double inflation_radius, double cost_scaling_factor, double resolution,
-    bool ignore_freespace)
+    bool ignore_freespace, double dynamic_kernel_inflation)
   {
 
     auto kernel = std::make_shared<Kernel>();
@@ -138,7 +139,7 @@ public:
         ROS_DEBUG("yy %d, xx %d, cell_dist %f", yy, xx, cell_distance);
 
         unsigned char cost = 0;
-        if (cell_distance == 0)
+        if (real_distance <= dynamic_kernel_inflation)
         {
           cost = max_value;
         }
@@ -168,10 +169,11 @@ public:
    * @param cost_scaling_factor The factor used in the exponential decay cost function
    * @param resolution The resolution of the grid
    * @param ignore_freespace Do not overwrite freespace with this kernel
+   * @param dynamic_kernel_inflation The inflation to add to the inscribed radius for all dynamic obstacle kernels.
    */
   static std::shared_ptr<Kernel> generateTrinomialRadialInflationKernel(unsigned char max_value, unsigned char inscribed_value,
     double inscribed_radius, double inflation_radius, double cost_scaling_factor, double resolution,
-    bool ignore_freespace)
+    bool ignore_freespace, double dynamic_kernel_inflation)
   {
 
     auto kernel = std::make_shared<Kernel>();
@@ -188,8 +190,8 @@ public:
     int center_x = kernel->size_x_ / 2 + 1;
     int center_y = kernel->size_y_ / 2 + 1;
 
-    ROS_DEBUG("Inflating: max_val %d, insc val %d, cell rad %d, size %d, center_x: %d, center_y: %d",
-      max_value, inscribed_value, cell_inflation_radius, size, center_x, center_y);
+    ROS_DEBUG("Inflating: max_val %d, insc val %d, cell rad %d, size %d, center_x: %d, center_y: %d, dynamic_kernel_inflation: %f",
+      max_value, inscribed_value, cell_inflation_radius, size, center_x, center_y, dynamic_kernel_inflation);
 
     kernel->values_.resize(kernel->size_x_ * kernel->size_y_);
 
@@ -202,7 +204,7 @@ public:
         ROS_DEBUG("yy %d, xx %d, cell_dist %f", yy, xx, cell_distance);
 
         unsigned char cost = 0;
-        if (cell_distance == 0)
+        if (real_distance <= dynamic_kernel_inflation)
         {
           cost = max_value;
         }
