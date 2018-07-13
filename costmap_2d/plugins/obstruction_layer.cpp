@@ -78,7 +78,7 @@ void ObstructionLayer::onInitialize()
   nh.param("observation_sources", topics_string, std::string(""));
   ROS_INFO("Subscribed to Topics: %s", topics_string.c_str());
 
-  nh.param<int>("dynamic_kernel_inflation", dynamic_kernel_inflation_, 0.05);
+  nh.param<float>("dynamic_kernel_inflation", dynamic_kernel_inflation_, 0.05);
 
   timingDataRecorder_ = srs::MasterTimingDataRecorder(global_frame_ + "-" + name_);
 
