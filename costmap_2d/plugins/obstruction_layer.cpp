@@ -76,7 +76,7 @@ void ObstructionLayer::onInitialize()
   std::string topics_string;
   // get the topics that we'll subscribe to from the parameter server
   nh.param("observation_sources", topics_string, std::string(""));
-  ROS_INFO("    Subscribed to Topics: %s", topics_string.c_str());
+  ROS_INFO("Subscribed to Topics: %s", topics_string.c_str());
 
   timingDataRecorder_ = srs::MasterTimingDataRecorder(global_frame_ + "-" + name_);
 
@@ -1049,6 +1049,7 @@ void ObstructionLayer::generateKernelsByType(ObstructionType type,
   bool ignore_freespace = (type == ObstructionType::PSEUDOSTATIC);
 
   double dynamic_kernel_inflation = (type == ObstructionType::DYNAMIC) ? dynamic_kernel_inflation_ : 0.0;
+  ROS_INFO("dynamic_kernel_inflation is set to %f", dynamic_kernel_inflation_);
 
   // Create all the new kernels that are needed.
   kernels_[type] = std::vector<std::shared_ptr<Kernel>>();

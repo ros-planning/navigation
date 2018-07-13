@@ -139,7 +139,7 @@ public:
         ROS_DEBUG("yy %d, xx %d, cell_dist %f", yy, xx, cell_distance);
 
         unsigned char cost = 0;
-        if (cell_distance <= dynamic_kernel_inflation)
+        if (real_distance <= dynamic_kernel_inflation)
         {
           cost = max_value;
         }
