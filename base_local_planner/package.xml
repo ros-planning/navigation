@@ -22,6 +22,7 @@
     <build_depend>cmake_modules</build_depend>
     <build_depend>message_generation</build_depend>
     <build_depend>pcl_conversions</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
 
     <depend>angles</depend>
     <depend>costmap_2d</depend>

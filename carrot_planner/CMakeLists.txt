@@ -4,11 +4,11 @@ project(carrot_planner)
 find_package(catkin REQUIRED
         COMPONENTS
             roscpp
-            tf
             nav_core
             costmap_2d
             base_local_planner
             pluginlib
+            tf2
         )
 
 include_directories(

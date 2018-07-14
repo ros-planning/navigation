@@ -51,6 +51,7 @@
 #include <nav_msgs/Path.h>
 
 #include <nav_core/parameter_magic.h>
+#include <tf2/utils.h>
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
@@ -411,13 +412,12 @@ namespace base_local_planner {
     if(transformed_plan.empty())
       return false;
 
-    tf::Stamped<tf::Pose> goal_point;
-    tf::poseStampedMsgToTF(transformed_plan.back(), goal_point);
+    const geometry_msgs::PoseStamped& goal_point = transformed_plan.back();
     //we assume the global goal is the last point in the global plan
-    double goal_x = goal_point.getOrigin().getX();
-    double goal_y = goal_point.getOrigin().getY();
+    const double goal_x = goal_point.pose.position.x;
+    const double goal_y = goal_point.pose.position.y;
 
-    double yaw = tf::getYaw(goal_point.getRotation());
+    const double yaw = tf2::getYaw(goal_point.pose.orientation);
 
     double goal_th = yaw;
 
@@ -511,14 +511,15 @@ namespace base_local_planner {
     for (unsigned int i = 0; i < path.getPointsSize(); ++i) {
       double p_x, p_y, p_th;
       path.getPoint(i, p_x, p_y, p_th);
-      tf::Stamped<tf::Pose> p =
-          tf::Stamped<tf::Pose>(tf::Pose(
-              tf::createQuaternionFromYaw(p_th),
-              tf::Point(p_x, p_y, 0.0)),
-              ros::Time::now(),
-              global_frame_);
       geometry_msgs::PoseStamped pose;
-      tf::poseStampedTFToMsg(p, pose);
+      pose.header.frame_id = global_frame_;
+      pose.header.stamp = ros::Time::now();
+      pose.pose.position.x = p_x;
+      pose.pose.position.y = p_y;
+      pose.pose.position.z = 0.0;
+      tf2::Quaternion q;
+      q.setEuler(p_th, 0, 0);
+      tf2::convert(q, pose.pose.orientation);
       local_plan.push_back(pose);
     }
 
