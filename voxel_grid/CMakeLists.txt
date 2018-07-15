@@ -31,6 +31,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
 )
 
 if(CATKIN_ENABLE_TESTING)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
   catkin_add_gtest(voxel_grid_tests test/voxel_grid_tests.cpp)
   target_link_libraries(voxel_grid_tests
     voxel_grid

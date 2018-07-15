@@ -141,6 +141,8 @@ install(DIRECTORY include/${PROJECT_NAME}/
 
 if(CATKIN_ENABLE_TESTING)
   find_package(rostest)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
   catkin_add_gtest(base_local_planner_utest
     test/gtest_main.cpp
     test/utest.cpp

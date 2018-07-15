@@ -178,6 +178,7 @@ if(CATKIN_ENABLE_TESTING)
   add_rostest(test/simple_driving_test.xml)
   add_rostest(test/static_tests.launch)
 
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
   catkin_add_gtest(array_parser_test test/array_parser_test.cpp)
   target_link_libraries(array_parser_test costmap_2d)
 endif()

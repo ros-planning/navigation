@@ -75,6 +75,7 @@ if(CATKIN_ENABLE_TESTING)
   copy_test_data( FILES
       test/testmap.bmp
       test/testmap.png )
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
   catkin_add_gtest(${PROJECT_NAME}_utest test/utest.cpp test/test_constants.cpp)
   target_link_libraries(${PROJECT_NAME}_utest
     map_server_image_loader
