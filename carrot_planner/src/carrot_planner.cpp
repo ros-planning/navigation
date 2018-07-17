@@ -150,7 +150,7 @@ namespace carrot_planner {
     plan.push_back(start);
     geometry_msgs::PoseStamped new_goal = goal;
     tf2::Quaternion goal_quat;
-    goal_quat.setEuler(target_yaw, 0, 0);
+    goal_quat.setRPY(0, 0, target_yaw);
 
     new_goal.pose.position.x = target_x;
     new_goal.pose.position.y = target_y;

@@ -518,7 +518,7 @@ namespace base_local_planner {
       pose.pose.position.y = p_y;
       pose.pose.position.z = 0.0;
       tf2::Quaternion q;
-      q.setEuler(p_th, 0, 0);
+      q.setRPY(0, 0, p_th);
       tf2::convert(q, pose.pose.orientation);
       local_plan.push_back(pose);
     }
