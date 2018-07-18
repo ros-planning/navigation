@@ -247,7 +247,7 @@ namespace dwa_local_planner {
       p.pose.position.y = p_y;
       p.pose.position.z = 0.0;
       tf2::Quaternion q;
-      q.setEuler(p_th, 0, 0);
+      q.setRPY(0, 0, p_th);
       tf2::convert(q, p.pose.orientation);
       local_plan.push_back(p);
     }

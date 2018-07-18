@@ -373,7 +373,7 @@ namespace dwa_local_planner {
       drive_velocities.pose.position.y = result_traj_.yv_;
       drive_velocities.pose.position.z = 0;
       tf2::Quaternion q;
-      q.setEuler(result_traj_.thetav_, 0, 0);
+      q.setRPY(0, 0, result_traj_.thetav_);
       tf2::convert(q, drive_velocities.pose.orientation);
     }
 

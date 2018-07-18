@@ -978,7 +978,7 @@ namespace base_local_planner{
       drive_velocities.pose.position.y = best.yv_;
       drive_velocities.pose.position.z = 0;
       tf2::Quaternion q;
-      q.setEuler(best.thetav_, 0, 0);
+      q.setRPY(0, 0, best.thetav_);
       tf2::convert(q, drive_velocities.pose.orientation);
     }
 

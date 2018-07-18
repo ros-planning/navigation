@@ -80,7 +80,7 @@ void OdometryHelperRos::getRobotVel(geometry_msgs::PoseStamped& robot_vel) {
   robot_vel.pose.position.y = global_vel.linear.y;
   robot_vel.pose.position.z = 0;
   tf2::Quaternion q;
-  q.setEuler(global_vel.angular.z, 0, 0);
+  q.setRPY(0, 0, global_vel.angular.z);
   tf2::convert(q, robot_vel.pose.orientation);
   robot_vel.header.stamp = ros::Time();
 }
