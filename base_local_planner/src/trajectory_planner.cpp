@@ -86,7 +86,6 @@ namespace base_local_planner{
         double resolution = costmap_.getResolution();
         gdist_scale_ *= resolution;
         pdist_scale_ *= resolution;
-        occdist_scale_ *= resolution;
       }
 
       oscillation_reset_dist_ = config.oscillation_reset_dist;
