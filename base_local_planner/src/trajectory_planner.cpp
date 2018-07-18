@@ -906,7 +906,7 @@ namespace base_local_planner{
 
   //given the current state of the robot, find a good trajectory
   Trajectory TrajectoryPlanner::findBestPath(const geometry_msgs::PoseStamped& global_pose,
-                              geometry_msgs::PoseStamped& global_vel, geometry_msgs::PoseStamped& drive_velocities) {
+      geometry_msgs::PoseStamped& global_vel, geometry_msgs::PoseStamped& drive_velocities) {
 
     Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation));
     Eigen::Vector3f vel(global_vel.pose.position.x, global_vel.pose.position.y, tf2::getYaw(global_vel.pose.orientation));

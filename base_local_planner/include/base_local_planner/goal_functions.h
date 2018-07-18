@@ -105,17 +105,17 @@ namespace base_local_planner {
       std::vector<geometry_msgs::PoseStamped>& transformed_plan);
 
   /**
-     * @brief  Returns last pose in plan
-     * @param tf A reference to a transform listener
-     * @param global_plan The plan being followed
-     * @param global_frame The global frame of the local planner
-     * @param goal_pose the pose to copy into
-     * @return True if achieved, false otherwise
-     */
+   * @brief  Returns last pose in plan
+   * @param tf A reference to a transform listener
+   * @param global_plan The plan being followed
+   * @param global_frame The global frame of the local planner
+   * @param goal_pose the pose to copy into
+   * @return True if achieved, false otherwise
+   */
   bool getGoalPose(const tf2_ros::Buffer& tf,
-  		  const std::vector<geometry_msgs::PoseStamped>& global_plan,
-  		  const std::string& global_frame,
-          geometry_msgs::PoseStamped &goal_pose);
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const std::string& global_frame,
+      geometry_msgs::PoseStamped &goal_pose);
 
   /**
    * @brief  Check if the goal pose has been achieved
