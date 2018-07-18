@@ -44,7 +44,7 @@ namespace global_planner {
 void set_angle(geometry_msgs::PoseStamped* pose, double angle)
 {
   tf2::Quaternion q;
-  q.setEuler( angle, 0, 0 );
+  q.setRPY(0, 0, angle);
   tf2::convert(q, pose->pose.orientation);
 }
 
