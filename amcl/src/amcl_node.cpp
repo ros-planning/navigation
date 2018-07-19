@@ -1045,9 +1045,7 @@ pf_vector_t AmclNode::customPoseGenerator(void* arg)
   
   tf::Quaternion quat(le.orientation.x,le.orientation.y,le.orientation.z,le.orientation.w);
   tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
-  
-  //std::cout<<"Size of array "<<parray->poses.size()<<std::endl;
-  
+    
   parray->poses.pop_back();
   
   pf_vector_t p;
