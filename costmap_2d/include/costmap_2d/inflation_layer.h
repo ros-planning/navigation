@@ -168,6 +168,7 @@ private:
 
   void computeCaches();
   void deleteKernels();
+  int generateIntegerDistances();
   void inflate_area(int min_i, int min_j, int max_i, int max_j, unsigned char* master_grid);
 
   unsigned int cellDistance(double world_dist)
@@ -175,18 +176,28 @@ private:
     return layered_costmap_->getCostmap()->cellDistance(world_dist);
   }
 
+  /**
+   * @brief  Given an index of a cell in the costmap, place it into a list pending for obstacle inflation
+   * @param  index The index of the cell
+   * @param  mx The x coordinate of the cell (can be computed from the index, but saves time to store it)
+   * @param  my The y coordinate of the cell (can be computed from the index, but saves time to store it)
+   * @param  src_x The x index of the obstacle point inflation started at
+   * @param  src_y The y index of the obstacle point inflation started at
+   */
   inline void enqueue(unsigned int index, unsigned int mx, unsigned int my,
                       unsigned int src_x, unsigned int src_y);
 
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
-  std::map<double, std::vector<CellData> > inflation_cells_;
+  std::vector<std::vector<CellData>> inflation_cells_;
 
   bool* seen_;
+  bool* queued_;
   int seen_size_;
 
   unsigned char** cached_costs_;
   double** cached_distances_;
+  std::vector<std::vector<int>> distance_matrix_;
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;
 
   dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig> *dsrv_;
