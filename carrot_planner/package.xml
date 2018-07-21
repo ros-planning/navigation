@@ -11,9 +11,9 @@
     <author>Eitan Marder-Eppstein</author>
     <author>Sachin Chitta</author>
     <author>contradict@gmail.com</author>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
     <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
-    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/carrot_planner</url>
 
