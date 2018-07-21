@@ -26,13 +26,11 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>cmake_modules</build_depend>
-    <build_depend>pcl_conversions</build_depend>
 
     <depend>base_local_planner</depend>
     <depend>costmap_2d</depend>
     <depend>dynamic_reconfigure</depend>
     <depend>eigen</depend>
-    <depend>libpcl-all-dev</depend>
     <depend>nav_core</depend>
     <depend>nav_msgs</depend>
     <depend>pluginlib</depend>
