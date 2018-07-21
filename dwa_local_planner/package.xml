@@ -37,7 +37,7 @@
     <depend>nav_msgs</depend>
     <depend>pluginlib</depend>
     <depend>roscpp</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
 
     <export>
         <nav_core plugin="${prefix}/blp_plugin.xml" />

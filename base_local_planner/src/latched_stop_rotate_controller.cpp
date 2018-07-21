@@ -17,6 +17,8 @@
 #include <base_local_planner/goal_functions.h>
 #include <base_local_planner/local_planner_limits.h>
 
+#include <tf2/utils.h>
+
 namespace base_local_planner {
 
 LatchedStopRotateController::LatchedStopRotateController(const std::string& name) {
@@ -35,17 +37,17 @@ LatchedStopRotateController::~LatchedStopRotateController() {}
  * Also goal orientation might not yet be true
  */
 bool LatchedStopRotateController::isPositionReached(LocalPlannerUtil* planner_util,
-    tf::Stamped<tf::Pose> global_pose) {
+    const geometry_msgs::PoseStamped& global_pose) {
   double xy_goal_tolerance = planner_util->getCurrentLimits().xy_goal_tolerance;
 
   //we assume the global goal is the last point in the global plan
-  tf::Stamped<tf::Pose> goal_pose;
+  geometry_msgs::PoseStamped goal_pose;
   if ( ! planner_util->getGoal(goal_pose)) {
     return false;
   }
 
-  double goal_x = goal_pose.getOrigin().getX();
-  double goal_y = goal_pose.getOrigin().getY();
+  double goal_x = goal_pose.pose.position.x;
+  double goal_y = goal_pose.pose.position.y;
 
   //check to see if we've reached the goal position
   if ((latch_xy_goal_tolerance_ && xy_tolerance_latch_) ||
@@ -63,7 +65,7 @@ bool LatchedStopRotateController::isPositionReached(LocalPlannerUtil* planner_ut
  */
 bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
     OdometryHelperRos& odom_helper,
-    tf::Stamped<tf::Pose> global_pose) {
+    const geometry_msgs::PoseStamped& global_pose) {
   double xy_goal_tolerance = planner_util->getCurrentLimits().xy_goal_tolerance;
   double theta_stopped_vel = planner_util->getCurrentLimits().theta_stopped_vel;
   double trans_stopped_vel = planner_util->getCurrentLimits().trans_stopped_vel;
@@ -73,13 +75,13 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
   odom_helper.getOdom(base_odom);
 
   //we assume the global goal is the last point in the global plan
-  tf::Stamped<tf::Pose> goal_pose;
+  geometry_msgs::PoseStamped goal_pose;
   if ( ! planner_util->getGoal(goal_pose)) {
     return false;
   }
 
-  double goal_x = goal_pose.getOrigin().getX();
-  double goal_y = goal_pose.getOrigin().getY();
+  double goal_x = goal_pose.pose.position.x;
+  double goal_y = goal_pose.pose.position.y;
 
   base_local_planner::LocalPlannerLimits limits = planner_util->getCurrentLimits();
 
@@ -92,7 +94,7 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
       ROS_DEBUG("Goal position reached (check), stopping and turning in place");
       xy_tolerance_latch_ = true;
     }
-    double goal_th = tf::getYaw(goal_pose.getRotation());
+    double goal_th = tf2::getYaw(goal_pose.pose.orientation);
     double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
     //check to see if the goal orientation has been reached
     if (fabs(angle) <= limits.yaw_goal_tolerance) {
@@ -105,8 +107,8 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
   return false;
 }
 
-bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>& global_pose,
-    const tf::Stamped<tf::Pose>& robot_vel,
+bool LatchedStopRotateController::stopWithAccLimits(const geometry_msgs::PoseStamped& global_pose,
+    const geometry_msgs::PoseStamped& robot_vel,
     geometry_msgs::Twist& cmd_vel,
     Eigen::Vector3f acc_lim,
     double sim_period,
@@ -116,16 +118,16 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
 
   //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible
   //but we'll use a tenth of a second to be consistent with the implementation of the local planner.
-  double vx = sign(robot_vel.getOrigin().x()) * std::max(0.0, (fabs(robot_vel.getOrigin().x()) - acc_lim[0] * sim_period));
-  double vy = sign(robot_vel.getOrigin().y()) * std::max(0.0, (fabs(robot_vel.getOrigin().y()) - acc_lim[1] * sim_period));
+  double vx = sign(robot_vel.pose.position.x) * std::max(0.0, (fabs(robot_vel.pose.position.x) - acc_lim[0] * sim_period));
+  double vy = sign(robot_vel.pose.position.y) * std::max(0.0, (fabs(robot_vel.pose.position.y) - acc_lim[1] * sim_period));
 
-  double vel_yaw = tf::getYaw(robot_vel.getRotation());
+  double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
   double vth = sign(vel_yaw) * std::max(0.0, (fabs(vel_yaw) - acc_lim[2] * sim_period));
 
   //we do want to check whether or not the command is valid
-  double yaw = tf::getYaw(global_pose.getRotation());
-  bool valid_cmd = obstacle_check(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
-                                  Eigen::Vector3f(robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), vel_yaw),
+  double yaw = tf2::getYaw(global_pose.pose.orientation);
+  bool valid_cmd = obstacle_check(Eigen::Vector3f(global_pose.pose.position.x, global_pose.pose.position.y, yaw),
+                                  Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
                                   Eigen::Vector3f(vx, vy, vth));
 
   //if we have a valid command, we'll pass it on, otherwise we'll command all zeros
@@ -144,8 +146,8 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
 }
 
 bool LatchedStopRotateController::rotateToGoal(
-    const tf::Stamped<tf::Pose>& global_pose,
-    const tf::Stamped<tf::Pose>& robot_vel,
+    const geometry_msgs::PoseStamped& global_pose,
+    const geometry_msgs::PoseStamped& robot_vel,
     double goal_th,
     geometry_msgs::Twist& cmd_vel,
     Eigen::Vector3f acc_lim,
@@ -154,8 +156,8 @@ bool LatchedStopRotateController::rotateToGoal(
     boost::function<bool (Eigen::Vector3f pos,
                           Eigen::Vector3f vel,
                           Eigen::Vector3f vel_samples)> obstacle_check) {
-  double yaw = tf::getYaw(global_pose.getRotation());
-  double vel_yaw = tf::getYaw(robot_vel.getRotation());
+  double yaw = tf2::getYaw(global_pose.pose.orientation);
+  double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
   cmd_vel.linear.x = 0;
   cmd_vel.linear.y = 0;
   double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
@@ -179,8 +181,8 @@ bool LatchedStopRotateController::rotateToGoal(
   }
 
   //we still want to lay down the footprint of the robot and check if the action is legal
-  bool valid_cmd = obstacle_check(Eigen::Vector3f(global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), yaw),
-      Eigen::Vector3f(robot_vel.getOrigin().getX(), robot_vel.getOrigin().getY(), vel_yaw),
+  bool valid_cmd = obstacle_check(Eigen::Vector3f(global_pose.pose.position.x, global_pose.pose.position.y, yaw),
+      Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
       Eigen::Vector3f( 0.0, 0.0, v_theta_samp));
 
   if (valid_cmd) {
@@ -199,12 +201,12 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
     double sim_period,
     LocalPlannerUtil* planner_util,
     OdometryHelperRos& odom_helper_,
-    tf::Stamped<tf::Pose> global_pose,
+    const geometry_msgs::PoseStamped& global_pose,
     boost::function<bool (Eigen::Vector3f pos,
                           Eigen::Vector3f vel,
                           Eigen::Vector3f vel_samples)> obstacle_check) {
   //we assume the global goal is the last point in the global plan
-  tf::Stamped<tf::Pose> goal_pose;
+  geometry_msgs::PoseStamped goal_pose;
   if ( ! planner_util->getGoal(goal_pose)) {
     ROS_ERROR("Could not get goal pose");
     return false;
@@ -219,7 +221,7 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
     xy_tolerance_latch_ = true;
   }
   //check to see if the goal orientation has been reached
-  double goal_th = tf::getYaw(goal_pose.getRotation());
+  double goal_th = tf2::getYaw(goal_pose.pose.orientation);
   double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
   if (fabs(angle) <= limits.yaw_goal_tolerance) {
     //set the velocity command to zero
@@ -229,7 +231,7 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
     rotating_to_goal_ = false;
   } else {
     ROS_DEBUG("Angle: %f Tolerance: %f", angle, limits.yaw_goal_tolerance);
-    tf::Stamped<tf::Pose> robot_vel;
+    geometry_msgs::PoseStamped robot_vel;
     odom_helper_.getRobotVel(robot_vel);
     nav_msgs::Odometry base_odom;
     odom_helper_.getOdom(base_odom);

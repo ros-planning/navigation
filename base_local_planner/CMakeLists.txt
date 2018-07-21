@@ -17,8 +17,8 @@ find_package(catkin REQUIRED
             roscpp
             rospy
             std_msgs
-            tf
             tf2_geometry_msgs
+            tf2_ros
             voxel_grid
         )
 
@@ -73,7 +73,7 @@ catkin_package(
         pluginlib
         roscpp
         std_msgs
-        tf
+        tf2_ros
 )
 
 #uncomment for profiling

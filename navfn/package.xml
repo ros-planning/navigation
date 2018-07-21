@@ -38,7 +38,7 @@
     <depend>pluginlib</depend>
     <depend>rosconsole</depend>
     <depend>roscpp</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
 
     <exec_depend>message_runtime</exec_depend>

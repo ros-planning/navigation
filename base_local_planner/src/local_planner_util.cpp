@@ -42,7 +42,7 @@
 namespace base_local_planner {
 
 void LocalPlannerUtil::initialize(
-    tf::TransformListener* tf,
+    tf2_ros::Buffer* tf,
     costmap_2d::Costmap2D* costmap,
     std::string global_frame) {
   if(!initialized_) {
@@ -80,7 +80,7 @@ LocalPlannerLimits LocalPlannerUtil::getCurrentLimits() {
 }
 
 
-bool LocalPlannerUtil::getGoal(tf::Stamped<tf::Pose>& goal_pose) {
+bool LocalPlannerUtil::getGoal(geometry_msgs::PoseStamped& goal_pose) {
   //we assume the global goal is the last point in the global plan
   return base_local_planner::getGoalPose(*tf_,
         global_plan_,
@@ -102,7 +102,7 @@ bool LocalPlannerUtil::setPlan(const std::vector<geometry_msgs::PoseStamped>& or
   return true;
 }
 
-bool LocalPlannerUtil::getLocalPlan(const tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan) {
+bool LocalPlannerUtil::getLocalPlan(const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan) {
   //get the global plan in our frame
   if(!base_local_planner::transformGlobalPlan(
       *tf_,

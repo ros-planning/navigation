@@ -25,7 +25,7 @@
     <depend>nav_core</depend>
     <depend>pluginlib</depend>
     <depend>roscpp</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
 
     <test_depend>rostest</test_depend>
 

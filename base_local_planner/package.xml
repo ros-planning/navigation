@@ -38,7 +38,7 @@
     <depend>rosconsole</depend>
     <depend>roscpp</depend>
     <depend>rospy</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
     <depend>voxel_grid</depend>
 

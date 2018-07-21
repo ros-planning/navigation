@@ -26,6 +26,7 @@
 
     <build_depend>cmake_modules</build_depend>
     <build_depend>message_generation</build_depend>
+    <build_depend>tf2_sensor_msgs</build_depend>
 
     <depend>dynamic_reconfigure</depend>
     <depend>geometry_msgs</depend>
@@ -41,13 +42,12 @@
     <depend>rostest</depend>
     <depend>sensor_msgs</depend>
     <depend>std_msgs</depend>
-    <depend>tf</depend>
+    <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
     <depend>voxel_grid</depend>
 
     <exec_depend>message_runtime</exec_depend>
     <exec_depend>rosconsole</exec_depend>
-
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>
     <test_depend>rostest</test_depend>
