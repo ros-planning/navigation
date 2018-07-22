@@ -30,14 +30,12 @@
 
     <depend>costmap_2d</depend>
     <depend>geometry_msgs</depend>
-    <depend>libpcl-all-dev</depend>
     <depend>nav_core</depend>
     <depend>nav_msgs</depend>
-    <depend>pcl_conversions</depend>
-    <depend>pcl_ros</depend>
     <depend>pluginlib</depend>
     <depend>rosconsole</depend>
     <depend>roscpp</depend>
+    <depend>sensor_msgs</depend>
     <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
 

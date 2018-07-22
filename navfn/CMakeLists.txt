@@ -9,18 +9,15 @@ find_package(catkin REQUIRED
         message_generation
         nav_core
         nav_msgs
-        pcl_conversions
-        pcl_ros
         pluginlib
         rosconsole
         roscpp
         tf2_ros
+        sensor_msgs
         visualization_msgs
         )
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED COMPONENT common)
-remove_definitions(-DDISABLE_LIBUSB-1.0)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
@@ -55,6 +52,7 @@ catkin_package(
         nav_msgs
         pluginlib
         roscpp
+        sensor_msgs
         visualization_msgs
 )
 
