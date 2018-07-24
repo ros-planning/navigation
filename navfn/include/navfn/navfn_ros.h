@@ -47,7 +47,6 @@
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
 #include <navfn/potarr_point.h>
-#include <pcl_ros/publisher.h>
 
 namespace navfn {
   /**
@@ -166,7 +165,7 @@ namespace navfn {
       costmap_2d::Costmap2D* costmap_;
       boost::shared_ptr<NavFn> planner_;
       ros::Publisher plan_pub_;
-      pcl_ros::Publisher<PotarrPoint> potarr_pub_;
+      ros::Publisher potarr_pub_;
       bool initialized_, allow_unknown_, visualize_potential_;
 
 

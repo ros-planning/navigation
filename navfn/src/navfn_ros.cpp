@@ -38,8 +38,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
-
-#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(navfn::NavfnROS, nav_core::BaseGlobalPlanner)
@@ -75,7 +74,7 @@ namespace navfn {
 
       //if we're going to visualize the potential array we need to advertise
       if(visualize_potential_)
-        potarr_pub_.advertise(private_nh, "potential", 1);
+        potarr_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("potential", 1);
 
       private_nh.param("allow_unknown", allow_unknown_, true);
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
@@ -301,15 +300,21 @@ namespace navfn {
       }
     }
 
-    if (visualize_potential_){
-      //publish potential array
-      pcl::PointCloud<PotarrPoint> pot_area;
-      pot_area.header.frame_id = global_frame_;
-      pot_area.points.clear();
-      std_msgs::Header header;
-      pcl_conversions::fromPCL(pot_area.header, header);
-      header.stamp = ros::Time::now();
-      pot_area.header = pcl_conversions::toPCL(header);
+    if (visualize_potential_)
+    {
+      // Publish the potentials as a PointCloud2
+      sensor_msgs::PointCloud2 cloud;
+      cloud.width = 0;
+      cloud.height = 0;
+      cloud.header.stamp = ros::Time::now();
+      cloud.header.frame_id = global_frame_;
+      sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
+      cloud_mod.setPointCloud2Fields(4, "x", 1, sensor_msgs::PointField::FLOAT32,
+                                        "y", 1, sensor_msgs::PointField::FLOAT32,
+                                        "z", 1, sensor_msgs::PointField::FLOAT32,
+                                        "pot", 1, sensor_msgs::PointField::FLOAT32);
+      cloud_mod.resize(planner_->ny * planner_->nx);
+      sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
 
       PotarrPoint pt;
       float *pp = planner_->potarr;
@@ -319,14 +324,14 @@ namespace navfn {
         if (pp[i] < 10e7)
         {
           mapToWorld(i%planner_->nx, i/planner_->nx, pot_x, pot_y);
-          pt.x = pot_x;
-          pt.y = pot_y;
-          pt.z = pp[i]/pp[planner_->start[1]*planner_->nx + planner_->start[0]]*20;
-          pt.pot_value = pp[i];
-          pot_area.push_back(pt);
+          iter_x[0] = pot_x;
+          iter_x[1] = pot_y;
+          iter_x[2] = pp[i]/pp[planner_->start[1]*planner_->nx + planner_->start[0]]*20;
+          iter_x[3] = pp[i];
+          ++iter_x;
         }
       }
-      potarr_pub_.publish(pot_area);
+      potarr_pub_.publish(cloud);
     }
 
     //publish the plan for visualization purposes
