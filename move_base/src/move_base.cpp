@@ -122,7 +122,7 @@ namespace move_base {
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
 
-    control_loop_missing_timer_ = nh.createTimer(ros::Duration(1.0), &MoveBase::wakePlanner, this);
+    control_loop_missing_timer_ = nh.createTimer(ros::Duration(1.0), &MoveBase::timerCb, this);
 
     //initialize the global planner
     try {
