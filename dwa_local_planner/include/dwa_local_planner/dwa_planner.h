@@ -45,7 +45,6 @@
 
 //for creating a local cost grid
 #include <base_local_planner/map_grid_visualizer.h>
-#include <pcl_ros/publisher.h>
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
@@ -77,11 +76,6 @@ namespace dwa_local_planner {
        * @param global_frame the frame id of the tf frame to use
        */
       DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util);
-
-      /**
-       * @brief  Destructor for the planner
-       */
-      ~DWAPlanner() {if(traj_cloud_) delete traj_cloud_;}
 
       /**
        * @brief Reconfigures the trajectory planner
@@ -159,8 +153,8 @@ namespace dwa_local_planner {
       std::vector<geometry_msgs::PoseStamped> global_plan_;
 
       boost::mutex configuration_mutex_;
-      pcl::PointCloud<base_local_planner::MapGridCostPoint>* traj_cloud_;
-      pcl_ros::Publisher<base_local_planner::MapGridCostPoint> traj_cloud_pub_;
+      std::string frame_id_;
+      ros::Publisher traj_cloud_pub_;
       bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud
       bool publish_traj_pc_;
 

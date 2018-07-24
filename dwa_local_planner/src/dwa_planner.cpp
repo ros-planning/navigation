@@ -36,7 +36,6 @@
 *********************************************************************/
 #include <dwa_local_planner/dwa_planner.h>
 #include <base_local_planner/goal_functions.h>
-#include <base_local_planner/map_grid_cost_point.h>
 #include <cmath>
 
 //for computing path distance
@@ -46,7 +45,8 @@
 
 #include <ros/ros.h>
 #include <tf2/utils.h>
-#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 namespace dwa_local_planner {
   void DWAPlanner::reconfigure(DWAPlannerConfig &config)
@@ -156,12 +156,9 @@ namespace dwa_local_planner {
     private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
     map_viz_.initialize(name, planner_util->getGlobalFrame(), boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
 
-    std::string frame_id;
-    private_nh.param("global_frame_id", frame_id, std::string("odom"));
+    private_nh.param("global_frame_id", frame_id_, std::string("odom"));
 
-    traj_cloud_ = new pcl::PointCloud<base_local_planner::MapGridCostPoint>;
-    traj_cloud_->header.frame_id = frame_id;
-    traj_cloud_pub_.advertise(private_nh, "trajectory_cloud", 1);
+    traj_cloud_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("trajectory_cloud", 1);
     private_nh.param("publish_traj_pc", publish_traj_pc_, false);
 
     // set up all the cost functions that will be applied in order
@@ -321,14 +318,27 @@ namespace dwa_local_planner {
 
     if(publish_traj_pc_)
     {
-        base_local_planner::MapGridCostPoint pt;
-        traj_cloud_->points.clear();
-        traj_cloud_->width = 0;
-        traj_cloud_->height = 0;
-        std_msgs::Header header;
-        pcl_conversions::fromPCL(traj_cloud_->header, header);
-        header.stamp = ros::Time::now();
-        traj_cloud_->header = pcl_conversions::toPCL(header);
+        sensor_msgs::PointCloud2 traj_cloud;
+        traj_cloud.header.frame_id = frame_id_;
+        traj_cloud.header.stamp = ros::Time::now();
+
+        sensor_msgs::PointCloud2Modifier cloud_mod(traj_cloud);
+        cloud_mod.setPointCloud2Fields(5, "x", 1, sensor_msgs::PointField::FLOAT32,
+                                          "y", 1, sensor_msgs::PointField::FLOAT32,
+                                          "z", 1, sensor_msgs::PointField::FLOAT32,
+                                          "theta", 1, sensor_msgs::PointField::FLOAT32,
+                                          "cost", 1, sensor_msgs::PointField::FLOAT32);
+
+        unsigned int num_points = 0;
+        for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); ++t)
+        {
+            if (t->cost_<0)
+              continue;
+            num_points += t->getPointsSize();
+        }
+
+        cloud_mod.resize(num_points);
+        sensor_msgs::PointCloud2Iterator<float> iter_x(traj_cloud, "x");
         for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); ++t)
         {
             if(t->cost_<0)
@@ -337,15 +347,15 @@ namespace dwa_local_planner {
             for(unsigned int i = 0; i < t->getPointsSize(); ++i) {
                 double p_x, p_y, p_th;
                 t->getPoint(i, p_x, p_y, p_th);
-                pt.x=p_x;
-                pt.y=p_y;
-                pt.z=0;
-                pt.path_cost=p_th;
-                pt.total_cost=t->cost_;
-                traj_cloud_->push_back(pt);
+                iter_x[0] = p_x;
+                iter_x[1] = p_y;
+                iter_x[2] = 0.0;
+                iter_x[3] = p_th;
+                iter_x[4] = t->cost_;
+                ++iter_x;
             }
         }
-        traj_cloud_pub_.publish(*traj_cloud_);
+        traj_cloud_pub_.publish(traj_cloud);
     }
 
     // verbose publishing of point clouds
