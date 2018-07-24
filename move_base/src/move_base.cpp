@@ -57,7 +57,7 @@ namespace move_base {
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
-    timingDataRecorder_("MoveBase"), max_control_loop_miss_(-1.0), control_loop_miss_count_(0) {
+    timingDataRecorder_("MoveBase"), max_control_loop_miss_(0.0), control_loop_miss_count_(0) {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -95,6 +95,7 @@ namespace move_base {
     //for comanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
+    control_loop_missing_pub_ = nh.advertise<srslib_framework::MsgLoopMiss>("control_loop_miss", 1);
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
@@ -353,7 +354,7 @@ namespace move_base {
     control_loop_missing_pub_.publish(msg);
 
     // reset variables
-    max_control_loop_miss_ = -1.0;
+    max_control_loop_miss_ = 0.0;
     control_loop_miss_count_ = 0;
   }
 
