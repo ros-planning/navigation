@@ -60,6 +60,7 @@
 #include "move_base/MoveBaseConfig.h"
 
 #include <srslib_timing/MasterTimingDataRecorder.hpp>
+#include <srslib_framework/MsgLoopMiss.h>
 
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much

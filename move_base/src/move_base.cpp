@@ -347,8 +347,12 @@ namespace move_base {
 
   void MoveBase::timerCb(const ros::TimerEvent&){
 
-    //control_loop_missing_pub_.publish();
+    srslib_framework::MsgLoopMiss msg;
+    msg.loop_miss_counts = control_loop_miss_count_;
+    msg.maximum_loop_miss = max_control_loop_miss_;
+    control_loop_missing_pub_.publish(msg);
 
+    // reset variables
     max_control_loop_miss_ = -1.0;
     control_loop_miss_count_ = 0;
   }
