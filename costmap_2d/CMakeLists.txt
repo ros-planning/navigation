@@ -22,7 +22,6 @@ find_package(catkin REQUIRED
             voxel_grid
         )
 
-find_package(PCL REQUIRED COMPONENTS common)
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
