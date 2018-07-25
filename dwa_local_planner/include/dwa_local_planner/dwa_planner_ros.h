@@ -57,13 +57,15 @@
 
 #include <dwa_local_planner/dwa_planner.h>
 
+#include <mbf_costmap_core/costmap_controller.h>
+
 namespace dwa_local_planner {
   /**
    * @class DWAPlannerROS
    * @brief ROS Wrapper for the DWAPlanner that adheres to the
    * BaseLocalPlanner interface and can be used as a plugin for move_base.
    */
-  class DWAPlannerROS : public nav_core::BaseLocalPlanner {
+  class DWAPlannerROS : public nav_core::BaseLocalPlanner, public mbf_costmap_core::CostmapController {
     public:
       /**
        * @brief  Constructor for DWAPlannerROS wrapper
@@ -144,16 +146,36 @@ namespace dwa_local_planner {
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
+      bool initialized_;
       tf::Stamped<tf::Pose> current_pose_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
 
-      bool initialized_;
-
-
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
+
+     virtual uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+                                                   const geometry_msgs::TwistStamped& velocity,
+                                                   geometry_msgs::TwistStamped &cmd_vel,
+                                                   std::string &message);
+
+      /**
+       * @brief Check if the goal pose has been achieved by the local planner within tolerance limits
+       * @remark New on MBF API
+       * @param xy_tolerance Distance tolerance in meters
+       * @param yaw_tolerance Heading tolerance in radians
+       * @return True if achieved, false otherwise
+       */
+      virtual bool isGoalReached(double xy_tolerance, double yaw_tolerance);
+
+      /**
+       * @brief Requests the planner to cancel, e.g. if it takes too much time
+       * @remark New on MBF API
+       * @return True if a cancel has been successfully requested, false if not implemented.
+       */
+      virtual bool cancel();
+
   };
 };
 #endif

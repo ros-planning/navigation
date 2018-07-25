@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
             pcl_conversions
             roscpp
             tf
+            mbf_costmap_core
         )
 
 find_package(Eigen3 REQUIRED)

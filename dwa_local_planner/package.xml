@@ -34,6 +34,7 @@
     <build_depend>pcl_conversions</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>tf</build_depend>
+    <build_depend>mbf_costmap_core</build_depend>
 
     <run_depend>base_local_planner</run_depend>
     <run_depend>costmap_2d</run_depend>
@@ -44,9 +45,11 @@
     <run_depend>pluginlib</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>tf</run_depend>
+    <run_depend>mbf_costmap_core</run_depend>
 
     <export>
         <nav_core plugin="${prefix}/blp_plugin.xml" />
+        <mbf_costmap_core plugin="${prefix}/blp_mbf_plugin.xml" />
     </export>
 
 </package>

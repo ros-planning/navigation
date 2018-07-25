@@ -48,6 +48,7 @@
 
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
+PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, mbf_costmap_core::CostmapController)
 
 namespace dwa_local_planner {
 
