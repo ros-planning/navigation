@@ -2,6 +2,22 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#735 <https://github.com/ros-planning/navigation/issues/735>`_ from ros-planning/melodic_708
+  Allow specification of free/occupied thresholds for map_saver (`#708 <https://github.com/ros-planning/navigation/issues/708>`_)
+* Allow specification of free/occupied thresholds for map_saver (`#708 <https://github.com/ros-planning/navigation/issues/708>`_)
+  * add occupied threshold command line parameter to map_saver (--occ)
+  * add free threshold command line parameter to map_saver (--free)
+* Merge pull request `#704 <https://github.com/ros-planning/navigation/issues/704>`_ from DLu/fix573_lunar
+  Map server wait for a valid time fix [lunar]
+* Map server wait for a valid time, fix `#573 <https://github.com/ros-planning/navigation/issues/573>`_ (`#700 <https://github.com/ros-planning/navigation/issues/700>`_)
+  When launching the map_server with Gazebo, the current time is picked
+  before the simulation is started and then has a value of 0.
+  Later when querying the stamp of the map, a value of has a special
+  signification on tf transform for example.
+* Contributors: Michael Ferguson, Romain Reignier, ipa-fez
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

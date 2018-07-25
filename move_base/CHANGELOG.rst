@@ -2,6 +2,15 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
+* Merge pull request `#723 <https://github.com/ros-planning/navigation/issues/723>`_ from moriarty/melodic-buildfarm-errors
+  Melodic buildfarm errors
+* Merge pull request `#719 <https://github.com/ros-planning/navigation/issues/719>`_ from ros-planning/lunar_711
+  adding mutex locks to costmap clearing service
+* Contributors: Alexander Moriarty, Michael Ferguson, Vincent Rabaud, stevemacenski
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

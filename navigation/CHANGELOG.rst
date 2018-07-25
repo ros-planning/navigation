@@ -2,6 +2,11 @@
 Changelog for package navigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove robot_pose_ekf, see `#701 <https://github.com/ros-planning/navigation/issues/701>`_
+* Contributors: Michael Ferguson
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

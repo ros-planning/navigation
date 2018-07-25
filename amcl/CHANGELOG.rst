@@ -2,6 +2,33 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
+* Merge pull request `#734 <https://github.com/ros-planning/navigation/issues/734>`_ from ros-planning/melodic_731
+  AMCL dynamic reconfigure: Extend parameter range (Forward port `#731 <https://github.com/ros-planning/navigation/issues/731>`_)
+* Merge pull request `#728 <https://github.com/ros-planning/navigation/issues/728>`_ from ros-planning/melodic_tf2_conversion
+  switch AMCL to use TF2
+* fix swapped odom1/4 in omni model, fixes `#499 <https://github.com/ros-planning/navigation/issues/499>`_
+* Merge pull request `#730 <https://github.com/ros-planning/navigation/issues/730>`_ from Glowcloud/melodic-devel
+  Fix for Potential Memory Leak  in AmclNode::reconfigureCB `#729 <https://github.com/ros-planning/navigation/issues/729>`_
+* Fix for Potential Memory Leak  in AmclNode::reconfigureCB
+* switch AMCL to use TF2
+* Merge pull request `#727 <https://github.com/ros-planning/navigation/issues/727>`_ from ros-planning/melodic_668
+  Update laser_model_type enum on AMCL.cfg (Melodic port of `#668 <https://github.com/ros-planning/navigation/issues/668>`_)
+* Update laser_model_type enum on AMCL.cfg
+  Adding likelihood_field_prob laser model option on AMCL.cfg to be able to control dynamic parameters with this laser sensor model.
+* Merge pull request `#723 <https://github.com/ros-planning/navigation/issues/723>`_ from moriarty/melodic-buildfarm-errors
+  Melodic buildfarm errors
+* include <memory> for std::shared_ptr
+* Merge pull request `#718 <https://github.com/ros-planning/navigation/issues/718>`_ from moriarty/tf2-buffer-ptr
+  [melodic] tf2_buffer\_ -> tf2_buffer_ptr\_
+* [melodic] tf2_buffer\_ -> tf2_buffer_ptr\_
+  Change required due to changes in upstream dependencies:
+  `ros/geometry#163 <https://github.com/ros/geometry/issues/163>`_: "Maintain & expose tf2 Buffer in shared_ptr for tf"
+  fixes `ros-planning/navigation#717 <https://github.com/ros-planning/navigation/issues/717>`_ (for compile errors at least.)
+* Contributors: Alexander Moriarty, Glowcloud, Martin Ganeff, Michael Ferguson, Miguel Cordero, Vincent Rabaud, maracuya-robotics
+
 1.15.2 (2018-03-22)
 -------------------
 * Fix minor typo (`#682 <https://github.com/ros-planning/navigation/issues/682>`_)
