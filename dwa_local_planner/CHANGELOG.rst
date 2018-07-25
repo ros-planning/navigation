@@ -2,8 +2,8 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.0 (2018-07-25)
+-------------------
 * Merge pull request `#765 <https://github.com/ros-planning/navigation/issues/765>`_ from ros-planning/remove_pcl
   remove left over PCL depends in dwa_local_planner
 * Remove PCL from local planners

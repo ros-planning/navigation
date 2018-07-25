@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.0 (2018-07-25)
+-------------------
 * Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
 * Merge pull request `#734 <https://github.com/ros-planning/navigation/issues/734>`_ from ros-planning/melodic_731
   AMCL dynamic reconfigure: Extend parameter range (Forward port `#731 <https://github.com/ros-planning/navigation/issues/731>`_)

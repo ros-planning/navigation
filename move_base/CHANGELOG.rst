@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.0 (2018-07-25)
+-------------------
 * Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
 * Merge pull request `#723 <https://github.com/ros-planning/navigation/issues/723>`_ from moriarty/melodic-buildfarm-errors
   Melodic buildfarm errors

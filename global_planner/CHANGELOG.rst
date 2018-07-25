@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.0 (2018-07-25)
+-------------------
 * Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
 * feat(orientation_filter): Added additional orientation filter options (`#739 <https://github.com/ros-planning/navigation/issues/739>`_)
   * feat(orientation_filter): Added additional orientation filter options

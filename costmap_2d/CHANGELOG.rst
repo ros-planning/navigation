@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.0 (2018-07-25)
+-------------------
 * Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
 * unify combination_method dynamic reconfig, closes `#402 <https://github.com/ros-planning/navigation/issues/402>`_
 * Merge pull request `#723 <https://github.com/ros-planning/navigation/issues/723>`_ from moriarty/melodic-buildfarm-errors
