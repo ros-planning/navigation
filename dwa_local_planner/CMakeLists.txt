@@ -10,19 +10,16 @@ find_package(catkin REQUIRED
             nav_core
             nav_msgs
             pluginlib
-            pcl_conversions
             roscpp
             tf2_ros
         )
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED COMPONENTS common)
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
     )
 add_definitions(${EIGEN3_DEFINITIONS})
 

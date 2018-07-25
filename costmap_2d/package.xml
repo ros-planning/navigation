@@ -34,10 +34,7 @@
     <depend>map_msgs</depend>
     <depend>message_filters</depend>
     <depend>nav_msgs</depend>
-    <depend>pcl_conversions</depend>
-    <depend>pcl_ros</depend>
     <depend>pluginlib</depend>
-    <depend>libpcl-all-dev</depend>
     <depend>roscpp</depend>
     <depend>rostest</depend>
     <depend>sensor_msgs</depend>

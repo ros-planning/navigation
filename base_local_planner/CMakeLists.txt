@@ -11,8 +11,6 @@ find_package(catkin REQUIRED
             message_generation
             nav_core
             nav_msgs
-            pcl_conversions
-            pcl_ros
             pluginlib
             roscpp
             rospy
@@ -28,13 +26,11 @@ find_package(Boost REQUIRED
         )
 
 find_package(Eigen3 REQUIRED)
-find_package(PCL REQUIRED COMPONENTS common)
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
 )
 add_definitions(${EIGEN3_DEFINITIONS})
 
@@ -107,7 +103,6 @@ add_dependencies(base_local_planner base_local_planner_generate_messages_cpp)
 add_dependencies(base_local_planner nav_msgs_generate_messages_cpp)
 target_link_libraries(base_local_planner
     ${catkin_LIBRARIES}
-    ${PCL_LIBRARIES}
     ${Boost_LIBRARIES}
     ${Eigen_LIBRARIES}
     )
