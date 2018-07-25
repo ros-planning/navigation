@@ -37,8 +37,6 @@
 #ifndef POTARR_POINT_H_
 #define POTARR_POINT_H_
 
-#include <pcl/register_point_struct.h>
-
 namespace navfn {
     struct PotarrPoint {
         float x;
@@ -47,13 +45,6 @@ namespace navfn {
         float pot_value;
     };
 }
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-        navfn::PotarrPoint,
-        (float, x, x)
-        (float, y, y)
-        (float, z, z)
-        (float, pot_value, pot_value));
 
 #endif
 
