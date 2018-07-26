@@ -62,6 +62,16 @@
 #include <srslib_timing/MasterTimingDataRecorder.hpp>
 #include <srslib_framework/MsgLoopMiss.h>
 
+namespace srs {
+  class ControlLoopAnalyzer {
+  public:
+    ControlLoopAnalyzer() {};
+    ~ControlLoopAnalyzer() {};
+
+    void compute(std::vector<float>& vec, float& maximum_miss);
+  };
+};
+
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
   typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
@@ -234,6 +244,7 @@ namespace move_base {
       boost::thread* planner_thread_;
 
       ros::Timer control_loop_missing_timer_;
+      std::vector<float> vec_;
 
       boost::recursive_mutex configuration_mutex_;
       dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
@@ -252,9 +263,9 @@ namespace move_base {
       int planner_thread_affinity_;
       int controller_thread_affinity_;
 
-      float max_control_loop_miss_;
-      size_t control_loop_miss_count_;
+      srs::ControlLoopAnalyzer analyzer_;
   };
 };
+
 #endif
 

@@ -57,7 +57,7 @@ namespace move_base {
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
-    timingDataRecorder_("MoveBase"), max_control_loop_miss_(0.0), control_loop_miss_count_(0) {
+    timingDataRecorder_("MoveBase"), analyzer_(){
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -348,14 +348,15 @@ namespace move_base {
 
   void MoveBase::timerCb(const ros::TimerEvent&){
 
+    float maximum_miss = 0.0;
+    analyzer_.compute(vec_, maximum_miss);
+
     srslib_framework::MsgLoopMiss msg;
-    msg.loop_miss_counts = control_loop_miss_count_;
-    msg.maximum_loop_miss = max_control_loop_miss_;
+    msg.loop_miss_counts = vec_.size();
+    msg.maximum_loop_miss = maximum_miss;
     control_loop_missing_pub_.publish(msg);
 
-    // reset variables
-    max_control_loop_miss_ = 0.0;
-    control_loop_miss_count_ = 0;
+    vec_.clear();
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
@@ -912,10 +913,7 @@ namespace move_base {
       r.sleep();
       //make sure to sleep for the remainder of our cycle time
       if(r.cycleTime() > ros::Duration(1 / controller_frequency_) && state_ == CONTROLLING){
-        control_loop_miss_count_ += 1;
-        if(max_control_loop_miss_ < r.cycleTime().toSec()){
-          max_control_loop_miss_ = r.cycleTime().toSec();
-        }
+        vec_.push_back(r.cycleTime().toSec());
         ROS_WARN("Control loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", controller_frequency_, r.cycleTime().toSec());
       }
 
@@ -1324,5 +1322,18 @@ namespace move_base {
       behavior->newGoalReceived();
     }
   }
-
 };
+
+namespace srs {
+  void ControlLoopAnalyzer::compute(std::vector<float>& vec, float& maximum_miss)
+  {
+    if(vec.empty())
+    {
+      maximum_miss = 0.0;
+      return;
+    }
+
+    std::sort(vec.begin(), vec.end());
+    maximum_miss = vec.back();
+  }
+}
