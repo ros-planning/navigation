@@ -58,6 +58,7 @@
 #include <dwa_local_planner/dwa_planner.h>
 
 #include <mbf_costmap_core/costmap_controller.h>
+#include <mbf_msgs/ExePathActionResult.h>
 
 namespace dwa_local_planner {
   /**
@@ -116,6 +117,59 @@ namespace dwa_local_planner {
        */
       bool isGoalReached();
 
+      /**
+       * @brief  Given the current timestamped position, orientation, and velocity of the robot,
+       * compute velocity commands to send to the base
+       *
+       *
+       * Possible return codes:
+       *
+       *     uint8 SUCESS          = 0
+       *
+       *     uint8 FAILURE         = 100  # Unspecified failure, only used for old, non-mfb_core based plugins
+       *     uint8 CANCELED        = 101
+       *     uint8 NO_VALID_CMD    = 102
+       *     uint8 PAT_EXCEEDED    = 103
+       *     uint8 COLLISION       = 104
+       *     uint8 OSCILLATION     = 105
+       *     uint8 ROBOT_STUCK     = 106
+       *     uint8 MISSED_GOAL     = 107
+       *     uint8 MISSED_PATH     = 108
+       *     uint8 BLOCKED_PATH    = 109
+       *     uint8 INVALID_PATH    = 110
+       *     uint8 TF_ERROR        = 111
+       *     uint8 NOT_INITIALIZED = 112
+       *     uint8 INVALID_PLUGIN  = 113
+       *     uint8 INTERNAL_ERROR  = 114
+       *     # 121..149 are reserved as plugin specific errors
+       *
+       * @param pose Gets current robot pose
+       * @param velocity Will be filled with the velocity
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       * @param message Will be filled with some message to be passed to the robot base
+       * @return  if a valid trajectory was found, false otherwise
+       */
+      virtual uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+                                               const geometry_msgs::TwistStamped& velocity,
+                                               geometry_msgs::TwistStamped &cmd_vel,
+                                               std::string &message);
+
+      /**
+       * @brief Check if the goal pose has been achieved by the local planner within tolerance limits
+       * @note params are not being used
+       * @remark New on MBF API
+       * @param xy_tolerance Distance tolerance in meters
+       * @param yaw_tolerance Heading tolerance in radians
+       * @return True if achieved, false otherwise
+       */
+      virtual bool isGoalReached(double xy_tolerance, double yaw_tolerance);
+
+      /**
+       * @brief Requests the planner to cancel, e.g. if it takes too much time
+       * @remark New on MBF API
+       * @return True if a cancel has been successfully requested, false if not implemented.
+       */
+      virtual bool cancel();
 
 
       bool isInitialized() {
@@ -147,6 +201,7 @@ namespace dwa_local_planner {
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
       bool initialized_;
+      bool canceled_;
       tf::Stamped<tf::Pose> current_pose_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
@@ -155,26 +210,6 @@ namespace dwa_local_planner {
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
 
-     virtual uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
-                                                   const geometry_msgs::TwistStamped& velocity,
-                                                   geometry_msgs::TwistStamped &cmd_vel,
-                                                   std::string &message);
-
-      /**
-       * @brief Check if the goal pose has been achieved by the local planner within tolerance limits
-       * @remark New on MBF API
-       * @param xy_tolerance Distance tolerance in meters
-       * @param yaw_tolerance Heading tolerance in radians
-       * @return True if achieved, false otherwise
-       */
-      virtual bool isGoalReached(double xy_tolerance, double yaw_tolerance);
-
-      /**
-       * @brief Requests the planner to cancel, e.g. if it takes too much time
-       * @remark New on MBF API
-       * @return True if a cancel has been successfully requested, false if not implemented.
-       */
-      virtual bool cancel();
 
   };
 };
