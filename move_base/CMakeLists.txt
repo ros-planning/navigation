@@ -68,7 +68,6 @@ if(CATKIN_ENABLE_TESTING)
 
   catkin_add_gtest(move_base_test test/move_base_test.cpp)
   target_link_libraries(move_base_test move_base ${GTEST_LIBRARIES})
-
 endif()
 
 install(DIRECTORY launch

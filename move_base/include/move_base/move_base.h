@@ -171,7 +171,7 @@ namespace move_base {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
-      void timerCb(const ros::TimerEvent&);
+      void timerCB(const ros::TimerEvent&);
 
       void planThread();
 

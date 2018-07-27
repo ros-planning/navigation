@@ -122,7 +122,7 @@ namespace move_base {
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
 
-    control_loop_missing_timer_ = nh.createTimer(ros::Duration(1.0), &MoveBase::timerCb, this);
+    control_loop_missing_timer_ = nh.createTimer(ros::Duration(1.0), &MoveBase::timerCB, this);
 
     //initialize the global planner
     try {
@@ -346,12 +346,13 @@ namespace move_base {
     action_goal_pub_.publish(action_goal);
   }
 
-  void MoveBase::timerCb(const ros::TimerEvent&){
+  void MoveBase::timerCB(const ros::TimerEvent&){
 
     float maximum_miss = 0.0;
     analyzer_.compute(vec_, maximum_miss);
 
     srslib_framework::MsgLoopMiss msg;
+    msg.header.stamp = ros::Time::now();
     msg.loop_miss_counts = vec_.size();
     msg.maximum_loop_miss = maximum_miss;
     control_loop_missing_pub_.publish(msg);
@@ -685,27 +686,27 @@ namespace move_base {
 
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
-	      //pointer swap the plans under mutex (the controller will pull from latest_plan_)
-	      std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
+        //pointer swap the plans under mutex (the controller will pull from latest_plan_)
+        std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
-  	    lock.lock();
-	      planner_plan_ = latest_plan_;
-	      latest_plan_ = temp_plan;
-	      last_valid_plan_ = ros::Time::now();
-	      planning_retries_ = 0;
-	      new_global_plan_ = true;
+        lock.lock();
+        planner_plan_ = latest_plan_;
+        latest_plan_ = temp_plan;
+        last_valid_plan_ = ros::Time::now();
+        planning_retries_ = 0;
+        new_global_plan_ = true;
 
-	      ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
+        ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
-	      //make sure we only start the controller if we still haven't reached the goal
+        //make sure we only start the controller if we still haven't reached the goal
         // The if condition here always sets state_ to CLONTROLLING even the state_ is
         // CLEARING and should conduct CLEARING action.
-	      if(runPlanner_ && (state_ != CLEARING)){
+        if(runPlanner_ && (state_ != CLEARING)){
           state_ = CONTROLLING;
-	      }
+        }
 
-	      if(planner_frequency_ <= 0)
-	        runPlanner_ = false;
+        if(planner_frequency_ <= 0)
+          runPlanner_ = false;
 
         lock.unlock();
       }
