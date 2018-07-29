@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
             tf2_ros
             dynamic_reconfigure
             nav_msgs
+            sensor_msgs
             std_srvs
         )
 
