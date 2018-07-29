@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.1 (2018-07-28)
+-------------------
 * Merge pull request `#770 <https://github.com/ros-planning/navigation/issues/770>`_ from ros-planning/fix_debians
   Fix debian builds (closes `#769 <https://github.com/ros-planning/navigation/issues/769>`_)
 * make AMCL depend on sensor_msgs

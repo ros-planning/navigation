@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.1 (2018-07-28)
+-------------------
 * Merge pull request `#770 <https://github.com/ros-planning/navigation/issues/770>`_ from ros-planning/fix_debians
   Fix debian builds (closes `#769 <https://github.com/ros-planning/navigation/issues/769>`_)
 * add tf2_geometry_msgs depend to costmap_2d
