@@ -2,6 +2,15 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#770 <https://github.com/ros-planning/navigation/issues/770>`_ from ros-planning/fix_debians
+  Fix debian builds (closes `#769 <https://github.com/ros-planning/navigation/issues/769>`_)
+* make AMCL depend on sensor_msgs
+  previously, amcl depended on TF, which depended on
+  sensor_msgs.
+* Contributors: Michael Ferguson
+
 1.16.0 (2018-07-25)
 -------------------
 * Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_

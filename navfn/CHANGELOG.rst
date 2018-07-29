@@ -2,6 +2,9 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.16.0 (2018-07-25)
 -------------------
 * Remove dependency on PCL

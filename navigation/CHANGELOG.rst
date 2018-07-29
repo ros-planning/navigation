@@ -2,6 +2,9 @@
 Changelog for package navigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.16.0 (2018-07-25)
 -------------------
 * remove robot_pose_ekf, see `#701 <https://github.com/ros-planning/navigation/issues/701>`_
