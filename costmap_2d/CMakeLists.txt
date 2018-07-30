@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
             roscpp
             sensor_msgs
             std_msgs
+            tf2
             tf2_geometry_msgs
             tf2_ros
             tf2_sensor_msgs
@@ -74,7 +75,10 @@ catkin_package(
         roscpp
         sensor_msgs
         std_msgs
+        tf2
+        tf2_geometry_msgs
         tf2_ros
+        tf2_sensor_msgs
         visualization_msgs
         voxel_grid
     DEPENDS
