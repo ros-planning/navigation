@@ -37,6 +37,7 @@
 *********************************************************************/
 #include <move_base/move_base.h>
 #include <cmath>
+#include <algorithm>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
@@ -57,7 +58,7 @@ namespace move_base {
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
-    timingDataRecorder_("MoveBase"), analyzer_(){
+    timingDataRecorder_("MoveBase"), control_loop_analyzer_(){
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -349,15 +350,15 @@ namespace move_base {
   void MoveBase::timerCB(const ros::TimerEvent&){
 
     float maximum_miss = 0.0;
-    analyzer_.compute(vec_, maximum_miss);
+    control_loop_analyzer_.compute(loop_missing_vec_, maximum_miss);
 
     srslib_framework::MsgLoopMiss msg;
     msg.header.stamp = ros::Time::now();
-    msg.loop_miss_counts = vec_.size();
+    msg.loop_miss_counts = loop_missing_vec_.size();
     msg.maximum_loop_miss = maximum_miss;
     control_loop_missing_pub_.publish(msg);
 
-    vec_.clear();
+    loop_missing_vec_.clear();
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
@@ -914,7 +915,7 @@ namespace move_base {
       r.sleep();
       //make sure to sleep for the remainder of our cycle time
       if(r.cycleTime() > ros::Duration(1 / controller_frequency_) && state_ == CONTROLLING){
-        vec_.push_back(r.cycleTime().toSec());
+        loop_missing_vec_.push_back(r.cycleTime().toSec());
         ROS_WARN("Control loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", controller_frequency_, r.cycleTime().toSec());
       }
 
@@ -1334,7 +1335,6 @@ namespace srs {
       return;
     }
 
-    std::sort(vec.begin(), vec.end());
-    maximum_miss = vec.back();
+    maximum_miss = *max_element(std::begin(vec), std::end(vec));
   }
 }

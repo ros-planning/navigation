@@ -244,7 +244,7 @@ namespace move_base {
       boost::thread* planner_thread_;
 
       ros::Timer control_loop_missing_timer_;
-      std::vector<float> vec_;
+      std::vector<float> loop_missing_vec_;
 
       boost::recursive_mutex configuration_mutex_;
       dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
@@ -263,7 +263,7 @@ namespace move_base {
       int planner_thread_affinity_;
       int controller_thread_affinity_;
 
-      srs::ControlLoopAnalyzer analyzer_;
+      srs::ControlLoopAnalyzer control_loop_analyzer_;
   };
 };
 
