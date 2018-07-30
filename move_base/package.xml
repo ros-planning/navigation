@@ -33,6 +33,7 @@
     <build_depend>visualization_msgs</build_depend>
 
     <build_depend>srslib_timing</build_depend>
+    <build_depend>srslib_framework</build_depend>
 
     <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->
     <build_depend>base_local_planner</build_depend>
@@ -63,4 +64,6 @@
     <run_depend>visualization_msgs</run_depend>
 
     <run_depend>srslib_timing</run_depend>
+    <run_depend>srslib_framework</run_depend>
+
 </package>

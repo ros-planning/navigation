@@ -37,6 +37,7 @@
 *********************************************************************/
 #include <move_base/move_base.h>
 #include <cmath>
+#include <algorithm>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
@@ -57,7 +58,7 @@ namespace move_base {
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false),
-    timingDataRecorder_("MoveBase") {
+    timingDataRecorder_("MoveBase"), control_loop_analyzer_(){
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -95,6 +96,7 @@ namespace move_base {
     //for comanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
+    control_loop_missing_pub_ = nh.advertise<srslib_framework::MsgLoopMiss>("control_loop_miss", 1);
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
@@ -120,6 +122,8 @@ namespace move_base {
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
+
+    control_loop_missing_timer_ = nh.createTimer(ros::Duration(1.0), &MoveBase::timerCB, this);
 
     //initialize the global planner
     try {
@@ -341,6 +345,20 @@ namespace move_base {
     action_goal.goal.target_pose = *goal;
 
     action_goal_pub_.publish(action_goal);
+  }
+
+  void MoveBase::timerCB(const ros::TimerEvent&){
+
+    float maximum_miss = 0.0;
+    control_loop_analyzer_.compute(loop_missing_vec_, maximum_miss);
+
+    srslib_framework::MsgLoopMiss msg;
+    msg.header.stamp = ros::Time::now();
+    msg.loop_miss_counts = loop_missing_vec_.size();
+    msg.maximum_loop_miss = maximum_miss;
+    control_loop_missing_pub_.publish(msg);
+
+    loop_missing_vec_.clear();
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
@@ -669,27 +687,27 @@ namespace move_base {
 
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
-	//pointer swap the plans under mutex (the controller will pull from latest_plan_)
-	std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
+        //pointer swap the plans under mutex (the controller will pull from latest_plan_)
+        std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
-  	lock.lock();
-	planner_plan_ = latest_plan_;
-	latest_plan_ = temp_plan;
-	last_valid_plan_ = ros::Time::now();
-	planning_retries_ = 0;
-	new_global_plan_ = true;
+        lock.lock();
+        planner_plan_ = latest_plan_;
+        latest_plan_ = temp_plan;
+        last_valid_plan_ = ros::Time::now();
+        planning_retries_ = 0;
+        new_global_plan_ = true;
 
-	ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
+        ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
-	//make sure we only start the controller if we still haven't reached the goal
+        //make sure we only start the controller if we still haven't reached the goal
         // The if condition here always sets state_ to CLONTROLLING even the state_ is
         // CLEARING and should conduct CLEARING action.
-	if(runPlanner_ && (state_ != CLEARING)){
+        if(runPlanner_ && (state_ != CLEARING)){
           state_ = CONTROLLING;
-	}
+        }
 
-	if(planner_frequency_ <= 0)
-	  runPlanner_ = false;
+        if(planner_frequency_ <= 0)
+          runPlanner_ = false;
 
         lock.unlock();
       }
@@ -896,8 +914,10 @@ namespace move_base {
 
       r.sleep();
       //make sure to sleep for the remainder of our cycle time
-      if(r.cycleTime() > ros::Duration(1 / controller_frequency_) && state_ == CONTROLLING)
+      if(r.cycleTime() > ros::Duration(1 / controller_frequency_) && state_ == CONTROLLING){
+        loop_missing_vec_.push_back(r.cycleTime().toSec());
         ROS_WARN("Control loop missed its desired rate of %.4fHz... the loop actually took %.4f seconds", controller_frequency_, r.cycleTime().toSec());
+      }
 
       stsr_controller_total_loop.stopSample();
     }
@@ -1304,5 +1324,17 @@ namespace move_base {
       behavior->newGoalReceived();
     }
   }
-
 };
+
+namespace srs {
+  void ControlLoopAnalyzer::compute(std::vector<float>& vec, float& maximum_miss)
+  {
+    if(vec.empty())
+    {
+      maximum_miss = 0.0;
+      return;
+    }
+
+    maximum_miss = *max_element(std::begin(vec), std::end(vec));
+  }
+}

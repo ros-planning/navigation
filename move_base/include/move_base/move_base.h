@@ -60,6 +60,17 @@
 #include "move_base/MoveBaseConfig.h"
 
 #include <srslib_timing/MasterTimingDataRecorder.hpp>
+#include <srslib_framework/MsgLoopMiss.h>
+
+namespace srs {
+  class ControlLoopAnalyzer {
+  public:
+    ControlLoopAnalyzer() {};
+    ~ControlLoopAnalyzer() {};
+
+    void compute(std::vector<float>& vec, float& maximum_miss);
+  };
+};
 
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
@@ -160,6 +171,8 @@ namespace move_base {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
+      void timerCB(const ros::TimerEvent&);
+
       void planThread();
 
       void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
@@ -198,7 +211,7 @@ namespace move_base {
       int32_t max_planning_retries_;
       uint32_t planning_retries_;
       double conservative_reset_dist_, clearing_radius_;
-      ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
+      ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_, control_loop_missing_pub_;
       ros::Subscriber goal_sub_;
       ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
@@ -230,6 +243,8 @@ namespace move_base {
       geometry_msgs::PoseStamped planner_goal_;
       boost::thread* planner_thread_;
 
+      ros::Timer control_loop_missing_timer_;
+      std::vector<float> loop_missing_vec_;
 
       boost::recursive_mutex configuration_mutex_;
       dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
@@ -247,7 +262,10 @@ namespace move_base {
       // Thread affinities
       int planner_thread_affinity_;
       int controller_thread_affinity_;
+
+      srs::ControlLoopAnalyzer control_loop_analyzer_;
   };
 };
+
 #endif
 

@@ -14,6 +14,7 @@ find_package(catkin REQUIRED
         nav_core
         tf
         srslib_timing
+        srslib_framework
 )
 find_package(Eigen3 REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})
@@ -27,12 +28,14 @@ catkin_package(
     CATKIN_DEPENDS
         roscpp
         dynamic_reconfigure
+        srslib_framework
 )
 
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
     ${EIGEN_INCLUDE_DIRS}
+    ${srslib_framework_INCLUDE_DIRS}
 )
 
 # move_base
@@ -51,6 +54,21 @@ add_executable(move_base_node
 )
 target_link_libraries(move_base_node move_base )
 set_target_properties(move_base_node PROPERTIES OUTPUT_NAME move_base)
+
+## Configure Tests
+if(CATKIN_ENABLE_TESTING)
+  # Find package test dependencies
+  find_package(rostest REQUIRED)
+
+  # Add the test folder to the include directories
+  include_directories(test)
+
+  include_directories(${GTEST_INCLUDE_DIRS})
+  link_directories(${GTEST_LIBRARY_DIRS})
+
+  catkin_add_gtest(move_base_test test/move_base_test.cpp)
+  target_link_libraries(move_base_test move_base ${GTEST_LIBRARIES})
+endif()
 
 install(DIRECTORY launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
