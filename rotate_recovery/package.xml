@@ -18,14 +18,18 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
+    <build_depend>angles</build_depend>
     <build_depend>base_local_planner</build_depend>
     <build_depend>cmake_modules</build_depend>
 
     <depend>costmap_2d</depend>
     <depend>eigen</depend>
+    <depend>geometry_msgs</depend>
     <depend>nav_core</depend>
     <depend>pluginlib</depend>
     <depend>roscpp</depend>
+    <depend>tf2</depend>
+    <depend>tf2_geometry_msgs</depend>
     <depend>tf2_ros</depend>
 
     <export>
