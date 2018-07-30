@@ -31,10 +31,12 @@
     <depend>nav_core</depend>
     <depend>nav_msgs</depend>
     <depend>pluginlib</depend>
+    <depend>sensor_msgs</depend>
     <depend>std_msgs</depend>
     <depend>rosconsole</depend>
     <depend>roscpp</depend>
     <depend>rospy</depend>
+    <depend>tf2</depend>
     <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
     <depend>voxel_grid</depend>
