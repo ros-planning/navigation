@@ -66,6 +66,7 @@ void GradientPath::setSize(int xs, int ys) {
 }
 
 bool GradientPath::getPath(float* potential, double start_x, double start_y, double goal_x, double goal_y, std::vector<std::pair<float, float> >& path) {
+    canceled_ = false;
     std::pair<float, float> current;
     int stc = getIndex(goal_x, goal_y);
 
@@ -78,6 +79,10 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
 
     int c = 0;
     while (c++<ns*4) {
+        if (canceled_) {
+            return false;
+        }
+
         // check if near goal
         double nx = stc % xs_ + dx, ny = stc / xs_ + dy;
 

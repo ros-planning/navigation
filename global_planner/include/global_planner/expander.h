@@ -45,7 +45,7 @@ namespace global_planner {
 class Expander {
     public:
         Expander(PotentialCalculator* p_calc, int nx, int ny) :
-                unknown_(true), lethal_cost_(253), neutral_cost_(50), factor_(3.0), p_calc_(p_calc) {
+                unknown_(true), canceled_(false), lethal_cost_(253), neutral_cost_(50), factor_(3.0), p_calc_(p_calc) {
             setSize(nx, ny);
         }
         virtual bool calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y,
@@ -88,13 +88,17 @@ class Expander {
             }
         }
 
+        void cancel() {
+            canceled_ = true;
+        }
+
     protected:
         inline int toIndex(int x, int y) {
             return x + nx_ * y;
         }
 
         int nx_, ny_, ns_; /**< size of grid, in pixels */
-        bool unknown_;
+        bool unknown_, canceled_;
         unsigned char lethal_cost_, neutral_cost_;
         int cells_visited_;
         float factor_;

@@ -41,6 +41,7 @@
 namespace global_planner {
 
 bool GridPath::getPath(float* potential, double start_x, double start_y, double end_x, double end_y, std::vector<std::pair<float, float> >& path) {
+    canceled_ = false;
     std::pair<float, float> current;
     current.first = end_x;
     current.second = end_y;
@@ -56,6 +57,9 @@ bool GridPath::getPath(float* potential, double start_x, double start_y, double 
         int min_x = 0, min_y = 0;
         for (int xd = -1; xd <= 1; xd++) {
             for (int yd = -1; yd <= 1; yd++) {
+                if (canceled_) {
+                    return false;
+                }
                 if (xd == 0 && yd == 0)
                     continue;
                 int x = current.first + xd, y = current.second + yd;

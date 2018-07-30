@@ -40,6 +40,7 @@
 #include <tf/transform_listener.h>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
+#include <mbf_msgs/GetPathResult.h>
 
 #include <global_planner/dijkstra.h>
 #include <global_planner/astar.h>
@@ -49,6 +50,7 @@
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
+PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, mbf_costmap_core::CostmapPlanner)
 
 namespace global_planner {
 
@@ -68,11 +70,11 @@ void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned 
 }
 
 GlobalPlanner::GlobalPlanner() :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        costmap_(NULL), initialized_(false), allow_unknown_(true), canceled_(false) {
 }
 
 GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        costmap_(NULL), initialized_(false), allow_unknown_(true), canceled_(false) {
     //initialize the planner
     initialize(name, costmap, frame_id);
 }
@@ -221,11 +223,24 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                            double tolerance, std::vector<geometry_msgs::PoseStamped>& plan) {
+    double cost; // Dummy
+    std::string message; //Dummy
+    return makePlan(start, goal, tolerance, plan, cost, message) == mbf_msgs::GetPathResult::SUCCESS;
+}
+
+uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped &start, const geometry_msgs::PoseStamped &goal,
+                  double tolerance, std::vector<geometry_msgs::PoseStamped> &plan, double &cost, std::string &/*message*/) {
+
     boost::mutex::scoped_lock lock(mutex_);
     if (!initialized_) {
         ROS_ERROR(
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
-        return false;
+        return mbf_msgs::GetPathResult::NOT_INITIALIZED;
+    }
+
+    if (canceled_) {
+        ROS_ERROR("This planner was canceled!");
+        return mbf_msgs::GetPathResult::CANCELED;
     }
 
     //clear the plan, just in case
@@ -238,13 +253,13 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     if (tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
         ROS_ERROR(
                 "The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
-        return false;
+        return mbf_msgs::GetPathResult::TF_ERROR;
     }
 
     if (tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, global_frame)) {
         ROS_ERROR(
                 "The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", tf::resolve(tf_prefix_, global_frame).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
-        return false;
+        return mbf_msgs::GetPathResult::TF_ERROR;
     }
 
     double wx = start.pose.position.x;
@@ -256,7 +271,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     if (!costmap_->worldToMap(wx, wy, start_x_i, start_y_i)) {
         ROS_WARN(
                 "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
-        return false;
+        return mbf_msgs::GetPathResult::INTERNAL_ERROR;
     }
     if(old_navfn_behavior_){
         start_x = start_x_i;
@@ -271,7 +286,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     if (!costmap_->worldToMap(wx, wy, goal_x_i, goal_y_i)) {
         ROS_WARN_THROTTLE(1.0,
                 "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
-        return false;
+        return mbf_msgs::GetPathResult::INTERNAL_ERROR;
     }
     if(old_navfn_behavior_){
         goal_x = goal_x_i;
@@ -323,7 +338,19 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete potential_array_;
-    return !plan.empty();
+    if (plan.empty()) {
+        return mbf_msgs::GetPathResult::NO_PATH_FOUND;
+    }
+    if (canceled_) {
+        return mbf_msgs::GetPathResult::CANCELED;
+    }
+    return mbf_msgs::GetPathResult::SUCCESS;
+}
+
+bool GlobalPlanner::cancel() {
+    planner_->cancel();
+    canceled_ = true;
+    return true;
 }
 
 void GlobalPlanner::publishPlan(const std::vector<geometry_msgs::PoseStamped>& path) {

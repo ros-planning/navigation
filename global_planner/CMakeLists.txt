@@ -8,6 +8,7 @@ find_package(catkin REQUIRED
     dynamic_reconfigure
     geometry_msgs
     nav_core
+    mbf_costmap_core
     navfn
     nav_msgs
     pluginlib

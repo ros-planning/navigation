@@ -79,6 +79,7 @@ void DijkstraExpansion::setSize(int xs, int ys) {
 
 bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y,
                                            int cycles, float* potential) {
+    canceled_ = false;
     cells_visited_ = 0;
     // priority buffers
     threshold_ = lethal_cost_;
@@ -129,8 +130,11 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x
     int startCell = toIndex(end_x, end_y);
 
     for (; cycle < cycles; cycle++) // go for this many cycles, unless interrupted
-            {
-        // 
+    {
+        if (canceled_) {
+            return false;
+        }
+
         if (currentEnd_ == 0 && nextEnd_ == 0) // priority blocks empty
             return false;
 
