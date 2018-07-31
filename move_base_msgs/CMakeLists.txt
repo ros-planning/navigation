@@ -25,7 +25,8 @@ add_action_files(
 add_message_files(
     DIRECTORY msg
     FILES
-   		PoseWithCovarianceStampedArray.msg
+        PoseWithCovarianceStampedArray.msg
+        LoopMiss.msg
 )
 
 generate_messages(

@@ -44,6 +44,7 @@
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
+#include <move_base_msgs/LoopMiss.h>
 
 #include <nav_core/base_local_planner.h>
 #include <nav_core/base_global_planner.h>
@@ -60,7 +61,6 @@
 #include "move_base/MoveBaseConfig.h"
 
 #include <srslib_timing/MasterTimingDataRecorder.hpp>
-#include <srslib_framework/MsgLoopMiss.h>
 
 namespace srs {
   class ControlLoopAnalyzer {

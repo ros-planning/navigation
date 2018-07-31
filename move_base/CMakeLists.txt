@@ -14,7 +14,6 @@ find_package(catkin REQUIRED
         nav_core
         tf
         srslib_timing
-        srslib_framework
 )
 find_package(Eigen3 REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})
@@ -28,14 +27,12 @@ catkin_package(
     CATKIN_DEPENDS
         roscpp
         dynamic_reconfigure
-        srslib_framework
 )
 
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
     ${EIGEN_INCLUDE_DIRS}
-    ${srslib_framework_INCLUDE_DIRS}
 )
 
 # move_base

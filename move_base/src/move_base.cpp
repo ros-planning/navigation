@@ -96,7 +96,7 @@ namespace move_base {
     //for comanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
-    control_loop_missing_pub_ = nh.advertise<srslib_framework::MsgLoopMiss>("control_loop_miss", 1);
+    control_loop_missing_pub_ = private_nh.advertise<move_base_msgs::LoopMiss>("control_loop_miss", 1);
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
@@ -352,7 +352,7 @@ namespace move_base {
     float maximum_miss = 0.0;
     control_loop_analyzer_.compute(loop_missing_vec_, maximum_miss);
 
-    srslib_framework::MsgLoopMiss msg;
+    move_base_msgs::LoopMiss msg;
     msg.header.stamp = ros::Time::now();
     msg.loop_miss_counts = loop_missing_vec_.size();
     msg.maximum_loop_miss = maximum_miss;
