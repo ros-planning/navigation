@@ -3,6 +3,7 @@ project(dwa_local_planner)
 
 find_package(catkin REQUIRED
         COMPONENTS
+            angles
             base_local_planner
             cmake_modules
             costmap_2d
@@ -10,7 +11,10 @@ find_package(catkin REQUIRED
             nav_core
             nav_msgs
             pluginlib
+            sensor_msgs
             roscpp
+            tf2
+            tf2_geometry_msgs
             tf2_ros
         )
 
@@ -32,10 +36,14 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES dwa_local_planner
     CATKIN_DEPENDS
+        base_local_planner
         dynamic_reconfigure
         nav_msgs
         pluginlib
+        sensor_msgs
         roscpp
+        tf2
+        tf2_ros
 )
 
 add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)

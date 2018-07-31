@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
             roscpp
             sensor_msgs
             std_msgs
+            tf2
             tf2_geometry_msgs
             tf2_ros
             tf2_sensor_msgs
@@ -22,7 +23,6 @@ find_package(catkin REQUIRED
             voxel_grid
         )
 
-remove_definitions(-DDISABLE_LIBUSB-1.0)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
