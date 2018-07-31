@@ -2,6 +2,15 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes
+  packaging fixes
+* fix depends of carrot_planner
+  * declare direct dependency on tf2
+  * alphabetize the depends in CMake
+* Contributors: Michael Ferguson
+
 1.16.1 (2018-07-28)
 -------------------
 

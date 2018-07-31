@@ -2,6 +2,13 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes
+  packaging fixes
+* add explicit sensor_msgs, tf2 depends for base_local_planner
+* Contributors: Michael Ferguson
+
 1.16.1 (2018-07-28)
 -------------------
 

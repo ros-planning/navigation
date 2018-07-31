@@ -2,6 +2,15 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes
+  packaging fixes
+* fix depends for dwa_local_planner
+  * add tf2_geometry_msgs (due to https://github.com/ros/geometry2/issues/275)
+  * add missing depends on angles, sensor_msgs, tf2
+* Contributors: Michael Ferguson
+
 1.16.1 (2018-07-28)
 -------------------
 

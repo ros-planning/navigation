@@ -2,6 +2,16 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes
+  packaging fixes
+* update amcl to have proper depends
+  * add geometry_msgs
+  * add tf2_msgs
+  * fix alphabetical order
+* Contributors: Michael Ferguson
+
 1.16.1 (2018-07-28)
 -------------------
 * Merge pull request `#770 <https://github.com/ros-planning/navigation/issues/770>`_ from ros-planning/fix_debians
