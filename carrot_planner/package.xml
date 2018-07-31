@@ -20,13 +20,14 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>tf2_geometry_msgs</build_depend>
-    <!--<depend>angles</depend>-->
+
     <depend>base_local_planner</depend>
     <depend>costmap_2d</depend>
     <depend>eigen</depend>
     <depend>nav_core</depend>
     <depend>pluginlib</depend>
     <depend>roscpp</depend>
+    <depend>tf2</depend>
     <depend>tf2_ros</depend>
 
     <export>

@@ -2,15 +2,16 @@ cmake_minimum_required(VERSION 2.8.3)
 project(carrot_planner)
 
 find_package(catkin REQUIRED
-        COMPONENTS
-            roscpp
-            nav_core
-            costmap_2d
-            base_local_planner
-            pluginlib
-            tf2_geometry_msgs
-            tf2_ros
-        )
+  COMPONENTS
+    base_local_planner
+    costmap_2d
+    nav_core
+    pluginlib
+    roscpp
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
+)
 
 include_directories(
     include 
@@ -19,14 +20,16 @@ include_directories(
 add_definitions(${EIGEN3_DEFINITIONS})
 
 catkin_package(
-    INCLUDE_DIRS include
-    LIBRARIES carrot_planner
-    CATKIN_DEPENDS
-        roscpp
-        pluginlib
-        costmap_2d
-        base_local_planner
-        nav_core
+  INCLUDE_DIRS include
+  LIBRARIES carrot_planner
+  CATKIN_DEPENDS
+    base_local_planner
+    costmap_2d
+    nav_core
+    pluginlib
+    roscpp
+    tf2
+    tf2_ros
 )
 
 add_library(carrot_planner src/carrot_planner.cpp)
