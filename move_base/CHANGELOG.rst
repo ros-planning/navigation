@@ -2,6 +2,12 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+* Merge pull request `#711 <https://github.com/ros-planning/navigation/issues/711>`_ from SteveMacenski/costmap_clearing_thread_lock
+  adding mutex locks to costmap clearing service
+* Contributors: Michael Ferguson, stevemacenski
+
 1.14.3 (2018-03-16)
 -------------------
 * Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic

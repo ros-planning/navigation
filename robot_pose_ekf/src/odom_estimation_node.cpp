@@ -338,10 +338,18 @@ namespace estimation
     // get data
     gps_stamp_ = gps->header.stamp;
     gps_time_  = Time::now();
-    poseMsgToTF(gps->pose.pose, gps_meas_);
+    geometry_msgs::PoseWithCovariance gps_pose = gps->pose;
+    if (isnan(gps_pose.pose.position.z)){
+      // if we have no linear z component in the GPS message, set it to 0 so that we can still get a transform via `tf
+      // (which does not like "NaN" values)
+      gps_pose.pose.position.z = 0;
+      // set the covariance for the linear z component very high so we just ignore it
+      gps_pose.covariance[6*2 + 2] = std::numeric_limits<double>::max();
+    }
+    poseMsgToTF(gps_pose.pose, gps_meas_);
     for (unsigned int i=0; i<3; i++)
       for (unsigned int j=0; j<3; j++)
-        gps_covariance_(i+1, j+1) = gps->pose.covariance[6*i+j];
+        gps_covariance_(i+1, j+1) = gps_pose.covariance[6*i+j];
     my_filter_.addMeasurement(StampedTransform(gps_meas_.inverse(), gps_stamp_, base_footprint_frame_, "gps"), gps_covariance_);
     
     // activate gps
