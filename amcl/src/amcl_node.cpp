@@ -356,7 +356,10 @@ AmclNode::AmclNode() :
   {
     private_nh_.param("beam_skip_error_threshold_", beam_skip_error_threshold_);
   }
-  private_nh_.param("beam_skip_error_threshold", beam_skip_error_threshold_, 0.9);
+  else
+  {
+    private_nh_.param("beam_skip_error_threshold", beam_skip_error_threshold_, 0.9);
+  }
 
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
