@@ -93,7 +93,7 @@ positions at about 1/2 cell resolution; else returns 0.
 
 */
 
-  int create_nav_plan_astar(const COSTTYPE *costmap, int nx, int ny,
+  int create_nav_plan_astar(COSTTYPE *costmap, int nx, int ny,
       int* goal, int* start,
       float *plan, int nplan);
 
