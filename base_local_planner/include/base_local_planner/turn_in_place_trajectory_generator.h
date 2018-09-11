@@ -95,8 +95,8 @@ public:
       const Eigen::Vector3f& vel, double dt);
 
   Eigen::Vector3f computeNewVelocities(const Eigen::Vector3f& position,
-      const Eigen::Vector3f& vel, double max_tip_vel, double tip_accel, double dt,
-      bool negative);
+      const Eigen::Vector3f& vel, double max_tip_vel, double min_tip_vel,
+      double tip_accel, double dt, bool negative);
 
   bool generateTrajectory(
         Eigen::Vector3f pos,
