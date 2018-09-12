@@ -259,13 +259,13 @@ void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& mess
   // project the scan into a point cloud
   try
   {
-    projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_);
+    projector_.transformLaserScanToPointCloud(message->header.frame_id, *message, cloud, *tf_, buffer->getRaytraceRange());
   }
   catch (tf::TransformException &ex)
   {
     ROS_WARN("High fidelity enabled, but TF returned a transform exception to frame %s: %s", global_frame_.c_str(),
              ex.what());
-    projector_.projectLaser(*message, cloud);
+    projector_.projectLaser(*message, cloud, buffer->getRaytraceRange());
   }
 
   // buffer the point cloud
@@ -296,13 +296,13 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
   // project the scan into a point cloud
   try
   {
-    projector_.transformLaserScanToPointCloud(message.header.frame_id, message, cloud, *tf_);
+    projector_.transformLaserScanToPointCloud(message.header.frame_id, message, cloud, *tf_, buffer->getRaytraceRange());
   }
   catch (tf::TransformException &ex)
   {
     ROS_WARN("High fidelity enabled, but TF returned a transform exception to frame %s: %s",
              global_frame_.c_str(), ex.what());
-    projector_.projectLaser(message, cloud);
+    projector_.projectLaser(message, cloud, buffer->getRaytraceRange());
   }
 
   // buffer the point cloud
