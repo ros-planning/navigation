@@ -150,6 +150,7 @@ bool TurnInPlaceTrajectoryGenerator::generateTrajectory(
   {
     traj.resetPoints();
     loop_vel = computeNewVelocities(pos, vel, limits_->max_tip_vel,
+      limits_->min_tip_vel,
       limits_->acc_limit_tip, sim_granularity_, negative_);
     traj.xv_     = loop_vel[0];
     traj.yv_     = loop_vel[1];
@@ -174,7 +175,7 @@ bool TurnInPlaceTrajectoryGenerator::generateTrajectory(
     //calculate velocities
     unsigned int found_idx = 0;
     loop_vel = computeNewVelocities(pos, loop_vel, limits_->max_tip_vel,
-      limit_->min_tip_vel,
+      limits_->min_tip_vel,
       limits_->acc_limit_tip, dt, negative_);
 
     //update the position of the robot using the velocities passed in
