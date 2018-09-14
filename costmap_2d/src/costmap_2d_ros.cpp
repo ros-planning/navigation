@@ -64,14 +64,14 @@ Costmap2DROS::Costmap2DROS(std::string name, tf::TransformListener& tf) :
     layered_costmap_(NULL), name_(name), tf_(tf), stop_updates_(false), initialized_(true), stopped_(false),
     robot_stopped_(false), map_update_thread_(NULL), last_publish_(0),
     plugin_loader_("costmap_2d", "costmap_2d::Layer"), publisher_(NULL), map_update_thread_affinity_(-1),
-    timingDataRecorder_("CM2dROS-"+name)
+    map_update_thread_nice_(0), timingDataRecorder_("CM2dROS-"+name)
 {
   ros::NodeHandle private_nh("~/" + name);
   ros::NodeHandle g_nh;
 
-  // get the thread affinity
+  // get the thread affinity and nice
   private_nh.param("map_update_thread_affinity", map_update_thread_affinity_, map_update_thread_affinity_);
-
+  private_nh.param("map_update_thread_nice", map_update_thread_nice_, map_update_thread_nice_);
 
   // get our tf prefix
   ros::NodeHandle prefix_nh;
@@ -382,7 +382,11 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
 {
   // the user might not want to run the loop every cycle
   if (frequency == 0.0)
+  {
     return;
+  }
+
+  niceThread("costmap_2d-" + name_, map_update_thread_nice_);
 
   if (map_update_thread_affinity_ >= 0)
   {

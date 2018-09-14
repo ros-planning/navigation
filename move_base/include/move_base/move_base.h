@@ -261,7 +261,9 @@ namespace move_base {
 
       // Thread affinities
       int planner_thread_affinity_;
+      int planner_thread_nice_;
       int controller_thread_affinity_;
+      int controller_thread_nice_;
 
       srs::ControlLoopAnalyzer control_loop_analyzer_;
   };
