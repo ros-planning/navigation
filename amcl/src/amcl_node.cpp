@@ -1086,26 +1086,30 @@ bool AmclNode::setParticlesCallback(amcl::amcl_particles::Request& req,
   int no_of_particles = req.pose_array_msg.poses.size();
   ROS_DEBUG_NAMED("amcl custom particles","Received set particles srv call, Pose Array Header seq = %i, stamp = %0.4f",
                   req.pose_array_msg.header.seq,req.pose_array_msg.header.stamp.toSec());
-  if (no_of_particles == max_particles_)
+  if (no_of_particles != max_particles_)
   {
-    ROS_INFO("Received %i particles with first one x:%0.2f & y:%0.2f",no_of_particles,
-             req.pose_array_msg.poses[0].position.x,req.pose_array_msg.poses[0].position.y);
-		
-    // In case the client sent us a pose estimate in the past, integrate the
-    // intervening odometric change.
-    geometry_msgs::TransformStamped tx_odom;
-    ROS_DEBUG_NAMED("amcl custom particles","Stamp of transform: %0.4f Diff to now: %0.4f",
-                    req.pose_array_msg.header.stamp.toSec(), 
-                    ros::Time::now().toSec()-req.pose_array_msg.header.stamp.toSec());
-    try
-    {
-      // wait a little for the latest tf to become available
-      tx_odom = tf_->lookupTransform(base_frame_id_, req.pose_array_msg.header.stamp,
-                                   base_frame_id_, ros::Time::now(),
-                                   odom_frame_id_, ros::Duration(0.5));
-    }
-    catch(tf2::TransformException e)
-    {
+    ROS_ERROR("Number of recieved particles: %i not equal to max_particles: %i",no_of_particles,max_particles_);
+    res.success = false;
+    return true;
+  }
+  ROS_INFO("Received %i particles with first one x:%0.2f & y:%0.2f",no_of_particles,
+           req.pose_array_msg.poses[0].position.x,req.pose_array_msg.poses[0].position.y);
+  
+  // In case the client sent us a pose estimate in the past, integrate the
+  // intervening odometric change.
+  geometry_msgs::TransformStamped tx_odom;
+  ROS_DEBUG_NAMED("amcl custom particles","Stamp of transform: %0.4f Diff to now: %0.4f",
+                  req.pose_array_msg.header.stamp.toSec(), 
+                  ros::Time::now().toSec()-req.pose_array_msg.header.stamp.toSec());
+  try
+  {
+    // wait a little for the latest tf to become available
+    tx_odom = tf_->lookupTransform(base_frame_id_, req.pose_array_msg.header.stamp,
+                                 base_frame_id_, ros::Time::now(),
+                                 odom_frame_id_, ros::Duration(0.5));
+  }
+  catch(tf2::TransformException e)
+  {
     // If we've never sent a transform, then this is normal, because the
     // global_frame_id_ frame doesn't exist.  We only care about in-time
     // transformation for on-the-move pose-setting, so ignoring this
@@ -1113,37 +1117,31 @@ bool AmclNode::setParticlesCallback(amcl::amcl_particles::Request& req,
     if(sent_first_transform_)
       ROS_WARN("Failed to transform poses in time: (%s)", e.what());
     tf2::convert(tf2::Transform::getIdentity(), tx_odom.transform);
-    }
-    
-    tf2::Transform tx_odom_tf2;
-    tf2::convert(tx_odom.transform, tx_odom_tf2);
-
-    tf2::Transform pose_old, pose_new;
-    geometry_msgs::Pose pose_new_msg;
-    geometry_msgs::Transform pose_new_tf_msg;    
-    for(int i=0;i<no_of_particles;i++)
-    {
-      tf2::convert(req.pose_array_msg.poses[i],pose_old);
-      pose_new = pose_old * tx_odom_tf2;
-      tf2::convert(pose_new,pose_new_tf_msg);      
-      //tf2::convert(pose_new,req.pose_array_msg.poses[i]);
-      //req.pose_array_msg.poses[i] = tf2::toMsg(pose_old * tx_odom_tf2);
-      req.pose_array_msg.poses[i].orientation = pose_new_tf_msg.rotation;
-      req.pose_array_msg.poses[i].position.x  = pose_new_tf_msg.translation.x;
-      req.pose_array_msg.poses[i].position.y  = pose_new_tf_msg.translation.y;
-      req.pose_array_msg.poses[i].position.z  = pose_new_tf_msg.translation.z;
-      //req.pose_array_msg.poses[i] = pose_new_msg;
-    }
-    pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::customPoseGenerator, 
-                  (void *) &req.pose_array_msg);
-    res.success = true;
-	}
-	
-  else
-  {
-    ROS_ERROR("Number of recieved particles: %i not equal to max_particles: %i",no_of_particles,max_particles_);
-    res.success = false;
   }
+  
+  tf2::Transform tx_odom_tf2;
+  tf2::convert(tx_odom.transform, tx_odom_tf2);
+
+  tf2::Transform pose_old, pose_new;
+  geometry_msgs::Pose pose_new_msg;
+  geometry_msgs::Transform pose_new_tf_msg;    
+  for(int i=0;i<no_of_particles;i++)
+  {
+    tf2::convert(req.pose_array_msg.poses[i],pose_old);
+    pose_new = pose_old * tx_odom_tf2;
+    tf2::convert(pose_new,pose_new_tf_msg);      
+    //tf2::convert(pose_new,req.pose_array_msg.poses[i]);
+    //req.pose_array_msg.poses[i] = tf2::toMsg(pose_old * tx_odom_tf2);
+    req.pose_array_msg.poses[i].orientation = pose_new_tf_msg.rotation;
+    req.pose_array_msg.poses[i].position.x  = pose_new_tf_msg.translation.x;
+    req.pose_array_msg.poses[i].position.y  = pose_new_tf_msg.translation.y;
+    req.pose_array_msg.poses[i].position.z  = pose_new_tf_msg.translation.z;
+    //req.pose_array_msg.poses[i] = pose_new_msg;
+  }
+  pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::customPoseGenerator, 
+                (void *) &req.pose_array_msg);
+  res.success = true;
+
   pf_init_ = false;
   ROS_DEBUG_NAMED("amcl custom particles","Custom particles set!");
   

@@ -36,8 +36,6 @@ generate_dynamic_reconfigure_options(
     cfg/AMCL.cfg
 )
 
-
-
 catkin_package(
   CATKIN_DEPENDS
     dynamic_reconfigure
