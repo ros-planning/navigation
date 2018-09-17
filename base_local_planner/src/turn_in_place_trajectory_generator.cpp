@@ -150,6 +150,7 @@ bool TurnInPlaceTrajectoryGenerator::generateTrajectory(
   {
     traj.resetPoints();
     loop_vel = computeNewVelocities(pos, vel, limits_->max_tip_vel,
+      limits_->min_tip_vel,
       limits_->acc_limit_tip, sim_granularity_, negative_);
     traj.xv_     = loop_vel[0];
     traj.yv_     = loop_vel[1];
@@ -174,6 +175,7 @@ bool TurnInPlaceTrajectoryGenerator::generateTrajectory(
     //calculate velocities
     unsigned int found_idx = 0;
     loop_vel = computeNewVelocities(pos, loop_vel, limits_->max_tip_vel,
+      limits_->min_tip_vel,
       limits_->acc_limit_tip, dt, negative_);
 
     //update the position of the robot using the velocities passed in
@@ -198,7 +200,7 @@ Eigen::Vector3f TurnInPlaceTrajectoryGenerator::computeNewPositions(const Eigen:
  * cheange vel using acceleration limits to converge towards sample_target-vel
  */
 Eigen::Vector3f TurnInPlaceTrajectoryGenerator::computeNewVelocities(const Eigen::Vector3f& pos,
-    const Eigen::Vector3f& vel, double max_tip_vel, double tip_accel, double dt,
+    const Eigen::Vector3f& vel, double max_tip_vel, double min_tip_vel, double tip_accel, double dt,
     bool negative) {
   Eigen::Vector3f new_vel = Eigen::Vector3f::Zero();
 
@@ -210,6 +212,14 @@ Eigen::Vector3f TurnInPlaceTrajectoryGenerator::computeNewVelocities(const Eigen
     new_vel[2] = std::min(desired_angular_velocity, vel[2] + tip_accel * dt);
   } else {
     new_vel[2] = std::max(desired_angular_velocity, vel[2] - tip_accel * dt);
+  }
+
+  if (new_vel[2] < 0 && new_vel[2] > -min_tip_vel) {
+    new_vel[2] = -min_tip_vel;
+  }
+
+  if (new_vel[2] > 0 && new_vel[2] < min_tip_vel) {
+    new_vel[2] = min_tip_vel;
   }
 
   ROS_DEBUG("TIPTG: des w: %f", desired_angular_velocity);
