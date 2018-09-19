@@ -83,7 +83,8 @@ typedef struct
 {
   // Total weight (weights sum to 1)
   double weight;
-
+  //num of Samples
+  int numSamples;
   // Mean of pose esimate
   pf_vector_t pf_pose_mean;
 
@@ -242,8 +243,9 @@ class AmclNode
 
     ros::NodeHandle nh_;
     ros::NodeHandle private_nh_;
-    ros::Publisher pose_pub_;
-    ros::Publisher analytics_pub_;
+    ros::Publisher pose_pub_; //regular pose pub
+    ros::Publisher analytics_pub_; //pub to send amcl_analytics msg
+    ros::Publisher data_pub_; //pub to send amcl_data msg
     ros::Publisher particlecloud_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
@@ -436,6 +438,8 @@ AmclNode::AmclNode() :
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics_pub",2,true);
+  data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data_pub",2,true);
+
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
 					 &AmclNode::globalLocalizationCallback,
@@ -1278,6 +1282,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   if(resampled || force_publication)
   {
     // Read out the current hypotheses
+    move_base_msgs::amcl_data dp; //data_msg
+
     double max_weight = 0.0;
     int max_weight_hyp = -1;
     std::vector<amcl_hyp_t> hyps;
@@ -1285,10 +1291,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     for(int hyp_count = 0;
         hyp_count < pf_->sets[pf_->current_set].cluster_count; hyp_count++)
     {
+      move_base_msgs::cluster tC; //cluster to push back to data_msg.clusters
       double weight;
+      int numSamples; 
       pf_vector_t pose_mean;
       pf_matrix_t pose_cov;
-      if (!pf_get_cluster_stats(pf_, hyp_count, &weight, &pose_mean, &pose_cov))
+      if (!pf_get_cluster_stats(pf_, hyp_count, &weight, &pose_mean, &pose_cov, &numSamples))
       {
         ROS_ERROR("Couldn't get stats on cluster %d", hyp_count);
         break;
@@ -1297,12 +1305,24 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       hyps[hyp_count].weight = weight;
       hyps[hyp_count].pf_pose_mean = pose_mean;
       hyps[hyp_count].pf_pose_cov = pose_cov;
+      hyps[hyp_count].numSamples = numSamples;
 
       if(hyps[hyp_count].weight > max_weight)
       {
         max_weight = hyps[hyp_count].weight;
         max_weight_hyp = hyp_count;
       }
+      tC.num_samples = numSamples;
+      tC.weight = weight;
+      tC.mean.position.x = hyps[hyp_count].pf_pose_mean.v[0];
+      tC.mean.position.y = hyps[hyp_count].pf_pose_mean.v[1];
+      tf::quaternionTFToMsg(tf::createQuaternionFromYaw(hyps[hyp_count].pf_pose_mean.v[2]),
+                            tC.mean.orientation);
+      tC.cov.xx = hyps[hyp_count].pf_pose_cov.m[0][0];
+      tC.cov.xy = hyps[hyp_count].pf_pose_cov.m[0][1];
+      tC.cov.yy = hyps[hyp_count].pf_pose_cov.m[1][1];
+      tC.cov.tt = hyps[hyp_count].pf_pose_cov.m[5][5];
+      dp.clusters.push_back(tC);
     }
 
     if(max_weight > 0.0)
@@ -1321,8 +1341,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       geometry_msgs::PoseWithCovarianceStamped p;
       move_base_msgs::amcl_analytics ap;
       // Fill in the header
-      ap.header.frame_id = global_frame_id_;
-      ap.header.stamp = laser_scan->header.stamp;
+
       p.header.frame_id = global_frame_id_;
       p.header.stamp = laser_scan->header.stamp;
       // Copy in the pose
@@ -1334,21 +1353,20 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // Copy in the covariance, converting from 3-D to 6-D
       pf_sample_set_t* set = pf_->sets + pf_->current_set;
 
+
+      ap.header.frame_id = global_frame_id_;
+      ap.header.stamp = laser_scan->header.stamp;
       ap.set_mean.position.x = set->mean.v[0];
       ap.set_mean.position.y = set->mean.v[1]; 
       ap.set_mean.position.z = 0;
-
       tf::quaternionTFToMsg(tf::createQuaternionFromYaw(set->mean.v[2]),
                             ap.set_mean.orientation);
-
       ap.set_covariance.xx = set->cov.m[0][0];
       ap.set_covariance.xy = set->cov.m[0][1];
       ap.set_covariance.yy = set->cov.m[1][1];
       ap.set_covariance.tt = set->cov.m[5][5];
-
       ap.bestCluster.mean.position.x = hyps[max_weight_hyp].pf_pose_mean.v[0];
       ap.bestCluster.mean.position.y = hyps[max_weight_hyp].pf_pose_mean.v[1];
-
       tf::quaternionTFToMsg(tf::createQuaternionFromYaw(hyps[max_weight_hyp].pf_pose_mean.v[2]),
                             ap.bestCluster.mean.orientation);
       ap.bestCluster.cov.xx = hyps[max_weight_hyp].pf_pose_cov.m[0][0];
@@ -1356,8 +1374,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       ap.bestCluster.cov.yy = hyps[max_weight_hyp].pf_pose_cov.m[1][1];
       ap.bestCluster.cov.tt = hyps[max_weight_hyp].pf_pose_cov.m[5][5];
       ap.bestCluster.weight =  hyps[max_weight_hyp].weight;
-      ap.bestCluster.num_samples = set->clusters[max_weight_hyp].count;
+      ap.bestCluster.num_samples = hyps[max_weight_hyp].numSamples;
       ap.num_clusters = pf_->sets[pf_->current_set].cluster_count;
+      dp.set_covariance = ap.set_covariance;
+      dp.set_mean = ap.set_mean;
+      dp.num_clusters= ap.num_clusters;
+
 
       for(int i=0; i<2; i++)
       {
@@ -1384,6 +1406,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
          }
        */
       analytics_pub_.publish(ap);
+      data_pub_.publish(dp);
       pose_pub_.publish(p);
       last_published_pose = p;
 
