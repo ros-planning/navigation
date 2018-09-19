@@ -27,12 +27,17 @@ add_message_files(
     FILES
         PoseWithCovarianceStampedArray.msg
         LoopMiss.msg
+        amcl_analytics.msg
+        amcl_data.msg
+        cluster.msg
+        flatCov.msg
 )
 
 generate_messages(
     DEPENDENCIES
         actionlib_msgs
         geometry_msgs
+        move_base_msgs
 )
 
 catkin_package(
