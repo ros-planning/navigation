@@ -1288,6 +1288,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     int max_weight_hyp = -1;
     std::vector<amcl_hyp_t> hyps;
     hyps.resize(pf_->sets[pf_->current_set].cluster_count);
+    int total_num_samples = 0;
     for(int hyp_count = 0;
         hyp_count < pf_->sets[pf_->current_set].cluster_count; hyp_count++)
     {
@@ -1323,8 +1324,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       tC.cov.yy = hyps[hyp_count].pf_pose_cov.m[1][1];
       tC.cov.tt = hyps[hyp_count].pf_pose_cov.m[5][5];
       dp.clusters.push_back(tC);
+      total_num_samples+=numSamples;
     }
-
     if(max_weight > 0.0)
     {
       ROS_DEBUG("Max weight pose: %.3f %.3f %.3f",
@@ -1376,6 +1377,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       ap.bestCluster.weight =  hyps[max_weight_hyp].weight;
       ap.bestCluster.num_samples = hyps[max_weight_hyp].numSamples;
       ap.num_clusters = pf_->sets[pf_->current_set].cluster_count;
+      ap.tot_samples = total_num_samples;
+      dp.tot_samples = total_num_samples;
       dp.set_covariance = ap.set_covariance;
       dp.set_mean = ap.set_mean;
       dp.num_clusters= ap.num_clusters;
