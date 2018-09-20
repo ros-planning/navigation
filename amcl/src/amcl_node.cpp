@@ -437,7 +437,7 @@ AmclNode::AmclNode() :
   tf_ = new TransformListenerWrapper();
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
-  analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics",2,true);
+  analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics", 2, true);
   data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
 
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
@@ -1292,7 +1292,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     for(int hyp_count = 0;
         hyp_count < pf_->sets[pf_->current_set].cluster_count; hyp_count++)
     {
-      move_base_msgs::cluster tC; //cluster to push back to data_msg.clusters
+      move_base_msgs::cluster temp_cluster; //cluster to push back to data_msg.clusters
       double weight;
       int numSamples; 
       pf_vector_t pose_mean;
@@ -1313,17 +1313,17 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         max_weight = hyps[hyp_count].weight;
         max_weight_hyp = hyp_count;
       }
-      tC.num_samples = numSamples;
-      tC.weight = weight;
-      tC.mean.position.x = hyps[hyp_count].pf_pose_mean.v[0];
-      tC.mean.position.y = hyps[hyp_count].pf_pose_mean.v[1];
+      temp_cluster.num_samples = numSamples;
+      temp_cluster.weight = weight;
+      temp_cluster.mean.position.x = hyps[hyp_count].pf_pose_mean.v[0];
+      temp_cluster.mean.position.y = hyps[hyp_count].pf_pose_mean.v[1];
       tf::quaternionTFToMsg(tf::createQuaternionFromYaw(hyps[hyp_count].pf_pose_mean.v[2]),
-                            tC.mean.orientation);
-      tC.cov.xx = hyps[hyp_count].pf_pose_cov.m[0][0];
-      tC.cov.xy = hyps[hyp_count].pf_pose_cov.m[0][1];
-      tC.cov.yy = hyps[hyp_count].pf_pose_cov.m[1][1];
-      tC.cov.tt = hyps[hyp_count].pf_pose_cov.m[5][5];
-      dp.clusters.push_back(tC);
+                            temp_cluster.mean.orientation);
+      temp_cluster.cov.xx = hyps[hyp_count].pf_pose_cov.m[0][0];
+      temp_cluster.cov.xy = hyps[hyp_count].pf_pose_cov.m[0][1];
+      temp_cluster.cov.yy = hyps[hyp_count].pf_pose_cov.m[1][1];
+      temp_cluster.cov.tt = hyps[hyp_count].pf_pose_cov.m[5][5];
+      dp.clusters.push_back(temp_cluster);
       total_num_samples+=numSamples;
     }
     if(max_weight > 0.0)

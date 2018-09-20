@@ -37,7 +37,6 @@ generate_messages(
     DEPENDENCIES
         actionlib_msgs
         geometry_msgs
-        move_base_msgs
 )
 
 catkin_package(
