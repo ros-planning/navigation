@@ -437,8 +437,8 @@ AmclNode::AmclNode() :
   tf_ = new TransformListenerWrapper();
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
-  analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics_pub",2,true);
-  data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data_pub",2,true);
+  analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics",2,true);
+  data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
 
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
