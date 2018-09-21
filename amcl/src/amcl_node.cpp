@@ -369,7 +369,7 @@ AmclNode::AmclNode() :
   private_nh_.param("do_beamskip", do_beamskip_, false);
   private_nh_.param("beam_skip_distance", beam_skip_distance_, 0.5);
   private_nh_.param("beam_skip_threshold", beam_skip_threshold_, 0.3);
-  private_nh_.param("beam_skip_error_threshold_", beam_skip_error_threshold_, 0.9);
+  private_nh_.param("beam_skip_error_threshold", beam_skip_error_threshold_, 0.9);
 
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
@@ -1294,7 +1294,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     {
       move_base_msgs::cluster temp_cluster; //cluster to push back to data_msg.clusters
       double weight;
-      int numSamples; 
+      int numSamples;
       pf_vector_t pose_mean;
       pf_matrix_t pose_cov;
       if (!pf_get_cluster_stats(pf_, hyp_count, &weight, &pose_mean, &pose_cov, &numSamples))
@@ -1358,7 +1358,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       ap.header.frame_id = global_frame_id_;
       ap.header.stamp = laser_scan->header.stamp;
       ap.set_mean.position.x = set->mean.v[0];
-      ap.set_mean.position.y = set->mean.v[1]; 
+      ap.set_mean.position.y = set->mean.v[1];
       ap.set_mean.position.z = 0;
       tf::quaternionTFToMsg(tf::createQuaternionFromYaw(set->mean.v[2]),
                             ap.set_mean.orientation);
