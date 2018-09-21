@@ -27,6 +27,10 @@ add_message_files(
     FILES
         PoseWithCovarianceStampedArray.msg
         LoopMiss.msg
+        amcl_analytics.msg
+        amcl_data.msg
+        cluster.msg
+        flatCov.msg
 )
 
 generate_messages(
