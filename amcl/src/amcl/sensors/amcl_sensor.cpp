@@ -61,7 +61,7 @@ bool AMCLSensor::InitSensor(pf_t *pf, AMCLSensorData *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the sensor model
-bool AMCLSensor::UpdateSensor(pf_t *pf, AMCLSensorData *data)
+bool AMCLSensor::UpdateSensor(pf_t *pf, AMCLSensorData *data, float *percent_invalid_poses)
 {
   return false;
 }

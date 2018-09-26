@@ -43,6 +43,7 @@
 
 // Messages that I need
 #include "sensor_msgs/LaserScan.h"
+#include "std_msgs/Float32.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 #include "move_base_msgs/PoseWithCovarianceStampedArray.h"
 #include "geometry_msgs/PoseArray.h"
@@ -247,6 +248,7 @@ class AmclNode
     ros::Publisher analytics_pub_; //pub to send amcl_analytics msg
     ros::Publisher data_pub_; //pub to send amcl_data msg
     ros::Publisher particlecloud_pub_;
+    ros::Publisher invalid_pose_percent_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
     ros::ServiceServer set_map_srv_;
@@ -439,6 +441,7 @@ AmclNode::AmclNode() :
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics", 2, true);
   data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
+  invalid_pose_percent_pub_ = nh_.advertise<std_msgs::Float32>("percent_invalid_poses", 2);
 
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
@@ -1245,7 +1248,14 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
               (i * angle_increment);
     }
 
-    lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata);
+    float percent_invalid_poses = 0.0;
+    lasers_[laser_index]->UpdateSensor(pf_, (AMCLSensorData*)&ldata, &percent_invalid_poses);
+
+    if (percent_invalid_poses > 0) {
+      std_msgs::Float32 float_msg;
+      float_msg.data = percent_invalid_poses;
+      invalid_pose_percent_pub_.publish(float_msg);
+    }
 
     lasers_update_[laser_index] = false;
 

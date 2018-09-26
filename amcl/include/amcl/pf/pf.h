@@ -52,7 +52,8 @@ typedef void (*pf_action_model_fn_t) (void *action_data,
 // Function prototype for the sensor model; determines the probability
 // for the given set of sample poses.
 typedef double (*pf_sensor_model_fn_t) (void *sensor_data, 
-                                        struct _pf_sample_set_t* set);
+                                        struct _pf_sample_set_t* set,
+                                        float *percent_invalid_poses);
 
 
 // Information for a single sample
@@ -154,7 +155,7 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data);
 void pf_update_action(pf_t *pf, pf_action_model_fn_t action_fn, void *action_data);
 
 // Update the filter with some new sensor observation
-void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_data);
+void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_data, float *percent_invalid_poses);
 
 // Resample the distribution
 void pf_update_resample(pf_t *pf);
