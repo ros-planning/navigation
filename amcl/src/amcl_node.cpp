@@ -441,7 +441,7 @@ AmclNode::AmclNode() :
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics", 2, true);
   data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
-  invalid_pose_percent_pub_ = nh_.advertise<std_msgs::Float32>("percent_invalid_poses", 2);
+  invalid_pose_percent_pub_ = nh_.advertise<std_msgs::Float32>("amcl_invalid_poses", 2);
 
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",

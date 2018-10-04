@@ -214,8 +214,13 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set, float *pe
     sample->weight *= p;
     total_weight += sample->weight;
   }
+  ROS_DEBUG("Invalid count %d", invalid_count);
+  if (set->sample_count > 0) {
+    *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  } else {
+    *percent_invalid_poses = -1;
+  }
 
-  *percent_invalid_poses = (float)invalid_count / set->sample_count;
   return(total_weight);
 }
 
@@ -315,8 +320,12 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     total_weight += sample->weight;
   }
 
-  ROS_WARN("Invalid count %d", invalid_count);
-  *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  ROS_DEBUG("Invalid count %d", invalid_count);
+  if (set->sample_count > 0) {
+    *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  } else {
+    *percent_invalid_poses = -1;
+  }
 
   return(total_weight);
 }
@@ -535,7 +544,12 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
   delete [] obs_count; 
   delete [] obs_mask;
-  *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  ROS_DEBUG("Invalid count %d", invalid_count);
+  if (set->sample_count > 0) {
+    *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  } else {
+    *percent_invalid_poses = -1;
+  }
   return(total_weight);
 }
 
