@@ -34,6 +34,7 @@
 #include <unistd.h>
 
 #include "amcl_laser.h"
+#include <ros/ros.h>
 
 using namespace amcl;
 
@@ -118,20 +119,20 @@ AMCLLaser::SetModelLikelihoodFieldProb(double z_hit,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the laser sensor model
-bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
+bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data, float *percent_invalid_poses)
 {
   if (this->max_beams < 2)
     return false;
 
   // Apply the laser sensor model
   if(this->model_type == LASER_MODEL_BEAM)
-    pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data, percent_invalid_poses);
   else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD)
-    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModel, data);  
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModel, data, percent_invalid_poses);  
   else if(this->model_type == LASER_MODEL_LIKELIHOOD_FIELD_PROB)
-    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModelProb, data);  
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) LikelihoodFieldModelProb, data, percent_invalid_poses);  
   else
-    pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data);
+    pf_update_sensor(pf, (pf_sensor_model_fn_t) BeamModel, data, percent_invalid_poses);
 
   return true;
 }
@@ -139,7 +140,7 @@ bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Determine the probability for the given pose
-double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
+double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set, float *percent_invalid_poses)
 {
   AMCLLaser *self;
   int i, j, step;
@@ -154,7 +155,7 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
   self = (AMCLLaser*) data->sensor;
 
   total_weight = 0.0;
-
+  int invalid_count = 0;
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
@@ -162,6 +163,7 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
 
     if(!isValidSample(self, sample))
     {
+      invalid_count++;
       continue;
     }
 
@@ -212,11 +214,17 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set)
     sample->weight *= p;
     total_weight += sample->weight;
   }
+  ROS_DEBUG("Invalid count %d", invalid_count);
+  if (set->sample_count > 0) {
+    *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  } else {
+    *percent_invalid_poses = -1;
+  }
 
   return(total_weight);
 }
 
-double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set)
+double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set, float *percent_invalid_poses)
 {
   AMCLLaser *self;
   int i, j, step;
@@ -232,6 +240,8 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
 
   total_weight = 0.0;
 
+  int invalid_count = 0;
+
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
@@ -239,6 +249,7 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
 
     if(!isValidSample(self, sample))
     {
+      invalid_count++;
       continue;
     }
 
@@ -309,10 +320,17 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     total_weight += sample->weight;
   }
 
+  ROS_DEBUG("Invalid count %d", invalid_count);
+  if (set->sample_count > 0) {
+    *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  } else {
+    *percent_invalid_poses = -1;
+  }
+
   return(total_weight);
 }
 
-double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t* set)
+double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t* set, float *percent_invalid_poses)
 {
   AMCLLaser *self;
   int i, j, step;
@@ -382,7 +400,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
       fprintf(stderr, "Reallocing temp weights %d - %d\n", self->max_samples, self->max_obs);
     }
   }
-
+  int invalid_count = 0;
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
   {
@@ -390,6 +408,7 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
     if(!isValidSample(self, sample))
     {
+      invalid_count++;
       continue;
     }
 
@@ -525,7 +544,12 @@ double AMCLLaser::LikelihoodFieldModelProb(AMCLLaserData *data, pf_sample_set_t*
 
   delete [] obs_count; 
   delete [] obs_mask;
-
+  ROS_DEBUG("Invalid count %d", invalid_count);
+  if (set->sample_count > 0) {
+    *percent_invalid_poses = (float)invalid_count / set->sample_count;
+  } else {
+    *percent_invalid_poses = -1;
+  }
   return(total_weight);
 }
 

@@ -88,7 +88,7 @@ class AMCLLaser : public AMCLSensor
 
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
-  public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data);
+  public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data, float *percent_invalid_poses);
 
   // Set the laser's pose after construction
   public: void SetLaserPose(pf_vector_t& laser_pose) 
@@ -96,14 +96,17 @@ class AMCLLaser : public AMCLSensor
 
   // Determine the probability for the given pose
   private: static double BeamModel(AMCLLaserData *data, 
-                                   pf_sample_set_t* set);
+                                   pf_sample_set_t* set,
+                                   float *percent_invalid_poses);
   // Determine the probability for the given pose
   private: static double LikelihoodFieldModel(AMCLLaserData *data, 
-                                              pf_sample_set_t* set);
+                                              pf_sample_set_t* set,
+                                              float *percent_invalid_poses);
 
   // Determine the probability for the given pose - more probablistic model 
   private: static double LikelihoodFieldModelProb(AMCLLaserData *data, 
-					     pf_sample_set_t* set);
+					     pf_sample_set_t* set,
+               float *percent_invalid_poses);
 
   private: static bool isValidSample(AMCLLaser* laser, pf_sample_t* sample);
 

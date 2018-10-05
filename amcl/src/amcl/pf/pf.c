@@ -274,7 +274,8 @@ void pf_update_action(pf_t *pf, pf_action_model_fn_t action_fn, void *action_dat
 
 #include <float.h>
 // Update the filter with some new sensor observation
-void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_data)
+void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, 
+                      void *sensor_data, float *percent_invalid_poses)
 {
   int i;
   pf_sample_set_t *set;
@@ -284,7 +285,7 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
   set = pf->sets + pf->current_set;
 
   // Compute the sample weights
-  total = (*sensor_fn) (sensor_data, set);
+  total = (*sensor_fn) (sensor_data, set, percent_invalid_poses);
   
   if (total > 0.0)
   {

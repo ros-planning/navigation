@@ -56,7 +56,7 @@ class AMCLSensor
 
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
-  public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data);
+  public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data, float *percent_invalid_poses);
 
   // Flag is true if this is the action sensor
   public: bool is_action;
