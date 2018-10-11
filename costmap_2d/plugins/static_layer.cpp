@@ -87,10 +87,10 @@ void StaticLayer::onInitialize()
   if (!first_map_only_ || map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
     // we'll subscribe to the latched topic that the map server uses
-    ROS_INFO("Requesting the map...");
-    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
     map_received_ = false;
     has_updated_data_ = false;
+    ROS_INFO("Requesting the map...");
+    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
 
     ros::Rate r(10);
     while (!map_received_ && g_nh.ok())
