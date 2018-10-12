@@ -120,19 +120,28 @@ add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
 add_dependencies(costmap_2d_markers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d_markers
     costmap_2d
-    )
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
 add_dependencies(costmap_2d_cloud ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d_cloud
     costmap_2d
-    )
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 add_executable(costmap_2d_node src/costmap_2d_node.cpp)
 add_dependencies(costmap_2d_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d_node
     costmap_2d
-    )
+    ${PCL_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 ## Configure Tests
 if(CATKIN_ENABLE_TESTING)
