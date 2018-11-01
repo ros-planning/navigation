@@ -72,6 +72,9 @@
 #include <rosbag/view.h>
 #include <boost/foreach.hpp>
 
+// For monitoring the estimator
+#include <diagnostic_updater/diagnostic_updater.h>
+
 #define NEW_UNIFORM_SAMPLING 1
 
 using namespace amcl;
@@ -249,6 +252,12 @@ class AmclNode
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
 
+    diagnostic_updater::Updater diagnosic_updater_;
+    void standardDeviationDiagnostics(diagnostic_updater::DiagnosticStatusWrapper& diagnostic_status);
+    double max_std_x_;
+    double max_std_y_;
+    double max_std_yaw_;
+
     amcl_hyp_t* initial_pose_hyp_;
     bool first_map_received_;
     bool first_reconfigure_call_;
@@ -422,6 +431,11 @@ AmclNode::AmclNode() :
   private_nh_.param("recovery_alpha_fast", alpha_fast_, 0.1);
   private_nh_.param("tf_broadcast", tf_broadcast_, true);
 
+  // For diagnostics
+  private_nh_.param("max_std_x", max_std_x_, 0.2);
+  private_nh_.param("max_std_y", max_std_y_, 0.2);
+  private_nh_.param("max_std_yaw", max_std_yaw_, 0.1);
+
   transform_tolerance_.fromSec(tmp_tol);
 
   {
@@ -476,6 +490,9 @@ AmclNode::AmclNode() :
   laser_check_interval_ = ros::Duration(15.0);
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
+
+  diagnosic_updater_.setHardwareID("None");
+  diagnosic_updater_.add("Standard deviation", this, &AmclNode::standardDeviationDiagnostics);
 }
 
 void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
@@ -1462,6 +1479,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     }
   }
 
+  diagnosic_updater_.update();
 }
 
 void
@@ -1561,5 +1579,30 @@ AmclNode::applyInitialPose()
 
     delete initial_pose_hyp_;
     initial_pose_hyp_ = NULL;
+  }
+}
+
+void
+AmclNode::standardDeviationDiagnostics(diagnostic_updater::DiagnosticStatusWrapper& diagnostic_status)
+{
+  double std_x = sqrt(last_published_pose.pose.covariance[6*0+0]);
+  double std_y = sqrt(last_published_pose.pose.covariance[6*1+1]);
+  double std_yaw = sqrt(last_published_pose.pose.covariance[6*5+5]);
+
+  diagnostic_status.add("std_x", std_x);
+  diagnostic_status.add("std_y", std_y);
+  diagnostic_status.add("std_yaw", std_yaw);
+  diagnostic_status.add("max_std_x", max_std_x_);
+  diagnostic_status.add("max_std_y", max_std_y_);
+  diagnostic_status.add("max_std_yaw", max_std_yaw_);
+
+
+  if (std_x > max_std_x_ || std_y > max_std_y_ || std_yaw > max_std_yaw_)
+  {
+    diagnostic_status.summaryf(diagnostic_msgs::DiagnosticStatus::WARN, "Too large");
+  }
+  else
+  {
+    diagnostic_status.summary(diagnostic_msgs::DiagnosticStatus::OK, "OK");
   }
 }
