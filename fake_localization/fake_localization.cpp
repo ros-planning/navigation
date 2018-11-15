@@ -117,7 +117,7 @@ class FakeOdomNode
       ros::NodeHandle nh;
 
       tf2::Quaternion q;
-      q.setEuler(-delta_yaw_, 0, 0);
+      q.setRPY(0.0, 0.0, -delta_yaw_);
       m_offsetTf = tf2::Transform(q, tf2::Vector3(-delta_x_, -delta_y_, 0.0));
 
       stuff_sub_ = nh.subscribe("base_pose_ground_truth", 100, &FakeOdomNode::stuffFilter, this);
