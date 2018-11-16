@@ -1332,7 +1332,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       temp_cluster.cov.xx = hyps[hyp_count].pf_pose_cov.m[0][0];
       temp_cluster.cov.xy = hyps[hyp_count].pf_pose_cov.m[0][1];
       temp_cluster.cov.yy = hyps[hyp_count].pf_pose_cov.m[1][1];
-      temp_cluster.cov.tt = hyps[hyp_count].pf_pose_cov.m[5][5];
+      temp_cluster.cov.tt = hyps[hyp_count].pf_pose_cov.m[2][2];
       dp.clusters.push_back(temp_cluster);
       total_num_samples+=numSamples;
     }
@@ -1375,7 +1375,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       ap.set_covariance.xx = set->cov.m[0][0];
       ap.set_covariance.xy = set->cov.m[0][1];
       ap.set_covariance.yy = set->cov.m[1][1];
-      ap.set_covariance.tt = set->cov.m[5][5];
+      ap.set_covariance.tt = set->cov.m[2][2];
       ap.bestCluster.mean.position.x = hyps[max_weight_hyp].pf_pose_mean.v[0];
       ap.bestCluster.mean.position.y = hyps[max_weight_hyp].pf_pose_mean.v[1];
       tf::quaternionTFToMsg(tf::createQuaternionFromYaw(hyps[max_weight_hyp].pf_pose_mean.v[2]),
@@ -1383,7 +1383,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       ap.bestCluster.cov.xx = hyps[max_weight_hyp].pf_pose_cov.m[0][0];
       ap.bestCluster.cov.xy = hyps[max_weight_hyp].pf_pose_cov.m[0][1];
       ap.bestCluster.cov.yy = hyps[max_weight_hyp].pf_pose_cov.m[1][1];
-      ap.bestCluster.cov.tt = hyps[max_weight_hyp].pf_pose_cov.m[5][5];
+      ap.bestCluster.cov.tt = hyps[max_weight_hyp].pf_pose_cov.m[2][2];
       ap.bestCluster.weight =  hyps[max_weight_hyp].weight;
       ap.bestCluster.num_samples = hyps[max_weight_hyp].numSamples;
       ap.num_clusters = pf_->sets[pf_->current_set].cluster_count;
