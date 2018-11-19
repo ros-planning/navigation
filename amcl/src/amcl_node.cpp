@@ -1599,7 +1599,7 @@ AmclNode::standardDeviationDiagnostics(diagnostic_updater::DiagnosticStatusWrapp
 
   if (std_x > max_std_x_ || std_y > max_std_y_ || std_yaw > max_std_yaw_)
   {
-    diagnostic_status.summaryf(diagnostic_msgs::DiagnosticStatus::WARN, "Too large");
+    diagnostic_status.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Too large");
   }
   else
   {
