@@ -237,6 +237,8 @@ bool SimpleTrajectoryGenerator::generateTrajectory(
     traj.yv_     = sample_target_vel[1];
     traj.thetav_ = sample_target_vel[2];
   }
+  // Limit the command out to less than the allowed max.
+  limits_->applyToTrajectory(traj);
 
   //simulate the trajectory and check for collisions, updating costs along the way
   for (int i = 0; i < num_steps; ++i) {

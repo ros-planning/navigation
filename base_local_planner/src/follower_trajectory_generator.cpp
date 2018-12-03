@@ -185,6 +185,10 @@ bool FollowerTrajectoryGenerator::generateTrajectory(
     pos = computeNewPositions(pos, loop_vel, dt);
 
   } // end for simulation steps
+
+  // Limit the command out to less than the allowed max.
+  limits_->applyToTrajectory(traj);
+
   stored_trajectory_ = traj;
   stored_idx_ = start_idx;
 

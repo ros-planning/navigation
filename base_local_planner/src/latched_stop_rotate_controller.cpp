@@ -269,6 +269,8 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
       }
       ROS_DEBUG("Rotating...");
     }
+
+    limits.applyToTwist(cmd_vel);
   }
 
   return true;

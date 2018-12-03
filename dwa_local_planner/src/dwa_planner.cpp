@@ -554,6 +554,9 @@ namespace dwa_local_planner {
     scored_sampling_planner_.findBestTrajectory(result_traj_, &all_explored);
     stsr.stopSample();
 
+    // Limit the command out to less than the allowed max.
+    limits.applyToTrajectory(result_traj_);
+
     if(publish_traj_pc_)
     {
         base_local_planner::MapGridCostPoint pt;
