@@ -139,15 +139,14 @@ namespace base_local_planner{
     double last_y = global_plan_in[0].pose.position.y;
     global_plan_out.push_back(global_plan_in[0]);
 
-    // we can take "holes" in the plan smaller than 2 grid cells (squared = 4)
-    double min_sq_resolution = resolution * resolution * 4;
+    double min_sq_resolution = resolution * resolution;
 
     for (unsigned int i = 1; i < global_plan_in.size(); ++i) {
       double loop_x = global_plan_in[i].pose.position.x;
       double loop_y = global_plan_in[i].pose.position.y;
       double sqdist = (loop_x - last_x) * (loop_x - last_x) + (loop_y - last_y) * (loop_y - last_y);
       if (sqdist > min_sq_resolution) {
-        int steps = ((sqrt(sqdist) - sqrt(min_sq_resolution)) / resolution) - 1;
+        int steps = ceil((sqrt(sqdist) - sqrt(min_sq_resolution)) / resolution) + 1;
         // add a points in-between
         double deltax = (loop_x - last_x) / steps;
         double deltay = (loop_y - last_y) / steps;
