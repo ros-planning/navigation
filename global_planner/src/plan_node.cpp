@@ -67,8 +67,8 @@ class PlannerWithCostmap : public GlobalPlanner {
 bool PlannerWithCostmap::makePlanService(navfn::MakeNavPlan::Request& req, navfn::MakeNavPlan::Response& resp) {
     vector<PoseStamped> path;
 
-    req.start.header.frame_id = "/map";
-    req.goal.header.frame_id = "/map";
+    req.start.header.frame_id = "map";
+    req.goal.header.frame_id = "map";
     bool success = makePlan(req.start, req.goal, path);
     resp.plan_found = success;
     if (success) {
