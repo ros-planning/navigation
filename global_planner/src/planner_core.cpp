@@ -171,6 +171,7 @@ void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, u
     planner_->setFactor(config.cost_factor);
     publish_potential_ = config.publish_potential;
     orientation_filter_->setMode(config.orientation_mode);
+    orientation_filter_->setWindowSize(config.orientation_window_size);
 }
 
 void GlobalPlanner::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my) {
