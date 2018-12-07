@@ -160,6 +160,7 @@ if(CATKIN_ENABLE_TESTING)
     test/velocity_iterator_test.cpp
     test/footprint_helper_test.cpp
     test/geometry_math_helpers_test.cpp
+    test/local_planner_limits_test.cpp
     test/trajectory_generator_test.cpp
     test/follower_trajectory_generator_test.cpp
     test/global_plan_distance_cost_function_test.cpp
