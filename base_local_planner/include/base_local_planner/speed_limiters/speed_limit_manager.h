@@ -76,6 +76,7 @@ protected:
   void reconfigure(SpeedLimitManagerConfig &cfg, uint32_t level) {
     setMaxLimits(cfg.max_linear_velocity, cfg.max_angular_velocity);
   }
+  ros::Publisher limiter_pub;
   std::vector<std::shared_ptr<SpeedLimiter>> limiters_;
   
   std::shared_ptr<dynamic_reconfigure::Server<SpeedLimitManagerConfig>> configServer_;
@@ -83,6 +84,7 @@ protected:
 
   double max_linear_velocity_ = 1.0;
   double max_angular_velocity_ = 1.0;
+  
 };
 
 } /* namespace base_local_planner */
