@@ -40,7 +40,7 @@
 #include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
 #include <base_local_planner/speed_limiters/path_speed_limiter.h>
 #include <base_local_planner/speed_limiters/external_speed_limiter.h>
-#include <std_msgs/Int64.h>
+#include <std_msgs/String.h>
 
 namespace base_local_planner {
 
@@ -73,7 +73,7 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
   ros::NodeHandle private_nh(name);
   configServer_ = std::make_shared<dynamic_reconfigure::Server<SpeedLimitManagerConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&SpeedLimitManager::reconfigure, this, _1, _2));
-  limiter_pub = private_nh.advertise<std_msgs::Int64>("limiter_index", 10);
+  limiter_pub = private_nh.advertise<std_msgs::String>("limiter_string", 10);
 };
 
 /**
@@ -83,8 +83,7 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
 bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
-  int index = 0;
-  int limiter_index = 0;
+  std::string limiter_string = "Nothing";
   for (const auto& limiter : limiters_)
   {
     double linear = 0, angular = 0;
@@ -96,13 +95,12 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
       return false;
     }
     if(linear < max_allowed_linear_vel){
-      limiter_index = index;
+      limiter_string = limiter->string_name;
     }
-    index++;
     max_allowed_linear_vel = std::min(max_allowed_linear_vel, linear);
     max_allowed_angular_vel = std::min(max_allowed_angular_vel, angular);
   }
-  limiter_pub.publish(limiter_index);
+  limiter_pub.publish(limiter_string);
   ROS_DEBUG_THROTTLE(0.2, "Limits: %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
   return true;
 }

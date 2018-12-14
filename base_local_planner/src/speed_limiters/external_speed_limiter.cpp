@@ -48,6 +48,7 @@ void ExternalSpeedLimiter::initialize(std::string name) {
 
   // Create the subscriber
   subscriber_ = private_nh.subscribe("limit", 10, &ExternalSpeedLimiter::msgCallback, this);
+  string_name = "External";
 }
 
 bool ExternalSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
