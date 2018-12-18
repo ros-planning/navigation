@@ -77,6 +77,7 @@ protected:
     setMaxLimits(cfg.max_linear_velocity, cfg.max_angular_velocity);
   }
   ros::Publisher limiter_pub;
+  ros::Publisher limiters_pub;
   std::vector<std::shared_ptr<SpeedLimiter>> limiters_;
   
   std::shared_ptr<dynamic_reconfigure::Server<SpeedLimitManagerConfig>> configServer_;
