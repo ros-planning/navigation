@@ -142,7 +142,7 @@ void RotateRecovery::runBehavior(){
     vel_pub.publish(cmd_vel);
 
     //makes sure that we won't decide we're done right after we start
-    if(current_angle < 0.0)
+    if(current_angle < (0.0 - tolerance_))
       got_180 = true;
 
     //if we're done with our in-place rotation... then return
