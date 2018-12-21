@@ -104,7 +104,7 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
     if(linear < max_allowed_linear_vel){
       greatest.name = limiter->string_name;
       greatest.linear_value = linear;
-      greatest.linear_value = angular;
+      greatest.angular_value = angular;
     }
     srsnode_analytics::speed_limiter temp;
     temp.name = limiter->string_name;
