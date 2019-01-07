@@ -50,8 +50,11 @@ void ShadowSpeedLimiter::initialize(std::string name)
   ros::NodeHandle private_nh(name + "/shadow");
   configServer_ = std::make_shared<dynamic_reconfigure::Server<ShadowSpeedLimiterConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&ShadowSpeedLimiter::reconfigure, this, _1, _2));
-  string_name = "Shadow";
   initialized_ = true;
+}
+
+std::string ShadowSpeedLimiter::getName(){
+  return std::string("Shadow");
 }
 
 bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {

@@ -45,7 +45,10 @@ void PathSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/path");
   configServer_ = std::make_shared<dynamic_reconfigure::Server<PathSpeedLimiterConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&PathSpeedLimiter::reconfigure, this, _1, _2));
-  string_name = "Path";
+}
+
+std::string PathSpeedLimiter::getName(){
+  return std::string("Path");
 }
 
 bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {

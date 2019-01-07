@@ -46,7 +46,10 @@ void ObstacleSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/obstacle");
   configServer_ = std::make_shared<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1, _2));
-  string_name = "Obstacle";
+}
+
+std::string ObstacleSpeedLimiter::getName(){
+  return std::string("Obstacle");
 }
 
 bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
