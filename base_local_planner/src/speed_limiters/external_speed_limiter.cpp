@@ -50,6 +50,10 @@ void ExternalSpeedLimiter::initialize(std::string name) {
   subscriber_ = private_nh.subscribe("limit", 10, &ExternalSpeedLimiter::msgCallback, this);
 }
 
+std::string ExternalSpeedLimiter::getName(){
+  return std::string("External");
+}
+
 bool ExternalSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
   // Reset the maximum allowed velocity
   max_allowed_linear_vel = max_linear_velocity_;

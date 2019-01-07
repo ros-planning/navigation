@@ -40,6 +40,10 @@
 #include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
 #include <base_local_planner/speed_limiters/path_speed_limiter.h>
 #include <base_local_planner/speed_limiters/external_speed_limiter.h>
+#include <std_msgs/String.h>
+#include <srsnode_analytics/speed_limiters.h>
+#include <srsnode_analytics/speed_limiter.h>
+
 
 namespace base_local_planner {
 
@@ -72,6 +76,8 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
   ros::NodeHandle private_nh(name);
   configServer_ = std::make_shared<dynamic_reconfigure::Server<SpeedLimitManagerConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&SpeedLimitManager::reconfigure, this, _1, _2));
+  limiter_pub = private_nh.advertise<srsnode_analytics::speed_limiter>("limiter_greatest", 10);
+  limiters_pub = private_nh.advertise<srsnode_analytics::speed_limiters>("limiter_values", 10);
 };
 
 /**
@@ -81,7 +87,10 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
 bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
-
+  std::string limiter_string = "Nothing";
+  srsnode_analytics::speed_limiter greatest;
+  srsnode_analytics::speed_limiters limiterArray;
+  greatest.name = limiter_string;
   for (const auto& limiter : limiters_)
   {
     double linear = 0, angular = 0;
@@ -92,9 +101,32 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
       max_allowed_angular_vel = 0;
       return false;
     }
+    if(linear < max_allowed_linear_vel){
+      greatest.name = limiter->getName();
+      greatest.linear_value = linear;
+      greatest.angular_value = angular;
+    }
+    srsnode_analytics::speed_limiter temp;
+    temp.name = limiter->getName();
+    temp.linear_value = linear;
+    temp.angular_value = angular;
+    if(temp.name == "Shadow"){
+      limiterArray.shadow = temp;
+    }
+    else if(temp.name == "Obstacle"){
+      limiterArray.obstacle = temp;
+    }
+    else if(temp.name == "Path"){
+      limiterArray.path = temp;
+    }
+    else if(temp.name == "External"){
+      limiterArray.external = temp;
+    }
     max_allowed_linear_vel = std::min(max_allowed_linear_vel, linear);
     max_allowed_angular_vel = std::min(max_allowed_angular_vel, angular);
   }
+  limiter_pub.publish(greatest);
+  limiters_pub.publish(limiterArray);
   ROS_DEBUG_THROTTLE(0.2, "Limits: %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
   return true;
 }

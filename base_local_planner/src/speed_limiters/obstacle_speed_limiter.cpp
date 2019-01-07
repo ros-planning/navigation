@@ -48,6 +48,10 @@ void ObstacleSpeedLimiter::initialize(std::string name) {
   configServer_->setCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1, _2));
 }
 
+std::string ObstacleSpeedLimiter::getName(){
+  return std::string("Obstacle");
+}
+
 bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
   // Reset the maximum allowed velocity
   max_allowed_linear_vel = max_linear_velocity_;

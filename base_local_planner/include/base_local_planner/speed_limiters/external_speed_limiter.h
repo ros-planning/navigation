@@ -68,6 +68,8 @@ public:
    */
   virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
+  std::string getName();
+  
 private:
   void reconfigure(ExternalSpeedLimiterConfig &cfg, uint32_t level) {
     params_ = cfg;

@@ -67,6 +67,8 @@ public:
    */
   virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
+  std::string getName();
+  
 private:
   void reconfigure(PathSpeedLimiterConfig &cfg, uint32_t level) {
     params_ = cfg;
