@@ -69,7 +69,7 @@ public:
    */
   virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) = 0;
 
-  virtual std::string getName();
+  virtual std::string getName() = 0;
   
   void setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
     plan_ = plan;
