@@ -151,7 +151,7 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::Obstr
   }
   else 
   {
-    speed = math.pow(distance_to_obstruction,1.0/1.172);
+    speed = pow(distance_to_obstruction,1.0/1.172);
   }
   if(speed > 1.3){
     speed = 1.3;
