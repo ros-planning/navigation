@@ -144,12 +144,18 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::Obstr
   double distance_to_obstruction = std::sqrt(x_dist_with_buffer * x_dist_with_buffer + y_dist_with_buffer * y_dist_with_buffer);
   ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);
 
-  return threeLevelInterpolation(distance_to_obstruction,     
-    params_.min_range, params_.nominal_range_min,
-    params_.nominal_range_max, params_.max_range,
-    std::min(params_.min_linear_velocity, max_linear_velocity_),
-    std::min(params_.nominal_linear_velocity, max_linear_velocity_),
-    max_linear_velocity_);
+  double speed = 0.0;
+  if (distance_to_obstruction < .2)
+  {
+    speed = 0.45;
+  }
+  else 
+  {
+    speed = math.pow(distance_to_obstruction,1.0/1.172);
+  }
+  if(speed > 1.3){
+    speed = 1.3;
+  }
 }
 
 
