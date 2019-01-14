@@ -146,7 +146,7 @@ namespace base_local_planner{
       double loop_y = global_plan_in[i].pose.position.y;
       double sqdist = (loop_x - last_x) * (loop_x - last_x) + (loop_y - last_y) * (loop_y - last_y);
       if (sqdist > min_sq_resolution) {
-        int steps = ceil((sqrt(sqdist) - sqrt(min_sq_resolution)) / resolution) + 1;
+        int steps = ceil((sqrt(sqdist)) / resolution);
         // add a points in-between
         double deltax = (loop_x - last_x) / steps;
         double deltay = (loop_y - last_y) / steps;
