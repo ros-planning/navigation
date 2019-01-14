@@ -10,6 +10,7 @@ find_package(catkin REQUIRED
     dynamic_reconfigure
     geometry_msgs
     message_filters
+    message_generation
     nav_msgs
     rosbag
     roscpp
@@ -22,6 +23,17 @@ find_package(catkin REQUIRED
 )
 
 find_package(Boost REQUIRED)
+
+add_service_files(
+  FILES	
+    amcl_particles.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+    std_msgs
+    geometry_msgs
+)
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
