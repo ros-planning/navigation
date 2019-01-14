@@ -174,6 +174,7 @@ namespace dwa_local_planner {
       double forward_point_distance_;
 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
+      std::vector<geometry_msgs::PoseStamped> actual_global_plan_;
       std::vector<geometry_msgs::Point> robot_footprint_;
 
       boost::mutex configuration_mutex_;

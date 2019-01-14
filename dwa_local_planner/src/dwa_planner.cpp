@@ -290,6 +290,11 @@ namespace dwa_local_planner {
       ROS_DEBUG("flag reset due to set plan at range %f", divergenceDistance);
       oscillation_costs_.resetOscillationFlags();
     }
+    actual_global_plan_.resize(orig_global_plan.size());
+
+    for (unsigned int i = 0; i < orig_global_plan.size(); ++i) {
+      actual_global_plan_[i] = orig_global_plan[i];
+    }
     return planner_util_->setPlan(orig_global_plan);
   }
 
@@ -447,7 +452,7 @@ namespace dwa_local_planner {
   bool DWAPlanner::getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf, double& distance, double& time)
   {
     // Get the current plan and pose.
-    if (global_plan_.empty())
+    if (actual_global_plan_.empty())
     {
       distance = 0;
       time = 0;
@@ -466,11 +471,11 @@ namespace dwa_local_planner {
     double distance_from_robot = -1;
     double minimum_distance = 0.5; // it needs to be at least this close
 
-    for (size_t k = 0; k < global_plan_.size() - 1; ++k)
+    for (size_t k = 0; k < actual_global_plan_.size() - 1; ++k)
     {
       // Pull out the datas
-      p0 = base_local_planner::poseStampedToVector(global_plan_[k]);
-      p1 = base_local_planner::poseStampedToVector(global_plan_[k + 1]);
+      p0 = base_local_planner::poseStampedToVector(actual_global_plan_[k]);
+      p1 = base_local_planner::poseStampedToVector(actual_global_plan_[k + 1]);
       double segment_length = (p1 - p0).norm();
       double dist_from_path = base_local_planner::distanceToLineSegment(pos2, p0, p1);
 
