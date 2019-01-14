@@ -34,22 +34,7 @@
  */
 
 #include "nav_msgs/GetMap.h"
-
-/** Map mode
- *  Default: TRINARY -
- *      value >= occ_th - Occupied (100)
- *      value <= free_th - Free (0)
- *      otherwise - Unknown
- *  SCALE -
- *      alpha < 1.0 - Unknown
- *      value >= occ_th - Occupied (100)
- *      value <= free_th - Free (0)
- *      otherwise - f( (free_th, occ_th) ) = (0, 100)
- *          (linearly map in between values to (0,100)
- *  RAW -
- *      value = value
- */
-enum MapMode {TRINARY, SCALE, RAW};
+#include "map_server/map_mode.h"
 
 namespace map_server
 {

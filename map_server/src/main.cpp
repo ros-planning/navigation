@@ -46,6 +46,9 @@
 #include "nav_msgs/MapMetaData.h"
 #include "yaml-cpp/yaml.h"
 
+namespace map_server
+{
+
 #ifdef HAVE_YAMLCPP_GT_0_5_0
 // The >> operator disappeared in yaml-cpp 0.5, so this function is
 // added to provide support for code written under the yaml-cpp 0.3 API.
@@ -231,6 +234,8 @@ class MapServer
 
 };
 
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "map_server", ros::init_options::AnonymousName);
@@ -247,7 +252,7 @@ int main(int argc, char **argv)
 
   try
   {
-    MapServer ms(fname, res);
+    map_server::MapServer ms(fname, res);
     ros::spin();
   }
   catch(std::runtime_error& e)
