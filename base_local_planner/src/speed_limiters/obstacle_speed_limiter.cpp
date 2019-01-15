@@ -145,16 +145,14 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::Obstr
   ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);
 
   double speed = 0.0;
-  if (distance_to_obstruction < .1)
+  speed = pow(std::fabs(distance_to_obstruction),1.0/1.72);
+  if (speed < params_.min_linear_velocity)
   {
-    speed = 0.45;
+    speed = params_.min_linear_velocity;
   }
-  else 
+  else if (speed > max_linear_velocity_)
   {
-    speed = pow(distance_to_obstruction,1.0/1.72);
-  }
-  if(speed > 1.3){
-    speed = 1.3;
+    speed = max_linear_velocity_;
   }
   return speed;
 }
