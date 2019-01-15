@@ -459,17 +459,12 @@ namespace dwa_local_planner {
       return true;
     }
 
-    geometry_msgs::PoseStamped pose;
-    tf::poseStampedTFToMsg(poseTf, pose);
-
-    Eigen::Vector2f pos2 = base_local_planner::poseStampedToVector(pose);
     // Vectors for storage
     Eigen::Vector2f p0 = Eigen::Vector2f::Zero();
     Eigen::Vector2f p1 = Eigen::Vector2f::Zero();
 
     // Other storage
     double distance_from_robot = -1;
-    double minimum_distance = 0.5; // it needs to be at least this close
 
     for (size_t k = 0; k < actual_global_plan_.size() - 1; ++k)
     {
@@ -477,24 +472,12 @@ namespace dwa_local_planner {
       p0 = base_local_planner::poseStampedToVector(actual_global_plan_[k]);
       p1 = base_local_planner::poseStampedToVector(actual_global_plan_[k + 1]);
       double segment_length = (p1 - p0).norm();
-      double dist_from_path = base_local_planner::distanceToLineSegment(pos2, p0, p1);
-
-      if (dist_from_path < minimum_distance)
-      {
-        minimum_distance = dist_from_path;
-        // Reset distance
-        distance_from_robot = std::max(0.0, segment_length - base_local_planner::distanceAlongLineSegment(pos2, p0, p1));
-      }
-      else
-      {
-        distance_from_robot += segment_length;
-      }
+      distance_from_robot += segment_length;
     }
     if (distance_from_robot < 0)
     {
       // If the distance wasn't set, the robot is too far from the path.
-      // Use euclidean distance.
-      distance_from_robot = (pos2 - p1).norm();
+      distance_from_robot = 0;
     }
 
     distance = distance_from_robot;

@@ -977,20 +977,20 @@ namespace move_base {
       return false;
     }
 
-          //update feedback to correspond to estimated time / distance to goal
-      double distance_to_go = 0, time_to_go = 0;
-      if (!tc_->getDistanceAndTimeEstimates(distance_to_go, time_to_go))
-      {
-        distance_to_go = -1;
-        time_to_go = -1;
-      }
+    //update feedback to correspond to estimated time / distance to goal
+    double distance_to_go = 0, time_to_go = 0;
+    if (!tc_->getDistanceAndTimeEstimates(distance_to_go, time_to_go))
+    {
+      distance_to_go = -1;
+      time_to_go = -1;
+    }
 
-      //push the feedback out
-      move_base_msgs::MoveBaseFeedback feedback;
-      feedback.base_position = current_position;
-      feedback.path_distance_to_goal = distance_to_go;
-      feedback.path_time_to_goal = time_to_go;
-      as_->publishFeedback(feedback);
+    //push the feedback out
+    move_base_msgs::MoveBaseFeedback feedback;
+    feedback.base_position = current_position;
+    feedback.path_distance_to_goal = distance_to_go;
+    feedback.path_time_to_goal = time_to_go;
+    as_->publishFeedback(feedback);
       
     //if we have a new plan then grab it and give it to the controller
     if(new_global_plan_){
