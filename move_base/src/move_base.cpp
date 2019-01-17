@@ -38,6 +38,7 @@
 #include <move_base/move_base.h>
 #include <cmath>
 #include <algorithm>
+#include <Eigen/Core>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/thread.hpp>
@@ -946,6 +947,58 @@ namespace move_base {
     return hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
   }
 
+  bool MoveBase::getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf,  std::vector<geometry_msgs::PoseStamped>& global_plan, double& distance, double& time)
+  {
+    // Get the current plan and pose.
+    if (global_plan.empty())
+    {
+      distance = 0;
+      time = 0;
+      return true;
+    }
+
+    geometry_msgs::PoseStamped pose;
+    tf::poseStampedTFToMsg(poseTf, pose);
+
+    Eigen::Vector2f pos2 = base_local_planner::poseStampedToVector(pose);
+    // Vectors for storage
+    Eigen::Vector2f p0 = Eigen::Vector2f::Zero();
+    Eigen::Vector2f p1 = Eigen::Vector2f::Zero();
+
+    // Other storage
+    double distance_from_robot = -1;
+    double minimum_distance = 0.5; // it needs to be at least this close
+
+    for (size_t k = 0; k < global_plan.size() - 1; ++k)
+    {
+      // Pull out the datas
+      p0 = base_local_planner::poseStampedToVector(global_plan[k]);
+      p1 = base_local_planner::poseStampedToVector(global_plan[k + 1]);
+      double segment_length = (p1 - p0).norm();
+      double dist_from_path = base_local_planner::distanceToLineSegment(pos2, p0, p1);
+
+      if (distance_from_robot < minimum_distance)
+      {
+        // reset distance
+        distance_from_robot = std::max(0.0, segment_length - base_local_planner::distanceAlongLineSegment(pos2, p0, p1));
+      }
+      else
+      {
+        distance_from_robot += segment_length;
+      }
+    }
+    if (distance_from_robot < 0)
+    {
+      // If the distance wasn't set, the robot is too far from the path.
+      // Use euclidean distance.
+      distance_from_robot = (pos2 - p1).norm();
+    }
+
+    distance = distance_from_robot/1.0;
+    return true;
+  }
+
+
   bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan){
     boost::recursive_mutex::scoped_lock ecl(configuration_mutex_);
     //we need to be able to publish velocity commands
@@ -957,7 +1010,20 @@ namespace move_base {
     geometry_msgs::PoseStamped current_position;
     tf::poseStampedTFToMsg(global_pose, current_position);
 
-    
+    //update feedback to correspond to estimated time / distance to goal
+    double distance_to_go = 0, time_to_go = 0;
+    if (!getDistanceAndTimeEstimates(global_pose, *controller_plan_, distance_to_go, time_to_go))
+    {
+      distance_to_go = -1;
+      time_to_go = -1;
+    }
+
+    //push the feedback out
+    move_base_msgs::MoveBaseFeedback feedback;
+    feedback.base_position = current_position;
+    feedback.path_distance_to_goal = distance_to_go;
+    feedback.path_time_to_goal = time_to_go;
+    as_->publishFeedback(feedback);
 
     //check to see if we've moved far enough to reset our oscillation timeout
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
@@ -976,21 +1042,6 @@ namespace move_base {
       publishZeroVelocity();
       return false;
     }
-
-    //update feedback to correspond to estimated time / distance to goal
-    double distance_to_go = 0, time_to_go = 0;
-    if (!tc_->getDistanceAndTimeEstimates(distance_to_go, time_to_go))
-    {
-      distance_to_go = -1;
-      time_to_go = -1;
-    }
-
-    //push the feedback out
-    move_base_msgs::MoveBaseFeedback feedback;
-    feedback.base_position = current_position;
-    feedback.path_distance_to_goal = distance_to_go;
-    feedback.path_time_to_goal = time_to_go;
-    as_->publishFeedback(feedback);
       
     //if we have a new plan then grab it and give it to the controller
     if(new_global_plan_){

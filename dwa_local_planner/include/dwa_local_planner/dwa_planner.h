@@ -156,9 +156,6 @@ namespace dwa_local_planner {
 
       void setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec);
 
-      bool getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf, double& distance, double& time);
-
-
     private:
 
       base_local_planner::LocalPlannerUtil *planner_util_;
@@ -174,7 +171,6 @@ namespace dwa_local_planner {
       double forward_point_distance_;
 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
-      std::vector<geometry_msgs::PoseStamped> actual_global_plan_;
       std::vector<geometry_msgs::Point> robot_footprint_;
 
       boost::mutex configuration_mutex_;

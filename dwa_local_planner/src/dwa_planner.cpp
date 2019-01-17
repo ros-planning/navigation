@@ -290,11 +290,7 @@ namespace dwa_local_planner {
       ROS_DEBUG("flag reset due to set plan at range %f", divergenceDistance);
       oscillation_costs_.resetOscillationFlags();
     }
-    actual_global_plan_.resize(orig_global_plan.size());
-
-    for (unsigned int i = 0; i < orig_global_plan.size(); ++i) {
-      actual_global_plan_[i] = orig_global_plan[i];
-    }
+    
     return planner_util_->setPlan(orig_global_plan);
   }
 
@@ -448,72 +444,6 @@ namespace dwa_local_planner {
 
     velocity_costs_.setGoalDistanceSquared(sq_dist);
   }
-
-  bool DWAPlanner::getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf, double& distance, double& time)
-  {
-    // Get the current plan and pose.
-    if (global_plan_.empty() || actual_global_plan_.empty())
-    {
-      distance = 0;
-      time = 0;
-      return true;
-    }
-
-    geometry_msgs::PoseStamped pose;
-    tf::poseStampedTFToMsg(poseTf, pose);
-
-    Eigen::Vector2f pos2 = base_local_planner::poseStampedToVector(pose);
-    // Vectors for storage
-    Eigen::Vector2f p0 = Eigen::Vector2f::Zero();
-    Eigen::Vector2f p1 = Eigen::Vector2f::Zero();
-
-    // Other storage
-    double distance_from_robot = -1;
-    double minimum_distance = 0.5; // it needs to be at least this close
-    double plan_skipped = 0; //local plan skipped
-    double distance_traveled = 0; //distance traveled along path 
-    for (size_t k = 0; k < global_plan_.size() - 1; ++k) //go along short local plan
-    {
-      // Pull out the datas
-      p0 = base_local_planner::poseStampedToVector(global_plan_[k]);
-      p1 = base_local_planner::poseStampedToVector(global_plan_[k + 1]);
-      double segment_length = (p1 - p0).norm();
-      double dist_from_path = base_local_planner::distanceToLineSegment(pos2, p0, p1);
-
-      if (dist_from_path < minimum_distance)
-      {
-        minimum_distance = dist_from_path;
-        distance_from_robot = minimum_distance; //distance to path
-        plan_skipped = distance_traveled; // skipped all distance from beginning of plan to now
-        distance_traveled += segment_length; // running counter of distance of path
-      }
-      else
-      {
-        distance_traveled += segment_length; //running counter ofistance of path
-      }
-    }
-
-    for (size_t k = 0; k < actual_global_plan_.size() - 1; ++k)
-    {
-      // Pull out the datas
-      p0 = base_local_planner::poseStampedToVector(actual_global_plan_[k]);
-      p1 = base_local_planner::poseStampedToVector(actual_global_plan_[k + 1]);
-      double segment_length = (p1 - p0).norm();
-      distance_from_robot += segment_length; //add up all segments length
-    }
-    distance_from_robot -= plan_skipped; //subtract the distance skipped in local planner
-
-    if (distance_from_robot < 0)
-    {
-      // If the distance wasn't set, the robot is too far from the path.
-      distance_from_robot = (pos2 - p1).norm();
-    }
-
-    distance = distance_from_robot;
-    time = distance_from_robot / planner_util_->getCurrentLimits().max_vel_x;
-    return true;
-  }
-
 
   /*
    * given the current state of the robot, find a good trajectory
