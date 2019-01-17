@@ -95,6 +95,15 @@ if(CATKIN_ENABLE_TESTING)
   # This has to be done after we've already built targets, or catkin variables get borked
   find_package(rostest REQUIRED)
   add_rostest(test/rtest.xml)
+
+  add_executable(map_saver_test test/map_saver_test.cpp include/map_server/map_generator.h)
+  add_dependencies(map_saver_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+  target_link_libraries(map_saver_test
+          gtest
+          map_server_image_loader
+          ${catkin_LIBRARIES}
+          ${PNG_LIBRARIES})
+  add_rostest(test/map_saver_test.test)
 endif()
 
 ## Install executables and/or libraries

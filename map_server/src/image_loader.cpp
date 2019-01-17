@@ -122,12 +122,11 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
         color_sum += *(p + (k));
       color_avg = color_sum / (double)avg_channels;
 
-      if (n_channels == 1)
+      if (n_channels < 4)
           alpha = 1.0;
       else
       {
           alpha = *(p+n_channels-1) / 255.0;
-          std::cout << "alpha: " << alpha << std::endl;
       }
 
 
