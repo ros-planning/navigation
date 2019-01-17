@@ -994,7 +994,8 @@ namespace move_base {
       distance_from_robot = (pos2 - p1).norm();
     }
 
-    distance = distance_from_robot/1.0;
+    distance = distance_from_robot;
+    time = distance/1.0; //Use 1.0 m/s as average robot speed
     return true;
   }
 
