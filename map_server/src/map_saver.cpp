@@ -28,13 +28,15 @@
  */
 
 #include <cstdio>
+#include <cstdio>
+#include <malloc.h>
+#include <string>
 #include "ros/ros.h"
 #include "ros/console.h"
 #include "nav_msgs/GetMap.h"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "geometry_msgs/Quaternion.h"
-#include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
+#include "png.h"
 
 #include "map_server/map_mode.h"
 
@@ -103,32 +105,41 @@ class MapGenerator
       {
         mapdatafile = mapname_ + ".png";
         ROS_INFO("Writing map occupancy data to %s", mapdatafile.c_str());
-        cv::Mat map_image(map->info.height, map->info.width, CV_8UC4);
+
+        FILE *fp = fopen(mapdatafile.c_str(), "wb");
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+        png_infop info_ptr = png_create_info_struct(png_ptr);
+        png_init_io(png_ptr, fp);
+        png_set_IHDR(png_ptr, info_ptr, map->info.width, map->info.height,
+                     8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+        png_write_info(png_ptr, info_ptr);
+        png_bytep row = (png_bytep) malloc(4 * map->info.width * sizeof(png_byte));
 
         for(unsigned int y = 0; y < map->info.height; y++) {
           for(unsigned int x = 0; x < map->info.width; x++) {
             unsigned int i = x + (map->info.height - y - 1) * map->info.width;
-            cv::Vec4b& element = map_image.at<cv::Vec4b>(y, x);
-            if (map->data[i] >= 0 && map->data[i] <= threshold_free_) { // [0,free)
-              element[0] = element[1] = element[2] = 254;
-              element[3] = 255;
-            } else if (map->data[i] >= threshold_occupied_) { // (occ,255]
-              element[0] = element[1] = element[2] = 0;
-              element[3] = 255;
-            } else if (map->data[i] > threshold_free_ && map->data[i] < threshold_occupied_){   //occ [0.25,0.65]
-              double ratio = (map->data[i] - threshold_free_) / (threshold_occupied_ - threshold_free_);
-              element[0] = element[1] = element[2] = (uchar)ratio * 254;
-              element[3] = 255;
-            } else if (map->data[i] == -1) {  // unknown
-              element[0] = element[1] = element[2] = 205;
-              element[3] = 0;
+            if (map->data[i] >= 0 && map->data[i] <= threshold_free_) {   // free space
+              row[x * 4] = row[x * 4 + 1] = row[x * 4 + 2] = 254;
+              row[x * 4 + 3] = 255;
+            } else if (map->data[i] >= threshold_occupied_) {             // occupied space
+              row[x * 4] = row[x * 4 + 1] = row[x * 4 + 2] = 0;
+              row[x * 4 + 3] = 255;
+            } else if (map->data[i] > threshold_free_ && map->data[i] < threshold_occupied_){   // scale space
+              double ratio = (map->data[i] - threshold_free_) * 1.0 / (threshold_occupied_ - threshold_free_);
+              row[x * 4] = row[x * 4 + 1] = row[x * 4 + 2] = (png_byte)((1 - ratio) * 254);
+              row[x * 4 + 3] = 255;
+            } else if (map->data[i] == -1) {  // unknown space
+              row[x * 4] = row[x * 4 + 1] = row[x * 4 + 2] = 205;
+              row[x * 4 + 3] = 0;
             } else {
               ROS_ERROR("Unsupported map data %d", map->data[i]);
               exit(-1);
             }
           }
+          png_write_row(png_ptr, row);
         }
-        cv::imwrite(mapdatafile, map_image);
+        png_write_end(png_ptr, NULL);
       }
 
       std::string mapmetadatafile = mapname_ + ".yaml";
@@ -158,8 +169,8 @@ class MapGenerator
         fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n",
                 mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw);
       } else if (map_mode_ == SCALE) {
-        fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\nmode: scale\n",
-                mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw);
+        fprintf(yaml, "image: %s\nresolution: %f\norigin: [%f, %f, %f]\nnegate: 0\noccupied_thresh: %f\nfree_thresh: %f\nmode: scale\n",
+                mapdatafile.c_str(), map->info.resolution, map->info.origin.position.x, map->info.origin.position.y, yaw, threshold_occupied_ / 100.0, threshold_free_ / 100.0);
       }
       fclose(yaml);
 

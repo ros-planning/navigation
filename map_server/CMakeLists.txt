@@ -11,7 +11,7 @@ find_package(catkin REQUIRED
 find_package(Bullet REQUIRED)
 find_package(SDL REQUIRED)
 find_package(SDL_image REQUIRED)
-find_package(OpenCV REQUIRED COMPONENTS core imgcodecs)
+find_package(PNG REQUIRED)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAMLCPP yaml-cpp REQUIRED)
@@ -37,7 +37,7 @@ include_directories(
     ${SDL_INCLUDE_DIR}
     ${SDL_IMAGE_INCLUDE_DIRS}
     ${YAMLCPP_INCLUDE_DIRS}
-    ${OpenCV_INCLUDE_DIRS}
+    ${PNG_INCLUDE_DIRS}
 )
 
 add_library(map_server_image_loader src/image_loader.cpp)
@@ -62,7 +62,7 @@ add_dependencies(map_server-map_saver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 set_target_properties(map_server-map_saver PROPERTIES OUTPUT_NAME map_saver)
 target_link_libraries(map_server-map_saver
     ${catkin_LIBRARIES}
-    ${OpenCV_LIBS}
+    ${PNG_LIBRARIES}
 )
 
 # copy test data to same place as tests are run
