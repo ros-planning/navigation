@@ -254,9 +254,9 @@ class AmclNode
 
     diagnostic_updater::Updater diagnosic_updater_;
     void standardDeviationDiagnostics(diagnostic_updater::DiagnosticStatusWrapper& diagnostic_status);
-    double max_std_x_;
-    double max_std_y_;
-    double max_std_yaw_;
+    double std_warn_level_x_;
+    double std_warn_level_y_;
+    double std_warn_level_yaw_;
 
     amcl_hyp_t* initial_pose_hyp_;
     bool first_map_received_;
@@ -432,9 +432,9 @@ AmclNode::AmclNode() :
   private_nh_.param("tf_broadcast", tf_broadcast_, true);
 
   // For diagnostics
-  private_nh_.param("max_std_x", max_std_x_, 0.2);
-  private_nh_.param("max_std_y", max_std_y_, 0.2);
-  private_nh_.param("max_std_yaw", max_std_yaw_, 0.1);
+  private_nh_.param("std_warn_level_x", std_warn_level_x_, 0.2);
+  private_nh_.param("std_warn_level_y", std_warn_level_y_, 0.2);
+  private_nh_.param("std_warn_level_yaw", std_warn_level_yaw_, 0.1);
 
   transform_tolerance_.fromSec(tmp_tol);
 
@@ -1592,12 +1592,11 @@ AmclNode::standardDeviationDiagnostics(diagnostic_updater::DiagnosticStatusWrapp
   diagnostic_status.add("std_x", std_x);
   diagnostic_status.add("std_y", std_y);
   diagnostic_status.add("std_yaw", std_yaw);
-  diagnostic_status.add("max_std_x", max_std_x_);
-  diagnostic_status.add("max_std_y", max_std_y_);
-  diagnostic_status.add("max_std_yaw", max_std_yaw_);
+  diagnostic_status.add("std_warn_level_x", std_warn_level_x_);
+  diagnostic_status.add("std_warn_level_y", std_warn_level_y_);
+  diagnostic_status.add("std_warn_level_yaw", std_warn_level_yaw_);
 
-
-  if (std_x > max_std_x_ || std_y > max_std_y_ || std_yaw > max_std_yaw_)
+  if (std_x > std_warn_level_x_ || std_y > std_warn_level_y_ || std_yaw > std_warn_level_yaw_)
   {
     diagnostic_status.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Too large");
   }
