@@ -156,9 +156,6 @@ namespace dwa_local_planner {
 
       void setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec);
 
-      bool getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf, double& distance, double& time);
-
-
     private:
 
       base_local_planner::LocalPlannerUtil *planner_util_;
