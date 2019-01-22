@@ -14,6 +14,7 @@ find_package(catkin REQUIRED
         nav_core
         tf
         srslib_timing
+        base_local_planner
 )
 find_package(Eigen3 REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})

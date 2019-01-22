@@ -53,6 +53,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GetPlan.h>
+#include <base_local_planner/geometry_math_helpers.h>
 
 #include <pluginlib/class_loader.h>
 #include <move_base_msgs/ClearCostmap.h>
@@ -180,6 +181,8 @@ namespace move_base {
       bool isQuaternionValid(const geometry_msgs::Quaternion& q);
 
       double distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
+
+      bool getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf,  std::vector<geometry_msgs::PoseStamped>& global_plan, double& distance, double& time);
 
       geometry_msgs::PoseStamped goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg);
 

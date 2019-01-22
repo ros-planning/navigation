@@ -290,6 +290,7 @@ namespace dwa_local_planner {
       ROS_DEBUG("flag reset due to set plan at range %f", divergenceDistance);
       oscillation_costs_.resetOscillationFlags();
     }
+    
     return planner_util_->setPlan(orig_global_plan);
   }
 
@@ -443,60 +444,6 @@ namespace dwa_local_planner {
 
     velocity_costs_.setGoalDistanceSquared(sq_dist);
   }
-
-  bool DWAPlanner::getDistanceAndTimeEstimates(const tf::Stamped<tf::Pose>& poseTf, double& distance, double& time)
-  {
-    // Get the current plan and pose.
-    if (global_plan_.empty())
-    {
-      distance = 0;
-      time = 0;
-      return true;
-    }
-
-    geometry_msgs::PoseStamped pose;
-    tf::poseStampedTFToMsg(poseTf, pose);
-
-    Eigen::Vector2f pos2 = base_local_planner::poseStampedToVector(pose);
-    // Vectors for storage
-    Eigen::Vector2f p0 = Eigen::Vector2f::Zero();
-    Eigen::Vector2f p1 = Eigen::Vector2f::Zero();
-
-    // Other storage
-    double distance_from_robot = -1;
-    double minimum_distance = 0.5; // it needs to be at least this close
-
-    for (size_t k = 0; k < global_plan_.size() - 1; ++k)
-    {
-      // Pull out the datas
-      p0 = base_local_planner::poseStampedToVector(global_plan_[k]);
-      p1 = base_local_planner::poseStampedToVector(global_plan_[k + 1]);
-      double segment_length = (p1 - p0).norm();
-      double dist_from_path = base_local_planner::distanceToLineSegment(pos2, p0, p1);
-
-      if (dist_from_path < minimum_distance)
-      {
-        minimum_distance = dist_from_path;
-        // Reset distance
-        distance_from_robot = std::max(0.0, segment_length - base_local_planner::distanceAlongLineSegment(pos2, p0, p1));
-      }
-      else
-      {
-        distance_from_robot += segment_length;
-      }
-    }
-    if (distance_from_robot < 0)
-    {
-      // If the distance wasn't set, the robot is too far from the path.
-      // Use euclidean distance.
-      distance_from_robot = (pos2 - p1).norm();
-    }
-
-    distance = distance_from_robot;
-    time = distance_from_robot / planner_util_->getCurrentLimits().max_vel_x;
-    return true;
-  }
-
 
   /*
    * given the current state of the robot, find a good trajectory
