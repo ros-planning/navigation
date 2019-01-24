@@ -37,6 +37,7 @@
 
 #include <base_local_planner/speed_limiters/obstacle_speed_limiter.h>
 #include <base_local_planner/geometry_math_helpers.h>
+#include <base_local_planner/Obstacle.h>
 #include <tf/transform_datatypes.h>
 #include <costmap_2d/footprint.h>
 
@@ -46,6 +47,7 @@ void ObstacleSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/obstacle");
   configServer_ = std::make_shared<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1, _2));
+  obstacle_pub = private_nh.advertise<base_local_planner::Obstacle>("nearest_obstacle", 5, true);
 }
 
 std::string ObstacleSpeedLimiter::getName(){
@@ -145,16 +147,33 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::Obstr
   ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);
 
   double speed = 0.0;
-  speed = pow(std::fabs(distance_to_obstruction),1.0/1.72);
-  if (speed < params_.min_linear_velocity)
+  speed = pow(std::fabs(distance_to_obstruction),1.0/params_.new_obstacle_curve);
+  base_local_planner::Obstacle nearest_obstacle;
+  nearest_obstacle.distance = distance_to_obstruction;
+  nearest_obstacle.heading = (getBearingToObstacle(obs));
+  obstacle_pub.publish(nearest_obstacle);
+
+  if(params_.enable_new_obstacle_curve)
   {
-    speed = params_.min_linear_velocity;
+    if (speed < params_.min_linear_velocity)
+    {
+      speed = params_.min_linear_velocity;
+    }
+    else if (speed > max_linear_velocity_)
+    {
+      speed = max_linear_velocity_;
+    }
+    return speed;
   }
-  else if (speed > max_linear_velocity_)
+  else
   {
-    speed = max_linear_velocity_;
+    return threeLevelInterpolation(distance_to_obstruction,     
+      params_.min_range, params_.nominal_range_min,
+      params_.nominal_range_max, params_.max_range,
+      std::min(params_.min_linear_velocity, max_linear_velocity_),
+      std::min(params_.nominal_linear_velocity, max_linear_velocity_),
+      max_linear_velocity_);
   }
-  return speed;
 }
 
 
