@@ -45,6 +45,7 @@ add_message_files(
         ScoredSamplingPlannerCosts.msg
         SpeedLimitRequest.msg
         Obstacle.msg
+        Obstacles.msg
 )
 
 generate_messages(
