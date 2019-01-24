@@ -124,14 +124,58 @@ TEST(MapGridTest, adjustPlan){
   global_plan_in.push_back(start);
   global_plan_in.push_back(end);
   mg.adjustPlanResolution(global_plan_in, global_plan_out, resolution);
-  EXPECT_EQ(3, global_plan_out.size());
+  
+  EXPECT_EQ(1, global_plan_out[0].pose.position.x);
+  EXPECT_EQ(1, global_plan_out[0].pose.position.y);
+  EXPECT_EQ(5, global_plan_out.back().pose.position.x);
+  EXPECT_EQ(5, global_plan_out.back().pose.position.y);
 
-  EXPECT_EQ(1, global_plan_out[0].pose.position.x);
-  EXPECT_EQ(1, global_plan_out[0].pose.position.x);
-  EXPECT_EQ(3, global_plan_out[1].pose.position.x);
-  EXPECT_EQ(3, global_plan_out[1].pose.position.x);
-  EXPECT_EQ(5, global_plan_out[2].pose.position.x);
-  EXPECT_EQ(5, global_plan_out[2].pose.position.x);
+  for (unsigned int i = 1; i < global_plan_out.size(); ++i)
+  {
+    geometry_msgs::Point& p0 = global_plan_out[i - 1].pose.position;
+    geometry_msgs::Point& p1 = global_plan_out[i].pose.position;
+    double d = hypot(p0.x - p1.x, p0.y - p1.y);
+    EXPECT_LT(d, resolution);
+  }
+}
+
+TEST(MapGridTest, adjustPlan2){
+  std::vector<geometry_msgs::PoseStamped> base_plan, result;
+
+  // Push two points, at (0,0) and (0,1). Gap is 1 meter
+  base_plan.push_back(geometry_msgs::PoseStamped());
+  base_plan.push_back(geometry_msgs::PoseStamped());
+  base_plan.back().pose.position.y = 1.0;
+
+  // resolution >= 1, path won't change
+  MapGrid::adjustPlanResolution(base_plan, result, 2.0);
+  EXPECT_EQ(2, result.size());
+  result.clear();
+  MapGrid::adjustPlanResolution(base_plan, result, 1.0);
+  EXPECT_EQ(2, result.size());
+  result.clear();
+
+  // 0.5 <= resolution < 1.0, one point should be added in the middle
+  MapGrid::adjustPlanResolution(base_plan, result, 0.8);
+  EXPECT_EQ(3, result.size());
+  result.clear();
+  MapGrid::adjustPlanResolution(base_plan, result, 0.5);
+  EXPECT_EQ(3, result.size());
+  result.clear();
+
+  // 0.333 <= resolution < 0.5, two points should be added in the middle
+  MapGrid::adjustPlanResolution(base_plan, result, 0.34);
+  EXPECT_EQ(4, result.size());
+  result.clear();
+
+  // 0.25 <= resolution < 0.333, three points should be added in the middle
+  MapGrid::adjustPlanResolution(base_plan, result, 0.32);
+  EXPECT_EQ(5, result.size());
+  result.clear();
+
+  MapGrid::adjustPlanResolution(base_plan, result, 0.1);
+  EXPECT_EQ(11, result.size());
+  result.clear();
 }
 
 TEST(MapGridTest, distancePropagation){
