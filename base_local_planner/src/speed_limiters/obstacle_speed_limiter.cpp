@@ -125,6 +125,13 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
       max_allowed_angular_vel = angular_speed;
     }
   }
+  if(distance_limiting == 10){
+    distance_limiting = -1;
+  }
+  if(distance_nearest == 10){
+    distance_nearest = -1;
+  }
+
   ROS_DEBUG_THROTTLE(0.2, "Setting max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
   base_local_planner::Obstacles obstacle_msg;
   obstacle_msg.limiting.distance = distance_limiting;
