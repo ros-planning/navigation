@@ -142,6 +142,8 @@ void MoveBackRecovery::runBehavior(){
   }
 
   while(n.ok()){
+    bool should_stop = false;
+
     local_costmap_->getRobotPose(global_pose);
 
     double cur_x = global_pose.getOrigin().x();
@@ -162,7 +164,7 @@ void MoveBackRecovery::runBehavior(){
 
     // if robot has already traveled enough, return
     if(distance_left_sq <= 0){
-      return;
+      should_stop = true;
     }
 
     // forward simulation to avoid collision
@@ -173,20 +175,24 @@ void MoveBackRecovery::runBehavior(){
 
       double footprint_cost = world_model_->footprintCost(sim_x, sim_y, cur_theta, footprint, 0.0, 0.0);
       if(footprint_cost < 0.0){
-    	ROS_ERROR("Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
-    	return;
+    	  ROS_ERROR("Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
+        should_stop = true;
+        break;
       }
 
       sim_dist += 0.01;
     }
 
     geometry_msgs::Twist cmd_vel;
-    cmd_vel.linear.x = backwards_velocity_;
+    cmd_vel.linear.x = should_stop ? 0 : backwards_velocity_;
     cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
 
     vel_pub.publish(cmd_vel);
 
+    if (should_stop) {
+      return;
+    }
     r.sleep();
   }
 }
