@@ -31,7 +31,9 @@
 #include <math.h>
 #include <stdlib.h>
 #include <assert.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "amcl/sensors/amcl_laser.h"
 
