@@ -80,9 +80,10 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
 
   // Find the nearest obstruction to the robot that is within the allowed range
   // Loop over all of the obstructions
-  double distance_limiting = 10;
+  double max_obstacle_distance = 10; //arbitrary distance
+  double distance_limiting = max_obstacle_distance;
   double heading_limiting = 0;
-  double distance_nearest = 10;
+  double distance_nearest = max_obstacle_distance;
   double heading_nearest = 0;
 
   for (const auto& obs : (*obstructions))
@@ -125,10 +126,10 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
       max_allowed_angular_vel = angular_speed;
     }
   }
-  if(distance_limiting == 10){
+  if(distance_limiting >= max_obstacle_distance){
     distance_limiting = -1;
   }
-  if(distance_nearest == 10){
+  if(distance_nearest >= max_obstacle_distance){
     distance_nearest = -1;
   }
 
@@ -186,7 +187,7 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::Obstr
 
   limiting = true;
   double speed = 0.0;
-  speed = pow(std::fabs(distance_to_obstruction),1.0/params_.new_obstacle_curve);
+  speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.new_obstacle_curve);
   
 
   if(params_.enable_new_obstacle_curve)
