@@ -37,7 +37,10 @@
 
 #include <base_local_planner/point_grid.h>
 #include <ros/console.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+
 #include <math.h>
 #include <cstdio>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -671,35 +674,49 @@ int main(int argc, char** argv){
   point.y = 1.2;
   point.z = 1.0;
 
+#ifdef HAVE_SYS_TIME_H
   struct timeval start, end;
   double start_t, end_t, t_diff;
+#endif
 
   printPSHeader();
 
+#ifdef HAVE_SYS_TIME_H
   gettimeofday(&start, NULL);
+#endif
+
   for(unsigned int i = 0; i < 2000; ++i){
     pg.insert(point);
   }
+
+#ifdef HAVE_SYS_TIME_H
   gettimeofday(&end, NULL);
   start_t = start.tv_sec + double(start.tv_usec) / 1e6;
   end_t = end.tv_sec + double(end.tv_usec) / 1e6;
   t_diff = end_t - start_t;
   printf("%%Insertion Time: %.9f \n", t_diff);
+#endif
 
   vector<Observation> obs;
   vector<PlanarLaserScan> scan;
 
+#ifdef HAVE_SYS_TIME_H
   gettimeofday(&start, NULL);
+#endif
   pg.updateWorld(footprint, obs, scan);
+
   double legal = pg.footprintCost(pt, footprint, 0.0, .95);
   pg.updateWorld(footprint, obs, scan);
   double legal2 = pg.footprintCost(pt, footprint, 0.0, .95);
+
+#ifdef HAVE_SYS_TIME_H
   gettimeofday(&end, NULL);
   start_t = start.tv_sec + double(start.tv_usec) / 1e6;
   end_t = end.tv_sec + double(end.tv_usec) / 1e6;
   t_diff = end_t - start_t;
 
   printf("%%Footprint calc: %.9f \n", t_diff);
+#endif
 
   if(legal >= 0.0)
     printf("%%Legal footprint %.4f, %.4f\n", legal, legal2);

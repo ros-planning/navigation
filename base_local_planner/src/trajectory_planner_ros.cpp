@@ -37,7 +37,10 @@
 
 #include <base_local_planner/trajectory_planner_ros.h>
 
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+
 #include <boost/tokenizer.hpp>
 
 #include <Eigen/Core>

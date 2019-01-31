@@ -17,13 +17,17 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
+check_include_file(sys/time.h HAVE_SYS_TIME_H)
+if (HAVE_SYS_TIME_H)
+  add_definitions(-DHAVE_SYS_TIME_H)
+endif (HAVE_SYS_TIME_H)
+
 add_library(voxel_grid src/voxel_grid.cpp)
 add_dependencies(voxel_grid ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(voxel_grid ${catkin_LIBRARIES})
 
 install(TARGETS voxel_grid
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/
