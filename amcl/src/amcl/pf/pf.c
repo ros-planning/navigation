@@ -53,7 +53,7 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   pf_sample_t *sample;
   
   srand48(time(NULL));
-  
+
   pf = calloc(1, sizeof(pf_t));
 
   pf->random_pose_fn = random_pose_fn;
@@ -217,6 +217,7 @@ int pf_update_converged(pf_t *pf)
   int i;
   pf_sample_set_t *set;
   pf_sample_t *sample;
+  double total;
 
   set = pf->sets + pf->current_set;
   double mean_x = 0, mean_y = 0;
