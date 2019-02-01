@@ -32,7 +32,6 @@ catkin_package(
     nav_msgs
     pluginlib
     roscpp
-    tf2
     tf2_ros
 )
 
