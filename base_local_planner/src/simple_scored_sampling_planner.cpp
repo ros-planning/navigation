@@ -53,6 +53,7 @@ namespace base_local_planner {
     for(std::vector<TrajectoryCostFunction*>::iterator score_function = critics_.begin(); score_function != critics_.end(); ++score_function) {
       TrajectoryCostFunction* score_function_p = *score_function;
       if (score_function_p->getScale() == 0) {
+	gen_id++;
         continue;
       }
       double cost = score_function_p->scoreTrajectory(traj);
