@@ -109,15 +109,22 @@ namespace dwa_local_planner {
       base_local_planner::Trajectory findBestPath(
           tf::Stamped<tf::Pose> global_pose,
           tf::Stamped<tf::Pose> global_vel,
-          tf::Stamped<tf::Pose>& drive_velocities,
-          std::vector<geometry_msgs::Point> footprint_spec);
+          tf::Stamped<tf::Pose>& drive_velocities);
 
       /**
-       * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
+       * @brief  Update the cost functions before planning
+       * @param  global_pose The robot's current pose
        * @param  new_plan The new global plan
+       * @param  footprint_spec The robot's footprint
+       *
+       * The obstacle cost function gets the footprint.
+       * The path and goal cost functions get the global_plan
+       * The alignment cost functions get a version of the global plan
+       *   that is modified based on the global_pose 
        */
       void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose,
-          const std::vector<geometry_msgs::PoseStamped>& new_plan);
+          const std::vector<geometry_msgs::PoseStamped>& new_plan,
+          const std::vector<geometry_msgs::Point>& footprint_spec);
 
       /**
        * @brief Get the period at which the local planner is expected to run
