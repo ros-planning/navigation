@@ -19,12 +19,13 @@
 
 namespace base_local_planner {
 
-LatchedStopRotateController::LatchedStopRotateController(const std::string& name) {
-  ros::NodeHandle private_nh("~/" + name);
-  private_nh.param("latch_xy_goal_tolerance", latch_xy_goal_tolerance_, false);
+LatchedStopRotateController::LatchedStopRotateController() {}
 
-  rotating_to_goal_ = false;
-}
+void LatchedStopRotateController::initialize(const std::string& name) {
+    ros::NodeHandle private_nh("~/" + name);
+    private_nh.param("latch_xy_goal_tolerance", latch_xy_goal_tolerance_, false);
+    rotating_to_goal_ = false;
+  }
 
 LatchedStopRotateController::~LatchedStopRotateController() {}
 
