@@ -187,10 +187,10 @@ double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::Obstr
 
   limiting = true;
   double speed = 0.0;
-  speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.new_obstacle_curve);
+  speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.extended_obstacle_curve);
   
 
-  if(params_.enable_new_obstacle_curve)
+  if(params_.enable_extended_obstacle_curve)
   {
     if (speed < params_.min_linear_velocity)
     {
