@@ -131,7 +131,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             path_maker_ = new GridPath(p_calc_);
         else
             path_maker_ = new GradientPath(p_calc_);
-            
+
         orientation_filter_ = new OrientationFilter();
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
@@ -143,9 +143,6 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         private_nh.param("planner_window_y", planner_window_y_, 0.0);
         private_nh.param("default_tolerance", default_tolerance_, 0.0);
         private_nh.param("publish_scale", publish_scale_, 100);
-
-        double costmap_pub_freq;
-        private_nh.param("planner_costmap_publish_frequency", costmap_pub_freq, 0.0);
 
         //get the tf prefix
         ros::NodeHandle prefix_nh;
@@ -320,7 +317,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     // add orientations if needed
     orientation_filter_->processPath(start, plan);
-    
+
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete potential_array_;
@@ -437,4 +434,3 @@ void GlobalPlanner::publishPotential(float* potential)
 }
 
 } //end namespace global_planner
-
