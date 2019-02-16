@@ -172,7 +172,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
         ros::Publisher plan_pub_;
-        bool initialized_, allow_unknown_, visualize_potential_;
+        bool initialized_, allow_unknown_;
 
     private:
         void mapToWorld(double mx, double my, double& wx, double& wy);
