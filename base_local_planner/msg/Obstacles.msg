@@ -1,0 +1,2 @@
+Obstacle nearest
+Obstacle limiting
