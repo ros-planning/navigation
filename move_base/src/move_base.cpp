@@ -1005,38 +1005,6 @@ namespace move_base {
     //we need to be able to publish velocity commands
     geometry_msgs::Twist cmd_vel;
 
-    //update feedback to correspond to our curent position
-    tf::Stamped<tf::Pose> global_pose;
-    planner_costmap_ros_->getRobotPose(global_pose);
-    geometry_msgs::PoseStamped current_position;
-    tf::poseStampedTFToMsg(global_pose, current_position);
-
-    //update feedback to correspond to estimated time / distance to goal
-    double distance_to_go = 0, time_to_go = 0;
-    if (!getDistanceAndTimeEstimates(global_pose, *controller_plan_, distance_to_go, time_to_go))
-    {
-      distance_to_go = -1;
-      time_to_go = -1;
-    }
-
-    //push the feedback out
-    move_base_msgs::MoveBaseFeedback feedback;
-    feedback.base_position = current_position;
-    feedback.path_distance_to_goal = distance_to_go;
-    feedback.path_time_to_goal = time_to_go;
-    as_->publishFeedback(feedback);
-
-    //check to see if we've moved far enough to reset our oscillation timeout
-    if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
-    {
-      last_oscillation_reset_ = ros::Time::now();
-      oscillation_pose_ = current_position;
-
-      //if our last recovery was caused by oscillation, we want to reset the recovery index
-      if(recovery_trigger_ == OSCILLATION_R)
-        recovery_index_ = 0;
-    }
-
     //check that the observation buffers for the costmap are current, we don't want to drive blind
     if(!controller_costmap_ros_->isCurrent()){
       ROS_WARN_THROTTLE(10.0f, "[%s]:Sensor data is out of date, we're not going to allow commanding of the base for safety",ros::this_node::getName().c_str());
@@ -1079,6 +1047,39 @@ namespace move_base {
       if(recovery_trigger_ == PLANNING_R)
         recovery_index_ = 0;
     }
+
+    //update feedback to correspond to our curent position
+    tf::Stamped<tf::Pose> global_pose;
+    planner_costmap_ros_->getRobotPose(global_pose);
+    geometry_msgs::PoseStamped current_position;
+    tf::poseStampedTFToMsg(global_pose, current_position);
+
+    //update feedback to correspond to estimated time / distance to goal
+    double distance_to_go = 0, time_to_go = 0;
+    if (!getDistanceAndTimeEstimates(global_pose, *controller_plan_, distance_to_go, time_to_go) || state_ == PLANNING)
+    {
+      distance_to_go = -1;
+      time_to_go = -1;
+    }
+
+    //push the feedback out
+    move_base_msgs::MoveBaseFeedback feedback;
+    feedback.base_position = current_position;
+    feedback.path_distance_to_goal = distance_to_go;
+    feedback.path_time_to_goal = time_to_go;
+    as_->publishFeedback(feedback);
+
+    //check to see if we've moved far enough to reset our oscillation timeout
+    if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
+    {
+      last_oscillation_reset_ = ros::Time::now();
+      oscillation_pose_ = current_position;
+
+      //if our last recovery was caused by oscillation, we want to reset the recovery index
+      if(recovery_trigger_ == OSCILLATION_R)
+        recovery_index_ = 0;
+    }
+
     //the move_base state machine, handles the control logic for navigation
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan

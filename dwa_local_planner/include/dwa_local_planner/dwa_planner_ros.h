@@ -153,13 +153,14 @@ namespace dwa_local_planner {
       tf::Stamped<tf::Pose> current_pose_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
-
-
       bool initialized_;
 
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
+
+      std::string mode_topic_;
+      ros::Publisher mode_pub_;
 
       srs::MasterTimingDataRecorder tdr_;
       srs::RollingTimingStatisticsCalculator loopTimingStatistics_;
