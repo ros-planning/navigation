@@ -2,6 +2,44 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+* Merge pull request `#711 <https://github.com/ros-planning/navigation/issues/711>`_ from SteveMacenski/costmap_clearing_thread_lock
+  adding mutex locks to costmap clearing service
+* Contributors: Michael Ferguson, stevemacenski
+
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer. 
+* Rebase PRs from Indigo (`#636 
+<https://github.com/ros-planning/navigation/issues/636>`_)
+  * Update gradient_path.cpp (`#576 <https://github.com/ros-planning/navigation/issues/576>`_)
+  * Update gradient_path.cpp
+  * Update navfn.cpp
+  * Only do a getRobotPose when no start pose is given (`#628 <https://github.com/ros-planning/navigation/issues/628>`_)
+  Omit the unnecessary call to getRobotPose when the start pose was
+  already given, so that move_base can also generate a path in
+  situations where getRobotPose would fail.
+  This is actually to work around an issue of getRobotPose randomly
+  failing.
+* Respect planner_frequency intended behavior (`#622 <https://github.com/ros-planning/navigation/issues/622>`_)
+* Contributors: Aaron Hoy, David V. Lu!!, Jorge Santos Simón, Michael Ferguson
+
+1.14.2 (2017-08-14)
+-------------------
+
+1.14.1 (2017-08-07)
+-------------------
+* Add a max_planning_retries parameter to move_base [kinetic] (`#539 <https://github.com/ros-planning/navigation/issues/539>`_)
+* Fixed deadlock when changing global planner
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Added deps to amcl costmap_2d move_base (`#512 <https://github.com/ros-planning/navigation/issues/512>`_)
+* move_base: Add move_base_msgs to find_package.
+* Contributors: Jorge Santos Simón, Maarten de Vries, Martin Günther, Vincent Rabaud, mryellow, ne0
+
 1.14.0 (2016-05-20)
 -------------------
 

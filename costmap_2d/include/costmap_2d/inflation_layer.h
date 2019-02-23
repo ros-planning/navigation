@@ -44,7 +44,6 @@
 #include <costmap_2d/InflationPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
-#include <queue>
 
 namespace costmap_2d
 {
@@ -57,7 +56,6 @@ class CellData
 public:
   /**
    * @brief  Constructor for a CellData objects
-   * @param  d The distance to the nearest obstacle, used for ordering in the priority queue
    * @param  i The index of the cell in the cost map
    * @param  x The x coordinate of the cell in the cost map
    * @param  y The y coordinate of the cell in the cost map
@@ -65,24 +63,14 @@ public:
    * @param  sy The y coordinate of the closest obstacle cell in the costmap
    * @return
    */
-  CellData(double d, double i, unsigned int x, unsigned int y, unsigned int sx, unsigned int sy) :
-      distance_(d), index_(i), x_(x), y_(y), src_x_(sx), src_y_(sy)
+  CellData(double i, unsigned int x, unsigned int y, unsigned int sx, unsigned int sy) :
+      index_(i), x_(x), y_(y), src_x_(sx), src_y_(sy)
   {
   }
-  double distance_;
   unsigned int index_;
   unsigned int x_, y_;
   unsigned int src_x_, src_y_;
 };
-
-/**
- * @brief Provide an ordering between CellData objects in the priority queue
- * @return We want the lowest distance to have the highest priority... so this returns true if a has higher priority than b
- */
-inline bool operator<(const CellData &a, const CellData &b)
-{
-  return a.distance_ > b.distance_;
-}
 
 class InflationLayer : public Layer
 {
@@ -183,9 +171,10 @@ private:
                       unsigned int src_x, unsigned int src_y);
 
   double inflation_radius_, inscribed_radius_, weight_;
+  bool inflate_unknown_;
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
-  std::priority_queue<CellData> inflation_queue_;
+  std::map<double, std::vector<CellData> > inflation_cells_;
 
   double resolution_;
 

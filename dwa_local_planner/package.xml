@@ -1,6 +1,6 @@
 <package>
     <name>dwa_local_planner</name>
-    <version>1.14.0</version>
+    <version>1.14.4</version>
     <description>
 
         This package provides an implementation of the Dynamic Window Approach to
@@ -16,7 +16,8 @@
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/dwa_local_planner</url>
 

@@ -54,10 +54,29 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
                                     std::vector<geometry_msgs::PoseStamped>& path)
 {
     int n = path.size();
+    if (n == 0) return;
     switch(omode_) {
         case FORWARD:
             for(int i=0;i<n-1;i++){
-                pointToNext(path, i);
+                setAngleBasedOnPositionDerivative(path, i);
+            }
+            break;
+        case BACKWARD:
+            for(int i=0;i<n-1;i++){
+                setAngleBasedOnPositionDerivative(path, i);
+                set_angle(&path[i], angles::normalize_angle(getYaw(path[i]) + M_PI));
+            }
+            break;
+        case LEFTWARD:
+            for(int i=0;i<n-1;i++){
+                setAngleBasedOnPositionDerivative(path, i);
+                set_angle(&path[i], angles::normalize_angle(getYaw(path[i]) - M_PI_2));
+            }
+            break;
+        case RIGHTWARD:
+            for(int i=0;i<n-1;i++){
+                setAngleBasedOnPositionDerivative(path, i);
+                set_angle(&path[i], angles::normalize_angle(getYaw(path[i]) + M_PI_2));
             }
             break;
         case INTERPOLATE:
@@ -66,7 +85,7 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
             break;
         case FORWARDTHENINTERPOLATE:
             for(int i=0;i<n-1;i++){
-                pointToNext(path, i);
+                setAngleBasedOnPositionDerivative(path, i);
             }
             
             int i=n-3;
@@ -86,12 +105,15 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
     }
 }
     
-void OrientationFilter::pointToNext(std::vector<geometry_msgs::PoseStamped>& path, int index)
+void OrientationFilter::setAngleBasedOnPositionDerivative(std::vector<geometry_msgs::PoseStamped>& path, int index)
 {
-  double x0 = path[ index ].pose.position.x, 
-         y0 = path[ index ].pose.position.y,
-         x1 = path[index+1].pose.position.x,
-         y1 = path[index+1].pose.position.y;
+  int index0 = std::max(0, index - window_size_);
+  int index1 = std::min((int)path.size() - 1, index + window_size_);
+
+  double x0 = path[index0].pose.position.x,
+         y0 = path[index0].pose.position.y,
+         x1 = path[index1].pose.position.x,
+         y1 = path[index1].pose.position.y;
          
   double angle = atan2(y1-y0,x1-x0);
   set_angle(&path[index], angle);

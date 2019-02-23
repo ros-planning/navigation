@@ -1,11 +1,12 @@
 <package>
     <name>fake_localization</name>
-    <version>1.14.0</version>
+    <version>1.14.4</version>
     <description>A ROS node that simply forwards odometry information.</description>
     <author>Ioan A. Sucan</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/fake_localization</url>
 
@@ -16,7 +17,8 @@
     <build_depend>rosconsole</build_depend>
     <build_depend>nav_msgs</build_depend>
     <build_depend>geometry_msgs</build_depend>
-    <build_depend>tf</build_depend>
+    <build_depend>tf2_geometry_msgs</build_depend>
+    <build_depend>tf2_ros</build_depend>
     <build_depend>message_filters</build_depend>
     <build_depend>rospy</build_depend>
 
@@ -24,7 +26,7 @@
     <run_depend>rosconsole</run_depend>
     <run_depend>nav_msgs</run_depend>
     <run_depend>geometry_msgs</run_depend>
-    <run_depend>tf</run_depend>
+    <run_depend>tf2_ros</run_depend>
     <run_depend>message_filters</run_depend>
     <run_depend>rospy</run_depend>
 

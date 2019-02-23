@@ -23,7 +23,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "map.h"
+#include "amcl/map/map.h"
 
 class CellData
 {
@@ -86,8 +86,8 @@ get_distance_map(double scale, double max_dist)
   return cdm;
 }
 
-void enqueue(map_t* map, unsigned int i, unsigned int j, 
-	     unsigned int src_i, unsigned int src_j,
+void enqueue(map_t* map, int i, int j,
+	     int src_i, int src_j,
 	     std::priority_queue<CellData>& Q,
 	     CachedDistanceMap* cdm,
 	     unsigned char* marked)
@@ -95,8 +95,8 @@ void enqueue(map_t* map, unsigned int i, unsigned int j,
   if(marked[MAP_INDEX(map, i, j)])
     return;
 
-  unsigned int di = abs(i - src_i);
-  unsigned int dj = abs(j - src_j);
+  int di = abs(i - src_i);
+  int dj = abs(j - src_j);
   double distance = cdm->distances_[di][dj];
 
   if(distance > cdm->cell_radius_)

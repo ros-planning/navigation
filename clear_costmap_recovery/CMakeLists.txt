@@ -11,15 +11,16 @@ find_package(catkin REQUIRED
             tf
         )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
+remove_definitions(-DDISABLE_LIBUSB-1.0)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    ${EIGEN_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
 )
-add_definitions(${EIGEN_DEFINITIONS})
+add_definitions(${EIGEN3_DEFINITIONS})
 
 catkin_package(
     INCLUDE_DIRS include
@@ -33,6 +34,7 @@ catkin_package(
 )
 
 add_library(clear_costmap_recovery src/clear_costmap_recovery.cpp)
+add_dependencies(clear_costmap_recovery ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(clear_costmap_recovery ${catkin_LIBRARIES})
 
 
@@ -44,12 +46,8 @@ if(CATKIN_ENABLE_TESTING)
   # Add the test folder to the include directories
   include_directories(test)
 
-  include_directories(${GTEST_INCLUDE_DIRS})
-  link_directories(${GTEST_LIBRARY_DIRS})
-
   # Create targets for test executables
   add_rostest_gtest(clear_tester test/clear_tests.launch test/clear_tester.cpp)
-  add_dependencies(tests clear_tester ${catkin_LIBRARIES})
   target_link_libraries(clear_tester clear_costmap_recovery ${GTEST_LIBRARIES})
 endif()
 

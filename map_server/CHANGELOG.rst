@@ -2,6 +2,43 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+* Allow specification of free/occupied thresholds for map_saver (`#708 <https://github.com/ros-planning/navigation/issues/708>`_)
+  * add occupied threshold command line parameter to map_saver (--occ)
+  * add free threshold command line parameter to map_saver (--free)
+* Map server wait for a valid time, fix `#573 <https://github.com/ros-planning/navigation/issues/573>`_ (`#700 <https://github.com/ros-planning/navigation/issues/700>`_)
+  When launching the map_server with Gazebo, the current time is picked
+  before the simulation is started and then has a value of 0.
+  Later when querying the stamp of the map, a value of has a special
+  signification on tf transform for example.
+* Contributors: Romain Reignier, ipa-fez
+
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* Print SDL error on IMG_Load failure in server_map (`#631 <https://github.com/ros-planning/navigation/issues/631>`_)
+* Contributors: Aaron Hoy, Aurélien Labate, Michael Ferguson
+
+1.14.2 (2017-08-14)
+-------------------
+* remove offending library export (fixes `#612 <https://github.com/ros-planning/navigation/issues/612>`_)
+* Contributors: Michael Ferguson
+
+1.14.1 (2017-08-07)
+-------------------
+* refactor to not use tf version 1 (`#561 <https://github.com/ros-planning/navigation/issues/561>`_)
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Merge pull request `#560 <https://github.com/ros-planning/navigation/issues/560>`_ from wjwwood/map_server_fixup_cmake
+* update to support Python 2 and 3 (`#559 <https://github.com/ros-planning/navigation/issues/559>`_)
+* remove duplicate and unreferenced file (`#558 <https://github.com/ros-planning/navigation/issues/558>`_)
+* remove trailing whitespace from map_server package (`#557 <https://github.com/ros-planning/navigation/issues/557>`_)
+* fix cmake use of yaml-cpp and sdl / sdl-image
+* Contributors: Martin Günther, Michael Ferguson, Vincent Rabaud, William Woodall
+
 1.14.0 (2016-05-20)
 -------------------
 * Corrections to alpha channel detection and usage.

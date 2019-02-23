@@ -2,6 +2,35 @@
 Changelog for package robot_pose_ekf
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+* Merge pull request `#713 <https://github.com/ros-planning/navigation/issues/713>`_ from garethellis0/kinetic-devel
+  Added handling for NaN linear.z components of GPS in `robot_pose_ekf`
+  Added a check in `odom_estimation_node.cpp` that checks if `linear.z`
+  values in the GPS `odom` message are `NaN` (something common in such
+  messages), and if so, sets it to 0, and sets the corresponding variance
+  to a very high value so we ignore it.
+* Contributors: Gareth Ellis, Michael Ferguson
+
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Fixes `#313 <https://github.com/ros-planning/navigation/issues/313>`_ (kinetic) (`#654 <https://github.com/ros-planning/navigation/issues/654>`_)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* added message_generation to build deps to prevent failing generation of GetStatus, MakeNavPlan and SetCostmap (`#640 <https://github.com/ros-planning/navigation/issues/640>`_)
+* Contributors: Aaron Hoy, David V. Lu!!, Leroy Rügemer, Michael Ferguson
+
+1.14.2 (2017-08-14)
+-------------------
+
+1.14.1 (2017-08-07)
+-------------------
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Initialization of filter with GPS and odometry.
+* Contributors: Martin Günther, Vincent Rabaud, azaganidis
+
 1.14.0 (2016-05-20)
 -------------------
 * add to install script/ directory

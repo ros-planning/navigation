@@ -1,6 +1,6 @@
 <package>
     <name>navfn</name>
-    <version>1.14.0</version>
+    <version>1.14.4</version>
     <description>
 
         navfn provides a fast interpolated navigation function that can be used to create plans for
@@ -15,7 +15,8 @@
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/navfn</url>
 
@@ -24,6 +25,7 @@
     <build_depend>cmake_modules</build_depend>
     <build_depend>costmap_2d</build_depend>
     <build_depend>geometry_msgs</build_depend>
+    <build_depend>message_generation</build_depend>
     <build_depend>nav_core</build_depend>
     <build_depend>nav_msgs</build_depend>
     <build_depend>netpbm</build_depend> <!-- This is a test dependency -->
@@ -34,9 +36,11 @@
     <build_depend>roscpp</build_depend>
     <build_depend>tf</build_depend>
     <build_depend>visualization_msgs</build_depend>
+    <build_depend>message_generation</build_depend>
 
     <run_depend>costmap_2d</run_depend>
     <run_depend>geometry_msgs</run_depend>
+    <run_depend>message_runtime</run_depend>
     <run_depend>nav_core</run_depend>
     <run_depend>nav_msgs</run_depend>
     <run_depend>pcl_conversions</run_depend>
@@ -46,6 +50,8 @@
     <run_depend>roscpp</run_depend>
     <run_depend>tf</run_depend>
     <run_depend>visualization_msgs</run_depend>
+
+    <test_depend>rosunit</test_depend>
 
     <export>
         <nav_core plugin="${prefix}/bgp_plugin.xml" />

@@ -2,6 +2,57 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+* Merge pull request `#693 <https://github.com/ros-planning/navigation/issues/693>`_ from ros-planning/kinetic_691
+  costmap variable init & cleanup (forward port of `#691 <https://github.com/ros-planning/navigation/issues/691>`_)
+* remove unused got_footprint\_
+* initialize all costmap variables
+* Merge pull request `#675 <https://github.com/ros-planning/navigation/issues/675>`_ from stereoboy/kinetic-devel_jylee
+  Fixed race condition with costmaps in LayeredCostmap::resizeMap()
+  LayeredCostmap::updateMap() and LayeredCostmap::resizeMap() write to the master grid costmap.
+  And these two functions can be called by different threads at the same time.
+  One example of these cases is a race condition between subscriber callback thread
+  dealing with dynamically-size-changing static_layer and periodical updateMap() calls from Costmap2DROS thread.
+  Under the situation the master grid costmap is not thread-safe.
+  LayeredCostmap::updateMap() already used the master grid costmap's lock.
+* Contributors: Jaeyoung Lee, Michael Ferguson
+
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Fixes `#206 <https://github.com/ros-planning/navigation/issues/206>`_ for kinetic (`#663 <https://github.com/ros-planning/navigation/issues/663>`_)
+  * Fixes `#206 <https://github.com/ros-planning/navigation/issues/206>`_ for kinetic
+* fix 'enable' for static_layer with rolling window (`#659 <https://github.com/ros-planning/navigation/issues/659>`_)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, David V. Lu!!, Jannik Abbenseth, Michael Ferguson
+
+1.14.2 (2017-08-14)
+-------------------
+
+1.14.1 (2017-08-07)
+-------------------
+* Added parameter for allowing inflation in unknown cells (`#564 <https://github.com/ros-planning/navigation/issues/564>`_)
+* don't update costs if inflation radius is zero
+* Speedup (~60%) inflation layer update (`#525 <https://github.com/ros-planning/navigation/issues/525>`_)
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Added deps to amcl costmap_2d move_base (`#512 <https://github.com/ros-planning/navigation/issues/512>`_)
+* remove GCC warnings
+* Fix CMake warnings
+* renamed targets for message generation (gencpp -> generate_messages_cpp) in order to avoid warnings for non-existing target dependencies
+* Fixed race condition with costmaps
+* Merge pull request `#491 <https://github.com/ros-planning/navigation/issues/491>`_ from alexhenning/kinetic-inflation-fix
+* Fixed sign error in inflation layer
+* Adds warning when a layer shrinks the bounds
+* Fixed bug with inflation layer that caused underinflation
+* Fixed bug with artifacts when not current
+* Fix bug with inflation artifacts being left behind
+* Fixes issue with costmaps shearing
+* Made costmap publishing truly lazy
+* Contributors: Alex Henning, Hidde Wieringa, Jorge Santos Simón, Martin Günther, Michael Ferguson, Stephan Opfer, Vincent Rabaud, mryellow
+
 1.14.0 (2016-05-20)
 -------------------
 * Reordered initializer list to match order of declarations.

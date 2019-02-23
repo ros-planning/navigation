@@ -1,6 +1,6 @@
 <package>
     <name>costmap_2d</name>
-    <version>1.14.0</version>
+    <version>1.14.4</version>
     <description>
         This package provides an implementation of a 2D costmap that takes in sensor
         data from the world, builds a 2D or 3D occupancy grid of the data (depending
@@ -15,7 +15,8 @@
     <author>Dave Hershberger</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/costmap_2d</url>
 
@@ -33,7 +34,6 @@
     <build_depend>pcl_ros</build_depend>
     <build_depend>pluginlib</build_depend>
     <build_depend>roscpp</build_depend>
-    <build_depend>rostest</build_depend>
     <build_depend>sensor_msgs</build_depend>
     <build_depend>std_msgs</build_depend>
     <build_depend>tf</build_depend>
@@ -52,7 +52,6 @@
     <run_depend>pluginlib</run_depend>
     <run_depend>rosconsole</run_depend>
     <run_depend>roscpp</run_depend>
-    <run_depend>rostest</run_depend>
     <run_depend>sensor_msgs</run_depend>
     <run_depend>std_msgs</run_depend>
     <run_depend>tf</run_depend>
@@ -61,6 +60,8 @@
 
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>
+    <test_depend>rostest</test_depend>
+    <test_depend>rosunit</test_depend>
 
     <export>
       <costmap_2d plugin="${prefix}/costmap_plugins.xml"/>

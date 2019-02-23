@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "map.h"
+#include "amcl/map/map.h"
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -55,9 +55,10 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
 
   // Read ppm header
   
-  if ((fscanf(file, "%10s \n", magic) != 1) || (strcmp(magic, "P5") != 0))
+  if ((fscanf(file, "%2s \n", magic) != 1) || (strcmp(magic, "P5") != 0))
   {
     fprintf(stderr, "incorrect image format; must be PGM/binary");
+    fclose(file);
     return -1;
   }
 

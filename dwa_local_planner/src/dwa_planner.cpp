@@ -83,6 +83,8 @@ namespace dwa_local_planner {
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_trans_vel, config.max_scaling_factor, config.scaling_speed);
 
+    twirling_costs_.setScale(config.twirling_scale);
+
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
@@ -171,6 +173,7 @@ namespace dwa_local_planner {
     critics.push_back(&alignment_costs_); // prefers trajectories that keep the robot nose on nose path
     critics.push_back(&path_costs_); // prefers trajectories on global path
     critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
+    critics.push_back(&twirling_costs_); // optionally prefer trajectories that don't spin
 
     // trajectory generators
     std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
@@ -239,11 +242,14 @@ namespace dwa_local_planner {
 
   void DWAPlanner::updatePlanAndLocalCosts(
       tf::Stamped<tf::Pose> global_pose,
-      const std::vector<geometry_msgs::PoseStamped>& new_plan) {
+      const std::vector<geometry_msgs::PoseStamped>& new_plan,
+      const std::vector<geometry_msgs::Point>& footprint_spec) {
     global_plan_.resize(new_plan.size());
     for (unsigned int i = 0; i < new_plan.size(); ++i) {
       global_plan_[i] = new_plan[i];
     }
+
+    obstacle_costs_.setFootprint(footprint_spec);
 
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
@@ -292,10 +298,7 @@ namespace dwa_local_planner {
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       tf::Stamped<tf::Pose> global_pose,
       tf::Stamped<tf::Pose> global_vel,
-      tf::Stamped<tf::Pose>& drive_velocities,
-      std::vector<geometry_msgs::Point> footprint_spec) {
-
-    obstacle_costs_.setFootprint(footprint_spec);
+      tf::Stamped<tf::Pose>& drive_velocities) {
 
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);

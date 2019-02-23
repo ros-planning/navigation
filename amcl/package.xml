@@ -1,6 +1,6 @@
 <package>
     <name>amcl</name>
-    <version>1.14.0</version>
+    <version>1.14.4</version>
     <description>
         <p>
             amcl is a probabilistic localization system for a robot moving in
@@ -17,7 +17,8 @@
     <author>Brian P. Gerkey</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>LGPL</license>
 
     <buildtool_depend>catkin</buildtool_depend>
@@ -27,7 +28,6 @@
     <build_depend>message_filters</build_depend>
     <build_depend>nav_msgs</build_depend>
     <build_depend>roscpp</build_depend>
-    <build_depend>rostest</build_depend>
     <build_depend>std_srvs</build_depend>
     <build_depend>tf</build_depend>
 
@@ -36,6 +36,8 @@
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>tf</run_depend>
     <run_depend>nav_msgs</run_depend>
+    <run_depend>std_srvs</run_depend>
 
+    <test_depend>rostest</test_depend>
     <test_depend>map_server</test_depend>
 </package>

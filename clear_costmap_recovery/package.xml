@@ -1,6 +1,6 @@
 <package>
     <name>clear_costmap_recovery</name>
-    <version>1.14.0</version>
+    <version>1.14.4</version>
     <description>
 
         This package provides a recovery behavior for the navigation stack that attempts to clear space by reverting the costmaps used by the navigation stack to the static map outside of a given area.
@@ -9,7 +9,8 @@
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/clear_costmap_recovery</url>
 
@@ -29,6 +30,8 @@
     <run_depend>nav_core</run_depend>
     <run_depend>pluginlib</run_depend>
     <run_depend>eigen</run_depend>
+
+    <test_depend>rostest</test_depend>
 
     <export>
         <nav_core plugin="${prefix}/ccr_plugin.xml" />

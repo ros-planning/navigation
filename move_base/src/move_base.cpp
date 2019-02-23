@@ -72,6 +72,7 @@ namespace move_base {
     private_nh.param("controller_frequency", controller_frequency_, 20.0);
     private_nh.param("planner_patience", planner_patience_, 5.0);
     private_nh.param("controller_patience", controller_patience_, 15.0);
+    private_nh.param("max_planning_retries", max_planning_retries_, -1);  // disabled by default
 
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
@@ -203,6 +204,7 @@ namespace move_base {
 
     planner_patience_ = config.planner_patience;
     controller_patience_ = config.controller_patience;
+    max_planning_retries_ = config.max_planning_retries;
     conservative_reset_dist_ = config.conservative_reset_dist;
 
     recovery_behavior_enabled_ = config.recovery_behavior_enabled;
@@ -219,7 +221,7 @@ namespace move_base {
         planner_ = bgp_loader_.createInstance(config.base_global_planner);
 
         // wait for the current planner to finish planning
-        boost::unique_lock<boost::mutex> lock(planner_mutex_);
+        boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
 
         // Clean up before initializing the new planner
         planner_plan_->clear();
@@ -325,8 +327,11 @@ namespace move_base {
 
   bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
     //clear the costmaps
-    planner_costmap_ros_->resetLayers();
+    boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
     controller_costmap_ros_->resetLayers();
+
+    boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
+    planner_costmap_ros_->resetLayers();
     return true;
   }
 
@@ -341,17 +346,22 @@ namespace move_base {
       ROS_ERROR("move_base cannot make a plan for you because it doesn't have a costmap");
       return false;
     }
-    tf::Stamped<tf::Pose> global_pose;
-    if(!planner_costmap_ros_->getRobotPose(global_pose)){
-      ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
-      return false;
-    }
+
     geometry_msgs::PoseStamped start;
     //if the user does not specify a start pose, identified by an empty frame id, then use the robot's pose
-    if(req.start.header.frame_id == "")
-      tf::poseStampedTFToMsg(global_pose, start);
+    if(req.start.header.frame_id.empty())
+    {
+        tf::Stamped<tf::Pose> global_pose;
+        if(!planner_costmap_ros_->getRobotPose(global_pose)){
+          ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
+          return false;
+        }
+        tf::poseStampedTFToMsg(global_pose, start);
+    }
     else
-      start = req.start;
+    {
+        start = req.start;
+    }
 
     //update the copy of the costmap the planner uses
     clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
@@ -549,7 +559,7 @@ namespace move_base {
     ros::NodeHandle n;
     ros::Timer timer;
     bool wait_for_wake = false;
-    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     while(n.ok()){
       //check if we should run the planner (the mutex is locked)
       while(wait_for_wake || !runPlanner_){
@@ -578,6 +588,7 @@ namespace move_base {
         planner_plan_ = latest_plan_;
         latest_plan_ = temp_plan;
         last_valid_plan_ = ros::Time::now();
+        planning_retries_ = 0;
         new_global_plan_ = true;
 
         ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
@@ -594,14 +605,20 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
 
-        //check if we've tried to make a plan for over our time limit
+        //check if we've tried to make a plan for over our time limit or our maximum number of retries
+        //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
+        //is negative (the default), it is just ignored and we have the same behavior as ever
         lock.lock();
-        if(ros::Time::now() > attempt_end && runPlanner_){
+        planning_retries_++;
+        if(runPlanner_ &&
+           (ros::Time::now() > attempt_end || planning_retries_ > uint32_t(max_planning_retries_))){
           //we'll move into our obstacle clearing mode
           state_ = CLEARING;
+          runPlanner_ = false;  // proper solution for issue #523
           publishZeroVelocity();
           recovery_trigger_ = PLANNING_R;
         }
+
         lock.unlock();
       }
 
@@ -629,7 +646,7 @@ namespace move_base {
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
 
     //we have a goal so start the planner
-    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
     runPlanner_ = true;
     planner_cond_.notify_one();
@@ -649,6 +666,7 @@ namespace move_base {
     last_valid_control_ = ros::Time::now();
     last_valid_plan_ = ros::Time::now();
     last_oscillation_reset_ = ros::Time::now();
+    planning_retries_ = 0;
 
     ros::NodeHandle n;
     while(n.ok())
@@ -687,10 +705,11 @@ namespace move_base {
           ROS_DEBUG_NAMED("move_base","move_base has received a goal of x: %.2f, y: %.2f", goal.pose.position.x, goal.pose.position.y);
           current_goal_pub_.publish(goal);
 
-          //make sure to reset our timeouts
+          //make sure to reset our timeouts and counters
           last_valid_control_ = ros::Time::now();
           last_valid_plan_ = ros::Time::now();
           last_oscillation_reset_ = ros::Time::now();
+          planning_retries_ = 0;
         }
         else {
           //if we've been preempted explicitly we need to shut things down
@@ -724,10 +743,11 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base","The global frame for move_base has changed, new frame: %s, new goal position x: %.2f, y: %.2f", goal.header.frame_id.c_str(), goal.pose.position.x, goal.pose.position.y);
         current_goal_pub_.publish(goal);
 
-        //make sure to reset our timeouts
+        //make sure to reset our timeouts and counters
         last_valid_control_ = ros::Time::now();
         last_valid_plan_ = ros::Time::now();
         last_oscillation_reset_ = ros::Time::now();
+        planning_retries_ = 0;
       }
 
       //for timing that gives real time even in simulation
@@ -811,7 +831,7 @@ namespace move_base {
       //do a pointer swap under mutex
       std::vector<geometry_msgs::PoseStamped>* temp_plan = controller_plan_;
 
-      boost::unique_lock<boost::mutex> lock(planner_mutex_);
+      boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
       controller_plan_ = latest_plan_;
       latest_plan_ = temp_plan;
       lock.unlock();
@@ -841,7 +861,7 @@ namespace move_base {
       //if we are in a planning state, then we'll attempt to make a plan
       case PLANNING:
         {
-          boost::mutex::scoped_lock lock(planner_mutex_);
+          boost::recursive_mutex::scoped_lock lock(planner_mutex_);
           runPlanner_ = true;
           planner_cond_.notify_one();
         }
@@ -858,7 +878,7 @@ namespace move_base {
           resetState();
 
           //disable the planner thread
-          boost::unique_lock<boost::mutex> lock(planner_mutex_);
+          boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
           runPlanner_ = false;
           lock.unlock();
 
@@ -901,11 +921,12 @@ namespace move_base {
           else{
             //otherwise, if we can't find a valid control, we'll go back to planning
             last_valid_plan_ = ros::Time::now();
+            planning_retries_ = 0;
             state_ = PLANNING;
             publishZeroVelocity();
 
             //enable the planner thread in case it isn't running on a clock
-            boost::unique_lock<boost::mutex> lock(planner_mutex_);
+            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
             runPlanner_ = true;
             planner_cond_.notify_one();
             lock.unlock();
@@ -928,6 +949,8 @@ namespace move_base {
 
           //we'll check if the recovery behavior actually worked
           ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
+          last_valid_plan_ = ros::Time::now();
+          planning_retries_ = 0;
           state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
@@ -936,7 +959,7 @@ namespace move_base {
         else{
           ROS_DEBUG_NAMED("move_base_recovery","All recovery behaviors have failed, locking the planner and disabling it.");
           //disable the planner thread
-          boost::unique_lock<boost::mutex> lock(planner_mutex_);
+          boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
           runPlanner_ = false;
           lock.unlock();
 
@@ -962,7 +985,7 @@ namespace move_base {
         ROS_ERROR("This case should never be reached, something is wrong, aborting");
         resetState();
         //disable the planner thread
-        boost::unique_lock<boost::mutex> lock(planner_mutex_);
+        boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
         runPlanner_ = false;
         lock.unlock();
         as_->setAborted(move_base_msgs::MoveBaseResult(), "Reached a case that should not be hit in move_base. This is a bug, please report it.");
@@ -1096,7 +1119,7 @@ namespace move_base {
 
   void MoveBase::resetState(){
     // Disable the planner thread
-    boost::unique_lock<boost::mutex> lock(planner_mutex_);
+    boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     runPlanner_ = false;
     lock.unlock();
 

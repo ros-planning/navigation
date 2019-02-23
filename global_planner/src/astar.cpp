@@ -69,6 +69,8 @@ bool AStarExpansion::calculatePotentials(unsigned char* costs, double start_x, d
         add(costs, potential, potential[i], i - 1, end_x, end_y);
         add(costs, potential, potential[i], i + nx_, end_x, end_y);
         add(costs, potential, potential[i], i - nx_, end_x, end_y);
+
+        cycle++;
     }
 
     return false;
@@ -76,6 +78,9 @@ bool AStarExpansion::calculatePotentials(unsigned char* costs, double start_x, d
 
 void AStarExpansion::add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x,
                          int end_y) {
+    if (next_i < 0 || next_i >= ns_)
+        return;
+
     if (potential[next_i] < POT_HIGH)
         return;
 

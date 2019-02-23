@@ -2,6 +2,29 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* update to use non deprecated pluginlib macro (`#630 <https://github.com/ros-planning/navigation/issues/630>`_)
+  * update to use non deprecated pluginlib macro
+  * multiline version as well
+* Contributors: Aaron Hoy, Michael Ferguson, Mikael Arguedas
+
+1.14.2 (2017-08-14)
+-------------------
+
+1.14.1 (2017-08-07)
+-------------------
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* remove GCC warnings
+* Contributors: Martin Günther, Vincent Rabaud
+
 1.14.0 (2016-05-20)
 -------------------
 

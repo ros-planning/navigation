@@ -2,6 +2,23 @@
 Changelog for package navigation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, Michael Ferguson
+
+1.14.2 (2017-08-14)
+-------------------
+
+1.14.1 (2017-08-07)
+-------------------
+
 1.14.0 (2016-05-20)
 -------------------
 

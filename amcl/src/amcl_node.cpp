@@ -31,10 +31,10 @@
 // Signal handling
 #include <signal.h>
 
-#include "map/map.h"
-#include "pf/pf.h"
-#include "sensors/amcl_odom.h"
-#include "sensors/amcl_laser.h"
+#include "amcl/map/map.h"
+#include "amcl/pf/pf.h"
+#include "amcl/sensors/amcl_odom.h"
+#include "amcl/sensors/amcl_laser.h"
 
 #include "ros/assert.h"
 
@@ -352,7 +352,14 @@ AmclNode::AmclNode() :
   private_nh_.param("do_beamskip", do_beamskip_, false);
   private_nh_.param("beam_skip_distance", beam_skip_distance_, 0.5);
   private_nh_.param("beam_skip_threshold", beam_skip_threshold_, 0.3);
-  private_nh_.param("beam_skip_error_threshold_", beam_skip_error_threshold_, 0.9);
+  if (private_nh_.hasParam("beam_skip_error_threshold_"))
+  {
+    private_nh_.param("beam_skip_error_threshold_", beam_skip_error_threshold_);
+  }
+  else
+  {
+    private_nh_.param("beam_skip_error_threshold", beam_skip_error_threshold_, 0.9);
+  }
 
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
@@ -802,6 +809,11 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
            msg.info.width,
            msg.info.height,
            msg.info.resolution);
+  
+  if(msg.header.frame_id != global_frame_id_)
+    ROS_WARN("Frame_id of map received:'%s' doesn't match global_frame_id:'%s'. This could cause issues with reading published topics",
+             msg.header.frame_id.c_str(),
+             global_frame_id_.c_str());
 
   freeMapDependentMemory();
   // Clear queued laser objects because they hold pointers to the existing

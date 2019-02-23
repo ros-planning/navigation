@@ -48,7 +48,22 @@ namespace costmap_2d
 {
 
 LayeredCostmap::LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown) :
-    costmap_(), global_frame_(global_frame), rolling_window_(rolling_window), initialized_(false), size_locked_(false)
+    costmap_(),
+    global_frame_(global_frame),
+    rolling_window_(rolling_window),
+    current_(false),
+    minx_(0.0),
+    miny_(0.0),
+    maxx_(0.0),
+    maxy_(0.0),
+    bx0_(0),
+    bxn_(0),
+    by0_(0),
+    byn_(0),
+    initialized_(false),
+    size_locked_(false),
+    circumscribed_radius_(1.0),
+    inscribed_radius_(0.1)
 {
   if (track_unknown)
     costmap_.setDefaultValue(255);
@@ -67,6 +82,7 @@ LayeredCostmap::~LayeredCostmap()
 void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
                                double origin_y, bool size_locked)
 {
+  boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
   size_locked_ = size_locked;
   costmap_.resizeMap(size_x, size_y, resolution, origin_x, origin_y);
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
@@ -78,6 +94,10 @@ void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double 
 
 void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 {
+  // Lock for the remainder of this function, some plugins (e.g. VoxelLayer)
+  // implement thread unsafe updateBounds() functions.
+  boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
+
   // if we're using a rolling buffer costmap... we need to update the origin using the robot's position
   if (rolling_window_)
   {
@@ -91,10 +111,6 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 
   minx_ = miny_ = 1e30;
   maxx_ = maxy_ = -1e30;
-
-  // Lock for the remainder of this function, some plugins (e.g. VoxelLayer)
-  // implement thread unsafe updateBounds() functions.
-  boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_.getMutex()));
 
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)

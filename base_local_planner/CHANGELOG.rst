@@ -2,6 +2,34 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.4 (2018-06-19)
+-------------------
+
+1.14.3 (2018-03-16)
+-------------------
+* Merge pull request `#672 <https://github.com/ros-planning/navigation/issues/672>`_ from ros-planning/email_update_kinetic
+  update maintainer email (kinetic)
+* CostmapModel: Make lineCost and pointCost public (`#660 <https://github.com/ros-planning/navigation/issues/660>`_)
+  Make the methods `lineCost` and `pointCost` of the CostmapModel class
+  public so they can be used outside of the class.
+  Both methods are not changing the instance, so this should not cause any
+  problems.  To emphasise their constness, add the actual `const` keyword.
+* Merge pull request `#648 <https://github.com/ros-planning/navigation/issues/648>`_ from aaronhoy/kinetic_add_ahoy
+  Add myself as a maintainer.
+* Contributors: Aaron Hoy, Felix Widmaier, Michael Ferguson
+
+1.14.2 (2017-08-14)
+-------------------
+
+1.14.1 (2017-08-07)
+-------------------
+* Merge pull request `#570 <https://github.com/ros-planning/navigation/issues/570>`_ from codebot/add_twirling_cost_function
+* Fix CMakeLists + package.xmls (`#548 <https://github.com/ros-planning/navigation/issues/548>`_)
+* Add cost function to prevent unnecessary spinning
+* make rostest in CMakeLists optional (`ros/rosdistro#3010 <https://github.com/ros/rosdistro/issues/3010>`_)
+* remove GCC warnings
+* Contributors: Lukas Bulwahn, Martin Günther, Michael Ferguson, Morgan Quigley, Vincent Rabaud, lengly
+
 1.14.0 (2016-05-20)
 -------------------
 

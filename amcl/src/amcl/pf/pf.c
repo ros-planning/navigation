@@ -30,17 +30,15 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "pf.h"
-#include "pf_pdf.h"
-#include "pf_kdtree.h"
+#include "amcl/pf/pf.h"
+#include "amcl/pf/pf_pdf.h"
+#include "amcl/pf/pf_kdtree.h"
 
 
 // Compute the required number of samples, given that there are k bins
 // with samples in them.
 static int pf_resample_limit(pf_t *pf, int k);
 
-// Re-compute the cluster statistics for a sample set
-static void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set);
 
 
 // Create a new filter

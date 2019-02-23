@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2015, David V. Lu!!
+ *  Copyright (c) 2017, Open Source Robotics Foundation, Inc.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -15,7 +15,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of David V. Lu nor the names of its
+ *   * Neither the name of Willow Garage, Inc. nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,36 +32,33 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: David V. Lu!!
+ * Author: Morgan Quigley
  *********************************************************************/
-#ifndef GLOBAL_PLANNER_ORIENTATION_FILTER_H
-#define GLOBAL_PLANNER_ORIENTATION_FILTER_H
-#include <nav_msgs/Path.h>
 
-namespace global_planner {
+#ifndef TWIRLING_COST_FUNCTION_H
+#define TWIRLING_COST_FUNCTION_H
 
-enum OrientationMode { NONE, FORWARD, INTERPOLATE, FORWARDTHENINTERPOLATE, BACKWARD, LEFTWARD, RIGHTWARD };
+#include <base_local_planner/trajectory_cost_function.h>
 
-class OrientationFilter {
-    public:
-        OrientationFilter() : omode_(NONE) {}
-    
-    
-        virtual void processPath(const geometry_msgs::PoseStamped& start,
-                                 std::vector<geometry_msgs::PoseStamped>& path);
-                                 
-        void setAngleBasedOnPositionDerivative(std::vector<geometry_msgs::PoseStamped>& path, int index);
-        void interpolate(std::vector<geometry_msgs::PoseStamped>& path, 
-                         int start_index, int end_index);
-                         
-        void setMode(OrientationMode new_mode){ omode_ = new_mode; }
-        void setMode(int new_mode){ setMode((OrientationMode) new_mode); }
+namespace base_local_planner {
 
-        void setWindowSize(size_t window_size){ window_size_ = window_size; }
-    protected:
-        OrientationMode omode_;
-        int window_size_;
+/**
+ * This class provides a cost based on how much a robot "twirls" on its
+ * way to the goal. With differential-drive robots, there isn't a choice,
+ * but with holonomic or near-holonomic robots, sometimes a robot spins
+ * more than you'd like on its way to a goal. This class provides a way
+ * to assign a penalty purely to rotational velocities.
+ */
+class TwirlingCostFunction: public base_local_planner::TrajectoryCostFunction {
+public:
+
+  TwirlingCostFunction() {}
+  ~TwirlingCostFunction() {}
+
+  double scoreTrajectory(Trajectory &traj);
+
+  bool prepare() {return true;};
 };
 
-} //end namespace global_planner
-#endif
+} /* namespace base_local_planner */
+#endif /* TWIRLING_COST_FUNCTION_H_ */

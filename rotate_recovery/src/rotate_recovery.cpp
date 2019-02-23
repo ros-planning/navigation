@@ -38,7 +38,7 @@
 #include <pluginlib/class_list_macros.h>
 
 //register this planner as a RecoveryBehavior plugin
-PLUGINLIB_DECLARE_CLASS(rotate_recovery, RotateRecovery, rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
+PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
 namespace rotate_recovery {
 RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL), 

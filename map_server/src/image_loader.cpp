@@ -45,8 +45,10 @@
 // We use SDL_image to load the image from disk
 #include <SDL/SDL_image.h>
 
+// Use Bullet's Quaternion object to create one from Euler angles
+#include <LinearMath/btQuaternion.h>
+
 #include "map_server/image_loader.h"
-#include <tf/tf.h>
 
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
@@ -105,7 +107,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   if(!(img = IMG_Load(fname)))
   {
     std::string errmsg = std::string("failed to open image file \"") +
-            std::string(fname) + std::string("\"");
+            std::string(fname) + std::string("\": ") + IMG_GetError();
     throw std::runtime_error(errmsg);
   }
 
@@ -116,8 +118,9 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   resp->map.info.origin.position.x = *(origin);
   resp->map.info.origin.position.y = *(origin+1);
   resp->map.info.origin.position.z = 0.0;
-  tf::Quaternion q;
-  q.setRPY(0,0, *(origin+2));
+  btQuaternion q;
+  // setEulerZYX(yaw, pitch, roll)
+  q.setEulerZYX(*(origin+2), 0, 0);
   resp->map.info.origin.orientation.x = q.x();
   resp->map.info.origin.orientation.y = q.y();
   resp->map.info.origin.orientation.z = q.z();

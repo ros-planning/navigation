@@ -1,6 +1,6 @@
 <package>
     <name>move_base</name>
-    <version>1.14.0</version>
+    <version>1.14.4</version>
     <description>
 
         The move_base package provides an implementation of an action (see the <a href="http://www.ros.org/wiki/actionlib">actionlib</a> package) that, given a goal in the world, will attempt to reach it with a mobile base. The move_base node links together a global and local planner to accomplish its global navigation task. It supports any global planner adhering to the nav_core::BaseGlobalPlanner interface specified in the <a href="http://www.ros.org/wiki/nav_core">nav_core</a> package and any local planner adhering to the nav_core::BaseLocalPlanner interface specified in the <a href="http://www.ros.org/wiki/nav_core">nav_core</a> package. The move_base node also maintains two costmaps, one for the global planner, and one for a local planner (see the <a href="http://www.ros.org/wiki/costmap_2d">costmap_2d</a> package) that are used to accomplish navigation tasks.
@@ -9,7 +9,8 @@
     <author>Eitan Marder-Eppstein</author>
     <author>contradict@gmail.com</author>
     <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
-    <maintainer email="mferguson@fetchrobotics.com">Michael Ferguson</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
     <license>BSD</license>
     <url>http://wiki.ros.org/move_base</url>
 
@@ -27,10 +28,8 @@
     <build_depend>pluginlib</build_depend>
     <build_depend>roscpp</build_depend>
     <build_depend>rospy</build_depend>
-    <build_depend>std_msgs</build_depend>
     <build_depend>std_srvs</build_depend>
     <build_depend>tf</build_depend>
-    <build_depend>visualization_msgs</build_depend>
 
     <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->
     <build_depend>base_local_planner</build_depend>
@@ -41,8 +40,6 @@
     <run_depend>clear_costmap_recovery</run_depend>
     <run_depend>navfn</run_depend>
     <run_depend>rotate_recovery</run_depend>
-
-<!--  This is commented out until rotate_recovery is ported to layered costmaps. <build_depend>rotate_recovery</build_depend> -->
 
     <run_depend>actionlib</run_depend>
     <run_depend>costmap_2d</run_depend>
@@ -55,9 +52,7 @@
     <run_depend>pluginlib</run_depend>
     <run_depend>roscpp</run_depend>
     <run_depend>rospy</run_depend>
-    <run_depend>std_msgs</run_depend>
     <run_depend>std_srvs</run_depend>
     <run_depend>tf</run_depend>
-    <run_depend>visualization_msgs</run_depend>
 
 </package>
