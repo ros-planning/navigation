@@ -36,7 +36,7 @@ catkin_package(
 )
 
 add_library(${PROJECT_NAME} src/move_slow_and_clear.cpp)
-add_dependencies(${PROJECT_NAME} geometry_msgs_gencpp)
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}

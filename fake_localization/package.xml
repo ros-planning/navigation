@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>fake_localization</name>
     <version>1.12.13</version>
     <description>A ROS node that simply forwards odometry information.</description>
@@ -20,12 +20,12 @@
     <build_depend>message_filters</build_depend>
     <build_depend>rospy</build_depend>
 
-    <run_depend>roscpp</run_depend>
-    <run_depend>rosconsole</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>message_filters</run_depend>
-    <run_depend>rospy</run_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>rosconsole</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>message_filters</exec_depend>
+    <exec_depend>rospy</exec_depend>
 
 </package>

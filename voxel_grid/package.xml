@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>voxel_grid</name>
     <version>1.12.13</version>
     <description>
@@ -17,5 +17,5 @@
 
     <build_depend>roscpp</build_depend>
 
-    <run_depend>roscpp</run_depend>
+    <exec_depend>roscpp</exec_depend>
 </package>

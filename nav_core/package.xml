@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>nav_core</name>
     <version>1.12.13</version>
     <description>
@@ -20,10 +20,10 @@
     <build_depend>costmap_2d</build_depend>
     <build_depend>tf</build_depend>
 
-    <run_depend>std_msgs</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>tf</run_depend>
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>costmap_2d</exec_depend>
+    <exec_depend>tf</exec_depend>
 </package>
 
 

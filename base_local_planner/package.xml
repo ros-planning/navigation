@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>base_local_planner</name>
     <version>1.12.13</version>
     <description>
@@ -37,26 +37,24 @@
     <build_depend>message_generation</build_depend>
     <build_depend>srslib_timing</build_depend>
 
-
-    <run_depend>std_msgs</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>rosconsole</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>rospy</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>voxel_grid</run_depend>
-    <run_depend>angles</run_depend>
-    <run_depend>visualization_msgs</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>nav_core</run_depend>
-    <run_depend>pcl_ros</run_depend>
-    <run_depend>eigen</run_depend>
-    <run_depend>dynamic_reconfigure</run_depend>
-    <run_depend>message_generation</run_depend>
-    <run_depend>srslib_timing</run_depend>
-
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>rosconsole</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>rospy</exec_depend>
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>costmap_2d</exec_depend>
+    <exec_depend>voxel_grid</exec_depend>
+    <exec_depend>angles</exec_depend>
+    <exec_depend>visualization_msgs</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>nav_core</exec_depend>
+    <exec_depend>pcl_ros</exec_depend>
+    <exec_depend>eigen</exec_depend>
+    <exec_depend>dynamic_reconfigure</exec_depend>
+    <exec_depend>message_generation</exec_depend>
+    <exec_depend>srslib_timing</exec_depend>
 
     <export>
         <nav_core plugin="${prefix}/blp_plugin.xml" />

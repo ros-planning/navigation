@@ -48,12 +48,12 @@ add_executable(robot_pose_ekf
                        src/odom_estimation.cpp 
                        src/nonlinearanalyticconditionalgaussianodo.cpp 
                        src/odom_estimation_node.cpp)
+add_dependencies(robot_pose_ekf robot_pose_ekf_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(robot_pose_ekf
     ${catkin_LIBRARIES}
     ${Boost_LIBRARIES}
     ${BFL_LIBRARIES}
     )
-add_dependencies(robot_pose_ekf robot_pose_ekf_gencpp)
 
 install(
     TARGETS

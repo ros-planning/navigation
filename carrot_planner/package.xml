@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>carrot_planner</name>
     <version>1.12.13</version>
     <description>
@@ -25,14 +25,14 @@
     <!--<build_depend>angles</build_depend>-->
     <build_depend>eigen</build_depend>
 
-    <run_depend>roscpp</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>nav_core</run_depend>
-    <run_depend>base_local_planner</run_depend>
-    <run_depend>tf</run_depend>
-    <!--<run_depend>angles</run_depend>-->
-    <run_depend>eigen</run_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>costmap_2d</exec_depend>
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>nav_core</exec_depend>
+    <exec_depend>base_local_planner</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <!--<exec_depend>angles</exec_depend>-->
+    <exec_depend>eigen</exec_depend>
 
     <export>
         <nav_core plugin="${prefix}/bgp_plugin.xml" />

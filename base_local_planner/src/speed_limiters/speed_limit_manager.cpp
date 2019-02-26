@@ -41,9 +41,8 @@
 #include <base_local_planner/speed_limiters/path_speed_limiter.h>
 #include <base_local_planner/speed_limiters/external_speed_limiter.h>
 #include <std_msgs/String.h>
-#include <srsnode_analytics/speed_limiters.h>
-#include <srsnode_analytics/speed_limiter.h>
-
+#include <base_local_planner/speed_limiters.h>
+#include <base_local_planner/speed_limiter.h>
 
 namespace base_local_planner {
 
@@ -76,8 +75,8 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
   ros::NodeHandle private_nh(name);
   configServer_ = std::make_shared<dynamic_reconfigure::Server<SpeedLimitManagerConfig>>(private_nh);
   configServer_->setCallback(boost::bind(&SpeedLimitManager::reconfigure, this, _1, _2));
-  limiter_pub = private_nh.advertise<srsnode_analytics::speed_limiter>("limiter_greatest", 10);
-  limiters_pub = private_nh.advertise<srsnode_analytics::speed_limiters>("limiter_values", 10);
+  limiter_pub = private_nh.advertise<base_local_planner::speed_limiter>("limiter_greatest", 10);
+  limiters_pub = private_nh.advertise<base_local_planner::speed_limiters>("limiter_values", 10);
 };
 
 /**
@@ -88,8 +87,8 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
   std::string limiter_string = "Nothing";
-  srsnode_analytics::speed_limiter greatest;
-  srsnode_analytics::speed_limiters limiterArray;
+  base_local_planner::speed_limiter greatest;
+  base_local_planner::speed_limiters limiterArray;
   greatest.name = limiter_string;
   for (const auto& limiter : limiters_)
   {
@@ -106,7 +105,7 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
       greatest.linear_value = linear;
       greatest.angular_value = angular;
     }
-    srsnode_analytics::speed_limiter temp;
+    base_local_planner::speed_limiter temp;
     temp.name = limiter->getName();
     temp.linear_value = linear;
     temp.angular_value = angular;

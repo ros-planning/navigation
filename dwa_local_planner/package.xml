@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>dwa_local_planner</name>
     <version>1.12.13</version>
     <description>
@@ -35,17 +35,16 @@
     <build_depend>tf</build_depend>
     <build_depend>srslib_timing</build_depend>
 
-
-    <run_depend>base_local_planner</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>dynamic_reconfigure</run_depend>
-    <run_depend>eigen</run_depend>
-    <run_depend>nav_core</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>srslib_timing</run_depend>
+    <exec_depend>base_local_planner</exec_depend>
+    <exec_depend>costmap_2d</exec_depend>
+    <exec_depend>dynamic_reconfigure</exec_depend>
+    <exec_depend>eigen</exec_depend>
+    <exec_depend>nav_core</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>srslib_timing</exec_depend>
 
     <export>
         <nav_core plugin="${prefix}/blp_plugin.xml" />

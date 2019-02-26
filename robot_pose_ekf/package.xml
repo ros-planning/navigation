@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>robot_pose_ekf</name>
     <version>1.12.13</version>
     <description>
@@ -24,14 +24,14 @@
     <build_depend>nav_msgs</build_depend>
     <build_depend>tf</build_depend>
 
-    <run_depend>roscpp</run_depend>
-    <run_depend>rostest</run_depend>
-    <run_depend>bfl</run_depend>
-    <run_depend>std_msgs</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>sensor_msgs</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>tf</run_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>rostest</exec_depend>
+    <exec_depend>bfl</exec_depend>
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>sensor_msgs</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>tf</exec_depend>
 
     <test_depend>rosbag</test_depend>
 </package>

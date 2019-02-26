@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>move_base</name>
     <version>1.12.13</version>
     <description>
@@ -32,38 +32,35 @@
     <build_depend>tf</build_depend>
     <build_depend>visualization_msgs</build_depend>
 
-    <build_depend>srslib_timing</build_depend>
     <build_depend>srslib_framework</build_depend>
-
     <!--These deps aren't strictly needed, but given the default parameters require them to work, we'll enforce that they build -->
     <build_depend>base_local_planner</build_depend>
     <build_depend>clear_costmap_recovery</build_depend>
     <build_depend>navfn</build_depend>
     <build_depend>rotate_recovery</build_depend>
-    <run_depend>base_local_planner</run_depend>
-    <run_depend>clear_costmap_recovery</run_depend>
-    <run_depend>navfn</run_depend>
-    <run_depend>rotate_recovery</run_depend>
+    <exec_depend>base_local_planner</exec_depend>
+    <exec_depend>clear_costmap_recovery</exec_depend>
+    <exec_depend>navfn</exec_depend>
+    <exec_depend>rotate_recovery</exec_depend>
 
 <!--  This is commented out until rotate_recovery is ported to layered costmaps. <build_depend>rotate_recovery</build_depend> -->
 
-    <run_depend>actionlib</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>dynamic_reconfigure</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>message_runtime</run_depend>
-    <run_depend>move_base_msgs</run_depend>
-    <run_depend>nav_core</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>rospy</run_depend>
-    <run_depend>std_msgs</run_depend>
-    <run_depend>std_srvs</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>visualization_msgs</run_depend>
+    <exec_depend>actionlib</exec_depend>
+    <exec_depend>costmap_2d</exec_depend>
+    <exec_depend>dynamic_reconfigure</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>message_runtime</exec_depend>
+    <exec_depend>move_base_msgs</exec_depend>
+    <exec_depend>nav_core</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>rospy</exec_depend>
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>std_srvs</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>visualization_msgs</exec_depend>
 
-    <run_depend>srslib_timing</run_depend>
-    <run_depend>srslib_framework</run_depend>
-
+    <exec_depend>srslib_timing</exec_depend>
+    <exec_depend>srslib_framework</exec_depend>
 </package>

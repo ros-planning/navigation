@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>amcl</name>
     <version>1.12.13</version>
     <description>
@@ -34,12 +34,13 @@
     <build_depend>tf</build_depend>
     <build_depend>srslib_timing</build_depend>
 
-    <run_depend>rosbag</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>dynamic_reconfigure</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>srslib_timing</run_depend>
+    <exec_depend>rosbag</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>dynamic_reconfigure</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>move_base_msgs</exec_depend>
+    <exec_depend>srslib_timing</exec_depend>
 
     <test_depend>map_server</test_depend>
 </package>

@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>map_server</name>
     <version>1.12.13</version>
     <description>
@@ -22,12 +22,12 @@
     <build_depend>tf</build_depend>
     <build_depend>yaml-cpp</build_depend>
 
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>rostest</run_depend>
-    <run_depend>sdl-image</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>yaml-cpp</run_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>rostest</exec_depend>
+    <exec_depend>sdl-image</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>yaml-cpp</exec_depend>
 
     <test_depend>rospy</test_depend>
 </package>

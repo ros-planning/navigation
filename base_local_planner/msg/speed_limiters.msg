@@ -1,0 +1,4 @@
+speed_limiter path
+speed_limiter shadow
+speed_limiter obstacle
+speed_limiter external

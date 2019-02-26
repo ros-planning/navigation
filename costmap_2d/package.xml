@@ -1,4 +1,4 @@
-<package>
+<package format="2">
     <name>costmap_2d</name>
     <version>1.12.13</version>
     <description>
@@ -41,25 +41,25 @@
     <build_depend>voxel_grid</build_depend>
     <build_depend>srslib_timing</build_depend>
 
-    <run_depend>dynamic_reconfigure</run_depend>
-    <run_depend>geometry_msgs</run_depend>
-    <run_depend>laser_geometry</run_depend>
-    <run_depend>map_msgs</run_depend>
-    <run_depend>message_filters</run_depend>
-    <run_depend>message_runtime</run_depend>
-    <run_depend>nav_msgs</run_depend>
-    <run_depend>pcl_conversions</run_depend>
-    <run_depend>pcl_ros</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>rosconsole</run_depend>
-    <run_depend>roscpp</run_depend>
-    <run_depend>rostest</run_depend>
-    <run_depend>sensor_msgs</run_depend>
-    <run_depend>std_msgs</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>visualization_msgs</run_depend>
-    <run_depend>voxel_grid</run_depend>
-    <run_depend>srslib_timing</run_depend>
+    <exec_depend>dynamic_reconfigure</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>laser_geometry</exec_depend>
+    <exec_depend>map_msgs</exec_depend>
+    <exec_depend>message_filters</exec_depend>
+    <exec_depend>message_runtime</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>pcl_conversions</exec_depend>
+    <exec_depend>pcl_ros</exec_depend>
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>rosconsole</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>rostest</exec_depend>
+    <exec_depend>sensor_msgs</exec_depend>
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>visualization_msgs</exec_depend>
+    <exec_depend>voxel_grid</exec_depend>
+    <exec_depend>srslib_timing</exec_depend>
 
     <test_depend>map_server</test_depend>
     <test_depend>rosbag</test_depend>

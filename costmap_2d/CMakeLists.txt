@@ -25,7 +25,7 @@ find_package(catkin REQUIRED
             srslib_timing
         )
 
-find_package(PCL 1.8 REQUIRED QUIET COMPONENTS io)
+find_package(PCL 1.8 REQUIRED QUIET COMPONENTS io common)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
@@ -69,7 +69,6 @@ catkin_package(
     INCLUDE_DIRS
         include
         ${EIGEN_INCLUDE_DIRS}
-        ${PCL_INCLUDE_DIRS}
     LIBRARIES costmap_2d layers
     CATKIN_DEPENDS
         dynamic_reconfigure
@@ -103,7 +102,7 @@ add_library(costmap_2d
   src/footprint.cpp
   src/costmap_layer.cpp
 )
-add_dependencies(costmap_2d ${catkin_EXPORTED_TARGETS})
+add_dependencies(costmap_2d costmap_2d_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(costmap_2d
   ${PCL_LIBRARIES}
@@ -126,18 +125,16 @@ target_link_libraries(layers
   costmap_2d
 )
 
-add_dependencies(costmap_2d costmap_2d_gencfg)
-add_dependencies(layers costmap_2d_gencfg)
-add_dependencies(costmap_2d costmap_2d_gencpp)
+add_dependencies(costmap_2d ${catkin_EXPORTED_TARGETS})
 
 #add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
-#add_dependencies(costmap_2d_markers visualization_msgs_gencpp)
+#add_dependencies(costmap_2d_markers ${catkin_EXPORTED_TARGETS})
 #target_link_libraries(costmap_2d_markers
 #    costmap_2d
 #    )
 
 #add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
-#add_dependencies(costmap_2d_cloud sensor_msgs_gencpp)
+#add_dependencies(costmap_2d_cloud ${catkin_EXPORTED_TARGETS})
 #target_link_libraries(costmap_2d_cloud
 #    costmap_2d
 #    )

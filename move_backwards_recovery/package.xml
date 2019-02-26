@@ -7,7 +7,7 @@
   *
 -->
 
-<package>
+<package format="2">
     <name>move_backwards_recovery</name>
     <version>1.0.0</version>
     <description>Node package: a customized recovery bahavior that will command robot moving backwards slowly</description>
@@ -29,12 +29,12 @@
     <build_depend>eigen</build_depend>
     <build_depend>base_local_planner</build_depend>
 
-    <run_depend>roscpp</run_depend>
-    <run_depend>tf</run_depend>
-    <run_depend>costmap_2d</run_depend>
-    <run_depend>nav_core</run_depend>
-    <run_depend>pluginlib</run_depend>
-    <run_depend>eigen</run_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>costmap_2d</exec_depend>
+    <exec_depend>nav_core</exec_depend>
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>eigen</exec_depend>
 
 
     <export>

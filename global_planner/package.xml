@@ -1,4 +1,4 @@
-<package>
+<package format="2">
   <name>global_planner</name>
   <version>1.12.13</version>
   <description>
@@ -24,15 +24,15 @@
   <build_depend>roscpp</build_depend>
   <build_depend>tf</build_depend>
 
-  <run_depend>costmap_2d</run_depend>
-  <run_depend>dynamic_reconfigure</run_depend>
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>nav_core</run_depend>
-  <run_depend>nav_msgs</run_depend>
-  <run_depend>navfn</run_depend>
-  <run_depend>pluginlib</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>tf</run_depend>
+  <exec_depend>costmap_2d</exec_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_core</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>navfn</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>tf</exec_depend>
   <export>
       <nav_core plugin="${prefix}/bgp_plugin.xml" />
   </export>
