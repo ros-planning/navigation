@@ -226,7 +226,7 @@ void ObservationBuffer::purgeStaleObservations()
       Observation& obs = *obs_it;
       // check if the observation is out of date... and if it is, remove it and those that follow from the list
       ros::Duration time_diff = last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp;
-      if ((last_updated_ - pcl_conversions::fromPCL(obs.cloud_->header).stamp) > observation_keep_time_)
+      if (time_diff > observation_keep_time_)
       {
         observation_list_.erase(obs_it, observation_list_.end());
         return;
@@ -255,4 +255,3 @@ void ObservationBuffer::resetLastUpdated()
   last_updated_ = ros::Time::now();
 }
 }  // namespace costmap_2d
-
