@@ -2,6 +2,31 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.2 (2018-07-31)
+-------------------
+* Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes
+  packaging fixes
+* add explicit sensor_msgs, tf2 depends for base_local_planner
+* Contributors: Michael Ferguson
+
+1.16.1 (2018-07-28)
+-------------------
+
+1.16.0 (2018-07-25)
+-------------------
+* Remove PCL `#765 <https://github.com/ros-planning/navigation/issues/765>`_
+* Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
+* Fix trajectory obstacle scoring in dwa_local_planner.
+* Make trajectory scoring scales consistent.
+* unify parameter names between base_local_planner and dwa_local_planner
+  addresses parts of `#90 <https://github.com/ros-planning/navigation/issues/90>`_
+* fix param to min_in_place_vel_theta, closes `#487 <https://github.com/ros-planning/navigation/issues/487>`_
+* add const to getLocalPlane, fixes `#709 <https://github.com/ros-planning/navigation/issues/709>`_
+* Merge pull request `#732 <https://github.com/ros-planning/navigation/issues/732>`_ from marting87/small_typo_fixes
+  Small typo fixes in ftrajectory_planner_ros and robot_pose_ekf
+* Fixed typos for base_local_planner
+* Contributors: Alexander Moriarty, David V. Lu, Martin Ganeff, Michael Ferguson, Pavlo Kolomiiets, Rein Appeldoorn, Vincent Rabaud, moriarty
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

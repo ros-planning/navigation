@@ -93,7 +93,7 @@ positions at about 1/2 cell resolution; else returns 0.
 
 */
 
-  int create_nav_plan_astar(const COSTTYPE *costmap, int nx, int ny,
+  int create_nav_plan_astar(COSTTYPE *costmap, int nx, int ny,
       int* goal, int* start,
       float *plan, int nplan);
 
@@ -245,7 +245,7 @@ positions at about 1/2 cell resolution; else returns 0.
       /**
        * @brief  Calculates the path for at mose <n> cycles
        * @param n The maximum number of cycles to run for 
-       * @return The lenght of the path found
+       * @return The length of the path found
        */
       int calcPath(int n, int *st = NULL); /**< calculates path for at most <n> cycles, returns path length, 0 if none */
 

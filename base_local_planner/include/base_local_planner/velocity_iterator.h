@@ -38,6 +38,7 @@
 #define DWA_LOCAL_PLANNER_VELOCITY_ITERATOR_H_
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace base_local_planner {
 

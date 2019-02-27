@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
     <name>navfn</name>
-    <version>1.15.2</version>
+    <version>1.16.2</version>
     <description>
 
         navfn provides a fast interpolated navigation function that can be used to create plans for
@@ -30,15 +30,13 @@
 
     <depend>costmap_2d</depend>
     <depend>geometry_msgs</depend>
-    <depend>libpcl-all-dev</depend>
     <depend>nav_core</depend>
     <depend>nav_msgs</depend>
-    <depend>pcl_conversions</depend>
-    <depend>pcl_ros</depend>
     <depend>pluginlib</depend>
     <depend>rosconsole</depend>
     <depend>roscpp</depend>
-    <depend>tf</depend>
+    <depend>sensor_msgs</depend>
+    <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
 
     <exec_depend>message_runtime</exec_depend>

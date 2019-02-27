@@ -2,6 +2,33 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.2 (2018-07-31)
+-------------------
+
+1.16.1 (2018-07-28)
+-------------------
+
+1.16.0 (2018-07-25)
+-------------------
+* Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
+* feat(orientation_filter): Added additional orientation filter options (`#739 <https://github.com/ros-planning/navigation/issues/739>`_)
+  * feat(orientation_filter): Added additional orientation filter options
+  Enables plan references with different orientations for omni-base
+  controllers. The following options are added:
+  - Backward (backward path traversal, pose points to previous point)
+  - Leftward (lateral path traversal in the positive y direction)
+  - Rightward (lateral path traversal in the negative y direction)
+  * Updated orientation filter option description
+  * Added window size parameter to orientation filter
+  Previously, the orientation was calculated using the current and the
+  next point. However, when the path is somewhat jumpy, this results in
+  poor orientations. By adding this parameter and altering the orientation
+  calculation, the calculated orientation can be smoothened along the path
+  by taking into account a larger window. The orientation of index point i
+  will be calculated using the positions of i - window_size and i +
+  window_size.
+* Contributors: Michael Ferguson, Rein Appeldoorn, Vincent Rabaud
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

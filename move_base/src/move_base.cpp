@@ -43,9 +43,11 @@
 
 #include <geometry_msgs/Twist.h>
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 namespace move_base {
 
-  MoveBase::MoveBase(tf::TransformListener& tf) :
+  MoveBase::MoveBase(tf2_ros::Buffer& tf) :
     tf_(tf),
     as_(NULL),
     planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
@@ -67,7 +69,7 @@ namespace move_base {
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
-    private_nh.param("global_costmap/global_frame", global_frame_, std::string("/map"));
+    private_nh.param("global_costmap/global_frame", global_frame_, std::string("map"));
     private_nh.param("planner_frequency", planner_frequency_, 0.0);
     private_nh.param("controller_frequency", controller_frequency_, 20.0);
     private_nh.param("planner_patience", planner_patience_, 5.0);
@@ -271,14 +273,14 @@ namespace move_base {
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
 
     //clear the planner's costmap
     getRobotPose(global_pose, planner_costmap_ros_);
 
     std::vector<geometry_msgs::Point> clear_poly;
-    double x = global_pose.getOrigin().x();
-    double y = global_pose.getOrigin().y();
+    double x = global_pose.pose.position.x;
+    double y = global_pose.pose.position.y;
     geometry_msgs::Point pt;
 
     pt.x = x - size_x / 2;
@@ -303,8 +305,8 @@ namespace move_base {
     getRobotPose(global_pose, controller_costmap_ros_);
 
     clear_poly.clear();
-    x = global_pose.getOrigin().x();
-    y = global_pose.getOrigin().y();
+    x = global_pose.pose.position.x;
+    y = global_pose.pose.position.y;
 
     pt.x = x - size_x / 2;
     pt.y = y - size_y / 2;
@@ -351,12 +353,12 @@ namespace move_base {
     //if the user does not specify a start pose, identified by an empty frame id, then use the robot's pose
     if(req.start.header.frame_id.empty())
     {
-        tf::Stamped<tf::Pose> global_pose;
-        if(!planner_costmap_ros_->getRobotPose(global_pose)){
+        geometry_msgs::PoseStamped global_pose;
+        if(!getRobotPose(global_pose, planner_costmap_ros_)){
           ROS_ERROR("move_base cannot make a plan for you because it could not get the start pose of the robot");
           return false;
         }
-        tf::poseStampedTFToMsg(global_pose, start);
+        start = global_pose;
     }
     else
     {
@@ -469,14 +471,13 @@ namespace move_base {
     }
 
     //get the starting pose of the robot
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     if(!getRobotPose(global_pose, planner_costmap_ros_)) {
       ROS_WARN("Unable to get starting pose of robot, unable to create global plan");
       return false;
     }
 
-    geometry_msgs::PoseStamped start;
-    tf::poseStampedTFToMsg(global_pose, start);
+    const geometry_msgs::PoseStamped& start = global_pose;
 
     //if the planner fails or returns a zero length plan, planning failed
     if(!planner_->makePlan(start, goal, plan) || plan.empty()){
@@ -502,7 +503,7 @@ namespace move_base {
       return false;
     }
 
-    tf::Quaternion tf_q(q.x, q.y, q.z, q.w);
+    tf2::Quaternion tf_q(q.x, q.y, q.z, q.w);
 
     //next, we need to check if the length of the quaternion is close to zero
     if(tf_q.length2() < 1e-6){
@@ -513,7 +514,7 @@ namespace move_base {
     //next, we'll normalize the quaternion and check that it transforms the vertical vector correctly
     tf_q.normalize();
 
-    tf::Vector3 up(0, 0, 1);
+    tf2::Vector3 up(0, 0, 1);
 
     double dot = up.dot(up.rotate(tf_q.getAxis(), tf_q.getAngle()));
 
@@ -527,25 +528,23 @@ namespace move_base {
 
   geometry_msgs::PoseStamped MoveBase::goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg){
     std::string global_frame = planner_costmap_ros_->getGlobalFrameID();
-    tf::Stamped<tf::Pose> goal_pose, global_pose;
-    poseStampedMsgToTF(goal_pose_msg, goal_pose);
+    geometry_msgs::PoseStamped goal_pose, global_pose;
+    goal_pose = goal_pose_msg;
 
     //just get the latest available transform... for accuracy they should send
     //goals in the frame of the planner
-    goal_pose.stamp_ = ros::Time();
+    goal_pose.header.stamp = ros::Time();
 
     try{
-      tf_.transformPose(global_frame, goal_pose, global_pose);
+      tf_.transform(goal_pose_msg, global_pose, global_frame);
     }
-    catch(tf::TransformException& ex){
+    catch(tf2::TransformException& ex){
       ROS_WARN("Failed to transform the goal pose from %s into the %s frame: %s",
-          goal_pose.frame_id_.c_str(), global_frame.c_str(), ex.what());
+          goal_pose.header.frame_id.c_str(), global_frame.c_str(), ex.what());
       return goal_pose_msg;
     }
 
-    geometry_msgs::PoseStamped global_pose_msg;
-    tf::poseStampedTFToMsg(global_pose, global_pose_msg);
-    return global_pose_msg;
+    return global_pose;
   }
 
   void MoveBase::wakePlanner(const ros::TimerEvent& event)
@@ -793,10 +792,9 @@ namespace move_base {
     geometry_msgs::Twist cmd_vel;
 
     //update feedback to correspond to our curent position
-    tf::Stamped<tf::Pose> global_pose;
+    geometry_msgs::PoseStamped global_pose;
     getRobotPose(global_pose, planner_costmap_ros_);
-    geometry_msgs::PoseStamped current_position;
-    tf::poseStampedTFToMsg(global_pose, current_position);
+    const geometry_msgs::PoseStamped& current_position = global_pose;
 
     //push the feedback out
     move_base_msgs::MoveBaseFeedback feedback;
@@ -1137,42 +1135,42 @@ namespace move_base {
     }
   }
 
-  bool MoveBase::getRobotPose(tf::Stamped<tf::Pose>& global_pose, costmap_2d::Costmap2DROS* costmap)
+  bool MoveBase::getRobotPose(geometry_msgs::PoseStamped& global_pose, costmap_2d::Costmap2DROS* costmap)
   {
-    global_pose.setIdentity();
-    tf::Stamped < tf::Pose > robot_pose;
-    robot_pose.setIdentity();
-    robot_pose.frame_id_ = robot_base_frame_;
-    robot_pose.stamp_ = ros::Time(); // latest available
+    tf2::toMsg(tf2::Transform::getIdentity(), global_pose.pose);
+    geometry_msgs::PoseStamped robot_pose;
+    tf2::toMsg(tf2::Transform::getIdentity(), robot_pose.pose);
+    robot_pose.header.frame_id = robot_base_frame_;
+    robot_pose.header.stamp = ros::Time(); // latest available
     ros::Time current_time = ros::Time::now();  // save time for checking tf delay later
 
     // get robot pose on the given costmap frame
     try
     {
-      tf_.transformPose(costmap->getGlobalFrameID(), robot_pose, global_pose);
+      tf_.transform(robot_pose, global_pose, costmap->getGlobalFrameID());
     }
-    catch (tf::LookupException& ex)
+    catch (tf2::LookupException& ex)
     {
       ROS_ERROR_THROTTLE(1.0, "No Transform available Error looking up robot pose: %s\n", ex.what());
       return false;
     }
-    catch (tf::ConnectivityException& ex)
+    catch (tf2::ConnectivityException& ex)
     {
       ROS_ERROR_THROTTLE(1.0, "Connectivity Error looking up robot pose: %s\n", ex.what());
       return false;
     }
-    catch (tf::ExtrapolationException& ex)
+    catch (tf2::ExtrapolationException& ex)
     {
       ROS_ERROR_THROTTLE(1.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
       return false;
     }
 
     // check if global_pose time stamp is within costmap transform tolerance
-    if (current_time.toSec() - global_pose.stamp_.toSec() > costmap->getTransformTolerance())
+    if (current_time.toSec() - global_pose.header.stamp.toSec() > costmap->getTransformTolerance())
     {
       ROS_WARN_THROTTLE(1.0, "Transform timeout for %s. " \
                         "Current time: %.4f, pose stamp: %.4f, tolerance: %.4f", costmap->getName().c_str(),
-                        current_time.toSec(), global_pose.stamp_.toSec(), costmap->getTransformTolerance());
+                        current_time.toSec(), global_pose.header.stamp.toSec(), costmap->getTransformTolerance());
       return false;
     }
 

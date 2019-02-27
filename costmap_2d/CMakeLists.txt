@@ -11,26 +11,24 @@ find_package(catkin REQUIRED
             message_filters
             message_generation
             nav_msgs
-            pcl_conversions
-            pcl_ros
             pluginlib
             roscpp
             sensor_msgs
             std_msgs
-            tf
+            tf2
+            tf2_geometry_msgs
+            tf2_ros
+            tf2_sensor_msgs
             visualization_msgs
             voxel_grid
         )
 
-find_package(PCL REQUIRED COMPONENTS common)
-remove_definitions(-DDISABLE_LIBUSB-1.0)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
 
@@ -62,6 +60,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
     INCLUDE_DIRS
         include
+        ${EIGEN3_INCLUDE_DIRS}
     LIBRARIES costmap_2d layers
     CATKIN_DEPENDS
         dynamic_reconfigure
@@ -71,16 +70,14 @@ catkin_package(
         message_filters
         message_runtime
         nav_msgs
-        pcl_ros
         pluginlib
         roscpp
         sensor_msgs
         std_msgs
-        tf
+        tf2_ros
         visualization_msgs
         voxel_grid
     DEPENDS
-        PCL
         EIGEN3
         Boost
 )
@@ -99,7 +96,6 @@ add_library(costmap_2d
 )
 add_dependencies(costmap_2d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d
-  ${PCL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
 )
@@ -120,19 +116,25 @@ add_executable(costmap_2d_markers src/costmap_2d_markers.cpp)
 add_dependencies(costmap_2d_markers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d_markers
     costmap_2d
-    )
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 add_executable(costmap_2d_cloud src/costmap_2d_cloud.cpp)
 add_dependencies(costmap_2d_cloud ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d_cloud
     costmap_2d
-    )
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 add_executable(costmap_2d_node src/costmap_2d_node.cpp)
 add_dependencies(costmap_2d_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d_node
     costmap_2d
-    )
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
 
 ## Configure Tests
 if(CATKIN_ENABLE_TESTING)
@@ -199,6 +201,11 @@ install(TARGETS
 install(FILES costmap_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+install(FILES test/TenByTen.yaml test/TenByTen.pgm
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/test
+)
+
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

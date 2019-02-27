@@ -2,6 +2,23 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.2 (2018-07-31)
+-------------------
+* Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes
+  packaging fixes
+* fix depends of carrot_planner
+  * declare direct dependency on tf2
+  * alphabetize the depends in CMake
+* Contributors: Michael Ferguson
+
+1.16.1 (2018-07-28)
+-------------------
+
+1.16.0 (2018-07-25)
+-------------------
+* Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
+* Contributors: Michael Ferguson, Rein Appeldoorn, Vincent Rabaud
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

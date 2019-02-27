@@ -2,6 +2,20 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.2 (2018-07-31)
+-------------------
+
+1.16.1 (2018-07-28)
+-------------------
+
+1.16.0 (2018-07-25)
+-------------------
+* Remove dependency on PCL
+* Switch to TF2 `#755 <https://github.com/ros-planning/navigation/issues/755>`_
+* Merge pull request `#737 <https://github.com/ros-planning/navigation/issues/737>`_ from marting87/minor_comment_fixes
+  Minor comment corrections
+* Contributors: David V. Lu, Martin Ganeff, Michael Ferguson, Vincent Rabaud
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

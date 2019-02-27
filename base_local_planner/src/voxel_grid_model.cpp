@@ -35,6 +35,7 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <base_local_planner/voxel_grid_model.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 using namespace std;
 using namespace costmap_2d;
@@ -189,22 +190,32 @@ namespace base_local_planner {
     //iterate through all observations and update the grid
     for(vector<Observation>::const_iterator it = observations.begin(); it != observations.end(); ++it){
       const Observation& obs = *it;
-      const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
-      for(unsigned int i = 0; i < cloud.size(); ++i){
+      const sensor_msgs::PointCloud2& cloud = *(obs.cloud_);
+
+      sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud, "x");
+      sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
+      sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
+
+      geometry_msgs::Point32 pt;
+
+      for(; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z){
         //filter out points that are too high
-        if(cloud[i].z > max_z_)
+        if(*iter_z > max_z_)
           continue;
 
         //compute the squared distance from the hitpoint to the pointcloud's origin
-        double sq_dist = (cloud[i].x - obs.origin_.x) * (cloud[i].x - obs.origin_.x)
-          + (cloud[i].y - obs.origin_.y) * (cloud[i].y - obs.origin_.y) 
-          + (cloud[i].z - obs.origin_.z) * (cloud[i].z - obs.origin_.z);
+        double sq_dist = (*iter_x - obs.origin_.x) * (*iter_x - obs.origin_.x)
+          + (*iter_y - obs.origin_.y) * (*iter_y - obs.origin_.y)
+          + (*iter_z - obs.origin_.z) * (*iter_z - obs.origin_.z);
 
         if(sq_dist >= sq_obstacle_range_)
           continue;
 
         //insert the point
-        insert(cloud[i]);
+        pt.x = *iter_x;
+        pt.y = *iter_y;
+        pt.z = *iter_z;
+        insert(pt);
       }
     }
 
@@ -266,22 +277,38 @@ namespace base_local_planner {
     }
   }
 
-  void VoxelGridModel::getPoints(pcl::PointCloud<pcl::PointXYZ>& cloud){
+  void VoxelGridModel::getPoints(sensor_msgs::PointCloud2& cloud){
+    size_t n = 0;
+
+    for(unsigned int i = 0; i < obstacle_grid_.sizeX(); ++i)
+      for(unsigned int j = 0; j < obstacle_grid_.sizeY(); ++j)
+        for(unsigned int k = 0; k < obstacle_grid_.sizeZ(); ++k)
+          if(obstacle_grid_.getVoxel(i, j, k))
+            ++n;
+
+    sensor_msgs::PointCloud2Modifier modifier(cloud);
+    modifier.setPointCloud2FieldsByString(1, "xyz");
+    modifier.resize(n);
+
+    sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
+    sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+
     for(unsigned int i = 0; i < obstacle_grid_.sizeX(); ++i){
       for(unsigned int j = 0; j < obstacle_grid_.sizeY(); ++j){
         for(unsigned int k = 0; k < obstacle_grid_.sizeZ(); ++k){
           if(obstacle_grid_.getVoxel(i, j, k)){
             double wx, wy, wz;
             mapToWorld3D(i, j, k, wx, wy, wz);
-            pcl::PointXYZ pt;
-            pt.x = wx;
-            pt.y = wy;
-            pt.z = wz;
-            cloud.points.push_back(pt);
+            *iter_x = wx;
+            *iter_y = wy;
+            *iter_z = wz;
+            ++iter_x;
+            ++iter_y;
+            ++iter_z;
           }
         }
       }
     }
   }
-
 };

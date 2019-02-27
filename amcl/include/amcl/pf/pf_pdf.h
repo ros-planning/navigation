@@ -75,7 +75,7 @@ void pf_pdf_gaussian_free(pf_pdf_gaussian_t *pdf);
 //   http://www.taygeta.com/random/gaussian.html
 double pf_ran_gaussian(double sigma);
 
-// Generate a sample from the the pdf.
+// Generate a sample from the pdf.
 pf_vector_t pf_pdf_gaussian_sample(pf_pdf_gaussian_t *pdf);
 
 #ifdef __cplusplus

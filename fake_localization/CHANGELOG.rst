@@ -2,6 +2,18 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.2 (2018-07-31)
+-------------------
+
+1.16.1 (2018-07-28)
+-------------------
+
+1.16.0 (2018-07-25)
+-------------------
+* Merge pull request `#690 <https://github.com/ros-planning/navigation/issues/690>`_ from ros-planning/lunar_609
+  switch fake_localization to tf2.
+* Contributors: Michael Ferguson, Vincent Rabaud
+
 1.15.2 (2018-03-22)
 -------------------
 * Merge pull request `#673 <https://github.com/ros-planning/navigation/issues/673>`_ from ros-planning/email_update_lunar

@@ -36,15 +36,18 @@
 *********************************************************************/
 #include <rotate_recovery/rotate_recovery.h>
 #include <pluginlib/class_list_macros.h>
+#include <nav_core/parameter_magic.h>
+#include <tf2/utils.h>
 
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
 namespace rotate_recovery {
+
 RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
   tf_(NULL), initialized_(false), world_model_(NULL) {} 
 
-void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
+void RotateRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
   if(!initialized_){
     name_ = name;
@@ -60,9 +63,9 @@ void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
     private_nh.param("frequency", frequency_, 20.0);
 
-    blp_nh.param("acc_lim_th", acc_lim_th_, 3.2);
-    blp_nh.param("max_rotational_vel", max_rotational_vel_, 1.0);
-    blp_nh.param("min_in_place_rotational_vel", min_rotational_vel_, 0.4);
+    acc_lim_th_ = nav_core::loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
+    max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
+    min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
     blp_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
 
     world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
@@ -94,29 +97,29 @@ void RotateRecovery::runBehavior(){
   ros::NodeHandle n;
   ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
-  tf::Stamped<tf::Pose> global_pose;
+  geometry_msgs::PoseStamped global_pose;
   local_costmap_->getRobotPose(global_pose);
 
   double current_angle = -1.0 * M_PI;
 
   bool got_180 = false;
 
-  double start_offset = 0 - angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
+  double start_offset = 0 - angles::normalize_angle(tf2::getYaw(global_pose.pose.orientation));
   while(n.ok()){
     local_costmap_->getRobotPose(global_pose);
 
-    double norm_angle = angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
+    double norm_angle = angles::normalize_angle(tf2::getYaw(global_pose.pose.orientation));
     current_angle = angles::normalize_angle(norm_angle + start_offset);
 
     //compute the distance left to rotate
     double dist_left = M_PI - current_angle;
 
-    double x = global_pose.getOrigin().x(), y = global_pose.getOrigin().y();
+    double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
     //check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
     while(sim_angle < dist_left){
-      double theta = tf::getYaw(global_pose.getRotation()) + sim_angle;
+      double theta = tf2::getYaw(global_pose.pose.orientation) + sim_angle;
 
       //make sure that the point is legal, if it isn't... we'll abort
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);

@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
   <name>global_planner</name>
-  <version>1.15.2</version>
+  <version>1.16.2</version>
   <description>
      A path planner library and node.
   </description>
@@ -17,6 +17,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>angles</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
 
   <depend>costmap_2d</depend>
   <depend>dynamic_reconfigure</depend>
@@ -26,7 +27,7 @@
   <depend>navfn</depend>
   <depend>pluginlib</depend>
   <depend>roscpp</depend>
-  <depend>tf</depend>
+  <depend>tf2_ros</depend>
 
   <export>
       <nav_core plugin="${prefix}/bgp_plugin.xml" />

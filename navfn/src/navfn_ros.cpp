@@ -36,11 +36,9 @@
 *********************************************************************/
 #include <navfn/navfn_ros.h>
 #include <pluginlib/class_list_macros.h>
-#include <tf/transform_listener.h>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
-
-#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(navfn::NavfnROS, nav_core::BaseGlobalPlanner)
@@ -76,16 +74,12 @@ namespace navfn {
 
       //if we're going to visualize the potential array we need to advertise
       if(visualize_potential_)
-        potarr_pub_.advertise(private_nh, "potential", 1);
+        potarr_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("potential", 1);
 
       private_nh.param("allow_unknown", allow_unknown_, true);
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
       private_nh.param("default_tolerance", default_tolerance_, 0.0);
-
-      //get the tf prefix
-      ros::NodeHandle prefix_nh;
-      tf_prefix_ = tf::getPrefixParam(prefix_nh);
 
       make_plan_srv_ =  private_nh.advertiseService("make_plan", &NavfnROS::makePlanService, this);
 
@@ -172,7 +166,7 @@ namespace navfn {
     return planner_->calcNavFnDijkstra();
   }
 
-  void NavfnROS::clearRobotCell(const tf::Stamped<tf::Pose>& global_pose, unsigned int mx, unsigned int my){
+  void NavfnROS::clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my){
     if(!initialized_){
       ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
       return;
@@ -215,15 +209,15 @@ namespace navfn {
     ros::NodeHandle n;
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(goal.header.frame_id != global_frame_){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                global_frame_.c_str(), goal.header.frame_id.c_str());
       return false;
     }
 
-    if(tf::resolve(tf_prefix_, start.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(start.header.frame_id != global_frame_){
       ROS_ERROR("The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, start.header.frame_id).c_str());
+                global_frame_.c_str(), start.header.frame_id.c_str());
       return false;
     }
 
@@ -237,9 +231,7 @@ namespace navfn {
     }
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
-    tf::Stamped<tf::Pose> start_pose;
-    tf::poseStampedMsgToTF(start, start_pose);
-    clearRobotCell(start_pose, mx, my);
+    clearRobotCell(start, mx, my);
 
     //make sure to resize the underlying array that Navfn uses
     planner_->setNavArr(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
@@ -308,15 +300,21 @@ namespace navfn {
       }
     }
 
-    if (visualize_potential_){
-      //publish potential array
-      pcl::PointCloud<PotarrPoint> pot_area;
-      pot_area.header.frame_id = global_frame_;
-      pot_area.points.clear();
-      std_msgs::Header header;
-      pcl_conversions::fromPCL(pot_area.header, header);
-      header.stamp = ros::Time::now();
-      pot_area.header = pcl_conversions::toPCL(header);
+    if (visualize_potential_)
+    {
+      // Publish the potentials as a PointCloud2
+      sensor_msgs::PointCloud2 cloud;
+      cloud.width = 0;
+      cloud.height = 0;
+      cloud.header.stamp = ros::Time::now();
+      cloud.header.frame_id = global_frame_;
+      sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
+      cloud_mod.setPointCloud2Fields(4, "x", 1, sensor_msgs::PointField::FLOAT32,
+                                        "y", 1, sensor_msgs::PointField::FLOAT32,
+                                        "z", 1, sensor_msgs::PointField::FLOAT32,
+                                        "pot", 1, sensor_msgs::PointField::FLOAT32);
+      cloud_mod.resize(planner_->ny * planner_->nx);
+      sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
 
       PotarrPoint pt;
       float *pp = planner_->potarr;
@@ -326,14 +324,14 @@ namespace navfn {
         if (pp[i] < 10e7)
         {
           mapToWorld(i%planner_->nx, i/planner_->nx, pot_x, pot_y);
-          pt.x = pot_x;
-          pt.y = pot_y;
-          pt.z = pp[i]/pp[planner_->start[1]*planner_->nx + planner_->start[0]]*20;
-          pt.pot_value = pp[i];
-          pot_area.push_back(pt);
+          iter_x[0] = pot_x;
+          iter_x[1] = pot_y;
+          iter_x[2] = pp[i]/pp[planner_->start[1]*planner_->nx + planner_->start[0]]*20;
+          iter_x[3] = pp[i];
+          ++iter_x;
         }
       }
-      potarr_pub_.publish(pot_area);
+      potarr_pub_.publish(cloud);
     }
 
     //publish the plan for visualization purposes
@@ -376,9 +374,9 @@ namespace navfn {
     plan.clear();
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
-    if(tf::resolve(tf_prefix_, goal.header.frame_id) != tf::resolve(tf_prefix_, global_frame_)){
+    if(goal.header.frame_id != global_frame_){
       ROS_ERROR("The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", 
-                tf::resolve(tf_prefix_, global_frame_).c_str(), tf::resolve(tf_prefix_, goal.header.frame_id).c_str());
+                global_frame_.c_str(), goal.header.frame_id.c_str());
       return false;
     }
 

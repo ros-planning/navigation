@@ -3,7 +3,7 @@
 import rospy
 
 import math
-from tf import transformations
+import PyKDL
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
 
@@ -22,7 +22,7 @@ class PoseSetter(rospy.SubscribeListener):
         (p.pose.pose.orientation.x,
          p.pose.pose.orientation.y,
          p.pose.pose.orientation.z,
-         p.pose.pose.orientation.w) = transformations.quaternion_from_euler(0, 0, self.pose[2])
+         p.pose.pose.orientation.w) = PyKDL.Rotation.RPY(0, 0, self.pose[2]).GetQuaternion()
         p.pose.covariance[6*0+0] = 0.5 * 0.5
         p.pose.covariance[6*1+1] = 0.5 * 0.5
         p.pose.covariance[6*3+3] = math.pi/12.0 * math.pi/12.0

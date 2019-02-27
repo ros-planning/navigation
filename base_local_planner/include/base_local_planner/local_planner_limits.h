@@ -44,68 +44,62 @@ class LocalPlannerLimits
 {
 public:
 
-  double max_trans_vel;
-  double min_trans_vel;
+  double max_vel_trans;
+  double min_vel_trans;
   double max_vel_x;
   double min_vel_x;
   double max_vel_y;
   double min_vel_y;
-  double max_rot_vel;
-  double min_rot_vel;
+  double max_vel_theta;
+  double min_vel_theta;
   double acc_lim_x;
   double acc_lim_y;
   double acc_lim_theta;
-  double acc_limit_trans;
-//  double jerk_lim_trans;
-//  double jerk_lim_rot;
+  double acc_lim_trans;
   bool   prune_plan;
   double xy_goal_tolerance;
   double yaw_goal_tolerance;
   double trans_stopped_vel;
-  double rot_stopped_vel;
+  double theta_stopped_vel;
   bool   restore_defaults;
 
   LocalPlannerLimits() {}
 
   LocalPlannerLimits(
-      double nmax_trans_vel,
-      double nmin_trans_vel,
+      double nmax_vel_trans,
+      double nmin_vel_trans,
       double nmax_vel_x,
       double nmin_vel_x,
       double nmax_vel_y,
       double nmin_vel_y,
-      double nmax_rot_vel,
-      double nmin_rot_vel,
+      double nmax_vel_theta,
+      double nmin_vel_theta,
       double nacc_lim_x,
       double nacc_lim_y,
       double nacc_lim_theta,
-      double nacc_limit_trans,
+      double nacc_lim_trans,
       double nxy_goal_tolerance,
       double nyaw_goal_tolerance,
-//      double njerk_lim_trans = -1,
-//      double njerk_lim_rot = -1,
       bool   nprune_plan = true,
       double ntrans_stopped_vel = 0.1,
-      double nrot_stopped_vel = 0.1):
-        max_trans_vel(nmax_trans_vel),
-        min_trans_vel(nmin_trans_vel),
+      double ntheta_stopped_vel = 0.1):
+        max_vel_trans(nmax_vel_trans),
+        min_vel_trans(nmin_vel_trans),
         max_vel_x(nmax_vel_x),
         min_vel_x(nmin_vel_x),
         max_vel_y(nmax_vel_y),
         min_vel_y(nmin_vel_y),
-        max_rot_vel(nmax_rot_vel),
-        min_rot_vel(nmin_rot_vel),
+        max_vel_theta(nmax_vel_theta),
+        min_vel_theta(nmin_vel_theta),
         acc_lim_x(nacc_lim_x),
         acc_lim_y(nacc_lim_y),
         acc_lim_theta(nacc_lim_theta),
-        acc_limit_trans(nacc_limit_trans),
-//        jerk_lim_trans(njerk_lim_trans),
-//        jerk_lim_rot(njerk_lim_rot),
+        acc_lim_trans(nacc_lim_trans),
         prune_plan(nprune_plan),
         xy_goal_tolerance(nxy_goal_tolerance),
         yaw_goal_tolerance(nyaw_goal_tolerance),
         trans_stopped_vel(ntrans_stopped_vel),
-        rot_stopped_vel(nrot_stopped_vel) {}
+        theta_stopped_vel(ntheta_stopped_vel) {}
 
   ~LocalPlannerLimits() {}
 

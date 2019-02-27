@@ -106,7 +106,7 @@ class FakeOdomNode
       ros::NodeHandle private_nh("~");
       private_nh.param("odom_frame_id", odom_frame_id_, std::string("odom"));
       private_nh.param("base_frame_id", base_frame_id_, std::string("base_link")); 
-      private_nh.param("global_frame_id", global_frame_id_, std::string("/map"));
+      private_nh.param("global_frame_id", global_frame_id_, std::string("map"));
       private_nh.param("delta_x", delta_x_, 0.0);
       private_nh.param("delta_y", delta_y_, 0.0);
       private_nh.param("delta_yaw", delta_yaw_, 0.0);      
@@ -117,7 +117,7 @@ class FakeOdomNode
       ros::NodeHandle nh;
 
       tf2::Quaternion q;
-      q.setEuler(-delta_yaw_, 0, 0);
+      q.setRPY(0.0, 0.0, -delta_yaw_);
       m_offsetTf = tf2::Transform(q, tf2::Vector3(-delta_x_, -delta_y_, 0.0));
 
       stuff_sub_ = nh.subscribe("base_pose_ground_truth", 100, &FakeOdomNode::stuffFilter, this);

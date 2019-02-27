@@ -45,7 +45,6 @@
 
 //for creating a local cost grid
 #include <base_local_planner/map_grid_visualizer.h>
-#include <pcl_ros/publisher.h>
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
@@ -79,11 +78,6 @@ namespace dwa_local_planner {
       DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util);
 
       /**
-       * @brief  Destructor for the planner
-       */
-      ~DWAPlanner() {if(traj_cloud_) delete traj_cloud_;}
-
-      /**
        * @brief Reconfigures the trajectory planner
        */
       void reconfigure(DWAPlannerConfig &cfg);
@@ -108,17 +102,24 @@ namespace dwa_local_planner {
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
       base_local_planner::Trajectory findBestPath(
-          tf::Stamped<tf::Pose> global_pose,
-          tf::Stamped<tf::Pose> global_vel,
-          tf::Stamped<tf::Pose>& drive_velocities,
-          std::vector<geometry_msgs::Point> footprint_spec);
+          const geometry_msgs::PoseStamped& global_pose,
+          const geometry_msgs::PoseStamped& global_vel,
+          geometry_msgs::PoseStamped& drive_velocities);
 
       /**
-       * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
+       * @brief  Update the cost functions before planning
+       * @param  global_pose The robot's current pose
        * @param  new_plan The new global plan
+       * @param  footprint_spec The robot's footprint
+       *
+       * The obstacle cost function gets the footprint.
+       * The path and goal cost functions get the global_plan
+       * The alignment cost functions get a version of the global plan
+       *   that is modified based on the global_pose 
        */
-      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose,
-          const std::vector<geometry_msgs::PoseStamped>& new_plan);
+      void updatePlanAndLocalCosts(const geometry_msgs::PoseStamped& global_pose,
+          const std::vector<geometry_msgs::PoseStamped>& new_plan,
+          const std::vector<geometry_msgs::Point>& footprint_spec);
 
       /**
        * @brief Get the period at which the local planner is expected to run
@@ -159,8 +160,8 @@ namespace dwa_local_planner {
       std::vector<geometry_msgs::PoseStamped> global_plan_;
 
       boost::mutex configuration_mutex_;
-      pcl::PointCloud<base_local_planner::MapGridCostPoint>* traj_cloud_;
-      pcl_ros::Publisher<base_local_planner::MapGridCostPoint> traj_cloud_pub_;
+      std::string frame_id_;
+      ros::Publisher traj_cloud_pub_;
       bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud
       bool publish_traj_pc_;
 
