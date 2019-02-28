@@ -182,6 +182,9 @@ if(CATKIN_ENABLE_TESTING)
 
   catkin_add_gtest(array_parser_test test/array_parser_test.cpp)
   target_link_libraries(array_parser_test costmap_2d)
+
+  catkin_add_gtest(coordinates_test test/coordinates_test.cpp)
+  target_link_libraries(coordinates_test costmap_2d)
 endif()
 
 install( TARGETS
