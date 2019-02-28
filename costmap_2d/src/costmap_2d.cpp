@@ -234,7 +234,7 @@ void Costmap2D::worldToMapEnforceBounds(double wx, double wy, int& mx, int& my) 
   {
     mx = 0;
   }
-  else if (wx > resolution_ * size_x_ + origin_x_)
+  else if (wx >= resolution_ * size_x_ + origin_x_)
   {
     mx = size_x_ - 1;
   }
@@ -247,7 +247,7 @@ void Costmap2D::worldToMapEnforceBounds(double wx, double wy, int& mx, int& my) 
   {
     my = 0;
   }
-  else if (wy > resolution_ * size_y_ + origin_y_)
+  else if (wy >= resolution_ * size_y_ + origin_y_)
   {
     my = size_y_ - 1;
   }
