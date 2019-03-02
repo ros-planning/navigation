@@ -238,11 +238,14 @@ namespace dwa_local_planner {
 
   void DWAPlanner::updatePlanAndLocalCosts(
       const geometry_msgs::PoseStamped& global_pose,
-      const std::vector<geometry_msgs::PoseStamped>& new_plan) {
+      const std::vector<geometry_msgs::PoseStamped>& new_plan,
+      const std::vector<geometry_msgs::Point>& footprint_spec) {
     global_plan_.resize(new_plan.size());
     for (unsigned int i = 0; i < new_plan.size(); ++i) {
       global_plan_[i] = new_plan[i];
     }
+
+    obstacle_costs_.setFootprint(footprint_spec);
 
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
@@ -290,10 +293,7 @@ namespace dwa_local_planner {
   base_local_planner::Trajectory DWAPlanner::findBestPath(
       const geometry_msgs::PoseStamped& global_pose,
       const geometry_msgs::PoseStamped& global_vel,
-      geometry_msgs::PoseStamped& drive_velocities,
-      std::vector<geometry_msgs::Point> footprint_spec) {
-
-    obstacle_costs_.setFootprint(footprint_spec);
+      geometry_msgs::PoseStamped& drive_velocities) {
 
     //make sure that our configuration doesn't change mid-run
     boost::mutex::scoped_lock l(configuration_mutex_);

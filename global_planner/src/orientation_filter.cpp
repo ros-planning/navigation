@@ -53,6 +53,7 @@ void OrientationFilter::processPath(const geometry_msgs::PoseStamped& start,
                                     std::vector<geometry_msgs::PoseStamped>& path)
 {
     int n = path.size();
+    if (n == 0) return;
     switch(omode_) {
         case FORWARD:
             for(int i=0;i<n-1;i++){

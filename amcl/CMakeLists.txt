@@ -7,6 +7,7 @@ endif()
 
 find_package(catkin REQUIRED
   COMPONENTS
+    diagnostic_updater
     dynamic_reconfigure
     geometry_msgs
     message_filters
@@ -30,6 +31,7 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
   CATKIN_DEPENDS
+    diagnostic_updater
     dynamic_reconfigure
     geometry_msgs
     nav_msgs
