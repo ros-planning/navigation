@@ -38,12 +38,11 @@
 // Load an occupancy grid
 int map_load_occ(map_t *map, const char *filename, double scale, int negate)
 {
-  FILE *file;
+  FILE* file;
   char magic[3];
-  int i, j;
   int ch, occ;
   int width, height, depth;
-  map_cell_t *cell;
+  map_cell_t* cell;
 
   // Open file
   file = fopen(filename, "r");
@@ -54,7 +53,6 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
   }
 
   // Read ppm header
-  
   if ((fscanf(file, "%2s \n", magic) != 1) || (strcmp(magic, "P5") != 0))
   {
     fprintf(stderr, "incorrect image format; must be PGM/binary");
@@ -64,11 +62,12 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
 
   // Ignore comments
   while ((ch = fgetc(file)) == '#')
-    while (fgetc(file) != '\n');
+    while (fgetc(file) != '\n') continue; // no logic - keep going but do nothing till \n
+  // Done ignoring comments
   ungetc(ch, file);
 
   // Read image dimensions
-  if(fscanf(file, " %d %d \n %d \n", &width, &height, &depth) != 3)
+  if (fscanf(file, " %d %d \n %d \n", &width, &height, &depth) != 3)
   {
     fprintf(stderr, "Failed ot read image dimensions");
     return -1;
@@ -92,9 +91,9 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
   }
 
   // Read in the image
-  for (j = height - 1; j >= 0; j--)
+  for (int j = height - 1; j >= 0; --j)
   {
-    for (i = 0; i < width; i++)
+    for (int i = 0; i < width; ++i)
     {
       ch = fgetc(file);
 
@@ -120,15 +119,15 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
           occ = 0;
       }
 
-      if (!MAP_VALID(map, i, j))
-        continue;
+      if (!MAP_VALID(map, i, j)) continue;
+
       cell = map->cells + MAP_INDEX(map, i, j);
       cell->occ_state = occ;
     }
   }
-  
+
   fclose(file);
-  
+
   return 0;
 }
 
@@ -136,14 +135,14 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
 ////////////////////////////////////////////////////////////////////////////
 // Load a wifi signal strength map
 /*
-int map_load_wifi(map_t *map, const char *filename, int index)
+int map_load_wifi(map_t* map, const char* filename, int index)
 {
-  FILE *file;
+  FILE* file;
   char magic[3];
   int i, j;
   int ch, level;
   int width, height, depth;
-  map_cell_t *cell;
+  map_cell_t* cell;
 
   // Open file
   file = fopen(filename, "r");
@@ -163,7 +162,7 @@ int map_load_wifi(map_t *map, const char *filename, int index)
 
   // Ignore comments
   while ((ch = fgetc(file)) == '#')
-    while (fgetc(file) != '\n');
+  while (fgetc(file) != '\n');
   ungetc(ch, file);
 
   // Read image dimensions
@@ -193,23 +192,20 @@ int map_load_wifi(map_t *map, const char *filename, int index)
       ch = fgetc(file);
 
       if (!MAP_VALID(map, i, j))
-        continue;
+      continue;
 
       if (ch == 0)
-        level = 0;
+      level = 0;
       else
-        level = ch * 100 / 255 - 100;
+      level = ch * 100 / 255 - 100;
 
       cell = map->cells + MAP_INDEX(map, i, j);
       cell->wifi_levels[index] = level;
     }
   }
-  
+
   fclose(file);
 
   return 0;
 }
 */
-
-
-
