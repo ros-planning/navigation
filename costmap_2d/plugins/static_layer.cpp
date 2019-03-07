@@ -38,6 +38,7 @@
  *********************************************************************/
 #include <costmap_2d/static_layer.h>
 #include <costmap_2d/costmap_math.h>
+#include <costmap_2d/map_parameters.h>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayer, costmap_2d::Layer)
@@ -163,41 +164,35 @@ unsigned char StaticLayer::interpretValue(unsigned char value)
 
 void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
 {
-  unsigned int size_x = new_map->info.width, size_y = new_map->info.height;
-
-  ROS_DEBUG("Received a %d X %d map at %f m/pix", size_x, size_y, new_map->info.resolution);
+  const MapParameters param_new(*new_map);
+  const MapParameters param_this(*this);
+  const MapParameters param_master(*layered_costmap_->getCostmap());
+  ROS_DEBUG_STREAM("Received new map with " << param_new);
 
   // resize costmap if size, resolution or origin do not match
-  Costmap2D* master = layered_costmap_->getCostmap();
-  if (!layered_costmap_->isRolling() && (master->getSizeInCellsX() != size_x ||
-      master->getSizeInCellsY() != size_y ||
-      master->getResolution() != new_map->info.resolution ||
-      master->getOriginX() != new_map->info.origin.position.x ||
-      master->getOriginY() != new_map->info.origin.position.y ||
-      !layered_costmap_->isSizeLocked()))
+  if (!layered_costmap_->isRolling() &&
+      param_new != param_master &&
+      !layered_costmap_->isSizeLocked())
   {
     // Update the size of the layered costmap (and all layers, including this one)
-    ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
-    layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
-                                new_map->info.origin.position.y, true);
+    ROS_INFO_STREAM("Resizing costmap to " << param_new);
+    layered_costmap_->resizeMap(param_new.size_x, param_new.size_y,
+            param_new.resolution, param_new.origin_x, param_new.origin_y, true);
   }
-  else if (size_x_ != size_x || size_y_ != size_y ||
-           resolution_ != new_map->info.resolution ||
-           origin_x_ != new_map->info.origin.position.x ||
-           origin_y_ != new_map->info.origin.position.y)
+  else if (param_this != param_new)
   {
     // only update the size of the costmap stored locally in this layer
-    ROS_INFO("Resizing static layer to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
-    resizeMap(size_x, size_y, new_map->info.resolution,
-              new_map->info.origin.position.x, new_map->info.origin.position.y);
+    ROS_INFO_STREAM("Resizing static layer to " << param_new);
+    resizeMap(param_new.size_x, param_new.size_y, param_new.resolution,
+            param_new.origin_x, param_new.origin_y);
   }
 
   unsigned int index = 0;
 
   // initialize the costmap with static data
-  for (unsigned int i = 0; i < size_y; ++i)
+  for (unsigned int i = 0; i < param_new.size_y; ++i)
   {
-    for (unsigned int j = 0; j < size_x; ++j)
+    for (unsigned int j = 0; j < param_new.size_x; ++j)
     {
       unsigned char value = new_map->data[index];
       costmap_[index] = interpretValue(value);

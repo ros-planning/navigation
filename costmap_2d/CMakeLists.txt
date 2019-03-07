@@ -96,6 +96,7 @@ add_library(costmap_2d
   src/costmap_math.cpp
   src/footprint.cpp
   src/costmap_layer.cpp
+  src/map_parameters.cpp
 )
 add_dependencies(costmap_2d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(costmap_2d
