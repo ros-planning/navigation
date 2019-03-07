@@ -37,6 +37,8 @@
 #include <voxel_grid/voxel_grid.h>
 #include <sys/time.h>
 #include <ros/console.h>
+#include <voxel_grid/basic_marker.h>
+#include <voxel_grid/basic_clearer.h>
 
 namespace voxel_grid {
   VoxelGrid::VoxelGrid(unsigned int size_x, unsigned int size_y, unsigned int size_z)
@@ -46,9 +48,11 @@ namespace voxel_grid {
     size_z_ = size_z; 
 
     if(size_z_ > 16){
-      ROS_INFO("Error, this implementation can only support up to 16 z values (%d)", size_z_); 
+      ROS_ERROR("Error, this implementation can only support up to 16 z values (%d)", size_z_);
       size_z_ = 16;
     }
+
+    accuracy_multiplier_ = 1;
 
     data_ = new uint32_t[size_x_ * size_y_];
     uint32_t unknown_col = ~((uint32_t)0)>>16;
@@ -100,44 +104,79 @@ namespace voxel_grid {
     }
   }
 
-  void VoxelGrid::markVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
-    if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
-          size_x_, size_y_, size_z_);
-      return;
-    }
-
-    MarkVoxel mv(data_);
-    raytraceLine(mv, x0, y0, z0, x1, y1, z1, max_length);
+  int VoxelGrid::getRaytraceAxis(double x0, double y0, double z0,
+				 double x1, double y1, double z1) {
+    double abs_dx = std::abs(x1 - x0);
+    double abs_dy = std::abs(y1 - y0);
+    double abs_dz = std::abs(z1 - z0);
+    if (abs_dy >= abs_dx && abs_dy >= abs_dz) return 1;
+    if (abs_dz >= abs_dx && abs_dz >= abs_dy) return 2;
+    return 0;
   }
 
-  void VoxelGrid::clearVoxelLine(double x0, double y0, double z0, double x1, double y1, double z1, unsigned int max_length){
-    if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
-          size_x_, size_y_, size_z_);
-      return;
+  unsigned int VoxelGrid::getNumSteps(double x0, double y0, double z0,
+				      double x1, double y1, double z1) {
+    int axis = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    switch (axis) {
+      case 0: return static_cast <unsigned int> (std::floor(std::abs(x1 - x0)) + 1);
+      case 1: return static_cast <unsigned int> (std::floor(std::abs(y1 - y0)) + 1);
+      case 2: return static_cast <unsigned int> (std::floor(std::abs(z1 - z0)) + 1);
     }
-
-    ClearVoxel cv(data_);
-    raytraceLine(cv, x0, y0, z0, x1, y1, z1, max_length);
   }
 
-  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0, double x1, double y1, double z1, unsigned char *map_2d, 
-      unsigned int unknown_threshold, unsigned int mark_threshold, unsigned char free_cost, unsigned char unknown_cost, unsigned int max_length){
-    costmap = map_2d;
-    if(map_2d == NULL){
-      clearVoxelLine(x0, y0, z0, x1, y1, z1, max_length);
-      return;
-    }
+  void VoxelGrid::markVoxelLine(double x0, double y0, double z0,
+				double x1, double y1, double z1){
+    markVoxelLine(x0, y0, z0, x1, y1, z1, size_x_);
+  }
 
+  void VoxelGrid::markVoxelLine(double x0, double y0, double z0,
+				double x1, double y1, double z1,
+				unsigned int cell_width){
     if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
-      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1, 
+      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
           size_x_, size_y_, size_z_);
       return;
     }
+    BasicMarker basic_marker(data_);
+    int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    raytraceLine(&basic_marker, x0, y0, z0, x1, y1, z1, cell_width, xyz,
+		 num_steps);
+  }
 
-    ClearVoxelInMap cvm(data_, costmap, unknown_threshold, mark_threshold, free_cost, unknown_cost);
-    raytraceLine(cvm, x0, y0, z0, x1, y1, z1, max_length);
+  void VoxelGrid::clearVoxelLine(double x0, double y0, double z0,
+				 double x1, double y1, double z1){
+    clearVoxelLine(x0, y0, z0, x1, y1, z1, size_x_);
+  }
+  void VoxelGrid::clearVoxelLine(double x0, double y0, double z0,
+				 double x1, double y1, double z1,
+				 unsigned int cell_width){
+    if(x0 >= size_x_ || y0 >= size_y_ || z0 >= size_z_ || x1>=size_x_ || y1>=size_y_ || z1>=size_z_){
+      ROS_DEBUG("Error, line endpoint out of bounds. (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f),  size: (%d, %d, %d)", x0, y0, z0, x1, y1, z1,
+          size_x_, size_y_, size_z_);
+      return;
+    }
+    BasicClearer basic_clearer(data_);
+    int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    raytraceLine(&basic_clearer, x0, y0, z0, x1, y1, z1, cell_width, xyz,
+		 num_steps);
+  }
+
+  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0,
+				      double x1, double y1, double z1,
+				      AbstractGridUpdater* clearer){
+    clearVoxelLineInMap(x0, y0, z0, x1, y1, z1, clearer, size_x_);
+  }
+  void VoxelGrid::clearVoxelLineInMap(double x0, double y0, double z0,
+				      double x1, double y1, double z1,
+				      AbstractGridUpdater* clearer,
+				      unsigned int cell_width)
+  {
+    int xyz = getRaytraceAxis(x0, y0, z0, x1, y1, z1);
+    unsigned int num_steps = getNumSteps(x0, y0, z0, x1, y1, z1);
+    raytraceLine(clearer, x0, y0, z0, x1, y1, z1, cell_width, xyz,
+		 num_steps);
   }
 
   VoxelStatus VoxelGrid::getVoxel(unsigned int x, unsigned int y, unsigned int z)
@@ -147,7 +186,7 @@ namespace voxel_grid {
       return UNKNOWN;
     }
     uint32_t full_mask = ((uint32_t)1<<z<<16) | (1<<z);
-    uint32_t result = data_[y * size_x_ + x] & full_mask; 
+    uint32_t result = data_[y * size_x_ + x] & full_mask;
     unsigned int bits = numBits(result);
 
     // known marked: 11 = 2 bits, unknown: 01 = 1 bit, known free: 00 = 0 bits
