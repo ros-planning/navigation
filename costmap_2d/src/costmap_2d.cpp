@@ -36,6 +36,7 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/cost_values.h>
 #include <cstdio>
 
 using namespace std;
@@ -191,12 +192,17 @@ unsigned char* Costmap2D::getCharMap() const
 
 unsigned char Costmap2D::getCost(unsigned int mx, unsigned int my) const
 {
-  return costmap_[getIndex(mx, my)];
+  if (mx < size_x_ && my < size_y_) {
+    return costmap_[getIndex(mx, my)];
+  }
+  return NO_INFORMATION;
 }
 
 void Costmap2D::setCost(unsigned int mx, unsigned int my, unsigned char cost)
 {
-  costmap_[getIndex(mx, my)] = cost;
+  if (mx < size_x_ && my < size_y_) {
+    costmap_[getIndex(mx, my)] = cost;
+  }
 }
 
 void Costmap2D::mapToWorld(unsigned int mx, unsigned int my, double& wx, double& wy) const
@@ -331,8 +337,10 @@ bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& po
   // set the cost of those cells
   for (unsigned int i = 0; i < polygon_cells.size(); ++i)
   {
-    unsigned int index = getIndex(polygon_cells[i].x, polygon_cells[i].y);
-    costmap_[index] = cost_value;
+    if (polygon_cells[i].x < size_x_ && polygon_cells[i].y < size_y_) {
+      unsigned int index = getIndex(polygon_cells[i].x, polygon_cells[i].y);
+      costmap_[index] = cost_value;
+    }
   }
   return true;
 }
