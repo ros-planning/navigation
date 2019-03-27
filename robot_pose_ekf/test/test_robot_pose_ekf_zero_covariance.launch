@@ -1,0 +1,16 @@
+<launch>
+  <!--<param name="/use_sim_time" type="bool" value="True"/>-->
+
+  <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" output="screen" >
+    <param name="freq" value="30.0"/>
+    <param name="sensor_timeout" value="1.0"/>
+    <param name="odom_used" value="true"/>
+    <param name="imu_used" value="true"/>
+    <param name="vo_used" value="true"/>
+    <remap from="/vo" to="/ins" />
+  </node>
+
+  <node pkg="rosbag" name="rosbag" type="play" args="$(find robot_pose_ekf)/test/zero_covariance_indexed.bag" />
+
+  <test test-name="test_robot_pose_ekf" pkg="robot_pose_ekf" type="test_robot_pose_ekf_zero_covariance" />
+</launch>

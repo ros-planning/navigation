@@ -1,0 +1,40 @@
+<package>
+    <name>robot_pose_ekf</name>
+    <version>1.14.4</version>
+    <description>
+
+        The Robot Pose EKF package is used to estimate the 3D pose of a robot, based on (partial) pose measurements coming from different sources. It uses an extended Kalman filter with a 6D model (3D position and 3D orientation) to combine measurements from wheel odometry, IMU sensor and visual odometry. The basic idea is to offer loosely coupled integration with different sensors, where sensor signals are received as ROS messages.
+
+    </description>
+    <author>Wim Meeussen</author>
+    <author>contradict@gmail.com</author>
+    <maintainer email="davidvlu@gmail.com">David V. Lu!!</maintainer>
+    <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
+    <maintainer email="ahoy@fetchrobotics.com">Aaron Hoy</maintainer>
+    <license>BSD</license>
+    <url>http://wiki.ros.org/robot_pose_ekf</url>
+
+    <buildtool_depend version_gte="0.5.68">catkin</buildtool_depend>
+
+    <build_depend>message_generation</build_depend>
+    <build_depend>roscpp</build_depend>
+    <build_depend>bfl</build_depend>
+    <build_depend>std_msgs</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>sensor_msgs</build_depend>
+    <build_depend>nav_msgs</build_depend>
+    <build_depend>tf</build_depend>
+    <build_depend>message_generation</build_depend>
+
+    <run_depend>message_runtime</run_depend>
+    <run_depend>roscpp</run_depend>
+    <run_depend>bfl</run_depend>
+    <run_depend>std_msgs</run_depend>
+    <run_depend>geometry_msgs</run_depend>
+    <run_depend>sensor_msgs</run_depend>
+    <run_depend>nav_msgs</run_depend>
+    <run_depend>tf</run_depend>
+
+    <test_depend>rosbag</test_depend>
+    <test_depend>rostest</test_depend>
+</package>
