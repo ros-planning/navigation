@@ -376,6 +376,9 @@ namespace base_local_planner {
         vth = acc_lim_theta_ * std::max(time, 0.0);
       }
 
+      //! Whether or not we should allow poses in unknown space
+      bool allow_unknown_;
+
       double lineCost(int x0, int x1, int y0, int y1);
       double pointCost(int x, int y);
       double headingDiff(int cell_x, int cell_y, double x, double y, double heading);

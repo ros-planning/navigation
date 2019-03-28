@@ -42,7 +42,10 @@ using namespace std;
 using namespace costmap_2d;
 
 namespace base_local_planner {
-  CostmapModel::CostmapModel(const Costmap2D& ma) : costmap_(ma) {}
+  CostmapModel::CostmapModel(const Costmap2D& ma) : costmap_(ma)
+  {
+    allow_unknown_ = ( Costmap2D(ma).getDefaultValue() == 0 ) ? false : true;
+  }
 
   double CostmapModel::footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
       double inscribed_radius, double circumscribed_radius){
@@ -62,7 +65,7 @@ namespace base_local_planner {
     //if number of points in the footprint is less than 3, we'll just assume a circular robot
     if(footprint.size() < 3){
       unsigned char cost = costmap_.getCost(cell_x, cell_y);
-      if(cost == NO_INFORMATION)
+      if(( cost == NO_INFORMATION ) && !allow_unknown_)
         return -2.0;
       if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE)
         return -1.0;
@@ -134,7 +137,7 @@ namespace base_local_planner {
   double CostmapModel::pointCost(int x, int y) const {
     unsigned char cost = costmap_.getCost(x, y);
     //if the cell is in an obstacle the path is invalid
-    if(cost == NO_INFORMATION)
+    if(( cost == NO_INFORMATION ) && !allow_unknown_) 
       return -2;
     if(cost == LETHAL_OBSTACLE)
       return -1;

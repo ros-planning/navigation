@@ -103,12 +103,14 @@ namespace base_local_planner{
   inline bool MapGrid::updatePathCell(MapCell* current_cell, MapCell* check_cell,
       const costmap_2d::Costmap2D& costmap){
 
+    bool allow_unknown = ( costmap_2d::Costmap2D(costmap).getDefaultValue() == 0 ) ? false : true;
+
     //if the cell is an obstacle set the max path distance
     unsigned char cost = costmap.getCost(check_cell->cx, check_cell->cy);
     if(! getCell(check_cell->cx, check_cell->cy).within_robot &&
         (cost == costmap_2d::LETHAL_OBSTACLE ||
          cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
-         cost == costmap_2d::NO_INFORMATION)){
+         ( ( cost == costmap_2d::NO_INFORMATION ) && !allow_unknown ) ) ){
       check_cell->target_dist = obstacleCosts();
       return false;
     }
