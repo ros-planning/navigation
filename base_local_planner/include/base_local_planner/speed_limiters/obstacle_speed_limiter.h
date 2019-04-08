@@ -77,9 +77,16 @@ private:
     params_ = cfg;
   };
 
+  struct LinearSpeedLimiterResult {
+      double speed = 0.0;
+      double heading = 0.0;
+      double distance = 0.0;
+      bool limiting = false;
+  };
+
   double getBearingToObstacle(const costmap_2d::ObstructionMsg& obs);
 
-  double calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs, double& distance, double& heading, bool& limiting);
+  LinearSpeedLimiterResult calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs);
 
   double calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs);
 

@@ -85,6 +85,7 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
   double heading_limiting = 0;
   double distance_nearest = max_obstacle_distance;
   double heading_nearest = 0;
+  std::string name_nearest, name_limiting;
 
   for (const auto& obs : (*obstructions))
   {
@@ -95,29 +96,30 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
     }
 
     costmap_2d::ObstructionMsg obs_body_frame = obstructionToBodyFrame(obs, current_pose_inv_tf);
-    double dist;
-    double head;
-    bool limit;
-    double linear_speed = calculateAllowedLinearSpeed(obs_body_frame, dist, head, limit);
-    if(limit){
-      if(dist < distance_limiting){
-        distance_limiting = dist;
-        heading_limiting = head;
+    LinearSpeedLimiterResult result;
+    result = calculateAllowedLinearSpeed(obs_body_frame);
+    if(result.limiting){
+      if(result.distance < distance_limiting){
+        distance_limiting = result.distance;
+        heading_limiting = result.heading;
+        name_limiting = obs_body_frame.costmap_name;
       }
-      if(dist < distance_nearest){
-        distance_nearest = dist;
-        heading_nearest = head;
+      if(result.distance < distance_nearest){
+        distance_nearest = result.distance;
+        heading_nearest = result.heading;
+        name_nearest = obs_body_frame.costmap_name;
       }
     }
     else{
-      if(dist < distance_nearest){
-        distance_nearest = dist;
-        heading_nearest = head;
+      if(result.distance < distance_nearest){
+        distance_nearest = result.distance;
+        heading_nearest = result.heading;
+        name_nearest = obs_body_frame.costmap_name;
       }
     }
-    if (linear_speed < max_allowed_linear_vel)
+    if (result.speed < max_allowed_linear_vel)
     {
-      max_allowed_linear_vel = linear_speed;
+      max_allowed_linear_vel = result.speed;
     }
 
     double angular_speed = calculateAllowedAngularSpeed(obs_body_frame);
@@ -137,8 +139,10 @@ bool ObstacleSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, doubl
   base_local_planner::Obstacles obstacle_msg;
   obstacle_msg.limiting.distance = distance_limiting;
   obstacle_msg.limiting.heading = heading_limiting;
+  obstacle_msg.limiting.layer_name = name_limiting;
   obstacle_msg.nearest.distance = distance_nearest;
   obstacle_msg.nearest.heading = heading_nearest;
+  obstacle_msg.nearest.layer_name = name_nearest;
   obstacle_pub.publish(obstacle_msg);
   return true;
 }
@@ -148,71 +152,75 @@ double ObstacleSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionM
   return atan2(obs.y, obs.x);
 }
 
-double ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs, double& distance, double& heading, bool& limiting)
-{
-  double abs_y_dist = 0;
-  if (obs.y < footprint_min_y_)
-  {
-    abs_y_dist = footprint_min_y_ - obs.y;
-  }
-  else if (obs.y > footprint_max_y_)
-  {
-    abs_y_dist = obs.y - footprint_max_y_;
-  }
-
-  double abs_x_dist = 0;
-  if (obs.x < footprint_min_x_)
-  {
-    abs_x_dist = footprint_min_x_ - obs.x;
-  }
-  else if (obs.x > footprint_max_x_)
-  {
-    abs_x_dist = obs.x - footprint_max_x_;
-  }
-
-  double x_dist_with_buffer = std::max(0.0, abs_x_dist - params_.x_buffer);
-  double y_dist_with_buffer = std::max(0.0, abs_y_dist - params_.y_buffer);
-
-  double distance_to_obstruction = std::sqrt(x_dist_with_buffer * x_dist_with_buffer + y_dist_with_buffer * y_dist_with_buffer);
-  ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);
-
-  distance = distance_to_obstruction;
-  heading = getBearingToObstacle(obs);
-  // Check if the bearing to the obstacle is acceptable
-  if (std::fabs(getBearingToObstacle(obs)) > params_.half_angle)
-  {
-    limiting = false;
-    return max_linear_velocity_;
-  }
-
-  limiting = true;
-  double speed = 0.0;
-  speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.extended_obstacle_curve);
-  
-
-  if(params_.enable_extended_obstacle_curve)
-  {
-    if (speed < params_.min_linear_velocity)
+    ObstacleSpeedLimiter::LinearSpeedLimiterResult ObstacleSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs)
     {
-      speed = params_.min_linear_velocity;
-    }
-    else if (speed > max_linear_velocity_)
-    {
-      speed = max_linear_velocity_;
-    }
-    return speed;
-  }
-  else
-  {
-    return threeLevelInterpolation(distance_to_obstruction,     
-      params_.min_range, params_.nominal_range_min,
-      params_.nominal_range_max, params_.max_range,
-      std::min(params_.min_linear_velocity, max_linear_velocity_),
-      std::min(params_.nominal_linear_velocity, max_linear_velocity_),
-      max_linear_velocity_);
-  }
-}
+      LinearSpeedLimiterResult result;
 
+      double abs_y_dist = 0;
+      if (obs.y < footprint_min_y_)
+      {
+        abs_y_dist = footprint_min_y_ - obs.y;
+      }
+      else if (obs.y > footprint_max_y_)
+      {
+        abs_y_dist = obs.y - footprint_max_y_;
+      }
+
+      double abs_x_dist = 0;
+      if (obs.x < footprint_min_x_)
+      {
+        abs_x_dist = footprint_min_x_ - obs.x;
+      }
+      else if (obs.x > footprint_max_x_)
+      {
+        abs_x_dist = obs.x - footprint_max_x_;
+      }
+
+      double x_dist_with_buffer = std::max(0.0, abs_x_dist - params_.x_buffer);
+      double y_dist_with_buffer = std::max(0.0, abs_y_dist - params_.y_buffer);
+
+      double distance_to_obstruction = std::sqrt(x_dist_with_buffer * x_dist_with_buffer + y_dist_with_buffer * y_dist_with_buffer);
+      ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);
+
+      result.distance = distance_to_obstruction;
+      result.heading = getBearingToObstacle(obs);
+      // Check if the bearing to the obstacle is acceptable
+      if (std::fabs(getBearingToObstacle(obs)) > params_.half_angle)
+      {
+        result.limiting = false;
+        result.speed = max_linear_velocity_;
+        return result;
+      }
+
+      result.limiting = true;
+      double speed = 0.0;
+      speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.extended_obstacle_curve);
+
+
+      if(params_.enable_extended_obstacle_curve)
+      {
+        if (speed < params_.min_linear_velocity)
+        {
+          speed = params_.min_linear_velocity;
+        }
+        else if (speed > max_linear_velocity_)
+        {
+          speed = max_linear_velocity_;
+        }
+        result.speed = speed;
+        return result;
+      }
+      else
+      {
+        result.speed = threeLevelInterpolation(distance_to_obstruction,
+                                       params_.min_range, params_.nominal_range_min,
+                                       params_.nominal_range_max, params_.max_range,
+                                       std::min(params_.min_linear_velocity, max_linear_velocity_),
+                                       std::min(params_.nominal_linear_velocity, max_linear_velocity_),
+                                       max_linear_velocity_);
+        return result;
+      }
+    }
 
 double ObstacleSpeedLimiter::calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs)
 {
