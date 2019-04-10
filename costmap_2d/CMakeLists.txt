@@ -182,6 +182,9 @@ if(CATKIN_ENABLE_TESTING)
 
   catkin_add_gtest(array_parser_test test/array_parser_test.cpp)
   target_link_libraries(array_parser_test costmap_2d)
+
+  catkin_add_gtest(coordinates_test test/coordinates_test.cpp)
+  target_link_libraries(coordinates_test costmap_2d)
 endif()
 
 install( TARGETS
@@ -201,6 +204,11 @@ install(TARGETS
 install(FILES costmap_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+install(FILES test/TenByTen.yaml test/TenByTen.pgm
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/test
+)
+
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

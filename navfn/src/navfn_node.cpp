@@ -69,8 +69,8 @@ bool NavfnWithCostmap::makePlanService(MakeNavPlan::Request& req, MakeNavPlan::R
 {
   vector<PoseStamped> path;
 
-  req.start.header.frame_id = "/map";
-  req.goal.header.frame_id = "/map";
+  req.start.header.frame_id = "map";
+  req.goal.header.frame_id = "map";
   bool success = makePlan(req.start, req.goal, path);
   resp.plan_found = success;
   if (success) {
