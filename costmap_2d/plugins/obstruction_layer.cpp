@@ -567,7 +567,7 @@ void ObstructionLayer::checkObservation(const Observation& obs, double* min_x, d
       {
         ROS_DEBUG("Creating new obstacle at %f, %f, %d, type: %d", px, py, index, static_cast<int>(type));
         // Create a new one.  Store in list and map.
-        auto obs = std::make_shared<Obstruction>(px, py, type, cloud.header.frame_id);
+        auto obs = std::make_shared<Obstruction>(px, py, type, cloud.header.frame_id, getShortName());
         obstruction_list_.push_back(obs);
         obstruction_map_[index] = obs;
       }

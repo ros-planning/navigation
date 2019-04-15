@@ -64,6 +64,7 @@ public:
   Layer();
 
   void initialize(LayeredCostmap* parent, std::string name, tf::TransformListener *tf);
+  void initialize(LayeredCostmap* parent, std::string name, std::string shortname, tf::TransformListener *tf);
 
   /**
    * @brief This is called by the LayeredCostmap to poll this plugin as to how
@@ -115,6 +116,11 @@ public:
     return name_;
   }
 
+    std::string getShortName() const
+    {
+      return shortname_;
+    }
+
   /** @brief Convenience function for layered_costmap_->getFootprint(). */
   const std::vector<geometry_msgs::Point>& getFootprint() const;
 
@@ -158,6 +164,7 @@ protected:
   bool current_;
   bool enabled_;  ///< Currently this var is managed by subclasses. TODO: make this managed by this class and/or container class.
   std::string name_;
+  std::string shortname_;
   tf::TransformListener* tf_;
 
 private:

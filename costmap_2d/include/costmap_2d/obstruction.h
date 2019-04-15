@@ -68,10 +68,10 @@ struct Obstruction
    * @param type The type of obstruction
    * @param frame The frame in which the x and y params are defined
    */
-  Obstruction(float x, float y, ObstructionType type, std::string frame) : x_(x), y_(y),
+  Obstruction(float x, float y, ObstructionType type, std::string frame, std::string costmap_name) : x_(x), y_(y),
     type_(type), frame_(frame), first_sighting_time_(ros::Time::now()),
     last_sighting_time_(ros::Time::now()), last_level_time_(ros::Time::now()),
-    seen_this_cycle_(true), updated_(true) {}
+    seen_this_cycle_(true), updated_(true), costmap_name_(costmap_name) {}
 
   /**
    * Mark the obstruction as seen again.
@@ -103,6 +103,7 @@ struct Obstruction
   float radius_ = -1; // the effective radius
   unsigned char max_cost_ = 255;
   std::string frame_ = ""; // the frame in which it is defined
+  std::string costmap_name_ = ""; //the costmap reporting this obstruction
 };
 
 /**
@@ -122,6 +123,7 @@ public:
     msg.effective_radius = obs.radius_;
     msg.max_cost = obs.max_cost_;
     msg.frame_id = obs.frame_;
+    msg.costmap_name = obs.costmap_name_;
     switch (obs.type_)
     {
       case ObstructionType::DYNAMIC:
