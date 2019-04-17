@@ -116,12 +116,12 @@ void MoveBackRecovery::runBehavior(){
   runOnce_ = true;
 
   // Check to see if the robot has moved suffic
-  if (maxRecoveriesPerGoal_ >= 0 && numRecoveriesSinceLastGoal_ >= maxRecoveriesPerGoal_)
+  /*if (maxRecoveriesPerGoal_ >= 0 && numRecoveriesSinceLastGoal_ >= maxRecoveriesPerGoal_)
   {
     ROS_INFO_NAMED("move_backwards_recovery",
       "Not moving backwards because the robot has recovered too many times for this goal.");
     return;
-  }
+  }*/
   if (std::fabs(originX - lastEndingX_) > maxRecoveriesResetDistance_
     || std::fabs(originY - lastEndingY_) > maxRecoveriesResetDistance_)
   {
