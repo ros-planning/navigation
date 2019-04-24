@@ -63,4 +63,6 @@
 
     <exec_depend>srslib_timing</exec_depend>
     <exec_depend>srslib_framework</exec_depend>
+    <exec_depend>teb_local_planner</exec_depend>
+    <exec_depend>costmap_converter</exec_depend>
 </package>
