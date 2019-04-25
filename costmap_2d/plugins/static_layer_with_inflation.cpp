@@ -407,7 +407,6 @@ void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, i
   }
   else
   {
-    return;
     // If rolling window, the master_grid is unlikely to have same coordinates as this layer
     unsigned int mx, my;
     double wx, wy;
