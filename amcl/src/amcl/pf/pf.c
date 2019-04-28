@@ -33,6 +33,7 @@
 #include "amcl/pf/pf.h"
 #include "amcl/pf/pf_pdf.h"
 #include "amcl/pf/pf_kdtree.h"
+#include "portable_utils.hpp"
 
 
 // Compute the required number of samples, given that there are k bins
