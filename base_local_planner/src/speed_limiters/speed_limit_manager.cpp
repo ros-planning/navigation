@@ -46,8 +46,8 @@
 
 namespace base_local_planner {
 
-void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap) {
-  std::string name = "~/speed_limiters";
+void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap, std::string controller_name) {
+  std::string name = "~/" + controller_name + "/speed_limiters";
   // Create the limiters
   limiters_.clear();
 

@@ -60,7 +60,7 @@ public:
    */
   ~SpeedLimitManager() {}
 
-  void initialize(costmap_2d::Costmap2DROS* costmap);
+  void initialize(costmap_2d::Costmap2DROS* costmap, std::string controller_name);
 
   /**
    * Calculate limits
