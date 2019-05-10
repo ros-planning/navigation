@@ -98,6 +98,7 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
       // Some limiter failed.
       max_allowed_linear_vel = 0;
       max_allowed_angular_vel = 0;
+      ROS_WARN_STREAM("The " << limiter->getName() << " limiter failed.");
       return false;
     }
     if(linear < max_allowed_linear_vel){
