@@ -414,7 +414,7 @@ void Costmap2D::convexFillCells(const std::vector<MapLocation>& polygon, std::ve
 
     MapLocation pt;
     // loop though cells in the column
-    for (unsigned int y = min_pt.y; y < max_pt.y; ++y)
+    for (unsigned int y = min_pt.y; y <= max_pt.y; ++y)
     {
       pt.x = x;
       pt.y = y;
