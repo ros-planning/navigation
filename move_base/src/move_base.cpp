@@ -957,9 +957,9 @@ namespace move_base {
 
           move_base_msgs::RecoveryStatus msg;
           msg.pose_stamped = current_position;
-          msg.index = recovery_index_;
-          msg.size = recovery_behaviors_.size();
-          msg.name =  recovery_behavior_names_[recovery_index_];
+          msg.current_recovery_number = recovery_index_;
+          msg.total_number_of_recoveries = recovery_behaviors_.size();
+          msg.recovery_behavior_name =  recovery_behavior_names_[recovery_index_];
 
           recovery_status_pub_.publish(msg);
 
