@@ -43,8 +43,8 @@ namespace base_local_planner {
 
 void PathSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/path");
-  configServer_ = std::make_shared<dynamic_reconfigure::Server<PathSpeedLimiterConfig>>(private_nh);
-  configServer_->setCallback(boost::bind(&PathSpeedLimiter::reconfigure, this, _1, _2));
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<PathSpeedLimiterConfig>>(name + "/path");
+  configClient_->setConfigurationCallback(boost::bind(&PathSpeedLimiter::reconfigure, this, _1));
 }
 
 std::string PathSpeedLimiter::getName(){

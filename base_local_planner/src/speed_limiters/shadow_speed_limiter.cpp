@@ -48,8 +48,8 @@ void ShadowSpeedLimiter::initialize(std::string name)
   map_grid_.reject_inscribed_cost_ = false;
 
   ros::NodeHandle private_nh(name + "/shadow");
-  configServer_ = std::make_shared<dynamic_reconfigure::Server<ShadowSpeedLimiterConfig>>(private_nh);
-  configServer_->setCallback(boost::bind(&ShadowSpeedLimiter::reconfigure, this, _1, _2));
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<ShadowSpeedLimiterConfig>>(name + "/shadow");
+  configClient_->setConfigurationCallback(boost::bind(&ShadowSpeedLimiter::reconfigure, this, _1));
   initialized_ = true;
 }
 

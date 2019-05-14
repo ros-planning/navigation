@@ -45,8 +45,10 @@ namespace base_local_planner {
 
 void ObstacleSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/obstacle");
-  configServer_ = std::make_shared<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>>(private_nh);
-  configServer_->setCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1, _2));
+  
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<ObstacleSpeedLimiterConfig>>(name + "/obstacle");
+  configClient_->setConfigurationCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1));
+
   obstacle_pub = private_nh.advertise<base_local_planner::Obstacles>("obstacle_info", 5, true);
 }
 

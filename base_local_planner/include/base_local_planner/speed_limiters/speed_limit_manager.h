@@ -42,6 +42,7 @@
 #include <base_local_planner/speed_limiters/speed_limiter.h>
 #include <base_local_planner/SpeedLimitManagerConfig.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include <dynamic_reconfigure/client.h>
 
 namespace base_local_planner {
 
@@ -73,14 +74,14 @@ public:
   void setMaxLimits(double linear, double angular);
 
 protected:
-  void reconfigure(SpeedLimitManagerConfig &cfg, uint32_t level) {
+  void reconfigure(SpeedLimitManagerConfig cfg) {
     setMaxLimits(cfg.max_linear_velocity, cfg.max_angular_velocity);
   }
   ros::Publisher limiter_pub;
   ros::Publisher limiters_pub;
   std::vector<std::shared_ptr<SpeedLimiter>> limiters_;
   
-  std::shared_ptr<dynamic_reconfigure::Server<SpeedLimitManagerConfig>> configServer_;
+  std::shared_ptr<dynamic_reconfigure::Client<SpeedLimitManagerConfig>> configClient_;
   SpeedLimitManagerConfig params_;
 
   double max_linear_velocity_ = 1.0;

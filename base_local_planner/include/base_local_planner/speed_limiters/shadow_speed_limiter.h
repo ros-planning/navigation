@@ -81,14 +81,15 @@ public:
 
 private:
 
-  void reconfigure(ShadowSpeedLimiterConfig &cfg, uint32_t level) {
+  void reconfigure(ShadowSpeedLimiterConfig cfg) {
     params_ = cfg;
+    ROS_INFO_STREAM(params_.min_range);
   }
 
   double getMapGridDistance(geometry_msgs::Point obj);
   double distanceToVelocity(double dist);
 
-  std::shared_ptr<dynamic_reconfigure::Server<ShadowSpeedLimiterConfig>> configServer_;
+  std::shared_ptr<dynamic_reconfigure::Client<ShadowSpeedLimiterConfig>> configClient_;
 
   MapGrid map_grid_;
   

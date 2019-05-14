@@ -43,8 +43,9 @@ namespace base_local_planner {
 
 void ExternalSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/external");
-  configServer_ = std::make_shared<dynamic_reconfigure::Server<ExternalSpeedLimiterConfig>>(private_nh);
-  configServer_->setCallback(boost::bind(&ExternalSpeedLimiter::reconfigure, this, _1, _2));
+
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<ExternalSpeedLimiterConfig>>(name + "/external");
+  configClient_->setConfigurationCallback(boost::bind(&ExternalSpeedLimiter::reconfigure, this, _1));
 
   // Create the subscriber
   subscriber_ = private_nh.subscribe("limit", 10, &ExternalSpeedLimiter::msgCallback, this);

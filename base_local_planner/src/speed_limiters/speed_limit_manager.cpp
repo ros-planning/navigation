@@ -47,7 +47,7 @@
 namespace base_local_planner {
 
 void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap, std::string controller_name) {
-  std::string name = "~/" + controller_name + "/speed_limiters";
+  std::string name = "~/speed_limiters";
   // Create the limiters
   limiters_.clear();
 
@@ -73,8 +73,10 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap, std::strin
 
   // Create the dynamic reconfigure
   ros::NodeHandle private_nh(name);
-  configServer_ = std::make_shared<dynamic_reconfigure::Server<SpeedLimitManagerConfig>>(private_nh);
-  configServer_->setCallback(boost::bind(&SpeedLimitManager::reconfigure, this, _1, _2));
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<SpeedLimitManagerConfig>>(name);
+  configClient_->setConfigurationCallback(boost::bind(&SpeedLimitManager::reconfigure, this, _1));
+  
+  ROS_INFO_STREAM("WHAT");
   limiter_pub = private_nh.advertise<base_local_planner::speed_limiter>("limiter_greatest", 10);
   limiters_pub = private_nh.advertise<base_local_planner::speed_limiters>("limiter_values", 10);
 };
@@ -145,6 +147,7 @@ void SpeedLimitManager::setMaxLimits(double linear, double angular) {
   }
   max_linear_velocity_ = linear;
   max_angular_velocity_ = angular;
+  ROS_INFO_STREAM(linear << " " << angular);
 };
 
 
