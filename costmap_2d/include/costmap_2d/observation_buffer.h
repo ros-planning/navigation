@@ -139,7 +139,7 @@ private:
 
   tf2_ros::Buffer& tf2_buffer_;
   const ros::Duration observation_keep_time_;
-  const ros::Duration expected_update_rate_;
+  const ros::Duration minimum_update_interval_;
   ros::Time last_updated_;
   std::string global_frame_;
   std::string sensor_frame_;
