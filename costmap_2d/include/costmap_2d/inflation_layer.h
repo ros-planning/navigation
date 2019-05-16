@@ -82,6 +82,8 @@ public:
     deleteKernels();
     if (dsrv_)
         delete dsrv_;
+    if (seen_)
+      delete[] seen_;
   }
 
   virtual void onInitialize();
