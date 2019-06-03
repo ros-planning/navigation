@@ -73,7 +73,7 @@ public:
   std::string getName();
   
 private:
-  void reconfigure(ObstacleSpeedLimiterConfig &cfg, uint32_t level) {
+  void reconfigure(ObstacleSpeedLimiterConfig cfg) {
     params_ = cfg;
   };
 
@@ -95,7 +95,7 @@ private:
 
   void calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint);
 
-  std::shared_ptr<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>> configServer_;
+  std::shared_ptr<dynamic_reconfigure::Client<ObstacleSpeedLimiterConfig>> configClient_;
   ObstacleSpeedLimiterConfig params_;
 
   double footprint_min_x_ = -0.4;

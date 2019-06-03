@@ -53,7 +53,7 @@ namespace dwa_local_planner {
        */
       DWAPlannerConfiguration(std::string name) : name_(name), initialized(false)
       {
-        ros::NodeHandle private_nh("~/controller/" + name);
+        ros::NodeHandle private_nh("~/" + name);
         dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
         dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb
             = boost::bind(&DWAPlannerConfiguration::reconfigure, this, _1, _2);

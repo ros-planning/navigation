@@ -41,6 +41,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf/tf.h>
+#include <dynamic_reconfigure/client.h>
 
 namespace base_local_planner {
 

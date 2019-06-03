@@ -70,13 +70,13 @@ public:
   std::string getName();
   
 private:
-  void reconfigure(PathSpeedLimiterConfig &cfg, uint32_t level) {
+  void reconfigure(PathSpeedLimiterConfig cfg) {
     params_ = cfg;
   }
 
   double calculateAllowedLinearSpeed(double heading_diff);
 
-  std::shared_ptr<dynamic_reconfigure::Server<PathSpeedLimiterConfig>> configServer_;
+  std::shared_ptr<dynamic_reconfigure::Client<PathSpeedLimiterConfig>> configClient_;
   PathSpeedLimiterConfig params_;
 };
 

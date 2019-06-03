@@ -115,7 +115,7 @@ namespace dwa_local_planner {
       tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
     if (! isInitialized()) {
-      std::string param_ns = "controller/" + name;
+      std::string param_ns = name;
       ros::NodeHandle private_nh("~/" + param_ns);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);

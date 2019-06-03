@@ -43,7 +43,6 @@
 #include <tf/transform_listener.h>
 
 #include <dynamic_reconfigure/server.h>
-#include <dwa_local_planner/DWAPlannerModeConfig.h>
 #include <dwa_local_planner/dwa_planner_configuration.h>
 
 #include <angles/angles.h>

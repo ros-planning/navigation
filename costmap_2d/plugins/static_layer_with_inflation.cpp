@@ -386,7 +386,7 @@ double StaticLayerWithInflation::getDistanceFromStaticMap(double px, double py)
 void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   srs::ScopedTimingSampleRecorder stsr_update_costs(timingDataRecorder_.getRecorder("-updateCosts", 1));
-
+  
   if (!map_received_)
     return;
 
