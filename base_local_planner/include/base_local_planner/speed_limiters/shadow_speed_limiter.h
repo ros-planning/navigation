@@ -83,6 +83,7 @@ private:
 
   void reconfigure(ShadowSpeedLimiterConfig cfg) {
     params_ = cfg;
+    ROS_INFO_STREAM(params_.min_range);
   }
 
   double getMapGridDistance(geometry_msgs::Point obj);

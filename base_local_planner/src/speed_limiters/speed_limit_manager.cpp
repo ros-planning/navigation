@@ -147,6 +147,7 @@ void SpeedLimitManager::setMaxLimits(double linear, double angular) {
   }
   max_linear_velocity_ = linear;
   max_angular_velocity_ = angular;
+  ROS_INFO_STREAM(linear << " " << angular);
 };
 
 

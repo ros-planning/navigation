@@ -72,6 +72,7 @@ public:
 private:
   void reconfigure(PathSpeedLimiterConfig cfg) {
     params_ = cfg;
+    ROS_INFO_STREAM(params_.min_linear_velocity);
   }
 
   double calculateAllowedLinearSpeed(double heading_diff);
