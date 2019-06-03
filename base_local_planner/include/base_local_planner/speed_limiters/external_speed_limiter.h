@@ -73,7 +73,6 @@ public:
 private:
   void reconfigure(ExternalSpeedLimiterConfig cfg) {
     params_ = cfg;
-    ROS_INFO_STREAM(params_.timeout);
   }
 
   void msgCallback(base_local_planner::SpeedLimitRequest msg) {
