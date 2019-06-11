@@ -695,7 +695,7 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
-        last_planner_goal_ = planner_goal_;
+        last_planner_goal_ = temp_goal;
         lock.lock();
         planner_plan_ = latest_plan_;
         latest_plan_ = temp_plan;
