@@ -246,6 +246,8 @@ namespace move_base {
       geometry_msgs::PoseStamped planner_goal_;
       boost::thread* planner_thread_;
 
+      geometry_msgs::PoseStamped last_planner_goal_;
+
       ros::Timer control_loop_missing_timer_;
       std::vector<float> loop_missing_vec_;
 
