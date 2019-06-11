@@ -784,6 +784,7 @@ namespace move_base {
     }
 
     ROS_DEBUG("Executing goal with frame %s", move_base_goal->target_pose.header.frame_id.c_str());
+    ROS_DEBUG("Goal: %f %f",move_base_goal->target_pose.pose.position.x, move_base_goal->target_pose.pose.position.y);
     geometry_msgs::PoseStamped goal;
     if (move_base_goal->use_target_frame) {
       goal = move_base_goal->target_pose;
