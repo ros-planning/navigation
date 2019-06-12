@@ -1098,7 +1098,7 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base","In controlling state.");
 
         //check to see if we've reached our goal
-        if(tc_->isGoalReached() && last_planner_goal_.pose.position.x == goal.pose.position.x){
+        if(tc_->isGoalReached() && poseEquality(last_planner_goal_, goal)){
           ROS_DEBUG_NAMED("move_base","Goal reached!");
           resetState();
 
@@ -1388,6 +1388,20 @@ namespace move_base {
       behavior->newGoalReceived();
     }
   }
+
+  bool MoveBase::poseEquality(geometry_msgs::PoseStamped pose1, geometry_msgs::PoseStamped pose2){
+    double threshold = .01;
+    if(fabs(pose1.pose.position.x - pose2.pose.position.x) < threshold){
+      if(fabs(pose1.pose.position.y - pose2.pose.position.y) < threshold){
+        if(fabs(pose1.pose.orientation.z - pose2.pose.orientation.z) < threshold){
+          if(fabs(pose1.pose.orientation.w - pose2.pose.orientation.w) < threshold){
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 };
 
 namespace srs {
@@ -1402,3 +1416,5 @@ namespace srs {
     maximum_miss = *max_element(std::begin(vec), std::end(vec));
   }
 }
+
+
