@@ -1123,7 +1123,8 @@ namespace move_base {
           state_ = CLEARING;
           recovery_trigger_ = OSCILLATION_R;
         }
-        boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
+        {
+         boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
 
         srs::ScopedTimingSampleRecorder stsr_controller_execution(timingDataRecorder_.getRecorder("-ControllerExecution"));
         bool successfulCalc = tc_->computeVelocityCommands(cmd_vel);
@@ -1163,8 +1164,10 @@ namespace move_base {
             lock.unlock();
           }
         }
+        }
+
         break;
-      }
+        }
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
