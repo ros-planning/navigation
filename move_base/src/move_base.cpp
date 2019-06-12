@@ -1095,10 +1095,15 @@ namespace move_base {
 
       //if we're controlling, we'll attempt to find valid velocity commands
       case CONTROLLING:
+        {
         ROS_DEBUG_NAMED("move_base","In controlling state.");
 
+        boost::unique_lock<boost::mutex> read_lock(planner_mutex_);
+        geometry_msgs::PoseStamped temp_goal = last_planner_goal_;
+        read_lock.unlock();
+
         //check to see if we've reached our goal
-        if(tc_->isGoalReached() && poseEquality(last_planner_goal_, goal)){
+        if(tc_->isGoalReached() && poseEquality(temp_goal, goal)){
           ROS_DEBUG_NAMED("move_base","Goal reached!");
           resetState();
 
@@ -1118,8 +1123,7 @@ namespace move_base {
           state_ = CLEARING;
           recovery_trigger_ = OSCILLATION_R;
         }
-        {
-         boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
+        boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
 
         srs::ScopedTimingSampleRecorder stsr_controller_execution(timingDataRecorder_.getRecorder("-ControllerExecution"));
         bool successfulCalc = tc_->computeVelocityCommands(cmd_vel);
@@ -1159,10 +1163,8 @@ namespace move_base {
             lock.unlock();
           }
         }
-        }
-
         break;
-
+      }
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
