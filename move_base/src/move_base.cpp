@@ -1391,14 +1391,11 @@ namespace move_base {
 
   bool MoveBase::poseEquality(geometry_msgs::PoseStamped pose1, geometry_msgs::PoseStamped pose2){
     double threshold = .01;
-    if(fabs(pose1.pose.position.x - pose2.pose.position.x) < threshold){
-      if(fabs(pose1.pose.position.y - pose2.pose.position.y) < threshold){
-        if(fabs(pose1.pose.orientation.z - pose2.pose.orientation.z) < threshold){
-          if(fabs(pose1.pose.orientation.w - pose2.pose.orientation.w) < threshold){
+    if(fabs(pose1.pose.position.x - pose2.pose.position.x) < threshold  && 
+        fabs(pose1.pose.position.y - pose2.pose.position.y) < threshold &&
+        fabs(pose1.pose.orientation.z - pose2.pose.orientation.z) < threshold &&
+        fabs(pose1.pose.orientation.w - pose2.pose.orientation.w) < threshold){
             return true;
-          }
-        }
-      }
     }
     return false;
   }
