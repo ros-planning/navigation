@@ -695,8 +695,8 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
-
         lock.lock();
+        last_planner_goal_ = temp_goal;
         planner_plan_ = latest_plan_;
         latest_plan_ = temp_plan;
         last_valid_plan_ = ros::Time::now();
@@ -784,6 +784,7 @@ namespace move_base {
     }
 
     ROS_DEBUG("Executing goal with frame %s", move_base_goal->target_pose.header.frame_id.c_str());
+    ROS_DEBUG("Goal: %f %f",move_base_goal->target_pose.pose.position.x, move_base_goal->target_pose.pose.position.y);
     geometry_msgs::PoseStamped goal;
     if (move_base_goal->use_target_frame) {
       goal = move_base_goal->target_pose;
@@ -1094,10 +1095,15 @@ namespace move_base {
 
       //if we're controlling, we'll attempt to find valid velocity commands
       case CONTROLLING:
+        {
         ROS_DEBUG_NAMED("move_base","In controlling state.");
 
+        boost::unique_lock<boost::mutex> read_lock(planner_mutex_);
+        geometry_msgs::PoseStamped temp_goal = last_planner_goal_;
+        read_lock.unlock();
+
         //check to see if we've reached our goal
-        if(tc_->isGoalReached()){
+        if(tc_->isGoalReached() && poseEquality(temp_goal, goal)){
           ROS_DEBUG_NAMED("move_base","Goal reached!");
           resetState();
 
@@ -1161,7 +1167,7 @@ namespace move_base {
         }
 
         break;
-
+        }
       //we'll try to clear out space with any user-provided recovery behaviors
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
@@ -1387,6 +1393,17 @@ namespace move_base {
       behavior->newGoalReceived();
     }
   }
+
+  bool MoveBase::poseEquality(geometry_msgs::PoseStamped pose1, geometry_msgs::PoseStamped pose2){
+    double threshold = .01;
+    if(fabs(pose1.pose.position.x - pose2.pose.position.x) < threshold  && 
+        fabs(pose1.pose.position.y - pose2.pose.position.y) < threshold &&
+        fabs(pose1.pose.orientation.z - pose2.pose.orientation.z) < threshold &&
+        fabs(pose1.pose.orientation.w - pose2.pose.orientation.w) < threshold){
+            return true;
+    }
+    return false;
+  }
 };
 
 namespace srs {
@@ -1401,3 +1418,5 @@ namespace srs {
     maximum_miss = *max_element(std::begin(vec), std::end(vec));
   }
 }
+
+
