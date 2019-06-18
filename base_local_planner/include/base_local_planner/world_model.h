@@ -57,7 +57,10 @@ namespace base_local_planner {
        * @param  footprint The specification of the footprint of the robot in world coordinates
        * @param  inscribed_radius The radius of the inscribed circle of the robot
        * @param  circumscribed_radius The radius of the circumscribed circle of the robot
-       * @return Positive if all the points lie outside the footprint, negative otherwise
+       * @return Positive if all the points lie outside the footprint, negative otherwise:
+       *          -1 if footprint covers at least a lethal obstacle cell, or
+       *          -2 if footprint covers at least a no-information cell, or
+       *          -3 if footprint is partially or totally outside of the map
        */
       virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius) = 0;
@@ -95,7 +98,7 @@ namespace base_local_planner {
        */
       double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius, double extra) {
-        return footprintCost(position, footprint, inscribed_radius, circumscribed_radius); 
+        return footprintCost(position, footprint, inscribed_radius, circumscribed_radius);
       }
 
       /**
