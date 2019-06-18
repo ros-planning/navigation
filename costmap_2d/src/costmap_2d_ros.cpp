@@ -37,6 +37,7 @@
  *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include <nav_core/parameter_magic.h>
 #include <cstdio>
 #include <string>
 #include <algorithm>
@@ -306,14 +307,8 @@ void Costmap2DROS::copyParentParameters(const std::string& plugin_name, const st
 
 void Costmap2DROS::warnForOldParameters(ros::NodeHandle& nh)
 {
-  checkOldParam(nh, "static_map");
-  checkOldParam(nh, "map_type");
-}
-
-void Costmap2DROS::checkOldParam(ros::NodeHandle& nh, const std::string &param_name){
-  if(nh.hasParam(param_name)){
-    ROS_WARN("%s: Pre-Hydro parameter \"%s\" unused since \"plugins\" is provided", name_.c_str(), param_name.c_str());
-  }
+  nav_core::warnRenamedParameter(nh, "static_map", "costmap_2d::StaticLayer");
+  nav_core::warnRenamedParameter(nh, "map_type", "costmap_2d::ObstacleLayer or costmap_2d::VoxelLayer");
 }
 
 void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level)
