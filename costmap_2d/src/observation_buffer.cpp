@@ -49,7 +49,8 @@ ObservationBuffer::ObservationBuffer(string topic_name, double observation_keep_
                                      double min_obstacle_height, double max_obstacle_height, double obstacle_range,
                                      double raytrace_range, tf2_ros::Buffer& tf2_buffer, string global_frame,
                                      string sensor_frame, double tf_tolerance) :
-    tf2_buffer_(tf2_buffer), observation_keep_time_(observation_keep_time), expected_update_rate_(expected_update_rate),
+    tf2_buffer_(tf2_buffer), observation_keep_time_(observation_keep_time),
+    minimum_update_interval_(expected_update_rate == 0 ? expected_update_rate : 1/expected_update_rate),
     last_updated_(ros::Time::now()), global_frame_(global_frame), sensor_frame_(sensor_frame), topic_name_(topic_name),
     min_obstacle_height_(min_obstacle_height), max_obstacle_height_(max_obstacle_height),
     obstacle_range_(obstacle_range), raytrace_range_(raytrace_range), tf_tolerance_(tf_tolerance)
@@ -230,15 +231,15 @@ void ObservationBuffer::purgeStaleObservations()
 
 bool ObservationBuffer::isCurrent() const
 {
-  if (expected_update_rate_ == ros::Duration(0.0))
+  if (minimum_update_interval_ == ros::Duration(0.0))
     return true;
 
-  bool current = (ros::Time::now() - last_updated_).toSec() <= expected_update_rate_.toSec();
+  bool current = (ros::Time::now() - last_updated_).toSec() <= minimum_update_interval_.toSec();
   if (!current)
   {
     ROS_WARN(
         "The %s observation buffer has not been updated for %.2f seconds, and it should be updated every %.2f seconds.",
-        topic_name_.c_str(), (ros::Time::now() - last_updated_).toSec(), expected_update_rate_.toSec());
+        topic_name_.c_str(), (ros::Time::now() - last_updated_).toSec(), minimum_update_interval_.toSec());
   }
   return current;
 }
