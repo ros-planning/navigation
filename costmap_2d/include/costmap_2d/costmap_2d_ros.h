@@ -243,7 +243,9 @@ private:
   void readFootprintFromConfig(const costmap_2d::Costmap2DConfig &new_config,
                                const costmap_2d::Costmap2DConfig &old_config);
 
-  void resetOldParameters(ros::NodeHandle& nh);
+  void loadOldParameters(ros::NodeHandle& nh);
+  void warnForOldParameters(ros::NodeHandle& nh);
+  void copyParentParameters(const std::string& plugin_name, const std::string& plugin_type, ros::NodeHandle& nh);
   void reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level);
   void movementCB(const ros::TimerEvent &event);
   void mapUpdateLoop(double frequency);

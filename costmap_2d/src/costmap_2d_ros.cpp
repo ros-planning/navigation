@@ -37,6 +37,7 @@
  *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include <nav_core/parameter_magic.h>
 #include <cstdio>
 #include <string>
 #include <algorithm>
@@ -84,7 +85,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   ros::NodeHandle private_nh("~/" + name);
   ros::NodeHandle g_nh;
 
-  // get two frames
+  // get global and robot base frame names
   private_nh.param("global_frame", global_frame_, std::string("map"));
   private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
 
@@ -116,7 +117,9 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   if (!private_nh.hasParam("plugins"))
   {
-    resetOldParameters(private_nh);
+    loadOldParameters(private_nh);
+  } else {
+    warnForOldParameters(private_nh);
   }
 
   if (private_nh.hasParam("plugins"))
@@ -127,7 +130,9 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     {
       std::string pname = static_cast<std::string>(my_list[i]["name"]);
       std::string type = static_cast<std::string>(my_list[i]["type"]);
-      ROS_INFO("Using plugin \"%s\"", pname.c_str());
+      ROS_INFO("%s: Using plugin \"%s\"", name_.c_str(), pname.c_str());
+
+      copyParentParameters(pname, type, private_nh);
 
       boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance(type);
       layered_costmap_->addPlugin(plugin);
@@ -193,9 +198,9 @@ Costmap2DROS::~Costmap2DROS()
   delete dsrv_;
 }
 
-void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
+void Costmap2DROS::loadOldParameters(ros::NodeHandle& nh)
 {
-  ROS_INFO("Loading from pre-hydro parameter style");
+  ROS_WARN("%s: Parameter \"plugins\" not provided, loading pre-Hydro parameters", name_.c_str());
   bool flag;
   std::string s;
   std::vector < XmlRpc::XmlRpcValue > plugins;
@@ -264,6 +269,46 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
 
   super_array.setArray(&plugins);
   nh.setParam("plugins", super_array);
+}
+
+void Costmap2DROS::copyParentParameters(const std::string& plugin_name, const std::string& plugin_type, ros::NodeHandle& nh)
+{
+  ros::NodeHandle target_layer(nh, plugin_name);
+
+  if(plugin_type == "costmap_2d::StaticLayer")
+  {
+    move_parameter(nh, target_layer, "map_topic", false);
+    move_parameter(nh, target_layer, "unknown_cost_value", false);
+    move_parameter(nh, target_layer, "lethal_cost_threshold", false);
+    move_parameter(nh, target_layer, "track_unknown_space", false);
+  }
+  else if(plugin_type == "costmap_2d::VoxelLayer")
+  {
+    move_parameter(nh, target_layer, "origin_z", false);
+    move_parameter(nh, target_layer, "z_resolution", false);
+    move_parameter(nh, target_layer, "z_voxels", false);
+    move_parameter(nh, target_layer, "mark_threshold", false);
+    move_parameter(nh, target_layer, "unknown_threshold", false);
+    move_parameter(nh, target_layer, "publish_voxel_map", false);
+  }
+  else if(plugin_type == "costmap_2d::ObstacleLayer")
+  {
+    move_parameter(nh, target_layer, "max_obstacle_height", false);
+    move_parameter(nh, target_layer, "raytrace_range", false);
+    move_parameter(nh, target_layer, "obstacle_range", false);
+    move_parameter(nh, target_layer, "track_unknown_space", false);
+  }
+  else if(plugin_type == "costmap_2d::InflationLayer")
+  {
+    move_parameter(nh, target_layer, "cost_scaling_factor", false);
+    move_parameter(nh, target_layer, "inflation_radius", false);
+  }
+}
+
+void Costmap2DROS::warnForOldParameters(ros::NodeHandle& nh)
+{
+  nav_core::warnRenamedParameter(nh, "static_map", "costmap_2d::StaticLayer");
+  nav_core::warnRenamedParameter(nh, "map_type", "costmap_2d::ObstacleLayer or costmap_2d::VoxelLayer");
 }
 
 void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level)
