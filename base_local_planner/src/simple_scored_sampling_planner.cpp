@@ -40,7 +40,7 @@
 #include <ros/console.h>
 
 namespace base_local_planner {
-  
+
   SimpleScoredSamplingPlanner::SimpleScoredSamplingPlanner(std::vector<TrajectorySampleGenerator*> gen_list, std::vector<TrajectoryCostFunction*>& critics, int max_samples) {
     max_samples_ = max_samples;
     gen_list_ = gen_list;
@@ -53,7 +53,7 @@ namespace base_local_planner {
     for(std::vector<TrajectoryCostFunction*>::iterator score_function = critics_.begin(); score_function != critics_.end(); ++score_function) {
       TrajectoryCostFunction* score_function_p = *score_function;
       if (score_function_p->getScale() == 0) {
-	gen_id++;
+        gen_id++;
         continue;
       }
       double cost = score_function_p->scoreTrajectory(traj);
@@ -119,7 +119,7 @@ namespace base_local_planner {
         count++;
         if (max_samples_ > 0 && count >= max_samples_) {
           break;
-        }        
+        }
       }
       if (best_traj_cost >= 0) {
         traj.xv_ = best_traj.xv_;
@@ -142,5 +142,5 @@ namespace base_local_planner {
     return best_traj_cost >= 0;
   }
 
-  
+
 }// namespace

@@ -23,7 +23,9 @@ LatchedStopRotateController::LatchedStopRotateController() {}
 
 void LatchedStopRotateController::initialize(const std::string& name) {
     ros::NodeHandle private_nh("~/" + name);
-    private_nh.param("latch_xy_goal_tolerance", latch_xy_goal_tolerance_, false);
+    std::string param_name;
+    private_nh.searchParam("latch_xy_goal_tolerance", param_name);
+    private_nh.param(param_name, latch_xy_goal_tolerance_, false);
     rotating_to_goal_ = false;
   }
 
