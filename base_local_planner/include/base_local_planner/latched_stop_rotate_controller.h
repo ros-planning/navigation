@@ -21,9 +21,11 @@ namespace base_local_planner {
 
 class LatchedStopRotateController {
 public:
-  LatchedStopRotateController(const std::string& name = "");
+  LatchedStopRotateController();
   virtual ~LatchedStopRotateController();
 
+  void initialize(const std::string& name = "");
+  
   bool isPositionReached(LocalPlannerUtil* planner_util,
       tf::Stamped<tf::Pose> global_pose);
 
