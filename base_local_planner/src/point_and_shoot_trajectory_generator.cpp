@@ -227,8 +227,12 @@ Eigen::Vector3f PointAndShootTrajectoryGenerator::computeNewVelocities(const Eig
   double bearing = angles::normalize_angle(std::atan2(dy, dx) - pos[2]);
 
   // Simple proportional control with limits
-  double desired_angular_velocity = bearing / std::fabs(bearing)
+  double desired_angular_velocity = 0.0;
+  if( std::fabs(bearing) > 0.000001)
+  {
+    desired_angular_velocity = bearing / std::fabs(bearing)
     * std::min(kp_angular_ * std::fabs(bearing), max_tip_vel);
+  }
 
   // Add accel limit
   if (vel[2] < desired_angular_velocity) {

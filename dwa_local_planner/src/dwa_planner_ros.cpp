@@ -115,17 +115,16 @@ namespace dwa_local_planner {
       tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
     if (! isInitialized()) {
-      std::string param_ns = name;
-      ros::NodeHandle private_nh("~/" + param_ns);
+      ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
       tf_ = tf;
       costmap_ros_ = costmap_ros;
       costmap_ros_->getRobotPose(current_pose_);
-      planner_util_.initialize(tf, costmap_ros_, costmap_ros_->getGlobalFrameID(), param_ns);
+      planner_util_.initialize(tf, costmap_ros_, costmap_ros_->getGlobalFrameID(), name);
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
-      dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(param_ns, &planner_util_));
+      dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
 
       // set up footprint when initialization
       dp_->setFootprintSpec(costmap_ros->getRobotFootprint());
