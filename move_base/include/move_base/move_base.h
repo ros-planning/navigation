@@ -54,6 +54,7 @@
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GetPlan.h>
 #include <base_local_planner/geometry_math_helpers.h>
+#include <geometry_msgs/PoseStamped.h>
 
 #include <pluginlib/class_loader.h>
 #include <move_base_msgs/ClearCostmap.h>
@@ -246,6 +247,8 @@ namespace move_base {
       geometry_msgs::PoseStamped planner_goal_;
       boost::thread* planner_thread_;
 
+      geometry_msgs::PoseStamped last_planner_goal_;
+
       ros::Timer control_loop_missing_timer_;
       std::vector<float> loop_missing_vec_;
 
@@ -267,6 +270,8 @@ namespace move_base {
       int planner_thread_nice_;
       int controller_thread_affinity_;
       int controller_thread_nice_;
+
+      bool poseEquality(geometry_msgs::PoseStamped pose1, geometry_msgs::PoseStamped pose2);
 
       srs::ControlLoopAnalyzer control_loop_analyzer_;
   };
