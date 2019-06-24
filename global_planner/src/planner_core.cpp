@@ -166,17 +166,6 @@ void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, u
     orientation_filter_->setWindowSize(config.orientation_window_size);
 }
 
-void GlobalPlanner::clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my) {
-    if (!initialized_) {
-        ROS_ERROR(
-                "This planner has not been initialized yet, but it is being used, please call initialize() before use");
-        return;
-    }
-
-    //set the associated costs in the cost map to be free
-    costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
-}
-
 bool GlobalPlanner::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp) {
     makePlan(req.start, req.goal, resp.plan.poses);
 
@@ -272,9 +261,6 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     }else{
         worldToMap(wx, wy, goal_x, goal_y);
     }
-
-    //clear the starting cell within the costmap because we know it can't be an obstacle
-    clearRobotCell(start, start_x_i, start_y_i);
 
     int nx = costmap_->getSizeInCellsX(), ny = costmap_->getSizeInCellsY();
 
