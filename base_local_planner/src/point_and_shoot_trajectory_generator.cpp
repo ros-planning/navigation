@@ -251,7 +251,7 @@ Eigen::Vector3f PointAndShootTrajectoryGenerator::computeNewVelocities(const Eig
     new_vel[0] = std::max(desired_linear_velocity, vel[0] - lin_accel * dt);
   }
   if (new_try_) {
-    ROS_INFO_NAMED("PASTG", "range: %f, bearing: %f, des v,w: %f,%f, (lin bear: %f, lin: %f)",
+    ROS_DEBUG_NAMED("PASTG", "range: %f, bearing: %f, des v,w: %f,%f, (lin bear: %f, lin: %f)",
       range, bearing, desired_linear_velocity, desired_angular_velocity,
       lin_bear_factor, lin_factor);
     new_try_ = false;
