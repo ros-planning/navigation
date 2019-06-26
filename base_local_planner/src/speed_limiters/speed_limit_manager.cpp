@@ -76,7 +76,6 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap, std::strin
   configClient_ = std::make_shared<dynamic_reconfigure::Client<SpeedLimitManagerConfig>>(name);
   configClient_->setConfigurationCallback(boost::bind(&SpeedLimitManager::reconfigure, this, _1));
   
-  ROS_INFO_STREAM("WHAT");
   limiter_pub = private_nh.advertise<base_local_planner::speed_limiter>("limiter_greatest", 10);
   limiters_pub = private_nh.advertise<base_local_planner::speed_limiters>("limiter_values", 10);
 };
