@@ -176,7 +176,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
     private:
         void mapToWorld(double mx, double my, double& wx, double& wy);
         bool worldToMap(double wx, double wy, double& mx, double& my);
-        void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
+        void clearRobotCell(unsigned char* costarr, unsigned int mx, unsigned int my);
         void publishPotential(float* potential);
 
         double planner_window_x_, planner_window_y_, default_tolerance_;
@@ -197,6 +197,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
 
+        bool do_not_alter_costmap_;
         bool old_navfn_behavior_;
         float convert_offset_;
 
