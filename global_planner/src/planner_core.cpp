@@ -67,7 +67,8 @@ void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned 
 }
 
 GlobalPlanner::GlobalPlanner() :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        costmap_(NULL), costmap_char_array_(NULL), costmap_size_x_(UINT_MAX), costmap_size_y_(UINT_MAX),
+        initialized_(false), allow_unknown_(true) {
 }
 
 GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
@@ -85,6 +86,8 @@ GlobalPlanner::~GlobalPlanner() {
         delete path_maker_;
     if (dsrv_)
         delete dsrv_;
+    if(costmap_char_array_ && plan_on_costmap_copy_)
+        delete costmap_char_array_;
 }
 
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
@@ -100,6 +103,17 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
 
         private_nh.param("plan_on_costmap_copy", plan_on_costmap_copy_, false);
+        if(plan_on_costmap_copy_){
+            //reserve memory to copy costmap's underlying char array before planning, so we can freely modify it
+            costmap_size_x_ = costmap_->getSizeInCellsX();
+            costmap_size_y_ = costmap_->getSizeInCellsY();
+            costmap_char_array_ = new unsigned char[costmap_size_x_ * costmap_size_y_];
+        }else{
+            //default behavior; just use the pointer offered by the costmap; content will
+            //be altered after planning is done, until the next update (fine in most cases)
+            costmap_char_array_ = costmap_->getCharMap();
+        }
+
         private_nh.param("old_navfn_behavior", old_navfn_behavior_, false);
         if(!old_navfn_behavior_)
             convert_offset_ = 0.5;
@@ -275,18 +289,20 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     int nx = costmap_->getSizeInCellsX(), ny = costmap_->getSizeInCellsY();
 
-    unsigned char* costmap_char_array;
     if(plan_on_costmap_copy_){
         //copy costmap's underlying char array so we can freely modify it (we clear robot cell and outline map borders)
-        costmap_char_array = new unsigned char[nx * ny];
-        memcpy(costmap_char_array, costmap_->getCharMap(), nx * ny);
-    }else{
-        //default behavior; costmap will be altered after planning is done, until the next update (fine in most cases)
-        costmap_char_array = costmap_->getCharMap();
+        if(costmap_size_x_ != nx || costmap_size_y_ != ny){
+            //map size changed, so we need to reallocate the memory
+            delete costmap_char_array_;
+            costmap_char_array_ = new unsigned char[nx * ny];
+            costmap_size_x_ = nx;
+            costmap_size_y_ = ny;
+        }
+        memcpy(costmap_char_array_, costmap_->getCharMap(), nx * ny);
     }
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
-    clearRobotCell(costmap_char_array, start_x_i, start_y_i);
+    clearRobotCell(costmap_char_array_, start_x_i, start_y_i);
 
     //make sure to resize the underlying array that Navfn uses
     p_calc_->setSize(nx, ny);
@@ -294,13 +310,13 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     path_maker_->setSize(nx, ny);
     potential_array_ = new float[nx * ny];
 
-    outlineMap(costmap_char_array, nx, ny, costmap_2d::LETHAL_OBSTACLE);
+    outlineMap(costmap_char_array_, nx, ny, costmap_2d::LETHAL_OBSTACLE);
 
-    bool found_legal = planner_->calculatePotentials(costmap_char_array, start_x, start_y, goal_x, goal_y,
+    bool found_legal = planner_->calculatePotentials(costmap_char_array_, start_x, start_y, goal_x, goal_y,
                                                     nx * ny * 2, potential_array_);
 
     if(!old_navfn_behavior_)
-        planner_->clearEndpoint(costmap_char_array, potential_array_, goal_x_i, goal_y_i, 2);
+        planner_->clearEndpoint(costmap_char_array_, potential_array_, goal_x_i, goal_y_i, 2);
     if(publish_potential_)
         publishPotential(potential_array_);
 
@@ -324,8 +340,6 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete potential_array_;
-    if(plan_on_costmap_copy_)
-        delete costmap_char_array;
     return !plan.empty();
 }
 

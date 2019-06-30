@@ -197,7 +197,10 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
 
+        unsigned char* costmap_char_array_;
+        unsigned int costmap_size_x_, costmap_size_y_;
         bool plan_on_costmap_copy_;
+
         bool old_navfn_behavior_;
         float convert_offset_;
 
