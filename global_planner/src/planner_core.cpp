@@ -99,7 +99,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
 
-        private_nh.param("do_not_alter_costmap", do_not_alter_costmap_, false);
+        private_nh.param("plan_on_costmap_copy", plan_on_costmap_copy_, false);
         private_nh.param("old_navfn_behavior", old_navfn_behavior_, false);
         if(!old_navfn_behavior_)
             convert_offset_ = 0.5;
@@ -276,7 +276,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     int nx = costmap_->getSizeInCellsX(), ny = costmap_->getSizeInCellsY();
 
     unsigned char* costmap_char_array;
-    if(do_not_alter_costmap_){
+    if(plan_on_costmap_copy_){
         //copy costmap's underlying char array so we can freely modify it (we clear robot cell and outline map borders)
         costmap_char_array = new unsigned char[nx * ny];
         memcpy(costmap_char_array, costmap_->getCharMap(), nx * ny);
@@ -324,7 +324,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete potential_array_;
-    if(do_not_alter_costmap_)
+    if(plan_on_costmap_copy_)
         delete costmap_char_array;
     return !plan.empty();
 }
