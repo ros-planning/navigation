@@ -98,7 +98,7 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
 
   for (size_t k = 0; k < plan_.size() - 1; ++k)
   {
-    ROS_DEBUG("Searching along plan at k=%zu", k);
+    //ROS_DEBUG("Searching along plan at k=%zu", k);
     // Pull out the datas
     p0 = poseStampedToVector(plan_[k]);
     p1 = poseStampedToVector(plan_[k + 1]);
