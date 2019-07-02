@@ -272,7 +272,6 @@ costmap_2d::ObstructionMsg ObstacleSpeedLimiter::obstructionToBodyFrame(const co
   out.x = pt_out[0];
   out.y = pt_out[1];
 
-  ROS_DEBUG("Converted point from [%f, %f] to [%f, %f]", in.x, in.y, out.x, out.y);
 
   return out;
 }
