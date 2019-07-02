@@ -199,7 +199,6 @@ double ObstacleSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionM
 
       double distance_to_obstruction = std::sqrt(x_dist_with_buffer * x_dist_with_buffer + y_dist_with_buffer * y_dist_with_buffer);
       double distance_to_obstruction_actual = std::sqrt(x_dist_without_buffer * x_dist_without_buffer + y_dist_without_buffer * y_dist_without_buffer);
-      ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);
 
       result.distance = distance_to_obstruction_actual;
       result.heading = getBearingToObstacle(obs);
