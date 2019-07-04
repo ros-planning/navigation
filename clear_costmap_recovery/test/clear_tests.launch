@@ -1,6 +1,0 @@
-<launch>
-  <node name="ms" pkg="map_server" type="map_server" args="$(find costmap_2d)/test/TenByTen.yaml"/>
-  <node name="static_tf" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 /map /base_link 100" />
-  <test time-limit="300" test-name="clear_tests" pkg="clear_costmap_recovery" type="clear_tester" />
-  <rosparam command="load" file="$(find clear_costmap_recovery)/test/params.yaml" ns="clear_tests"/>
-</launch>

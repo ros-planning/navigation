@@ -1,7 +1,0 @@
-<library path="lib/librotate_recovery">
-  <class name="rotate_recovery/RotateRecovery" type="rotate_recovery::RotateRecovery" base_class_type="nav_core::RecoveryBehavior">
-    <description>
-      A recovery behavior that performs a 360 degree in-place rotation to attempt to clear out space.
-    </description>
-  </class>
-</library>

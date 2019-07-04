@@ -1,7 +1,0 @@
-<launch>
-
-  <node name="map_server" pkg="map_server" type="map_server" args="$(find map_server)/test/testmap.yaml"/>
-
-  <test test-name="map_server_test" pkg="map_server" type="rtest"/>
-
-</launch>

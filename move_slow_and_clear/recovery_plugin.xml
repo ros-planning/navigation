@@ -1,7 +1,0 @@
-<library path="lib/libmove_slow_and_clear">
-  <class name="move_slow_and_clear/MoveSlowAndClear" type="move_slow_and_clear::MoveSlowAndClear" base_class_type="nav_core::RecoveryBehavior">
-    <description>
-      A recovery behavior that clears information in the costmap within the circumscribed radius of the robot and then limits the speed of the robot. Note, this recovery behavior is not truly safe, the robot may hit things, it'll just happen at a user-specified speed. Also, this recovery behavior is only compatible with local planners that allow maximum speeds to be set via dynamic reconfigure.
-    </description>
-  </class>
-</library>

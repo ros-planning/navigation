@@ -1,7 +1,0 @@
-<library path="lib/libcarrot_planner">
-  <class name="carrot_planner/CarrotPlanner" type="carrot_planner::CarrotPlanner" base_class_type="nav_core::BaseGlobalPlanner">
-    <description>
-      A simple planner that seeks to place a legal carrot in-front of the robot
-    </description>
-  </class>
-</library>
