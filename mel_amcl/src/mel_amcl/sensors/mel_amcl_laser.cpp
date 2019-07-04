@@ -35,9 +35,9 @@
 #include <unistd.h>
 #endif
 
-#include "amcl/sensors/amcl_laser.h"
+#include "mel_amcl/sensors/mel_amcl_laser.h"
 
-using namespace amcl;
+using namespace mel_amcl;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor

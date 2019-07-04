@@ -29,10 +29,10 @@
 #ifndef AMCL_ODOM_H
 #define AMCL_ODOM_H
 
-#include "amcl_sensor.h"
+#include "mel_amcl_sensor.h"
 #include "../pf/pf_pdf.h"
 
-namespace amcl
+namespace mel_amcl
 {
 
 typedef enum

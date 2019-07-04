@@ -29,10 +29,10 @@
 #ifndef AMCL_LASER_H
 #define AMCL_LASER_H
 
-#include "amcl_sensor.h"
+#include "mel_amcl_sensor.h"
 #include "../map/map.h"
 
-namespace amcl
+namespace mel_amcl
 {
 
 typedef enum

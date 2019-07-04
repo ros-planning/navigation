@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(amcl)
+project(mel_amcl)
 
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 11)
@@ -26,7 +26,7 @@ find_package(Boost REQUIRED)
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
-    cfg/AMCL.cfg
+    cfg/MEL_AMCL.cfg
 )
 
 catkin_package(
@@ -43,7 +43,7 @@ catkin_package(
     tf2_msgs
     tf2_ros
   INCLUDE_DIRS include
-  LIBRARIES amcl_sensors amcl_map amcl_pf
+  LIBRARIES mel_amcl_sensors mel_amcl_map mel_amcl_pf
 )
 
 include_directories(include)
@@ -60,49 +60,49 @@ if (HAVE_DRAND48)
   add_definitions(-DHAVE_DRAND48)
 endif (HAVE_DRAND48)
 
-add_library(amcl_pf
-                    src/amcl/pf/pf.c
-                    src/amcl/pf/pf_kdtree.c
-                    src/amcl/pf/pf_pdf.c
-                    src/amcl/pf/pf_vector.c
-                    src/amcl/pf/eig3.c
-                    src/amcl/pf/pf_draw.c)
+add_library(mel_amcl_pf
+                    src/mel_amcl/pf/pf.c
+                    src/mel_amcl/pf/pf_kdtree.c
+                    src/mel_amcl/pf/pf_pdf.c
+                    src/mel_amcl/pf/pf_vector.c
+                    src/mel_amcl/pf/eig3.c
+                    src/mel_amcl/pf/pf_draw.c)
 
-add_library(amcl_map
-                    src/amcl/map/map.c
-                    src/amcl/map/map_cspace.cpp
-                    src/amcl/map/map_range.c
-                    src/amcl/map/map_store.c
-                    src/amcl/map/map_draw.c)
+add_library(mel_amcl_map
+                    src/mel_amcl/map/map.c
+                    src/mel_amcl/map/map_cspace.cpp
+                    src/mel_amcl/map/map_range.c
+                    src/mel_amcl/map/map_store.c
+                    src/mel_amcl/map/map_draw.c)
 
-add_library(amcl_sensors
-                    src/amcl/sensors/amcl_sensor.cpp
-                    src/amcl/sensors/amcl_odom.cpp
-                    src/amcl/sensors/amcl_laser.cpp)
-target_link_libraries(amcl_sensors amcl_map amcl_pf)
+add_library(mel_amcl_sensors
+                    src/mel_amcl/sensors/mel_amcl_sensor.cpp
+                    src/mel_amcl/sensors/mel_amcl_odom.cpp
+                    src/mel_amcl/sensors/mel_amcl_laser.cpp)
+target_link_libraries(mel_amcl_sensors mel_amcl_map mel_amcl_pf)
 
 
-add_executable(amcl
-                       src/amcl_node.cpp)
-add_dependencies(amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(mel_amcl
+                       src/mel_amcl_node.cpp)
+add_dependencies(mel_amcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(amcl
-    amcl_sensors amcl_map amcl_pf
+target_link_libraries(mel_amcl
+    mel_amcl_sensors mel_amcl_map mel_amcl_pf
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
 )
 
 install( TARGETS
-    amcl
+    mel_amcl
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install( TARGETS
-    amcl_sensors amcl_map amcl_pf
+    mel_amcl_sensors mel_amcl_map mel_amcl_pf
     DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
-install(DIRECTORY include/amcl/
+install(DIRECTORY include/mel_amcl/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 

@@ -32,9 +32,9 @@
 #include <sys/types.h> // required by Darwin
 #include <math.h>
 
-#include "amcl/sensors/amcl_odom.h"
+#include "mel_amcl/sensors/mel_amcl_odom.h"
 
-using namespace amcl;
+using namespace mel_amcl;
 
 static double
 normalize(double z)

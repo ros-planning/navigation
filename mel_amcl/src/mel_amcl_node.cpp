@@ -32,10 +32,10 @@
 // Signal handling
 #include <signal.h>
 
-#include "amcl/map/map.h"
-#include "amcl/pf/pf.h"
-#include "amcl/sensors/amcl_odom.h"
-#include "amcl/sensors/amcl_laser.h"
+#include "mel_amcl/map/map.h"
+#include "mel_amcl/pf/pf.h"
+#include "mel_amcl/sensors/mel_amcl_odom.h"
+#include "mel_amcl/sensors/mel_amcl_laser.h"
 #include "portable_utils.hpp"
 
 #include "ros/assert.h"
@@ -66,7 +66,7 @@
 
 // Dynamic_reconfigure
 #include "dynamic_reconfigure/server.h"
-#include "amcl/AMCLConfig.h"
+#include "mel_amcl/MEL_AMCLConfig.h"
 
 // Allows AMCL to run from bag file
 #include <rosbag/bag.h>
@@ -78,7 +78,7 @@
 
 #define NEW_UNIFORM_SAMPLING 1
 
-using namespace amcl;
+using namespace mel_amcl;
 
 // Pose hypothesis
 typedef struct
@@ -264,8 +264,8 @@ class AmclNode
     bool first_reconfigure_call_;
 
     boost::recursive_mutex configuration_mutex_;
-    dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
-    amcl::AMCLConfig default_config_;
+    dynamic_reconfigure::Server<mel_amcl::MEL_AMCLConfig> *dsrv_;
+    mel_amcl::MEL_AMCLConfig default_config_;
     ros::Timer check_laser_timer_;
 
     int max_beams_, min_particles_, max_particles_;
@@ -282,7 +282,7 @@ class AmclNode
     laser_model_t laser_model_type_;
     bool tf_broadcast_;
 
-    void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
+    void reconfigureCB(mel_amcl::MEL_AMCLConfig &config, uint32_t level);
 
     ros::Time last_laser_received_ts_;
     ros::Duration laser_check_interval_;
@@ -483,8 +483,8 @@ AmclNode::AmclNode() :
   }
   m_force_update = false;
 
-  dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
-  dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
+  dsrv_ = new dynamic_reconfigure::Server<mel_amcl::MEL_AMCLConfig>(ros::NodeHandle("~"));
+  dynamic_reconfigure::Server<mel_amcl::MEL_AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 
   // 15s timer to warn on lack of receipt of laser scans, #5209
@@ -496,7 +496,7 @@ AmclNode::AmclNode() :
   diagnosic_updater_.add("Standard deviation", this, &AmclNode::standardDeviationDiagnostics);
 }
 
-void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
+void AmclNode::reconfigureCB(MEL_AMCLConfig &config, uint32_t level)
 {
   boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
 

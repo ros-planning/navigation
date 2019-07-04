@@ -30,7 +30,7 @@
 
 #include "../pf/pf.h"
 
-namespace amcl
+namespace mel_amcl
 {
 
 // Forward declarations
