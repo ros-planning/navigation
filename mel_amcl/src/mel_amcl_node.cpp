@@ -52,6 +52,7 @@
 #include "nav_msgs/GetMap.h"
 #include "nav_msgs/SetMap.h"
 #include "std_srvs/Empty.h"
+#include "std_msgs/Float64.h"
 
 // For transform support
 #include "tf2/LinearMath/Transform.h"
@@ -247,6 +248,7 @@ class AmclNode
     ros::NodeHandle private_nh_;
     ros::Publisher pose_pub_;
     ros::Publisher particlecloud_pub_;
+    ros::Publisher localisation_quality_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
     ros::ServiceServer set_map_srv_;
@@ -458,6 +460,9 @@ AmclNode::AmclNode() :
 
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
+  localisation_quality_pub_ = nh_.advertise<std_msgs::Float64>("amcl_quality", 2, true);
+
+  
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
                                          this);
@@ -1091,6 +1096,7 @@ AmclNode::setMapCallback(nav_msgs::SetMap::Request& req,
 void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
+  AMCLLaserData ldata; // move this declration here so it is in scope of my added code.
   std::string laser_scan_frame_id = stripSlash(laser_scan->header.frame_id);
   last_laser_received_ts_ = ros::Time::now();
   if( map_ == NULL ) {
@@ -1217,7 +1223,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   // If the robot has moved, update the filter
   if(lasers_update_[laser_index])
   {
-    AMCLLaserData ldata;
+    
     ldata.sensor = lasers_[laser_index];
     ldata.range_count = laser_scan->ranges.size();
 
@@ -1346,6 +1352,34 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         max_weight = hyps[hyp_count].weight;
         max_weight_hyp = hyp_count;
       }
+    }
+
+    if (max_weight > 0.0)
+    {
+      double weight_amcl_from_scan;
+      // can change laser data back to ldata if I am using it in this (laserReceived) function
+      if (laser_model_type_ == LASER_MODEL_BEAM)
+      {
+       weight_amcl_from_scan = AMCLLaser::BeamModelFromPose((AMCLLaserData *)&ldata, hyps[max_weight_hyp].pf_pose_mean.v[0], hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
+      }
+      else if (laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD)
+      {
+        weight_amcl_from_scan = AMCLLaser::LikelihoodFieldModelFromPose((AMCLLaserData *)&ldata, hyps[max_weight_hyp].pf_pose_mean.v[0], hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
+      }
+      else if (laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB)
+      {
+        weight_amcl_from_scan = AMCLLaser::LikelihoodFieldModelProbFromPose((AMCLLaserData *)&ldata, hyps[max_weight_hyp].pf_pose_mean.v[0], hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
+      }
+      else
+      {
+        weight_amcl_from_scan = AMCLLaser::LikelihoodFieldModelFromPose((AMCLLaserData *)&ldata, hyps[max_weight_hyp].pf_pose_mean.v[0], hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
+      }
+      //ROS_INFO("GPS pose: %0.3f, %0.3f, %0.3f.  AMCL pose: %0.3f, %0.3f, %0.3f", gps_pose.v[0], gps_pose.v[1], gps_pose.v[2], hyps[max_weight_hyp].pf_pose_mean.v[0], hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
+      ROS_INFO("TOTAL WEIGHT AMCL pose : %.12f", weight_amcl_from_scan);
+
+      std_msgs::Float64 localisation_quality;
+      localisation_quality.data = weight_amcl_from_scan;
+      localisation_quality_pub_.publish(localisation_quality);
     }
 
     if(max_weight > 0.0)

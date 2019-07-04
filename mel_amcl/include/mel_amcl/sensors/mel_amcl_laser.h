@@ -86,6 +86,22 @@ class AMCLLaser : public AMCLSensor
 					   double beam_skip_threshold, 
 					   double beam_skip_error_threshold);
 
+
+  // Determine the probability for the given pose
+  public: static double BeamModelFromPose(AMCLLaserData *data, 
+                                               double x, double y, double theta);
+
+  // Determine the probability for the given pose
+  public: static double LikelihoodFieldModelFromPose(AMCLLaserData *data, 
+                                               double x, double y, double theta);
+
+  // Determine the probability for the given pose
+  public: static double LikelihoodFieldModelProbFromPose(AMCLLaserData *data, 
+                                               double x, double y, double theta);
+
+
+
+
   // Update the filter based on the sensor model.  Returns true if the
   // filter has been updated.
   public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data);
