@@ -1,17 +1,11 @@
-ROS Navigation Stack
+MEL (Michael's Epic Localisation)
 ====================
 
-A 2D navigation stack that takes in information from odometry, sensor
-streams, and a goal pose and outputs safe velocity commands that are sent
-to a mobile base.
+Incorporates fusion of GPS and lidar data by modifying the AMCL package from the ROS Navigation Stack and running all data in an Extended Kalman Filter from the robot_localisation package.
 
- * AMD64 Debian Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Mbin_uB64__navigation__ubuntu_bionic_amd64__binary)](http://build.ros.org/job/Mbin_uB64__navigation__ubuntu_bionic_amd64__binary/)
 
-Related stacks:
+TODO: Finish adding GPS.
 
- * http://github.com/ros-planning/navigation_msgs (new in Jade+)
- * http://github.com/ros-planning/navigation_tutorials
- * http://github.com/ros-planning/navigation_experimental
+TODO: Remove the need for the extra EKF by adding a GPS sensor model to the AMCL node and fusing there.
 
-For discussion, please check out the
-https://groups.google.com/group/ros-sig-navigation mailing list.
+TODO: Adaptive weightings between lidar and GPS information sources based on, among other things, the scan match at the given pose. (should take care of lag in GPS error covariance updates and for indoor/outdoor nav)
