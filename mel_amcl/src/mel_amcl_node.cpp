@@ -206,7 +206,7 @@ private:
   geometry_msgs::PoseWithCovarianceStamped last_received_gps_msg;
   // variable which will allow the node to publish gps data if no laser data is received
   bool use_gps_without_scan;
-  bool use_gps = true;
+  bool use_gps;
   bool gps_received = false;
   // how many times should gps pose match the map better than AMCL before re initialising AMCL pose
   int degraded_amcl_localisation_count_max = 4;
@@ -518,6 +518,7 @@ AmclNode::AmclNode() :
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
 
+  private_nh_.param("use_gps_in_amcl", use_gps, false);
 
   if (use_gps)
   {
