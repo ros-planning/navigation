@@ -39,7 +39,10 @@
   <include file="$(find mel_amcl)/launch/mel.launch"/>
 
   <!-- load parameters for both eKFs (odom and map) -->
-  <rosparam command="load" file="$(find rasberry_localisation)/config/norway_localisation.yaml" />
+  <!--  <rosparam command="load" file="$(find rasberry_localisation)/config/norway_localisation.yaml" /> -->
+
+  <!-- load parameters for eKFs: odom, map and separate gps -->
+  <rosparam command="load" file="$(find mel_amcl)/config/norway_localisation.yaml" />
 
   <!-- eKF for the odom frame -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true">
@@ -51,6 +54,10 @@
     <remap from="odometry/filtered" to="rl/map_pose"/>
   </node>
 
+  <!-- eKF for the gps in map frame -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true">
+    <remap from="odometry/filtered" to="odometry/gps"/>
+  </node>
 
 
 </launch>

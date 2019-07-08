@@ -563,11 +563,9 @@ AmclNode::AmclNode() :
 
 void AmclNode::gpsOdomReceived(const nav_msgs::Odometry odom_msg)
 {
-
   geometry_msgs::PoseWithCovarianceStamped pose_msg;
   pose_msg.header = odom_msg.header;
   pose_msg.pose = odom_msg.pose;
-
   handleGPSPoseMessage(pose_msg);
 }
 
@@ -1512,7 +1510,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       localisation_quality_pub_.publish(localisation_quality);
 
 
-      if (use_gps && gps_received)
+      if ((use_gps || use_gps_odom) && gps_received)
       {
         double weight_gps_from_scan;
 
