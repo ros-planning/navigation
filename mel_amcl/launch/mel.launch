@@ -73,7 +73,7 @@
         <param name="use_map_topic" value="true"/>
 
         <!-- publish map->odom? Turn off if fusing again with robot_localisation -->
-        <param name="tf_broadcast" value="true"/>
+        <param name="tf_broadcast" value="false"/>
 
 	</node>
 

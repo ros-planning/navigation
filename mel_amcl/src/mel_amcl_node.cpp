@@ -522,7 +522,7 @@ AmclNode::AmclNode() :
   if (use_gps)
   {
 
-  gps_pose_sub_ = nh_.subscribe("gps/map_pose", 5, &AmclNode::gpsPoseReceived, this);
+  gps_pose_sub_ = nh_.subscribe(gps_map_frame_topic_, 5, &AmclNode::gpsPoseReceived, this);
   filtered_gps_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("gps/map_pose/filtered", 2, true);
 
   gps_check_interval_ = ros::Duration(2.0);
