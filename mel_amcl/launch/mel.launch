@@ -9,7 +9,7 @@
     <remap from="odometry/filtered" to="rl/odom"/>
   </node> -->
 
-  <arg name="use_gps_in_amcl" default="true"/>
+  <arg name="use_gps" default="true"/>
 
 
   <arg name="initial_pose_x" default="0.0"/>
@@ -26,7 +26,7 @@
 
 
     <!-- GPS parameters -->
-    <param name="use_gps_in_amcl" value="$(arg use_gps_in_amcl)"/>
+    <param name="use_gps" value="$(arg use_gps)"/>
 
 
 	<!--robot initial pose-->

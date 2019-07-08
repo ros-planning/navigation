@@ -518,7 +518,7 @@ AmclNode::AmclNode() :
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
 
-  private_nh_.param("use_gps_in_amcl", use_gps, false);
+  private_nh_.param("use_gps", use_gps, false);
 
   if (use_gps)
   {
