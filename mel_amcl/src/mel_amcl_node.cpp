@@ -117,6 +117,7 @@ angle_diff(double a, double b)
 }
 
 static const std::string scan_topic_ = "scan";
+static const std::string gps_map_frame_topic_ = "gps/map_pose";
 
 /* This function is only useful to have the whole code work
  * with old rosbags that have trailing slashes for their frames
@@ -132,163 +133,183 @@ std::string stripSlash(const std::string& in)
 
 class AmclNode
 {
-  public:
-    AmclNode();
-    ~AmclNode();
+public:
+  AmclNode();
+  ~AmclNode();
 
-    /**
+  /**
      * @brief Uses TF and LaserScan messages from bag file to drive AMCL instead
      */
-    void runFromBag(const std::string &in_bag_fn);
+  void runFromBag(const std::string &in_bag_fn);
 
-    int process();
-    void savePoseToServer();
+  int process();
+  void savePoseToServer();
 
-  private:
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tfb_;
-    std::shared_ptr<tf2_ros::TransformListener> tfl_;
-    std::shared_ptr<tf2_ros::Buffer> tf_;
+private:
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tfb_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tf_;
 
-    bool sent_first_transform_;
+  bool sent_first_transform_;
 
-    tf2::Transform latest_tf_;
-    bool latest_tf_valid_;
+  tf2::Transform latest_tf_;
+  bool latest_tf_valid_;
 
-    // Pose-generating function used to uniformly distribute particles over
-    // the map
-    static pf_vector_t uniformPoseGenerator(void* arg);
+  // Pose-generating function used to uniformly distribute particles over
+  // the map
+  static pf_vector_t uniformPoseGenerator(void *arg);
 #if NEW_UNIFORM_SAMPLING
-    static std::vector<std::pair<int,int> > free_space_indices;
+  static std::vector<std::pair<int, int>> free_space_indices;
 #endif
-    // Callbacks
-    bool globalLocalizationCallback(std_srvs::Empty::Request& req,
-                                    std_srvs::Empty::Response& res);
-    bool nomotionUpdateCallback(std_srvs::Empty::Request& req,
-                                    std_srvs::Empty::Response& res);
-    bool setMapCallback(nav_msgs::SetMap::Request& req,
-                        nav_msgs::SetMap::Response& res);
+  // Callbacks
+  bool globalLocalizationCallback(std_srvs::Empty::Request &req,
+                                  std_srvs::Empty::Response &res);
+  bool nomotionUpdateCallback(std_srvs::Empty::Request &req,
+                              std_srvs::Empty::Response &res);
+  bool setMapCallback(nav_msgs::SetMap::Request &req,
+                      nav_msgs::SetMap::Response &res);
 
-    void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
-    void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
-    void handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg);
-    void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
+  void laserReceived(const sensor_msgs::LaserScanConstPtr &laser_scan);
+  void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
+  void handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped &msg);
+  void mapReceived(const nav_msgs::OccupancyGridConstPtr &msg);
+  void gpsPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
+  void handleGPSPoseMessage(const geometry_msgs::PoseWithCovarianceStamped &msg);
 
-    void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
-    void freeMapDependentMemory();
-    map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
-    void updatePoseFromServer();
-    void applyInitialPose();
+  void handleMapMessage(const nav_msgs::OccupancyGrid &msg);
+  void freeMapDependentMemory();
+  map_t *convertMap(const nav_msgs::OccupancyGrid &map_msg);
+  void updatePoseFromServer();
+  void applyInitialPose();
 
-    //parameter for what odom to use
-    std::string odom_frame_id_;
+  //parameter for what odom to use
+  std::string odom_frame_id_;
 
-    //paramater to store latest odom pose
-    geometry_msgs::PoseStamped latest_odom_pose_;
+  //paramater to store latest odom pose
+  geometry_msgs::PoseStamped latest_odom_pose_;
 
-    //parameter for what base to use
-    std::string base_frame_id_;
-    std::string global_frame_id_;
+  //parameter for what base to use
+  std::string base_frame_id_;
+  std::string global_frame_id_;
 
-    bool use_map_topic_;
-    bool first_map_only_;
+  bool use_map_topic_;
+  bool first_map_only_;
 
-    ros::Duration gui_publish_period;
-    ros::Time save_pose_last_time;
-    ros::Duration save_pose_period;
+  ros::Duration gui_publish_period;
+  ros::Time save_pose_last_time;
+  ros::Duration save_pose_period;
 
-    geometry_msgs::PoseWithCovarianceStamped last_published_pose;
+  geometry_msgs::PoseWithCovarianceStamped last_published_pose;
 
-    map_t* map_;
-    char* mapdata;
-    int sx, sy;
-    double resolution;
+  // GPS related variables
+  pf_vector_t last_received_gps_pose;
+  geometry_msgs::PoseWithCovarianceStamped last_received_gps_msg;
+  // variable which will allow the node to publish gps data if no laser data is received
+  bool use_gps_without_scan;
+  bool use_gps = true;
+  bool gps_received = false;
+  // how many times should gps pose match the map better than AMCL before re initialising AMCL pose
+  int degraded_amcl_localisation_count_max = 4;
+  int degraded_amcl_localisation_counter = 0;
 
-    message_filters::Subscriber<sensor_msgs::LaserScan>* laser_scan_sub_;
-    tf2_ros::MessageFilter<sensor_msgs::LaserScan>* laser_scan_filter_;
-    ros::Subscriber initial_pose_sub_;
-    std::vector< AMCLLaser* > lasers_;
-    std::vector< bool > lasers_update_;
-    std::map< std::string, int > frame_to_laser_;
+  map_t *map_;
+  char *mapdata;
+  int sx, sy;
+  double resolution;
 
-    // Particle filter
-    pf_t *pf_;
-    double pf_err_, pf_z_;
-    bool pf_init_;
-    pf_vector_t pf_odom_pose_;
-    double d_thresh_, a_thresh_;
-    int resample_interval_;
-    int resample_count_;
-    double laser_min_range_;
-    double laser_max_range_;
+  message_filters::Subscriber<sensor_msgs::LaserScan> *laser_scan_sub_;
+  tf2_ros::MessageFilter<sensor_msgs::LaserScan> *laser_scan_filter_;
+  ros::Subscriber initial_pose_sub_;
+  ros::Subscriber gps_pose_sub_;
+  std::vector<AMCLLaser *> lasers_;
+  std::vector<bool> lasers_update_;
+  std::map<std::string, int> frame_to_laser_;
 
-    //Nomotion update control
-    bool m_force_update;  // used to temporarily let amcl update samples even when no motion occurs...
+  // Particle filter
+  pf_t *pf_;
+  double pf_err_, pf_z_;
+  bool pf_init_;
+  pf_vector_t pf_odom_pose_;
+  double d_thresh_, a_thresh_;
+  int resample_interval_;
+  int resample_count_;
+  double laser_min_range_;
+  double laser_max_range_;
 
-    AMCLOdom* odom_;
-    AMCLLaser* laser_;
+  //Nomotion update control
+  bool m_force_update; // used to temporarily let amcl update samples even when no motion occurs...
 
-    ros::Duration cloud_pub_interval;
-    ros::Time last_cloud_pub_time;
+  AMCLOdom *odom_;
+  AMCLLaser *laser_;
 
-    // For slowing play-back when reading directly from a bag file
-    ros::WallDuration bag_scan_period_;
+  ros::Duration cloud_pub_interval;
+  ros::Time last_cloud_pub_time;
 
-    void requestMap();
+  // For slowing play-back when reading directly from a bag file
+  ros::WallDuration bag_scan_period_;
 
-    // Helper to get odometric pose from transform system
-    bool getOdomPose(geometry_msgs::PoseStamped& pose,
-                     double& x, double& y, double& yaw,
-                     const ros::Time& t, const std::string& f);
+  void requestMap();
 
-    //time for tolerance on the published transform,
-    //basically defines how long a map->odom transform is good for
-    ros::Duration transform_tolerance_;
+  // Helper to get odometric pose from transform system
+  bool getOdomPose(geometry_msgs::PoseStamped &pose,
+                   double &x, double &y, double &yaw,
+                   const ros::Time &t, const std::string &f);
 
-    ros::NodeHandle nh_;
-    ros::NodeHandle private_nh_;
-    ros::Publisher pose_pub_;
-    ros::Publisher particlecloud_pub_;
-    ros::Publisher localisation_quality_pub_;
-    ros::ServiceServer global_loc_srv_;
-    ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
-    ros::ServiceServer set_map_srv_;
-    ros::Subscriber initial_pose_sub_old_;
-    ros::Subscriber map_sub_;
+  //time for tolerance on the published transform,
+  //basically defines how long a map->odom transform is good for
+  ros::Duration transform_tolerance_;
 
-    diagnostic_updater::Updater diagnosic_updater_;
-    void standardDeviationDiagnostics(diagnostic_updater::DiagnosticStatusWrapper& diagnostic_status);
-    double std_warn_level_x_;
-    double std_warn_level_y_;
-    double std_warn_level_yaw_;
+  ros::NodeHandle nh_;
+  ros::NodeHandle private_nh_;
+  ros::Publisher pose_pub_;
+  ros::Publisher particlecloud_pub_;
+  ros::Publisher filtered_amcl_pose_pub_;
+  ros::Publisher filtered_gps_pose_pub_;
+  ros::Publisher localisation_quality_pub_;
+  ros::ServiceServer global_loc_srv_;
+  ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
+  ros::ServiceServer set_map_srv_;
+  ros::Subscriber initial_pose_sub_old_;
+  ros::Subscriber map_sub_;
 
-    amcl_hyp_t* initial_pose_hyp_;
-    bool first_map_received_;
-    bool first_reconfigure_call_;
+  diagnostic_updater::Updater diagnosic_updater_;
+  void standardDeviationDiagnostics(diagnostic_updater::DiagnosticStatusWrapper &diagnostic_status);
+  double std_warn_level_x_;
+  double std_warn_level_y_;
+  double std_warn_level_yaw_;
 
-    boost::recursive_mutex configuration_mutex_;
-    dynamic_reconfigure::Server<mel_amcl::MEL_AMCLConfig> *dsrv_;
-    mel_amcl::MEL_AMCLConfig default_config_;
-    ros::Timer check_laser_timer_;
+  amcl_hyp_t *initial_pose_hyp_;
+  bool first_map_received_;
+  bool first_reconfigure_call_;
 
-    int max_beams_, min_particles_, max_particles_;
-    double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
-    double alpha_slow_, alpha_fast_;
-    double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
+  boost::recursive_mutex configuration_mutex_;
+  dynamic_reconfigure::Server<mel_amcl::MEL_AMCLConfig> *dsrv_;
+  mel_amcl::MEL_AMCLConfig default_config_;
+  ros::Timer check_laser_timer_;
+  ros::Timer check_gps_timer_;
+
+  int max_beams_, min_particles_, max_particles_;
+  double alpha1_, alpha2_, alpha3_, alpha4_, alpha5_;
+  double alpha_slow_, alpha_fast_;
+  double z_hit_, z_short_, z_max_, z_rand_, sigma_hit_, lambda_short_;
   //beam skip related params
-    bool do_beamskip_;
-    double beam_skip_distance_, beam_skip_threshold_, beam_skip_error_threshold_;
-    double laser_likelihood_max_dist_;
-    odom_model_t odom_model_type_;
-    double init_pose_[3];
-    double init_cov_[3];
-    laser_model_t laser_model_type_;
-    bool tf_broadcast_;
+  bool do_beamskip_;
+  double beam_skip_distance_, beam_skip_threshold_, beam_skip_error_threshold_;
+  double laser_likelihood_max_dist_;
+  odom_model_t odom_model_type_;
+  double init_pose_[3];
+  double init_cov_[3];
+  laser_model_t laser_model_type_;
+  bool tf_broadcast_;
 
-    void reconfigureCB(mel_amcl::MEL_AMCLConfig &config, uint32_t level);
+  void reconfigureCB(mel_amcl::MEL_AMCLConfig &config, uint32_t level);
 
-    ros::Time last_laser_received_ts_;
-    ros::Duration laser_check_interval_;
-    void checkLaserReceived(const ros::TimerEvent& event);
+  ros::Time last_laser_received_ts_;
+  ros::Time last_gps_map_pose_received_ts_;
+  ros::Duration laser_check_interval_;
+  ros::Duration gps_check_interval_;
+  void checkLaserReceived(const ros::TimerEvent &event);
+  void checkGPSReceived(const ros::TimerEvent &event);
 };
 
 std::vector<std::pair<int,int> > AmclNode::free_space_indices;
@@ -461,7 +482,7 @@ AmclNode::AmclNode() :
   pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   localisation_quality_pub_ = nh_.advertise<std_msgs::Float64>("amcl_quality", 2, true);
-
+  filtered_amcl_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose/filtered", 2, true);
   
   global_loc_srv_ = nh_.advertiseService("global_localization", 
 					 &AmclNode::globalLocalizationCallback,
@@ -497,9 +518,56 @@ AmclNode::AmclNode() :
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
 
+
+  if (use_gps)
+  {
+
+  gps_pose_sub_ = nh_.subscribe("gps/map_pose", 5, &AmclNode::gpsPoseReceived, this);
+  filtered_gps_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("gps/map_pose/filtered", 2, true);
+
+  gps_check_interval_ = ros::Duration(2.0);
+  check_gps_timer_ = nh_.createTimer(gps_check_interval_,
+                                       boost::bind(&AmclNode::checkGPSReceived, this, _1));    
+  }
+
+
+
   diagnosic_updater_.setHardwareID("None");
   diagnosic_updater_.add("Standard deviation", this, &AmclNode::standardDeviationDiagnostics);
 }
+
+
+void AmclNode::gpsPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg)
+{
+  handleGPSPoseMessage(*msg);
+  /*
+  if(pf_init_)
+  {
+    handleGPSPoseMessage(*msg);
+  }
+  */
+}
+
+void AmclNode::handleGPSPoseMessage(const geometry_msgs::PoseWithCovarianceStamped &msg)
+{
+
+  // Put GPS pose data into format for AMCLLaser::LikelihoodField so we can compute likelihood
+  pf_vector_t gps_pose = pf_vector_zero();
+  gps_pose.v[0] = msg.pose.pose.position.x;
+  gps_pose.v[1] = msg.pose.pose.position.y;
+  gps_pose.v[2] = tf2::getYaw(msg.pose.pose.orientation);
+
+  last_gps_map_pose_received_ts_ = msg.header.stamp; //ros::Time::now();
+  last_received_gps_pose = gps_pose;
+  last_received_gps_msg = msg;
+
+  if (use_gps_without_scan == true || !first_map_received_)
+  {
+    filtered_gps_pose_pub_.publish(msg);
+  }
+
+}
+
 
 void AmclNode::reconfigureCB(MEL_AMCLConfig &config, uint32_t level)
 {
@@ -814,7 +882,30 @@ AmclNode::checkLaserReceived(const ros::TimerEvent& event)
     ROS_WARN("No laser scan received (and thus no pose updates have been published) for %f seconds.  Verify that data is being published on the %s topic.",
              d.toSec(),
              ros::names::resolve(scan_topic_).c_str());
+
+    use_gps_without_scan = true;
   }
+  else
+  {
+    use_gps_without_scan = false;
+  }
+}
+
+void AmclNode::checkGPSReceived(const ros::TimerEvent &event)
+{
+  ros::Duration d = ros::Time::now() - last_gps_map_pose_received_ts_;  
+  if (d > gps_check_interval_)
+  {
+    ROS_WARN("No GPS data received for %f seconds.  Verify that gps data in the map frame is being published on the %s topic. Will use Lidar only if availlable.",
+             d.toSec(),
+             ros::names::resolve(gps_map_frame_topic_).c_str());
+    gps_received = false;
+  }
+  else
+  {
+    gps_received = true;
+  }
+  
 }
 
 void
@@ -1354,13 +1445,15 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       }
     }
 
+    bool use_filtered_amcl_pose_;
+
     if (max_weight > 0.0)
     {
       double weight_amcl_from_scan;
       // can change laser data back to ldata if I am using it in this (laserReceived) function
       if (laser_model_type_ == LASER_MODEL_BEAM)
       {
-       weight_amcl_from_scan = AMCLLaser::BeamModelFromPose((AMCLLaserData *)&ldata, hyps[max_weight_hyp].pf_pose_mean.v[0], hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
+        weight_amcl_from_scan = AMCLLaser::BeamModelFromPose((AMCLLaserData *)&ldata, hyps[max_weight_hyp].pf_pose_mean.v[0], hyps[max_weight_hyp].pf_pose_mean.v[1], hyps[max_weight_hyp].pf_pose_mean.v[2]);
       }
       else if (laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD)
       {
@@ -1380,6 +1473,73 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       std_msgs::Float64 localisation_quality;
       localisation_quality.data = weight_amcl_from_scan;
       localisation_quality_pub_.publish(localisation_quality);
+
+
+      if (use_gps && gps_received)
+      {
+        double weight_gps_from_scan;
+
+        if (laser_model_type_ == LASER_MODEL_BEAM)
+        {
+          weight_gps_from_scan = AMCLLaser::BeamModelFromPose((AMCLLaserData *)&ldata, last_received_gps_pose.v[0], last_received_gps_pose.v[1], last_received_gps_pose.v[2]);
+        }
+        else if (laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD)
+        {
+          weight_gps_from_scan = AMCLLaser::LikelihoodFieldModelFromPose((AMCLLaserData *)&ldata, last_received_gps_pose.v[0], last_received_gps_pose.v[1], last_received_gps_pose.v[2]);
+        }
+        else if (laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB)
+        {
+          weight_gps_from_scan = AMCLLaser::LikelihoodFieldModelProbFromPose((AMCLLaserData *)&ldata, last_received_gps_pose.v[0], last_received_gps_pose.v[1], last_received_gps_pose.v[2]);
+        }
+        else
+        {
+          weight_gps_from_scan = AMCLLaser::LikelihoodFieldModelFromPose((AMCLLaserData *)&ldata, last_received_gps_pose.v[0], last_received_gps_pose.v[1], last_received_gps_pose.v[2]);
+        }
+
+        ROS_INFO("TOTAL WEIGHT GPS pose : %.12f", weight_gps_from_scan);
+
+        // Localisation quality monitor (AMCL vs GPS)
+        // Compare likelihood between gps and amcl positions, reinitialise AMCL if its weight is low
+        // degraded_amcl_localisation_count_max times in a row
+        if (weight_gps_from_scan > weight_amcl_from_scan)
+        {
+          ROS_INFO("Using GPS pos");
+          // publish gps position on gps_transform/filtered topic
+          filtered_gps_pose_pub_.publish(last_received_gps_msg);
+
+          if ((weight_amcl_from_scan < 2) && (weight_gps_from_scan > 5))
+          {
+            degraded_amcl_localisation_counter++;
+            use_filtered_amcl_pose_ = false;
+            if (degraded_amcl_localisation_counter >= degraded_amcl_localisation_count_max)
+            {
+              ROS_INFO("Resetting AMCL pose");
+
+              // reinitialise particle filter with the gps data
+              handleInitialPoseMessage(last_received_gps_msg);
+              degraded_amcl_localisation_counter = 0;
+            }
+          }
+        }
+        else
+        {
+          ROS_INFO("Using AMCL pos");
+          degraded_amcl_localisation_counter = 0;
+          // publish AMCL position on AMCL_pose/filtered topic
+          use_filtered_amcl_pose_ = true;
+        }
+
+        // Just to test what is the time difference between gps and laser scan data
+        // NOTE: it was less than 1/10 of a second.
+        /*
+      ros::Duration time_diff = gps_msg.header.stamp - laser_scan->header.stamp;
+      ROS_INFO("Time difference between gps and scan is: %f", time_diff.toSec());
+      */
+      }
+      else
+      {
+        use_filtered_amcl_pose_ = true;
+      }
     }
 
     if(max_weight > 0.0)
@@ -1434,6 +1594,10 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
        */
 
       pose_pub_.publish(p);
+      if (use_filtered_amcl_pose_ == true)
+      {
+        filtered_amcl_pose_pub_.publish(p);
+      }
       last_published_pose = p;
 
       ROS_DEBUG("New pose: %6.3f %6.3f %6.3f",
