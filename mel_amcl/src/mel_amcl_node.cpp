@@ -51,6 +51,7 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "nav_msgs/GetMap.h"
 #include "nav_msgs/SetMap.h"
+#include "nav_msgs/Odometry.h"
 #include "std_srvs/Empty.h"
 #include "std_msgs/Float64.h"
 
@@ -118,6 +119,9 @@ angle_diff(double a, double b)
 
 static const std::string scan_topic_ = "scan";
 static const std::string gps_map_frame_topic_ = "gps/map_pose";
+// in case we have a datum relating to the map and use navsat_transform_node instead of gps_transform.py:
+static const std::string gps_odom_topic_ = "odometry/gps"; 
+
 
 /* This function is only useful to have the whole code work
  * with old rosbags that have trailing slashes for their frames
@@ -174,6 +178,7 @@ private:
   void handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped &msg);
   void mapReceived(const nav_msgs::OccupancyGridConstPtr &msg);
   void gpsPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg);
+  void gpsOdomReceived(const nav_msgs::Odometry odom_msg);
   void handleGPSPoseMessage(const geometry_msgs::PoseWithCovarianceStamped &msg);
 
   void handleMapMessage(const nav_msgs::OccupancyGrid &msg);
@@ -207,6 +212,9 @@ private:
   // variable which will allow the node to publish gps data if no laser data is received
   bool use_gps_without_scan;
   bool use_gps;
+  // For navsat_transform node & georeferenced datum in map or for robot_localisation ekf output (incase we want to fiter gps first)
+  // This will be particularly useful for fusing noisy gps and imu data instea of dual rtk.
+  bool use_gps_odom;
   bool gps_received = false;
   // how many times should gps pose match the map better than AMCL before re initialising AMCL pose
   int degraded_amcl_localisation_count_max = 4;
@@ -221,6 +229,7 @@ private:
   tf2_ros::MessageFilter<sensor_msgs::LaserScan> *laser_scan_filter_;
   ros::Subscriber initial_pose_sub_;
   ros::Subscriber gps_pose_sub_;
+  ros::Subscriber gps_odom_sub_;
   std::vector<AMCLLaser *> lasers_;
   std::vector<bool> lasers_update_;
   std::map<std::string, int> frame_to_laser_;
@@ -305,7 +314,7 @@ private:
   void reconfigureCB(mel_amcl::MEL_AMCLConfig &config, uint32_t level);
 
   ros::Time last_laser_received_ts_;
-  ros::Time last_gps_map_pose_received_ts_;
+  ros::Time last_gps_msg_received_ts_;
   ros::Duration laser_check_interval_;
   ros::Duration gps_check_interval_;
   void checkLaserReceived(const ros::TimerEvent &event);
@@ -519,8 +528,23 @@ AmclNode::AmclNode() :
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
 
   private_nh_.param("use_gps", use_gps, false);
+  // for navsat_transform node & georeferenced datum in map or for robot_localisation ekf output (incase we want to fiter gps first)
+  // this will be particularly useful for fusing noisy gps and imu data instea of dual rtk.
+  private_nh_.param("use_gps_odom", use_gps_odom, false);
 
-  if (use_gps)
+
+
+  if (use_gps_odom)
+  {
+
+  gps_odom_sub_ = nh_.subscribe(gps_odom_topic_, 5, &AmclNode::gpsOdomReceived, this);
+  filtered_gps_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("gps/map_pose/filtered", 2, true);
+
+  gps_check_interval_ = ros::Duration(2.0);
+  check_gps_timer_ = nh_.createTimer(gps_check_interval_,
+                                       boost::bind(&AmclNode::checkGPSReceived, this, _1));    
+  }
+  else if (use_gps)
   {
 
   gps_pose_sub_ = nh_.subscribe(gps_map_frame_topic_, 5, &AmclNode::gpsPoseReceived, this);
@@ -532,21 +556,24 @@ AmclNode::AmclNode() :
   }
 
 
-
   diagnosic_updater_.setHardwareID("None");
   diagnosic_updater_.add("Standard deviation", this, &AmclNode::standardDeviationDiagnostics);
 }
 
 
+void AmclNode::gpsOdomReceived(const nav_msgs::Odometry odom_msg)
+{
+
+  geometry_msgs::PoseWithCovarianceStamped pose_msg;
+  pose_msg.header = odom_msg.header;
+  pose_msg.pose = odom_msg.pose;
+
+  handleGPSPoseMessage(pose_msg);
+}
+
 void AmclNode::gpsPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr &msg)
 {
   handleGPSPoseMessage(*msg);
-  /*
-  if(pf_init_)
-  {
-    handleGPSPoseMessage(*msg);
-  }
-  */
 }
 
 void AmclNode::handleGPSPoseMessage(const geometry_msgs::PoseWithCovarianceStamped &msg)
@@ -558,7 +585,7 @@ void AmclNode::handleGPSPoseMessage(const geometry_msgs::PoseWithCovarianceStamp
   gps_pose.v[1] = msg.pose.pose.position.y;
   gps_pose.v[2] = tf2::getYaw(msg.pose.pose.orientation);
 
-  last_gps_map_pose_received_ts_ = msg.header.stamp; //ros::Time::now();
+  last_gps_msg_received_ts_ = msg.header.stamp; //ros::Time::now();
   last_received_gps_pose = gps_pose;
   last_received_gps_msg = msg;
 
@@ -894,12 +921,21 @@ AmclNode::checkLaserReceived(const ros::TimerEvent& event)
 
 void AmclNode::checkGPSReceived(const ros::TimerEvent &event)
 {
-  ros::Duration d = ros::Time::now() - last_gps_map_pose_received_ts_;  
+  ros::Duration d = ros::Time::now() - last_gps_msg_received_ts_;  
   if (d > gps_check_interval_)
   {
-    ROS_WARN("No GPS data received for %f seconds.  Verify that gps data in the map frame is being published on the %s topic. Will use Lidar only if availlable.",
+    if (use_gps)
+    {
+      ROS_WARN("No GPS data received for %f seconds.  Verify that gps data in the map frame is being published on the %s topic. Will use Lidar only if availlable.",
              d.toSec(),
              ros::names::resolve(gps_map_frame_topic_).c_str());
+    }
+    else if (use_gps_odom)
+    {
+            ROS_WARN("No GPS data received for %f seconds.  Verify that gps data in the map frame is being published on the %s topic. Will use Lidar only if availlable.",
+             d.toSec(),
+             ros::names::resolve(gps_odom_topic_).c_str());
+    }
     gps_received = false;
   }
   else
