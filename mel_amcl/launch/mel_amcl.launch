@@ -9,8 +9,8 @@
     <remap from="odometry/filtered" to="rl/odom"/>
   </node> -->
 
-  <arg name="use_gps" default="false"/>
-  <arg name="use_gps_odom" default="true"/>
+  <arg name="use_gps" default="true"/>
+  <arg name="use_gps_odom" default="false"/>
 
 
   <arg name="initial_pose_x" default="0.0"/>
