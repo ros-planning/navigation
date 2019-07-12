@@ -59,17 +59,17 @@ def get_coord_utm(gps_data_directory):
             a = line.find('$GPGGA')
             b = line.find('$GPGST')
             if a == 0:               #True only if line starts with $GPGGA
-                latitude=np.append(line[17:29],latitude) # had to change from 30 as precision changed
-                longitude=np.append(line[32:45],longitude) # had to change from 46 as precision changed
-                if line[46] == 'W':
+                latitude=np.append(line[17:30],latitude) # had to change from 30 as precision changed
+                longitude=np.append(line[33:46],longitude) # had to change from 46 as precision changed
+                if line[47] == 'W':
                     west_hem=1    #flag to identify west hemisphere (longitude must be multiplied with -1 after converting to degrees)
                     ##   Weights ##
                 else:
                     west_hem=0
 
             if b == 0:
-                lat_err = np.append(line[-21:-17],lat_err)
-                lon_err = np.append(line[-15:-11],lon_err) 
+                lat_err = np.append(line[-22:-17],lat_err)
+                lon_err = np.append(line[-16:-11],lon_err) 
             line = test.readline()  #Read next line  
         latitude=np.array(latitude).astype(np.float)   #convert string to float
         longitude=np.array(longitude).astype(np.float) #convert string to float

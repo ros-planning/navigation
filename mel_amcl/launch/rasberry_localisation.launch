@@ -3,7 +3,7 @@
 <launch>
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
-  <!-- <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.30 0 0.41 0 0 0 1 base_link septentrio 100" output="log">
+ <!--  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="0.535 0.40 0.41 0.633 0 0 base_link septentrio 100" output="log">
   </node> -->
 
   <!-- gps yaw offset - if the two gps's are not parallel with forward direction of robot. Note: could probably just add to static transform but this makes it easier to debug -->
@@ -16,11 +16,18 @@
   <!-- launch this node to transform data to the riseholme map frame -->
   <node pkg="mel_amcl" type="gps_transform.py" name="gps_transform" output="screen">
     <param name="gps_frame_id" value="septentrio" />
+<<<<<<< HEAD
     <remap from="gps/fix" to="gps/fix_septentrio"/> <!-- gps input topic name -->
     <!--  <param name="yaw_topic" value="/yaw/septentrio" /> -->
     <remap from="yaw" to="yaw/na"/> <!-- name of earth referenced heading imu type msg -->
     <param name="gps_log_directory" value="norway" /> <!-- directory name inside the rasberry_localisation packages gps_logs folder: rasberry_localisation/gps_logs/ -->     
     <param name="gps_yaw_offset_rad" value="$(arg gps_yaw_offset_rad)" />   
+=======
+    <param name="gps_log_directory" value="riseholme_06-2019" /> <!-- directory name inside the rasberry_localisation packages gps_logs folder: rasberry_localisation/gps_logs/ -->     
+    <param name="gps_yaw_offset_rad" value="$(arg gps_yaw_offset_rad)" />   
+    <remap from="gps/fix" to="/fix"/> <!-- gps input topic name -->
+    <remap from="yaw" to="/yaw"/> <!-- name of earth referenced heading imu type msg -->
+>>>>>>> 309ee7f... update files from tests on robot
  </node> 
 
 
