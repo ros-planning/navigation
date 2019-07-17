@@ -37,6 +37,7 @@
 #include <rotate_recovery/rotate_recovery.h>
 #include <pluginlib/class_list_macros.h>
 #include <nav_core/parameter_magic.h>
+#include <tf2/utils.h>
 
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
@@ -101,7 +102,7 @@ void RotateRecovery::runBehavior(){
 
   double rotated_angle = 0.0;
 
-  double prev_yaw = tf::getYaw(global_pose.getRotation());
+  double prev_yaw = tf2::getYaw(global_pose.pose.orientation);
   const double dir = rotate_positive_ ? 1.0 : -1.0;
   const double max_stopping_distance =
       acc_lim_th_ > 0 ? max_rotational_vel_ * max_rotational_vel_ / (2.0 * acc_lim_th_) : M_PI_4;
@@ -109,14 +110,14 @@ void RotateRecovery::runBehavior(){
   while(n.ok()){
     local_costmap_->getRobotPose(global_pose);
 
-    const double current_yaw = tf::getYaw(global_pose.getRotation());
+    const double current_yaw = tf2::getYaw(global_pose.pose.orientation);
     rotated_angle += dir * angles::normalize_angle(current_yaw - prev_yaw);
     prev_yaw = current_yaw;
 
     //compute the distance left to rotate
     double dist_left = 2 * M_PI - rotated_angle;
 
-    const double x = global_pose.getOrigin().x(), y = global_pose.getOrigin().y();
+    const double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
     //check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
