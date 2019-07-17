@@ -105,7 +105,14 @@ void SimpleTrajectoryGenerator::initialise(
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_time_);
     } else {
       // with dwa do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
-      max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
+      max_vel_x = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
+      if (max_vel_x <= limits_->min_trans_vel) {
+        max_vel[0] = max_vel_x;
+      } else {
+        // prevent fast accelerations while turning to reduce risk of slip
+        max_vel[0] = std::min(max_vel_x, std::max(limits_->min_trans_vel,
+            vel[0] + std::max(0.0, acc_lim[0] * sim_period_ * (1.0 - 2.0 * std::fabs(vel[2])))));
+      }
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_period_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
 
