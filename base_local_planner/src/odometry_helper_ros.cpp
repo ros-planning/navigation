@@ -204,15 +204,11 @@ nav_msgs::Odometry OdometryHelperRos::forwardEstimateOdometry(geometry_msgs::Twi
   double t = 0;
   while (t < estimate_dt)
   {
-    //ROS_DEBUG("updating from [%f, %f, %f] and vel from [%f, %f]",
-      //pos[0], pos[1], pos[2], vel[0], vel[2]);
     t += loop_dt;
     pos = computeNewPositions(pos, vel, loop_dt / 2);
     vel = computeNewVelocities(des_vel, vel, linear_acceleration_rate_, wheelbase_, loop_dt);
     pos = computeNewPositions(pos, vel, loop_dt / 2);
 
-  //ROS_DEBUG("updating to [%f, %f, %f] and vel to [%f, %f]",
-    //pos[0], pos[1], pos[2], vel[0], vel[2]);
   }
 
   // Package up the information into an odometry message
@@ -266,7 +262,6 @@ Eigen::Vector3f OdometryHelperRos::computeNewVelocities(Eigen::Vector3f desired_
     // Scale to the right wheel
     scaleWheelSpeedChanges(dRight, dLeft, wheel_limits, dt);
   }
-  //ROS_DEBUG("Post-scaling: dLeft %f, dRight %f", dLeft, dRight);
   // Convert wheel velocities into body velocities.
   double new_left_ms = left_ms_current + dLeft;
   double new_right_ms = right_ms_current + dRight;

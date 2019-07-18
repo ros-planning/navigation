@@ -120,8 +120,7 @@ double ShadowSpeedLimiter::getMapGridDistance(geometry_msgs::Point obj)
   }
   double grid_dist = map_grid_(px, py).target_dist;
   double out_dist = grid_dist * costmap_->getCostmap()->getResolution();
-
-  //ROS_DEBUG("x: %f, y: %f, grid_dist %f, out_dist %f", obj.x, obj.y, grid_dist, out_dist);
+  
   return out_dist;
 }
 
