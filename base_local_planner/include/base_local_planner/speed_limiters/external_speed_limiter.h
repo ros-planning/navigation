@@ -71,7 +71,7 @@ public:
   std::string getName();
   
 private:
-  void reconfigure(ExternalSpeedLimiterConfig &cfg, uint32_t level) {
+  void reconfigure(ExternalSpeedLimiterConfig cfg) {
     params_ = cfg;
   }
 
@@ -80,7 +80,7 @@ private:
     last_msg_time_ = ros::Time::now();
   }
 
-  std::shared_ptr<dynamic_reconfigure::Server<ExternalSpeedLimiterConfig>> configServer_;
+  std::shared_ptr<dynamic_reconfigure::Client<ExternalSpeedLimiterConfig>> configClient_;
   ExternalSpeedLimiterConfig params_;
 
   ros::Subscriber subscriber_;

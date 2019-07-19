@@ -43,8 +43,8 @@ namespace base_local_planner {
 
 void PathSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/path");
-  configServer_ = std::make_shared<dynamic_reconfigure::Server<PathSpeedLimiterConfig>>(private_nh);
-  configServer_->setCallback(boost::bind(&PathSpeedLimiter::reconfigure, this, _1, _2));
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<PathSpeedLimiterConfig>>(name + "/path");
+  configClient_->setConfigurationCallback(boost::bind(&PathSpeedLimiter::reconfigure, this, _1));
 }
 
 std::string PathSpeedLimiter::getName(){
@@ -98,7 +98,7 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
 
   for (size_t k = 0; k < plan_.size() - 1; ++k)
   {
-    ROS_DEBUG("Searching along plan at k=%zu", k);
+    //ROS_DEBUG("Searching along plan at k=%zu", k);
     // Pull out the datas
     p0 = poseStampedToVector(plan_[k]);
     p1 = poseStampedToVector(plan_[k + 1]);

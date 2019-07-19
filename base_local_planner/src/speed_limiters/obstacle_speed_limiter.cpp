@@ -45,8 +45,10 @@ namespace base_local_planner {
 
 void ObstacleSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/obstacle");
-  configServer_ = std::make_shared<dynamic_reconfigure::Server<ObstacleSpeedLimiterConfig>>(private_nh);
-  configServer_->setCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1, _2));
+  
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<ObstacleSpeedLimiterConfig>>(name + "/obstacle");
+  configClient_->setConfigurationCallback(boost::bind(&ObstacleSpeedLimiter::reconfigure, this, _1));
+
   obstacle_pub = private_nh.advertise<base_local_planner::Obstacles>("obstacle_info", 5, true);
 }
 
@@ -197,7 +199,6 @@ double ObstacleSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionM
 
       double distance_to_obstruction = std::sqrt(x_dist_with_buffer * x_dist_with_buffer + y_dist_with_buffer * y_dist_with_buffer);
       double distance_to_obstruction_actual = std::sqrt(x_dist_without_buffer * x_dist_without_buffer + y_dist_without_buffer * y_dist_without_buffer);
-      ROS_DEBUG("Obs: %f, %f.  abs x: %f, abs y: %f, Dist: %f", obs.x, obs.y, abs_x_dist, abs_y_dist, distance_to_obstruction);
 
       result.distance = distance_to_obstruction_actual;
       result.heading = getBearingToObstacle(obs);
@@ -270,7 +271,6 @@ costmap_2d::ObstructionMsg ObstacleSpeedLimiter::obstructionToBodyFrame(const co
   out.x = pt_out[0];
   out.y = pt_out[1];
 
-  ROS_DEBUG("Converted point from [%f, %f] to [%f, %f]", in.x, in.y, out.x, out.y);
 
   return out;
 }

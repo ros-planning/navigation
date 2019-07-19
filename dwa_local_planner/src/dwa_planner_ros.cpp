@@ -56,7 +56,7 @@ PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlan
 
 namespace dwa_local_planner {
 
-  void DWAPlannerROS::reconfigureCB(DWAPlannerModeConfig &main_config, uint32_t level) {
+  void DWAPlannerROS::reconfigureCB(DWAPlannerConfig &main_config, uint32_t level) {
       if (setup_ && main_config.restore_defaults) {
         main_config = default_config_;
         main_config.restore_defaults = false;
@@ -66,17 +66,7 @@ namespace dwa_local_planner {
         setup_ = true;
       }
 
-      // Check the mode
-      int mode = main_config.mode;
-
-      if (mode >= mode_configurations_.size())
-      {
-        ROS_WARN("Could not find mode %d in list of configurations", mode);
-        return;
-      }
-      ROS_INFO("Switching dwa planner to mode %d", mode);
-
-      DWAPlannerConfig config = mode_configurations_[mode]->getConfig();
+      DWAPlannerConfig config = main_config;
 
       // update generic local planner params
       base_local_planner::LocalPlannerLimits limits;
@@ -111,11 +101,6 @@ namespace dwa_local_planner {
 
       // update dwa specific configuration
       dp_->reconfigure(config);
-
-      // publish changes to the mode
-      std_msgs::Int32 mode_msg;
-      mode_msg.data = mode;
-      mode_pub_.publish(mode_msg);
   }
 
   DWAPlannerROS::DWAPlannerROS() : initialized_(false),
@@ -130,15 +115,13 @@ namespace dwa_local_planner {
       tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
     if (! isInitialized()) {
-
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
       tf_ = tf;
       costmap_ros_ = costmap_ros;
       costmap_ros_->getRobotPose(current_pose_);
-
-      planner_util_.initialize(tf, costmap_ros_, costmap_ros_->getGlobalFrameID());
+      planner_util_.initialize(tf, costmap_ros_, costmap_ros_->getGlobalFrameID(), name);
 
       //create the actual planner that we'll use.. it'll configure itself from the parameter server
       dp_ = boost::shared_ptr<DWAPlanner>(new DWAPlanner(name, &planner_util_));
@@ -150,37 +133,10 @@ namespace dwa_local_planner {
       {
         odom_helper_.setOdomTopic( odom_topic_ );
       }
-
-      /////// Set up the different modes.
-      if (!private_nh.hasParam("modes"))
-      {
-        ROS_ERROR("DWAPlannerROS cannot be initialized because no modes were provided.");
-        return;
-      }
-
-      std::vector<std::string> mode_names;
-      private_nh.getParam("modes", mode_names);
-      for (auto mode_name : mode_names)
-      {
-        // Create a config object and store it in the map.
-        auto configuration = std::make_shared<DWAPlannerConfiguration>(name + "/" + mode_name);
-        mode_configurations_.push_back(configuration);
-      }
-
-      private_nh.param<std::string>( "mode_topic", mode_topic_, "mode" );
-      mode_pub_ = private_nh.advertise<std_msgs::Int32>(mode_topic_, 1, true);
-      // publish default mode on startup
-      // todo check if there is a way to get default programmatically
-      std_msgs::Int32 modeMsg;
-      modeMsg.data = 0;
-      mode_pub_.publish(modeMsg);
-      /////// End mode setup.
-
+      configServer_ = std::make_shared<dynamic_reconfigure::Server<DWAPlannerConfig>>(private_nh);
+      configServer_->setCallback(boost::bind(&DWAPlannerROS::reconfigureCB, this, _1, _2));
       initialized_ = true;
 
-      dsrv_ = new dynamic_reconfigure::Server<DWAPlannerModeConfig>(private_nh);
-      dynamic_reconfigure::Server<DWAPlannerModeConfig>::CallbackType cb = boost::bind(&DWAPlannerROS::reconfigureCB, this, _1, _2);
-      dsrv_->setCallback(cb);
     }
     else{
       ROS_WARN("This planner has already been initialized, doing nothing.");
@@ -225,8 +181,6 @@ namespace dwa_local_planner {
   }
 
   DWAPlannerROS::~DWAPlannerROS(){
-    //make sure to clean things up
-    delete dsrv_;
   }
 
   bool DWAPlannerROS::dwaComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, tf::Stamped<tf::Pose>& robot_vel,

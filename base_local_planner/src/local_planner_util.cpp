@@ -44,12 +44,15 @@ namespace base_local_planner {
 void LocalPlannerUtil::initialize(
     tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* costmap,
-    std::string global_frame) {
+    std::string global_frame, std::string controller_name) {
+
+
+      
   if(!initialized_) {
     tf_ = tf;
     costmap_ = costmap;
     global_frame_ = global_frame;
-    speed_limit_manager_.initialize(costmap);
+    speed_limit_manager_.initialize(costmap, controller_name);
     initialized_ = true;
   }
   else{

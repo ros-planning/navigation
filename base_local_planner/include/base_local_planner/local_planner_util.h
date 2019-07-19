@@ -93,7 +93,7 @@ public:
 
   void initialize(tf::TransformListener* tf,
       costmap_2d::Costmap2DROS* costmap,
-      std::string global_frame);
+      std::string global_frame, std::string controller_name);
 
   bool getGoal(tf::Stamped<tf::Pose>& goal_pose);
 

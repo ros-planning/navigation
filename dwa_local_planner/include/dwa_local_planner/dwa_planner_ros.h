@@ -43,7 +43,6 @@
 #include <tf/transform_listener.h>
 
 #include <dynamic_reconfigure/server.h>
-#include <dwa_local_planner/DWAPlannerModeConfig.h>
 #include <dwa_local_planner/dwa_planner_configuration.h>
 
 #include <angles/angles.h>
@@ -128,7 +127,7 @@ namespace dwa_local_planner {
       /**
        * @brief Callback to update the local planner's parameters based on dynamic reconfigure
        */
-      void reconfigureCB(DWAPlannerModeConfig &config, uint32_t level);
+      void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
       void publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
@@ -145,9 +144,7 @@ namespace dwa_local_planner {
 
       costmap_2d::Costmap2DROS* costmap_ros_;
 
-      dynamic_reconfigure::Server<DWAPlannerModeConfig> *dsrv_;
-      dwa_local_planner::DWAPlannerModeConfig default_config_;
-      std::vector<std::shared_ptr<dwa_local_planner::DWAPlannerConfiguration> > mode_configurations_;
+      dwa_local_planner::DWAPlannerConfig default_config_;
 
       bool setup_;
       tf::Stamped<tf::Pose> current_pose_;
@@ -159,11 +156,10 @@ namespace dwa_local_planner {
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
 
-      std::string mode_topic_;
-      ros::Publisher mode_pub_;
-
       srs::MasterTimingDataRecorder tdr_;
       srs::RollingTimingStatisticsCalculator loopTimingStatistics_;
+
+      std::shared_ptr<dynamic_reconfigure::Server<DWAPlannerConfig>> configServer_;
   };
 };
 #endif
