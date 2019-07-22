@@ -1,0 +1,8 @@
+<launch>
+  <arg name="local_planner" default="/move_base/TrajectoryPlannerROS"/>
+  <!-- limit max velocity based on the current position of the robot-->
+  <node pkg="max_velocity_map" type="max_velocity_map_node" name="max_velocity_map_node" output="screen">
+    <remap from="max_velocity_map" to="map"/>
+    <param name="local_planner" value="$(arg local_planner)"/>
+  </node>
+</launch>
