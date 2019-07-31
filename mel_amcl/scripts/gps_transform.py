@@ -119,12 +119,11 @@ class GPS_to_pose_message:
 #        print orientation_input_data[2]
         gps_yaw_offset_rad = rospy.get_param('~gps_yaw_offset_rad', 0.0)
         #self.yaw_trans_rad = orientation_input_data[2] + ref_theta_rad + (pi) + (self.rot[2]) - 12*pi/180 #((pi/2)+gps_yaw_offset_rad) # 
-<<<<<<< HEAD
-        self.yaw_trans_rad = orientation_input_data[2] - ref_theta_rad + pi + (self.rot[2]) - gps_yaw_offset_rad #+ 12*pi/180 #((pi/2)+gps_yaw_offset_rad) # 
-=======
         # In this case the gps was facing backwards, which is why pi is added. Should really be handled in gps_yaw_offset_rad param
-        self.yaw_trans_rad = orientation_input_data[2] - ref_theta_rad + pi - (self.rot[2]) - gps_yaw_offset_rad 
->>>>>>> 309ee7f... update files from tests on robot
+        #self.yaw_trans_rad = orientation_input_data[2] - ref_theta_rad + pi - (self.rot[2]) - gps_yaw_offset_rad 
+        #riseholme version
+        self.yaw_trans_rad = orientation_input_data[2] + ref_theta_rad + (pi/2) - (gps_yaw_offset_rad)
+
 
         trans_quat = tf.transformations.quaternion_from_euler(orientation_input_data[0], orientation_input_data[1], self.yaw_trans_rad)# roll,pttch,yaw
 

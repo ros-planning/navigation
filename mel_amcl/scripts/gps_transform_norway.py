@@ -9,7 +9,7 @@ Created on Wed Apr 10 09:38:47 2019
 # The script uses GGA_to_utm.py to transform the incoming lat/lon to utm coords (eastings northings [ENU system]) and procutes_analysis.py to to find the rotation matrix between utm and the robots map frame.
 # The output of the script is the robots pose (geometry_msgs/PoseWithCovarianceStamped) in the map frame approximated from measurements by the GPS and the rotation matrix which uses reference GPS points in the map. The pose frame_id should match the GPS' to take into accound the transform from the GPS position and the base_link.
 
-from procrutes_analysis import PA
+from procrutes_analysis_norway import PA
 from pyproj import Proj
 import rospy
 from sensor_msgs.msg import NavSatFix

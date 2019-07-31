@@ -172,7 +172,7 @@ ekf_se_map:
   pose0_differential: false
   pose0_relative: false
   pose0_queue_size: 5
-  pose0_rejection_threshold: 5  # Note the difference in parameter name
+  #pose0_rejection_threshold: 5  # Note the difference in parameter name
   pose0_nodelay: true #false (my previous value)
   
   pose1: /amcl_pose/filtered
@@ -184,7 +184,7 @@ ekf_se_map:
   pose1_differential: false
   pose1_relative: false
   pose1_queue_size: 5
-  pose1_rejection_threshold: 2  # Note the difference in parameter name
+  #pose1_rejection_threshold: 2  # Note the difference in parameter name
   pose1_nodelay: true #false (my previous value)
 
 
@@ -207,12 +207,12 @@ ekf_se_map:
                              0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.3,  0,
                              0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.3]
 
-  initial_estimate_covariance: [1.0,  0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    1.0,  0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+  initial_estimate_covariance: [50000.0,  0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    50000.0,  0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    1.0,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    0,    1.0,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    7.0,  0,    0,    0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    0,    0,    0,    1.0,  0,    0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    0,    0,    0,    0,    1.0,  0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    1.0,  0,     0,     0,     0,    0,    0,
