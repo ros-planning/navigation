@@ -44,8 +44,8 @@ PLUGINLIB_EXPORT_CLASS(clear_costmap_recovery::ClearCostmapRecovery, nav_core::R
 using costmap_2d::NO_INFORMATION;
 
 namespace clear_costmap_recovery {
-ClearCostmapRecovery::ClearCostmapRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
-  tf_(NULL), initialized_(false) {} 
+ClearCostmapRecovery::ClearCostmapRecovery(): global_costmap_(NULL), local_costmap_(NULL),
+  tf_(NULL), initialized_(false) {}
 
 void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
@@ -59,16 +59,23 @@ void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
-    
+    private_nh.param("force_updating", force_updating_, false);
+    private_nh.param("affected_maps", affected_maps_, std::string("both"));
+    if (affected_maps_ != "local" && affected_maps_ != "global" && affected_maps_ != "both")
+    {
+      ROS_WARN("Wrong value for affected_maps parameter: '%s'; valid values are 'local', 'global' or 'both'; " \
+               "defaulting to 'both'", affected_maps_.c_str());
+      affected_maps_ = "both";
+    }
+
     std::vector<std::string> clearable_layers_default, clearable_layers;
     clearable_layers_default.push_back( std::string("obstacles") );
     private_nh.param("layer_names", clearable_layers, clearable_layers_default);
 
     for(unsigned i=0; i < clearable_layers.size(); i++) {
-        ROS_INFO("Recovery behavior will clear layer %s", clearable_layers[i].c_str());
+        ROS_INFO("Recovery behavior will clear layer '%s'", clearable_layers[i].c_str());
         clearable_layers_.insert(clearable_layers[i]);
     }
-
 
     initialized_ = true;
   }
@@ -87,9 +94,31 @@ void ClearCostmapRecovery::runBehavior(){
     ROS_ERROR("The costmaps passed to the ClearCostmapRecovery object cannot be NULL. Doing nothing.");
     return;
   }
-  ROS_WARN("Clearing costmap to unstuck robot (%fm).", reset_distance_);
-  clear(global_costmap_);
-  clear(local_costmap_);
+
+  ROS_WARN("Clearing %s costmap%s to unstuck robot (%.2fm).", affected_maps_.c_str(),
+           affected_maps_ == "both" ? "s" : "", reset_distance_);
+
+  ros::WallTime t0 = ros::WallTime::now();
+  if (affected_maps_ == "global" || affected_maps_ == "both")
+  {
+    clear(global_costmap_);
+
+    if (force_updating_)
+      global_costmap_->updateMap();
+
+    ROS_DEBUG("Global costmap cleared in %fs", (ros::WallTime::now() - t0).toSec());
+  }
+
+  t0 = ros::WallTime::now();
+  if (affected_maps_ == "local" || affected_maps_ == "both")
+  {
+    clear(local_costmap_);
+
+    if (force_updating_)
+      local_costmap_->updateMap();
+
+    ROS_DEBUG("Local costmap cleared in %fs", (ros::WallTime::now() - t0).toSec());
+  }
 }
 
 void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
@@ -122,10 +151,10 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 }
 
 
-void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> costmap, 
+void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> costmap,
                                         double pose_x, double pose_y){
   boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(costmap->getMutex()));
- 
+
   double start_point_x = pose_x - reset_distance_ / 2;
   double start_point_y = pose_y - reset_distance_ / 2;
   double end_point_x = start_point_x + reset_distance_;
@@ -138,7 +167,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> 
   unsigned char* grid = costmap->getCharMap();
   for(int x=0; x<(int)costmap->getSizeInCellsX(); x++){
     bool xrange = x>start_x && x<end_x;
-                   
+
     for(int y=0; y<(int)costmap->getSizeInCellsY(); y++){
       if(xrange && y>start_y && y<end_y)
         continue;
