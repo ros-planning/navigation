@@ -16,6 +16,7 @@ from pyproj import Proj
 import rospkg
 import utm
 
+
 def get_coord_utm(gps_data_directory):
     rospack = rospkg.RosPack()
     location = rospack.get_path("mel_amcl") + "/gps_logs/" + gps_data_directory + "/" #location = rospack.get_path("PACKAGE_NAME") + "/FOLDER_NAME/" 

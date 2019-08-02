@@ -56,7 +56,7 @@
     <param name="gui_publish_rate" value="10.0"/>
 
 	<!-- laser model -->
-    <param name="laser_max_beams" value="60"/> 
+    <param name="laser_max_beams" value="30"/> 
     <param name="laser_z_hit" value="0.95"/>
     <param name="laser_z_short" value="0.1"/>
     <param name="laser_z_max" value="0.05"/>
