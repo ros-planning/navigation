@@ -57,7 +57,7 @@ void RotateRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
 
     //get some parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name_);
-    ros::NodeHandle blp_nh("~/DWAPlannerROS");
+    ros::NodeHandle blp_nh("~/RotationRecovery");
 
     //we'll simulate every degree by default
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
