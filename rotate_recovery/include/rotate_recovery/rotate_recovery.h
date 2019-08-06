@@ -78,6 +78,9 @@ namespace rotate_recovery{
        */
       ~RotateRecovery();
 
+    protected:
+      bool rotate_positive_;
+
     private:
       costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
       costmap_2d::Costmap2D costmap_;

@@ -84,6 +84,7 @@ catkin_package(
 #set(ROS_LINK_FLAGS "-g" ${ROS_LINK_FLAGS})
 
 add_library(base_local_planner
+	src/align_with_path_function.cpp
 	src/footprint_helper.cpp
 	src/goal_functions.cpp
 	src/map_cell.cpp

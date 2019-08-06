@@ -111,7 +111,7 @@ install(DIRECTORY examples/
 )
 
 ## Configure Tests
-if(CATKIN_ENABLE_TESTING)
+if(FALSE)#CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
 
   # Bags
