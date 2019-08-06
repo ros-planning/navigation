@@ -43,9 +43,9 @@
   </node>
 
   <!-- eKF for the gps in map frame, to use output, set use_gps_odom arg in mel_amcl to true --> 
-  <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true">
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true">
     <remap from="odometry/filtered" to="odometry/gps"/>
-  </node> -->
+  </node> 
 
 
 </launch>

@@ -30,7 +30,7 @@ class GGA_to_utm_to_map_transformation:
         rospy.loginfo("GPS log dir: %s", self.location)
         
         self.coords_map, self.txtfiles = self.read_files()
-        self.coords_utm = self.get_coord_utm() #Corresponding utm coordinates
+        self.coords_utm, self.utm_zone_num, self.utm_zone_let = self.get_coord_utm() #Corresponding utm coordinates
         self.ground_truth_error = self.get_ground_truth_error()
         
         if self.ground_truth_error < 0.1:
@@ -39,6 +39,9 @@ class GGA_to_utm_to_map_transformation:
             rospy.logwarn("Average GPS ground truth error is:  %f m, consider collecting new ground truth points!", self.ground_truth_error)
 
         self.transformation_matrix, self.theta_trans_rad = self.get_utm_transformation_matrix()
+
+        self.datum_lat, self.datum_lon = self.get_datum()
+
 
     def read_files(self):
         
@@ -124,11 +127,13 @@ class GGA_to_utm_to_map_transformation:
     
             utm_x_ = np.append(utm_x_, utmvals[0])
             utm_y_ = np.append(utm_y_, utmvals[1])
-    
+            
+            utm_zone_num = utmvals[2]
+            utm_zone_let = utmvals[3]
 
             coords_utm = np.column_stack((utm_x_,utm_y_))
 #            print 'utm coords_new: ', coords_utm
-        return coords_utm
+        return coords_utm, utm_zone_num, utm_zone_let
             
     
     
@@ -154,80 +159,53 @@ class GGA_to_utm_to_map_transformation:
         return average_gps_ground_truth_error
         
         
+        
     def get_utm_transformation_matrix(self):
         
         transformation_matrix, inliers = estimateAffine2D(self.coords_utm, self.coords_map, confidence=0.99)
     
     
         theta_trans_rad = ( math.atan(transformation_matrix[1,0]/transformation_matrix[1,1]) + math.atan(-transformation_matrix[0,1]/transformation_matrix[0,0]) ) / 2
-        print "theta 1 : ", math.atan(transformation_matrix[1,0]/transformation_matrix[1,1])
-        print "theta 2 : ", math.atan(-transformation_matrix[0,1]/transformation_matrix[0,0]) 
+        theta_1 = math.atan(transformation_matrix[1,0]/transformation_matrix[1,1])
+        theta_2 = math.atan(-transformation_matrix[0,1]/transformation_matrix[0,0])
+        print "Theta 1 : ", theta_1
+        print "Theta 2 : ", theta_2 
+        
+        
+        theta_inconsitency = abs(theta_2 - theta_1)
+        if theta_inconsitency > 0.05:
+            rospy.logwarn("Error between yaw estimates is %f radians, are gps logs accurate?", theta_inconsitency )
+            
 #        theta_trans_rad = np.mean([math.acos(transformation_matrix[0,0]),math.acos(transformation_matrix[1,1]),-math.asin(transformation_matrix[0,1]),math.asin(transformation_matrix[1,0])])
 
         return transformation_matrix, theta_trans_rad
         
+
+    def get_datum(self):
+
+        a = np.array([ [self.transformation_matrix[0,0], self.transformation_matrix[0,1]], [self.transformation_matrix[1,0], self.transformation_matrix[1,1]] ])
+        b = np.array([-self.transformation_matrix[0,2], -self.transformation_matrix[1,2]])
+        datum_utm_x, datum_utm_y = np.linalg.solve(a, b)
+        
+        datum_lat, datum_lon = utm.to_latlon(datum_utm_x, datum_utm_y, self.utm_zone_num, self.utm_zone_let)
+        
+        return datum_lat, datum_lon
+        
             
         
-def ProcrustesAmalysis(utm_data, twod_data):
 
-#    sprint data
-    ref_utm=utm_data[0,:]            #Choose ref point on on utm_map (choose first one for simplicity)
-    ref_2D=twod_data[0,:]      #Choose reference point on 2D map (Choose first one for simplicity)
-    Q_r = utm_data - ref_utm         #Denomenator  for calculating rotation matrix
-    Q_t = twod_data - ref_2D   #Numerator for calculating rotation matrix
-    Q_t= np.delete(Q_t,np.where(~Q_t.any(axis=1))[0], axis=0)      #Remove zero row from Numerator
-    Q_r= np.delete(Q_r,np.where(~Q_r.any(axis=1))[0], axis=0)      #Remove zero column from denominator
-    Q_t=np.transpose(Q_t)                                          #
-    Q_r=np.transpose(Q_r)                                          #
-    Q_=np.linalg.pinv(Q_r)                                         
-    rotation_matrix=np.matmul(Q_t,Q_)         
-    ref_2D = ref_2D[:,None]      #To convert 1x2 array into 2x1 array. Note: np.transpose does not work on 1 dimensional array
-    ref_utm = ref_utm[:,None]    #To convert 1x2 array into 2x1 array. Note: np.transpose does not work on 1 dimensional array    
-    
-    other_ref_utm = utm_data[1,:] # choose another ref point on utm to find angle difference with 2d map
-    other_ref_2D = twod_data[1,:] # choose another ref point on 2d map to find angle difference with utm
-    dx = ref_2D[0] - other_ref_2D[0]
-    dy = ref_2D[1] - other_ref_2D[1]
-    de = ref_utm[0] - other_ref_utm[0]
-    dn = ref_utm[1] - other_ref_utm[1]
-    a=de**2
-    b=dn**2
-    nedist = (a+b)**(0.5)
-    c=dx**2
-    d=dy**2
-    xydist = (c+d)**(0.5)
-    error = ((nedist-xydist)**2)**0.5
-    print 'projection error', error
-    theta = math.atan(dx/dy)-math.atan(de/dn)
-    ans = theta*180/math.pi
-    print 'rotation_matrix', rotation_matrix
-    theta = np.mean([math.acos(rotation_matrix[0,0]),math.acos(rotation_matrix[1,1]),-math.asin(rotation_matrix[0,1]),math.asin(rotation_matrix[1,0])])
-    ans = theta*180/math.pi
-    print "procrutres theta: ", ans
-   # ref_heading
-    
-    return (rotation_matrix, ref_utm, ref_2D, theta)
-
-
-
-    
     
 def main():
     
-#    getUtm = GGA_to_utm_to_map_transformation("riseholme")
-    getUtm = GGA_to_utm_to_map_transformation("norway")
+#    getUtm = GGA_to_utm_to_map_transformation("norway")
+    getUtm = GGA_to_utm_to_map_transformation("riseholme")
 
-    rotation_matrix, ref_utm, ref_2D, theta = ProcrustesAmalysis(getUtm.coords_utm, getUtm.coords_map)
     
-    print "Transformation matrix : ", getUtm.transformation_matrix
+    print "Transformation matrix : \n", getUtm.transformation_matrix
     print "Theta deg: ", math.degrees(getUtm.theta_trans_rad)
     
-    
-#    x = transformation_matrix[0,0]*getUtm.coords_utm[0,0] + transformation_matrix[0,1]*getUtm.coords_utm[0,1] + transformation_matrix[0,2]
-#    y = transformation_matrix[1,0]*getUtm.coords_utm[0,0] + transformation_matrix[1,1]*getUtm.coords_utm[0,1] + transformation_matrix[1,2]
-    
 
-    
+
 if __name__ == '__main__':
     main()
 
