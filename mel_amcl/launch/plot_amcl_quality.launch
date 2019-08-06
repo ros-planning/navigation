@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+<launch>
+
+
+  <param name="/use_sim_time" value="true"/>
+
+  <!-- Play rosbag -->
+  <!-- <arg name="path" default="$(find mel_amcl)/bag_data/local_odom/" /> -->
+  <arg name="path" default="" />
+  <arg name="file_name" default="/media/michael/DATA/BenchmarksData/navigation_benchmarks_2019-07-25-11-16-29_0.bag" />
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_name) -r 6 /tf:=/tf_old"/>
+  
+  
+  
+  <node pkg="topic_tools" type="relay" name="relay_initial_estimate" clear_params="true"
+    args="/set_pose /initialpose" />
+
+  <!-- Localisation -->
+  <include file="$(find mel_amcl)/launch/amcl.launch"/>
+
+
+
+  <!-- rviz -->
+  <node pkg="rviz" type="rviz" name="rviz"
+          args="-d $(find rasberry_bringup)/resources/row_traversal_action.rviz"/>
+
+</launch>
