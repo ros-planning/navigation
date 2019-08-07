@@ -17,7 +17,7 @@ from math import pi
 def get_datum_msg(lat, lon, thata_rad):
     
 #    theta_quat = tf.transformations.quaternion_from_euler(0, 0, -thata_rad-(1.1*pi/180))# roll,pitch,yaw
-    theta_quat = tf.transformations.quaternion_from_euler(0, 0, -thata_rad-(2*pi/180))# roll,pitch,yaw
+    theta_quat = tf.transformations.quaternion_from_euler(0, 0, -thata_rad-(0*pi/180))# roll,pitch,yaw
 
     datum = GeoPose()
     datum.position.latitude = lat
@@ -28,6 +28,8 @@ def get_datum_msg(lat, lon, thata_rad):
     datum.orientation.z = theta_quat[2]
     datum.orientation.w = theta_quat[3]
     return datum
+    
+
 
 def main():
     
@@ -50,6 +52,7 @@ def main():
         print response
     except rospy.ServiceException, e:
         rospy.loginfo ("Service call failed: %s"%e)
+
 
 
 if __name__ == '__main__':
