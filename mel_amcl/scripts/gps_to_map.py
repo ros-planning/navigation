@@ -13,7 +13,7 @@ import rospy
 from sensor_msgs.msg import NavSatFix
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import PoseWithCovarianceStamped
-import numpy as np
+from geometry_msgs.msg import Quaternion
 from math import sin
 from math import cos
 from math import pi
@@ -31,8 +31,8 @@ class GPS_to_map_pose_publish:
 
 #        Get ROS Parameters
         gps_data_directory = rospy.get_param('~gps_log_directory', 'riseholme')
-        self.gps_yaw_offset_rad = rospy.get_param('~gps_yaw_offset_rad', 0.0)
-        self.gps_tf_frame_id = rospy.get_param('~gps_frame_id', 'septentrio')
+        self.gps_yaw_offset_rad = rospy.get_param('~gps_yaw_offset_rad', 0.0) # use this if it is not in the GPS tf
+        self.gps_tf_frame_id = rospy.get_param('~gps_frame_id', 'septentrio') # use this if data did not arrive with header usually use with static_tf_publisher for post processing
 
 
 #        Need to keep track of the robot orientation in the map for the GPS tf
@@ -53,10 +53,9 @@ class GPS_to_map_pose_publish:
         self.yaw_msg = Imu()
         self.pose_yaw_msg = PoseWithCovarianceStamped()
 
-        self.pose_msg.header.frame_id='map'
-        self.yaw_msg.header.frame_id='base_link'
-        self.pose_yaw_msg.header.frame_id='map'
-
+        self.pose_msg.header.frame_id = 'map'
+        self.yaw_msg.header.frame_id = 'base_link'
+        self.pose_yaw_msg.header.frame_id = 'map'
 
         
 #        Setup subscribers
@@ -69,22 +68,21 @@ class GPS_to_map_pose_publish:
 
         if not self.got_tf:        
             self.get_gps_antenna_tf(data.header.frame_id)
-
-
+            
+            
         try:
             now = rospy.Time.now()
             self.map_tf_listener.waitForTransform('map', 'base_link', now, rospy.Duration(0.5))
-            (self.map_position,map_orientation_quat) = self.map_tf_listener.lookupTransform('map', 'base_link', now)
+            (map_position, map_orientation_quat) = self.map_tf_listener.lookupTransform('map', 'base_link', now)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return
-        
         
         map_orientation = tf.transformations.euler_from_quaternion(map_orientation_quat)
         self.map_orientation_rad = map_orientation[2]
 
 
-        lat =data.latitude
-        lon =data.longitude
+        lat = data.latitude
+        lon = data.longitude
         location_cov = data.position_covariance
 
         utm_coord = utm.from_latlon(lat, lon)
@@ -93,17 +91,18 @@ class GPS_to_map_pose_publish:
         y = self.transformation_matrix[1,0]*utm_coord[0] + self.transformation_matrix[1,1]*utm_coord[1] + self.transformation_matrix[1,2]
         
     
-        xpos = x - ((self.trans[0]*cos(self.map_orientation_rad)) - (self.trans[1]*sin(self.map_orientation_rad)))
-        ypos = y - ((self.trans[0]*sin(self.map_orientation_rad)) + (self.trans[1]*cos(self.map_orientation_rad)))
+        xpos = x - ( (self.trans[0]*cos(self.map_orientation_rad)) - (self.trans[1]*sin(self.map_orientation_rad)) )
+        ypos = y - ( (self.trans[0]*sin(self.map_orientation_rad)) + (self.trans[1]*cos(self.map_orientation_rad)) )
         
 
-        self.pose_msg.header.stamp= data.header.stamp
-        self.pose_msg.pose.pose.position.x= xpos
-        self.pose_msg.pose.pose.position.y= ypos
+        self.pose_msg.header.stamp = data.header.stamp
+        self.pose_msg.pose.pose.position.x = xpos
+        self.pose_msg.pose.pose.position.y = ypos
         self.pose_msg.pose.covariance[0] = location_cov[0] 
         self.pose_msg.pose.covariance[7] = location_cov[4] 
         self.pose_msg.pose.covariance[14] = location_cov[8]
         self.pose_pub.publish(self.pose_msg) # need to add orientation covariances!!
+        
         
 
     def yaw_callback(self,data):
@@ -114,58 +113,54 @@ class GPS_to_map_pose_publish:
         try:
             now = rospy.Time.now()
             self.map_tf_listener.waitForTransform('map', 'base_link', now, rospy.Duration(0.5))
-            (self.map_position,map_orientation_quat) = self.map_tf_listener.lookupTransform('map', 'base_link', now)
+            (map_position, map_orientation_quat) = self.map_tf_listener.lookupTransform('map', 'base_link', now)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return
             
         input_quat = (data.orientation.x, data.orientation.y, data.orientation.z, data.orientation.w)
-        orientation_input_data = tf.transformations.euler_from_quaternion(input_quat)# roll,pttch,yaw
+        orientation_input_data = tf.transformations.euler_from_quaternion(input_quat) # roll,pttch,yaw
 
 
-        # this one works for old riseholme
-        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + pi/2 + (self.rot[2]) - (self.gps_yaw_offset_rad)
+#        This one works for old riseholme
+        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + pi/2 + self.rot[2] - self.gps_yaw_offset_rad
 
 
-        trans_quat = tf.transformations.quaternion_from_euler(orientation_input_data[0], orientation_input_data[1], yaw_map_rad)# roll,pttch,yaw
+        trans_quat = tf.transformations.quaternion_from_euler(orientation_input_data[0], orientation_input_data[1], yaw_map_rad) # roll,pttch,yaw
 
-        self.pose_yaw_msg.header.stamp= data.header.stamp
+        self.pose_yaw_msg.header.stamp = data.header.stamp
         self.pose_yaw_msg.pose.pose.position = self.pose_msg.pose.pose.position
         self.pose_yaw_msg.pose.covariance = self.pose_msg.pose.covariance 
-        self.pose_yaw_msg.pose.pose.orientation.x = trans_quat[0]
-        self.pose_yaw_msg.pose.pose.orientation.y = trans_quat[1] 
-        self.pose_yaw_msg.pose.pose.orientation.z = trans_quat[2]
-        self.pose_yaw_msg.pose.pose.orientation.w = trans_quat[3]
+        self.pose_yaw_msg.pose.pose.orientation = Quaternion(*trans_quat)
         self.pose_yaw_msg.pose.covariance[21] = 0.1
         self.pose_yaw_msg.pose.covariance[28] = 0.1
         self.pose_yaw_msg.pose.covariance[35] = 0.1
-        self.pose_yaw_pub.publish(self.pose_yaw_msg) # need to add orientation covariances!!
+        self.pose_yaw_pub.publish(self.pose_yaw_msg) # need to add orientation covariances to gps parser!!
     
         self.yaw_msg.header.stamp= data.header.stamp
-        self.yaw_msg.orientation.x = trans_quat[0]
-        self.yaw_msg.orientation.y = trans_quat[1] 
-        self.yaw_msg.orientation.z = trans_quat[2]
-        self.yaw_msg.orientation.w = trans_quat[3]
+        self.yaw_msg.orientation = Quaternion(*trans_quat)
         self.yaw_msg.orientation_covariance[0] = 0.1
         self.yaw_msg.orientation_covariance[4] = 0.1
         self.yaw_msg.orientation_covariance[8] = 0.1
-        self.yaw_pub.publish(self.yaw_msg) # need to add orientation covariances!!
+        self.yaw_pub.publish(self.yaw_msg) # need to add orientation covariances to gps parser!!
         
     
     
     def get_gps_antenna_tf(self, frame_id):
+        
 #        Get GPS antenna tf
         rospy.loginfo( "Waiting for GPS tf.")
         GPS_tf_listener = tf.TransformListener()
         while not self.got_tf:
             try:
-                (self.trans,self.rot_q) = GPS_tf_listener.lookupTransform('base_link', frame_id, rospy.Time(0))
+                (self.trans, self.rot_q) = GPS_tf_listener.lookupTransform('base_link', frame_id, rospy.Time(0))
                 self.got_tf = True
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 self.got_tf = False
                 continue
-        self.rot = tf.transformations.euler_from_quaternion(self.rot_q)# roll,pttch,yaw
+        self.rot = tf.transformations.euler_from_quaternion(self.rot_q) # roll,pttch,yaw
         rospy.loginfo( "Got gps tf")
         
+
 
 def main():
     
