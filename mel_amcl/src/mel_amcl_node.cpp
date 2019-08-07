@@ -118,7 +118,7 @@ angle_diff(double a, double b)
 }
 
 static const std::string scan_topic_ = "scan";
-static const std::string gps_map_frame_topic_ = "gps/map_pose";
+static const std::string gps_map_frame_topic_ = "gps/map_pose_yaw";
 // in case we have a datum relating to the map and use navsat_transform_node instead of gps_transform.py:
 static const std::string gps_odom_topic_ = "odometry/gps"; 
 
@@ -538,7 +538,7 @@ AmclNode::AmclNode() :
   {
 
   gps_odom_sub_ = nh_.subscribe(gps_odom_topic_, 5, &AmclNode::gpsOdomReceived, this);
-  filtered_gps_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("gps/map_pose/filtered", 2, true);
+  filtered_gps_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("gps/map_pose_amcl/filtered", 2, true);
 
   gps_check_interval_ = ros::Duration(2.0);
   check_gps_timer_ = nh_.createTimer(gps_check_interval_,
@@ -548,7 +548,7 @@ AmclNode::AmclNode() :
   {
 
   gps_pose_sub_ = nh_.subscribe(gps_map_frame_topic_, 5, &AmclNode::gpsPoseReceived, this);
-  filtered_gps_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("gps/map_pose/filtered", 2, true);
+  filtered_gps_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("gps/map_pose_amcl/filtered", 2, true);
 
   gps_check_interval_ = ros::Duration(2.0);
   check_gps_timer_ = nh_.createTimer(gps_check_interval_,

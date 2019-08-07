@@ -14,7 +14,7 @@
     args="/set_pose /initialpose" />
 
   <!-- launch this node to transform data to the riseholme map frame -->
-  <node pkg="rasberry_localisation" type="gps_transform_norway.py" name="gps_transform_norway" output="screen">
+  <node pkg="mel_amcl" type="gps_transform_norway.py" name="gps_transform_norway" output="screen">
     <param name="gps_frame_id" value="septentrio" />
     <remap from="gps/fix" to="gps/fix_septentrio"/> <!-- gps input topic name -->
     <!--  <param name="yaw_topic" value="/yaw/septentrio" /> -->
@@ -24,13 +24,14 @@
  </node> 
 
  <!-- launch this node to transform data to the riseholme map frame -->
-  <node pkg="rasberry_localisation" type="gps_transform_norway_xsens.py" name="gps_transform_xsens" output="screen">
+  <node pkg="mel_amcl" type="gps_transform_norway_xsens.py" name="gps_transform_xsens" output="screen">
     <param name="gps_frame_id" value="septentrio" />
     <remap from="gps/fix" to="xsens/fix"/> <!-- gps input topic name -->
     <!--  <param name="yaw_topic" value="/yaw/septentrio" /> -->
     <remap from="yaw" to="yaw/na"/> <!-- name of earth referenced heading imu type msg -->
     <remap from="gps/map_pose" to="xsens/map_pose"/>
-    <param name="gps_log_directory" value="norway" /> <!-- directory name inside the rasberry_localisation packages gps_logs folder: rasberry_localisation/gps_logs/ -->     
+    <param name="gps_log_directory" value="riseholme" />
+    <!-- <param name="gps_log_directory" value="norway" /> --> <!-- directory name inside the rasberry_localisation packages gps_logs folder: rasberry_localisation/gps_logs/ -->     
     <!-- <param name="gps_yaw_offset_rad" value="$(arg gps_yaw_offset_rad)" /> -->     
  </node> 
 
