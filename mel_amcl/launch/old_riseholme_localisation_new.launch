@@ -4,18 +4,22 @@
 
 
    <arg name="gps_log_directory" default="riseholme"/>
-   <arg name="gps_frame_id" default="septentrio"/>
-   <arg name="gps_yaw_offset_rad" default="-0.0698131"/>   <!-- gps yaw offset - if the two gps's are not parallel with forward direction of robot. & The yaw is not added to the urdf tf -->
+   <arg name="gps_yaw_offset_rad" default="0.0"/>   <!-- gps yaw offset - if the two gps's are not parallel with forward direction of robot. & The yaw is not added to the urdf tf -->
+   <arg name="added_gps_position_covariance" default="0.4"/>
+   <arg name="added_gps_orientation_covariance" default="0.1"/>   
+   <!-- <arg name="gps_frame_id" default="septentrio"/> -->
 
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
-  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.30 0 0.41 0 0 0 base_link septentrio 100" output="log">
+  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.30 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
   </node>
 
 
   <!-- launch this node to transform data to the riseholme map frame -->
   <node pkg="mel_amcl" type="gps_to_map.py" name="gps_transform" output="screen">
-    <param name="gps_frame_id" value="$(arg gps_frame_id)" />
+    <!-- <param name="gps_frame_id" value="$(arg gps_frame_id)" /> -->
+    <param name="added_gps_position_covariance" value="$(arg added_gps_position_covariance)" />
+    <param name="added_gps_orientation_covariance" value="$(arg added_gps_orientation_covariance)" />
     <param name="gps_log_directory" value="$(arg gps_log_directory)" />  <!-- directory name inside the mel_amcl package gps_logs folder: mel_amcl/gps_logs/ -->     
     <param name="gps_yaw_offset_rad" value="$(arg gps_yaw_offset_rad)" />   
     
@@ -46,9 +50,14 @@
     <remap from="odometry/filtered" to="odometry/gps"/>
   </node> 
 
+  <!-- eKF for the gps in map frame, to use output, set use_gps_odom arg in mel_amcl to true --> 
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps_no_yaw" clear_params="true">
+    <remap from="odometry/filtered" to="odometry/gps_no_yaw"/>
+  </node> 
+
 
   <node pkg="topic_tools" type="relay" name="relay_initial_estimate" clear_params="true"
     args="/set_pose /initialpose" />
-    
+
 
 </launch>

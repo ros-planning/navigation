@@ -165,11 +165,11 @@ class GGA_to_utm_to_map_transformation:
         transformation_matrix, inliers = estimateAffine2D(self.coords_utm, self.coords_map, confidence=0.99)
     
     
-        theta_trans_rad = ( math.atan(transformation_matrix[1,0]/transformation_matrix[1,1]) + math.atan(-transformation_matrix[0,1]/transformation_matrix[0,0]) ) / 2
-        theta_1 = math.atan(transformation_matrix[1,0]/transformation_matrix[1,1])
-        theta_2 = math.atan(-transformation_matrix[0,1]/transformation_matrix[0,0])
+        theta_trans_rad = ( math.atan2(transformation_matrix[1,0],transformation_matrix[1,1]) + math.atan2(-transformation_matrix[0,1],transformation_matrix[0,0]) ) / 2
+        theta_1 = math.atan2(transformation_matrix[1,0],transformation_matrix[1,1])
+        theta_2 = math.atan2(-transformation_matrix[0,1],transformation_matrix[0,0])
         print "Theta 1 : ", theta_1
-        print "Theta 2 : ", theta_2 
+        print "Theta 2 : ", theta_2
         
         
         theta_inconsitency = abs(theta_2 - theta_1)
@@ -197,7 +197,9 @@ class GGA_to_utm_to_map_transformation:
     
 def main():
     
-#    getUtm = GGA_to_utm_to_map_transformation("norway")
+    getUtm = GGA_to_utm_to_map_transformation("norway")
+    print "Transformation matrix : \n", getUtm.transformation_matrix
+    print "Theta deg: ", math.degrees(getUtm.theta_trans_rad)
     getUtm = GGA_to_utm_to_map_transformation("riseholme")
 
     

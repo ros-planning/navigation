@@ -32,7 +32,9 @@ class GPS_to_map_pose_publish:
 #        Get ROS Parameters
         gps_data_directory = rospy.get_param('~gps_log_directory', 'riseholme')
         self.gps_yaw_offset_rad = rospy.get_param('~gps_yaw_offset_rad', 0.0) # use this if it is not in the GPS tf
-        self.gps_tf_frame_id = rospy.get_param('~gps_frame_id', 'septentrio') # use this if data did not arrive with header usually use with static_tf_publisher for post processing
+        self.added_gps_position_covariance = rospy.get_param('~added_gps_position_covariance', 0.0)
+        self.added_gps_orientation_covariance = rospy.get_param('~added_gps_orientation_covariance', 0.0)
+#        self.gps_tf_frame_id = rospy.get_param('~gps_frame_id', 'septentrio') # use this if data did not arrive with header usually use with static_tf_publisher for post processing
 
 
 #        Need to keep track of the robot orientation in the map for the GPS tf
@@ -98,9 +100,9 @@ class GPS_to_map_pose_publish:
         self.pose_msg.header.stamp = data.header.stamp
         self.pose_msg.pose.pose.position.x = xpos
         self.pose_msg.pose.pose.position.y = ypos
-        self.pose_msg.pose.covariance[0] = location_cov[0] 
-        self.pose_msg.pose.covariance[7] = location_cov[4] 
-        self.pose_msg.pose.covariance[14] = location_cov[8]
+        self.pose_msg.pose.covariance[0] = location_cov[0] + self.added_gps_position_covariance
+        self.pose_msg.pose.covariance[7] = location_cov[4] + self.added_gps_position_covariance
+        self.pose_msg.pose.covariance[14] = location_cov[8] + self.added_gps_position_covariance
         self.pose_pub.publish(self.pose_msg) # need to add orientation covariances!!
         
         
@@ -122,7 +124,7 @@ class GPS_to_map_pose_publish:
 
 
 #        This one works for old riseholme
-        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + pi/2 + self.rot[2] - self.gps_yaw_offset_rad
+        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + pi/2 + self.rot[2] + self.gps_yaw_offset_rad
 
 
         trans_quat = tf.transformations.quaternion_from_euler(orientation_input_data[0], orientation_input_data[1], yaw_map_rad) # roll,pttch,yaw
@@ -131,16 +133,16 @@ class GPS_to_map_pose_publish:
         self.pose_yaw_msg.pose.pose.position = self.pose_msg.pose.pose.position
         self.pose_yaw_msg.pose.covariance = self.pose_msg.pose.covariance 
         self.pose_yaw_msg.pose.pose.orientation = Quaternion(*trans_quat)
-        self.pose_yaw_msg.pose.covariance[21] = 0.1
-        self.pose_yaw_msg.pose.covariance[28] = 0.1
-        self.pose_yaw_msg.pose.covariance[35] = 0.1
+        self.pose_yaw_msg.pose.covariance[21] = 0.1 + self.added_gps_orientation_covariance
+        self.pose_yaw_msg.pose.covariance[28] = 0.1 + self.added_gps_orientation_covariance
+        self.pose_yaw_msg.pose.covariance[35] = 0.1 + self.added_gps_orientation_covariance
         self.pose_yaw_pub.publish(self.pose_yaw_msg) # need to add orientation covariances to gps parser!!
     
         self.yaw_msg.header.stamp= data.header.stamp
         self.yaw_msg.orientation = Quaternion(*trans_quat)
-        self.yaw_msg.orientation_covariance[0] = 0.1
-        self.yaw_msg.orientation_covariance[4] = 0.1
-        self.yaw_msg.orientation_covariance[8] = 0.1
+        self.yaw_msg.orientation_covariance[0] = 0.1 + self.added_gps_orientation_covariance
+        self.yaw_msg.orientation_covariance[4] = 0.1 + self.added_gps_orientation_covariance
+        self.yaw_msg.orientation_covariance[8] = 0.1 + self.added_gps_orientation_covariance
         self.yaw_pub.publish(self.yaw_msg) # need to add orientation covariances to gps parser!!
         
     
