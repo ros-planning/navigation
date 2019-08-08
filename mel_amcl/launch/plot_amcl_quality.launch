@@ -25,4 +25,5 @@
   <node pkg="rviz" type="rviz" name="rviz"
           args="-d $(find rasberry_bringup)/resources/row_traversal_action.rviz"/>
 
+
 </launch>
