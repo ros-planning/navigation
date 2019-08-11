@@ -10,11 +10,29 @@ before_install:
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/build-package.sh
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/packages.sh
   # Determine packages modified in this commit
-  - source packages.sh
+  - source packages.sh # add all folders which need to be excluded as an argument
+
+env:
+  - PACKAGE=amcl
+  - PACKAGE=base_local_planner
+  - PACKAGE=carrot_planner
+  - PACKAGE=clear_costmap_recovery
+  - PACKAGE=costmap_2d
+  - PACKAGE=dwa_local_planner
+  - PACKAGE=fake_localization
+  - PACKAGE=global_planner
+  - PACKAGE=map_server
+  - PACKAGE=move_base
+  - PACKAGE=move_base_msgs
+  - PACKAGE=move_slow_and_clear
+  - PACKAGE=nav_core
+  - PACKAGE=navfn
+  - PACKAGE=robot_pose_ekf
+  - PACKAGE=rotate_recovery
+  - PACKAGE=voxel_grid
+
+install:
+  - bash install-package.sh --package=$PACKAGE --branch=${TRAVIS_PULL_REQUEST_BRANCH:-$TRAVIS_BRANCH} --commit=$TRAVIS_COMMIT --pullrequest=$TRAVIS_PULL_REQUEST
 
 script:
-  - 'for PACKAGE in $PACKAGES;
-     do
-     bash install-package.sh --package=$PACKAGE --branch=$TRAVIS_BRANCH --commit=$TRAVIS_COMMIT --pullrequest=$TRAVIS_PULL_REQUEST &&
-     bash build-package.sh --package=$PACKAGE;
-     done'
+  - bash build-package.sh --package=$PACKAGE
