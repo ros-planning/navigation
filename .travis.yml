@@ -9,7 +9,6 @@ before_install:
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/install-package.sh
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/build-package.sh
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/packages.sh
-  # Determine packages modified in this commit
   - ALL=$([ "$TRAVIS_EVENT_TYPE" == "cron" ] && echo "true") || true
   - source packages.sh --commit-range=$TRAVIS_COMMIT_RANGE --all=$ALL
 
