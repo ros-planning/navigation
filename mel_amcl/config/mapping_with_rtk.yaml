@@ -15,12 +15,11 @@ ekf_local:
   base_link_frame: base_link
   world_frame: odom
 
-
-  odom0: /odometry/base_raw
-  odom0_config: [false, false, true, # because we want 3D for roll/pitch but dont care about z
+  odom0: /odometry/gps
+  odom0_config: [true, true, false,
                  false, false, false,
-                 true,  true,  false,
-                 false, false, true,
+                 false,  false,  false,
+                 false, false, false,
                  false, false, false]
   odom0_queue_size: 10
   odom0_nodelay: true
@@ -28,20 +27,44 @@ ekf_local:
   odom0_relative: false
 
 
-  imu0: /imu/data
+  odom1: /odometry/base_raw
+  odom1_config: [false, false, true, # because we want 3D for roll/pitch but dont care about z
+                 false, false, false,
+                 true,  true,  false,
+                 false, false, true,
+                 false, false, false]
+  odom1_queue_size: 10
+  odom1_nodelay: true
+  odom1_differential: false
+  odom1_relative: false
+
+
+  imu0: /yaw/enu
   imu0_config: [false, false, false,
-              true,  true,  false,
+              false,  false,  true,
               false, false, false,
-              true,  true,  true,
-              true,  true,  true]
+              false, false, false,
+              false, false, false]
   imu0_nodelay: false
   imu0_differential: false
   imu0_relative: false
   imu0_queue_size: 5
-  imu0_pose_rejection_threshold: 0.8
-  imu0_twist_rejection_threshold: 0.8
-  imu0_linear_acceleration_rejection_threshold: 0.8
-  imu0_remove_gravitational_acceleration: true
+
+
+  imu1: /imu/data
+  imu1_config: [false, false, false,
+              true,  true,  false,
+              false, false, false,
+              true,  true,  true,
+              true,  true,  true]
+  imu1_nodelay: false
+  imu1_differential: false
+  imu1_relative: false
+  imu1_queue_size: 5
+  imu1_pose_rejection_threshold: 0.8
+  imu1_twist_rejection_threshold: 0.8
+  imu1_linear_acceleration_rejection_threshold: 0.8
+  imu1_remove_gravitational_acceleration: true
 
 
   use_control: false
@@ -70,12 +93,12 @@ ekf_local:
 
 # I just use larger values for roll/pitch! Everthing else starts at zero anyway.
 
-initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                              0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+initial_estimate_covariance: [100, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    100, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0.05, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0,    0.05, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                              0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    6.0, 0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0,    0,    0,    1e-9, 0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0,    0,    0,    0,    1e-9, 0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0,    0,    0,    0,    0,    1e-9, 0,     0,     0,     0,    0,    0,
@@ -106,12 +129,11 @@ ekf_map:
   base_link_frame: base_link
   world_frame: map
 
-
-  odom0: /odometry/base_raw
-  odom0_config: [false, false, false,
+  odom0: /odometry/gps
+  odom0_config: [true, true, false,
                  false, false, false,
-                 true,  true,  false,
-                 false, false, true,
+                 false,  false,  false,
+                 false, false, false,
                  false, false, false]
   odom0_queue_size: 10
   odom0_nodelay: true
@@ -119,47 +141,45 @@ ekf_map:
   odom0_relative: false
 
 
-  imu0: imu/data
+  odom1: /odometry/base_raw
+  odom1_config: [false, false, true, # because we want 3D for roll/pitch but dont care about z
+                 false, false, false,
+                 true,  true,  false,
+                 false, false, true,
+                 false, false, false]
+  odom1_queue_size: 10
+  odom1_nodelay: true
+  odom1_differential: false
+  odom1_relative: false
+
+
+  imu0: /yaw/enu
   imu0_config: [false, false, false,
+              false,  false,  true,
+              false, false, false,
+              false, false, false,
+              false, false, false]
+  imu0_nodelay: false
+  imu0_differential: false
+  imu0_relative: false
+  imu0_queue_size: 5
+
+
+  imu1: /imu/data
+  imu1_config: [false, false, false,
               true,  true,  false,
               false, false, false,
               true,  true,  true,
               true,  true,  true]
-  imu0_nodelay: true
-  imu0_differential: false
-  imu0_relative: false
-  imu0_queue_size: 5
-  imu0_pose_rejection_threshold: 0.3
-  imu0_twist_rejection_threshold: 0.3
-  imu0_linear_acceleration_rejection_threshold: 0.3
-  imu0_remove_gravitational_acceleration: true
+  imu1_nodelay: false
+  imu1_differential: false
+  imu1_relative: false
+  imu1_queue_size: 5
+  imu1_pose_rejection_threshold: 0.8
+  imu1_twist_rejection_threshold: 0.8
+  imu1_linear_acceleration_rejection_threshold: 0.8
+  imu1_remove_gravitational_acceleration: true
 
-
-  pose0: /gps/map_pose_amcl/filtered
-  pose0_config: [true,  true,  false,
-                 false, false, true,
-                 false, false, false,
-                 false, false, false,
-                 false, false, false]
-  pose0_differential: false
-  pose0_relative: false
-  pose0_queue_size: 5
-  #pose0_rejection_threshold: 5
-  pose0_nodelay: true
-  
-  pose1: /amcl_pose/filtered
-  pose1_config: [true,  true,  false,
-                 false, false, true,
-                 false, false, false,
-                 false, false, false,
-                 false, false, false]
-  pose1_differential: false
-  pose1_relative: false
-  pose1_queue_size: 5
-  #pose1_rejection_threshold: 5  # Note the difference in parameter name
-  pose1_nodelay: true #false (my previous value)
-
-  use_control: false
 
   process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
                            0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
@@ -314,11 +334,24 @@ ekf_gps_no_yaw:
 
 
 navsat_transform_node:
-  magnetic_declination_radians: 0
+  magnetic_declination_radians: 0.0
   yaw_offset: 0.0
   zero_altitude: true
   broadcast_utm_transform: false
   broadcast_utm_transform_as_parent_frame: false
   publish_filtered_gps: true
   use_odometry_yaw: false
-  wait_for_datum: false
+  wait_for_datum: true
+  datum: [ 53.268642038, -0.524509505881, 0.0]
+
+
+navsat_post_process:
+  magnetic_declination_radians: 0.0
+  yaw_offset: 0.0
+  zero_altitude: true
+  broadcast_utm_transform: false
+  broadcast_utm_transform_as_parent_frame: false
+  publish_filtered_gps: true
+  use_odometry_yaw: false
+  wait_for_datum: true
+  datum: [ 53.268642038, -0.524509505881, 0.0]

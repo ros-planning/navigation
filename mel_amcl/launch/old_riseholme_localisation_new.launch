@@ -11,7 +11,9 @@
 
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
-  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.30 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
+  <!-- For some reason increasing x dir tf from -0.3 to -0.8 makes it much more accurate in the map! 
+  not entirely sure what the proper value was probably (hopefully) around -0.8 -->
+  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.80 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
   </node>
 
 

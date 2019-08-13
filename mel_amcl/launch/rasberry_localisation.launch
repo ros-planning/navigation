@@ -3,7 +3,7 @@
 <launch>
 
 
-   <arg name="gps_log_directory" default="septentrio"/>
+   <arg name="gps_log_directory" default="riseholme_06-2019"/>
    <arg name="gps_yaw_offset_rad" default="0.0"/>   <!-- gps yaw offset - if the two gps's are not parallel with forward direction of robot. & The yaw is not added to the urdf tf -->
    <arg name="added_gps_position_covariance" default="0.4"/>
    <arg name="added_gps_orientation_covariance" default="0.1"/>
@@ -16,7 +16,7 @@
 
 
   <!-- launch this node to transform data to the riseholme map frame -->
-  <node pkg="mel_amcl" type="gps_to_map.py" name="gps_transform" output="screen">
+  <node pkg="mel_amcl" type="gps_to_map.py" name="gps_to_map" output="screen">
     <!-- <param name="gps_frame_id" value="$(arg gps_frame_id)" /> -->
     <param name="added_gps_position_covariance" value="$(arg added_gps_position_covariance)" />
     <param name="added_gps_orientation_covariance" value="$(arg added_gps_orientation_covariance)" />

@@ -10,20 +10,23 @@
   <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" />
   <arg name="file_name" default="2019-04-09-16-00-52.bag" />
   <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_name)
-   -r 5 --topics /odometry/base_raw /tf_static /gps/fix /yaw /map /twist_mux/cmd_vel /scan"/>
+   -r 2 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan"/>
   
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
   <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.30 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
   </node>
 
-
+  <!-- this might be neccessary to make yaw enu format -->
+  <node pkg="mel_amcl" type="yaw_republisher.py" name="yaw_republisher" clear_params="true">
+  </node>
+  
   <!-- load parameters for eKFs: odom, map and separate gps -->
   <rosparam command="load" file="$(find mel_amcl)/config/mapping_with_rtk.yaml" />
 
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true">
       <!-- Placeholders for input remapping. Set your topic names as the "to" values. -->
-      <remap from="imu/data" to="yaw"/> 
+      <remap from="imu/data" to="yaw/enu"/> 
       <remap from="odometry/filtered" to="rl/odom"/>
       <remap from="gps/fix" to="gps/fix"/>
   </node>
@@ -37,46 +40,6 @@
   <!-- rviz -->
   <node pkg="rviz" type="rviz" name="rviz"/>
        <!--    args="-d $(find rasberry_bringup)/resources/row_traversal_action.rviz"/> -->
-
-  <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
-    <param name="base_frame" value="base_link"/>
-    <param name="odom_frame" value="odom"/>
-    <param name="map_update_interval" value="5.0"/>
-    <param name="maxUrange" value="10.0"/>
-    <param name="maxRange" value="30.0"/>
-    <param name="sigma" value="0.05"/>
-    <param name="kernelSize" value="1"/>
-    <param name="lstep" value="0.03"/>
-    <param name="astep" value="0.03"/>
-    <param name="iterations" value="3"/>
-    <param name="lsigma" value="0.075"/>
-    <param name="ogain" value="3.0"/>
-    <param name="lskip" value="0"/>
-    <param name="minimumScore" value="100"/>
-    <param name="srr" value="0.001"/>
-    <param name="srt" value="0.002"/>
-    <param name="str" value="0.001"/>
-    <param name="stt" value="0.002"/>
-    <param name="linearUpdate" value="0.2"/>
-    <param name="angularUpdate" value="0.436"/>
-    <param name="temporalUpdate" value="-1.0"/>
-    <param name="resampleThreshold" value="0.5"/>
-    <param name="particles" value="80"/>
-  <!--
-    <param name="xmin" value="-50.0"/>
-    <param name="ymin" value="-50.0"/>
-    <param name="xmax" value="50.0"/>
-    <param name="ymax" value="50.0"/>
-  make the starting size small for the benefit of the Android client's memory...
-  -->
-
-
-    <param name="delta" value="0.05"/>
-    <param name="llsamplerange" value="0.01"/>
-    <param name="llsamplestep" value="0.01"/>
-    <param name="lasamplerange" value="0.005"/>
-    <param name="lasamplestep" value="0.005"/>
-  </node>
 
 
 </launch>
