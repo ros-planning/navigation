@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+<launch>
+
+  <!-- bagging data -->
+  <node pkg="rosbag" type="record" name="rosbag_record_standard_data" respawn="true" output="screen" 
+  args="-o $(find mel_amcl)/bag_data/map_frame/tall_robot_data /tf_static /odometry/base_raw /twist_mux/cmd_vel /nmea/main_GGA /yaw /gps/fix /scan" />
+
+</launch>
