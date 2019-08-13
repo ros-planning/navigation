@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+<launch>
+
+
+  <param name="/use_sim_time" value="true"/>
+
+  <!-- Play rosbag -->
+  <!-- <arg name="path" default="$(find mel_amcl)/bag_data/local_odom/" /> -->
+  <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" />
+  <arg name="file_name" default="2019-04-09-16-00-52.bag" />
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_name)
+   -r 5 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan"/>
+  
+
+  <!-- Load rtk map -->
+  <arg name="map_file" default="$(find mel_amcl)/maps/rtk_map_9.yaml"/>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+ 
+
+  <!-- this might be neccessary to make yaw enu format -->
+  <node pkg="mel_amcl" type="yaw_republisher.py" name="yaw_republisher" clear_params="true">
+  </node>
+
+
+  <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
+  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.37 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
+  </node>
+
+
+  <!-- load parameters for eKFs: odom, map and separate gps -->
+  <rosparam command="load" file="$(find mel_amcl)/config/mapping_with_rtk.yaml" />
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_post_process" clear_params="true">
+      <!-- Placeholders for input remapping. Set your topic names as the "to" values. -->
+      <!-- <remap from="imu/data" to="yaw/enu"/> Dont need imu becuase we provide manual datum, allows/improves repeatability -->
+      <remap from="odometry/filtered" to="rl/map"/>
+      <remap from="gps/fix" to="gps/fix"/>
+  </node>
+
+
+  <!-- eKF for the odom frame -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true">
+    <remap from="odometry/filtered" to="rl/odom"/>
+  </node>
+
+    <!-- eKF for the map frame -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_map" clear_params="true">
+    <remap from="odometry/filtered" to="rl/map"/>
+  </node>
+
+
+  <!-- rviz -->
+  <node pkg="rviz" type="rviz" name="rviz"/>
+       <!--    args="-d $(find rasberry_bringup)/resources/row_traversal_action.rviz"/> -->
+
+</launch>
