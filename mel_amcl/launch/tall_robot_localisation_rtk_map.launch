@@ -16,25 +16,21 @@
   <!-- <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.80 0 1.71 -1.57079632 0 0 base_link septentrio 100" output="log">
   </node>-->
 
-  <!-- launch this node to transform data to the riseholme map frame -->
-  <node pkg="mel_amcl" type="gps_to_map.py" name="gps_to_map" output="screen">
-    <!-- <param name="gps_frame_id" value="$(arg gps_frame_id)" /> -->
-    <param name="added_gps_position_covariance" value="$(arg added_gps_position_covariance)" />
-    <param name="added_gps_orientation_covariance" value="$(arg added_gps_orientation_covariance)" />
-    <param name="gps_log_directory" value="$(arg gps_log_directory)" />  <!-- directory name inside the mel_amcl package gps_logs folder: mel_amcl/gps_logs/ -->     
-    <param name="gps_yaw_offset_rad" value="$(arg gps_yaw_offset_rad)" />   
-    
-    <remap from="gps/fix" to="/gps/fix"/> <!-- gps input topic name -->
-    <remap from="yaw" to="/yaw"/> <!-- name of earth referenced heading imu type msg -->
- </node> 
-
-
   <!-- launch amcl but dont publish map->odom tf as this is handled by ekf_map -->
   <include file="$(find mel_amcl)/launch/mel_amcl.launch"/>
 
 
   <!-- load parameters for eKFs: odom, map and separate gps -->
   <rosparam command="load" file="$(find mel_amcl)/config/rasberry_ekf.yaml" />
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true">
+      <!-- Placeholders for input remapping. Set your topic names as the "to" values. -->
+      <remap from="imu/data" to="yaw"/> 
+      <remap from="odometry/filtered" to="rl/map"/>
+      <remap from="gps/fix" to="gps/fix"/>
+      <remap from="odometry/gps" to="gps/odom"/>
+  </node>
+
 
   <!-- eKF for the odom frame -->
   <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true">
@@ -43,11 +39,11 @@
 
   <!-- eKF for the map frame -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_map" clear_params="true">
-    <remap from="odometry/filtered" to="rl/map_pose"/>
+    <remap from="odometry/filtered" to="rl/map"/>
   </node>
 
   <!-- eKF for the gps in map frame, to use output, set use_gps_odom arg in mel_amcl to true --> 
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true">
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps_rtk_map" clear_params="true">
     <remap from="odometry/filtered" to="odometry/gps"/>
   </node> 
 
