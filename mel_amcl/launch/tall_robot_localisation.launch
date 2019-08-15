@@ -13,8 +13,8 @@
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
   <!-- <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.30 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
   </node> -->
-  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.80 0 1.71 -1.57079632 0 0 base_link septentrio 100" output="log">
-  </node>
+  <!-- <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.80 0 1.71 -1.57079632 0 0 base_link septentrio 100" output="log">
+  </node> -->
 
   <!-- launch this node to transform data to the riseholme map frame -->
   <node pkg="mel_amcl" type="gps_to_map.py" name="gps_to_map" output="screen">
@@ -44,6 +44,7 @@
   <!-- eKF for the map frame -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_map" clear_params="true">
     <remap from="odometry/filtered" to="rl/map_pose"/>
+    <param name="publish_tf" value="true" />
   </node>
 
   <!-- eKF for the gps in map frame, to use output, set use_gps_odom arg in mel_amcl to true --> 
@@ -60,7 +61,6 @@
   <node pkg="topic_tools" type="relay" name="relay_initial_estimate" clear_params="true"
     args="/set_pose /initialpose" />
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rviz_satellite)/launch/demo.rviz"/>
 
 
 </launch>

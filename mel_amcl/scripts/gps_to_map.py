@@ -124,7 +124,10 @@ class GPS_to_map_pose_publish:
 
 
 #        This one works for old riseholme
-        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + pi/2 + self.rot[2] + self.gps_yaw_offset_rad
+#        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + pi/2 + self.rot[2] + self.gps_yaw_offset_rad
+        
+#        Proper one with ENU input        
+        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + self.rot[2] + self.gps_yaw_offset_rad
 
 
         trans_quat = tf.transformations.quaternion_from_euler(orientation_input_data[0], orientation_input_data[1], yaw_map_rad) # roll,pttch,yaw

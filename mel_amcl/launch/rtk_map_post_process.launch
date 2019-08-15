@@ -6,15 +6,15 @@
   <param name="/use_sim_time" value="true"/>
 
   <!-- Play rosbag -->
-  <!-- <arg name="path" default="$(find mel_amcl)/bag_data/local_odom/" /> -->
-  <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" />
-  <arg name="file_name" default="2019-04-09-16-00-52.bag" />
+  <arg name="path" default="$(find mel_amcl)/bag_data/map_frame/" />
+  <!-- <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" /> -->
+  <arg name="file_name" default="tall_robot_data_2019-08-14-12-48-50.bag" />
   <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_name)
    -r 5 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan"/>
   
 
   <!-- Load rtk map -->
-  <arg name="map_file" default="$(find mel_amcl)/maps/rtk_map_9.yaml"/>
+  <arg name="map_file" default="$(find mel_amcl)/maps/rtk_map_11.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
  
 
@@ -24,8 +24,8 @@
 
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
-  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.37 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
-  </node>
+  <!-- <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="-0.37 0 0.41 0.0698131 0 0 base_link septentrio 100" output="log">
+  </node> -->
 
 
   <!-- load parameters for eKFs: odom, map and separate gps -->
