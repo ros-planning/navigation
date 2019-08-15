@@ -124,6 +124,9 @@ class GPS_to_map_pose_publish:
 
 
 #        This one works for old riseholme
+#        yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + pi/2 + self.rot[2] + self.gps_yaw_offset_rad
+        
+#        Proper one with ENU input
         yaw_map_rad = orientation_input_data[2] + self.theta_trans_rad + self.rot[2] + self.gps_yaw_offset_rad
 
 

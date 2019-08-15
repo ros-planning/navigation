@@ -39,7 +39,7 @@ ekf_local:
   odom1_relative: false
 
 
-  imu0: /yaw/enu
+  imu0: /yaw
   imu0_config: [false, false, false,
               false,  false,  true,
               false, false, false,
@@ -153,7 +153,7 @@ ekf_map:
   odom1_relative: false
 
 
-  imu0: /yaw/enu
+  imu0: /yaw
   imu0_config: [false, false, false,
               false,  false,  true,
               false, false, false,
