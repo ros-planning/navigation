@@ -14,7 +14,7 @@
   
 
   <!-- Load rtk map -->
-  <arg name="map_file" default="$(find mel_amcl)/maps/rtk_map_11.yaml"/>
+  <arg name="map_file" default="$(find mel_amcl)/maps/rtk_map_11_edit.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
  
 
