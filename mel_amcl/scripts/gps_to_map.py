@@ -114,7 +114,7 @@ class GPS_to_map_pose_publish:
             
         try:
             now = rospy.Time.now()
-            self.map_tf_listener.waitForTransform('map', 'base_link', now, rospy.Duration(0.5))
+            self.map_tf_listener.waitForTransform('map', 'base_link', now, rospy.Duration(2.0))
             (map_position, map_orientation_quat) = self.map_tf_listener.lookupTransform('map', 'base_link', now)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return

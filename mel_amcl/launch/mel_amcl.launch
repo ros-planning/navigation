@@ -42,7 +42,7 @@
 
 	  <!--overall filter -->
     <param name="min_particles" value="100"/>
-    <param name="max_particles" value="5000"/>
+    <param name="max_particles" value="10000"/>
     <param name="kld_err" value="0.01"/>
     <param name="kld_z" value="0.99"/>
     <!-- <param name="update_min_d" value="0.05"/> -->
@@ -82,7 +82,7 @@
     <param name="use_map_topic" value="true"/>
 
     <!-- publish map->odom? Turn off if fusing again with robot_localisation -->
-    <param name="tf_broadcast" value="false"/>
+    <param name="tf_broadcast" value="true"/>
 
   </node>
 

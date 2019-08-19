@@ -4,7 +4,7 @@
 
 
    <arg name="gps_log_directory" default="riseholme"/>
-   <arg name="gps_yaw_offset_rad" default="0.0"/>   <!-- gps yaw offset - if the two gps's are not parallel with forward direction of robot. & The yaw is not added to the urdf tf -->
+   <arg name="gps_yaw_offset_rad" default="1.5707963267"/>   <!-- gps yaw offset - if the two gps's are not parallel with forward direction of robot. & The yaw is not added to the urdf tf -->
    <arg name="added_gps_position_covariance" default="0.4"/>
    <arg name="added_gps_orientation_covariance" default="0.1"/>   
    <!-- <arg name="gps_frame_id" default="septentrio"/> -->
@@ -43,9 +43,9 @@
   </node>
 
   <!-- eKF for the map frame -->
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_map" clear_params="true">
+  <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_map" clear_params="true">
     <remap from="odometry/filtered" to="rl/map_pose"/>
-  </node>
+  </node> -->
 
   <!-- eKF for the gps in map frame, to use output, set use_gps_odom arg in mel_amcl to true --> 
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true">

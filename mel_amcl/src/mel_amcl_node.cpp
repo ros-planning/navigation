@@ -35,6 +35,7 @@
 #include "mel_amcl/map/map.h"
 #include "mel_amcl/pf/pf.h"
 #include "mel_amcl/sensors/mel_amcl_odom.h"
+#include "mel_amcl/sensors/mel_amcl_pose.h"
 #include "mel_amcl/sensors/mel_amcl_laser.h"
 #include "portable_utils.hpp"
 
@@ -208,6 +209,7 @@ private:
 
   // GPS related variables
   pf_vector_t last_received_gps_pose;
+  pf_vector_t last_received_gps_covariance;
   geometry_msgs::PoseWithCovarianceStamped last_received_gps_msg;
   // variable which will allow the node to publish gps data if no laser data is received
   bool use_gps_without_scan;
@@ -249,6 +251,7 @@ private:
   bool m_force_update; // used to temporarily let amcl update samples even when no motion occurs...
 
   AMCLOdom *odom_;
+  AMCLPose *pose_;
   AMCLLaser *laser_;
 
   ros::Duration cloud_pub_interval;
@@ -370,6 +373,7 @@ AmclNode::AmclNode() :
         pf_(NULL),
         resample_count_(0),
         odom_(NULL),
+        pose_(NULL),
         laser_(NULL),
 	      private_nh_("~"),
         initial_pose_hyp_(NULL),
@@ -579,12 +583,20 @@ void AmclNode::handleGPSPoseMessage(const geometry_msgs::PoseWithCovarianceStamp
 
   // Put GPS pose data into format for AMCLLaser::LikelihoodField so we can compute likelihood
   pf_vector_t gps_pose = pf_vector_zero();
+  pf_vector_t gps_covariance = pf_vector_zero();
+
   gps_pose.v[0] = msg.pose.pose.position.x;
   gps_pose.v[1] = msg.pose.pose.position.y;
   gps_pose.v[2] = tf2::getYaw(msg.pose.pose.orientation);
 
+  gps_covariance.v[0] = msg.pose.covariance[0];
+  gps_covariance.v[1] = msg.pose.covariance[7];
+  gps_covariance.v[2] = msg.pose.covariance[35];
+
   last_gps_msg_received_ts_ = msg.header.stamp; //ros::Time::now();
   last_received_gps_pose = gps_pose;
+  last_received_gps_covariance = gps_covariance;
+
   last_received_gps_msg = msg;
 
   if (use_gps_without_scan == true || !first_map_received_)
@@ -706,6 +718,10 @@ void AmclNode::reconfigureCB(MEL_AMCLConfig &config, uint32_t level)
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
   odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
+  //Pose
+  delete pose_;
+  pose_ = new AMCLPose();
+  ROS_ASSERT(pose_);
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
@@ -1032,6 +1048,10 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   odom_ = new AMCLOdom();
   ROS_ASSERT(odom_);
   odom_->SetModel( odom_model_type_, alpha1_, alpha2_, alpha3_, alpha4_, alpha5_ );
+  //Pose
+  delete pose_;
+  pose_ = new AMCLPose();
+  ROS_ASSERT(pose_);
   // Laser
   delete laser_;
   laser_ = new AMCLLaser(max_beams_, map_);
@@ -1074,6 +1094,8 @@ AmclNode::freeMapDependentMemory()
   }
   delete odom_;
   odom_ = NULL;
+  delete pose_;
+  pose_ = NULL;
   delete laser_;
   laser_ = NULL;
 }
@@ -1449,6 +1471,30 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       particlecloud_pub_.publish(cloud_msg);
     }
   }
+
+  if ((use_gps || use_gps_odom) && gps_received)
+    {
+      AMCLPoseData pdata;
+      
+      pdata.pose = last_received_gps_pose;
+
+      pdata.pose_covariance = last_received_gps_covariance;
+      ROS_INFO("In gps section.");
+      ROS_INFO("Input pose (%.6f): %.3f %.3f %.3f",
+           ros::Time::now().toSec(),
+           pdata.pose.v[0],
+           pdata.pose.v[1],
+           pdata.pose.v[2]);
+      ROS_INFO("Input covariance (%.6f): %.3f %.3f %.3f",
+           ros::Time::now().toSec(),
+           pdata.pose_covariance.v[0],
+           pdata.pose_covariance.v[1],
+           pdata.pose_covariance.v[2]);
+
+      pose_->UpdateSensor(pf_, (AMCLSensorData*)&pdata);
+      ROS_INFO("After update.");
+    }
+
 
   if(resampled || force_publication)
   {
