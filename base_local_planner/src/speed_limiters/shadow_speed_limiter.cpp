@@ -137,8 +137,7 @@ double ShadowSpeedLimiter::getAngle(geometry_msgs::PoseStamped pose, geometry_ms
   geometry_msgs::Vector3 obj_vec;
   obj_vec.x = obj.x - pose.pose.position.x;
   obj_vec.y = obj.y - pose.pose.position.y;
-  double angle = acos((pose_vec.x*obj_vec.x + pose_vec.y*obj_vec.y)/(sqrt(obj_vec.x*obj_vec.x + obj_vec.y*obj_vec.y)));
-  //ROS_INFO_STREAM("Pose: %f %f obj:  %f %f angle: %f", pose_vec.x, pose_vec.y, obj_vec.x, obj_vec.y, angle);
+  double angle = acos((pose_vec.x * obj_vec.x + pose_vec.y * obj_vec.y) / (sqrt(obj_vec.x * obj_vec.x + obj_vec.y * obj_vec.y)));
   return angle;
 }
 double ShadowSpeedLimiter::getMapGridDistance(geometry_msgs::Point obj) 
