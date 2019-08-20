@@ -223,6 +223,14 @@ double ObstacleSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionM
         {
           speed = max_linear_velocity_;
         }
+        else if (distance_to_obstruction > params_.nominal_range_min){
+          speed = threeLevelInterpolation(distance_to_obstruction,
+                                       params_.min_range, params_.nominal_range_min,
+                                       params_.nominal_range_max, params_.max_range,
+                                       std::min(params_.min_linear_velocity, max_linear_velocity_),
+                                       std::min(params_.nominal_linear_velocity, max_linear_velocity_),
+                                       max_linear_velocity_);
+        }
         result.speed = speed;
         return result;
       }
