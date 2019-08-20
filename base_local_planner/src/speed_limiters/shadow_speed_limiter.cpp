@@ -39,6 +39,7 @@
 #include <base_local_planner/geometry_math_helpers.h>
 #include <tf/transform_datatypes.h>
 #include <costmap_2d/footprint.h>
+#include <geometry_msgs/Vector3.h>
 
 namespace base_local_planner {
 
@@ -84,6 +85,9 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
   geometry_msgs::PoseStamped pose;
   tf::poseStampedTFToMsg(current_pose, pose);
 
+  geometry_msgs::PoseStamped pose_no_offset;
+  tf::poseStampedTFToMsg(current_pose, pose_no_offset);
+
   double pose_yaw = tf::getYaw(pose.pose.orientation);
   pose.pose.position.x += cos(pose_yaw) * params_.forward_offset;
   pose.pose.position.y += sin(pose_yaw) * params_.forward_offset;
@@ -92,22 +96,50 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
   map_grid_.resetPathDist();
   map_grid_.setUnadjustedGoal(*(costmap_->getCostmap()), pose);
 
+  double points_inside = 0;
+  double points_total = 0;
+  double max_vel = max_linear_velocity_;
   // Find nearest object via brushfire distance
+
+  double max_cost = map_grid_.obstacleCosts();
   for (const auto& obj : (*objects))
-  {
-    // Get the brushfire distance to the obstacle
-    double distance = getMapGridDistance(obj);
-    // Convert it to a velocity
-    double velocity = distanceToVelocity(distance);
+  {	
+	// Get the brushfire distance to the obstacle
+   	double distance = getMapGridDistance(obj)/costmap_->getCostmap()->getResolution();
+	if (fabs(getAngle(pose_no_offset, obj)) < params_.half_angle && distance < max_cost)
+	{	
+    	// Convert it to a velocity
+		double distance = getMapGridDistance(obj);
+    	double velocity = distanceToVelocity(distance);
+		max_vel = std::min(velocity, max_vel);
 
-    max_allowed_linear_vel = std::min(velocity, max_allowed_linear_vel);
+		points_inside++;
+	}
+	points_total++;
   }
-
+  if (points_inside / points_total > params_.shadow_threshold)
+  {
+		max_allowed_linear_vel = max_vel;
+  }
+  double percentage = points_inside/points_total;
+  //ROS_INFO_THROTTLE(0.1, "Shadow at %f, of %f points", percentage, points_total);
   ROS_DEBUG_THROTTLE(0.2, "Setting shadow max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
 
   return true;
 }
 
+double ShadowSpeedLimiter::getAngle(geometry_msgs::PoseStamped pose, geometry_msgs::Point obj)
+{ 
+  double pose_yaw = tf::getYaw(pose.pose.orientation);
+  geometry_msgs::Vector3 pose_vec;
+  pose_vec.x = cos(pose_yaw);
+  pose_vec.y = sin(pose_yaw);
+  geometry_msgs::Vector3 obj_vec;
+  obj_vec.x = obj.x - pose.pose.position.x;
+  obj_vec.y = obj.y - pose.pose.position.y;
+  double angle = acos((pose_vec.x * obj_vec.x + pose_vec.y * obj_vec.y) / (sqrt(obj_vec.x * obj_vec.x + obj_vec.y * obj_vec.y)));
+  return angle;
+}
 double ShadowSpeedLimiter::getMapGridDistance(geometry_msgs::Point obj) 
 {
 

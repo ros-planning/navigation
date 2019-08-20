@@ -87,6 +87,7 @@ private:
 
   double getMapGridDistance(geometry_msgs::Point obj);
   double distanceToVelocity(double dist);
+  double getAngle(geometry_msgs::PoseStamped pose, geometry_msgs::Point obj);
 
   std::shared_ptr<dynamic_reconfigure::Client<ShadowSpeedLimiterConfig>> configClient_;
 
