@@ -118,6 +118,14 @@ public:
     }
 
   /**
+   * @brief Is the costmap stopped
+   */
+  bool isStopped()
+    {
+      return stopped_;
+    }
+
+  /**
    * @brief Get the pose of the robot in the global frame of the costmap
    * @param global_pose Will be set to the pose of the robot in the global frame of the costmap
    * @return True if the pose was set successfully, false otherwise
