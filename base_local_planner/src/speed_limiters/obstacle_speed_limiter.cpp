@@ -203,6 +203,7 @@ ObstacleSpeedLimiter::LinearSpeedLimiterResult ObstacleSpeedLimiter::calculateAl
   result.distance = distance_to_obstruction_actual;
   result.heading = getBearingToObstacle(obs);
 
+
   costmap_2d::ObstructionMsg obs_offset = obs;
   obs_offset.x -= params_.forward_offset;
   // Check if the bearing to the obstacle is acceptable
@@ -213,7 +214,6 @@ ObstacleSpeedLimiter::LinearSpeedLimiterResult ObstacleSpeedLimiter::calculateAl
   else{
     result.limiting = true;
   }
-
   double speed = 0.0;
   if(params_.enable_extended_obstacle_curve)
   {
@@ -225,6 +225,14 @@ ObstacleSpeedLimiter::LinearSpeedLimiterResult ObstacleSpeedLimiter::calculateAl
     else if (speed > max_linear_velocity_)
     {
       speed = max_linear_velocity_;
+    }
+    else if (distance_to_obstruction > params_.nominal_range_min){
+      speed = threeLevelInterpolation(distance_to_obstruction,
+                                    params_.min_range, params_.nominal_range_min,
+                                    params_.nominal_range_max, params_.max_range,
+                                    std::min(params_.min_linear_velocity, max_linear_velocity_),
+                                    std::min(params_.nominal_linear_velocity, max_linear_velocity_),
+                                    max_linear_velocity_);
     }
     result.speed = speed;
     return result;
