@@ -218,6 +218,7 @@ private:
   // This will be particularly useful for fusing noisy gps and imu data instea of dual rtk.
   bool use_gps_odom;
   bool gps_received = false;
+  double gps_mask_std;
   // how many times should gps pose match the map better than AMCL before re initialising AMCL pose
   int degraded_amcl_localisation_count_max = 4;
   int degraded_amcl_localisation_counter = 0;
@@ -535,6 +536,8 @@ AmclNode::AmclNode() :
   // for navsat_transform node & georeferenced datum in map or for robot_localisation ekf output (incase we want to fiter gps first)
   // this will be particularly useful for fusing noisy gps and imu data instea of dual rtk.
   private_nh_.param("use_gps_odom", use_gps_odom, false);
+  private_nh_.param("gps_mask_std", gps_mask_std, 0.2);
+
 
 
 
@@ -1371,7 +1374,35 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
   // If the robot has moved, update the filter
   if(lasers_update_[laser_index])
   {
-    
+
+    if ((use_gps || use_gps_odom) && gps_received)
+    {
+      AMCLPoseData pdata;
+      
+      pdata.pose = last_received_gps_pose;
+
+      pdata.pose_covariance = last_received_gps_covariance;
+
+      ros::Duration d = ros::Time::now() - last_gps_msg_received_ts_;  
+      ROS_INFO("GPS age: %f seconds.",
+             d.toSec());
+      if ( d < ros::Duration(0.2) )
+      {
+        if ( sqrt(pdata.pose_covariance.v[0]) < gps_mask_std && sqrt(pdata.pose_covariance.v[1]) < gps_mask_std )
+        {
+          pose_->UpdateSensor(pf_, (AMCLSensorData*)&pdata);
+        }
+        else
+        {
+        ROS_WARN("GPS variance too high, skipped gps update.");
+        }
+      }
+      else
+      {
+        ROS_WARN("GPS data too old to fuse, skipped gps update.");
+      }  
+    }
+
     ldata.sensor = lasers_[laser_index];
     ldata.range_count = laser_scan->ranges.size();
 
@@ -1470,30 +1501,9 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       }
       particlecloud_pub_.publish(cloud_msg);
     }
+
+
   }
-
-  if ((use_gps || use_gps_odom) && gps_received)
-    {
-      AMCLPoseData pdata;
-      
-      pdata.pose = last_received_gps_pose;
-
-      pdata.pose_covariance = last_received_gps_covariance;
-      ROS_INFO("In gps section.");
-      ROS_INFO("Input pose (%.6f): %.3f %.3f %.3f",
-           ros::Time::now().toSec(),
-           pdata.pose.v[0],
-           pdata.pose.v[1],
-           pdata.pose.v[2]);
-      ROS_INFO("Input covariance (%.6f): %.3f %.3f %.3f",
-           ros::Time::now().toSec(),
-           pdata.pose_covariance.v[0],
-           pdata.pose_covariance.v[1],
-           pdata.pose_covariance.v[2]);
-
-      pose_->UpdateSensor(pf_, (AMCLSensorData*)&pdata);
-      ROS_INFO("After update.");
-    }
 
 
   if(resampled || force_publication)

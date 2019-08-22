@@ -69,10 +69,10 @@
 
 	<!-- odometry model -->
     <param name="odom_model_type" value="diff-corrected"/> <!-- diff -->
-    <param name="odom_alpha1" value="0.015"/> <!-- 0.4 -->
-    <param name="odom_alpha2" value="0.015"/>
-    <param name="odom_alpha3" value="0.015"/>
-    <param name="odom_alpha4" value="0.015"/>
+    <param name="odom_alpha1" value="0.004"/> <!-- 0.4 -->
+    <param name="odom_alpha2" value="0.004"/>
+    <param name="odom_alpha3" value="0.004"/>
+    <param name="odom_alpha4" value="0.004"/>
     <param name="odom_frame_id" value="odom"/>
     <param name="base_frame_id" value="base_link"/>
     <param name="global_frame_id" value="map" />

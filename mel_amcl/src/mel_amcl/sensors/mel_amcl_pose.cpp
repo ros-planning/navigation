@@ -29,7 +29,6 @@ AMCLPose::AMCLPose() : AMCLSensor()
 // Apply the position sensor model
 bool AMCLPose::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 {
-  ROS_INFO("In gps update sensor.");
 
   pf_update_sensor(pf, (pf_sensor_model_fn_t) GaussianModel, data);
 
@@ -48,10 +47,9 @@ double AMCLPose::GaussianModel(AMCLPoseData *data, pf_sample_set_t* set)
   double angle_error;
   total_weight = 0.0;
 
-  double addition_pose_covariance = 0.8;
-  double addition_yaw_covariance = 0.3;
+  double addition_pose_covariance = 0.4;
+  double addition_yaw_covariance = 0.2;
 
-  ROS_INFO("Pose gaussian model.");
 
   // Compute the sample weights
   for (j = 0; j < set->sample_count; j++)
@@ -70,8 +68,8 @@ double AMCLPose::GaussianModel(AMCLPoseData *data, pf_sample_set_t* set)
         angle_error += 2*M_PI;
     angle_error -= M_PI;
 
-    double num = exp(-0.5 * (pow((pose.v[0] - data->pose.v[0]), 2) / pow(data->pose_covariance.v[0]+addition_pose_covariance, 2) + pow((pose.v[1] - data->pose.v[1]), 2) / pow(data->pose_covariance.v[1]+addition_pose_covariance, 2) + pow(angle_error, 2) / pow(data->pose_covariance.v[2]+addition_yaw_covariance, 2) ));
-    double denom = 2 * M_PI * (data->pose_covariance.v[0]+addition_pose_covariance) * (data->pose_covariance.v[1]+addition_pose_covariance) * (data->pose_covariance.v[2]+addition_yaw_covariance);
+    double num = exp(-0.5 * (pow((pose.v[0] - data->pose.v[0]), 2) / (data->pose_covariance.v[0]+addition_pose_covariance) + pow((pose.v[1] - data->pose.v[1]), 2) / (data->pose_covariance.v[1]+addition_pose_covariance) + pow(angle_error, 2) / (data->pose_covariance.v[2]+addition_yaw_covariance) ));
+    double denom = sqrt(2 * M_PI * (data->pose_covariance.v[0]+addition_pose_covariance) * (data->pose_covariance.v[1]+addition_pose_covariance) * (data->pose_covariance.v[2]+addition_yaw_covariance));
     p = num/denom;
 
     //assert(p <= 1.0);
@@ -82,9 +80,8 @@ double AMCLPose::GaussianModel(AMCLPoseData *data, pf_sample_set_t* set)
     
     total_weight += sample->weight;
   }
-  ROS_INFO("Yaw gps: %f. Yaw amcl: %f", data->pose.v[2], pose.v[2]);
 
-  ROS_INFO("Angle_error %f.", angle_error);
+  //ROS_INFO("Angle_error %f.", angle_error);
 
   return(total_weight);
 
