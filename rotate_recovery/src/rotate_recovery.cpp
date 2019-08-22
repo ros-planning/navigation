@@ -36,6 +36,10 @@
 *********************************************************************/
 #include <rotate_recovery/rotate_recovery.h>
 #include <pluginlib/class_list_macros.h>
+#include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Point.h>
+#include <angles/angles.h>
 #include <algorithm>
 #include <string>
 
@@ -45,21 +49,19 @@ PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavi
 
 namespace rotate_recovery
 {
-RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL),
-  tf_(NULL), initialized_(false), world_model_(NULL) {}
+RotateRecovery::RotateRecovery(): local_costmap_(NULL), initialized_(false), world_model_(NULL)
+{
+}
 
-void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
-                                costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap)
+void RotateRecovery::initialize(std::string name, tf::TransformListener*,
+                                costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS* local_costmap)
 {
   if (!initialized_)
   {
-    name_ = name;
-    tf_ = tf;
-    global_costmap_ = global_costmap;
     local_costmap_ = local_costmap;
 
     // get some parameters from the parameter server
-    ros::NodeHandle private_nh("~/" + name_);
+    ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
 
     // we'll simulate every degree by default
@@ -94,9 +96,9 @@ void RotateRecovery::runBehavior()
     return;
   }
 
-  if (global_costmap_ == NULL || local_costmap_ == NULL)
+  if (local_costmap_ == NULL)
   {
-    ROS_ERROR("The costmaps passed to the RotateRecovery object cannot be NULL. Doing nothing.");
+    ROS_ERROR("The costmap passed to the RotateRecovery object cannot be NULL. Doing nothing.");
     return;
   }
   ROS_WARN("Rotate recovery behavior started.");
