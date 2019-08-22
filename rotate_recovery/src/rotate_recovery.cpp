@@ -110,20 +110,37 @@ void RotateRecovery::runBehavior()
   tf::Stamped<tf::Pose> global_pose;
   local_costmap_->getRobotPose(global_pose);
 
-  double current_angle = -1.0 * M_PI;
+  double current_angle = tf::getYaw(global_pose.getRotation());
+  double start_angle = current_angle;
 
   bool got_180 = false;
 
-  double start_offset = 0 - angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
-  while (n.ok())
+  while (n.ok() &&
+         (!got_180 ||
+          std::fabs(angles::shortest_angular_distance(current_angle, start_angle)) > tolerance_))
   {
+    // Update Current Angle
     local_costmap_->getRobotPose(global_pose);
-
-    double norm_angle = angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
-    current_angle = angles::normalize_angle(norm_angle + start_offset);
+    current_angle = tf::getYaw(global_pose.getRotation());
 
     // compute the distance left to rotate
-    double dist_left = M_PI - current_angle;
+    double dist_left;
+    if (!got_180)
+    {
+      // If we haven't hit 180 yet, we need to rotate a half circle plus the distance to the 180 point
+      double distance_to_180 = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + M_PI));
+      dist_left = M_PI + distance_to_180;
+
+      if (distance_to_180 < tolerance_)
+      {
+        got_180 = true;
+      }
+    }
+    else
+    {
+      // If we have hit the 180, we just have the distance back to the start
+      dist_left = std::fabs(angles::shortest_angular_distance(current_angle, start_angle));
+    }
 
     double x = global_pose.getOrigin().x(), y = global_pose.getOrigin().y();
 
@@ -131,7 +148,7 @@ void RotateRecovery::runBehavior()
     double sim_angle = 0.0;
     while (sim_angle < dist_left)
     {
-      double theta = tf::getYaw(global_pose.getRotation()) + sim_angle;
+      double theta = current_angle + sim_angle;
 
       // make sure that the point is legal, if it isn't... we'll abort
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
@@ -157,14 +174,6 @@ void RotateRecovery::runBehavior()
     cmd_vel.angular.z = vel;
 
     vel_pub.publish(cmd_vel);
-
-    // makes sure that we won't decide we're done right after we start
-    if (current_angle < 0.0)
-      got_180 = true;
-
-    // if we're done with our in-place rotation... then return
-    if (got_180 && current_angle >= (0.0 - tolerance_))
-      return;
 
     r.sleep();
   }
