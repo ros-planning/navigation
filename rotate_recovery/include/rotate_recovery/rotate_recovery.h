@@ -54,18 +54,18 @@ namespace rotate_recovery{
     public:
       /**
        * @brief  Constructor, make sure to call initialize in addition to actually initialize the object
-       * @param  
-       * @return 
+       * @param
+       * @return
        */
       RotateRecovery();
 
       /**
        * @brief  Initialization function for the RotateRecovery recovery behavior
        * @param tf A pointer to a transform listener
-       * @param global_costmap A pointer to the global_costmap used by the navigation stack 
-       * @param local_costmap A pointer to the local_costmap used by the navigation stack 
+       * @param global_costmap A pointer to the global_costmap used by the navigation stack
+       * @param local_costmap A pointer to the local_costmap used by the navigation stack
        */
-      void initialize(std::string name, tf::TransformListener* tf, 
+      void initialize(std::string name, tf::TransformListener* tf,
           costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap);
 
       /**
@@ -88,4 +88,4 @@ namespace rotate_recovery{
       base_local_planner::CostmapModel* world_model_;
   };
 };
-#endif  
+#endif

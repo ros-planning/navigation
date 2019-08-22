@@ -41,8 +41,8 @@
 PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
 namespace rotate_recovery {
-RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
-  tf_(NULL), initialized_(false), world_model_(NULL) {} 
+RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL),
+  tf_(NULL), initialized_(false), world_model_(NULL) {}
 
 void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
     costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
