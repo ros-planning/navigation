@@ -8,9 +8,12 @@
   <!-- Play rosbag -->
   <arg name="path" default="$(find mel_amcl)/bag_data/map_frame/" />
   <!-- <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" /> -->
-  <arg name="file_name" default="tall_robot_data_2019-08-14-12-48-50.bag" />
-  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_name)
-   -r 2 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan"/>
+  <!-- <arg name="file_name" default="tall_robot_data_2019-08-14-12-48-50.bag" /> -->
+  <arg name="file_name" default="tall_robot_data_2019-08-20-15-17-25.bag" />
+  <node pkg="rosbag" type="play" name="player1" output="screen" args="$(arg path)$(arg file_name)
+   -r 1 -u 2 -k --topics /tf_static"/>
+  <node pkg="rosbag" type="play" name="player2" output="screen" args="--clock $(arg path)$(arg file_name)
+   -r 1 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan /nmea/main_GGA /imu/data"/>
   
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
@@ -33,8 +36,16 @@
 
 
   <!-- eKF for the odom frame -->
+  <node pkg="mel_amcl" type="gps_odom_mask.py" name="gps_odom_mask" clear_params="true">
+  </node>
+
+
+  <!-- eKF for the odom frame -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true">
     <remap from="odometry/filtered" to="rl/odom"/>
+    <remap from="odometry/gps" to="odometry/gps/mask"/>
+    <remap from="/yaw" to="/yaw/mask"/>
+
   </node>
 
   <!-- eKF for the map frame -->

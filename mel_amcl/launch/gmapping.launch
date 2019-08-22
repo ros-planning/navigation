@@ -1,19 +1,21 @@
 <?xml version="1.0"?>
 <launch>
 
+  <param name="/use_sim_time" value="true"/>
+
 
   <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
     <param name="base_frame" value="base_link"/>
     <param name="odom_frame" value="odom"/>
     <param name="map_update_interval" value="5.0"/>
-    <param name="maxUrange" value="6.5"/>
+    <param name="maxUrange" value="6.0"/> <!-- 6.5 -->
     <param name="maxRange" value="30.0"/>
-    <param name="sigma" value="0.08"/>
-    <param name="kernelSize" value="0.01"/>
+    <param name="sigma" value="0.1"/>
+    <param name="kernelSize" value="0.05"/>
     <param name="lstep" value="0.005"/>
     <param name="astep" value="0.005"/>
     <param name="iterations" value="2"/>
-    <param name="lsigma" value="0.05"/>
+    <param name="lsigma" value="0.08"/>
     <param name="ogain" value="15.0"/>
     <param name="lskip" value="0"/>
     <param name="minimumScore" value="99999"/>
@@ -36,13 +38,13 @@
 
 
     <param name="delta" value="0.05"/>
-    <param name="llsamplerange" value="0.01"/>
-    <param name="llsamplestep" value="0.01"/>
-    <param name="lasamplerange" value="0.005"/>
-    <param name="lasamplestep" value="0.005"/>
+    <param name="llsamplerange" value="0.02"/>
+    <param name="llsamplestep" value="0.02"/>
+    <param name="lasamplerange" value="0.02"/>
+    <param name="lasamplestep" value="0.02"/>
 
 
-    <param name="occ_thresh" value="0.1"/>
+    <param name="occ_thresh" value="0.25"/>
 
 
   </node>
