@@ -1248,6 +1248,7 @@ void
 AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
   AMCLLaserData ldata; // move this declration here so it is in scope of my added code.
+  AMCLPoseData pdata;
   std::string laser_scan_frame_id = stripSlash(laser_scan->header.frame_id);
   last_laser_received_ts_ = ros::Time::now();
   if( map_ == NULL ) {
@@ -1377,7 +1378,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
     if ((use_gps || use_gps_odom) && gps_received)
     {
-      AMCLPoseData pdata;
+      
       
       pdata.pose = last_received_gps_pose;
 
@@ -1592,6 +1593,17 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         // Localisation quality monitor (AMCL vs GPS)
         // Compare likelihood between gps and amcl positions, reinitialise AMCL if its weight is low
         // degraded_amcl_localisation_count_max times in a row
+
+        double pose_discrepancy = sqrt( pow(last_received_gps_pose.v[0] - hyps[max_weight_hyp].pf_pose_mean.v[0],2) + pow(last_received_gps_pose.v[1] - hyps[max_weight_hyp].pf_pose_mean.v[1],2) );
+
+        if (pose_discrepancy > 3 &&  sqrt(pdata.pose_covariance.v[0]) < gps_mask_std && sqrt(pdata.pose_covariance.v[1]) < gps_mask_std && weight_gps_from_scan > 2)
+        {
+              ROS_WARN("Resetting AMCL pose due to pose discepancy");
+              // reinitialise particle filter with the gps data
+              handleInitialPoseMessage(last_received_gps_msg);
+              degraded_amcl_localisation_counter = 0;
+        }
+
         if (weight_gps_from_scan > weight_amcl_from_scan)
         {
           ROS_INFO("Using GPS pos");
@@ -1604,7 +1616,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
             use_filtered_amcl_pose_ = false;
             if (degraded_amcl_localisation_counter >= degraded_amcl_localisation_count_max)
             {
-              ROS_INFO("Resetting AMCL pose");
+              ROS_WARN("Resetting AMCL pose due to higer likelihood at gps.");
 
               // reinitialise particle filter with the gps data
               handleInitialPoseMessage(last_received_gps_msg);
@@ -1620,12 +1632,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
           use_filtered_amcl_pose_ = true;
         }
 
-        // Just to test what is the time difference between gps and laser scan data
-        // NOTE: it was less than 1/10 of a second.
-        /*
-      ros::Duration time_diff = gps_msg.header.stamp - laser_scan->header.stamp;
-      ROS_INFO("Time difference between gps and scan is: %f", time_diff.toSec());
-      */
       }
       else
       {
