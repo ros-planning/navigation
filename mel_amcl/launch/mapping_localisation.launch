@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+<launch>
+  
+  <!-- load parameters for eKFs: odom, map and separate gps -->
+  <rosparam command="load" file="$(find mel_amcl)/config/mapping_with_rtk.yaml" />
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true">
+      <!-- Placeholders for input remapping. Set your topic names as the "to" values. -->
+      <remap from="imu/data" to="yaw"/> 
+      <remap from="odometry/filtered" to="rl/odom"/>
+      <remap from="gps/fix" to="gps/fix"/>
+  </node>
+
+  <!-- eKF for the odom frame -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true">
+    <remap from="odometry/filtered" to="rl/odom"/>
+  </node>
+
+
+</launch>

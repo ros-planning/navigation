@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="ISO-8859-15"?>
+
+<launch>
+
+
+  <param name="/use_sim_time" value="true"/>
+  
+  <!-- Play rosbag -->
+  <arg name="path" default="$(find mel_amcl)/bag_data/map_frame/" />
+  <!-- <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" /> -->
+  <!-- <arg name="file_name" default="tall_robot_data_2019-08-14-12-48-50.bag" /> -->
+  <arg name="file_name" default="tall_robot_data_2019-08-20-15-17-25.bag" />
+  <node pkg="rosbag" type="play" name="player1" output="screen" args="$(arg path)$(arg file_name)
+   -r 1 -u 2 -k --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan /nmea/main_GGA /imu/data"/>
+  
+
+</launch>

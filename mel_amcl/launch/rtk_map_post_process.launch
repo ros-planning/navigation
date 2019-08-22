@@ -8,19 +8,19 @@
   <!-- Play rosbag -->
   <arg name="path" default="$(find mel_amcl)/bag_data/map_frame/" />
   <!-- <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" /> -->
-  <arg name="file_name" default="tall_robot_data_2019-08-14-12-48-50.bag" />
+  <arg name="file_name" default="tall_robot_data_2019-08-20-15-17-25.bag" />
   <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_name)
-   -r 5 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan"/>
+   -r 10 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan"/>
   
 
   <!-- Load rtk map -->
-  <arg name="map_file" default="$(find mel_amcl)/maps/rtk_map_11_edit.yaml"/>
+  <arg name="map_file" default="$(find mel_amcl)/maps/riseholme_rtk_fix.yaml"/>
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
  
 
   <!-- this might be neccessary to make yaw enu format -->
-  <node pkg="mel_amcl" type="yaw_republisher.py" name="yaw_republisher" clear_params="true">
-  </node>
+  <!-- <node pkg="mel_amcl" type="yaw_republisher.py" name="yaw_republisher" clear_params="true">
+  </node> -->
 
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
