@@ -2,23 +2,11 @@
 
 <launch>
 
-   <arg name="gps_yaw_offset_rad" default="0.0"/>   <!-- gps yaw offset - if the two gps's are not parallel with forward direction of robot. & The yaw is not added to the urdf tf -->
-   <arg name="added_gps_position_covariance" default="0.4"/>
-   <arg name="added_gps_orientation_covariance" default="0.1"/>
-   <!-- <arg name="gps_frame_id" default="septentrio"/> -->
-
-
-  <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
- <!--  <node name="septentrio_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="0.535 0.40 0.41 0.633 0 0 base_link septentrio 100" output="log">
-  </node> -->
-
-
-
   <!-- launch amcl but dont publish map->odom tf as this is handled by ekf_se_map -->
   <include file="$(find mel_amcl)/launch/mel_amcl.launch"/>
 
 
-  <!-- load parameters for eKFs: odom, map and separate gps -->
+  <!-- load parameters for eKFs: odom, and separate gps -->
   <rosparam command="load" file="$(find mel_amcl)/config/rasberry_ekf.yaml" />
 
 
@@ -36,19 +24,11 @@
     <remap from="odometry/filtered" to="rl/odom"/>
   </node>
 
-  <!-- eKF for the map frame -->
-  <!--  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_map" clear_params="true">
-    <remap from="odometry/filtered" to="rl/map_pose"/>
-  </node> -->
 
   <!-- eKF for the gps in map frame, to use output, set use_gps_odom arg in mel_amcl to true --> 
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true">
     <remap from="odometry/filtered" to="odometry/gps"/>
   </node> 
-
-
-  <node pkg="topic_tools" type="relay" name="relay_initial_estimate" clear_params="true"
-    args="/set_pose /initialpose" />
 
 
 </launch>
