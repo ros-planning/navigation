@@ -1,9 +1,8 @@
 base:
     global:
         plugins:
-        - {name: static_map,       type: "costmap_2d::StaticLayer"}
+        - {name: static_map,       type: "costmap_2d::StaticLayerWithInflation"}
         - {name: obstacles,        type: "costmap_2d::ObstacleLayer"}
-        - {name: inflation,        type: "costmap_2d::InflationLayer"}
         obstacles:
             track_unknown_space: true
     local:

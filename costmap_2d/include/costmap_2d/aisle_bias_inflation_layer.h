@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef COSTMAP_2D_INFLATION_LAYER_H_
-#define COSTMAP_2D_INFLATION_LAYER_H_
+#ifndef COSTMAP_2D_AISLE_BIAS_INFLATION_LAYER_H_
+#define COSTMAP_2D_AISLE_BIAS_INFLATION_LAYER_H_
 
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
@@ -44,44 +44,27 @@
 #include <costmap_2d/InflationPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
+#include <costmap_2d/inflation_layer.h>
 
 namespace costmap_2d
 {
-/**
- * @class CellData
- * @brief Storage for cell information used during obstacle inflation
- */
-class CellData
+
+class AisleBiasInflationLayer : public Layer
 {
 public:
-  /**
-   * @brief  Constructor for a CellData objects
-   * @param  i The index of the cell in the cost map
-   * @param  x The x coordinate of the cell in the cost map
-   * @param  y The y coordinate of the cell in the cost map
-   * @param  sx The x coordinate of the closest obstacle cell in the costmap
-   * @param  sy The y coordinate of the closest obstacle cell in the costmap
-   * @return
-   */
-  CellData(double i, unsigned int x, unsigned int y, unsigned int sx, unsigned int sy) :
-      index_(i), x_(x), y_(y), src_x_(sx), src_y_(sy)
-  {
-  }
-  unsigned int index_;
-  unsigned int x_, y_;
-  unsigned int src_x_, src_y_;
-};
+  AisleBiasInflationLayer();
 
-class InflationLayer : public Layer
-{
-public:
-  InflationLayer();
-
-  virtual ~InflationLayer()
+  virtual ~AisleBiasInflationLayer()
   {
     deleteKernels();
     if (dsrv_)
+    {
         delete dsrv_;
+    }
+    if (inflation_access_)
+    {
+      delete inflation_access_;
+    }
   }
 
   virtual void onInitialize();
@@ -97,22 +80,54 @@ public:
   virtual void reset() { onInitialize(); }
 
   /** @brief  Given a distance, compute a cost.
-   * @param  distance The distance from an obstacle in cells
+   * @param  obs_distance The distance from an obstacle in cells
+   * @param  vor_distance
    * @return A cost value for the distance */
-  inline unsigned char computeCost(double distance) const
+  inline unsigned char computeCost(double obs_distance, double vor_distance) const
   {
     unsigned char cost = 0;
-    if (distance == 0)
-      cost = LETHAL_OBSTACLE;
-    else if (distance * resolution_ <= inscribed_radius_)
-      cost = INSCRIBED_INFLATED_OBSTACLE;
-    else
+    if (obs_distance == 0)
     {
-      // make sure cost falls off by Euclidean distance
-      double euclidean_distance = distance * resolution_;
-      double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
-      cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
+      return LETHAL_OBSTACLE;
     }
+  
+    double euclidean_distance = obs_distance * resolution_;
+    if (obs_distance * resolution_ <= inscribed_radius_)
+    {
+      return INSCRIBED_INFLATED_OBSTACLE;
+    }
+
+    if (vor_distance <= 0.001 && euclidean_distance < (lane_width_ + inscribed_radius_))
+    {
+      return 0;
+    }
+    
+    if (euclidean_distance > max_effect_distance_)
+    {
+      euclidean_distance = max_effect_distance_;
+    }
+
+
+    double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
+
+    double cell_dist = euclidean_distance - inscribed_radius_;
+    double cell_from_lane_dist = cell_dist - lane_width_;
+    // double sigma = 1 / (2 * M_PI) * exp(weight_ * lane_dist);
+    // double sub_factor = 1 / (2 * M_PI * sigma) 
+    //                     * exp(-1 * (cell_from_lane_dist * cell_from_lane_dist) / (2 * sigma * sigma));
+    double sigma = 0.5 * lane_width_;
+    double sub_factor = exp(-1 * (cell_from_lane_dist * cell_from_lane_dist) / (2 * sigma * sigma));
+
+      double full_factor = factor * (1 - sub_factor);
+    cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * full_factor);
+    if (std::fabs(cell_from_lane_dist) < resolution_ / 2) {
+      cost = 0;
+    }
+    // ROS_INFO("inflation: %f, lane_width: %f, sigma: %f, cell_dist: %f, factor %f, sub_factor %f", 
+    // inscribed_radius_, lane_width_, sigma, cell_dist, factor, sub_factor);
+
+
+      // cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
     return cost;
   }
 
@@ -124,6 +139,14 @@ public:
   void setInflationParameters(double inflation_radius, double cost_scaling_factor, double lane_width);
 
   virtual bool needsUpdate() {return need_reinflation_;};
+
+  virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap() {
+    return obstacle_distance_map_;
+  }
+
+  virtual std::shared_ptr<std::vector<int>> getAnglesFromStaticMap() {
+    return obstacle_angle_map_;
+  }
 
 protected:
   virtual void onFootprintChanged();
@@ -142,6 +165,7 @@ private:
   {
     unsigned int dx = abs(mx - src_x);
     unsigned int dy = abs(my - src_y);
+    // return std::max(dx, dy);
     return cached_distances_[dx][dy];
   }
 
@@ -153,11 +177,9 @@ private:
    * @param src_y The y coordinate of the source cell
    * @return
    */
-  inline unsigned char costLookup(int mx, int my, int src_x, int src_y)
+  inline unsigned char costLookup(double obs_dist, double vor_dist)
   {
-    unsigned int dx = abs(mx - src_x);
-    unsigned int dy = abs(my - src_y);
-    return cached_costs_[dx][dy];
+    return cached_costs_[obs_dist][vor_dist];
   }
 
   void computeCaches();
@@ -170,21 +192,21 @@ private:
   }
 
   inline void enqueue(unsigned int index, unsigned int mx, unsigned int my,
-                      unsigned int src_x, unsigned int src_y);
+                      unsigned int src_x, unsigned int src_y,
+                      std::map<double, std::vector<CellData> >& queue_map);
 
   double inflation_radius_, inscribed_radius_, weight_;
   unsigned int cell_inflation_radius_;
   unsigned int cached_cell_inflation_radius_;
-  std::map<double, std::vector<CellData> > inflation_cells_;
+
+  std::map<double, std::map<double, unsigned char> > cached_costs_;
+
 
   double resolution_;
 
-  double lane_width_;
+  std::shared_ptr<std::vector<double>> obstacle_distance_map_;
+  std::shared_ptr<std::vector<int>> obstacle_angle_map_;
 
-  bool* seen_;
-  int seen_size_;
-
-  unsigned char** cached_costs_;
   double** cached_distances_;
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;
 
@@ -192,8 +214,11 @@ private:
   void reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level);
 
   bool need_reinflation_;  ///< Indicates that the entire costmap should be reinflated next time around.
+
+  double max_effect_distance_ = 1.0;
+  double lane_width_ = 0.5;
 };
 
 }  // namespace costmap_2d
 
-#endif  // COSTMAP_2D_INFLATION_LAYER_H_
+#endif  // COSTMAP_2D_AISLE_BIAS_INFLATION_LAYER_H_

@@ -111,6 +111,7 @@ target_link_libraries(costmap_2d
 )
 
 add_library(layers
+  plugins/aisle_bias_inflation_layer.cpp
   plugins/inflation_layer.cpp
   plugins/obstacle_layer.cpp
   plugins/obstruction_layer.cpp

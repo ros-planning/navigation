@@ -89,7 +89,13 @@ public:
     return inflation_layer_->getDistancesFromStaticMap();
   }
 
+  virtual std::shared_ptr<std::vector<int>> getAnglesFromStaticMap() override {
+    return inflation_layer_->getAnglesFromStaticMap();
+  }
+
+
   virtual double getDistanceFromStaticMap(double px, double py) override;
+  virtual int getAngleFromStaticMap(double px, double py) override;
 
 private:
   /**
@@ -130,6 +136,8 @@ private:
   pluginlib::ClassLoader<Layer> plugin_loader_;
   boost::shared_ptr<Layer> inflation_layer_;
   std::string inflation_layer_type_;
+  boost::shared_ptr<Layer> secondary_inflation_layer_;
+  std::string secondary_inflation_layer_type_;
   bool needs_reinflation_;
 
   bool impassible_;

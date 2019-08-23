@@ -41,6 +41,7 @@
 #include <string>
 #include <algorithm>
 #include <vector>
+#include <costmap_2d/costmap_layer.h>
 
 using std::vector;
 
@@ -64,7 +65,7 @@ LayeredCostmap::~LayeredCostmap()
   }
 }
 
-void LayeredCostmap::addPlugin(boost::shared_ptr<Layer> plugin)
+void LayeredCostmap::addPlugin(boost::shared_ptr<CostmapLayer> plugin)
 {
   if (plugin->getLayerType() == LayerType::STATIC_IMPASSIBLE
     && !static_layer_) {
@@ -114,6 +115,15 @@ std::shared_ptr<std::vector<double>> LayeredCostmap::getDistancesFromStaticMap()
   }
 }
 
+std::shared_ptr<std::vector<int>> LayeredCostmap::getAnglesFromStaticMap()
+{
+  if (static_layer_) {
+    return static_layer_->getAnglesFromStaticMap();
+  } else {
+    return std::shared_ptr<std::vector<int>>();
+  }
+}
+
 double LayeredCostmap::getDistanceFromStaticMap(double px, double py)
 {
   if (static_layer_)
@@ -126,12 +136,24 @@ double LayeredCostmap::getDistanceFromStaticMap(double px, double py)
   }
 }
 
+int LayeredCostmap::getAngleFromStaticMap(double px, double py)
+{
+  if (static_layer_)
+  {
+    return static_layer_->getAngleFromStaticMap(px, py);
+  }
+  else
+  {
+    return -10;
+  }
+}
+
 void LayeredCostmap::resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
                                double origin_y, bool size_locked)
 {
   size_locked_ = size_locked;
   costmap_.resizeMap(size_x, size_y, resolution, origin_x, origin_y);
-  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<CostmapLayer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
     (*plugin)->matchSize();
@@ -166,7 +188,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   rec = nullptr;
   if (rolling_window_) {rec = timingDataRecorder_.getRecorder("-updateBounds", 1);  rec->startSample();}
 
-  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<CostmapLayer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)
   {
     double prev_minx = minx_;
@@ -208,7 +230,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   rec = nullptr;
   if (rolling_window_) {rec = timingDataRecorder_.getRecorder("-updateCosts", 1);  rec->startSample();}
 
-  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<CostmapLayer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)
   {
     srs::TimingDataRecorder* rec2 = nullptr;
@@ -230,7 +252,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
 bool LayeredCostmap::isCurrent()
 {
   current_ = true;
-  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<CostmapLayer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
     current_ = current_ && (*plugin)->isCurrent();
@@ -243,7 +265,7 @@ void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footp
   footprint_ = footprint_spec;
   costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius_, circumscribed_radius_);
 
-  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+  for (vector<boost::shared_ptr<CostmapLayer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
     (*plugin)->onFootprintChanged();

@@ -339,5 +339,19 @@ namespace base_local_planner{
       }
     }
   }
+  bool MapGrid::worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my, double resolution) const
+  {
+    if (wx < origin_x_ || wy < origin_y_)
+      return false;
+
+    mx = (int)((wx - origin_x_) / resolution);
+    my = (int)((wy - origin_y_) / resolution);
+
+
+    if (mx < size_x_ && my < size_y_)
+      return true;
+
+    return false;
+  }
 
 };

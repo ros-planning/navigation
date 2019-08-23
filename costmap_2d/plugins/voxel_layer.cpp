@@ -40,7 +40,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #define VOXEL_BITS 16
-PLUGINLIB_EXPORT_CLASS(costmap_2d::VoxelLayer, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::VoxelLayer, costmap_2d::CostmapLayer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;

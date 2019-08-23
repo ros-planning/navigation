@@ -65,14 +65,14 @@ unsigned int countValues(costmap_2d::Costmap2D& costmap, unsigned char value, bo
 void addStaticLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
 {
   costmap_2d::StaticLayer* slayer = new costmap_2d::StaticLayer();
-  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(slayer));
+  layers.addPlugin(boost::shared_ptr<costmap_2d::CostmapLayer>(slayer));
   slayer->initialize(&layers, "static", &tf);
 }
 
 void addStaticLayerWithInflation(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
 {
   costmap_2d::StaticLayerWithInflation* slayer = new costmap_2d::StaticLayerWithInflation();
-  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(slayer));
+  layers.addPlugin(boost::shared_ptr<costmap_2d::CostmapLayer>(slayer));
   slayer->initialize(&layers, "static", &tf);
 }
 
@@ -80,7 +80,7 @@ costmap_2d::ObstacleLayer* addObstacleLayer(costmap_2d::LayeredCostmap& layers, 
 {
   costmap_2d::ObstacleLayer* olayer = new costmap_2d::ObstacleLayer();
   olayer->initialize(&layers, "obstacles", &tf);
-  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(olayer));
+  layers.addPlugin(boost::shared_ptr<costmap_2d::CostmapLayer>(olayer));
   return olayer;
 }
 
@@ -88,7 +88,7 @@ costmap_2d::ObstructionLayer* addObstructionLayer(costmap_2d::LayeredCostmap& la
 {
   costmap_2d::ObstructionLayer* olayer = new costmap_2d::ObstructionLayer();
   olayer->initialize(&layers, "obstructions", &tf);
-  layers.addPlugin(boost::shared_ptr<costmap_2d::Layer>(olayer));
+  layers.addPlugin(boost::shared_ptr<costmap_2d::CostmapLayer>(olayer));
   return olayer;
 }
 
@@ -128,14 +128,14 @@ void addObservation(costmap_2d::ObstructionLayer* olayer, double x, double y, do
   olayer->addStaticObservation(obs, true, true);
 }
 
-costmap_2d::InflationLayer* addInflationLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
-{
-  costmap_2d::InflationLayer* ilayer = new costmap_2d::InflationLayer();
-  ilayer->initialize(&layers, "inflation", &tf);
-  boost::shared_ptr<costmap_2d::Layer> ipointer(ilayer);
-  layers.addPlugin(ipointer);
-  return ilayer;
-}
+// costmap_2d::InflationLayer* addInflationLayer(costmap_2d::LayeredCostmap& layers, tf::TransformListener& tf)
+// {
+//   costmap_2d::InflationLayer* ilayer = new costmap_2d::InflationLayer();
+//   ilayer->initialize(&layers, "inflation", &tf);
+//   boost::shared_ptr<costmap_2d::Layer> ipointer(ilayer);
+//   layers.addPlugin(ipointer);
+//   return ilayer;
+// }
 
 std::vector<geometry_msgs::Point> setRadii(costmap_2d::LayeredCostmap& layers, double length, double width, double inflation_radius)
 {

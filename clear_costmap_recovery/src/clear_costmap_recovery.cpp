@@ -94,7 +94,7 @@ void ClearCostmapRecovery::runBehavior(){
 }
 
 void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
-  std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = costmap->getLayeredCostmap()->getPlugins();
+  std::vector<boost::shared_ptr<costmap_2d::CostmapLayer> >* plugins = costmap->getLayeredCostmap()->getPlugins();
 
   tf::Stamped<tf::Pose> pose;
 
@@ -106,8 +106,8 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
   double x = pose.getOrigin().x();
   double y = pose.getOrigin().y();
 
-  for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-    boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
+  for (std::vector<boost::shared_ptr<costmap_2d::CostmapLayer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+    boost::shared_ptr<costmap_2d::CostmapLayer> plugin = *pluginp;
     std::string name = plugin->getName();
     int slash = name.rfind('/');
     if( slash != std::string::npos ){

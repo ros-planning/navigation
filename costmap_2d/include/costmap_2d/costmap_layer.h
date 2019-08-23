@@ -39,11 +39,11 @@
 #define COSTMAP_2D_COSTMAP_LAYER_H_
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
-#include <costmap_2d/layered_costmap.h>
+// #include <costmap_2d/costmap_2d.h>
+// #include <costmap_2d/layered_costmap.h>
 
 namespace costmap_2d
 {
-
 class CostmapLayer : public Layer, public Costmap2D
 {
 public:

@@ -106,9 +106,9 @@ namespace move_slow_and_clear
     }
 
     //clear the desired space in the costmaps
-    std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = global_costmap_->getLayeredCostmap()->getPlugins();
-    for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-            boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
+    std::vector<boost::shared_ptr<costmap_2d::CostmapLayer> >* plugins = global_costmap_->getLayeredCostmap()->getPlugins();
+    for (std::vector<boost::shared_ptr<costmap_2d::CostmapLayer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+            boost::shared_ptr<costmap_2d::CostmapLayer> plugin = *pluginp;
           if(plugin->getName().find("obstacles")!=std::string::npos){
             boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
             costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
@@ -117,8 +117,8 @@ namespace move_slow_and_clear
     }
      
     plugins = local_costmap_->getLayeredCostmap()->getPlugins();
-    for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-            boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
+    for (std::vector<boost::shared_ptr<costmap_2d::CostmapLayer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+            boost::shared_ptr<costmap_2d::CostmapLayer> plugin = *pluginp;
           if(plugin->getName().find("obstacles")!=std::string::npos){
             boost::shared_ptr<costmap_2d::ObstacleLayer> costmap;
             costmap = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);

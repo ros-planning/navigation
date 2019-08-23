@@ -97,6 +97,7 @@ public:
   bool copyCostmapWindow(const Costmap2D& map, double win_origin_x, double win_origin_y, double win_size_x,
                          double win_size_y);
 
+
   /**
    * @brief  Default constructor
    */
