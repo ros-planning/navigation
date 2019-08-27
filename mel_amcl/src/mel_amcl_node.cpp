@@ -536,7 +536,7 @@ AmclNode::AmclNode() :
   // for navsat_transform node & georeferenced datum in map or for robot_localisation ekf output (incase we want to fiter gps first)
   // this will be particularly useful for fusing noisy gps and imu data instea of dual rtk.
   private_nh_.param("use_gps_odom", use_gps_odom, false);
-  private_nh_.param("gps_mask_std", gps_mask_std, 0.2);
+  private_nh_.param("gps_mask_std", gps_mask_std, 0.1);
 
 
 
