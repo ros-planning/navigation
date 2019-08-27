@@ -1385,8 +1385,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       pdata.pose_covariance = last_received_gps_covariance;
 
       ros::Duration d = ros::Time::now() - last_gps_msg_received_ts_;  
-      ROS_INFO("GPS age: %f seconds.",
-             d.toSec());
+      ROS_INFO("GPS age: %f seconds. Variance: x= %f, y= %f meters",
+             d.toSec(), pdata.pose_covariance.v[0], pdata.pose_covariance.v[1]);
       if ( d < ros::Duration(0.2) )
       {
         if ( sqrt(pdata.pose_covariance.v[0]) < gps_mask_std && sqrt(pdata.pose_covariance.v[1]) < gps_mask_std )
@@ -1395,7 +1395,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         }
         else
         {
-        ROS_WARN("GPS variance too high, skipped gps update.");
+        ROS_WARN("GPS variance too high (x=%f, y=%f)), skipped gps update.", pdata.pose_covariance.v[0], pdata.pose_covariance.v[1]);
         }
       }
       else
