@@ -46,9 +46,9 @@
     <param name="kld_err" value="0.01"/>
     <param name="kld_z" value="0.99"/>
     <!-- <param name="update_min_d" value="0.05"/> -->
-    <param name="update_min_d" value="0.15"/>
+    <param name="update_min_d" value="0.2"/>
     <!-- <param name="update_min_a" value="0.52"/> -->
-    <param name="update_min_a" value="0.32"/>
+    <param name="update_min_a" value="0.52"/>
     <param name="resample_interval" value="2"/>
     <param name="transform_tolerance" value="0.1"/>
     <param name="recovery_alpha_slow" value="0.0"/> <!-- 0.0 -->
@@ -69,10 +69,10 @@
 
 	<!-- odometry model -->
     <param name="odom_model_type" value="diff-corrected"/> <!-- diff -->
-    <param name="odom_alpha1" value="0.004"/> <!-- 0.4 -->
-    <param name="odom_alpha2" value="0.004"/>
-    <param name="odom_alpha3" value="0.004"/>
-    <param name="odom_alpha4" value="0.004"/>
+    <param name="odom_alpha1" value="0.014"/> <!-- 0.4 -->
+    <param name="odom_alpha2" value="0.014"/>
+    <param name="odom_alpha3" value="0.014"/>
+    <param name="odom_alpha4" value="0.014"/>
     <param name="odom_frame_id" value="odom"/>
     <param name="base_frame_id" value="base_link"/>
     <param name="global_frame_id" value="map" />

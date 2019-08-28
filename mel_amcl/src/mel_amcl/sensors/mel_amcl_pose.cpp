@@ -47,8 +47,8 @@ double AMCLPose::GaussianModel(AMCLPoseData *data, pf_sample_set_t* set)
   double angle_error;
   total_weight = 0.0;
 
-  double addition_pose_covariance = 0.5;
-  double addition_yaw_covariance = 0.25;
+  double addition_pose_covariance = 0.4;
+  double addition_yaw_covariance = 0.2;
 
 
   // Compute the sample weights
@@ -71,7 +71,7 @@ double AMCLPose::GaussianModel(AMCLPoseData *data, pf_sample_set_t* set)
 
     double x_p =  exp(-0.5 * (pow((pose.v[0] - data->pose.v[0]), 2) / (data->pose_covariance.v[0]+addition_pose_covariance))) / sqrt(2 * M_PI * (data->pose_covariance.v[0]+addition_pose_covariance));
     double y_p =  exp(-0.5 * (pow((pose.v[1] - data->pose.v[1]), 2) / (data->pose_covariance.v[1]+addition_pose_covariance))) / sqrt(2 * M_PI * (data->pose_covariance.v[1]+addition_pose_covariance));
-    double yaw_p =  exp(-0.5 * (pow((pose.v[2] - data->pose.v[2]), 2) / (data->pose_covariance.v[2]+addition_yaw_covariance))) / sqrt(2 * M_PI * (data->pose_covariance.v[2]+addition_yaw_covariance));
+    double yaw_p =  exp(-0.5 * (pow(angle_error, 2) / (data->pose_covariance.v[2]+addition_yaw_covariance))) / sqrt(2 * M_PI * (data->pose_covariance.v[2]+addition_yaw_covariance));
     //double num = exp(-0.5 * (pow((pose.v[0] - data->pose.v[0]), 2) / (data->pose_covariance.v[0]+addition_pose_covariance) + pow((pose.v[1] - data->pose.v[1]), 2) / (data->pose_covariance.v[1]+addition_pose_covariance) + pow(angle_error, 2) / (data->pose_covariance.v[2]+addition_yaw_covariance) ));
     //double denom = sqrt(2 * M_PI * (data->pose_covariance.v[0]+addition_pose_covariance) * (data->pose_covariance.v[1]+addition_pose_covariance) * (data->pose_covariance.v[2]+addition_yaw_covariance));
     //p = num/denom;
