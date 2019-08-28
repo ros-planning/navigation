@@ -61,11 +61,11 @@ public:
 
   void setSumScores(bool score_sums){ sum_scores_=score_sums; }
 
-  void setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed);
+  void setParams(double max_trans_vel, double max_forward_inflation, double max_sideward_inflation, double scaling_speed);
   void setFootprint(std::vector<geometry_msgs::Point> footprint_spec);
 
   // helper functions, made static for easy unit testing
-  static double getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor);
+  static double getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel);
   static double footprintCost(
       const double& x,
       const double& y,
@@ -81,7 +81,7 @@ private:
   double max_trans_vel_;
   bool sum_scores_;
   //footprint scaling with velocity;
-  double max_scaling_factor_, scaling_speed_;
+  double max_forward_inflation_, max_sideward_inflation_, scaling_speed_;
 };
 
 } /* namespace base_local_planner */
