@@ -56,10 +56,11 @@ ObstacleCostFunction::~ObstacleCostFunction() {
 }
 
 
-void ObstacleCostFunction::setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed) {
+void ObstacleCostFunction::setParams(double max_trans_vel, double max_forward_inflation, double max_sideward_inflation, double scaling_speed) {
   // TODO: move this to prepare if possible
   max_trans_vel_ = max_trans_vel;
-  max_scaling_factor_ = max_scaling_factor;
+  max_forward_inflation_ = max_forward_inflation;
+  max_sideward_inflation_ = max_sideward_inflation;
   scaling_speed_ = scaling_speed;
 }
 
@@ -73,7 +74,7 @@ bool ObstacleCostFunction::prepare() {
 
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0;
-  double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
+  double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_);
   double px, py, pth;
   if (footprint_spec_.size() == 0) {
     // Bug, should never happen
@@ -82,10 +83,17 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   }
 
   std::vector<geometry_msgs::Point> scaled_footprint = footprint_spec_;
-  if (scale != 1.0) {
+  if (scale != 0.0) {
+    const bool fwd = traj.xv_ > 0;
+    const double forward_inflation = scale * max_forward_inflation_;
+    const double sideward_inflation = scale * max_sideward_inflation_;
     for (unsigned int i = 0; i < scaled_footprint.size(); ++i) {
-      scaled_footprint[i].x *= scale;
-      scaled_footprint[i].y *= scale;
+      if (fwd == (scaled_footprint[i].x > 0)) {
+        // assumes no sideward motion
+        scaled_footprint[i].x += std::copysign(forward_inflation, scaled_footprint[i].x);
+        // assumes the widest part of the robot is not behind the footprint's origin
+        scaled_footprint[i].y += std::copysign(sideward_inflation, scaled_footprint[i].y);
+      }
     }
   }
 
@@ -110,18 +118,13 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   return cost;
 }
 
-double ObstacleCostFunction::getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor) {
+double ObstacleCostFunction::getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel) {
   double vmag = hypot(traj.xv_, traj.yv_);
 
   //if we're over a certain speed threshold, we'll scale the robot's
   //footprint to make it either slow down or stay further from walls
-  double scale = 1.0;
-  if (vmag > scaling_speed) {
-    //scale up to the max scaling factor linearly... this could be changed later
-    double ratio = (vmag - scaling_speed) / (max_trans_vel - scaling_speed);
-    scale = max_scaling_factor * ratio + 1.0;
-  }
-  return scale;
+  //scale up to 1 linearly... this could be changed later
+  return vmag <= scaling_speed ? 0.0 : (vmag - scaling_speed) / (max_trans_vel - scaling_speed);
 }
 
 double ObstacleCostFunction::footprintCost (
