@@ -26,7 +26,7 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     //get parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name_);
 
-    private_nh.param("distance_backward", distance_backwards_, 0.15);
+    private_nh.param("distance_backward", distance_backwards_, 2.0);
     private_nh.param("backwards_velocity", backwards_velocity_, -0.05);
     private_nh.param("linear_start_tolerance", linearStartTolerance_, 0.05);
     private_nh.param("angular_start_tolerance", angularStartTolerance_, 0.1);
@@ -54,6 +54,7 @@ MoveBackRecovery::~MoveBackRecovery(){
 }
 
 void MoveBackRecovery::runBehavior(){
+  canceled_ = false;
   if(!initialized_){
     ROS_ERROR("This object must be initialized before runBehavior is called");
     return;
@@ -175,10 +176,16 @@ void MoveBackRecovery::runBehavior(){
     if (should_stop) {
       return;
     }
+    if (canceled_) {
+      return;
+    }
     r.sleep();
   }
 }
 
+void MoveBackRecovery::cancel() {
+  canceled_ = true;
+}
 void MoveBackRecovery::newGoalReceived() {
   numRecoveriesSinceLastGoal_ = 0;
 }
