@@ -26,7 +26,7 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
     //get parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name_);
 
-    private_nh.param("distance_backward", distance_backwards_, 2.0);
+    private_nh.param("distance_backward", distance_backwards_, 0.15);
     private_nh.param("backwards_velocity", backwards_velocity_, -0.05);
     private_nh.param("linear_start_tolerance", linearStartTolerance_, 0.05);
     private_nh.param("angular_start_tolerance", angularStartTolerance_, 0.1);
