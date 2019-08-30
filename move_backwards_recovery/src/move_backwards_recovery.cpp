@@ -43,6 +43,7 @@ void MoveBackRecovery::initialize(std::string name, tf::TransformListener* tf,
 
     world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
     initialized_ = true;
+    canceled_ = false;
   }
   else{
     ROS_ERROR("You should not call initialize twice on this object, doing nothing");
@@ -54,7 +55,6 @@ MoveBackRecovery::~MoveBackRecovery(){
 }
 
 void MoveBackRecovery::runBehavior(){
-  canceled_ = false;
   if(!initialized_){
     ROS_ERROR("This object must be initialized before runBehavior is called");
     return;
@@ -75,6 +75,7 @@ void MoveBackRecovery::runBehavior(){
     return;
   }
 
+  canceled_ = false;
   // make sure the distance value >0 and backwards velocity < 0
   distance_backwards_ = (distance_backwards_> 0) ? distance_backwards_ : ((-1) * distance_backwards_) ;
   backwards_velocity_ = (backwards_velocity_ > 0) ? ((-1)*backwards_velocity_) : backwards_velocity_ ;
@@ -125,6 +126,17 @@ void MoveBackRecovery::runBehavior(){
   }
 
   while(n.ok()){
+
+    if (canceled_) {
+      geometry_msgs::Twist cmd_vel;
+      cmd_vel.linear.x = 0.0;
+      cmd_vel.linear.y = 0.0;
+      cmd_vel.angular.z = 0.0;
+      vel_pub.publish(cmd_vel);
+      ROS_DEBUG_NAMED("move_backwards_recovery","Cancelled called on move backwards recovery behavior publishing zero velocity");
+      return;
+    }
+
     bool should_stop = false;
 
     local_costmap_->getRobotPose(global_pose);
@@ -141,7 +153,7 @@ void MoveBackRecovery::runBehavior(){
 
     distance_traveled_sq = (cur_x - originX) * (cur_x - originX) + (cur_y - originY) * (cur_y - originY);
 
-    ROS_DEBUG_NAMED("move_backwards_recovery", "Sqare of distance traveled: %lf", distance_traveled_sq);
+    ROS_DEBUG_NAMED("move_backwards_recovery", "Square of distance traveled: %lf", distance_traveled_sq);
 
     double distance_left_sq = distance_max_sq - distance_traveled_sq;
 
@@ -176,16 +188,16 @@ void MoveBackRecovery::runBehavior(){
     if (should_stop) {
       return;
     }
-    if (canceled_) {
-      return;
-    }
+    
     r.sleep();
   }
 }
 
-void MoveBackRecovery::cancel() {
+bool MoveBackRecovery::cancel() {
   canceled_ = true;
+  return true;
 }
+
 void MoveBackRecovery::newGoalReceived() {
   numRecoveriesSinceLastGoal_ = 0;
 }

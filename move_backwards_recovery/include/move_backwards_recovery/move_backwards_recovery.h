@@ -26,7 +26,7 @@ namespace move_backwards_recovery{
 
       void newGoalReceived();
 
-      void cancel();
+      bool cancel();
 
     private:
       costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
