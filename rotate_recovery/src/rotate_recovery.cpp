@@ -36,27 +36,35 @@
 *********************************************************************/
 #include <rotate_recovery/rotate_recovery.h>
 #include <pluginlib/class_list_macros.h>
+#include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/Point.h>
+#include <angles/angles.h>
+#include <algorithm>
+#include <string>
 
-//register this planner as a RecoveryBehavior plugin
+
+// register this planner as a RecoveryBehavior plugin
 PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavior)
 
-namespace rotate_recovery {
-RotateRecovery::RotateRecovery(): global_costmap_(NULL), local_costmap_(NULL), 
-  tf_(NULL), initialized_(false), world_model_(NULL) {} 
+namespace rotate_recovery
+{
+RotateRecovery::RotateRecovery(): local_costmap_(NULL), initialized_(false), world_model_(NULL)
+{
+}
 
-void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
-    costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap){
-  if(!initialized_){
-    name_ = name;
-    tf_ = tf;
-    global_costmap_ = global_costmap;
+void RotateRecovery::initialize(std::string name, tf::TransformListener*,
+                                costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS* local_costmap)
+{
+  if (!initialized_)
+  {
     local_costmap_ = local_costmap;
 
-    //get some parameters from the parameter server
-    ros::NodeHandle private_nh("~/" + name_);
+    // get some parameters from the parameter server
+    ros::NodeHandle private_nh("~/" + name);
     ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
 
-    //we'll simulate every degree by default
+    // we'll simulate every degree by default
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
     private_nh.param("frequency", frequency_, 20.0);
 
@@ -69,23 +77,28 @@ void RotateRecovery::initialize(std::string name, tf::TransformListener* tf,
 
     initialized_ = true;
   }
-  else{
+  else
+  {
     ROS_ERROR("You should not call initialize twice on this object, doing nothing");
   }
 }
 
-RotateRecovery::~RotateRecovery(){
+RotateRecovery::~RotateRecovery()
+{
   delete world_model_;
 }
 
-void RotateRecovery::runBehavior(){
-  if(!initialized_){
+void RotateRecovery::runBehavior()
+{
+  if (!initialized_)
+  {
     ROS_ERROR("This object must be initialized before runBehavior is called");
     return;
   }
 
-  if(global_costmap_ == NULL || local_costmap_ == NULL){
-    ROS_ERROR("The costmaps passed to the RotateRecovery object cannot be NULL. Doing nothing.");
+  if (local_costmap_ == NULL)
+  {
+    ROS_ERROR("The costmap passed to the RotateRecovery object cannot be NULL. Doing nothing.");
     return;
   }
   ROS_WARN("Rotate recovery behavior started.");
@@ -97,41 +110,62 @@ void RotateRecovery::runBehavior(){
   tf::Stamped<tf::Pose> global_pose;
   local_costmap_->getRobotPose(global_pose);
 
-  double current_angle = -1.0 * M_PI;
+  double current_angle = tf::getYaw(global_pose.getRotation());
+  double start_angle = current_angle;
 
   bool got_180 = false;
 
-  double start_offset = 0 - angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
-  while(n.ok()){
+  while (n.ok() &&
+         (!got_180 ||
+          std::fabs(angles::shortest_angular_distance(current_angle, start_angle)) > tolerance_))
+  {
+    // Update Current Angle
     local_costmap_->getRobotPose(global_pose);
+    current_angle = tf::getYaw(global_pose.getRotation());
 
-    double norm_angle = angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
-    current_angle = angles::normalize_angle(norm_angle + start_offset);
+    // compute the distance left to rotate
+    double dist_left;
+    if (!got_180)
+    {
+      // If we haven't hit 180 yet, we need to rotate a half circle plus the distance to the 180 point
+      double distance_to_180 = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + M_PI));
+      dist_left = M_PI + distance_to_180;
 
-    //compute the distance left to rotate
-    double dist_left = M_PI - current_angle;
+      if (distance_to_180 < tolerance_)
+      {
+        got_180 = true;
+      }
+    }
+    else
+    {
+      // If we have hit the 180, we just have the distance back to the start
+      dist_left = std::fabs(angles::shortest_angular_distance(current_angle, start_angle));
+    }
 
     double x = global_pose.getOrigin().x(), y = global_pose.getOrigin().y();
 
-    //check if that velocity is legal by forward simulating
+    // check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
-    while(sim_angle < dist_left){
-      double theta = tf::getYaw(global_pose.getRotation()) + sim_angle;
+    while (sim_angle < dist_left)
+    {
+      double theta = current_angle + sim_angle;
 
-      //make sure that the point is legal, if it isn't... we'll abort
+      // make sure that the point is legal, if it isn't... we'll abort
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
-      if(footprint_cost < 0.0){
-        ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f", footprint_cost);
+      if (footprint_cost < 0.0)
+      {
+        ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f",
+                  footprint_cost);
         return;
       }
 
       sim_angle += sim_granularity_;
     }
 
-    //compute the velocity that will let us stop by the time we reach the goal
+    // compute the velocity that will let us stop by the time we reach the goal
     double vel = sqrt(2 * acc_lim_th_ * dist_left);
 
-    //make sure that this velocity falls within the specified limits
+    // make sure that this velocity falls within the specified limits
     vel = std::min(std::max(vel, min_rotational_vel_), max_rotational_vel_);
 
     geometry_msgs::Twist cmd_vel;
@@ -141,15 +175,7 @@ void RotateRecovery::runBehavior(){
 
     vel_pub.publish(cmd_vel);
 
-    //makes sure that we won't decide we're done right after we start
-    if(current_angle < 0.0)
-      got_180 = true;
-
-    //if we're done with our in-place rotation... then return
-    if(got_180 && current_angle >= (0.0 - tolerance_))
-      return;
-
     r.sleep();
   }
 }
-};
+};  // namespace rotate_recovery
