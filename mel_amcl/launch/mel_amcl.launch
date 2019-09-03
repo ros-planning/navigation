@@ -12,7 +12,7 @@
   <arg name="use_gps" default="true"/>
   <arg name="use_gps_odom" default="true"/>
 
-  <arg name="use_omni" default="false" />
+  <arg name="use_omni" default="true" />
 
   <arg name="initial_pose_x" default="0.0"/>
   <arg name="initial_pose_y" default="0.0"/>
@@ -23,7 +23,7 @@
   <arg name="initial_cov_aa" default="0.0"/>
   
 
-  
+
   <node pkg="mel_amcl" type="mel_amcl" name="mel_amcl" output="screen">
 
 	  <!-- see param description on http://www.ros.org/wiki/amcl -->     
