@@ -20,6 +20,10 @@ find_package(catkin REQUIRED
     tf2_geometry_msgs
     tf2_msgs
     tf2_ros
+    mapviz
+    mapviz_plugins
+    robot_localization
+    gmapping
 )
 
 find_package(Boost REQUIRED)

@@ -40,6 +40,11 @@
     <depend>tf2_msgs</depend>
     <depend>tf2_ros</depend>
 
+    <exec_depend>mapviz</exec_depend>
+    <exec_depend>mapviz_plugins</exec_depend>
+    <exec_depend>robot_localization</exec_depend>
+    <exec_depend>gmapping</exec_depend>
+
     <test_depend>map_server</test_depend>
     <test_depend>rostest</test_depend>
     <test_depend>python_orocos_kdl</test_depend>
