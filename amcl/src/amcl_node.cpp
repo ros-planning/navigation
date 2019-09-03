@@ -261,6 +261,7 @@ class AmclNode
     double init_cov_[3];
     laser_model_t laser_model_type_;
     bool tf_broadcast_;
+    bool selective_resampling_;
 
     void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
 
@@ -406,6 +407,7 @@ AmclNode::AmclNode() :
   private_nh_.param("base_frame_id", base_frame_id_, std::string("base_link"));
   private_nh_.param("global_frame_id", global_frame_id_, std::string("map"));
   private_nh_.param("resample_interval", resample_interval_, 2);
+  private_nh_.param("selective_resampling", selective_resampling_, false);
   double tmp_tol;
   private_nh_.param("transform_tolerance", tmp_tol, 0.1);
   private_nh_.param("recovery_alpha_slow", alpha_slow_, 0.001);
@@ -545,6 +547,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
+  pf_set_selective_resampling(pf_, selective_resampling_);
   pf_err_ = config.kld_err; 
   pf_z_ = config.kld_z; 
   pf_->pop_err = pf_err_;
@@ -837,6 +840,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
+  pf_set_selective_resampling(pf_, selective_resampling_);
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
 
