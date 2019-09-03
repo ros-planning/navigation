@@ -10,7 +10,7 @@
   <!-- <arg name="path" default="/home/michael/Documents/Saga\ start/Localisation/" /> -->
   <arg name="file_name" default="sick_bag_2019-08-23-18-00-39.bag" />
   <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg path)$(arg file_name)
-   -r 5 /sick_safetyscanners/scan:=/scan" />
+   -r 2 /sick_safetyscanners/scan:=/scan" />
 
   <!-- Load rtk map -->
   <arg name="map_file" default="$(find mel_amcl)/maps/riseholme_rtk_fix.yaml"/>
@@ -21,7 +21,7 @@
   <node name="sick_tf" pkg="tf" type="static_transform_publisher" respawn="true" args="0.73 -0.456 0.41 -0.79 0 0 base_link sick_front 50" output="log">
   </node>
 
-  <include file="$(find mel_amcl)/launch/amcl.launch"/>
+ <!--  <include file="$(find mel_amcl)/launch/amcl.launch"/> -->
 
 
 

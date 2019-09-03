@@ -2,8 +2,19 @@
 
 <launch>
 
+
+  <arg name="use_omni" default="true" />
+  <arg name="use_gps" default="true" />
+
+
+
   <!-- launch amcl but dont publish map->odom tf as this is handled by ekf_se_map -->
-  <include file="$(find mel_amcl)/launch/mel_amcl.launch"/>
+  <include file="$(find mel_amcl)/launch/mel_amcl.launch">
+      <arg name="use_omni" value="$(arg use_omni)" />
+      <arg name="use_gps" value="$(arg use_gps)" />
+      <arg name="use_gps_odom" value="$(arg use_gps)" />
+  </include>
+
 
 
   <!-- load parameters for eKFs: odom, and separate gps -->

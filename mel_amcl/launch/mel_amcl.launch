@@ -12,6 +12,7 @@
   <arg name="use_gps" default="true"/>
   <arg name="use_gps_odom" default="true"/>
 
+  <arg name="use_omni" default="false" />
 
   <arg name="initial_pose_x" default="0.0"/>
   <arg name="initial_pose_y" default="0.0"/>
@@ -21,10 +22,11 @@
   <arg name="initial_cov_yy" default="0.0"/>
   <arg name="initial_cov_aa" default="0.0"/>
   
+
+  
   <node pkg="mel_amcl" type="mel_amcl" name="mel_amcl" output="screen">
 
 	  <!-- see param description on http://www.ros.org/wiki/amcl -->     
-
 
     <!-- GPS parameters -->
     <param name="use_gps" value="$(arg use_gps)"/>
@@ -68,11 +70,13 @@
 
 
 	<!-- odometry model -->
-    <param name="odom_model_type" value="diff-corrected"/> <!-- diff -->
+    <param name="odom_model_type" value="omni-corrected" if="$(arg use_omni)"/>
+    <param name="odom_model_type" value="diff-corrected" unless="$(arg use_omni)"/>
     <param name="odom_alpha1" value="0.014"/> <!-- 0.4 -->
     <param name="odom_alpha2" value="0.014"/>
     <param name="odom_alpha3" value="0.014"/>
     <param name="odom_alpha4" value="0.014"/>
+    <param name="odom_alpha5" value="0.014"/>
     <param name="odom_frame_id" value="odom"/>
     <param name="base_frame_id" value="base_link"/>
     <param name="global_frame_id" value="map" />

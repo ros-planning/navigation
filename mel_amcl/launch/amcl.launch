@@ -21,7 +21,10 @@
   <arg name="initial_cov_yy" default="0.0"/>
   <arg name="initial_cov_aa" default="0.0"/>
   
-  <node pkg="mel_amcl" type="mel_amcl" name="mel_amcl" output="screen">
+  <arg name="use_omni" default="false" />
+
+
+  <node pkg="amcl" type="amcl" name="amcl" output="screen">
 
 	  <!-- see param description on http://www.ros.org/wiki/amcl -->     
 
@@ -72,7 +75,8 @@
 
 
 	  <!-- odometry model -->
-    <param name="odom_model_type" value="diff-corrected"/> <!-- diff -->
+    <param name="odom_model_type" value="omni-corrected" if="$(arg use_omni)"/>
+    <param name="odom_model_type" value="diff-corrected" unless="$(arg use_omni)"/>
     <param name="odom_alpha1" value="0.001"/> <!-- 0.4 -->
     <param name="odom_alpha2" value="0.001"/>
     <param name="odom_alpha3" value="0.001"/>
