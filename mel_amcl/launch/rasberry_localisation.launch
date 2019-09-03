@@ -5,6 +5,7 @@
 
   <arg name="use_omni" default="true" />
   <arg name="use_gps" default="true" />
+  <arg name="ekf_publish_tf" default="true" />
 
 
 
@@ -21,7 +22,7 @@
   <rosparam command="load" file="$(find mel_amcl)/config/rasberry_ekf.yaml" />
 
 
-  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true">
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true" if="$(arg use_gps)">
       <!-- Placeholders for input remapping. Set your topic names as the "to" values. -->
       <remap from="imu/data" to="yaw"/> 
       <remap from="odometry/filtered" to="odometry/gps"/>
@@ -31,13 +32,13 @@
 
 
   <!-- eKF for the odom frame -->
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true">
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true" if="$(arg ekf_publish_tf)">
     <remap from="odometry/filtered" to="rl/odom"/>
   </node>
 
 
   <!-- eKF for the gps in map frame, to use output, set use_gps_odom arg in mel_amcl to true --> 
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true">
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_gps" clear_params="true" if="$(arg use_gps)">
     <remap from="odometry/filtered" to="odometry/gps"/>
   </node> 
 
