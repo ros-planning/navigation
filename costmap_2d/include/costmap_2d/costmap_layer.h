@@ -40,6 +40,7 @@
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
+#include <geometry_msgs/Point.h>
 
 namespace costmap_2d
 {
@@ -70,6 +71,11 @@ public:
    * @param my1 Maximum y value of the bounding box
    */
   void addExtraBounds(double mx0, double my0, double mx1, double my1);
+
+  /**
+   * Reset an axis-aligned bounding box in world coordinates.
+   */
+  void resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Point max);
 
 protected:
   /*

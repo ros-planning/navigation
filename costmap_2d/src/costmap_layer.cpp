@@ -45,6 +45,22 @@ void CostmapLayer::addExtraBounds(double mx0, double my0, double mx1, double my1
     has_extra_bounds_ = true;
 }
 
+void CostmapLayer::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Point max)
+{
+  boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(getMutex()));
+
+  int start_x, start_y, end_x, end_y;
+
+  worldToMapEnforceBounds(min.x, min.y, start_x, start_y);
+  worldToMapEnforceBounds(max.x, max.y, end_x, end_y);
+
+  resetMap(start_x, start_y, end_x, end_y);
+
+  addExtraBounds(min.x, min.y, max.x, max.y);
+  return;
+}
+
+
 void CostmapLayer::useExtraBounds(double* min_x, double* min_y, double* max_x, double* max_y)
 {
     if (!has_extra_bounds_)

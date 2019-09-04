@@ -38,6 +38,7 @@
 #ifndef COSTMAP_2D_COSTMAP_2D_ROS_H_
 #define COSTMAP_2D_COSTMAP_2D_ROS_H_
 
+#include <set>
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/costmap_2d_publisher.h>
@@ -80,41 +81,53 @@ public:
    * @param tf A reference to a TransformListener
    */
   Costmap2DROS(const std::string &name, tf2_ros::Buffer& tf);
-  ~Costmap2DROS();
+  virtual ~Costmap2DROS();
 
   /**
    * @brief  Subscribes to sensor topics if necessary and starts costmap
    * updates, can be called to restart the costmap after calls to either
    * stop() or pause()
    */
-  void start();
+  virtual void start();
 
   /**
    * @brief  Stops costmap updates and unsubscribes from sensor topics
    */
-  void stop();
+  virtual void stop();
 
   /**
    * @brief  Stops the costmap from updating, but sensor data still comes in over the wire
    */
-  void pause();
+  virtual void pause();
 
   /**
    * @brief  Resumes costmap updates
    */
-  void resume();
+  virtual void resume();
 
-  void updateMap();
+  virtual void updateMap();
 
   /**
    * @brief Reset each individual layer
    */
-  void resetLayers();
+  virtual void resetLayers();
 
   /** @brief Same as getLayeredCostmap()->isCurrent(). */
-  bool isCurrent() const
+  virtual bool isCurrent() const
     {
       return layered_costmap_->isCurrent();
+    }
+
+  /** @brief Return if costmap is stopped. */
+  virtual bool isStopped()
+    {
+      return stopped_;
+    }
+
+  /** @brief Return if costmap is paused. */
+  virtual bool isPaused()
+    {
+      return stop_updates_;
     }
 
   /**
@@ -130,7 +143,7 @@ public:
    * @param global_pose Will be set to the pose of the robot in the global frame of the costmap
    * @return True if the pose was set successfully, false otherwise
    */
-  bool getRobotPose(geometry_msgs::PoseStamped& global_pose) const;
+  virtual bool getRobotPose(geometry_msgs::PoseStamped& global_pose) const;
 
   /** @brief Returns costmap name */
   inline const std::string& getName() const noexcept
@@ -147,7 +160,7 @@ public:
   /** @brief Return a pointer to the "master" costmap which receives updates from all the layers.
    *
    * Same as calling getLayeredCostmap()->getCostmap(). */
-  Costmap2D* getCostmap() const
+  virtual Costmap2D* getCostmap() const
     {
       return layered_costmap_->getCostmap();
     }
@@ -156,7 +169,7 @@ public:
    * @brief  Returns the global frame of the costmap
    * @return The global frame of the costmap
    */
-  inline const std::string& getGlobalFrameID() const noexcept
+  virtual inline const std::string& getGlobalFrameID() const noexcept
     {
       return global_frame_;
     }
@@ -165,17 +178,17 @@ public:
    * @brief  Returns the local frame of the costmap
    * @return The local frame of the costmap
    */
-  inline const std::string& getBaseFrameID() const noexcept
+  virtual inline const std::string& getBaseFrameID() const noexcept
     {
       return robot_base_frame_;
     }
-  LayeredCostmap* getLayeredCostmap() const
+  virtual LayeredCostmap* getLayeredCostmap() const
     {
       return layered_costmap_;
     }
 
   /** @brief Returns the current padded footprint as a geometry_msgs::Polygon. */
-  geometry_msgs::Polygon getRobotFootprintPolygon() const
+  virtual geometry_msgs::Polygon getRobotFootprintPolygon() const
   {
     return costmap_2d::toPolygon(padded_footprint_);
   }
@@ -188,7 +201,7 @@ public:
    * The footprint initially comes from the rosparam "footprint" but
    * can be overwritten by dynamic reconfigure or by messages received
    * on the "footprint" topic. */
-  inline const std::vector<geometry_msgs::Point>& getRobotFootprint() const noexcept
+  virtual inline const std::vector<geometry_msgs::Point>& getRobotFootprint() const noexcept
   {
     return padded_footprint_;
   }
@@ -200,7 +213,7 @@ public:
    * The footprint initially comes from the rosparam "footprint" but
    * can be overwritten by dynamic reconfigure or by messages received
    * on the "footprint" topic. */
-  inline const std::vector<geometry_msgs::Point>& getUnpaddedRobotFootprint() const noexcept
+  virtual inline const std::vector<geometry_msgs::Point>& getUnpaddedRobotFootprint() const noexcept
   {
     return unpadded_footprint_;
   }
@@ -209,7 +222,7 @@ public:
    * @brief  Build the oriented footprint of the robot at the robot's current pose
    * @param  oriented_footprint Will be filled with the points in the oriented footprint of the robot
    */
-  void getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const;
+  virtual void getOrientedFootprint(std::vector<geometry_msgs::Point>& oriented_footprint) const;
 
   /** @brief Set the footprint of the robot to be the given set of
    * points, padded by footprint_padding.
@@ -221,7 +234,7 @@ public:
    * layered_costmap_->setFootprint().  Also saves the unpadded
    * footprint, which is available from
    * getUnpaddedRobotFootprint(). */
-  void setUnpaddedRobotFootprint(const std::vector<geometry_msgs::Point>& points);
+  virtual void setUnpaddedRobotFootprint(const std::vector<geometry_msgs::Point>& points);
 
   /** @brief Set the footprint of the robot to be the given polygon,
    * padded by footprint_padding.
@@ -233,7 +246,42 @@ public:
    * layered_costmap_->setFootprint().  Also saves the unpadded
    * footprint, which is available from
    * getUnpaddedRobotFootprint(). */
-  void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
+  virtual void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
+
+  /** @brief Lock the master costmap to prevent updates.
+   *
+   * This is important for planners or other users who require a consistent
+   * view over a period of time.
+   *
+   * This class implements the BasicLockable requirements so you can use a
+   * costmap_3d_ros as a template argument to std::lock_guard, for instance.
+   */
+  virtual void lock()
+  {
+    getCostmap()->getMutex()->lock();
+  }
+
+  /** @brief Unlock the master costmap to prevent updates.
+   *
+   * This is important for planners or other users who require a consistent
+   * view over a period of time.
+   *
+   * This class implements the BasicLockable requirements so you can use a
+   * costmap_3d_ros as a template argument to std::lock_guard, for instance.
+   */
+  virtual void unlock()
+  {
+    getCostmap()->getMutex()->unlock();
+  }
+
+  /** @brief Get the names of the layers in the costmap. */
+  virtual std::set<std::string> getLayerNames();
+
+  /** @brief Reset the costmap within the given axis-aligned bounding box in world coordinates across all layers. */
+  virtual void resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Point max);
+
+  /** @brief Reset the costmap within the given axis-aligned bounding box in world coordinates for the given layers. */
+  virtual void resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Point max, const std::set<std::string>& layers);
 
 protected:
   LayeredCostmap* layered_costmap_;

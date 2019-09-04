@@ -37,6 +37,7 @@
  *********************************************************************/
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/costmap_layer.h>
 #include <cstdio>
 #include <string>
 #include <algorithm>
@@ -630,6 +631,58 @@ void Costmap2DROS::getOrientedFootprint(std::vector<geometry_msgs::Point>& orien
   double yaw = tf2::getYaw(global_pose.pose.orientation);
   transformFootprint(global_pose.pose.position.x, global_pose.pose.position.y, yaw,
                      padded_footprint_, oriented_footprint);
+}
+
+std::set<std::string> Costmap2DROS::getLayerNames()
+{
+  std::set<std::string> rv;
+
+  std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+      ++plugin)
+  {
+    rv.insert((*plugin)->getName());
+  }
+  return rv;
+}
+
+void Costmap2DROS::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Point max)
+{
+  // No need to reset the master map, as the next update will pull in the changes to each layer.
+  resetBoundingBox(min, max, getLayerNames());
+}
+
+void Costmap2DROS::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Point max, const std::set<std::string>& layers)
+{
+  boost::lock_guard<Costmap2DROS> lock(*this);
+
+  std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
+  for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end(); ++plugin)
+  {
+    // Only reset layers that are in the layer set
+    // Match either the whole layer name, or just the final name after the
+    // final '/'.
+    const std::string& plugin_full_name((*plugin)->getName());
+    std::string plugin_last_name_only;
+    int slash = plugin_full_name.rfind('/');
+    if( slash != std::string::npos )
+    {
+      plugin_last_name_only = plugin_full_name.substr(slash+1);
+    }
+    if (layers.find(plugin_full_name) != layers.end()
+        || plugin_last_name_only.size() > 0 && layers.find(plugin_last_name_only) != layers.end())
+    {
+      boost::shared_ptr<CostmapLayer> costmap_layer(boost::dynamic_pointer_cast<CostmapLayer>((*plugin)));
+      if (costmap_layer)
+      {
+        costmap_layer->resetBoundingBox(min, max);
+      }
+      else
+      {
+        ROS_WARN_STREAM_THROTTLE(5.0, "Unable to clear layer " << (*plugin)->getName() << ": not a CostmapLayer");
+      }
+    }
+  }
 }
 
 }  // namespace costmap_2d

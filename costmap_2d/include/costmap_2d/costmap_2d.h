@@ -113,7 +113,7 @@ public:
    * @param my The y coordinate of the cell
    * @return The cost of the cell
    */
-  unsigned char getCost(unsigned int mx, unsigned int my) const;
+  virtual unsigned char getCost(unsigned int mx, unsigned int my) const;
 
   /**
    * @brief  Set the cost of a cell in the costmap
@@ -121,7 +121,7 @@ public:
    * @param my The y coordinate of the cell
    * @param cost The cost to set the cell to
    */
-  void setCost(unsigned int mx, unsigned int my, unsigned char cost);
+  virtual void setCost(unsigned int mx, unsigned int my, unsigned char cost);
 
   /**
    * @brief  Convert from map coordinates to world coordinates
@@ -189,7 +189,7 @@ public:
    * @brief  Will return a pointer to the underlying unsigned char array used as the costmap
    * @return A pointer to the underlying unsigned char array storing cost values
    */
-  unsigned char* getCharMap() const;
+  virtual unsigned char* getCharMap() const;
 
   /**
    * @brief  Accessor for the x size of the costmap in cells
@@ -249,21 +249,21 @@ public:
    * @param cost_value The value to set costs to
    * @return True if the polygon was filled... false if it could not be filled
    */
-  bool setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value);
+  virtual bool setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value);
 
   /**
    * @brief  Get the map cells that make up the outline of a polygon
    * @param polygon The polygon in map coordinates to rasterize
    * @param polygon_cells Will be set to the cells contained in the outline of the polygon
    */
-  void polygonOutlineCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells);
+  virtual void polygonOutlineCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells);
 
   /**
    * @brief  Get the map cells that fill a convex polygon
    * @param polygon The polygon in map coordinates to rasterize
    * @param polygon_cells Will be set to the cells that fill the polygon
    */
-  void convexFillCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells);
+  virtual void convexFillCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells);
 
   /**
    * @brief  Move the origin of the costmap to a new location.... keeping data when it can
@@ -276,12 +276,12 @@ public:
    * @brief  Save the costmap out to a pgm file
    * @param file_name The name of the file to save
    */
-  bool saveMap(std::string file_name);
+  virtual bool saveMap(std::string file_name);
 
-  void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
+  virtual void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x,
                  double origin_y);
 
-  void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
+  virtual void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
 
   /**
    * @brief  Given distance in the world... convert it to cells
