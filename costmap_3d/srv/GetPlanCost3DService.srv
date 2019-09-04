@@ -1,0 +1,53 @@
+# Get the cost of a plan in the 3D costmap.
+# The first two fields are identical to nav_msgs/Path
+Header header
+geometry_msgs/PoseStamped[] poses
+
+# If true, stop as soon as a lethal pose is found.
+# Poses are processed in order, and when a lethal pose is found
+# no further processing is done.
+bool lazy
+
+# If true, run this query on a copy of the costmap, leaving it unlocked
+# after copy. If false, run directly on the master costmap, leaving it locked
+# for the duration of the query.
+bool buffered
+
+# Return costs of each pose as normal
+uint8 COST_QUERY_MODE_COST=0
+# Do not find actual costs, just binary collision information
+uint8 COST_QUERY_MODE_COLLISION_ONLY=1
+# Do not find actual costs, find distances instead
+uint8 COST_QUERY_MODE_DISTANCE=2
+# Do not find actual costs, find exact signed distances instead
+uint8 COST_QUERY_MODE_EXACT_SIGNED_DISTANCE=3
+# Set to one of the above COST_QUERY_MODE_* to control query mode.
+# The default is COST_QUERY_MODE_COST.
+uint8 cost_query_mode
+
+# An alternative footprint_mesh_resource to use (in base_footprint frame)
+# If empty, the default stored in the costmap will be used.
+string footprint_mesh_resource
+
+# How much padding (in meters) to grow the footprint mesh.
+# (negative numbers will shrink the mesh).
+# 0.0 means no padding.
+# NaN means use the default value from the costmap.
+# To precisely control padding, use an alternate mesh, as the generated mesh
+# may pad in a naive way.
+float32 padding
+---
+# The aggregate cost value across the poses.
+# A negative cost value indicates collision.
+# A cost value of 0.0 means no cost.
+# A postive cost value indicates non-zero, yet non-lethal cost.
+# When running in one of the distance modes, the plan_cost will be the minimum
+# distance across all the poses. Note that all forms of distance check will return
+# a negative distance for a collision, but only in the exact signed mode will
+# the negative value be an exact signed distance.
+float64 cost
+# The cost of each pose.
+# When running in one of the distance modes, the "cost" will instead be the
+# distance to the nearest obstacle in meters.
+float64[] pose_costs
+uint32[] lethal_indices

@@ -1,0 +1,7 @@
+<class_libraries>
+  <library path="liblayers_3d">
+    <class type="costmap_3d::Costmap3DTo2DLayer" base_class_type="costmap_2d::Layer">
+      <description>2D costmap layer that tracks 3D costmap updates.</description>
+    </class>
+  </library>
+</class_libraries>

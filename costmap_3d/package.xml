@@ -1,0 +1,46 @@
+<package format="2">
+  <name>costmap_3d</name>
+  <version>0.1.0</version>
+  <description>
+    This package provides an implementation of a 3D costmap. The ROS 3D costmap
+    is a specialization of the ROS 2D costmap interface for backwards
+    compatability with existing navigation code. Additionally, it provides
+    a new interface to find the cost of a stored robot mesh at a given pose
+    using a MoveIt! planning scene. Also, the 3D costmap
+    contains some standard 3D costmap plugins. The octomap_server plugin
+    wraps an OctomapServer object as a 3D costmap layer. The OctomapServer
+    is capable of serving static octomaps and/or build up sensor data into an
+    octomap. This allows multiple layers of sensor data that does not
+    cross-clear. The costmap_3d_to_2d_layer plugin forwards the 3D costmap
+    data to the 2D costmap.
+  </description>
+  <author>C. Andy Martin</author>
+  <maintainer email="cam@badger-technologies.com">C. Andy Martin</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>message_generation</build_depend>
+  <build_depend>tf2_sensor_msgs</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <depend>costmap_2d</depend>
+  <depend>dynamic_reconfigure</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>pluginlib</depend>
+  <depend>roscpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>octomap</depend>
+  <depend>octomap_msgs</depend>
+  <depend>pcl_ros</depend>
+  <depend>pcl_msgs</depend>
+  <depend>pcl_conversions</depend>
+  <depend>fcl</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
+  <export>
+    <costmap_2d plugin="${prefix}/costmap_2d_plugins.xml"/>
+    <costmap_3d plugin="${prefix}/costmap_3d_plugins.xml"/>
+  </export>
+</package>

@@ -1,0 +1,12 @@
+<launch>
+  <!--
+  NOTE: You'll need to bring up an octomap server to publish the octomap data
+  and rviz to visualize the results.
+
+  Also, if running from bagfiles, set the "use_sim_time" parameter to true
+  -->
+  <node name="costmap_3d_node" pkg="costmap_3d" type="costmap_3d_node" output="screen">
+    <rosparam file="$(find costmap_3d)/launch/example_params.yaml" command="load" ns="costmap" />
+  </node>
+
+</launch>

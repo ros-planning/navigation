@@ -1,0 +1,13 @@
+<class_libraries>
+  <library path="liblayers_3d">
+    <class type="costmap_3d::Costmap3DTo2DLayer3D" base_class_type="costmap_3d::Layer3D">
+      <description>3D costmap layer that connects the 3D costmap to Costmap3DTo2DLayer instances.</description>
+    </class>
+    <class type="costmap_3d::OctomapServerLayer3D" base_class_type="costmap_3d::Layer3D">
+      <description>Updates a 3D costmap layer from an octomap server.</description>
+    </class>
+    <class type="costmap_3d::PointCloudLayer3D" base_class_type="costmap_3d::Layer3D">
+      <description>Overwrites the 3D costmap layer with the last point cloud received.</description>
+    </class>
+  </library>
+</class_libraries>

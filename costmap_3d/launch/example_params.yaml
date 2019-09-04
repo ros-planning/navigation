@@ -1,0 +1,39 @@
+global_frame: odom
+robot_base_frame: base_footprint
+rolling_window: true
+track_unknown_space: true
+always_send_full_costmap: false
+
+publish_frequency: 5.0
+update_frequency: 5.0
+transform_tolerance: 1.5
+
+resolution: 0.05
+width: 8
+height: 8
+origin_x: 0.0
+origin_y: 0.0
+max_obstacle_height: 2.05
+
+footprint: [[-0.325, -0.325], [-0.325, 0.325], [0.325, 0.325], [0.46, 0.0], [0.325, -0.325]]
+footprint_padding: 0.01
+
+costmap_3d:
+  plugins:
+  - {name: costmap_3d_to_2d, type: 'costmap_3d::Costmap3DTo2DLayer3D'}
+  - {name: occupancy_octomap_layer, type: 'costmap_3d::OctomapServerLayer3D'}
+  occupancy_octomap_layer:
+    octomap_server_namespace: '/'
+    octomap_server_node_name: occupancy_octomap
+    enabled: true
+    # Combine with maximum (1, see cfg/GenericPlugin.cfg for all values)
+    combination_method: 1
+
+plugins:
+- {name: costmap_3d_to_2d, type: 'costmap_3d::Costmap3DTo2DLayer'}
+
+costmap_3d_to_2d:
+  enabled: true
+  # Combine with maximum (1, see cfg/GenericPlugin.cfg for all values)
+  combination_method: 1
+
