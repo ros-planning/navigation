@@ -33,7 +33,7 @@
 
   <!-- eKF for the odom frame -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true" if="$(arg ekf_publish_tf)">
-    <remap from="odometry/filtered" to="rl/odom"/>
+    <!-- <remap from="odometry/filtered" to="rl/odom"/> -->
   </node>
 
 
