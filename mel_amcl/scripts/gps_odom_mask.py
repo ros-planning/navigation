@@ -18,7 +18,7 @@ class GpsMask:
     
     def __init__(self):
 
-        self.gps_error_mask = rospy.get_param('~gps_error_mask', 0.2) # use this if it is not in the GPS tf
+        self.gps_error_mask = rospy.get_param('~gps_error_mask', 0.05)
 
         
         self.gps_error_x = 0
@@ -37,6 +37,8 @@ class GpsMask:
 
         if (self.gps_error_x < self.gps_error_mask) and (self.gps_error_y <self.gps_error_mask):
             self.odom_repub.publish(data)
+        else:
+            rospy.logwarn("GPS error too high (x=%d, y=%d), masking. ", self.gps_error_x, self.gps_error_y)
 
 
     def yaw_callback(self, data):

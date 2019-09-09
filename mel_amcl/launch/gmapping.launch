@@ -28,16 +28,16 @@
     <param name="temporalUpdate" value="-1.0"/>
     <param name="resampleThreshold" value="0.5"/>
     <param name="particles" value="80"/>
-  <!--
-    <param name="xmin" value="-50.0"/>
-    <param name="ymin" value="-50.0"/>
-    <param name="xmax" value="50.0"/>
-    <param name="ymax" value="50.0"/>
-  make the starting size small for the benefit of the Android client's memory...
-  -->
 
 
+    <param name="xmin" value="-100.0"/>
+    <param name="ymin" value="-100.0"/>
+    <param name="xmax" value="100.0"/>
+    <param name="ymax" value="100.0"/>
     <param name="delta" value="0.05"/>
+
+
+
     <param name="llsamplerange" value="0.02"/>
     <param name="llsamplestep" value="0.02"/>
     <param name="lasamplerange" value="0.02"/>

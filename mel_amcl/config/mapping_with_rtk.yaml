@@ -331,27 +331,3 @@ ekf_gps_no_yaw:
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1.0,  0,    0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1.0,  0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
-
-
-navsat_transform_node:
-  magnetic_declination_radians: 0.0
-  yaw_offset: 0.0
-  zero_altitude: true
-  broadcast_utm_transform: false
-  broadcast_utm_transform_as_parent_frame: false
-  publish_filtered_gps: true
-  use_odometry_yaw: false
-  wait_for_datum: true
-  datum: [ 53.268642038, -0.524509505881, 0.0]
-
-
-navsat_post_process:
-  magnetic_declination_radians: 0.0
-  yaw_offset: 0.0
-  zero_altitude: true
-  broadcast_utm_transform: false
-  broadcast_utm_transform_as_parent_frame: false
-  publish_filtered_gps: true
-  use_odometry_yaw: false
-  wait_for_datum: true
-  datum: [ 53.268642038, -0.524509505881, 0.0]
