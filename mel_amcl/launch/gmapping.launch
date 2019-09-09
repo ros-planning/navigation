@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <param name="/use_sim_time" value="true"/>
+  <!-- <param name="/use_sim_time" value="true"/> -->
 
 
   <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
