@@ -1,4 +1,4 @@
-ekf_odom:
+ekf_local:
   frequency: 30
   sensor_timeout: 0.1
   two_d_mode: false
@@ -7,6 +7,7 @@ ekf_odom:
   print_diagnostics: true
   debug: false
   debug_out_file: /home/michael/Documents/rasberry start/Localisation/rl_odom_log.txt
+  
   publish_tf: true
 
   map_frame: map
@@ -14,8 +15,9 @@ ekf_odom:
   base_link_frame: base_link
   world_frame: odom
 
+
   odom0: /odometry/base_raw
-  odom0_config: [false, false, true,
+  odom0_config: [false, false, true, # because we want 3D for roll/pitch but dont care about z
                  false, false, false,
                  true,  true,  false,
                  false, false, true,
@@ -25,30 +27,8 @@ ekf_odom:
   odom0_differential: false
   odom0_relative: false
 
-  #imu0: /yaw/septentrio
-  #imu0_config: [false, false, false,
-  #              false, false, true,
-  #              false, false, false,
-  #              false, false, false,
-  #              false, false, false]
-  #
-  #imu0_differential: false
-  #imu0_relative: false 
-  #imu0_pose_rejection_threshold: 0.8   
 
-  #pose0: /gps/map_pose
-  #pose0_config: [false, false, false,
-  #               false, false, true,
-  #               false, false, false,
-  #               false, false, false,
-  #               false, false, false]
-  #pose0_differential: false
-  #pose0_relative: false
-  #pose0_queue_size: 5
-  #pose0_rejection_threshold: 5  # Note the difference in parameter name
-  #pose0_nodelay: true #false (my previous value)
-
-  imu0: imu/data
+  imu0: /imu/data
   imu0_config: [false, false, false,
               true,  true,  false,
               false, false, false,
@@ -56,57 +36,45 @@ ekf_odom:
               true,  true,  true]
   imu0_nodelay: false
   imu0_differential: false
-  imu0_relative: true
+  imu0_relative: false
   imu0_queue_size: 5
-  imu0_pose_rejection_threshold: 0.8                 # Note the difference in parameter names
-  imu0_twist_rejection_threshold: 0.8                #
-  imu0_linear_acceleration_rejection_threshold: 0.8  #
+  imu0_pose_rejection_threshold: 0.8
+  imu0_twist_rejection_threshold: 0.8
+  imu0_linear_acceleration_rejection_threshold: 0.8
   imu0_remove_gravitational_acceleration: true
-
-  #imu1: imu/data
-  #imu1_config: [false, false, false,
-  #            true,  true,  true,
-  #            false, false, false,
-  #            true,  true,  true,
-  #            true,  true,  true]
-  #imu1_nodelay: false
-  #imu1_differential: false
-  #imu1_relative: true
-  #imu1_queue_size: 5
-  #imu1_pose_rejection_threshold: 0.8                 # Note the difference in parameter names
-  #imu1_twist_rejection_threshold: 0.8                #
-  #imu1_linear_acceleration_rejection_threshold: 0.8  #
-  #imu1_remove_gravitational_acceleration: true
 
 
   use_control: false
 
-  process_noise_covariance: [0.008, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0.008, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0.008, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0.3, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0.3, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0.3, 0,     0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0,    0.025, 0,     0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0,    0,     0.025, 0,    0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0,    0,     0,     0.04, 0,    0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0.01, 0,    0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.01, 0,    0,    0,    0,
-                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.02, 0,    0,    0,
+  process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0.05, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0.05, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0.05, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0.12, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0.08, 0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0.08, 0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0.08, 0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0.03, 0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.03, 0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.07, 0,    0,    0,
                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.01, 0,    0,
                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.01, 0,
                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.015]
 
-# [ADVANCED] This represents the initial value for the state estimate error covariance matrix. Setting a diagonal
+# [ADVANCED] This repre2sents the initial value for the state estimate error covariance matrix. Setting a diagonal
 # value (variance) to a large value will result in rapid convergence for initial measurements of the variable in
 # question. Users should take care not to use large values for variables that will not be measured directly. The values
 # are ordered as x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az. Defaults to the matrix below
 #if unspecified.
+
+# I just use larger values for roll/pitch! Everthing else starts at zero anyway.
+
 initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                              0,    0,    0,    1e-9, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                              0,    0,    0,    0,    1e-9, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0.05, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0.05, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0,    0,    0,    1e-9, 0,    0,    0,     0,     0,     0,    0,    0,
                               0,    0,    0,    0,    0,    0,    0,    1e-9, 0,    0,     0,     0,     0,    0,    0,
@@ -119,109 +87,7 @@ initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,
                               0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-9]
 
 
-ekf_map:
-  frequency: 30
-  sensor_timeout: 0.1
-  two_d_mode: true
-  transform_time_offset: 0.0
-  transform_timeout: 0.0
-  print_diagnostics: true
-  debug: false
-  debug_out_file: /home/michael/Documents/rasberry start/Localisation/rl_map_log.txt
-  publish_tf: true
 
-  map_frame: map
-  odom_frame: odom
-  base_link_frame: base_link
-  world_frame: map
-
-  odom0: /odometry/base_raw
-  odom0_config: [false, false, false,
-                 false, false, false,
-                 true,  true,  true,
-                 false, false, true,
-                 false, false, false]
-  odom0_queue_size: 10
-  odom0_nodelay: true
-  odom0_differential: false #true (my previous value)
-  odom0_relative: false #true
-
-
-  imu0: imu/data
-  imu0_config: [false, false, false,
-              true,  true,  true,
-              false, false, false,
-              true,  true,  true,
-              true,  true,  true]
-  imu0_nodelay: false
-  imu0_differential: false
-  imu0_relative: false
-  imu0_queue_size: 5
-  imu0_pose_rejection_threshold: 0.8                 # Note the difference in parameter names
-  imu0_twist_rejection_threshold: 0.8                #
-  imu0_linear_acceleration_rejection_threshold: 0.8  #
-  imu0_remove_gravitational_acceleration: true
-
-
-  pose0: /gps/map_pose/filtered
-  pose0_config: [true,  true,  false,
-                 false, false, true,
-                 false, false, false,
-                 false, false, false,
-                 false, false, false]
-  pose0_differential: false
-  pose0_relative: false
-  pose0_queue_size: 5
-  pose0_rejection_threshold: 5  # Note the difference in parameter name
-  pose0_nodelay: true #false (my previous value)
-  
-  pose1: /amcl_pose/filtered
-  pose1_config: [true,  true,  false,
-                 false, false, true,
-                 false, false, false,
-                 false, false, false,
-                 false, false, false]
-  pose1_differential: false
-  pose1_relative: false
-  pose1_queue_size: 5
-  pose1_rejection_threshold: 2  # Note the difference in parameter name
-  pose1_nodelay: true #false (my previous value)
-
-
-
-  use_control: false
-
-  process_noise_covariance: [0.2,  0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0.2,  0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    1e-3, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0.2,  0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0.2,  0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0.01, 0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0.3,   0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0.3,   0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0.05,  0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0.3,  0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.3,  0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.3,  0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.3,  0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.3,  0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.3]
-
-  initial_estimate_covariance: [1.0,  0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    1.0,  0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    1.0,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    1.0,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    0,    1.0,  0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    0,    0,    1.0,  0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    0,    0,    0,    1.0,  0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    0,    0,    0,    0,    1.0,   0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1.0,   0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1.0,   0,    0,    0,
-                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1.0,  0,    0,
-                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1.0,  0,
-                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
 
 
 ekf_gps:
@@ -240,71 +106,83 @@ ekf_gps:
   base_link_frame: base_link
   world_frame: map
 
-  odom0: /odometry/base_raw
-  odom0_config: [false, false, false,
+  odom0: odometry/gps/unfiltered
+  odom0_config: [true, true, false,
                  false, false, false,
-                 true,  true,  true,
-                 false, false, true,
+                 false,  false,  false,
+                 false, false, false,
                  false, false, false]
   odom0_queue_size: 10
   odom0_nodelay: true
-  odom0_differential: false #true (my previous value)
-  odom0_relative: false #true
+  odom0_differential: false
+  odom0_relative: false
 
+
+  odom1: /odometry/base_raw
+  odom1_config: [false, false, true, # because we want 3D for roll/pitch but dont care about z
+                 false, false, false,
+                 true,  true,  false,
+                 false, false, true,
+                 false, false, false]
+  odom1_queue_size: 10
+  odom1_nodelay: true
+  odom1_differential: false
+  odom1_relative: false
 
   imu0: imu/data
   imu0_config: [false, false, false,
-              true,  true,  false,                   # false yaw because this is in map_pose below
+              true,  true,  false,
               false, false, false,
               true,  true,  true,
               true,  true,  true]
   imu0_nodelay: false
   imu0_differential: false
-  imu0_relative: false
+  imu0_relative: true
   imu0_queue_size: 5
-  imu0_pose_rejection_threshold: 0.8                 # Note the difference in parameter names
-  imu0_twist_rejection_threshold: 0.8                #
-  imu0_linear_acceleration_rejection_threshold: 0.8  #
+  imu0_pose_rejection_threshold: 0.8
+  imu0_twist_rejection_threshold: 0.8
+  imu0_linear_acceleration_rejection_threshold: 0.8
   imu0_remove_gravitational_acceleration: true
 
 
-  pose0: /gps/map_pose
-  pose0_config: [true,  true,  false,
-                 false, false, true,
-                 false, false, false,
-                 false, false, false,
-                 false, false, false]
-  pose0_differential: false
-  pose0_relative: false
-  pose0_queue_size: 5
-  pose0_rejection_threshold: 5  # Note the difference in parameter name
-  pose0_nodelay: true #false (my previous value)
-  
+  imu1: /yaw
+  imu1_config: [false, false, false,
+              false,  false,  true,
+              false, false, false,
+              false,  false,  false,
+              false,  false,  false]
+  imu1_nodelay: true
+  imu1_differential: false
+  imu1_relative: false
+  imu1_queue_size: 10
+  imu1_pose_rejection_threshold: 3.0   
+
 
   use_control: false
 
-  process_noise_covariance: [0.2,  0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0.2,  0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    1e-3, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0.2,  0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0.2,  0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0.01, 0,     0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0.3,   0,     0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0.3,   0,    0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0.05,  0,    0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0.3,  0,    0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.3,  0,    0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.3,  0,    0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.3,  0,    0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.3,  0,
-                             0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.3]
 
-  initial_estimate_covariance: [1.0,  0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    1.0,  0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    1.0,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    1.0,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
-                                0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+  process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0.05, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0.05, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0.05, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0.12, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0.08, 0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0.08, 0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0.08, 0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0.03, 0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.03, 0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.07, 0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.01, 0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.01, 0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.015]
+
+  initial_estimate_covariance: [50.0,  0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    50.0,  0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0.1, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0.05,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0.05,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    6.0, 0,    0,    0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    0,    0,    0,    1.0,  0,    0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    0,    0,    0,    0,    1.0,  0,    0,     0,     0,     0,    0,    0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    1.0,  0,     0,     0,     0,    0,    0,
@@ -314,5 +192,3 @@ ekf_gps:
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1.0,  0,    0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1.0,  0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
-
-

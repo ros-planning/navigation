@@ -519,4 +519,3 @@ navsat_transform_node:
   use_odometry_yaw: false
   wait_for_datum: true
   datum: [ 53.268642038, -0.524509505881, 0.0]
-

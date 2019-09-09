@@ -2,6 +2,7 @@
 
 <launch>
 
+  <arg name="site_name" default="riseholme" />
 
   <arg name="use_omni" default="true" />
   <arg name="use_gps" default="true" />
@@ -18,11 +19,10 @@
 
 
 
-  <!-- load parameters for eKFs: odom, and separate gps -->
-  <rosparam command="load" file="$(find mel_amcl)/config/rasberry_ekf.yaml" />
 
 
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform_node" clear_params="true" if="$(arg use_gps)">
+      <rosparam command="load" file="$(find mel_amcl)/config/datums/$(arg site_name).yaml" />      
       <!-- Placeholders for input remapping. Set your topic names as the "to" values. -->
       <remap from="imu/data" to="yaw"/> 
       <remap from="odometry/filtered" to="odometry/gps"/>
@@ -30,6 +30,10 @@
       <remap from="odometry/gps" to="odometry/gps/unfiltered"/>
   </node>
 
+
+
+  <!-- load parameters for eKFs: odom, and separate gps -->
+  <rosparam command="load" file="$(find mel_amcl)/config/rasberry_localisation.yaml" />
 
   <!-- eKF for the odom frame -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_local" clear_params="true" if="$(arg ekf_publish_tf)">
