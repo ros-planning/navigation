@@ -2,6 +2,8 @@
 
   <arg name="site_name" default="riseholme" />
 
+  <node pkg="mel_amcl" type="run_mapproxy.sh" name="mapproxy"></node>
+
 
   <node pkg="mapviz" type="mapviz" name="mapviz"></node>
 

@@ -16,7 +16,7 @@
   <node pkg="rosbag" type="play" name="player1" output="screen" args="$(arg path)$(arg file_name)
    -r 5 -u 2 -k --topics /tf_static"/>
   <node pkg="rosbag" type="play" name="player2" output="screen" args="--clock $(arg path)$(arg file_name)
-   -r 5 -u 2000 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan /nmea/main_GGA /imu/data"/>
+   -r 5 -s 500 --topics /odometry/base_raw /tf_static /gps/fix /yaw /twist_mux/cmd_vel /scan /nmea/main_GGA /imu/data"/>
   
 
   <!-- static transform publisher for the "main" gps receiver (where lat, lon comes from) -->
