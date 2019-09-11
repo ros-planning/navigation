@@ -202,7 +202,7 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner","Cancelled called on DWA Planner.");
       local_plan.clear();
       publishLocalPlan(local_plan);
-
+      canceled_ = false;
       return false;
     }
 
