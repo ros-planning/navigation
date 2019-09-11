@@ -122,6 +122,12 @@ namespace dwa_local_planner {
       bool isInitialized() {
         return initialized_;
       }
+      
+      /**
+       * @brief  Cancel the current controller thread
+       * @return True if achieved, false otherwise
+       */
+      bool cancel();
 
     private:
       /**
@@ -160,6 +166,8 @@ namespace dwa_local_planner {
       srs::RollingTimingStatisticsCalculator loopTimingStatistics_;
 
       std::shared_ptr<dynamic_reconfigure::Server<DWAPlannerConfig>> configServer_;
+
+      bool canceled_;
   };
 };
 #endif

@@ -101,6 +101,7 @@ namespace dwa_local_planner {
 
       // update dwa specific configuration
       dp_->reconfigure(config);
+      canceled_ = false;
   }
 
   DWAPlannerROS::DWAPlannerROS() : initialized_(false),
@@ -191,6 +192,20 @@ namespace dwa_local_planner {
       return false;
     }
 
+    std::vector<geometry_msgs::PoseStamped> local_plan;
+    if (canceled_) {
+      cmd_vel.linear.x = 0.0;
+      cmd_vel.linear.y = 0.0;
+      cmd_vel.angular.z = 0.0;
+      odom_helper_.setCmdVel(cmd_vel);
+      ROS_INFO("Cancelled called on DWA Planner.");
+      ROS_DEBUG_NAMED("dwa_local_planner","Cancelled called on DWA Planner.");
+      local_plan.clear();
+      publishLocalPlan(local_plan);
+
+      return false;
+    }
+
     /* For timing uncomment
     struct timeval start, end;
     double start_t, end_t, t_diff;
@@ -224,7 +239,6 @@ namespace dwa_local_planner {
     odom_helper_.setCmdVel(cmd_vel);
 
     //if we cannot move... tell someone
-    std::vector<geometry_msgs::PoseStamped> local_plan;
     if(path.cost_ < 0) {
       ROS_DEBUG_NAMED("dwa_local_planner",
           "The dwa local planner failed to find a valid plan, cost functions discarded all candidates. This can mean there is an obstacle too close to the robot.");
@@ -328,4 +342,10 @@ namespace dwa_local_planner {
       return isOk;
     }
   }
+
+  bool DWAPlannerROS::cancel() {
+  canceled_ = true;
+  return true;
+  }
+
 };

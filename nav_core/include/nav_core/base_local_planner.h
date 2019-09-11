@@ -85,6 +85,8 @@ namespace nav_core {
        */
       virtual ~BaseLocalPlanner(){}
 
+      virtual bool cancel() {return false;};
+
     protected:
       BaseLocalPlanner(){}
   };
