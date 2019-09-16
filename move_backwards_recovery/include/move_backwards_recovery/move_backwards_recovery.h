@@ -9,6 +9,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Point.h>
 #include <costmap_2d/footprint.h>
+#include <atomic>
 
 namespace move_backwards_recovery{
 
@@ -50,7 +51,7 @@ namespace move_backwards_recovery{
       double maxRecoveriesResetDistance_;
       int inPlaceRecoveryCount_;
       int maxInPlaceRecoveries_;
-      bool canceled_;
+      std::atomic<bool> canceled_;
 
       base_local_planner::CostmapModel* world_model_;
       static constexpr auto RECOVERY_VELOCITY_CMD = "/cmd_vel";
