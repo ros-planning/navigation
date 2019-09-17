@@ -58,6 +58,7 @@
 #include <srslib_timing/RollingTimingStatisticsCalculator.hpp>
 
 #include <dwa_local_planner/dwa_planner.h>
+#include <atomic>
 
 namespace dwa_local_planner {
   /**
@@ -167,7 +168,7 @@ namespace dwa_local_planner {
 
       std::shared_ptr<dynamic_reconfigure::Server<DWAPlannerConfig>> configServer_;
 
-      bool canceled_;
+      std::atomic<bool> canceled_;
   };
 };
 #endif
