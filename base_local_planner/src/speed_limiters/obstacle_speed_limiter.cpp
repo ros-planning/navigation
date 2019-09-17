@@ -215,7 +215,7 @@ ObstacleSpeedLimiter::LinearSpeedLimiterResult ObstacleSpeedLimiter::calculateAl
     result.limiting = true;
   }
   double speed = 0.0;
-  if(params_.enable_extended_obstacle_curve)
+  if(params_.wally_speed_profile)
   {
     speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.extended_obstacle_curve);
     if (speed < params_.min_linear_velocity)
@@ -239,12 +239,16 @@ ObstacleSpeedLimiter::LinearSpeedLimiterResult ObstacleSpeedLimiter::calculateAl
   }
   else
   {
-    result.speed = threeLevelInterpolation(distance_to_obstruction,
-                                    params_.min_range, params_.nominal_range_min,
-                                    params_.nominal_range_max, params_.max_range,
-                                    std::min(params_.min_linear_velocity, max_linear_velocity_),
-                                    std::min(params_.nominal_linear_velocity, max_linear_velocity_),
-                                    max_linear_velocity_);
+    speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.extended_obstacle_curve);
+    if (speed < params_.min_linear_velocity)
+    {
+      speed = params_.min_linear_velocity;
+    }
+    else if (speed > max_linear_velocity_)
+    {
+      speed = max_linear_velocity_;
+    }
+    result.speed = speed;
     return result;
   }
 }

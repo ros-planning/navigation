@@ -106,16 +106,16 @@ bool ShadowSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
   {	
 	// Get the brushfire distance to the obstacle
    	double distance = getMapGridDistance(obj)/costmap_->getCostmap()->getResolution();
-	if (fabs(getAngle(pose_no_offset, obj)) < params_.half_angle && distance < max_cost)
-	{	
-    	// Convert it to a velocity
-		double distance = getMapGridDistance(obj);
-    	double velocity = distanceToVelocity(distance);
-		max_vel = std::min(velocity, max_vel);
+    if (fabs(getAngle(pose_no_offset, obj)) < params_.half_angle && distance < max_cost)
+    {	
+        // Convert it to a velocity
+      double distance = getMapGridDistance(obj);
+      double velocity = distanceToVelocity(distance);
+      max_vel = std::min(velocity, max_vel);
 
-		points_inside++;
-	}
-	points_total++;
+      points_inside++;
+    }
+    points_total++;
   }
   if (points_inside / points_total > params_.shadow_threshold)
   {
