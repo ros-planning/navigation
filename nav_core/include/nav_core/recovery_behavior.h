@@ -69,6 +69,8 @@ namespace nav_core {
        */
       virtual void newGoalReceived() {};
 
+      virtual bool cancel() {return false;};
+
     protected:
       RecoveryBehavior(){}
   };

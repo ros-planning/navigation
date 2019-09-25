@@ -58,6 +58,7 @@
 #include <srslib_timing/RollingTimingStatisticsCalculator.hpp>
 
 #include <dwa_local_planner/dwa_planner.h>
+#include <atomic>
 
 namespace dwa_local_planner {
   /**
@@ -122,6 +123,12 @@ namespace dwa_local_planner {
       bool isInitialized() {
         return initialized_;
       }
+      
+      /**
+       * @brief  Cancel the current controller thread
+       * @return True if achieved, false otherwise
+       */
+      bool cancel();
 
     private:
       /**
@@ -160,6 +167,8 @@ namespace dwa_local_planner {
       srs::RollingTimingStatisticsCalculator loopTimingStatistics_;
 
       std::shared_ptr<dynamic_reconfigure::Server<DWAPlannerConfig>> configServer_;
+
+      std::atomic<bool> canceled_;
   };
 };
 #endif
