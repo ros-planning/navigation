@@ -84,7 +84,9 @@ namespace base_local_planner{
 
   void MapGrid::sizeCheck(unsigned int size_x, unsigned int size_y){
     if(map_.size() != size_x * size_y)
+    {
       map_.resize(size_x * size_y);
+    }
 
     if(size_x_ != size_x || size_y_ != size_y){
       size_x_ = size_x;
@@ -338,6 +340,24 @@ namespace base_local_planner{
         }
       }
     }
+  }
+  bool MapGrid::worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my, double resolution) const
+  {
+    if (wx < origin_x_ || wy < origin_y_)
+    {
+      return false;
+    }
+
+    mx = (int)((wx - origin_x_) / resolution);
+    my = (int)((wy - origin_y_) / resolution);
+
+
+    if (mx < size_x_ && my < size_y_)
+    {
+      return true;
+    }
+
+    return false;
   }
 
 };

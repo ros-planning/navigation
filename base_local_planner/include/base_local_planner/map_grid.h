@@ -184,12 +184,21 @@ namespace base_local_planner{
        * @brief Update what cell is considered the next local goal
        */
       void setLocalGoal(const costmap_2d::Costmap2D& costmap,
-            const std::vector<geometry_msgs::PoseStamped>& global_plan);
+          const std::vector<geometry_msgs::PoseStamped>& global_plan);
 
       void setUnadjustedGoal(const costmap_2d::Costmap2D& costmap,
           const geometry_msgs::PoseStamped& goal);
 
+      void setOrigin(double x, double y){
+          origin_x_ = x;
+          origin_y_ = y;
+      }
+
+      bool worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my, double resolution) const;
+
       double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
+
+      double origin_x_, origin_y_;
 
       unsigned int size_x_, size_y_; ///< @brief The dimensions of the grid
 

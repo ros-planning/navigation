@@ -41,7 +41,7 @@
 #include <visualization_msgs/Marker.h>
 
 
-PLUGINLIB_EXPORT_CLASS(costmap_2d::ShadowLayer, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::ShadowLayer, costmap_2d::CostmapLayer)
 
 using costmap_2d::ObservationBuffer;
 using costmap_2d::Observation;

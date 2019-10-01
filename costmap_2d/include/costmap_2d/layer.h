@@ -149,8 +149,16 @@ public:
     return std::shared_ptr<std::vector<double>>();
   }
 
+  virtual std::shared_ptr<std::vector<int>> getAnglesFromStaticMap() {
+    return std::shared_ptr<std::vector<int>>();
+  }
+
   virtual double getDistanceFromStaticMap(double px, double py) {
     return -1.0;
+  }
+
+  virtual int getAngleFromStaticMap(double px, double py) {
+    return -10;
   }
 
 protected:

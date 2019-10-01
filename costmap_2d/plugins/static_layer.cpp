@@ -40,7 +40,7 @@
 #include <costmap_2d/costmap_math.h>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayer, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayer, costmap_2d::CostmapLayer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;

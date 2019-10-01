@@ -42,7 +42,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 
-PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstructionLayer, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstructionLayer, costmap_2d::CostmapLayer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;

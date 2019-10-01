@@ -40,6 +40,7 @@
 
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/layer.h>
+// #include <costmap_2d/costmap_layer.h>
 #include <costmap_2d/costmap_2d.h>
 #include <vector>
 #include <string>
@@ -48,6 +49,7 @@
 
 namespace costmap_2d
 {
+class CostmapLayer;
 class Layer;
 
 /**
@@ -106,12 +108,12 @@ public:
     return costmap_.getDefaultValue() == costmap_2d::NO_INFORMATION;
   }
 
-  std::vector<boost::shared_ptr<Layer> >* getPlugins()
+  std::vector<boost::shared_ptr<CostmapLayer> >* getPlugins()
   {
     return &plugins_;
   }
 
-  void addPlugin(boost::shared_ptr<Layer> plugin);
+  void addPlugin(boost::shared_ptr<CostmapLayer> plugin);
 
   bool isSizeLocked()
   {
@@ -155,12 +157,19 @@ public:
 
   virtual std::shared_ptr<std::vector<double>> getDistancesFromStaticMap();
 
+  virtual std::shared_ptr<std::vector<int>> getAnglesFromStaticMap();
+
   double getDistanceFromStaticMap(double px, double py);
+
+  int getAngleFromStaticMap(double px, double py);
 
   std::shared_ptr<std::vector<ObstructionMsg>> getObstructions();
 
   std::shared_ptr<std::vector<geometry_msgs::Point>> getShadowedObjects();
 
+  boost::shared_ptr<CostmapLayer> getStaticLayer() const{
+    return static_layer_;
+  }
 
 private:
   Costmap2D costmap_;
@@ -172,11 +181,11 @@ private:
   double minx_, miny_, maxx_, maxy_;
   unsigned int bx0_, bxn_, by0_, byn_;
 
-  std::vector<boost::shared_ptr<Layer> > plugins_;
-  std::vector<boost::shared_ptr<Layer> > obstruction_layers_;
+  std::vector<boost::shared_ptr<CostmapLayer> > plugins_;
+  std::vector<boost::shared_ptr<CostmapLayer> > obstruction_layers_;
 
-  boost::shared_ptr<Layer> static_layer_;
-  boost::shared_ptr<Layer> shadow_layer_;  
+  boost::shared_ptr<CostmapLayer> static_layer_;
+  boost::shared_ptr<CostmapLayer> shadow_layer_;  
 
   bool initialized_;
   bool size_locked_;

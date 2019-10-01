@@ -43,7 +43,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 
-PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayerWithInflation, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::StaticLayerWithInflation, costmap_2d::CostmapLayer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;
@@ -53,7 +53,7 @@ namespace costmap_2d
 {
 
 StaticLayerWithInflation::StaticLayerWithInflation() : dsrv_(NULL),
-  inflation_layer_(NULL), needs_reinflation_(true), timingDataRecorder_("slwi"),
+  inflation_layer_(NULL), secondary_inflation_layer_(NULL), needs_reinflation_(true), timingDataRecorder_("slwi"),
   static_map_(nullptr),
   plugin_loader_("costmap_2d", "costmap_2d::Layer") {}
 
@@ -84,6 +84,7 @@ void StaticLayerWithInflation::onInitialize()
   nh.param("trinary_costmap", trinary_costmap_, true);
 
   nh.param("inflation_layer_type", inflation_layer_type_, std::string("costmap_2d::VoronoiInflationLayer"));
+  nh.param("secondary_inflation_layer_type", secondary_inflation_layer_type_, std::string(""));
 
   nh.param("impassible", impassible_, true);
 
@@ -96,6 +97,13 @@ void StaticLayerWithInflation::onInitialize()
   {
     // delete inflation_layer_;
     inflation_layer_->reset();
+  }
+
+  // Create a new secondary inflation layer
+  if (secondary_inflation_layer_)
+  {
+    // delete inflation_layer_;
+    secondary_inflation_layer_->reset();
   }
 
   // Only resubscribe if topic has changed
@@ -169,6 +177,10 @@ void StaticLayerWithInflation::matchSize()
   else
   {
     ROS_WARN("Could not match size for inflation layer because there isn't one.");
+  }
+  if (secondary_inflation_layer_)
+  {
+    secondary_inflation_layer_->matchSize();
   }
 }
 
@@ -254,6 +266,14 @@ void StaticLayerWithInflation::incomingMap(const nav_msgs::OccupancyGridConstPtr
     inflation_layer_ = plugin;
     inflation_layer_->initialize(layered_costmap_, name_ + "/inflation", tf_);
   }
+  if (!secondary_inflation_layer_ && secondary_inflation_layer_type_.size() > 0){
+    ROS_INFO("Creating secondary inflation layer in static layer.");
+
+    boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance(secondary_inflation_layer_type_);
+    // inflation_layer_ = boost::static_pointer_cast<VoronoiInflationLayer>(plugin);
+    secondary_inflation_layer_ = plugin;
+    secondary_inflation_layer_->initialize(layered_costmap_, name_ + "/secondary_inflation", tf_);
+  }
   needs_reinflation_ = true;
 
   // shutdown the map subscrber if firt_map_only_ flag is on
@@ -325,6 +345,14 @@ void StaticLayerWithInflation::updateBounds(double robot_x, double robot_y, doub
     }
     inflation_layer_->updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
   }
+  if (secondary_inflation_layer_)
+  {
+    if (secondary_inflation_layer_->needsUpdate())
+    {
+      needs_reinflation_ = true;
+    }
+    secondary_inflation_layer_->updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
+  }
 
   if( !layered_costmap_->isRolling() ){
     if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
@@ -382,6 +410,42 @@ double StaticLayerWithInflation::getDistanceFromStaticMap(double px, double py)
   }
 }
 
+int StaticLayerWithInflation::getAngleFromStaticMap(double px, double py)
+{
+  if (layered_costmap_->isRolling())
+  {
+    // If it is rolling, convert the points.
+    // If rolling window, the master_grid is unlikely to have same coordinates as this layer
+    unsigned int mx, my;
+    double wx, wy;
+    // Might even be in a different frame
+    tf::StampedTransform transform;
+    if (!getTransform(transform, map_frame_, global_frame_))
+    {
+      return -1.0;
+    }
+
+    tf::Point p(px, py, 0);
+    p = transform(p);
+    ROS_DEBUG("Original: %f, %f - transformed: %f, %f", px, py, p.x(), p.y());
+    px = p.x();
+    py = p.y();
+  }
+
+  unsigned int mx = 0;
+  unsigned int my = 0;
+
+  auto angle_map = inflation_layer_->getAnglesFromStaticMap();
+  if (angle_map && worldToMap(px, py, mx, my))
+  {
+    return (*angle_map)[getIndex(mx, my)];
+  }
+  else
+  {
+    return -10;
+  }
+}
+
 
 void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
@@ -394,6 +458,11 @@ void StaticLayerWithInflation::updateCosts(costmap_2d::Costmap2D& master_grid, i
   {
     updateCostmapFromStaticMap();
     inflation_layer_->updateCosts(*this, x_, y_, width_, height_);
+
+    if (secondary_inflation_layer_) 
+    {
+      secondary_inflation_layer_->updateCosts(*this, x_, y_, width_, height_);
+    }
     needs_reinflation_ = false;
   }
 
@@ -469,6 +538,10 @@ void StaticLayerWithInflation::onFootprintChanged()
   if (inflation_layer_)
   {
     boost::static_pointer_cast<Layer>(inflation_layer_)->onFootprintChanged();
+    if (secondary_inflation_layer_)
+    {
+      boost::static_pointer_cast<Layer>(secondary_inflation_layer_)->onFootprintChanged();
+    }
     needs_reinflation_ = true;
   } else {
     ROS_WARN("Don't have an inflation layer to footprint change.");

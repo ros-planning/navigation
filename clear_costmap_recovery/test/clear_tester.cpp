@@ -38,9 +38,9 @@ void testCountLethal(std::string name, double distance, bool obstacles, bool sta
     costmap_2d::Costmap2DROS  local(name + "/local" , *transformer);
     boost::shared_ptr<costmap_2d::ObstacleLayer> olayer;
         
-    std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = global.getLayeredCostmap()->getPlugins();
-    for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-        boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
+    std::vector<boost::shared_ptr<costmap_2d::CostmapLayer> >* plugins = global.getLayeredCostmap()->getPlugins();
+    for (std::vector<boost::shared_ptr<costmap_2d::CostmapLayer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
+        boost::shared_ptr<costmap_2d::CostmapLayer> plugin = *pluginp;
         if(plugin->getName().find("obstacles")!=std::string::npos){
             olayer = boost::static_pointer_cast<costmap_2d::ObstacleLayer>(plugin);
             addObservation(&(*olayer), 5.0, 0.0, MAX_Z/2, 0, 0, MAX_Z/2);

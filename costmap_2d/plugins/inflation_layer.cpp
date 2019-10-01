@@ -55,6 +55,7 @@ InflationLayer::InflationLayer()
   : inflation_radius_(0)
   , weight_(0)
   , cell_inflation_radius_(0)
+  , lane_width_(0.5)
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
   , seen_(NULL)
@@ -99,7 +100,7 @@ void InflationLayer::onInitialize()
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
 {
-  setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
+  setInflationParameters(config.inflation_radius, config.cost_scaling_factor, config.lane_width);
 
   if (enabled_ != config.enabled) {
     enabled_ = config.enabled;
@@ -203,10 +204,10 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   max_i += cell_inflation_radius_;
   max_j += cell_inflation_radius_;
 
-  min_i = std::max(0, min_i);
-  min_j = std::max(0, min_j);
-  max_i = std::min(int(size_x), max_i);
-  max_j = std::min(int(size_y), max_j);
+  min_i = std::max(1, min_i);
+  min_j = std::max(1, min_j);
+  max_i = std::min(int(size_x) - 1, max_i);
+  max_j = std::min(int(size_y) - 1, max_j);
 
   // Inflation list; we append cells to visit in a list associated with its distance to the nearest obstacle
   // We use a map<distance, list> to emulate the priority queue used before, with a notable performance boost
@@ -217,11 +218,21 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   {
     for (int i = min_i; i < max_i; i++)
     {
-      int index = master_grid.getIndex(i, j);
-      unsigned char cost = master_array[index];
-      if (cost == LETHAL_OBSTACLE)
+      // Only keep corners
+      unsigned int index = master_grid.getIndex(i, j);
+      unsigned char cost = master_array[master_grid.getIndex(i, j)];
+
+      if (cost == LETHAL_OBSTACLE) 
       {
-        obs_bin.push_back(CellData(index, i, j, i, j));
+        bool cost_n_lethal = master_array[master_grid.getIndex(i + 1, j)] == LETHAL_OBSTACLE;
+        bool cost_s_lethal = master_array[master_grid.getIndex(i - 1, j)] == LETHAL_OBSTACLE;
+        bool cost_e_lethal = master_array[master_grid.getIndex(i, j + 1)] == LETHAL_OBSTACLE;
+        bool cost_w_lethal = master_array[master_grid.getIndex(i, j - 1)] == LETHAL_OBSTACLE;
+
+        if ((cost_n_lethal != cost_s_lethal) && (cost_e_lethal != cost_w_lethal))
+        {
+          obs_bin.push_back(CellData(index, i, j, i, j));
+        }
       }
     }
   }
@@ -363,10 +374,10 @@ void InflationLayer::deleteKernels()
   }
 }
 
-void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
+void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor, double lane_width)
 {
   ROS_DEBUG_STREAM("Calling set inflation params with " << inflation_radius << " and " << cost_scaling_factor);
-  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius)
+  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius || lane_width_ != lane_width)
   {
     // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
     // when accessing the cached arrays
@@ -375,6 +386,7 @@ void InflationLayer::setInflationParameters(double inflation_radius, double cost
     inflation_radius_ = inflation_radius;
     cell_inflation_radius_ = cellDistance(inflation_radius_);
     weight_ = cost_scaling_factor;
+    lane_width_ = lane_width;
     need_reinflation_ = true;
     ROS_DEBUG_STREAM("About to cache with " << inflation_radius_ << ", "
       << cell_inflation_radius_ << ", " << weight_);
