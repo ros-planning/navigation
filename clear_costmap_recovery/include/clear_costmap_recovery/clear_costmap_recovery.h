@@ -80,6 +80,7 @@ namespace clear_costmap_recovery{
       bool initialized_;
       bool force_updating_; ///< force costmap update after clearing, so we don't need to wait for update thread
       double reset_distance_;
+      bool invert_area_to_clear_;
       std::string affected_maps_; ///< clear only local, global or both costmaps
       std::set<std::string> clearable_layers_; ///< Layer names which will be cleared.
   };
