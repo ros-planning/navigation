@@ -65,7 +65,7 @@ namespace base_local_planner {
       virtual double footprintCost(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
           double inscribed_radius, double circumscribed_radius) = 0;
 
-      double footprintCost(double x, double y, double theta, const std::vector<geometry_msgs::Point>& footprint_spec, double inscribed_radius = 0.0, double circumscribed_radius=0.0){
+      virtual double footprintCost(double x, double y, double theta, const std::vector<geometry_msgs::Point>& footprint_spec, double inscribed_radius = 0.0, double circumscribed_radius=0.0){
 
         double cos_th = cos(theta);
         double sin_th = sin(theta);
