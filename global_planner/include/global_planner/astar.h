@@ -68,6 +68,7 @@ class AStarExpansion : public Expander {
     private:
         void add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x, int end_y);
         std::vector<Index> queue_;
+        uint8_t combined_cost_; 
 };
 
 } //end namespace global_planner
