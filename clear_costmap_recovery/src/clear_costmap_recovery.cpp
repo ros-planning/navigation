@@ -148,49 +148,15 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
   double x = pose.pose.position.x;
   double y = pose.pose.position.y;
 
-  for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
-    boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
-    std::string name = plugin->getName();
-    int slash = name.rfind('/');
-    if( slash != std::string::npos ){
-        name = name.substr(slash+1);
-    }
+  geometry_msgs::Point min, max;
+  min.x = x - reset_distance_ / 2;
+  min.y = y - reset_distance_ / 2;
+  min.z = -std::numeric_limits<double>::max();
+  max.x = x + reset_distance_ / 2;
+  max.y = y + reset_distance_ / 2;
+  max.z = std::numeric_limits<double>::max();
 
-    if(clearable_layers_.count(name)!=0){
-
-      // check if the value is convertable
-      if(!dynamic_cast<costmap_2d::CostmapLayer*>(plugin.get())){
-        ROS_ERROR_STREAM("Layer " << name << " is not derived from costmap_2d::CostmapLayer");
-        continue;
-      }
-
-      boost::shared_ptr<costmap_2d::CostmapLayer> costmap;
-      costmap = boost::static_pointer_cast<costmap_2d::CostmapLayer>(plugin);
-      clearMap(costmap, x, y);
-    }
-  }
-}
-
-
-void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> costmap,
-                                        double pose_x, double pose_y){
-  boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(costmap->getMutex()));
-
-  double start_point_x = pose_x - reset_distance_ / 2;
-  double start_point_y = pose_y - reset_distance_ / 2;
-  double end_point_x = start_point_x + reset_distance_;
-  double end_point_y = start_point_y + reset_distance_;
-
-  int start_x, start_y, end_x, end_y;
-  costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
-  costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
-
-  costmap->clearArea(start_x, start_y, end_x, end_y, invert_area_to_clear_);
-
-  double ox = costmap->getOriginX(), oy = costmap->getOriginY();
-  double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
-  costmap->addExtraBounds(ox, oy, ox + width, oy + height);
-  return;
+  costmap->resetBoundingBox(min, max, clearable_layers_);
 }
 
 };

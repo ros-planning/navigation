@@ -72,8 +72,7 @@ namespace clear_costmap_recovery{
       void runBehavior();
 
     private:
-      void clear(costmap_2d::Costmap2DROS* costmap);
-      void clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> costmap, double pose_x, double pose_y);
+      void clear(costmap_2d::Costmap2DROS* costmap);      
       costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
       std::string name_;
       tf2_ros::Buffer* tf_;
