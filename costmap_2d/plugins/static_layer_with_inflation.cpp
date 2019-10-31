@@ -521,7 +521,7 @@ bool StaticLayerWithInflation::getTransform(tf::StampedTransform& transform,
     }
     else
     {
-      ROS_ERROR_THROTTLE(1.0, "Could not find transform from %s to %s", from_frame_id.c_str(), to_frame_id.c_str());
+      ROS_ERROR_THROTTLE(5.0, "Could not find transform from %s to %s", from_frame_id.c_str(), to_frame_id.c_str());
       return false;
     }
   }
