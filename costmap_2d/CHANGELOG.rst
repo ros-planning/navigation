@@ -2,6 +2,23 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Changed logic for when to resize layered costmap in static layer (`#792 <https://github.com/ros-planning/navigation/issues/792>`_)
+  * Changed logic for when to resize layered costmap in static layer
+  -Now the master layered costmap should no longer get resized when
+  isSizeLocked returns true
+  * Fixing format for if loop
+* [kinetic] Fix Bounds Bug (plus test) (`#871 <https://github.com/ros-planning/navigation/issues/871>`_)
+  * fix map bounds bug
+  * Add test
+* Remove twice calculation of time_diff (`#863 <https://github.com/ros-planning/navigation/issues/863>`_)
+* Merge pull request `#841 <https://github.com/ros-planning/navigation/issues/841>`_ from DLu/feature/fix_install
+  [kinetic] Fix install
+* Fix install
+* Add additional linked libraries (`#800 <https://github.com/ros-planning/navigation/issues/800>`_)
+* Contributors: David V. Lu, David V. Lu!!, Michael Ferguson, Stepan Kostusiev
+
 1.14.4 (2018-06-19)
 -------------------
 * Merge pull request `#693 <https://github.com/ros-planning/navigation/issues/693>`_ from ros-planning/kinetic_691

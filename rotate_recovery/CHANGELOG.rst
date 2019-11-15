@@ -2,6 +2,11 @@
 Changelog for package rotate_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Rotate Recovery Refactor (`#914 <https://github.com/ros-planning/navigation/issues/914>`_)
+* Contributors: David V. Lu!!
+
 1.14.4 (2018-06-19)
 -------------------
 

@@ -2,6 +2,18 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* ROS_DEBUG prints incorrect gen_id & incorrect namespace for /latch_xy_goal_tolerance (`#862 <https://github.com/ros-planning/navigation/issues/862>`_)
+  * gen_id also increments when the critic's scale is set to 0
+  * Moved the latch_xy_goal_tolerance parameter from global namespace to the planner's namespace.
+  * `latch_xy_goal_tolerance`  parameter is searched in node_handle's namespace as well as in global namespace, for people who relied on the old configuration
+* Set footprint before in place rotation continuation (`#829 <https://github.com/ros-planning/navigation/issues/829>`_)
+  * Make sure to call setFootprint() before an in-place rotation
+  * Change to const reference
+  * Remove footprint from findBestPath
+* Contributors: Marcel Soler, Veera Ragav
+
 1.14.4 (2018-06-19)
 -------------------
 

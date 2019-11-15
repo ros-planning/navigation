@@ -2,6 +2,33 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove unused costmap_pub_freq (`#864 <https://github.com/ros-planning/navigation/issues/864>`_)
+* Merge pull request `#865 <https://github.com/ros-planning/navigation/issues/865>`_ from IronClimber/remove-visualize-potential
+  [kinetic] Remove unused visualize_potential\_
+* Remove unused visualize_potential\_
+* Fix `#845 <https://github.com/ros-planning/navigation/issues/845>`_ (`#846 <https://github.com/ros-planning/navigation/issues/846>`_)
+* Merge pull request `#821 <https://github.com/ros-planning/navigation/issues/821>`_ from ros-planning/fix739kinetic
+  PR `#739 <https://github.com/ros-planning/navigation/issues/739>`_ for Kinetic
+* feat(orientation_filter): Added additional orientation filter options (`#739 <https://github.com/ros-planning/navigation/issues/739>`_)
+  * feat(orientation_filter): Added additional orientation filter options
+  Enables plan references with different orientations for omni-base
+  controllers. The following options are added:
+  - Backward (backward path traversal, pose points to previous point)
+  - Leftward (lateral path traversal in the positive y direction)
+  - Rightward (lateral path traversal in the negative y direction)
+  * Updated orientation filter option description
+  * Added window size parameter to orientation filter
+  Previously, the orientation was calculated using the current and the
+  next point. However, when the path is somewhat jumpy, this results in
+  poor orientations. By adding this parameter and altering the orientation
+  calculation, the calculated orientation can be smoothened along the path
+  by taking into account a larger window. The orientation of index point i
+  will be calculated using the positions of i - window_size and i +
+  window_size.
+* Contributors: David V. Lu!!, Michael Ferguson, Rein Appeldoorn, Stepan Kostusiev
+
 1.14.4 (2018-06-19)
 -------------------
 

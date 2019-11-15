@@ -2,6 +2,12 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix typo for parameter beam_skip_error_threshold but bandaged for other users in AMCL (`#790 <https://github.com/ros-planning/navigation/issues/790>`_)
+  * fix typo but bandage for other users
+* Contributors: Steven Macenski
+
 1.14.4 (2018-06-19)
 -------------------
 * Merge pull request `#731 <https://github.com/ros-planning/navigation/issues/731>`_ from maracuya-robotics/kinetic/amcl-dynamic-reconfigure

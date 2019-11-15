@@ -2,6 +2,18 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* ROS_DEBUG prints incorrect gen_id & incorrect namespace for /latch_xy_goal_tolerance (`#862 <https://github.com/ros-planning/navigation/issues/862>`_)
+  * gen_id also increments when the critic's scale is set to 0
+  * Moved the latch_xy_goal_tolerance parameter from global namespace to the planner's namespace.
+  * `latch_xy_goal_tolerance`  parameter is searched in node_handle's namespace as well as in global namespace, for people who relied on the old configuration
+* Provide different negative values for unknown and out-of-map costs (`#833 <https://github.com/ros-planning/navigation/issues/833>`_)
+* [kinetic] Fix for adjusting plan resolution (`#819 <https://github.com/ros-planning/navigation/issues/819>`_)
+  * Fix for adjusting plan resolution
+  * Simpler math expression
+* Contributors: David V. Lu!!, Jorge Santos Simón, Veera Ragav
+
 1.14.4 (2018-06-19)
 -------------------
 
