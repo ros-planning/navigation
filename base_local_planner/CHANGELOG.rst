@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic
 * Provide different negative values for unknown and out-of-map costs (`#833 <https://github.com/ros-planning/navigation/issues/833>`_)
 * Merge pull request `#857 <https://github.com/ros-planning/navigation/issues/857>`_ from jspricke/add_include

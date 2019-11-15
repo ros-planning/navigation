@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic
 * Added publishZeroVelocity() before starting planner (`#751 <https://github.com/ros-planning/navigation/issues/751>`_)
   Edit for Issue `#750 <https://github.com/ros-planning/navigation/issues/750>`_

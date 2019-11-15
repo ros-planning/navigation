@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Merge pull request `#877 <https://github.com/ros-planning/navigation/issues/877>`_ from SteveMacenski/layer_clear_area-melodic
   [melodic] moving clearing area method to costmap_layer so other applications can clear other types.
 * Merge branch 'melodic-devel' into layer_clear_area-melodic

@@ -2,8 +2,8 @@
 Changelog for package rotate_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic
 * Cherry pick `#914 <https://github.com/ros-planning/navigation/issues/914>`_ (`#919 <https://github.com/ros-planning/navigation/issues/919>`_)
 * Contributors: David V. Lu!!, Steven Macenski

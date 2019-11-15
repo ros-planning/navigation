@@ -2,8 +2,8 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes
   [melodic] Remove leading slashes from default frame_id parameters
 * Remove leading slashes from default frame_id parameters

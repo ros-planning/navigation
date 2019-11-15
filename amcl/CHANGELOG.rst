@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic
 * Fix typo in amcl_laser model header (`#918 <https://github.com/ros-planning/navigation/issues/918>`_)
 * Merge pull request `#849 <https://github.com/ros-planning/navigation/issues/849>`_ from seanyen/amcl_windows_fix

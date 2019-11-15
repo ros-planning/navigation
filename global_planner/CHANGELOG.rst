@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Remove unused visualize_potential (`#866 <https://github.com/ros-planning/navigation/issues/866>`_)
 * remove unused costmap_pub_frequency (`#858 <https://github.com/ros-planning/navigation/issues/858>`_)
 * Fix `#845 <https://github.com/ros-planning/navigation/issues/845>`_ (`#846 <https://github.com/ros-planning/navigation/issues/846>`_)

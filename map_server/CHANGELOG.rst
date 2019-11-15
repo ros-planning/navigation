@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic
 * Merge pull request `#850 <https://github.com/ros-planning/navigation/issues/850>`_ from seanyen/map_server_windows_fix
   [Windows][melodic] map_server Windows build bring up

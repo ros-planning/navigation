@@ -2,8 +2,8 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.3 (2019-11-15)
+-------------------
 * Set footprint before in place rotation continuation (`#829 <https://github.com/ros-planning/navigation/issues/829>`_) (`#861 <https://github.com/ros-planning/navigation/issues/861>`_)
   * Make sure to call setFootprint() before an in-place rotation
   * Change to const reference
