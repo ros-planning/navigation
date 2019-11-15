@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.5 (2019-11-15)
+-------------------
 * Remove unused costmap_pub_freq (`#864 <https://github.com/ros-planning/navigation/issues/864>`_)
 * Merge pull request `#865 <https://github.com/ros-planning/navigation/issues/865>`_ from IronClimber/remove-visualize-potential
   [kinetic] Remove unused visualize_potential\_

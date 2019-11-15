@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.5 (2019-11-15)
+-------------------
 * fix typo for parameter beam_skip_error_threshold but bandaged for other users in AMCL (`#790 <https://github.com/ros-planning/navigation/issues/790>`_)
   * fix typo but bandage for other users
 * Contributors: Steven Macenski

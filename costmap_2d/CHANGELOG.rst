@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.5 (2019-11-15)
+-------------------
 * Changed logic for when to resize layered costmap in static layer (`#792 <https://github.com/ros-planning/navigation/issues/792>`_)
   * Changed logic for when to resize layered costmap in static layer
   -Now the master layered costmap should no longer get resized when
