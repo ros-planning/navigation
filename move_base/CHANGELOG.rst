@@ -2,6 +2,16 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Added publishZeroVelocity() before starting planner (`#751 <https://github.com/ros-planning/navigation/issues/751>`_)
+  Edit for Issue `#750 <https://github.com/ros-planning/navigation/issues/750>`_
+* Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes
+  [melodic] Remove leading slashes from default frame_id parameters
+* Remove leading slashes from default frame_id parameters
+* Contributors: David V. Lu, Michael Ferguson, SUNIL SULANIA, Steven Macenski
+
 1.16.2 (2018-07-31)
 -------------------
 

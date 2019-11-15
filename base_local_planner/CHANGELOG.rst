@@ -2,6 +2,18 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Provide different negative values for unknown and out-of-map costs (`#833 <https://github.com/ros-planning/navigation/issues/833>`_)
+* Merge pull request `#857 <https://github.com/ros-planning/navigation/issues/857>`_ from jspricke/add_include
+  Add missing header
+* Add missing header
+* [kinetic] Fix for adjusting plan resolution (`#819 <https://github.com/ros-planning/navigation/issues/819>`_)
+  * Fix for adjusting plan resolution
+  * Simpler math expression
+* Contributors: David V. Lu!!, Jochen Sprickerhof, Jorge Santos Simón, Michael Ferguson, Steven Macenski
+
 1.16.2 (2018-07-31)
 -------------------
 * Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes

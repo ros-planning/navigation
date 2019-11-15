@@ -2,6 +2,16 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#877 <https://github.com/ros-planning/navigation/issues/877>`_ from SteveMacenski/layer_clear_area-melodic
+  [melodic] moving clearing area method to costmap_layer so other applications can clear other types.
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Add force_updating and affected_maps parameters to tailor clear costmaps recovey (`#838 <https://github.com/ros-planning/navigation/issues/838>`_)
+  behavior
+* clear area in layer for melodic
+* Contributors: Jorge Santos Simón, Michael Ferguson, Steven Macenski, stevemacenski
+
 1.16.2 (2018-07-31)
 -------------------
 

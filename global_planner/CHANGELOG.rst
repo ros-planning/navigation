@@ -2,6 +2,16 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Remove unused visualize_potential (`#866 <https://github.com/ros-planning/navigation/issues/866>`_)
+* remove unused costmap_pub_frequency (`#858 <https://github.com/ros-planning/navigation/issues/858>`_)
+* Fix `#845 <https://github.com/ros-planning/navigation/issues/845>`_ (`#846 <https://github.com/ros-planning/navigation/issues/846>`_)
+* Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes
+  [melodic] Remove leading slashes from default frame_id parameters
+* Remove leading slashes from default frame_id parameters
+* Contributors: David V. Lu, David V. Lu!!, Michael Ferguson, Stepan Kostusiev
+
 1.16.2 (2018-07-31)
 -------------------
 

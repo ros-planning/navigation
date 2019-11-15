@@ -2,6 +2,16 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes
+  [melodic] Remove leading slashes from default frame_id parameters
+* Remove leading slashes from default frame_id parameters
+* Merge pull request `#789 <https://github.com/ros-planning/navigation/issues/789>`_ from ipa-fez/fix/astar_const_melodic
+  Remove const from create_nav_plan_astar
+* remove const from create_nav_plan_astar
+* Contributors: David V. Lu, Felix, Michael Ferguson
+
 1.16.2 (2018-07-31)
 -------------------
 
