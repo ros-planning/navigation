@@ -83,6 +83,8 @@ public:
   Costmap2DROS(const std::string &name, tf2_ros::Buffer& tf);
   virtual ~Costmap2DROS();
 
+  virtual const std::string& getName() { return name_; }
+
   /**
    * @brief  Subscribes to sensor topics if necessary and starts costmap
    * updates, can be called to restart the costmap after calls to either
