@@ -311,6 +311,7 @@ private:
   bool map_update_thread_shutdown_;
   bool stop_updates_, initialized_, stopped_, robot_stopped_;
   boost::thread* map_update_thread_;  ///< @brief A thread for updating the map
+  boost::condition_variable_any update_complete_condition_;
   ros::Timer timer_;
   ros::Time last_publish_;
   ros::Duration publish_cycle;
