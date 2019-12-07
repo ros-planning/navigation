@@ -170,7 +170,7 @@ void MoveBackRecovery::runBehavior(){
 
       double footprint_cost = world_model_->footprintCost(sim_x, sim_y, cur_theta, footprint, 0.0, 0.0);
       if(footprint_cost < 0.0){
-    	  ROS_INFO_THROTTLED(1.0, "Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
+    	  ROS_INFO_THROTTLE(1.0, "Backwards recovery can't move because there is a potential collision. Cost: %.2f", footprint_cost);
         should_stop = true;
         break;
       }
