@@ -25,6 +25,7 @@
 
     <depend>angles</depend>
     <depend>costmap_2d</depend>
+    <depend>costmap_3d</depend>
     <depend>dynamic_reconfigure</depend>
     <depend>eigen</depend>
     <depend>geometry_msgs</depend>

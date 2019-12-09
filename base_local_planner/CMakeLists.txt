@@ -8,6 +8,7 @@ find_package(catkin REQUIRED
             angles
             cmake_modules
             costmap_2d
+            costmap_3d
             dynamic_reconfigure
             geometry_msgs
             message_generation
@@ -65,6 +66,7 @@ catkin_package(
     CATKIN_DEPENDS
         angles
         costmap_2d
+        costmap_3d
         dynamic_reconfigure
         geometry_msgs
         message_runtime
@@ -105,6 +107,7 @@ add_library(base_local_planner
 	src/prefer_forward_cost_function.cpp
 	src/point_grid.cpp
 	src/costmap_model.cpp
+	src/costmap_3d_model.cpp
 	src/simple_scored_sampling_planner.cpp
 	src/simple_trajectory_generator.cpp
 	src/trajectory.cpp
