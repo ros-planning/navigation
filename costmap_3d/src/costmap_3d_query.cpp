@@ -282,7 +282,7 @@ bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose)
   return result.isCollision();
 }
 
-double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose)
+double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_distance)
 {
   if (!robot_obj_)
   {
@@ -309,7 +309,7 @@ double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose)
   auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
   if (micro_cache_entry != micro_distance_cache_.end())
   {
-    return micro_cache_entry->second.distanceToNewPose(pose);
+    return micro_cache_entry->second.distanceToNewPose(pose, signed_distance);
   }
 
   fcl::DistanceRequest<FCLFloat> request;
@@ -323,7 +323,8 @@ double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose)
     // and the octomap box, and use this as our initial guess in the result.
     // This greatly prunes the search tree, yielding a big increase in runtime
     // performance.
-    pose_distance = cache_entry->second.distanceToNewPose(pose);
+    pose_distance = cache_entry->second.distanceToNewPose(pose, signed_distance);
+
     cache_entry->second.setupResult(&result);
   }
   else if(distance_cache_.size() > 0)
@@ -334,52 +335,65 @@ double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose)
     // a correct upper bound, as the minimum distance must be less or equal to
     // the mesh triangle at the new pose and the old nearest octomap cell.
     auto begin = distance_cache_.begin();
-    pose_distance = begin->second.distanceToNewPose(pose);
+    pose_distance = begin->second.distanceToNewPose(pose, signed_distance);
     begin->second.setupResult(&result);
   }
 
   request.enable_nearest_points = true;
+  // We will emulate signed distance ourselves, as FCL only emulates it anyway,
+  // and for costmap query purposes, only getting one of the penetrations is
+  // good enough (not the most maximal).
+  request.enable_signed_distance = false;
 
   result.min_distance = pose_distance;
 
-  double distance = fcl::distance(world.get(), robot.get(), request, result);
+  double distance;
+
+  if (pose_distance <= 0.0)
+  {
+    // The cached objects collided at the new pose.
+    // FCL distance (signed or unsigned) between a mesh and octree
+    // is not guaranteed to give the most negative distance in such cases,
+    // as it stops as soon as a collision is found (due to the potentially very
+    // large number of collisions). For the costmap use case, it isn't
+    // super important that the most negative signed distance be found in the
+    // signed case, as generally the use case for finding signed distance
+    // is as an estimate of cost to move the robot to a pose, making it worse
+    // to penetrate slightly more. In such cases, the main thing is that the
+    // negative depth be one of the collisions, not necessarily the worst.
+    // In the non-signed case, there is clearly nothing more to calculate, as
+    // we already have a collision.
+    distance = pose_distance;
+  }
+  else
+  {
+    distance = fcl::distance(world.get(), robot.get(), request, result);
+  }
 
   // Update distance caches
   const DistanceCacheEntry& new_entry = DistanceCacheEntry(result);
   distance_cache_[cache_key] = new_entry;
   micro_distance_cache_[micro_cache_key] = new_entry;
 
+  // Emulate signed distance in a similar way as FCL. FCL re-does the whole
+  // tree/BVH collision, but we already know the colliding primitives, so save
+  // time by calculating their penetration depth directly.
+  if (signed_distance && distance < 0.0)
+  {
+    distance = new_entry.distanceToNewPose(pose, true);
+  }
+
   return distance;
+}
+
+double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose)
+{
+  return calculateDistance(pose);
 }
 
 double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose)
 {
-  if (!robot_obj_)
-  {
-    // We failed to create a robot model.
-    // The failure would have been logged, so simply return collision.
-    return -1.0;
-  }
-  checkCostmap();
-  // TODO: Figure out how to apply distance cache to signed distance.
-  // TODO: Think about how to make this work w/ meshes representing a solid and octomaps
-  assert(world_obj_);
-
-  // FCL does not correctly handle an empty octomap.
-  if (octree_ptr_->size() == 0)
-  {
-    return std::numeric_limits<double>::max();
-  }
-
-  FCLCollisionObjectPtr robot(getRobotCollisionObject(pose));
-  FCLCollisionObjectPtr world(getWorldCollisionObject());
-
-  fcl::DistanceRequest<FCLFloat> request;
-  fcl::DistanceResult<FCLFloat> result;
-
-  request.enable_signed_distance = true;
-
-  return fcl::distance(world.get(), robot.get(), request, result);
+  return calculateDistance(pose, true);
 }
 
 }  // namespace costmap_3d

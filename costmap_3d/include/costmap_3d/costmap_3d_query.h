@@ -154,6 +154,9 @@ protected:
   /** @brief Update the mesh to use for queries. */
   virtual void updateMeshResource(const std::string& mesh_resource, double padding = 0.0);
 
+  /** @brief core of distance calculations */
+  virtual double calculateDistance(geometry_msgs::Pose pose, bool signed_distance = false);
+
 private:
   // returns path to package file, or empty on error
   std::string getFileNameFromPackageURL(const std::string& url);
@@ -325,7 +328,7 @@ private:
       result->primitive2 = mesh_triangle;
       result->tf1 = octomap_box_tf;
     }
-    FCLFloat distanceToNewPose(geometry_msgs::Pose pose)
+    FCLFloat distanceToNewPose(geometry_msgs::Pose pose, bool signed_distance=false) const
     {
       // Turn pose into tf
       fcl::Transform3<FCLFloat> new_tf(
@@ -336,11 +339,30 @@ private:
                                     pose.orientation.z));
 
       FCLFloat dist;
+      // As of the time this code was written, the normal FCL API does not
+      // allow box/triangle distance or signed distance queries.
+      // Yet FCL internally does such checks all the time, so use the
+      // internal mechanism for now.
       fcl::detail::GJKSolver_libccd<FCLFloat> solver;
-      fcl::Vector3<FCLFloat> p1, p2;
       solver.shapeTriangleDistance(*octomap_box, octomap_box_tf,
                                    mesh_triangle->a, mesh_triangle->b, mesh_triangle->c, new_tf,
-                                   &dist, &p1, &p2);
+                                   &dist);
+      if (signed_distance && dist < 0.0)
+      {
+        // The objects collide, so use the penetration depth as signed distance.
+        // We do not (yet) use the contact points or normal points
+        // We must provide contact points and normal vector to get penetration
+        // depth calculation.
+        fcl::Vector3<FCLFloat> contact_points;
+        fcl::Vector3<FCLFloat> normal_vector;
+        solver.shapeTriangleIntersect(*octomap_box, octomap_box_tf,
+                                      mesh_triangle->a, mesh_triangle->b, mesh_triangle->c, new_tf,
+                                      &contact_points,
+                                      &dist,
+                                      &normal_vector);
+        // Signed distance is the negative penetration depth
+        dist = -dist;
+      }
       return dist;
     }
     std::shared_ptr<fcl::Box<FCLFloat>> octomap_box;
