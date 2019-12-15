@@ -31,17 +31,18 @@ if __name__ == "__main__":
         sys.exit(1)
 
     pose_array_pub = rospy.Publisher("/test_costmap_3d/pose_array", geometry_msgs.msg.PoseArray, queue_size=1)
-    get_cost_srv = rospy.ServiceProxy("/test_costmap_3d/costmap/get_plan_cost_3d",
+    test_ns = "/move_base/local_costmap/"
+    get_cost_srv = rospy.ServiceProxy(test_ns + "get_plan_cost_3d",
             costmap_3d.srv.GetPlanCost3DService)
     pose_array = geometry_msgs.msg.PoseArray()
     pose_array.header.frame_id = "odom"
     pose_array.header.stamp = rospy.Time.now()
     req = costmap_3d.srv.GetPlanCost3DServiceRequest()
     req.lazy = False
-    req.buffered = True
+    req.buffered = False
     req.header.frame_id = "odom"
     req.header.stamp = pose_array.header.stamp
-    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_DISTANCE
+    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_EXACT_SIGNED_DISTANCE
     req.footprint_mesh_resource = ""
 #    req.footprint_mesh_resource = "package://ant_description/meshes/robot-get-close-to-obstacle-backward.stl"
     req.padding = 0.0
@@ -107,16 +108,17 @@ if __name__ == "__main__":
                     req.poses.append(tf2_geometry_msgs.do_transform_pose(orig_pose, xform))
                     pose_array.poses.append(tf2_geometry_msgs.do_transform_pose(orig_pose, xform).pose)
                     # simulate calls for jacobian
-                    path_pose.pose.position.x += .000001
+                    epsilon = 1e-4
+                    path_pose.pose.position.x += epsilon
                     req.poses.append(tf2_geometry_msgs.do_transform_pose(path_pose, xform))
                     pose_array.poses.append(tf2_geometry_msgs.do_transform_pose(path_pose, xform).pose)
-                    path_pose.pose.position.x -= .000001
-                    path_pose.pose.position.y += .000001
+                    path_pose.pose.position.x -= epsilon
+                    path_pose.pose.position.y += epsilon
         #            req.poses.append(tf2_geometry_msgs.do_transform_pose(orig_pose, xform))
                     req.poses.append(tf2_geometry_msgs.do_transform_pose(path_pose, xform))
                     pose_array.poses.append(tf2_geometry_msgs.do_transform_pose(path_pose, xform).pose)
-                    path_pose.pose.position.y -= .000001
-                    theta += .000006283
+                    path_pose.pose.position.y -= epsilon
+                    theta += epsilon
                     q = tf.transformations.quaternion_from_euler(0.0, 0.0, theta)
                     path_pose.pose.orientation.x = q[0]
                     path_pose.pose.orientation.y = q[1]
