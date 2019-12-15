@@ -71,7 +71,8 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
     unsigned int pose_bins_per_radian,
     unsigned int pose_micro_bins_per_meter,
     unsigned int pose_micro_bins_per_radian)
-  : pose_bins_per_meter_(pose_bins_per_meter),
+  : layered_costmap_3d_(nullptr),
+    pose_bins_per_meter_(pose_bins_per_meter),
     pose_bins_per_radian_(pose_bins_per_radian),
     pose_micro_bins_per_meter_(pose_micro_bins_per_meter),
     pose_micro_bins_per_radian_(pose_micro_bins_per_radian)
