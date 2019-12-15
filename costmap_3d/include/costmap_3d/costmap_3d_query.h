@@ -41,6 +41,7 @@
 #include <memory>
 #include <unordered_map>
 #include <limits>
+#include <boost/thread/shared_mutex.hpp>
 #include <fcl/geometry/bvh/BVH_model.h>
 #include <fcl/geometry/shape/utility.h>
 #include <fcl/narrowphase/collision_object.h>
@@ -90,15 +91,6 @@ public:
       unsigned int pose_micro_bins_per_meter = 1024,
       unsigned int pose_micro_bins_per_radian = 1024);
 
-  /**
-   * Copy constructor.
-   * This is useful to have multiple threads querying the same map.
-   * Query objects are not multi-thread safe, so to query the same
-   * map from multiple threads, create copies of the query objects. The
-   * underlying map is not copied, as std::shared_ptr is used.
-   */
-  Costmap3DQuery(const Costmap3DQuery& rhs);
-
   virtual ~Costmap3DQuery();
 
   /** @brief Get the cost to put the robot base at the given pose.
@@ -142,6 +134,11 @@ public:
 protected:
   const LayeredCostmap3D* layered_costmap_3d_;
 
+  using upgrade_mutex = boost::upgrade_mutex;
+  using upgrade_lock = boost::upgrade_lock<upgrade_mutex>;
+  using upgrade_to_unique_lock = boost::upgrade_to_unique_lock<upgrade_mutex>;
+  using unique_lock = boost::unique_lock<upgrade_mutex>;
+
   /** @brief Ensure query map matches currently active costmap.
    * Note: must be called on every query to ensure that the correct Costmap3D is being queried.
    * The LayeredCostmap3D can reallocate the Costmap3D, such as when
@@ -149,7 +146,7 @@ protected:
    * Note: assumes the costmap is locked. The costmap should always be locked
    * during query calls when this is called.
    */
-  virtual void checkCostmap();
+  virtual void checkCostmap(upgrade_lock& upgrade_lock);
 
   /** @brief Update the mesh to use for queries. */
   virtual void updateMeshResource(const std::string& mesh_resource, double padding = 0.0);
@@ -158,6 +155,8 @@ protected:
   virtual double calculateDistance(geometry_msgs::Pose pose, bool signed_distance = false);
 
 private:
+  // synchronize this object for parallel queries
+  upgrade_mutex upgrade_mutex_;
   // returns path to package file, or empty on error
   std::string getFileNameFromPackageURL(const std::string& url);
 

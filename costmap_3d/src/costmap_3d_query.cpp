@@ -89,39 +89,32 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
   updateMeshResource(mesh_resource, padding);
 }
 
-// Be sure to deep-copy any object with state that we modify.
-Costmap3DQuery::Costmap3DQuery(const Costmap3DQuery& rhs)
-  : // Share a pointer to the layered_costmap_3d_
-    layered_costmap_3d_(rhs.layered_costmap_3d_),
-    // Copy the pose-bin constants
-    pose_bins_per_meter_(rhs.pose_bins_per_meter_),
-    pose_bins_per_radian_(rhs.pose_bins_per_radian_),
-    pose_micro_bins_per_meter_(rhs.pose_micro_bins_per_meter_),
-    pose_micro_bins_per_radian_(rhs.pose_micro_bins_per_radian_),
-    // Share a pointer to the robot model
-    robot_model_(rhs.robot_model_),
-    // Create a new robot_obj_, as we need to modify the transform.
-    robot_obj_(new FCLCollisionObject(robot_model_)),
-    // Share a pointer to the octree (if there was one)
-    octree_ptr_(rhs.octree_ptr_),
-    // Start out sharing a pointer to the world object.
-    // (We may make our own if the layered_costmap_3d_'s costmap is re-created)
-    world_obj_(rhs.world_obj_)
-    // Do NOT copy our caches as we do not synchrnoize.
-    // The whole point of this copy constructor is so multiple planning
-    // threads could be querying the same octomap with separate caches in
-    // order to avoid locking.
-{
-}
-
 Costmap3DQuery::~Costmap3DQuery()
 {
 }
 
-void Costmap3DQuery::checkCostmap()
+// Caller must already hold an upgradable shared lock via the passed
+// upgrade_lock, which we can use to upgrade to exclusive access if necessary.
+void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
 {
-  if (layered_costmap_3d_)
+  // First check if we need to update w/ just the read lock held
+  bool need_update = false;
   {
+    if (layered_costmap_3d_)
+    {
+      if (layered_costmap_3d_->getCostmap3D() != octree_ptr_ ||
+         (last_layered_costmap_update_number_ != layered_costmap_3d_->getNumberOfUpdates()))
+      {
+        need_update = true;
+      }
+    }
+  }
+  if (need_update)
+  {
+    bool force_cache_dump = false;
+    // get write access
+    upgrade_to_unique_lock write_lock(upgrade_lock);
+
     if (layered_costmap_3d_->getCostmap3D() != octree_ptr_)
     {
       // The octomap has been reallocated, change where we are pointing.
@@ -129,9 +122,10 @@ void Costmap3DQuery::checkCostmap()
       std::shared_ptr<fcl::OcTree<FCLFloat>> fcl_octree_ptr;
       fcl_octree_ptr.reset(new fcl::OcTree<FCLFloat>(octree_ptr_));
       world_obj_ = FCLCollisionObjectPtr(new fcl::CollisionObject<FCLFloat>(fcl_octree_ptr));
+      force_cache_dump = true;
     }
     // The costmap has been updated since the last query, reset our caches
-    if (last_layered_costmap_update_number_ != layered_costmap_3d_->getNumberOfUpdates())
+    if (force_cache_dump || last_layered_costmap_update_number_ != layered_costmap_3d_->getNumberOfUpdates())
     {
       // For simplicity, on every update, clear out the collision cache.
       // This is not strictly necessary. The mesh is stored in the cache and does
@@ -255,14 +249,24 @@ double Costmap3DQuery::footprintCost(geometry_msgs::Pose pose)
 
 bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose)
 {
+  upgrade_lock upgrade_lock(upgrade_mutex_);
   if (!robot_obj_)
   {
     // We failed to create a robot model.
     // The failure would have been logged, so simply return collision.
     return true;
   }
-  checkCostmap();
+  checkCostmap(upgrade_lock);
   assert(world_obj_);
+
+  // We could keep the read-lock held during the relatively long collision
+  // query because the world object has a raw pointer to the octomap, so it
+  // must not be freed.  However, it is not possible in practice for that to
+  // happen at this point, as it is already necessary to either have the
+  // associated costmap locked, or to have a copy (which by definition won't
+  // change). It allows for much more parallelism with concurrent distance
+  // queries to keep the read lock dropped during the collision query.
+  upgrade_lock.unlock();
 
   // FCL does not correctly handle an empty octomap.
   if (octree_ptr_->size() == 0)
@@ -284,13 +288,14 @@ bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose)
 
 double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_distance)
 {
+  upgrade_lock upgrade_lock(upgrade_mutex_);
   if (!robot_obj_)
   {
     // We failed to create a robot model.
     // The failure would have been logged, so simply return collision.
     return -1.0;
   }
-  checkCostmap();
+  checkCostmap(upgrade_lock);
   assert(world_obj_);
 
   // FCL does not correctly handle an empty octomap.
@@ -339,6 +344,18 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     begin->second.setupResult(&result);
   }
 
+  // We could keep the read-lock held during the relatively long distance query
+  // for two reasons:
+  // 1) the world has a raw pointer to the octomap, so it must not be freed
+  // 2) we do not want to be able to clear the cache during the distance
+  //    query and then add an invalid cache entry below
+  // However, it is not possible in practice for either of these things to
+  // happen, as it is already necessary to either have the associated costmap
+  // locked, or to have a copy (which by definition won't change). It allows
+  // for much more parallelism to keep the read lock dropped during the
+  // distance query.
+  upgrade_lock.unlock();
+
   request.enable_nearest_points = true;
   // We will emulate signed distance ourselves, as FCL only emulates it anyway,
   // and for costmap query purposes, only getting one of the penetrations is
@@ -372,8 +389,12 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
 
   // Update distance caches
   const DistanceCacheEntry& new_entry = DistanceCacheEntry(result);
-  distance_cache_[cache_key] = new_entry;
-  micro_distance_cache_[micro_cache_key] = new_entry;
+  {
+    // Get write access
+    unique_lock write_lock(upgrade_mutex_);
+    distance_cache_[cache_key] = new_entry;
+    micro_distance_cache_[micro_cache_key] = new_entry;
+  }
 
   // Emulate signed distance in a similar way as FCL. FCL re-does the whole
   // tree/BVH collision, but we already know the colliding primitives, so save
