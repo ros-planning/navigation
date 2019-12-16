@@ -42,7 +42,7 @@ if __name__ == "__main__":
     req.buffered = False
     req.header.frame_id = "odom"
     req.header.stamp = pose_array.header.stamp
-    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_EXACT_SIGNED_DISTANCE
+    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_SIGNED_DISTANCE
     req.footprint_mesh_resource = ""
 #    req.footprint_mesh_resource = "package://ant_description/meshes/robot-get-close-to-obstacle-backward.stl"
     req.padding = 0.0

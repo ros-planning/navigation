@@ -19,8 +19,12 @@ uint8 COST_QUERY_MODE_COST=0
 uint8 COST_QUERY_MODE_COLLISION_ONLY=1
 # Do not find actual costs, find distances instead
 uint8 COST_QUERY_MODE_DISTANCE=2
-# Do not find actual costs, find exact signed distances instead
-uint8 COST_QUERY_MODE_EXACT_SIGNED_DISTANCE=3
+# Do not find actual costs, find signed distances instead
+# Note that signed distance may not be exact, but approximated.
+# However, signed distance must have the property that querying small changes
+# in position/orientation will generate a derivative pointing away from
+# one of the penetration points (not necessarily the deepest).
+uint8 COST_QUERY_MODE_SIGNED_DISTANCE=3
 # Set to one of the above COST_QUERY_MODE_* to control query mode.
 # The default is COST_QUERY_MODE_COST.
 uint8 cost_query_mode

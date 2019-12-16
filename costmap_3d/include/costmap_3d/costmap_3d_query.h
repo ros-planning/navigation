@@ -113,9 +113,11 @@ public:
   /** @brief Return minimum distance to nearest costmap object.
    *
    * It is assumed the pose is in the frame of the costmap.
-   * This returns the minimum unsigned distance. So a collision will return <0.0.
-   * Negative values are not exact minimum distances. If exact minimum is
-   * required use footprintSignedDistance.
+   * This returns the minimum distance, or negative for penetration.
+   * Negative values are not based on penetration depth and may always be a
+   * constant value like -1.0. If penetrations must be modeled use
+   * footprintSignedDistance. A case where penetrations should be modeled would
+   * be to approximate the motion necessary to avoid the penetrating obstacle.
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap.
    */
@@ -124,8 +126,18 @@ public:
   /** @brief Return minimum signed distance to nearest costmap object.
    *
    * It is assumed the pose is in the frame of the costmap.
-   * This returns the minimum signed distance. So, the deeper a pose goes into
-   * obstacles, the more negative the return value becomes.
+   * This returns the signed distance. For non-pentration cases, the return
+   * value is the same as footprintDistance. For penetrating collisions, an
+   * approximation of one of the negative penetration depths will be returned.
+   * This approximation has the property that for most cases the derivative
+   * obtained by a small perturbation in pose will point away from the
+   * penetration. However, if the pose is moved enough away from the
+   * penetration, some other pentrating point may be choosen in the case of
+   * multiple penetrations. This should normally result in a net negative
+   * direction to the derivative, but the more penetrations the worse the
+   * approximation becomes. Finding the absolute deepest penetration depth is
+   * not worth the extra computational cost, and for navigation purposes is
+   * rarely necessary.
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap.
    */
