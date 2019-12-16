@@ -172,7 +172,7 @@ private:
   // returns path to package file, or empty on error
   std::string getFileNameFromPackageURL(const std::string& url);
 
-  using FCLFloat = float;
+  using FCLFloat = double;
   using FCLRobotModel = fcl::BVHModel<fcl::OBBRSS<FCLFloat>>;
   using FCLRobotModelPtr = std::shared_ptr<FCLRobotModel>;
 
