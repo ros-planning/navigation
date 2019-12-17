@@ -48,6 +48,7 @@
 #include <fcl/narrowphase/distance.h>
 #include <pcl/point_types.h>
 #include <pcl/PolygonMesh.h>
+#include <pcl/filters/passthrough.h>
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
 #include <costmap_3d/layered_costmap_3d.h>
@@ -172,6 +173,10 @@ private:
   // returns path to package file, or empty on error
   std::string getFileNameFromPackageURL(const std::string& url);
 
+  // Save the PCL model of the mesh to use with crop hull
+  pcl::PolygonMesh robot_mesh_;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr robot_mesh_points_;
+
   using FCLFloat = double;
   using FCLRobotModel = fcl::BVHModel<fcl::OBBRSS<FCLFloat>>;
   using FCLRobotModelPtr = std::shared_ptr<FCLRobotModel>;
@@ -184,33 +189,50 @@ private:
 
   std::shared_ptr<const octomap::OcTree> octree_ptr_;
   FCLCollisionObjectPtr world_obj_;
+  inline const fcl::Transform3<FCLFloat> poseToFCLTransform(const geometry_msgs::Pose& pose)
+  {
+    return fcl::Transform3<FCLFloat>(
+        fcl::Translation3<FCLFloat>(pose.position.x, pose.position.y, pose.position.z) *
+        fcl::Quaternion<FCLFloat>(pose.orientation.w,
+                                  pose.orientation.x,
+                                  pose.orientation.y,
+                                  pose.orientation.z));
+  }
   inline const FCLCollisionObjectPtr& getRobotCollisionObject(const geometry_msgs::Pose& pose)
   {
-    robot_obj_->setTransform(
-        fcl::Transform3<FCLFloat>(
-            fcl::Translation3<FCLFloat>(pose.position.x, pose.position.y, pose.position.z) *
-            fcl::Quaternion<FCLFloat>(pose.orientation.w,
-                                      pose.orientation.x,
-                                      pose.orientation.y,
-                                      pose.orientation.z)));
-
+    robot_obj_->setTransform(poseToFCLTransform(pose));
     return robot_obj_;
   }
   inline const FCLCollisionObjectPtr& getWorldCollisionObject() { return world_obj_; }
 
-  // Apply padding to a point coordinate
-  inline FCLFloat padPointCoordinate(FCLFloat c, double padding)
+  void padPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr points, float padding)
   {
-    return c > 0.0 ? c + padding : c < 0.0 ? c - padding : c;
+    for (unsigned int index = 0; index < points->size(); index++)
+    {
+      float x = points->points[index].x;
+      float y = points->points[index].y;
+      float dist = sqrt(x * x + y * y);
+      if (dist == 0.0)
+      {
+        // Do not pad the origin.
+        // The code below will divide by zero, go to the next point
+        continue;
+      }
+      float nx = x / dist;
+      float ny = y / dist;
+      points->points[index].x = nx * (dist + padding);
+      points->points[index].y = ny * (dist + padding);
+    }  // for point
   }
 
-  // Apply padding and convert PCL point to FCL
-  inline fcl::Vector3<FCLFloat> padPCLPointToFCL(const pcl::PointXYZ& p, double padding)
+  inline fcl::Vector3<FCLFloat> convertPCLPointToFCL(const pcl::PointXYZ& p)
   {
-    return fcl::Vector3<FCLFloat>(
-        padPointCoordinate(p.x, padding),
-        padPointCoordinate(p.y, padding),
-        padPointCoordinate(p.z, padding));
+    return fcl::Vector3<FCLFloat>(p.x, p.y, p.z);
+  }
+
+  inline pcl::PointXYZ convertFCLPointToPCL(const fcl::Vector3<FCLFloat>& p)
+  {
+    return pcl::PointXYZ(p.x(), p.y(), p.z());
   }
 
   // Add fcl triangles to the mesh vector for all triangles in a PCL polygon
@@ -373,6 +395,7 @@ private:
                                       &normal_vector);
         // Signed distance is the negative penetration depth
         dist = -dist;
+        assert(dist <= 0.0);
       }
       return dist;
     }
@@ -380,6 +403,12 @@ private:
     fcl::Transform3<FCLFloat> octomap_box_tf;
     std::shared_ptr<fcl::TriangleP<FCLFloat>> mesh_triangle;
   };
+  // used by distance calculation to find interior collisions
+  double handleDistanceInteriorCollisions(
+      double distance,
+      bool signed_distance,
+      const DistanceCacheEntry& cache_entry,
+      const geometry_msgs::Pose& pose);
   using DistanceCache = std::unordered_map<DistanceCacheKey, DistanceCacheEntry, DistanceCacheKeyHash, DistanceCacheKeyEqual>;
   /**
    * The distance cache allows us to find a very good distance guess quickly.

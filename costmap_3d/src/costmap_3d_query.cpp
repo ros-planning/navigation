@@ -40,6 +40,7 @@
 #include <fcl/narrowphase/distance_result.h>
 #include <fcl/geometry/shape/sphere.h>
 #include <pcl/io/vtk_lib_io.h>
+#include <pcl/filters/crop_hull.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <tf/transform_datatypes.h>
@@ -159,15 +160,17 @@ void Costmap3DQuery::addPCLPolygonMeshToRobotModel(
     double padding,
     FCLRobotModel* robot_model)
 {
-  pcl::PointCloud<pcl::PointXYZ> mesh_points;
-  pcl::fromPCLPointCloud2(pcl_mesh.cloud, mesh_points);
+  robot_mesh_points_.reset(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::fromPCLPointCloud2(pcl_mesh.cloud, *robot_mesh_points_);
+
+  padPoints(robot_mesh_points_, padding);
 
   std::vector<fcl::Vector3<FCLFloat>> fcl_points;
   std::vector<fcl::Triangle> fcl_triangles;
 
-  for (auto pcl_point : mesh_points)
+  for (auto pcl_point : *robot_mesh_points_)
   {
-    fcl_points.push_back(padPCLPointToFCL(pcl_point, padding));
+    fcl_points.push_back(convertPCLPointToFCL(pcl_point));
   }
 
   for (auto polygon : pcl_mesh.polygons)
@@ -185,8 +188,7 @@ void Costmap3DQuery::updateMeshResource(const std::string& mesh_resource, double
   {
     return;
   }
-  pcl::PolygonMesh mesh;
-  int pcl_rv = pcl::io::loadPolygonFileSTL(filename, mesh);
+  int pcl_rv = pcl::io::loadPolygonFileSTL(filename, robot_mesh_);
   if (pcl_rv < 0)
   {
     ROS_ERROR_STREAM("Costmap3DQuery: unable to load STL mesh file " << filename
@@ -195,7 +197,7 @@ void Costmap3DQuery::updateMeshResource(const std::string& mesh_resource, double
   }
   robot_model_.reset(new FCLRobotModel());
   robot_model_->beginModel();
-  addPCLPolygonMeshToRobotModel(mesh, padding, robot_model_.get());
+  addPCLPolygonMeshToRobotModel(robot_mesh_, padding, robot_model_.get());
   robot_model_->endModel();
   robot_obj_ = FCLCollisionObjectPtr(new FCLCollisionObject(robot_model_));
 }
@@ -250,41 +252,102 @@ double Costmap3DQuery::footprintCost(geometry_msgs::Pose pose)
 
 bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose)
 {
-  upgrade_lock upgrade_lock(upgrade_mutex_);
-  if (!robot_obj_)
+  // It is more correct and even more efficient to query the distance to find
+  // collisions than it is to use FCL to directly find octomap collisions.
+  // This is because our distance query correctly handles interior collisions,
+  // which requires finding the nearest octomap box, which an FCL collision
+  // will not do.
+  return footprintDistance(pose) <= 0.0;
+}
+
+// Discern if the given octomap box is an interior collision and adjust
+// distance or signed distance appropriately.
+// This is done by using PCL's point-in-a-mesh call which works on concave
+// meshes that represent closed polyhedra. FCL handles concave meshes as
+// surfaces, not volumes.
+double Costmap3DQuery::handleDistanceInteriorCollisions(
+      double distance,
+      bool signed_distance,
+      const DistanceCacheEntry& cache_entry,
+      const geometry_msgs::Pose& pose)
+{
+  if (distance < 0.0 && !signed_distance)
   {
-    // We failed to create a robot model.
-    // The failure would have been logged, so simply return collision.
-    return true;
+    // fast case, already a collision and doing normal distance check, nothing
+    // left to do.
+    return distance;
   }
-  checkCostmap(upgrade_lock);
-  assert(world_obj_);
 
-  // We could keep the read-lock held during the relatively long collision
-  // query because the world object has a raw pointer to the octomap, so it
-  // must not be freed.  However, it is not possible in practice for that to
-  // happen at this point, as it is already necessary to either have the
-  // associated costmap locked, or to have a copy (which by definition won't
-  // change). It allows for much more parallelism with concurrent distance
-  // queries to keep the read lock dropped during the collision query.
-  upgrade_lock.unlock();
+  // Find out if the center of the box is inside the given footprint volume mesh.
+  bool interior_collision = false;
 
-  // FCL does not correctly handle an empty octomap.
-  if (octree_ptr_->size() == 0)
+  // Find the transform from the given octomap box to the robot model at the given pose.
+  fcl::Transform3<FCLFloat> map_to_robot_transform(
+      poseToFCLTransform(pose).inverse() * cache_entry.octomap_box_tf);
+
+  // transform the center of the box (which is the origin) into the robot frame
+  fcl::Vector3<FCLFloat> box_center(map_to_robot_transform * fcl::Vector3<FCLFloat>::Zero());
+
+  if (robot_model_->aabb_local.contain(box_center))
   {
-    // There is nothing to collide, so there will be no collision
-    return false;
+    // The center of the octomap box is inside the AABB of the robot model
+    // It may be inside the volume of the mesh footprint.
+    // Create a PCL crop hull filter to see if the center of the box is inside
+    // the volume of the mesh.
+    pcl::PointCloud<pcl::PointXYZ> test_cloud;
+    pcl::CropHull<pcl::PointXYZ> crop_hull;
+    crop_hull.setHullCloud(robot_mesh_points_);
+    crop_hull.setHullIndices(robot_mesh_.polygons);
+    crop_hull.setDim(3);
+    crop_hull.setCropOutside(true);
+    test_cloud.resize(1);
+    test_cloud.is_dense = true;
+    test_cloud.width = 1;
+    test_cloud.height = 1;
+    test_cloud.points[0] = convertFCLPointToPCL(box_center);
+    // Crop hull requires a shared pointer to the input cloud.
+    // in this case, this is a waste of time, we do not want to allocate one
+    // point of dynamic memory. Cheat and make a shared pointer with a deleter
+    // that does nothing, and ensure the crop_hull goes out of scope before the
+    // test_cloud.
+    pcl::PointCloud<pcl::PointXYZ>::Ptr test_cloud_ptr(&test_cloud, [](void *){});
+    crop_hull.setInputCloud(test_cloud_ptr);
+    std::vector<int> indices;
+    crop_hull.filter(indices);
+    if (indices.size() > 0)
+    {
+      interior_collision = true;
+    }
   }
-
-  FCLCollisionObjectPtr robot(getRobotCollisionObject(pose));
-  FCLCollisionObjectPtr world(getWorldCollisionObject());
-
-  fcl::CollisionRequest<FCLFloat> request;
-  fcl::CollisionResult<FCLFloat> result;
-
-  fcl::collide(world.get(), robot.get(), request, result);
-
-  return result.isCollision();
+  if (interior_collision)
+  {
+    if (signed_distance)
+    {
+      // Modify the signed distance.
+      // If not already in collision, negate the distance (so we have the
+      // negative of nearest octomap cell in interior of the volume)
+      if (distance > 0.0)
+      {
+        distance = -distance;
+      }
+      // Instead of attempting to exactly calculate the deepest point on the
+      // colliding octomap box, approximate the penetration depth by
+      // subtracting the bounding diameter of the box.
+      // This results in exaggerated penetration distances in some cases (such
+      // as on or near the boundary), and obviously also results in not enough
+      // penetration when there are multiple interior collisions (as fcl
+      // distance only gives us the nearest octomap box to the mesh)
+      // If exact signed distance were required, FCL would need to be modified
+      // to work with general polyhedra volumes.
+      distance -= cache_entry.octomap_box->side.norm();
+    }
+    else
+    {
+      // Non-signed distance case, just return a lethal collision
+      distance = -1.0;
+    }
+  }
+  return distance;
 }
 
 double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_distance)
@@ -315,7 +378,11 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
   if (micro_cache_entry != micro_distance_cache_.end())
   {
-    return micro_cache_entry->second.distanceToNewPose(pose, signed_distance);
+    return handleDistanceInteriorCollisions(
+        micro_cache_entry->second.distanceToNewPose(pose, signed_distance),
+        signed_distance,
+        micro_cache_entry->second,
+        pose);
   }
 
   fcl::DistanceRequest<FCLFloat> request;
@@ -405,7 +472,11 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     distance = new_entry.distanceToNewPose(pose, true);
   }
 
-  return distance;
+  return handleDistanceInteriorCollisions(
+      distance,
+      signed_distance,
+      new_entry,
+      pose);
 }
 
 double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose)
