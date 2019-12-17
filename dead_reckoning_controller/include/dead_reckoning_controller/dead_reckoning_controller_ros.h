@@ -17,8 +17,6 @@
 #include <nav_core/base_local_planner.h>
 
 #include <base_local_planner/odometry_helper_ros.h>
-#include <srslib_timing/MasterTimingDataRecorder.hpp>
-#include <srslib_timing/RollingTimingStatisticsCalculator.hpp>
 
 #include <dead_reckoning_controller/dead_reckoning_controller.h>
 #include <dead_reckoning_controller/DeadReckoningControllerConfig.h>
@@ -73,7 +71,7 @@ namespace dead_reckoning_controller {
        */
       bool isGoalReached();
 
-
+      bool deadReckoningComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel);
 
       bool isInitialized() {
         return initialized_;
@@ -100,9 +98,7 @@ namespace dead_reckoning_controller {
       // for visualisation, publishers of global and local plan
       ros::Publisher g_plan_pub_, l_plan_pub_;
 
-      base_local_planner::LocalPlannerUtil planner_util_;
-
-      boost::shared_ptr<DeadReckoningController> dp_; ///< @brief The trajectory controller
+      boost::shared_ptr<DeadReckoningController> drc_; ///< @brief The trajectory controller
 
       costmap_2d::Costmap2DROS* costmap_ros_;
 
@@ -111,15 +107,10 @@ namespace dead_reckoning_controller {
       bool setup_;
       tf::Stamped<tf::Pose> current_pose_;
 
-      base_local_planner::LatchedStopRotateController latchedStopRotateController_;
       bool initialized_;
-
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
-
-      srs::MasterTimingDataRecorder tdr_;
-      srs::RollingTimingStatisticsCalculator loopTimingStatistics_;
 
       std::shared_ptr<dynamic_reconfigure::Server<DeadReckoningControllerConfig>> configServer_;
 

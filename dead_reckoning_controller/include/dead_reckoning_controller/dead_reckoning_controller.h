@@ -10,15 +10,15 @@
 #include <dead_reckoning_controller/DeadReckoningControllerConfig.h>
 
 //for creating a local cost grid
-#include <base_local_planner/map_grid_visualizer.h>
 #include <pcl_ros/publisher.h>
 
 //for obstacle data access
 #include <costmap_2d/costmap_2d.h>
 
 #include <nav_msgs/Path.h>
+#include <tf/transform_listener.h>
 
-namespace DeadReckoningController {
+namespace dead_reckoning_controller {
   /**
    * @class DeadReckoningController
    * @brief A class implementing a dead reckoning controller
@@ -31,96 +31,50 @@ namespace DeadReckoningController {
        * @param costmap_ros A pointer to the costmap instance the controller should use
        * @param global_frame the frame id of the tf frame to use
        */
-      DeadReckoningController(std::string name, base_local_planner::LocalPlannerUtil *planner_util);
+      DeadReckoningController(std::string name);
 
       /**
        * @brief  Destructor for the controller
        */
-      ~DeadReckoningController() {if(traj_cloud_) delete traj_cloud_;}
+      ~DeadReckoningController() {}
 
       /**
        * @brief Reconfigures the trajectory planner
        */
       void reconfigure(DeadReckoningControllerConfig &cfg);
+      
 
-      /**
-       * @brief  Take in a new global plan for the local planner to follow, and adjust local costmaps
-       * @param  new_plan The new global plan
-       */
-      void updatePlanAndLocalCosts(tf::Stamped<tf::Pose> global_pose,
-          tf::Stamped<tf::Pose> global_vel,
-          const std::vector<geometry_msgs::PoseStamped>& new_plan);
+      double calculateAngularVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity);
 
+      double calculateLinearVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity);
 
       /**
        * @brief Given the current position and velocity of the robot, find the best velocity to exectue
        * @param global_pose The current position of the robot
        * @param global_vel The current velocity of the robot
        * @param drive_velocities The velocities to send to the robot base
-       * @return Whether it found a valid velocity
        */
-      base_local_planner::Trajectory computeVelocity(
+      void computeVelocity(
           tf::Stamped<tf::Pose> global_pose,
           tf::Stamped<tf::Pose> global_vel,
           tf::Stamped<tf::Pose>& drive_velocities);
 
       /**
-       * @brief Get the period at which the local planner is expected to run
-       * @return The simulation period
-       */
-      double getSimPeriod() { return sim_period_; }
-
-      /**
-       * @brief Compute the components and total cost for a map grid cell
-       * @param cx The x coordinate of the cell in the map grid
-       * @param cy The y coordinate of the cell in the map grid
-       * @param path_cost Will be set to the path distance component of the cost function
-       * @param goal_cost Will be set to the goal distance component of the cost function
-       * @param occ_cost Will be set to the costmap value of the cell
-       * @param total_cost Will be set to the value of the overall cost function, taking into account the scaling parameters
-       * @return True if the cell is traversible and therefore a legal location for the robot to move to
-       */
-      bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
-
-      /**
        * sets new plan and resets state
        */
-      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+      bool setPlan(const tf::Stamped<tf::Pose> start_pose, const tf::Stamped<tf::Pose> end_pose);
 
-      void setFootprintSpec(const std::vector<geometry_msgs::Point>& footprint_spec);
+      bool isGoalReached(const tf::Stamped<tf::Pose>);
 
     private:
 
-      base_local_planner::LocalPlannerUtil *planner_util_;
-
-      double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
-      double pdist_scale_, gdist_scale_, occdist_scale_;
-      Eigen::Vector3f vsamples_;
-
-      double sim_period_;///< @brief The number of seconds to use to compute max/min vels for dwa
-      double generator_sim_time_;
-      base_local_planner::Trajectory result_traj_;
-
-      double forward_point_distance_;
-
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       std::vector<geometry_msgs::Point> robot_footprint_;
+      tf::Stamped<tf::Pose> start_pose_;
+      tf::Stamped<tf::Pose> end_pose_;
+      tf::Pose path_;
 
-      boost::mutex configuration_mutex_;
-      pcl::PointCloud<base_local_planner::MapGridCostPoint>* traj_cloud_;
-      pcl_ros::Publisher<base_local_planner::MapGridCostPoint> traj_cloud_pub_;
-      bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud
-      bool publish_traj_pc_;
-
-      double close_to_goal_range_;
-      double euclidean_distance_scale_;
-      double minimum_simulation_time_factor_;
-
-      bool always_use_euclidean_goal_distance_;
-
-      srs::MasterTimingDataRecorder tdr_;
-
-      double oscillation_reset_plan_divergence_distance_;
+      DeadReckoningControllerConfig config_;
   };
 };
 #endif
