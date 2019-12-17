@@ -190,10 +190,9 @@ std::shared_ptr<Costmap3DQuery> Costmap3DROS::getAssociatedQuery(
         const std::string& footprint_mesh_resource,
         double padding)
 {
-  const std::string& query_mesh(getFootprintMeshResource(footprint_mesh_resource));
-  padding = getFootprintPadding(padding);
-  std::lock_guard<LayeredCostmap3D> lock(layered_costmap_3d_);
-  return std::shared_ptr<Costmap3DQuery>(new Costmap3DQuery(&layered_costmap_3d_, query_mesh, padding));
+  // Now that query objects are thread safe, just return our internal query to
+  // share caches.
+  return getQuery(footprint_mesh_resource, padding);
 }
 
 std::set<std::string> Costmap3DROS::getLayerNames()
