@@ -68,6 +68,7 @@ namespace dead_reckoning_controller {
   }
 
   bool DeadReckoningControllerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
+    ROS_INFO_STREAM("setPlan");
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
@@ -76,30 +77,25 @@ namespace dead_reckoning_controller {
       ROS_ERROR("Plan is not one point, failing");
       return false;
     }
+    ROS_INFO_STREAM(orig_global_plan.size());
     costmap_ros_->getRobotPose(current_pose_);
-    std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    if(!base_local_planner::transformGlobalPlan(
-        *tf_,
-        orig_global_plan,
-        current_pose_,
-        *(costmap_ros_->getCostmap()),
-        costmap_ros_->getGlobalFrameID(),
-        transformed_plan)) {
-      ROS_WARN("Could not transform the global plan to the frame of the controller");
-      return false;
-    }
-  
+
+
+    tf::Stamped<tf::Pose> goal_pose;
+    tf::poseStampedMsgToTF(orig_global_plan[0], goal_pose);
+
 
     tf::Stamped<tf::Pose> end_point;
-    tf::poseStampedMsgToTF(transformed_plan[0], end_point);
+    tf::Stamped<tf::Pose> global_pose_time_zero(goal_pose, ros::Time(0), goal_pose.frame_id_);
+    tf_->transformPose(costmap_ros_->getGlobalFrameID(), global_pose_time_zero, end_point);
 
     tf::Pose offsetTransform;
     offsetTransform.setOrigin( tf::Vector3(-1.0, 0, 0));
     offsetTransform.setRotation( tf::Quaternion(0,0,0,1));
-    
 
     tf::Stamped<tf::Pose> start_point(end_point * offsetTransform, end_point.stamp_, end_point.frame_id_);
-
+    ROS_INFO_STREAM(start_point.getOrigin().getX() << " " << start_point.getOrigin().getY() << " " << start_point.getRotation().getZ() << " " << start_point.getRotation().getW());
+    ROS_INFO_STREAM(end_point.getOrigin().getX() << " " << end_point.getOrigin().getY() << " " << end_point.getRotation().getZ() << " " << end_point.getRotation().getW());
 
     return drc_->setPlan(start_point, end_point);
   }
