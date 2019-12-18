@@ -43,11 +43,29 @@ namespace dead_reckoning_controller {
        */
       void reconfigure(DeadReckoningControllerConfig &cfg);
       
-
+      /**
+       * @brief Calculate angular velocity of controller
+       * @param current_pose Current pose of the robot
+       * @param current_velocity Current velocity of the robot
+       * @returns A double of what the angular velocity should be
+       */
       double calculateAngularVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity);
 
+      /**
+       * @brief Calculate angular velocity of controller
+       * @param current_pose Current pose of the robot
+       * @param current_velocity Current velocity of the robot
+       * @returns A double of what the linear velocity should be
+       */
       double calculateLinearVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity);
 
+      /**
+       * @brief Calculate distance of a point relative to a line. If point is left of the line, it comes back as postitive.
+       * @param line_start Start point of line
+       * @param line_end End point of line
+       * @param point The point to calculate the distance
+       * @returns A distance of the point to the line
+       */
       double distanceFromLine(tf::Stamped<tf::Pose> line_start, tf::Stamped<tf::Pose> line_end, tf::Stamped<tf::Pose> point);
 
       /**
@@ -66,7 +84,13 @@ namespace dead_reckoning_controller {
        */
       bool setPlan(const tf::Stamped<tf::Pose> start_pose, const tf::Stamped<tf::Pose> end_pose, const tf::Stamped<tf::Pose> current_pose);
 
-      bool isGoalReached(const tf::Stamped<tf::Pose>);
+
+      /**
+       * @brief Function to see if the goal is reached according to the controller tolerances
+       * @param current_pose The current pose of the robot
+       * @returns A bool if the goal is reached.
+       */
+      bool isGoalReached(const tf::Stamped<tf::Pose> current_pose);
 
     private:
 

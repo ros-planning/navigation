@@ -37,6 +37,11 @@ namespace dead_reckoning_controller {
       DeadReckoningControllerROS();
 
       /**
+       * @brief  Destructor for the wrapper
+       */
+      ~DeadReckoningControllerROS();
+
+      /**
        * @brief  Constructs the ros wrapper
        * @param name The name to give this instance of the controller
        * @param tf A pointer to a transform listener
@@ -44,11 +49,6 @@ namespace dead_reckoning_controller {
        */
       void initialize(std::string name, tf::TransformListener* tf,
           costmap_2d::Costmap2DROS* costmap_ros);
-
-      /**
-       * @brief  Destructor for the wrapper
-       */
-      ~DeadReckoningControllerROS();
 
       /**
        * @brief  Given the current position, orientation, and velocity of the robot,
@@ -71,8 +71,18 @@ namespace dead_reckoning_controller {
        */
       bool isGoalReached();
 
+      /**
+       * @brief Get velocity commands from controller
+       * @param global_pose robot pose
+       * @param robot_vel robot velocity
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
+       */
       bool deadReckoningComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, tf::Stamped<tf::Pose>& robot_vel, geometry_msgs::Twist& cmd_vel);
 
+      /**
+       * @brief Is initialized
+       * @return value if initialized
+       */
       bool isInitialized() {
         return initialized_;
       }
@@ -104,7 +114,6 @@ namespace dead_reckoning_controller {
 
       dead_reckoning_controller::DeadReckoningControllerConfig default_config_;
 
-      bool setup_;
       tf::Stamped<tf::Pose> current_pose_;
 
       bool initialized_;

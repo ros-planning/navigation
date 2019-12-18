@@ -19,7 +19,8 @@ PLUGINLIB_EXPORT_CLASS(dead_reckoning_controller::DeadReckoningControllerROS, na
 
 namespace dead_reckoning_controller {
 
-  void DeadReckoningControllerROS::reconfigureCB(DeadReckoningControllerConfig &main_config, uint32_t level) {
+  void DeadReckoningControllerROS::reconfigureCB(DeadReckoningControllerConfig &main_config, uint32_t level)
+  {
 
       DeadReckoningControllerConfig config = main_config;
 
@@ -33,16 +34,21 @@ namespace dead_reckoning_controller {
   }
 
   DeadReckoningControllerROS::DeadReckoningControllerROS() : initialized_(false),
-      odom_helper_("odom"), setup_(false)
+      odom_helper_("odom")
   {
 
+  }
+
+  DeadReckoningControllerROS::~DeadReckoningControllerROS(){
   }
 
   void DeadReckoningControllerROS::initialize(
       std::string name,
       tf::TransformListener* tf,
-      costmap_2d::Costmap2DROS* costmap_ros) {
-    if (! isInitialized()) {
+      costmap_2d::Costmap2DROS* costmap_ros) 
+  {
+    if (! isInitialized())
+    {
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
@@ -62,50 +68,59 @@ namespace dead_reckoning_controller {
       initialized_ = true;
 
     }
-    else{
+    else
+    {
       ROS_WARN("This controller has already been initialized, doing nothing.");
     }
   }
 
-  bool DeadReckoningControllerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
-    if (! isInitialized()) {
+  bool DeadReckoningControllerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan)
+  {
+    if (! isInitialized()) 
+    {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-    if (orig_global_plan.size() != 1) {
+    if (orig_global_plan.size() != 1)
+    {
       ROS_ERROR("Plan is not one point, failing");
       return false;
     }
     costmap_ros_->getRobotPose(current_pose_);
 
-
     tf::Stamped<tf::Pose> goal_pose;
     tf::poseStampedMsgToTF(orig_global_plan[0], goal_pose);
 
-
+    //get goal pose in costmap Frame ID
     tf::Stamped<tf::Pose> end_point;
     tf::Stamped<tf::Pose> global_pose_time_zero(goal_pose, ros::Time(0), goal_pose.frame_id_);
     tf_->transformPose(costmap_ros_->getGlobalFrameID(), global_pose_time_zero, end_point);
 
+    //translate point back in x to get a path vector
     tf::Pose offsetTransform;
     offsetTransform.setOrigin( tf::Vector3(-1.0, 0, 0));
     offsetTransform.setRotation( tf::Quaternion(0,0,0,1));
 
+    //create start point of path vector from offset
     tf::Stamped<tf::Pose> start_point(end_point * offsetTransform, end_point.stamp_, end_point.frame_id_);
       
     return drc_->setPlan(start_point, end_point, current_pose_);
   }
 
-  bool DeadReckoningControllerROS::isGoalReached() {
-    if (! isInitialized()) {
+  bool DeadReckoningControllerROS::isGoalReached()
+  {
+    if (! isInitialized()) 
+    {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-    if ( ! costmap_ros_->getRobotPose(current_pose_)) {
+    if ( ! costmap_ros_->getRobotPose(current_pose_))
+    {
       ROS_ERROR("Could not get robot pose");
       return false;
     }
-    if(drc_->isGoalReached(current_pose_)) {
+    if(drc_->isGoalReached(current_pose_))
+    {
       ROS_INFO("Goal reached");
       return true;
     } else {
@@ -113,21 +128,22 @@ namespace dead_reckoning_controller {
     }
   }
 
-  void DeadReckoningControllerROS::publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
+  void DeadReckoningControllerROS::publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path)
+  {
     base_local_planner::publishPlan(path, l_plan_pub_);
   }
 
-  void DeadReckoningControllerROS::publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path) {
+  void DeadReckoningControllerROS::publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path)
+  {
     base_local_planner::publishPlan(path, g_plan_pub_);
   }
 
-  DeadReckoningControllerROS::~DeadReckoningControllerROS(){
-  }
-
   bool DeadReckoningControllerROS::deadReckoningComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, tf::Stamped<tf::Pose>& robot_vel,
-    geometry_msgs::Twist& cmd_vel) {
+    geometry_msgs::Twist& cmd_vel)
+  {
     // dynamic window sampling approach to get useful velocity commands
-    if(! isInitialized()){
+    if (! isInitialized())
+    {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
@@ -151,12 +167,14 @@ namespace dead_reckoning_controller {
     ROS_DEBUG_NAMED("dead_reckoning_controller", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.",
                     cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z);
 
-    return true;
+    return true; //should be a better check in the future
   }
 
-  bool DeadReckoningControllerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
+  bool DeadReckoningControllerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
+  {
 
-    if (canceled_) {
+    if (canceled_)
+    {
       cmd_vel.linear.x = 0.0;
       cmd_vel.linear.y = 0.0;
       cmd_vel.angular.z = 0.0;
@@ -185,7 +203,8 @@ namespace dead_reckoning_controller {
     }
   }
 
-  bool DeadReckoningControllerROS::cancel() {
+  bool DeadReckoningControllerROS::cancel()
+  {
 	  canceled_ = true;
 	  return true;
   }

@@ -20,6 +20,7 @@ namespace dead_reckoning_controller {
 
   double DeadReckoningController::distanceFromLine(tf::Stamped<tf::Pose> line_start, tf::Stamped<tf::Pose> line_end, tf::Stamped<tf::Pose> point)
   {
+    //Calcluation to get distance from line. Will return postiive if left of line, and negative if right of line.
     double numerator = -1 * ((line_end.getOrigin().getY() - line_start.getOrigin().getY()) * point.getOrigin().getX() - 
                           (line_end.getOrigin().getX() - line_start.getOrigin().getX()) * point.getOrigin().getY() +
                           line_end.getOrigin().getX() * line_start.getOrigin().getY() - 
@@ -47,6 +48,7 @@ namespace dead_reckoning_controller {
     end_pose_ = end_pose;
     path_ = start_pose_.inverseTimes(end_pose_);
     ROS_INFO_STREAM(distanceFromLine(start_pose, end_pose, current_pose));
+    //check if the start distance in the y direction is too far from the path vector.
     if (std::fabs(distanceFromLine(start_pose, end_pose, current_pose)) > config_.max_path_correction) {
       ROS_ERROR("Robot too far from path, can't proceed");
       return false;
@@ -55,7 +57,9 @@ namespace dead_reckoning_controller {
   }
 
   double DeadReckoningController::calculateLinearVelocity(tf::Stamped<tf::Pose> current_pose, tf::Stamped<tf::Pose> current_velocity){
+    //current distance from the goal position.
     double currentDistanceAway = sqrt(pow(current_pose.getOrigin().getX() - end_pose_.getOrigin().getX(),2) + pow(current_pose.getOrigin().getY() - end_pose_.getOrigin().getY(), 2));
+    //base velocity on the acceleration curve
     double p_error = sqrt(2*std::fabs(currentDistanceAway) * config_.acc_lim_x);
     
     return std::min(config_.max_vel_x, p_error * config_.p_weight_linear); //reconfigurable and better variable names
@@ -63,18 +67,24 @@ namespace dead_reckoning_controller {
   }
 
   double DeadReckoningController::calculateAngularVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity){
+
+    //I dont like these lines, but I can't figure a non buggy way tf to get the angle diff with correct signs
     double current_yaw;
     double path_yaw;
 
+    //yaw of current pose orientation
     tf::Matrix3x3 current_pose_matrix(current_pose.getRotation());
     double roll, pitch, yaw;
     current_pose_matrix.getRPY(roll, pitch, yaw);
     current_yaw = yaw;
+    
 
+    //yaw of path orientation
     tf::Matrix3x3 path_matrix(path_.getRotation());
     path_matrix.getRPY(roll, pitch, yaw);
     path_yaw = yaw;
-
+    
+    //just get it in {-pi to pi} format
     double angleDiff;
     angleDiff = current_yaw - path_yaw;
     if (angleDiff > M_PI){
@@ -87,8 +97,9 @@ namespace dead_reckoning_controller {
     double Ierror = distanceFromLine(start_pose_, end_pose_, current_pose); //essentially the y distance from the path vector
     //ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
 
-
     double angular_velocity = -1 * config_.p_weight_angular * Perror + -1 * config_.i_weight_angular * Ierror;
+
+    //make sure it's not above the max ang z limits
     if (std::fabs(angular_velocity) < config_.max_ang_z){
       return angular_velocity;
     }
@@ -101,7 +112,11 @@ namespace dead_reckoning_controller {
   }
 
   bool DeadReckoningController::isGoalReached(const tf::Stamped<tf::Pose> current_pose){
+    //need this to get a proper vector form current pose to the start pose.
     tf::Pose current_pose_transform = start_pose_.inverseTimes(current_pose);
+
+    //this does a check to see if the robot is past the goal vector's y axis.
+    //this is comparing start_pose -> current_pose and start_pose -> end_pose
     if((current_pose_transform.getOrigin().getX() * path_.getOrigin().getX() + current_pose_transform.getOrigin().getY() * path_.getOrigin().getY()) > 
       (path_.getOrigin().getX() * path_.getOrigin().getX() + path_.getOrigin().getY() * path_.getOrigin().getY())){
         return true;
