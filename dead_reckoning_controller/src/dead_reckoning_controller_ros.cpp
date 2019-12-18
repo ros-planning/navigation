@@ -68,7 +68,6 @@ namespace dead_reckoning_controller {
   }
 
   bool DeadReckoningControllerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
-    ROS_INFO_STREAM("setPlan");
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
@@ -77,7 +76,6 @@ namespace dead_reckoning_controller {
       ROS_ERROR("Plan is not one point, failing");
       return false;
     }
-    ROS_INFO_STREAM(orig_global_plan.size());
     costmap_ros_->getRobotPose(current_pose_);
 
 
@@ -94,10 +92,8 @@ namespace dead_reckoning_controller {
     offsetTransform.setRotation( tf::Quaternion(0,0,0,1));
 
     tf::Stamped<tf::Pose> start_point(end_point * offsetTransform, end_point.stamp_, end_point.frame_id_);
-    ROS_INFO_STREAM(start_point.getOrigin().getX() << " " << start_point.getOrigin().getY() << " " << start_point.getRotation().getZ() << " " << start_point.getRotation().getW());
-    ROS_INFO_STREAM(end_point.getOrigin().getX() << " " << end_point.getOrigin().getY() << " " << end_point.getRotation().getZ() << " " << end_point.getRotation().getW());
-
-    return drc_->setPlan(start_point, end_point);
+      
+    return drc_->setPlan(start_point, end_point, current_pose_);
   }
 
   bool DeadReckoningControllerROS::isGoalReached() {

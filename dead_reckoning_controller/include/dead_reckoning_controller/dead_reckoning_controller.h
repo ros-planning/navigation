@@ -48,6 +48,8 @@ namespace dead_reckoning_controller {
 
       double calculateLinearVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity);
 
+      double distanceFromLine(tf::Stamped<tf::Pose> line_start, tf::Stamped<tf::Pose> line_end, tf::Stamped<tf::Pose> point);
+
       /**
        * @brief Given the current position and velocity of the robot, find the best velocity to exectue
        * @param global_pose The current position of the robot
@@ -62,7 +64,7 @@ namespace dead_reckoning_controller {
       /**
        * sets new plan and resets state
        */
-      bool setPlan(const tf::Stamped<tf::Pose> start_pose, const tf::Stamped<tf::Pose> end_pose);
+      bool setPlan(const tf::Stamped<tf::Pose> start_pose, const tf::Stamped<tf::Pose> end_pose, const tf::Stamped<tf::Pose> current_pose);
 
       bool isGoalReached(const tf::Stamped<tf::Pose>);
 

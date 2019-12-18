@@ -17,6 +17,21 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dead_reckoning_controller {
+
+  double DeadReckoningController::distanceFromLine(tf::Stamped<tf::Pose> line_start, tf::Stamped<tf::Pose> line_end, tf::Stamped<tf::Pose> point)
+  {
+    double numerator = -1 * ((line_end.getOrigin().getY() - line_start.getOrigin().getY()) * point.getOrigin().getX() - 
+                          (line_end.getOrigin().getX() - line_start.getOrigin().getX()) * point.getOrigin().getY() +
+                          line_end.getOrigin().getX() * line_start.getOrigin().getY() - 
+                          line_end.getOrigin().getY() * line_start.getOrigin().getX());
+
+    double denominator = sqrt(pow(line_end.getOrigin().getY() - line_start.getOrigin().getY(), 2) + pow(line_end.getOrigin().getX() - line_start.getOrigin().getX(), 2));
+    if( denominator != 0) {
+      return numerator/denominator;
+    } else{
+      return 0;
+    }
+  }
   void DeadReckoningController::reconfigure(DeadReckoningControllerConfig &config)
   {
     config_ = config;
@@ -27,10 +42,15 @@ namespace dead_reckoning_controller {
     ros::NodeHandle private_nh("~/" + name);
   }
 
-  bool DeadReckoningController::setPlan(const tf::Stamped<tf::Pose> start_pose, const tf::Stamped<tf::Pose> end_pose) {
+  bool DeadReckoningController::setPlan(const tf::Stamped<tf::Pose> start_pose, const tf::Stamped<tf::Pose> end_pose, const tf::Stamped<tf::Pose> current_pose) {
     start_pose_ = start_pose;
     end_pose_ = end_pose;
     path_ = start_pose_.inverseTimes(end_pose_);
+    ROS_INFO_STREAM(distanceFromLine(start_pose, end_pose, current_pose));
+    if (std::fabs(distanceFromLine(start_pose, end_pose, current_pose)) > config_.max_path_correction) {
+      ROS_ERROR("Robot too far from path, can't proceed");
+      return false;
+    }
     return true;
   }
 
@@ -41,6 +61,7 @@ namespace dead_reckoning_controller {
     return std::min(config_.max_vel_x, p_error * config_.p_weight_linear); //reconfigurable and better variable names
 
   }
+
   double DeadReckoningController::calculateAngularVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity){
     double current_yaw;
     double path_yaw;
@@ -62,19 +83,11 @@ namespace dead_reckoning_controller {
         angleDiff = angleDiff + 2*M_PI;
     }
 
-    //ROS_INFO_STREAM(angleDiff);
     double Perror = sin(angleDiff)*current_velocity.getOrigin().getX(); //essentially the y velocity of the robot away from the path vector
-    double numerator = -1 * ((end_pose_.getOrigin().getY() - start_pose_.getOrigin().getY()) * current_pose.getOrigin().getX() - 
-                          (end_pose_.getOrigin().getX() - start_pose_.getOrigin().getX()) * current_pose.getOrigin().getY() +
-                          end_pose_.getOrigin().getX() * start_pose_.getOrigin().getY() - 
-                          end_pose_.getOrigin().getY() * start_pose_.getOrigin().getX());
-                      
-                      
-                      //distance of robot away from closest point on path vector
+    double Ierror = distanceFromLine(start_pose_, end_pose_, current_pose); //essentially the y distance from the path vector
+    //ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
 
-    double denominator = sqrt(pow(end_pose_.getOrigin().getY() - start_pose_.getOrigin().getY(), 2) + pow(end_pose_.getOrigin().getX() - start_pose_.getOrigin().getX(), 2));
-    double Ierror = numerator/denominator;
-    ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
+
     double angular_velocity = -1 * config_.p_weight_angular * Perror + -1 * config_.i_weight_angular * Ierror;
     if (std::fabs(angular_velocity) < config_.max_ang_z){
       return angular_velocity;
