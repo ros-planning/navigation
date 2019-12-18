@@ -231,24 +231,13 @@ private:
   template <typename RequestType, typename ResponseType>
   void processPlanCost3D(RequestType& request, ResponseType& response);
 
-  // turn this into a map of pairs of string, double => Costmap3DQuery
-  // use a rw lock on it to speed up multi-thread
-  // change (or extend?) the query class to *track* the costmap via subscribing to the delta updates (in process) have
-  // it detect a loss of sync and resubscribe just like the costmap itself.
-  // this way queries do not requiring locking the master costmap.
-  //
-  // Or, instead of different queries for each mesh, add an interface by which
-  // a caller can get a reference to their own query object. Leave the current
-  // direct-querying intact, as this may be important for feasability checks.
-  // But a direct query object would have its own subscription to the costmap,
-  // and its own copies of the mesh/models, and its own current mesh/padding
-  // so other queries don't interfere w/ that client.
-  // Create query objects for each call.
-  // Add an interface to the query object to lock the query object so the map doesn't update
-  // Query objects themselves could buffer the various models that have been
-  // used on that object directly to speed up switching models?
   using QueryMap = std::map<std::pair<std::string, double>, std::shared_ptr<Costmap3DQuery>>;
   QueryMap query_map_;
+  using upgrade_mutex = boost::upgrade_mutex;
+  using upgrade_lock = boost::upgrade_lock<upgrade_mutex>;
+  using upgrade_to_unique_lock = boost::upgrade_to_unique_lock<upgrade_mutex>;
+  using unique_lock = boost::unique_lock<upgrade_mutex>;
+  upgrade_mutex query_map_mutex_;
   const std::string& getFootprintMeshResource(const std::string& alt_mesh);
   double getFootprintPadding(double alt_padding);
   // assumes costmap is locked

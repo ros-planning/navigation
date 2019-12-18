@@ -298,12 +298,14 @@ std::shared_ptr<Costmap3DQuery> Costmap3DROS::getQuery(const std::string& footpr
   const std::string& query_mesh(getFootprintMeshResource(footprint_mesh_resource));
   padding = getFootprintPadding(padding);
   auto query_pair = std::make_pair(query_mesh, padding);
+  upgrade_lock upgrade_lock(query_map_mutex_);
   auto query_it = query_map_.find(query_pair);
   if (query_it == query_map_.end())
   {
     // Query object does not exist, create it and add it to the map
     std::shared_ptr<Costmap3DQuery> query;
     query.reset(new Costmap3DQuery(&layered_costmap_3d_, query_mesh, padding));
+    upgrade_to_unique_lock write_lock(upgrade_lock);
     query_it = query_map_.insert(std::make_pair(query_pair, query)).first;
   }
   return query_it->second;
