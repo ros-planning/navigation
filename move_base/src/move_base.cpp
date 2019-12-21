@@ -55,7 +55,7 @@ namespace move_base {
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
+    runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false), planner_goal_updated_(false) {
 
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -571,13 +571,24 @@ namespace move_base {
 
       //time to plan! get a copy of the goal and unlock the mutex
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
+      planner_goal_updated_ = false;
       lock.unlock();
       ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
       //run planner
       planner_plan_->clear();
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
-
+      
+      //if new goal available, abandon current plan and go back to makePlan for new goal
+      if(planner_goal_updated_)
+      {
+        if(gotPlan) // still update last_valid_plan_ in case too many goals preempted
+          last_valid_plan_ = ros::Time::now();
+        //take the mutex for the next iteration
+        lock.lock();
+        continue;
+      }
+      
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
@@ -649,6 +660,7 @@ namespace move_base {
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
     runPlanner_ = true;
+    planner_goal_updated_ = true;
     planner_cond_.notify_one();
     lock.unlock();
 
@@ -698,6 +710,7 @@ namespace move_base {
           lock.lock();
           planner_goal_ = goal;
           runPlanner_ = true;
+          planner_goal_updated_ = true;
           planner_cond_.notify_one();
           lock.unlock();
 
@@ -736,6 +749,7 @@ namespace move_base {
         lock.lock();
         planner_goal_ = goal;
         runPlanner_ = true;
+        planner_goal_updated_ = true;
         planner_cond_.notify_one();
         lock.unlock();
 
