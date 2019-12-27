@@ -56,10 +56,11 @@ ObstacleCostFunction::~ObstacleCostFunction() {
 }
 
 
-void ObstacleCostFunction::setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed) {
+void ObstacleCostFunction::setParams(double max_trans_vel, double max_forward_inflation, double max_sideward_inflation, double scaling_speed) {
   // TODO: move this to prepare if possible
   max_trans_vel_ = max_trans_vel;
-  max_scaling_factor_ = max_scaling_factor;
+  max_forward_inflation_ = max_forward_inflation;
+  max_sideward_inflation_ = max_sideward_inflation;
   scaling_speed_ = scaling_speed;
 }
 
@@ -73,7 +74,7 @@ bool ObstacleCostFunction::prepare() {
 
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0;
-  double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
+  double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_);
   double px, py, pth;
   if (footprint_spec_.size() == 0) {
     // Bug, should never happen
@@ -81,10 +82,28 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     return -9;
   }
 
-  for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
+  std::vector<geometry_msgs::Point> scaled_footprint = footprint_spec_;
+  if (scale != 0.0) {
+    const bool fwd = traj.xv_ > 0;
+    const double forward_inflation = scale * max_forward_inflation_;
+    const double sideward_inflation = scale * max_sideward_inflation_;
+    for (unsigned int i = 0; i < scaled_footprint.size(); ++i) {
+      if (fwd == (scaled_footprint[i].x > 0)) {
+        // assumes no sideward motion
+        scaled_footprint[i].x += std::copysign(forward_inflation, scaled_footprint[i].x);
+        // assumes the widest part of the robot is not behind the footprint's origin
+        scaled_footprint[i].y += std::copysign(sideward_inflation, scaled_footprint[i].y);
+      }
+    }
+  }
+
+   const unsigned int point_size = traj.getPointsSize();
+  // ignore first trajectory point since it is the same for all trajectories,
+  // unless trajectory only contains one point
+  for (unsigned int i = point_size > 1 ? 1 : 0; i < point_size; ++i) {
     traj.getPoint(i, px, py, pth);
     double f_cost = footprintCost(px, py, pth,
-        scale, footprint_spec_,
+        scaled_footprint,
         costmap_, world_model_);
 
     if(f_cost < 0){
@@ -94,37 +113,31 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     if(sum_scores_)
         cost +=  f_cost;
     else
-        cost = std::max(cost, f_cost);
+        cost = f_cost;
   }
   return cost;
 }
 
-double ObstacleCostFunction::getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor) {
+double ObstacleCostFunction::getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel) {
   double vmag = hypot(traj.xv_, traj.yv_);
 
   //if we're over a certain speed threshold, we'll scale the robot's
   //footprint to make it either slow down or stay further from walls
-  double scale = 1.0;
-  if (vmag > scaling_speed) {
-    //scale up to the max scaling factor linearly... this could be changed later
-    double ratio = (vmag - scaling_speed) / (max_trans_vel - scaling_speed);
-    scale = max_scaling_factor * ratio + 1.0;
-  }
-  return scale;
+  //scale up to 1 linearly... this could be changed later
+  return vmag <= scaling_speed ? 0.0 : (vmag - scaling_speed) / (max_trans_vel - scaling_speed);
 }
 
 double ObstacleCostFunction::footprintCost (
     const double& x,
     const double& y,
     const double& th,
-    double scale,
-    std::vector<geometry_msgs::Point> footprint_spec,
+    const std::vector<geometry_msgs::Point>& scaled_footprint,
     costmap_2d::Costmap2D* costmap,
     base_local_planner::WorldModel* world_model) {
 
   //check if the footprint is legal
   // TODO: Cache inscribed radius
-  double footprint_cost = world_model->footprintCost(x, y, th, footprint_spec);
+  double footprint_cost = world_model->footprintCost(x, y, th, scaled_footprint);
 
   if (footprint_cost < 0) {
     return -6.0;

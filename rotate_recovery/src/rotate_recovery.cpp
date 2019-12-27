@@ -51,7 +51,7 @@ PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavi
 
 namespace rotate_recovery
 {
-RotateRecovery::RotateRecovery(): local_costmap_(NULL), initialized_(false), world_model_(NULL)
+RotateRecovery::RotateRecovery(): rotate_positive_(true), local_costmap_(NULL), initialized_(false), world_model_(NULL)
 {
 }
 
@@ -64,7 +64,7 @@ void RotateRecovery::initialize(std::string name, tf2_ros::Buffer*,
 
     // get some parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name);
-    ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
+    ros::NodeHandle blp_nh("~/RotationRecovery");
 
     // we'll simulate every degree by default
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
@@ -112,53 +112,50 @@ void RotateRecovery::runBehavior()
   geometry_msgs::PoseStamped global_pose;
   local_costmap_->getRobotPose(global_pose);
 
-  double current_angle = tf2::getYaw(global_pose.pose.orientation);
-  double start_angle = current_angle;
+  double rotated_angle = 0.0;
 
-  bool got_180 = false;
+  double prev_yaw = tf2::getYaw(global_pose.pose.orientation);
+  const double dir = rotate_positive_ ? 1.0 : -1.0;
+  const double max_stopping_distance =
+      acc_lim_th_ > 0 ? max_rotational_vel_ * max_rotational_vel_ / (2.0 * acc_lim_th_) : M_PI_4;
 
-  while (n.ok() &&
-         (!got_180 ||
-          std::fabs(angles::shortest_angular_distance(current_angle, start_angle)) > tolerance_))
+  while(n.ok())
   {
-    // Update Current Angle
     local_costmap_->getRobotPose(global_pose);
-    current_angle = tf2::getYaw(global_pose.pose.orientation);
+
+    const double current_yaw = tf2::getYaw(global_pose.pose.orientation);
+    rotated_angle += dir * angles::normalize_angle(current_yaw - prev_yaw);
+    prev_yaw = current_yaw;
 
     // compute the distance left to rotate
-    double dist_left;
-    if (!got_180)
-    {
-      // If we haven't hit 180 yet, we need to rotate a half circle plus the distance to the 180 point
-      double distance_to_180 = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + M_PI));
-      dist_left = M_PI + distance_to_180;
+    double dist_left = 2 * M_PI - rotated_angle;
 
-      if (distance_to_180 < tolerance_)
-      {
-        got_180 = true;
-      }
-    }
-    else
-    {
-      // If we have hit the 180, we just have the distance back to the start
-      dist_left = std::fabs(angles::shortest_angular_distance(current_angle, start_angle));
-    }
-
-    double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
+    const double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
     // check if that velocity is legal by forward simulating
     double sim_angle = 0.0;
     while (sim_angle < dist_left)
     {
-      double theta = current_angle + sim_angle;
+      const double theta = current_yaw + dir * sim_angle;
 
       // make sure that the point is legal, if it isn't... we'll abort
       double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
-      if (footprint_cost < 0.0)
+      if(footprint_cost < 0.0)
       {
-        ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f",
-                  footprint_cost);
-        return;
+        // only allow to rotate to the obstacle, minus some buffer
+        dist_left = sim_angle - 2 * max_stopping_distance;
+        if (dist_left <= 0) {
+          ROS_ERROR("Rotate recovery stops rotating in place because there is a potential collision. Cost: %.2f", footprint_cost);
+          geometry_msgs::Twist cmd_vel;
+          cmd_vel.linear.x = 0.0;
+          cmd_vel.linear.y = 0.0;
+          cmd_vel.angular.z = 0.0;
+
+           vel_pub.publish(cmd_vel);
+          return;
+        }
+        ROS_DEBUG("Rotate recovery slowing down because there is a potential collision %.2f [rad] away", sim_angle);
+        break;
       }
 
       sim_angle += sim_granularity_;
@@ -173,9 +170,13 @@ void RotateRecovery::runBehavior()
     geometry_msgs::Twist cmd_vel;
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;
-    cmd_vel.angular.z = vel;
+    cmd_vel.angular.z = dir * vel;
 
     vel_pub.publish(cmd_vel);
+
+    // if we're done with our in-place rotation... then return
+    if(rotated_angle >= 2 * M_PI - tolerance_)
+      return;
 
     r.sleep();
   }

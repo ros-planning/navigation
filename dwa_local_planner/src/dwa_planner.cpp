@@ -81,7 +81,7 @@ namespace dwa_local_planner {
     alignment_costs_.setXShift(forward_point_distance_);
  
     // obstacle costs can vary due to scaling footprint feature
-    obstacle_costs_.setParams(config.max_vel_trans, config.max_scaling_factor, config.scaling_speed);
+    obstacle_costs_.setParams(config.max_vel_trans, config.max_forward_inflation, config.max_sideward_inflation, config.scaling_speed);
 
     twirling_costs_.setScale(config.twirling_scale);
 
@@ -164,6 +164,7 @@ namespace dwa_local_planner {
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
+    critics.push_back(&path_align_costs_);
     critics.push_back(&oscillation_costs_); // discards oscillating motions (assisgns cost -1)
     critics.push_back(&obstacle_costs_); // discards trajectories that move into obstacles
     critics.push_back(&goal_front_costs_); // prefers trajectories that make the nose go towards (local) nose goal
@@ -200,8 +201,17 @@ namespace dwa_local_planner {
     return true;
   }
 
+  inline bool is2DPoseEqual(const geometry_msgs::PoseStamped& a, const geometry_msgs::PoseStamped& b) {
+    return a.pose.position.x == b.pose.position.x && a.pose.position.y == b.pose.position.y &&
+        a.pose.orientation.z * b.pose.orientation.w == a.pose.orientation.w * b.pose.orientation.z;
+  }
+
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
-    oscillation_costs_.resetOscillationFlags();
+    const std::vector<geometry_msgs::PoseStamped>& prevPlan = planner_util_->getGlobalPlan();
+    // conservatively reset oscillation flags: reset only for plan towards different goal
+    if (orig_global_plan.empty() || prevPlan.empty() || !is2DPoseEqual(prevPlan.back(), orig_global_plan.back())) {
+      oscillation_costs_.resetOscillationFlags();
+    }
     return planner_util_->setPlan(orig_global_plan);
   }
 
@@ -247,6 +257,8 @@ namespace dwa_local_planner {
 
     obstacle_costs_.setFootprint(footprint_spec);
 
+    path_align_costs_.setTargetPoses(global_plan_);
+
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
 
@@ -269,9 +281,8 @@ namespace dwa_local_planner {
     std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
     double angle_to_goal = atan2(goal_pose.pose.position.y - pos[1], goal_pose.pose.position.x - pos[0]);
     front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x +
-      forward_point_distance_ * cos(angle_to_goal);
-    front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + forward_point_distance_ *
-      sin(angle_to_goal);
+        std::abs(forward_point_distance_) * cos(angle_to_goal);
+    front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + std::abs(forward_point_distance_) * sin(angle_to_goal);
 
     goal_front_costs_.setTargetPoses(front_global_plan);
     

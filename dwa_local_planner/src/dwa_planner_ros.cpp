@@ -290,25 +290,33 @@ namespace dwa_local_planner {
       publishGlobalPlan(transformed_plan);
       publishLocalPlan(local_plan);
       base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
-      return latchedStopRotateController_.computeVelocityCommandsStopRotate(
-          cmd_vel,
-          limits.getAccLimits(),
-          dp_->getSimPeriod(),
-          &planner_util_,
-          odom_helper_,
-          current_pose_,
-          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
-    } else {
-      bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
-      if (isOk) {
-        publishGlobalPlan(transformed_plan);
-      } else {
-        ROS_WARN_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
-        std::vector<geometry_msgs::PoseStamped> empty_plan;
-        publishGlobalPlan(empty_plan);
+      if (latchedStopRotateController_.computeVelocityCommandsStopRotate(
+              cmd_vel,
+              limits.getAccLimits(),
+              dp_->getSimPeriod(),
+              &planner_util_,
+              odom_helper_,
+              current_pose_,
+              boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3))) {
+          return true;
       }
-      return isOk;
+      else {
+          // reset latching since DWA planner can move forward / backwards
+          latchedStopRotateController_.resetLatching();
+          ROS_INFO("can't rotate in place; fall back to DWA planner");
+      }
     }
+
+    bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
+    if (isOk) {
+      publishGlobalPlan(transformed_plan);
+    } else {
+      ROS_WARN_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
+      std::vector<geometry_msgs::PoseStamped> empty_plan;
+      publishGlobalPlan(empty_plan);
+    }
+   return isOk;
+
   }
 
 
