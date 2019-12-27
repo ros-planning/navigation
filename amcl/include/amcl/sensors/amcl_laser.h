@@ -68,7 +68,7 @@ class AMCLLaser : public AMCLSensor
                             double z_max,
                             double z_rand,
                             double sigma_hit,
-                            double labda_short,
+                            double lambda_short,
                             double chi_outlier);
 
   public: void SetModelLikelihoodField(double z_hit,

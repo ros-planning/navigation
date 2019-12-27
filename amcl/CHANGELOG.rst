@@ -2,6 +2,31 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.3 (2019-11-15)
+-------------------
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Fix typo in amcl_laser model header (`#918 <https://github.com/ros-planning/navigation/issues/918>`_)
+* Merge pull request `#849 <https://github.com/ros-planning/navigation/issues/849>`_ from seanyen/amcl_windows_fix
+  [Windows][melodic] AMCL Windows build bring up.
+* revert unrelated changes.
+* AMCL windows build bring up.
+  * Add HAVE_UNISTD and HAVE_DRAND48 and portable_utils.hpp for better cross compiling.
+  * Variable length array is not supported in MSVC, conditionally disable it.
+  * Fix install location for shared lib and executables on Windows.
+  * Use isfinite for better cross compiling.
+* feat: AMCL Diagnostics (`#807 <https://github.com/ros-planning/navigation/issues/807>`_)
+  Diagnostic task that monitors the estimated standard deviation of the filter.
+  By: reinzor <reinzor@gmail.com>
+* fix typo for parameter beam_skip_error_threshold but bandaged for other users in AMCL (`#790 <https://github.com/ros-planning/navigation/issues/790>`_)
+  * fix typo but bandage for other users
+* Merge pull request `#785 <https://github.com/ros-planning/navigation/issues/785>`_ from mintar/amcl_c++11
+  amcl: Add compile option C++11
+* amcl: Set C++ standard 11 if not set
+  This is required to build the melodic-devel branch of the navigation
+  stack on kinetic. Melodic sets CMAKE_CXX_STANDARD=14, but kinetic
+  doesn't set that variable at all.
+* Contributors: Hadi Tabatabaee, Martin Günther, Michael Ferguson, Rein Appeldoorn, Sean Yen, Steven Macenski
+
 1.16.2 (2018-07-31)
 -------------------
 * Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes

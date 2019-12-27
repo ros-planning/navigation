@@ -164,19 +164,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> 
   costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
   costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
 
-  unsigned char* grid = costmap->getCharMap();
-  for(int x=0; x<(int)costmap->getSizeInCellsX(); x++){
-    bool xrange = x>start_x && x<end_x;
-
-    for(int y=0; y<(int)costmap->getSizeInCellsY(); y++){
-      if(xrange && y>start_y && y<end_y)
-        continue;
-      int index = costmap->getIndex(x,y);
-      if(grid[index]!=NO_INFORMATION){
-        grid[index] = NO_INFORMATION;
-      }
-    }
-  }
+  costmap->clearArea(start_x, start_y, end_x, end_y);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
