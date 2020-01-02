@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>dead_reckoning_controller</name>
+  <version>0.0.0</version>
+  <description>The dead_reckoning_controller package</description>
+
+  <maintainer email="dnikitopoulos@6river.com">Dimitri Nikitopoulos</maintainer>
+  <license>BSD</license>
+
+
+  <author email="dnikitopoulos@6river.com">Dimitri Nikitopoulos</author> -->
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <build_depend>cmake_modules</build_depend>
+    <build_depend>std_msgs</build_depend>
+    <build_depend>nav_msgs</build_depend>
+    <build_depend>rosconsole</build_depend>
+    <build_depend>roscpp</build_depend>
+    <build_depend>tf</build_depend>
+    <build_depend>rospy</build_depend>
+    <build_depend>pluginlib</build_depend>
+    <build_depend>costmap_2d</build_depend>
+    <build_depend>voxel_grid</build_depend>
+    <build_depend>angles</build_depend>
+    <build_depend>visualization_msgs</build_depend>
+    <build_depend>geometry_msgs</build_depend>
+    <build_depend>nav_core</build_depend>
+    <build_depend>pcl_conversions</build_depend>
+    <build_depend>pcl_ros</build_depend>
+    <build_depend>eigen</build_depend>
+    <build_depend>dynamic_reconfigure</build_depend>
+    <build_depend>message_generation</build_depend>
+    <build_depend>srslib_timing</build_depend>
+    <build_depend>base_local_planner</build_depend>
+
+    <exec_depend>std_msgs</exec_depend>
+    <exec_depend>nav_msgs</exec_depend>
+    <exec_depend>rosconsole</exec_depend>
+    <exec_depend>roscpp</exec_depend>
+    <exec_depend>tf</exec_depend>
+    <exec_depend>rospy</exec_depend>
+    <exec_depend>pluginlib</exec_depend>
+    <exec_depend>costmap_2d</exec_depend>
+    <exec_depend>voxel_grid</exec_depend>
+    <exec_depend>angles</exec_depend>
+    <exec_depend>visualization_msgs</exec_depend>
+    <exec_depend>geometry_msgs</exec_depend>
+    <exec_depend>nav_core</exec_depend>
+    <exec_depend>pcl_ros</exec_depend>
+    <exec_depend>eigen</exec_depend>
+    <exec_depend>dynamic_reconfigure</exec_depend>
+    <exec_depend>message_generation</exec_depend>
+    <exec_depend>srslib_timing</exec_depend>
+    <exec_depend>base_local_planner</exec_depend>
+
+  <export>
+    <nav_core plugin="${prefix}/blp_plugin.xml" />
+
+  </export>
+</package>

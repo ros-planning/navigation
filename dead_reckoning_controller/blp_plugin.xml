@@ -1,0 +1,7 @@
+<library path="lib/libdead_reckoning_controller">
+  <class name="dead_reckoning_controller/DeadReckoningControllerROS" type="dead_reckoning_controller::DeadReckoningControllerROS" base_class_type="nav_core::BaseLocalPlanner">
+    <description>
+      A implementation of a local planner using dead reckoning
+    </description>
+  </class>
+</library>
