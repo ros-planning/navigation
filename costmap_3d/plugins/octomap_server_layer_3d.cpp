@@ -198,6 +198,24 @@ void OctomapServerLayer3D::unsubscribeUpdatesUnlocked()
   map_update_sub_.shutdown();
 }
 
+void OctomapServerLayer3D::scheduleResubscribeUpdates()
+{
+  // We can't resubscribe a topic from its own callback due to internal
+  // locking issues. So schedule resubscribing on a one-shot timer that fires
+  // immediately.
+  resub_timer_ = pnh_.createTimer(
+      ros::Duration(0.0),
+      boost::bind(&OctomapServerLayer3D::resubscribeUpdatesCallback, this),
+      true);
+}
+
+void OctomapServerLayer3D::resubscribeUpdatesCallback()
+{
+  std::lock_guard<Layer3D> lock(*this);
+  unsubscribeUpdatesUnlocked();
+  subscribeUpdatesUnlocked();
+}
+
 void OctomapServerLayer3D::reset()
 {
   std::lock_guard<Layer3D> lock(*this);
@@ -297,8 +315,7 @@ void OctomapServerLayer3D::mapUpdateCallback(const octomap_msgs::OctomapUpdateCo
       // Huh. We never got the first full map, this means we lost that
       // message. We have no choice but to re-subscribe.
       ROS_WARN("Lost first full map update message, resubscribing.");
-      unsubscribeUpdatesUnlocked();
-      subscribeUpdatesUnlocked();
+      scheduleResubscribeUpdates();
       return;
     }
     first_full_map_update_received_ = true;
@@ -310,8 +327,7 @@ void OctomapServerLayer3D::mapUpdateCallback(const octomap_msgs::OctomapUpdateCo
       ROS_WARN("Lost an update message, resubscribing to get entire map.");
       ROS_INFO_STREAM("Expected sequence number " << last_seq_ + 1 << " but received "
                       << map_update_msg->octomap_bounds.header.seq);
-      unsubscribeUpdatesUnlocked();
-      subscribeUpdatesUnlocked();
+      scheduleResubscribeUpdates();
       return;
     }
     else if(last_seq_ + 1 > map_update_msg->octomap_bounds.header.seq)

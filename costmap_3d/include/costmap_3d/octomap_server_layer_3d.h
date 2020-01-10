@@ -90,6 +90,8 @@ protected:
   virtual void unsubscribe();
   virtual void subscribeUpdatesUnlocked();
   virtual void unsubscribeUpdatesUnlocked();
+  virtual void scheduleResubscribeUpdates();
+  virtual void resubscribeUpdatesCallback();
 
   ros::NodeHandle pnh_;
   std::shared_ptr<dynamic_reconfigure::Server<costmap_3d::GenericPluginConfig>> dsrv_;
@@ -108,6 +110,7 @@ protected:
   uint32_t last_seq_;
   ros::Duration data_valid_duration_;
   ros::Time last_update_stamp_;
+  ros::Timer resub_timer_;  // one-shot timer used for resubscribing
 };
 
 }  // namespace costmap_3d
