@@ -426,6 +426,7 @@ private:
       const geometry_msgs::Pose& pose);
   using DistanceCache = std::unordered_map<DistanceCacheKey, DistanceCacheEntry, DistanceCacheKeyHash, DistanceCacheKeyEqual>;
   using ExactDistanceCache = std::unordered_map<DistanceCacheKey, double, DistanceCacheKeyHash, DistanceCacheKeyEqual>;
+  DistanceCacheEntry last_cache_entry;
   /**
    * The distance cache allows us to find a very good distance guess quickly.
    * The cache memorizes to a hash table for a pose rounded to the number of

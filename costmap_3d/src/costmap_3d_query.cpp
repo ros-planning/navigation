@@ -146,6 +146,7 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
       // results incorrect in the presence of a new closer cell, it just makes
       // the calculation take longer.
       distance_cache_.clear();
+      last_cache_entry = DistanceCacheEntry();
       // We must always drop the milli cache and micro cache, as new cells will
       // invalidate the old results, and there is no simple way to figure out
       // which ones might still be valid.
@@ -458,6 +459,19 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     begin->second.setupResult(&result);
   }
 
+  // Check the distance from the last cache entry too, and use it if it is a
+  // better match. This is especialy useful if we miss every cache, but have a
+  // last entry, and the queries are being done on a path.
+  if (last_cache_entry.octomap_box)
+  {
+    double last_entry_distance = last_cache_entry.distanceToNewPose(pose, signed_distance);
+    if (last_entry_distance < pose_distance)
+    {
+      pose_distance = last_entry_distance;
+      last_cache_entry.setupResult(&result);
+    }
+  }
+
   // We could keep the read-lock held during the relatively long distance query
   // for two reasons:
   // 1) the world has a raw pointer to the octomap, so it must not be freed
@@ -521,6 +535,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   {
     // Get write access
     unique_lock write_lock(upgrade_mutex_);
+    last_cache_entry = new_entry;
     distance_cache_[cache_key] = new_entry;
     micro_distance_cache_[micro_cache_key] = new_entry;
     milli_distance_cache_[milli_cache_key] = new_entry;
