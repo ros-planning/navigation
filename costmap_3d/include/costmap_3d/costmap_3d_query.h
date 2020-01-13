@@ -71,6 +71,8 @@ public:
       double padding = 0.0,
       unsigned int pose_bins_per_meter = 4,
       unsigned int pose_bins_per_radian = 4,
+      unsigned int pose_milli_bins_per_meter = 20,
+      unsigned int pose_milli_bins_per_radian = 20,
       unsigned int pose_micro_bins_per_meter = 1024,
       unsigned int pose_micro_bins_per_radian = 1024);
 
@@ -89,6 +91,8 @@ public:
       double padding = 0.0,
       unsigned int pose_bins_per_meter = 4,
       unsigned int pose_bins_per_radian = 4,
+      unsigned int pose_milli_bins_per_meter = 20,
+      unsigned int pose_milli_bins_per_radian = 20,
       unsigned int pose_micro_bins_per_meter = 1024,
       unsigned int pose_micro_bins_per_radian = 1024);
 
@@ -427,6 +431,14 @@ private:
    */
   DistanceCache distance_cache_;
   /**
+   * The milli-distance cache allows a very fast path when the nearest
+   * obstacle is more than a threshold of distance away. This results in a
+   * massive speed up for cases where the nearest obstacle is futher than the
+   * milli_cache_threshold_
+   */
+  double milli_cache_threshold_ = .125;
+  DistanceCache milli_distance_cache_;
+  /**
    * The micro-distance cache allows us to return a guess as to the distance
    * based on hitting the micro-cache. The number of bins in the micro-cache
    * must be large to prevent gross error. If the micro-cache is hit on a
@@ -445,6 +457,10 @@ private:
   unsigned int pose_bins_per_meter_;
   //! Distance cache bins per radian for binning the pose's orientation
   unsigned int pose_bins_per_radian_;
+  //! Milli-distance cache bins per meter for binning the pose's position
+  unsigned int pose_milli_bins_per_meter_;
+  //! Milli-distance cache bins per radian for binning the pose's position
+  unsigned int pose_milli_bins_per_radian_;
   //! Micro-distance cache bins per meter for binning the pose's position
   unsigned int pose_micro_bins_per_meter_;
   //! Micro-distance cache bins per radian for binning the pose's position
