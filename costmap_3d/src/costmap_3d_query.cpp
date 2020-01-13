@@ -382,6 +382,13 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     return std::numeric_limits<double>::max();
   }
 
+  DistanceCacheKey exact_cache_key(pose);
+  auto exact_cache_entry = exact_distance_cache_.find(exact_cache_key);
+  if (exact_cache_entry != exact_distance_cache_.end())
+  {
+    return exact_cache_entry->second;
+  }
+
   FCLCollisionObjectPtr robot(getRobotCollisionObject(pose));
   FCLCollisionObjectPtr world(getWorldCollisionObject());
 
@@ -517,6 +524,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     distance_cache_[cache_key] = new_entry;
     micro_distance_cache_[micro_cache_key] = new_entry;
     milli_distance_cache_[milli_cache_key] = new_entry;
+    exact_distance_cache_[exact_cache_key] = distance;
   }
 
   return distance;

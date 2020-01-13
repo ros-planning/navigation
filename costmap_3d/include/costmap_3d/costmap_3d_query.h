@@ -263,6 +263,11 @@ private:
     {
       binned_pose_ = binPose(pose, bins_per_meter, bins_per_radian);
     }
+    // Constructor for the "exact" cache where the poses are not binned
+    DistanceCacheKey(const geometry_msgs::Pose& pose)
+    {
+      binned_pose_ = pose;
+    }
 
     size_t hash_value() const
     {
@@ -420,6 +425,7 @@ private:
       const DistanceCacheEntry& cache_entry,
       const geometry_msgs::Pose& pose);
   using DistanceCache = std::unordered_map<DistanceCacheKey, DistanceCacheEntry, DistanceCacheKeyHash, DistanceCacheKeyEqual>;
+  using ExactDistanceCache = std::unordered_map<DistanceCacheKey, double, DistanceCacheKeyHash, DistanceCacheKeyEqual>;
   /**
    * The distance cache allows us to find a very good distance guess quickly.
    * The cache memorizes to a hash table for a pose rounded to the number of
@@ -452,6 +458,10 @@ private:
    * efficiency for the sake of accuracy).
    */
   DistanceCache micro_distance_cache_;
+  // Immediately return the distance for an exact duplicate query
+  // This avoid any calculation in the case that the calculation has been done
+  // since the costmap was updated.
+  ExactDistanceCache exact_distance_cache_;
   unsigned int last_layered_costmap_update_number_;
   //! Distance cache bins per meter for binning the pose's position
   unsigned int pose_bins_per_meter_;
