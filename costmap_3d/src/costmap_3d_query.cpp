@@ -35,6 +35,7 @@
  * Author: C. Andy Martin
  *********************************************************************/
 #include <costmap_3d/costmap_3d_query.h>
+#include <chrono>
 #include <fcl/geometry/octree/octree.h>
 #include <fcl/narrowphase/collision.h>
 #include <fcl/narrowphase/distance_result.h>
@@ -66,6 +67,7 @@ Costmap3DQuery::Costmap3DQuery(
     pose_micro_bins_per_meter_(pose_micro_bins_per_meter),
     pose_micro_bins_per_radian_(pose_micro_bins_per_radian)
 {
+  clearStatistics();
   updateMeshResource(mesh_resource, padding);
 }
 
@@ -86,6 +88,7 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
     pose_micro_bins_per_meter_(pose_micro_bins_per_meter),
     pose_micro_bins_per_radian_(pose_micro_bins_per_radian)
 {
+  clearStatistics();
   // Make a local copy of the costmap in question
   // It would be awesome if the Costmap3D had a way to snapshot
   // or copy-on-write. As it stands, for many scenarios involving
@@ -152,9 +155,78 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
       // which ones might still be valid.
       milli_distance_cache_.clear();
       micro_distance_cache_.clear();
+      printStatistics();
+      clearStatistics();
+      last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
     }
-    last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
   }
+}
+
+void Costmap3DQuery::clearStatistics()
+{
+  queries_since_clear_ = 0;
+  hits_since_clear_ = 0;
+  fast_milli_hits_since_clear_ = 0;
+  slow_milli_hits_since_clear_ = 0;
+  micro_hits_since_clear_ = 0;
+  exact_hits_since_clear_ = 0;
+  misses_since_clear_us_ = 0;
+  hits_since_clear_us_ = 0;
+  fast_milli_hits_since_clear_us_ = 0;
+  slow_milli_hits_since_clear_us_ = 0;
+  micro_hits_since_clear_us_ = 0;
+  exact_hits_since_clear_us_ = 0;
+  hit_fcl_bv_distance_calculations_ = 0;
+  hit_fcl_primative_distance_calculations_ = 0;
+  miss_fcl_bv_distance_calculations_ = 0;
+  miss_fcl_primative_distance_calculations_ = 0;
+}
+
+void Costmap3DQuery::printStatistics()
+{
+  unsigned int cache_misses = queries_since_clear_ -
+      hits_since_clear_ -
+      fast_milli_hits_since_clear_ -
+      slow_milli_hits_since_clear_ -
+      micro_hits_since_clear_ -
+      exact_hits_since_clear_;
+  double hit_ratio = (double)hits_since_clear_ / queries_since_clear_;
+  double fast_milli_hit_ratio = (double)fast_milli_hits_since_clear_ / queries_since_clear_;
+  double slow_milli_hit_ratio = (double)slow_milli_hits_since_clear_ / queries_since_clear_;
+  double micro_hit_ratio = (double)micro_hits_since_clear_ / queries_since_clear_;
+  double exact_hit_ratio = (double)exact_hits_since_clear_ / queries_since_clear_;
+  uint64_t total_us = misses_since_clear_us_ +
+      hits_since_clear_us_ +
+      fast_milli_hits_since_clear_us_ +
+      slow_milli_hits_since_clear_us_ +
+      micro_hits_since_clear_us_ +
+      exact_hits_since_clear_us_;
+  ROS_DEBUG_STREAM_NAMED(
+      "query_statistics",
+      "Costmap3DQuery statistics:"
+      "\n\tqueries this cycle: " << queries_since_clear_ <<
+      "\n\tcache misses: " << cache_misses <<
+      "\n\tcache hits: " << hits_since_clear_ <<
+      "\n\tcache hit ratio: " << hit_ratio <<
+      "\n\tslow milli cache hits: " << slow_milli_hits_since_clear_ <<
+      "\n\tslow milli cache hit ratio: " << slow_milli_hit_ratio <<
+      "\n\tfast milli cache hits: " << fast_milli_hits_since_clear_ <<
+      "\n\tfast milli cache hit ratio: " << fast_milli_hit_ratio <<
+      "\n\tmicro cache hits: " << micro_hits_since_clear_ <<
+      "\n\tmicro cache hit ratio: " << micro_hit_ratio <<
+      "\n\texact cache hits: " << exact_hits_since_clear_ <<
+      "\n\texact cache hit ratio: " << exact_hit_ratio <<
+      "\n\ttotal usecs: " << total_us <<
+      "\n\tmiss usecs/query: " << (double)misses_since_clear_us_ / cache_misses <<
+      "\n\thit usecs/query: " << (double)hits_since_clear_us_ / hits_since_clear_ <<
+      "\n\tslow milli hit usecs/query: " << (double)slow_milli_hits_since_clear_us_ / slow_milli_hits_since_clear_ <<
+      "\n\tfast milli hit usecs/query: " << (double)fast_milli_hits_since_clear_us_ / fast_milli_hits_since_clear_ <<
+      "\n\tmicro hit usecs/query: " << (double)micro_hits_since_clear_us_ / micro_hits_since_clear_ <<
+      "\n\texact hit usecs/query: " << (double)exact_hits_since_clear_us_ / exact_hits_since_clear_ <<
+      "\n\tmiss FCL BV distance calculations: " << miss_fcl_bv_distance_calculations_ <<
+      "\n\tmiss FCL primative distance calculations: " << miss_fcl_primative_distance_calculations_ <<
+      "\n\thit FCL BV distance calculations: " << hit_fcl_bv_distance_calculations_ <<
+      "\n\thit FCL primative distance calculations: " << hit_fcl_primative_distance_calculations_);
 }
 
 void Costmap3DQuery::addPCLPolygonToFCLTriangles(
@@ -368,6 +440,8 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
 double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_distance)
 {
   upgrade_lock upgrade_lock(upgrade_mutex_);
+  std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
+  queries_since_clear_.fetch_add(1, std::memory_order_relaxed);
   if (!robot_obj_)
   {
     // We failed to create a robot model.
@@ -387,6 +461,10 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   auto exact_cache_entry = exact_distance_cache_.find(exact_cache_key);
   if (exact_cache_entry != exact_distance_cache_.end())
   {
+    exact_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
+    exact_hits_since_clear_us_.fetch_add(
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+        std::memory_order_relaxed);
     return exact_cache_entry->second;
   }
 
@@ -400,17 +478,24 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
   if (micro_cache_entry != micro_distance_cache_.end())
   {
-    return handleDistanceInteriorCollisions(
+    double distance = handleDistanceInteriorCollisions(
         micro_cache_entry->second.distanceToNewPose(pose, signed_distance),
         signed_distance,
         micro_cache_entry->second,
         pose);
+    micro_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
+    micro_hits_since_clear_us_.fetch_add(
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+        std::memory_order_relaxed);
+    return distance;
   }
 
   DistanceCacheKey milli_cache_key(pose, pose_milli_bins_per_meter_, pose_milli_bins_per_radian_);
   auto milli_cache_entry = milli_distance_cache_.find(milli_cache_key);
+  bool milli_hit = false;
   if (milli_cache_entry != milli_distance_cache_.end())
   {
+    milli_hit = true;
     double distance = handleDistanceInteriorCollisions(
         milli_cache_entry->second.distanceToNewPose(pose, signed_distance),
         signed_distance,
@@ -418,6 +503,10 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
         pose);
     if (distance > milli_cache_threshold_)
     {
+      fast_milli_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
+      fast_milli_hits_since_clear_us_.fetch_add(
+          std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+          std::memory_order_relaxed);
       return distance;
     }
     else
@@ -433,12 +522,14 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
 
   DistanceCacheKey cache_key(pose, pose_bins_per_meter_, pose_bins_per_radian_);
   auto cache_entry = distance_cache_.find(cache_key);
+  bool cache_hit = false;
   if (milli_cache_entry != milli_distance_cache_.end())
   {
     milli_cache_entry->second.setupResult(&result);
   }
   else if (cache_entry != distance_cache_.end())
   {
+    cache_hit = true;
     // Cache hit, find the distance between the mesh triangle at the new pose
     // and the octomap box, and use this as our initial guess in the result.
     // This greatly prunes the search tree, yielding a big increase in runtime
@@ -447,7 +538,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
 
     cache_entry->second.setupResult(&result);
   }
-  else if(distance_cache_.size() > 0)
+  else if(!milli_hit && distance_cache_.size() > 0)
   {
     // Cache miss, use the beginning of the cache to set the initial guess.
     // This still prunes the search better than no initial guess in certain
@@ -540,6 +631,31 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     micro_distance_cache_[micro_cache_key] = new_entry;
     milli_distance_cache_[milli_cache_key] = new_entry;
     exact_distance_cache_[exact_cache_key] = distance;
+  }
+
+  if (milli_hit)
+  {
+    slow_milli_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
+    slow_milli_hits_since_clear_us_.fetch_add(
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+        std::memory_order_relaxed);
+  }
+  else if (cache_hit)
+  {
+    hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
+    hits_since_clear_us_.fetch_add(
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+        std::memory_order_relaxed);
+    hit_fcl_bv_distance_calculations_.fetch_add(result.bv_distance_calculations);
+    hit_fcl_primative_distance_calculations_.fetch_add(result.primative_distance_calculations);
+  }
+  else
+  {
+    misses_since_clear_us_.fetch_add(
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+        std::memory_order_relaxed);
+    miss_fcl_bv_distance_calculations_.fetch_add(result.bv_distance_calculations);
+    miss_fcl_primative_distance_calculations_.fetch_add(result.primative_distance_calculations);
   }
 
   return distance;

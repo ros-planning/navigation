@@ -41,6 +41,7 @@
 #include <memory>
 #include <unordered_map>
 #include <limits>
+#include <atomic>
 #include <boost/thread/shared_mutex.hpp>
 #include <fcl/geometry/bvh/BVH_model.h>
 #include <fcl/geometry/shape/utility.h>
@@ -476,6 +477,28 @@ private:
   unsigned int pose_micro_bins_per_meter_;
   //! Micro-distance cache bins per radian for binning the pose's position
   unsigned int pose_micro_bins_per_radian_;
+  // Statistics gathered between clearing cycles
+  void printStatistics();
+  void clearStatistics();
+  // Use std::atomic so we can increment with only the read lock held.
+  // The write lock will be held when resetting these so they all reset
+  // atomically
+  std::atomic<unsigned int> queries_since_clear_;
+  std::atomic<unsigned int> hits_since_clear_;
+  std::atomic<unsigned int> fast_milli_hits_since_clear_;
+  std::atomic<unsigned int> slow_milli_hits_since_clear_;
+  std::atomic<unsigned int> micro_hits_since_clear_;
+  std::atomic<unsigned int> exact_hits_since_clear_;
+  std::atomic<uint64_t> misses_since_clear_us_;
+  std::atomic<uint64_t> hits_since_clear_us_;
+  std::atomic<uint64_t> fast_milli_hits_since_clear_us_;
+  std::atomic<uint64_t> slow_milli_hits_since_clear_us_;
+  std::atomic<uint64_t> micro_hits_since_clear_us_;
+  std::atomic<uint64_t> exact_hits_since_clear_us_;
+  std::atomic<size_t> hit_fcl_bv_distance_calculations_;
+  std::atomic<size_t> hit_fcl_primative_distance_calculations_;
+  std::atomic<size_t> miss_fcl_bv_distance_calculations_;
+  std::atomic<size_t> miss_fcl_primative_distance_calculations_;
 };
 
 using Costmap3DQueryPtr = std::shared_ptr<Costmap3DQuery>;
