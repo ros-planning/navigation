@@ -144,6 +144,12 @@ public:
    */
   virtual double footprintSignedDistance(geometry_msgs::Pose pose);
 
+  /** @brief get a const reference to the padded robot mesh points being used */
+  const pcl::PointCloud<pcl::PointXYZ>& getRobotMeshPoints() const {return *robot_mesh_points_;}
+
+  /** @brief get a const reference to the mesh polygons being used */
+  const std::vector<pcl::Vertices>& getRobotMeshPolygons() const {return robot_mesh_.polygons;}
+
 protected:
   const LayeredCostmap3D* layered_costmap_3d_;
 

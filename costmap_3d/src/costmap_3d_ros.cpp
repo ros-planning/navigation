@@ -268,11 +268,12 @@ double Costmap3DROS::getFootprintPadding(double alt_padding)
 
 void Costmap3DROS::publishFootprint()
 {
-  // TODO: publish a footprint with the padding applied
   visualization_msgs::Marker marker;
   marker.header.frame_id = getBaseFrameID();
   marker.header.stamp = ros::Time();
-  marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+  marker.ns = private_nh_.getNamespace();
+  marker.id = 1;
+  marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
   marker.action = visualization_msgs::Marker::ADD;
   marker.pose.position.x = 0.0;
   marker.pose.position.y = 0.0;
@@ -289,7 +290,33 @@ void Costmap3DROS::publishFootprint()
   marker.color.g = 0.5;
   marker.color.b = 0.5;
   marker.frame_locked = true;
-  marker.mesh_resource = footprint_mesh_resource_;
+
+  auto q = getAssociatedQuery();
+  const auto& mesh_points = q->getRobotMeshPoints();
+  const auto& mesh_polygons = q->getRobotMeshPolygons();
+  for (const auto& polygon : mesh_polygons)
+  {
+    const auto& zero_pt = mesh_points[polygon.vertices[0]];
+    geometry_msgs::Point zero_pt_msg;
+    zero_pt_msg.x = zero_pt.x;
+    zero_pt_msg.y = zero_pt.y;
+    zero_pt_msg.z = zero_pt.z;
+    // Assume the polygon mesh only has convex polygons in it
+    // Break them into triangles
+    for (unsigned int i=1; i < polygon.vertices.size() - 1; ++i)
+    {
+      marker.points.push_back(zero_pt_msg);
+      geometry_msgs::Point triangle_pt_msg;
+      triangle_pt_msg.x = mesh_points[polygon.vertices[i]].x;
+      triangle_pt_msg.y = mesh_points[polygon.vertices[i]].y;
+      triangle_pt_msg.z = mesh_points[polygon.vertices[i]].z;
+      marker.points.push_back(triangle_pt_msg);
+      triangle_pt_msg.x = mesh_points[polygon.vertices[i+1]].x;
+      triangle_pt_msg.y = mesh_points[polygon.vertices[i+1]].y;
+      triangle_pt_msg.z = mesh_points[polygon.vertices[i+1]].z;
+      marker.points.push_back(triangle_pt_msg);
+    }
+  }
   footprint_pub_.publish(marker);
 }
 
