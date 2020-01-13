@@ -75,7 +75,7 @@ void LocalPlannerUtil::reconfigureCB(LocalPlannerLimits &config, bool restore_de
     nominal_limits_ = LocalPlannerLimits(config);
     ROS_INFO("Nominal limits tolerance: %f", nominal_limits_.xy_goal_tolerance);
   }
-  updateLimits();
+  //updateLimits();
 }
 
 costmap_2d::Costmap2D* LocalPlannerUtil::getCostmap() {
