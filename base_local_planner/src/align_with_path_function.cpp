@@ -4,9 +4,10 @@
 
 namespace base_local_planner {
 
-const double MAX_ANGLE_ERROR = 0.8;
-const double MIN_ROT_SPEED = 0.1;
-const double MIN_GOAL_DIST_SQ = 0.7;
+constexpr double MAX_ANGLE_ERROR = 0.8;
+constexpr double MIN_ROT_SPEED = 0.1;
+constexpr double MIN_GOAL_DIST_SQ = 0.7;
+constexpr double PENALTY_COST = 1e6;
 
 AlignWithPathFunction::AlignWithPathFunction() : target_pose_valid_(false) {}
 
@@ -48,10 +49,10 @@ double AlignWithPathFunction::scoreTrajectory(Trajectory &traj) {
   const double angle_diff = angles::normalize_angle(path_yaw_ - pth);
   // if angle off by more than MAX_ANGLE_ERROR, force to rotate towards path with more than MIN_ROT_SPEED
   if (angle_diff > MAX_ANGLE_ERROR && traj.thetav_ < MIN_ROT_SPEED) {
-    return -1;
+    return PENALTY_COST;
   }
   if (angle_diff < -MAX_ANGLE_ERROR && traj.thetav_ > -MIN_ROT_SPEED) {
-    return -1;
+    return PENALTY_COST;
   }
   return 0;
 }
