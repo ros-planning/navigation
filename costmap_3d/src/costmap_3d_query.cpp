@@ -41,7 +41,6 @@
 #include <fcl/narrowphase/distance_result.h>
 #include <fcl/geometry/shape/sphere.h>
 #include <pcl/io/vtk_lib_io.h>
-#include <pcl/filters/crop_hull.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <tf/transform_datatypes.h>
@@ -287,6 +286,10 @@ void Costmap3DQuery::updateMeshResource(const std::string& mesh_resource, double
   addPCLPolygonMeshToRobotModel(robot_mesh_, padding, robot_model_.get());
   robot_model_->endModel();
   robot_obj_ = FCLCollisionObjectPtr(new FCLCollisionObject(robot_model_));
+
+  crop_hull_.setHullCloud(robot_mesh_points_);
+  crop_hull_.setHullIndices(robot_mesh_.polygons);
+  crop_hull_.setCropOutside(true);
 }
 
 std::string Costmap3DQuery::getFileNameFromPackageURL(const std::string& url)
@@ -382,25 +385,13 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
     // Create a PCL crop hull filter to see if the center of the box is inside
     // the volume of the mesh.
     pcl::PointCloud<pcl::PointXYZ> test_cloud;
-    pcl::CropHull<pcl::PointXYZ> crop_hull;
-    crop_hull.setHullCloud(robot_mesh_points_);
-    crop_hull.setHullIndices(robot_mesh_.polygons);
-    crop_hull.setDim(3);
-    crop_hull.setCropOutside(true);
     test_cloud.resize(1);
     test_cloud.is_dense = true;
     test_cloud.width = 1;
     test_cloud.height = 1;
     test_cloud.points[0] = convertFCLPointToPCL(box_center);
-    // Crop hull requires a shared pointer to the input cloud.
-    // in this case, this is a waste of time, we do not want to allocate one
-    // point of dynamic memory. Cheat and make a shared pointer with a deleter
-    // that does nothing, and ensure the crop_hull goes out of scope before the
-    // test_cloud.
-    pcl::PointCloud<pcl::PointXYZ>::Ptr test_cloud_ptr(&test_cloud, [](void *){});
-    crop_hull.setInputCloud(test_cloud_ptr);
     std::vector<int> indices;
-    crop_hull.filter(indices);
+    crop_hull_.applyFilter(test_cloud, indices);
     if (indices.size() > 0)
     {
       interior_collision = true;

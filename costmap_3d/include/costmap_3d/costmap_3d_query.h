@@ -53,6 +53,7 @@
 #include <geometry_msgs/Pose.h>
 #include <tf2/utils.h>
 #include <costmap_3d/layered_costmap_3d.h>
+#include <costmap_3d/crop_hull.h>
 
 namespace costmap_3d
 {
@@ -187,6 +188,9 @@ private:
   // Save the PCL model of the mesh to use with crop hull
   pcl::PolygonMesh robot_mesh_;
   pcl::PointCloud<pcl::PointXYZ>::Ptr robot_mesh_points_;
+
+  // Use the costmap_3d version of CropHull that is thread safe
+  CropHull<pcl::PointXYZ> crop_hull_;
 
   using FCLFloat = double;
   using FCLRobotModel = fcl::BVHModel<fcl::OBBRSS<FCLFloat>>;
