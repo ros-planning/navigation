@@ -123,7 +123,6 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
   }
   if (need_update)
   {
-    bool force_cache_dump = false;
     // get write access
     upgrade_to_unique_lock write_lock(upgrade_lock);
 
@@ -134,30 +133,32 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
       std::shared_ptr<fcl::OcTree<FCLFloat>> fcl_octree_ptr;
       fcl_octree_ptr.reset(new fcl::OcTree<FCLFloat>(octree_ptr_));
       world_obj_ = FCLCollisionObjectPtr(new fcl::CollisionObject<FCLFloat>(fcl_octree_ptr));
-      force_cache_dump = true;
     }
     // The costmap has been updated since the last query, reset our caches
-    if (force_cache_dump || last_layered_costmap_update_number_ != layered_costmap_3d_->getNumberOfUpdates())
-    {
-      // For simplicity, on every update, clear out the collision cache.
-      // This is not strictly necessary. The mesh is stored in the cache and does
-      // not change. The only thing that is changing is the costmap. We could go
-      // through the delta map and only remove entries that have had the
-      // corresponding octomap cell go away. This may be implemented as a future
-      // improvement. This is OK since the distance_cache_ can not make the
-      // results incorrect in the presence of a new closer cell, it just makes
-      // the calculation take longer.
-      distance_cache_.clear();
-      last_cache_entry = DistanceCacheEntry();
-      // We must always drop the milli cache and micro cache, as new cells will
-      // invalidate the old results, and there is no simple way to figure out
-      // which ones might still be valid.
-      milli_distance_cache_.clear();
-      micro_distance_cache_.clear();
-      printStatistics();
-      clearStatistics();
-      last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
-    }
+
+    // For simplicity, on every update, clear out the collision cache.
+    // This is not strictly necessary in the case where the costmap has been
+    // updated. The mesh is stored in the cache and does not change. The only
+    // thing that changed is the costmap. We could go through the delta map
+    // and only remove entries that have had the corresponding octomap cell go
+    // away. This may be implemented as a future improvement. It would be OK
+    // to keep entries in the distance_cache_ as long as their respective
+    // octomap boxes did not get removed, as the distance_cache not having the
+    // best answer in the presence of a new closer octomap cell does not make
+    // the result incorrect (just less efficient). However, such an improvement
+    // may not yield any practical increase in performance due to the
+    // last_cache_entry and the fact that most queries query poses on a path,
+    // which makes a distance_cache miss much less costly.
+    distance_cache_.clear();
+    last_cache_entry = DistanceCacheEntry();
+    // We must always drop the milli cache and micro cache, as new cells will
+    // invalidate the old results, and there is no simple way to figure out
+    // which ones might still be valid.
+    milli_distance_cache_.clear();
+    micro_distance_cache_.clear();
+    printStatistics();
+    clearStatistics();
+    last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
   }
 }
 
