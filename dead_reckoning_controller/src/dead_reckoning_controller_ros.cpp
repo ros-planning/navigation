@@ -103,7 +103,19 @@ namespace dead_reckoning_controller {
 
     //create start point of path vector from offset
     tf::Stamped<tf::Pose> start_point(end_point * offsetTransform, end_point.stamp_, end_point.frame_id_);
-      
+
+    std::vector<geometry_msgs::PoseStamped> transformedPlan;
+    geometry_msgs::PoseStamped start_point_msg;
+    tf::poseStampedTFToMsg(start_point, start_point_msg);
+
+    geometry_msgs::PoseStamped end_point_msg;
+    tf::poseStampedTFToMsg(end_point, end_point_msg);
+
+    transformedPlan.push_back(start_point_msg);
+    transformedPlan.push_back(end_point_msg);
+
+    publishGlobalPlan(transformedPlan);
+
     return drc_->setPlan(start_point, end_point, current_pose_);
   }
 
@@ -121,7 +133,7 @@ namespace dead_reckoning_controller {
     }
     if(drc_->isGoalReached(current_pose_))
     {
-      ROS_INFO("Goal reached");
+      ROS_INFO("Goal reached DRC");
       return true;
     } else {
       return false;
@@ -192,6 +204,10 @@ namespace dead_reckoning_controller {
     odom_helper_.getEstimatedRobotVel(robot_vel);
 
     if (drc_->isGoalReached(current_pose_)) {
+      cmd_vel.linear.x = 0.0;
+      cmd_vel.linear.y = 0.0;
+      cmd_vel.angular.z = 0.0;
+      odom_helper_.setCmdVel(cmd_vel);
       return true;
     } else {
       bool isOk = deadReckoningComputeVelocityCommands(current_pose_, robot_vel, cmd_vel);

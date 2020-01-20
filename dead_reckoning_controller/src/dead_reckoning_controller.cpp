@@ -47,7 +47,7 @@ namespace dead_reckoning_controller {
     start_pose_ = start_pose;
     end_pose_ = end_pose;
     path_ = start_pose_.inverseTimes(end_pose_);
-    ROS_INFO_STREAM(distanceFromLine(start_pose, end_pose, current_pose));
+    //ROS_INFO_STREAM(distanceFromLine(start_pose, end_pose, current_pose));
     //check if the start distance in the y direction is too far from the path vector.
     if (std::fabs(distanceFromLine(start_pose, end_pose, current_pose)) > config_.max_path_correction) {
       ROS_ERROR("Robot too far from path, can't proceed");
@@ -84,7 +84,7 @@ namespace dead_reckoning_controller {
     tf::Matrix3x3 end_pose_matrix(end_pose_.getRotation());
     end_pose_matrix.getRPY(roll, pitch, yaw);
     end_pose_yaw = yaw;
-    ROS_INFO_STREAM(current_yaw << " " << end_pose_yaw);
+    //ROS_INFO_STREAM(current_yaw << " " << end_pose_yaw);
     
     //just get it in {-pi to pi} format
     double angleDiff;
@@ -99,7 +99,7 @@ namespace dead_reckoning_controller {
 
     double Perror = sin(angleDiff)*current_velocity.getOrigin().getX(); //essentially the y velocity of the robot away from the path vector
     double Ierror = distanceFromLine(start_pose_, end_pose_, current_pose); //essentially the y distance from the path vector
-    ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
+    //ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
 
     double angular_velocity = -1 * config_.p_weight_angular * Perror + -1 * config_.i_weight_angular * Ierror;
 
