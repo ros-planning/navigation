@@ -175,7 +175,7 @@ void LocalPlannerUtil::updateLimits() {
   if (global_plan_.size() <= 0) {
     ROS_WARN("No global plan plan for speed limiters.");
   }
-  else if(!getLocalPlan(robot_pose, transformed_plan)) {
+  else if (!getLocalPlan(robot_pose, transformed_plan)) {
     ROS_WARN("No plan for speed limiters.");
   }
   speed_limit_manager_.setPlan(transformed_plan);
