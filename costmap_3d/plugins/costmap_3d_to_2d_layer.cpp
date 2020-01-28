@@ -179,7 +179,12 @@ void Costmap3DTo2DLayer::updateBounds(double robot_x, double robot_y, double rob
         const int min_x_3d = (int)min_index_3d[0] - map_3d_ox;
         const int min_y_3d = (int)min_index_3d[1] - map_3d_oy;
         const octomap::key_type depth_diff_3d = master_3d->getTreeDepth() - it.getDepth();
-        const octomap::key_type size_3d = (((octomap::key_type)1u)<<depth_diff_3d) - 1u;
+        // avoid undefined behavior in the bit shift by special-case when
+        // depth diff is at or beyond the key's bit width
+        const octomap::key_type size_3d = (
+            depth_diff_3d >= octomap::KEY_BIT_WIDTH ?
+            std::numeric_limits<octomap::key_type>::max() :
+            (((octomap::key_type)1u)<<depth_diff_3d) - 1u);
         const int max_x_3d = min_x_3d + size_3d;
         const int max_y_3d = min_y_3d + size_3d;
         const unsigned char cost = toCostmap2D(it->getValue());
