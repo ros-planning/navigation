@@ -136,7 +136,18 @@ protected:
   virtual void touchKeyAtDepth(const octomap::OcTreeKey& key,
                                unsigned int depth=std::numeric_limits<unsigned int>::max());
 
-  /** @brief Update the cells in binary fashion from the given values and bounds. */
+  /** @brief Update the cells in binary fashion from the given values and bounds.
+   * Note: in this version, the value and bounds trees will have their depth
+   * changed to match the costmap */
+  virtual void updateCells(octomap::OcTree* value_map, octomap::OcTree* bounds_map,
+                           Cost occupied_threshold = LETHAL);
+
+  /** @brief Update the cells in binary fashion from the given values and bounds.
+   * Note: if the value_map or bounds_map have a different depth from the
+   * internal costmap_, the costmap_ will *not* be updated!
+   * To update from maps with different depths, use the updateCells version
+   * that takes non-const pointers to the maps, which will alter the depth of
+   * the input trees first to match. */
   virtual void updateCells(const octomap::OcTree& value_map, const octomap::OcTree& bounds_map,
                            Cost occupied_threshold = LETHAL);
 

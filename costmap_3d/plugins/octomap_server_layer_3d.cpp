@@ -425,7 +425,7 @@ void OctomapServerLayer3D::mapUpdateInternal(const octomap_msgs::Octomap* map_ms
       {
         ROS_DEBUG_STREAM("using bounds octomap with size " << bounds_map->size());
         // Use zero log odds as the threshold for any incoming binary map
-        updateCells(*map, *bounds_map, 0.0);
+        updateCells(map, bounds_map, 0.0);
         ROS_DEBUG_STREAM("after update cells, costmap_ has size " << costmap_->size());
         ROS_DEBUG_STREAM(" and changed_cells_ has size " << changed_cells_->size());
       }

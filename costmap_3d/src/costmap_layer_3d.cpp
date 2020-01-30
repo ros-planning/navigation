@@ -201,6 +201,17 @@ void CostmapLayer3D::touchKeyAtDepth(const octomap::OcTreeKey& key, unsigned int
   }
 }
 
+void CostmapLayer3D::updateCells(octomap::OcTree* value_map, octomap::OcTree* bounds_map,
+                                 Cost occupied_threshold)
+{
+  if (costmap_ && value_map && bounds_map)
+  {
+    value_map->setTreeDepth(costmap_->getTreeDepth());
+    bounds_map->setTreeDepth(costmap_->getTreeDepth());
+    updateCells(*value_map, *bounds_map, occupied_threshold);
+  }
+}
+
 void CostmapLayer3D::updateCells(const octomap::OcTree& value_map, const octomap::OcTree& bounds_map,
                                  Cost occupied_threshold)
 {
