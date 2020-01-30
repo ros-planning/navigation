@@ -91,10 +91,7 @@ public:
   virtual void resetLayers();
 
   /** @brief Returns true if all layers have current sensor data. */
-  virtual bool isCurrent() const
-  {
-    return super::isCurrent() && layered_costmap_3d_.isCurrent();
-  }
+  virtual bool isCurrent();
 
   /* Unlike Costmap2D, provide no interface to the 3D layered costmap internals.
    * Instead provide specific interfaces to clear 3D layers and get 3D collision

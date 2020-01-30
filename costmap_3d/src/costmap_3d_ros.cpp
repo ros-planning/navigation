@@ -176,6 +176,25 @@ void Costmap3DROS::resetLayers()
   super::resetLayers();
 }
 
+bool Costmap3DROS::isCurrent()
+{
+  geometry_msgs::PoseStamped pose;
+  if (getRobotPose(pose))
+  {
+    if (!layered_costmap_3d_.isPoseInMap(pose.pose))
+    {
+      ROS_ERROR_THROTTLE(5.0, "Robot is off the 3D costmap, marking costmap as non-current");
+      return false;
+    }
+  }
+  else
+  {
+    ROS_ERROR_THROTTLE(5.0, "Robot's position unknown, marking costmap as non-current");
+    return false;
+  }
+  return super::isCurrent() && layered_costmap_3d_.isCurrent();
+}
+
 std::shared_ptr<Costmap3DQuery> Costmap3DROS::getBufferedQuery(
         const std::string& footprint_mesh_resource,
         double padding)

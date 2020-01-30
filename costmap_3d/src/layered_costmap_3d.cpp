@@ -258,6 +258,17 @@ double LayeredCostmap3D::getResolution() const
   return resolution_;
 }
 
+bool LayeredCostmap3D::isPoseInMap(geometry_msgs::Pose robot_pose)
+{
+  double limit = costmap_->getNodeSize(1);
+  return (robot_pose.position.x < limit &&
+          robot_pose.position.x > -limit &&
+          robot_pose.position.y < limit &&
+          robot_pose.position.y > -limit &&
+          robot_pose.position.z < limit &&
+          robot_pose.position.z > -limit);
+}
+
 void LayeredCostmap3D::getBounds(geometry_msgs::Point* min, geometry_msgs::Point* max)
 {
   // keep the view of min/max consistent

@@ -127,6 +127,9 @@ public:
 
   double getResolution() const;
 
+  /// Return true if the given pose is inside the map's coordinate system
+  bool isPoseInMap(geometry_msgs::Pose robot_pose);
+
   void getBounds(geometry_msgs::Point* min, geometry_msgs::Point* max);
 
   /**
