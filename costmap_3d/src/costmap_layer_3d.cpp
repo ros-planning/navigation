@@ -81,10 +81,10 @@ void CostmapLayer3D::updateCosts(const Costmap3D& bounds_map, Costmap3D* master_
     switch (combination_method_)
     {
       case GenericPlugin_Overwrite:
-        master_map->setTreeValues(costmap_.get(), &bounds_map, false, false);
+        master_map->setTreeValues(static_cast<const Costmap3D*>(costmap_.get()), &bounds_map, false, false);
         break;
       case GenericPlugin_Maximum:
-        master_map->setTreeValues(costmap_.get(), &bounds_map, true, false);
+        master_map->setTreeValues(static_cast<const Costmap3D*>(costmap_.get()), &bounds_map, true, false);
         break;
       default:
       case GenericPlugin_Nothing:
