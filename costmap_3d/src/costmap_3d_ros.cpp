@@ -441,33 +441,42 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
   for (int i = 0; i < request.poses.size(); ++i)
   {
     bool collision = false;
-    // NOTE: Costmap3D does not support time (its not a 4D costmap!) so ignore the stamp.
-    const auto pose = request.poses[i].pose;
+
+    float timeout_seconds = (request.transform_wait_time_limit > 0) ? request.transform_wait_time_limit : 0.1;
+
     double pose_cost = -1.0;
-    // Warn if the frame doesn't match. We currently don't transform the poses.
-    if (request.poses[i].header.frame_id != layered_costmap_3d_.getGlobalFrameID())
+    if (tf_.canTransform(layered_costmap_3d_.getGlobalFrameID(),
+                         request.poses[i].header.frame_id,
+                         request.poses[i].header.stamp,
+                         ros::Duration(timeout_seconds)))
     {
-      ROS_WARN_STREAM_THROTTLE(1.0, "Costmap3DROS::getPlanCost3DServiceCallback expects poses in frame " <<
-                               layered_costmap_3d_.getGlobalFrameID() << " but pose was in frame " <<
-                               request.poses[i].header.frame_id);
-      // Leave the pose_cost lethal
-    }
-    else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_COLLISION_ONLY)
-    {
-      pose_cost = query->footprintCollision(pose) ? -1.0 : 0.0;
-    }
-    else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE)
-    {
-      pose_cost = query->footprintDistance(pose);
-    }
-    else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
-    {
-      pose_cost = query->footprintSignedDistance(pose);
+      geometry_msgs::PoseStamped pose = tf_.transform(request.poses[i], layered_costmap_3d_.getGlobalFrameID());
+
+      if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_COLLISION_ONLY)
+      {
+        pose_cost = query->footprintCollision(pose.pose) ? -1.0 : 0.0;
+      }
+      else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE)
+      {
+        pose_cost = query->footprintDistance(pose.pose);
+      }
+      else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
+      {
+        pose_cost = query->footprintSignedDistance(pose.pose);
+      }
+      else
+      {
+        pose_cost = query->footprintCost(pose.pose);
+      }
     }
     else
     {
-      pose_cost = query->footprintCost(pose);
+      ROS_WARN_STREAM("Skipping pose " << i << ". No Transform available from " <<
+        request.poses[i].header.frame_id << " to " << layered_costmap_3d_.getGlobalFrameID());
+      // "fail safe" by saying this pose is "in collision".
+      pose_cost = -1.0;
     }
+
     // negative is a collision
     if (pose_cost < 0.0)
     {

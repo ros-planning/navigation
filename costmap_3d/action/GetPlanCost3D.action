@@ -40,6 +40,11 @@ string footprint_mesh_resource
 # To precisely control padding, use an alternate mesh, as the generated mesh
 # may pad in a naive way.
 float32 padding
+
+# The maximum amount of time (seconds) to wait for a transform to become
+# available to transform a pose. (default=0.1, any values <= 0 will be
+# converted to the default.)
+float32 transform_wait_time_limit
 ---
 # The aggregate cost value across the poses.
 # A negative cost value indicates collision.
