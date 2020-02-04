@@ -64,17 +64,15 @@ void RotateRecovery::initialize(std::string name, tf2_ros::Buffer*,
 
     // get some parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name);
-    ros::NodeHandle blp_nh("~/RotationRecovery");
 
     // we'll simulate every degree by default
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
     private_nh.param("frequency", frequency_, 20.0);
-
-    acc_lim_th_ = nav_core::loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
-    max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
-    min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
-    blp_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
-    blp_nh.param("rotation_angle", rotation_angle_, 2 * M_PI);
+    private_nh.param("acc_lim_theta", acc_lim_th_, 3.2);
+    private_nh.param("max_vel_theta", max_rotational_vel_, 1.0);
+    private_nh.param("min_in_place_vel_theta", min_rotational_vel_, 0.4);
+    private_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
+    private_nh.param("rotation_angle", rotation_angle_, 2 * M_PI);
 
     world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
 
