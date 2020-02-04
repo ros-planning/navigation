@@ -53,6 +53,7 @@ namespace dead_reckoning_controller {
       ROS_ERROR("Robot too far from path, can't proceed");
       return false;
     }
+    do_tip_first_ = config_.tip_first;
     return true;
   }
 
@@ -62,6 +63,9 @@ namespace dead_reckoning_controller {
     //base velocity on the acceleration curve
     double p_error = sqrt(2*std::fabs(currentDistanceAway) * config_.acc_lim_x);
     
+    if(do_tip_first_){
+      return 0;
+    }
     return std::min(config_.max_vel_x, p_error * config_.p_weight_linear); //reconfigurable and better variable names
 
   }
@@ -94,9 +98,16 @@ namespace dead_reckoning_controller {
     } else if (angleDiff < -1*M_PI){
         angleDiff = angleDiff + 2*M_PI;
     }
-    
-    
 
+    if(do_tip_first_){
+      if(std::fabs(angleDiff) < config_.tip_difference_threshold) {
+        do_tip_first_ = false;
+      }
+      else{
+        return -1 * angleDiff *config_.p_weight_tip;
+      }
+    }
+    
     double Perror = sin(angleDiff)*current_velocity.getOrigin().getX(); //essentially the y velocity of the robot away from the path vector
     double Ierror = distanceFromLine(start_pose_, end_pose_, current_pose); //essentially the y distance from the path vector
     //ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
