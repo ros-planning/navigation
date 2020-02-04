@@ -77,12 +77,15 @@ public:
   ~RotateRecovery();
 
 protected:
-  bool rotate_positive_;
+  /**
+   * @brief  Run the RotateRecovery recovery behavior with additional arguments.
+   */
+  void runBehavior(const double rotation_angle);
 
 private:
   costmap_2d::Costmap2DROS* local_costmap_;
   bool initialized_;
-  double sim_granularity_, min_rotational_vel_, max_rotational_vel_, acc_lim_th_, tolerance_, frequency_;
+  double sim_granularity_, min_rotational_vel_, max_rotational_vel_, acc_lim_th_, rotation_angle_, tolerance_, frequency_;
   base_local_planner::CostmapModel* world_model_;
 };
 }   // namespace rotate_recovery
