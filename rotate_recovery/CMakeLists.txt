@@ -37,7 +37,7 @@ catkin_package(
     tf2_ros
 )
 
-add_library(rotate_recovery src/rotate_recovery.cpp src/negative_rotate_recovery.cpp)
+add_library(rotate_recovery src/rotate_recovery.cpp)
 add_dependencies(rotate_recovery ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(rotate_recovery ${catkin_LIBRARIES})
 

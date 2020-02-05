@@ -51,7 +51,7 @@ PLUGINLIB_EXPORT_CLASS(rotate_recovery::RotateRecovery, nav_core::RecoveryBehavi
 
 namespace rotate_recovery
 {
-RotateRecovery::RotateRecovery(): rotate_positive_(true), local_costmap_(NULL), initialized_(false), world_model_(NULL)
+RotateRecovery::RotateRecovery(): local_costmap_(NULL), initialized_(false), world_model_(NULL)
 {
 }
 
@@ -64,16 +64,15 @@ void RotateRecovery::initialize(std::string name, tf2_ros::Buffer*,
 
     // get some parameters from the parameter server
     ros::NodeHandle private_nh("~/" + name);
-    ros::NodeHandle blp_nh("~/RotationRecovery");
 
     // we'll simulate every degree by default
     private_nh.param("sim_granularity", sim_granularity_, 0.017);
     private_nh.param("frequency", frequency_, 20.0);
-
-    acc_lim_th_ = nav_core::loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
-    max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
-    min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
-    blp_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
+    private_nh.param("acc_lim_theta", acc_lim_th_, 3.2);
+    private_nh.param("max_vel_theta", max_rotational_vel_, 1.0);
+    private_nh.param("min_in_place_vel_theta", min_rotational_vel_, 0.4);
+    private_nh.param("yaw_goal_tolerance", tolerance_, 0.10);
+    private_nh.param("rotation_angle", rotation_angle_, 2 * M_PI);
 
     world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
 
@@ -91,6 +90,11 @@ RotateRecovery::~RotateRecovery()
 }
 
 void RotateRecovery::runBehavior()
+{
+  runBehavior(rotation_angle_);
+}
+
+void RotateRecovery::runBehavior(const double rotation_angle)
 {
   if (!initialized_)
   {
@@ -115,7 +119,7 @@ void RotateRecovery::runBehavior()
   double rotated_angle = 0.0;
 
   double prev_yaw = tf2::getYaw(global_pose.pose.orientation);
-  const double dir = rotate_positive_ ? 1.0 : -1.0;
+  const double dir = rotation_angle > 0 ? 1.0 : -1.0;
   const double max_stopping_distance =
       acc_lim_th_ > 0 ? max_rotational_vel_ * max_rotational_vel_ / (2.0 * acc_lim_th_) : M_PI_4;
 
@@ -128,7 +132,7 @@ void RotateRecovery::runBehavior()
     prev_yaw = current_yaw;
 
     // compute the distance left to rotate
-    double dist_left = 2 * M_PI - rotated_angle;
+    double dist_left = std::abs(rotation_angle) - rotated_angle;
 
     const double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
@@ -162,7 +166,7 @@ void RotateRecovery::runBehavior()
     }
 
     // compute the velocity that will let us stop by the time we reach the goal
-    double vel = sqrt(2 * acc_lim_th_ * dist_left);
+    double vel = dist_left > 0 ? sqrt(2 * acc_lim_th_ * dist_left) : 0;
 
     // make sure that this velocity falls within the specified limits
     vel = std::min(std::max(vel, min_rotational_vel_), max_rotational_vel_);
@@ -175,7 +179,7 @@ void RotateRecovery::runBehavior()
     vel_pub.publish(cmd_vel);
 
     // if we're done with our in-place rotation... then return
-    if(rotated_angle >= 2 * M_PI - tolerance_)
+    if(rotated_angle >= std::abs(rotation_angle) - tolerance_)
       return;
 
     r.sleep();
