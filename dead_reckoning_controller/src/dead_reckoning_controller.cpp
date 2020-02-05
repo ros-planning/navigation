@@ -72,6 +72,8 @@ namespace dead_reckoning_controller {
 
   double DeadReckoningController::calculateAngularVelocity(tf::Stamped<tf::Pose> current_pose,tf::Stamped<tf::Pose> current_velocity){
 
+
+    double ang_vel_out;
     //I dont like these lines, but I can't figure a non buggy way tf to get the angle diff with correct signs
     double current_yaw;
     double end_pose_yaw;
@@ -104,29 +106,33 @@ namespace dead_reckoning_controller {
         do_tip_first_ = false;
       }
       else{
-        return -1 * angleDiff *config_.p_weight_tip;
+        ang_vel_out = -1 * angleDiff *config_.p_weight_tip;
+      }
+    }
+    else{
+
+      double Perror = sin(angleDiff)*current_velocity.getOrigin().getX(); //essentially the y velocity of the robot away from the path vector
+      double Ierror = distanceFromLine(start_pose_, end_pose_, current_pose); //essentially the y distance from the path vector
+      //ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
+
+      double angular_velocity = -1 * config_.p_weight_angular * Perror + -1 * config_.i_weight_angular * Ierror;
+
+      ang_vel_out = angular_velocity;
+
+      if(angleDiff > config_.max_sweep_angle && angular_velocity > 0)
+      {
+        ang_vel_out =  0;
+      } else if (angleDiff < -1 * config_.max_sweep_angle && angular_velocity < 0)
+      {
+        ang_vel_out =  0;
       }
     }
     
-    double Perror = sin(angleDiff)*current_velocity.getOrigin().getX(); //essentially the y velocity of the robot away from the path vector
-    double Ierror = distanceFromLine(start_pose_, end_pose_, current_pose); //essentially the y distance from the path vector
-    //ROS_INFO_STREAM("Angle diff" << angleDiff << " Ierror: " << Ierror << " " << "Perror: " << Perror);
-
-    double angular_velocity = -1 * config_.p_weight_angular * Perror + -1 * config_.i_weight_angular * Ierror;
-
-    if(angleDiff > config_.max_sweep_angle && angular_velocity > 0)
-    {
-      return 0;
-    } else if (angleDiff < -1 * config_.max_sweep_angle && angular_velocity < 0)
-    {
-      return 0;
-    }
-
     //make sure it's not above the max ang z limits
-    if (std::fabs(angular_velocity) < config_.max_ang_z){
-      return angular_velocity;
+    if (std::fabs(ang_vel_out) < config_.max_ang_z){
+      return ang_vel_out;
     }
-    else if (angular_velocity < 0) {
+    else if (ang_vel_out < 0) {
       return -1 * config_.max_ang_z;
     }
     else{
