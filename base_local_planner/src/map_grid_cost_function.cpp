@@ -36,6 +36,7 @@
  *********************************************************************/
 
 #include <base_local_planner/map_grid_cost_function.h>
+#include <costmap_2d/cost_values.h>
 
 namespace base_local_planner {
 
@@ -106,7 +107,11 @@ double MapGridCostFunction::scoreTrajectory(Trajectory &traj) {
     if (stop_on_failure_) {
       if (grid_dist == map_.obstacleCosts()) {
         return -3.0;
-      } else if (grid_dist == map_.unreachableCellCosts()) {
+      }
+      if (grid_dist == costmap_2d::INSCRIBED_INFLATED_OBSTACLE && xshift_ == 0 && yshift_ == 0) {
+        return -3.0;
+      }
+      if (grid_dist == map_.unreachableCellCosts()) {
         return -2.0;
       }
     }
