@@ -143,7 +143,7 @@ namespace dead_reckoning_controller {
         if (angleDiff < 0) {
           v_theta_samp = - v_theta_samp;
         }
-        ang_vel_out = v_theta_samp;
+        ang_vel_out = -1 * v_theta_samp;
       }
     }
     else{
