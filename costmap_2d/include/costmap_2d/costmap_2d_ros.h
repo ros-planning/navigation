@@ -120,7 +120,7 @@ public:
   /**
    * @brief Is the costmap stopped
    */
-  bool isStopped()
+  bool isStopped() const
     {
       return stopped_;
     }
