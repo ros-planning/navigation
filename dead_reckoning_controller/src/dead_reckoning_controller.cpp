@@ -41,6 +41,21 @@ namespace dead_reckoning_controller {
   DeadReckoningController::DeadReckoningController(std::string name)
   {
     ros::NodeHandle private_nh("~/" + name);
+    ros::NodeHandle global_nh();
+
+    std::string controller_frequency_param_name;
+    if(!global_nh.searchParam("controller_frequency", controller_frequency_param_name)) {
+      sim_period_ = 0.05;
+    } else {
+      double controller_frequency = 0;
+      global_nh.param(controller_frequency_param_name, controller_frequency, 20.0);
+      if(controller_frequency > 0) {
+        sim_period_ = 1.0 / controller_frequency;
+      } else {
+        ROS_WARN("A controller_frequency less than 0 has been set. Ignoring the parameter, assuming a rate of 20Hz");
+        sim_period_ = 0.05;
+      }
+    }
   }
 
   bool DeadReckoningController::setPlan(const tf::Stamped<tf::Pose> start_pose, const tf::Stamped<tf::Pose> end_pose, const tf::Stamped<tf::Pose> current_pose) {
@@ -106,7 +121,24 @@ namespace dead_reckoning_controller {
         do_tip_first_ = false;
       }
       else{
-        ang_vel_out = -1 * angleDiff *config_.p_weight_tip;
+
+        //this is actually the gain conversion from distance to velocity
+        double v_theta_samp = std::min(config_.max_tip_vel, std::max(config_.min_tip_vel, fabs(angleDiff)));
+
+        double max_acc_vel = fabs(vel_yaw) + config_.acc_lim_tip * sim_period_;
+        double min_acc_vel = fabs(vel_yaw) - config_.acc_lim_tip * sim_period_;
+
+        v_theta_samp = std::min(std::max(fabs(v_theta_samp), min_acc_vel), max_acc_vel);
+
+        double max_speed_to_stop = sqrt(2 * config_.acc_lim_tip * fabs(angleDiff));
+        v_theta_samp = std::min(max_speed_to_stop, fabs(v_theta_samp));
+
+        v_theta_samp = std::min(config_.max_tip_vel, std::max(config_.min_tip_vel, v_theta_samp));
+
+        if (angleDiff < 0) {
+          v_theta_samp = - v_theta_samp;
+        }
+        ang_vel_out = v_theta_samp;
       }
     }
     else{

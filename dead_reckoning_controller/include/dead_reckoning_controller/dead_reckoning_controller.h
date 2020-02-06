@@ -101,6 +101,8 @@ namespace dead_reckoning_controller {
       tf::Pose path_;
       bool do_tip_first_ = false;
 
+      double sim_period_;
+
       DeadReckoningControllerConfig config_;
   };
 };
