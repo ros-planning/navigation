@@ -9,20 +9,37 @@ constexpr double MIN_ROT_SPEED = 0.1;
 constexpr double MIN_GOAL_DIST_SQ = 0.7;
 constexpr double PENALTY_COST = 1e6;
 
-AlignWithPathFunction::AlignWithPathFunction() : target_pose_valid_(false) {}
+AlignWithPathFunction::AlignWithPathFunction() : current_yaw_diff_positive_(true) {}
 
-void AlignWithPathFunction::setTargetPoses(std::vector<geometry_msgs::PoseStamped>& target_poses) {
+void AlignWithPathFunction::setTargetPoses(std::vector<geometry_msgs::PoseStamped>& target_poses, const geometry_msgs::PoseStamped& global_pose) {
+  setScale(0);
+
   const int num_points = target_poses.size();
   if (num_points <= 0) {
-    target_pose_valid_ = false;
     return;
   }
-  target_pose_valid_ = true;
   // todo: decide which point to pick
   geometry_msgs::PoseStamped path_node =  *(target_poses.begin() + std::min(3, num_points-1));
-  path_yaw_ = 2 * atan2 (path_node.pose.orientation.z, path_node.pose.orientation.w);
-  goal_x_ = target_poses.back().pose.position.x;
-  goal_y_ = target_poses.back().pose.position.y;
+  const double path_yaw = 2 * atan2 (path_node.pose.orientation.z, path_node.pose.orientation.w);
+  const double goal_dx = target_poses.back().pose.position.x - global_pose.pose.position.x;
+  const double goal_dy = target_poses.back().pose.position.y - global_pose.pose.position.y;
+
+  const double squared_dist = goal_dx * goal_dx + goal_dy * goal_dy;
+  if (squared_dist < MIN_GOAL_DIST_SQ)
+  {
+    return;
+  }
+
+  const double current_yaw = 2 * atan2(global_pose.pose.orientation.z, global_pose.pose.orientation.w);
+  const double current_yaw_diff = angles::normalize_angle(path_yaw - current_yaw);
+
+  current_yaw_diff_positive_ = current_yaw_diff > 0;
+
+  if (std::abs(current_yaw_diff) < MAX_ANGLE_ERROR)
+  {
+    return;
+  }
+  setScale(1);
 }
 
 bool AlignWithPathFunction::prepare() {
@@ -30,28 +47,11 @@ bool AlignWithPathFunction::prepare() {
 }
 
 double AlignWithPathFunction::scoreTrajectory(Trajectory &traj) {
-  if (!target_pose_valid_) {
-    return 0;
-  }
-
-  if (traj.getPointsSize() <= 0) {
-    return 0;
-  }
-
-  double px, py, pth;
-  traj.getPoint(0, px, py, pth);
-  const double squared_dist = (goal_x_ - px) * (goal_x_ - px) + (goal_y_ - py) * (goal_y_ - py);
-  // allow backwards motion close to goal
-  if (squared_dist < MIN_GOAL_DIST_SQ) {
-    return 0;
-  }
-
-  const double angle_diff = angles::normalize_angle(path_yaw_ - pth);
   // if angle off by more than MAX_ANGLE_ERROR, force to rotate towards path with more than MIN_ROT_SPEED
-  if (angle_diff > MAX_ANGLE_ERROR && traj.thetav_ < MIN_ROT_SPEED) {
+  if (current_yaw_diff_positive_ && traj.thetav_ < MIN_ROT_SPEED) {
     return PENALTY_COST;
   }
-  if (angle_diff < -MAX_ANGLE_ERROR && traj.thetav_ > -MIN_ROT_SPEED) {
+  if (!current_yaw_diff_positive_ && traj.thetav_ > -MIN_ROT_SPEED) {
     return PENALTY_COST;
   }
   return 0;

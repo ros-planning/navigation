@@ -257,7 +257,7 @@ namespace dwa_local_planner {
 
     obstacle_costs_.setFootprint(footprint_spec);
 
-    path_align_costs_.setTargetPoses(global_plan_);
+    path_align_costs_.setTargetPoses(global_plan_, global_pose);
 
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
