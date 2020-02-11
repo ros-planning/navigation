@@ -62,7 +62,7 @@ Costmap3D::Costmap3D(double resolution) : octomap::OcTree(resolution)
 
 octomap::point3d toOctomapPoint(const geometry_msgs::Point& point)
 {
-  return octomap::point3d((float)point.x, (float)point.y, (float)point.z);
+  return octomap::point3d(point.x, point.y, point.z);
 }
 
 geometry_msgs::Point fromOctomapPoint(const octomap::point3d& point)

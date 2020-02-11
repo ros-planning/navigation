@@ -81,14 +81,14 @@ void LayeredCostmap3D::updateMap(geometry_msgs::Pose robot_pose)
   {
     // Adjust the x/y based on the x/y of the robot's pose, as a rolling map
     // stays centered on the robot base in x/y (but not z).
-    float robot_x = (float)robot_pose.position.x;
-    float robot_y = (float)robot_pose.position.y;
-    float aabb_width = aabb_max.x() - aabb_min.x();
-    float aabb_height = aabb_max.y() - aabb_min.y();
-    aabb_min.x() += robot_x - aabb_width/2.0f;
-    aabb_min.y() += robot_y - aabb_height/2.0f;
-    aabb_max.x() += robot_x - aabb_width/2.0f;
-    aabb_max.y() += robot_y - aabb_height/2.0f;
+    double robot_x = robot_pose.position.x;
+    double robot_y = robot_pose.position.y;
+    double aabb_width = aabb_max.x() - aabb_min.x();
+    double aabb_height = aabb_max.y() - aabb_min.y();
+    aabb_min.x() += robot_x - aabb_width/2.0;
+    aabb_min.y() += robot_y - aabb_height/2.0;
+    aabb_max.x() += robot_x - aabb_width/2.0;
+    aabb_max.y() += robot_y - aabb_height/2.0;
   }
   const geometry_msgs::Point min_msg(fromOctomapPoint(aabb_min));
   const geometry_msgs::Point max_msg(fromOctomapPoint(aabb_max));
