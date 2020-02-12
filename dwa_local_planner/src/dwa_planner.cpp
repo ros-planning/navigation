@@ -85,6 +85,8 @@ namespace dwa_local_planner {
 
     twirling_costs_.setScale(config.twirling_scale);
 
+    prefer_forward_costs_.setScale(1.2 * config.sim_time * (2 * config.goal_distance_bias + config.path_distance_bias));
+
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
@@ -171,6 +173,7 @@ namespace dwa_local_planner {
     critics.push_back(&alignment_costs_); // prefers trajectories that keep the robot nose on nose path
     critics.push_back(&path_costs_); // prefers trajectories on global path
     critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
+    critics.push_back(&prefer_forward_costs_); // prefer trajectories that don't go backwards
     critics.push_back(&twirling_costs_); // optionally prefer trajectories that don't spin
 
     // trajectory generators
