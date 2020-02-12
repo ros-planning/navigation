@@ -1,0 +1,4 @@
+SpeedLimiterMsg path
+SpeedLimiterMsg shadow
+SpeedLimiterMsg obstacle
+SpeedLimiterMsg external
