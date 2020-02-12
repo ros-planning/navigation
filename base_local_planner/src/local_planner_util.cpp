@@ -172,7 +172,10 @@ void LocalPlannerUtil::updateLimits() {
   }
 
   std::vector<geometry_msgs::PoseStamped> transformed_plan;
-  if (!getLocalPlan(robot_pose, transformed_plan)) {
+  if (global_plan_.size() <= 0) {
+    ROS_WARN("No global plan plan for speed limiters.");
+  }
+  else if (!getLocalPlan(robot_pose, transformed_plan)) {
     ROS_WARN("No plan for speed limiters.");
   }
   speed_limit_manager_.setPlan(transformed_plan);
