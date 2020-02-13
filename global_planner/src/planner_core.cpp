@@ -67,7 +67,8 @@ void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned 
 }
 
 GlobalPlanner::GlobalPlanner() :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        costmap_(NULL), costmap_char_array_(NULL), costmap_size_x_(UINT_MAX), costmap_size_y_(UINT_MAX),
+        initialized_(false), allow_unknown_(true) {
 }
 
 GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
@@ -85,6 +86,8 @@ GlobalPlanner::~GlobalPlanner() {
         delete path_maker_;
     if (dsrv_)
         delete dsrv_;
+    if(costmap_char_array_ && plan_on_costmap_copy_)
+        delete costmap_char_array_;
 }
 
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
@@ -98,6 +101,18 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         frame_id_ = frame_id;
 
         unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
+
+        private_nh.param("plan_on_costmap_copy", plan_on_costmap_copy_, false);
+        if(plan_on_costmap_copy_){
+            //reserve memory to copy costmap's underlying char array before planning, so we can freely modify it
+            costmap_size_x_ = costmap_->getSizeInCellsX();
+            costmap_size_y_ = costmap_->getSizeInCellsY();
+            costmap_char_array_ = new unsigned char[costmap_size_x_ * costmap_size_y_];
+        }else{
+            //default behavior; just use the pointer offered by the costmap; content will
+            //be altered after planning is done, until the next update (fine in most cases)
+            costmap_char_array_ = costmap_->getCharMap();
+        }
 
         private_nh.param("old_navfn_behavior", old_navfn_behavior_, false);
         if(!old_navfn_behavior_)
@@ -166,15 +181,14 @@ void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, u
     orientation_filter_->setWindowSize(config.orientation_window_size);
 }
 
-void GlobalPlanner::clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my) {
+void GlobalPlanner::clearRobotCell(unsigned char* costarr, unsigned int mx, unsigned int my) {
     if (!initialized_) {
         ROS_ERROR(
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
         return;
     }
-
-    //set the associated costs in the cost map to be free
-    costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
+    //set the associated costs in the cost array to be free
+    costarr[costmap_->getIndex(mx, my)] = costmap_2d::FREE_SPACE;
 }
 
 bool GlobalPlanner::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp) {
@@ -273,10 +287,22 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         worldToMap(wx, wy, goal_x, goal_y);
     }
 
-    //clear the starting cell within the costmap because we know it can't be an obstacle
-    clearRobotCell(start, start_x_i, start_y_i);
-
     int nx = costmap_->getSizeInCellsX(), ny = costmap_->getSizeInCellsY();
+
+    if(plan_on_costmap_copy_){
+        //copy costmap's underlying char array so we can freely modify it (we clear robot cell and outline map borders)
+        if(costmap_size_x_ != nx || costmap_size_y_ != ny){
+            //map size changed, so we need to reallocate the memory
+            delete costmap_char_array_;
+            costmap_char_array_ = new unsigned char[nx * ny];
+            costmap_size_x_ = nx;
+            costmap_size_y_ = ny;
+        }
+        memcpy(costmap_char_array_, costmap_->getCharMap(), nx * ny);
+    }
+
+    //clear the starting cell within the costmap because we know it can't be an obstacle
+    clearRobotCell(costmap_char_array_, start_x_i, start_y_i);
 
     //make sure to resize the underlying array that Navfn uses
     p_calc_->setSize(nx, ny);
@@ -284,13 +310,13 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     path_maker_->setSize(nx, ny);
     potential_array_ = new float[nx * ny];
 
-    outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
+    outlineMap(costmap_char_array_, nx, ny, costmap_2d::LETHAL_OBSTACLE);
 
-    bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
+    bool found_legal = planner_->calculatePotentials(costmap_char_array_, start_x, start_y, goal_x, goal_y,
                                                     nx * ny * 2, potential_array_);
 
     if(!old_navfn_behavior_)
-        planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
+        planner_->clearEndpoint(costmap_char_array_, potential_array_, goal_x_i, goal_y_i, 2);
     if(publish_potential_)
         publishPotential(potential_array_);
 
