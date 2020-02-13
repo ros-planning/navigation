@@ -85,7 +85,8 @@ namespace dwa_local_planner {
 
     twirling_costs_.setScale(config.twirling_scale);
 
-    prefer_forward_costs_.setScale(1.2 * config.sim_time * (config.path_distance_bias + config.goal_distance_bias));
+    backwardvel_scale_ = 1.2 * config.sim_time * (config.path_distance_bias + config.goal_distance_bias);
+    prefer_forward_costs_.setScale(backwardvel_scale_);
 
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
@@ -264,6 +265,7 @@ namespace dwa_local_planner {
 
     // costs for going away from path
     path_costs_.setTargetPoses(global_plan_);
+    alignment_costs_.setTargetPoses(global_plan_);
 
     // costs for not going towards the local goal as much as possible
     goal_costs_.setTargetPoses(global_plan_);
@@ -289,20 +291,34 @@ namespace dwa_local_planner {
 
     goal_front_costs_.setTargetPoses(front_global_plan);
 
-    // keeping the nose on the path
-    if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
-      if (path_align_costs_.getScale() == 0) {
-        alignment_costs_.setScale(pdist_scale_);
-        goal_front_costs_.setScale(gdist_scale_);
-        // costs for robot being aligned with path (nose on path, not ju
-        alignment_costs_.setTargetPoses(global_plan_);
-      } else {
-         alignment_costs_.setScale(0.0);
-         goal_front_costs_.setScale(0.0);
-      }
-    } else {
-      // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
+    constexpr double MIN_GOAL_DIST_SQ = 0.7;
+    if (sq_dist > MIN_GOAL_DIST_SQ && path_align_costs_.isTurningRequired()) {
+      // enable turning penalty
+      path_align_costs_.setScale(1.0);
+      // disable goal cost during turning because turning won't move the robot closer to the goal
+      goal_costs_.setScale(0.0);
+      // disable alignment cost during turning because turning will inadvertedly move the nose off the path
       alignment_costs_.setScale(0.0);
+    } else {
+      // disable turning penalty close to goal
+      path_align_costs_.setScale(0.0);
+
+      // revert settings made for when turning was required
+      goal_costs_.setScale(gdist_scale_);
+
+      if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
+        alignment_costs_.setScale(pdist_scale_);
+      } else {
+        // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
+        alignment_costs_.setScale(0.0);
+      }
+    }
+
+    // disable cost for backwards motion close to the goal
+    if (sq_dist > MIN_GOAL_DIST_SQ) {
+        prefer_forward_costs_.setScale(backwardvel_scale_);
+    } else {
+        prefer_forward_costs_.setScale(0.0);
     }
   }
 
