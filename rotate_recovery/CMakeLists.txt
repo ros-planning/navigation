@@ -42,8 +42,7 @@ add_dependencies(rotate_recovery ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 target_link_libraries(rotate_recovery ${catkin_LIBRARIES})
 
 install(TARGETS rotate_recovery
-       ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-       LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
 install(DIRECTORY include/${PROJECT_NAME}/

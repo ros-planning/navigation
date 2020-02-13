@@ -38,6 +38,11 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#ifdef _MSC_VER
+#define GOAL_ATTRIBUTE_UNUSED
+#else
+#define GOAL_ATTRIBUTE_UNUSED __attribute__ ((unused))
+#endif
 
 namespace base_local_planner {
 
@@ -203,7 +208,7 @@ namespace base_local_planner {
 
   bool isGoalReached(const tf2_ros::Buffer& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const costmap_2d::Costmap2D& costmap __attribute__((unused)),
+      const costmap_2d::Costmap2D& costmap GOAL_ATTRIBUTE_UNUSED,
       const std::string& global_frame,
       geometry_msgs::PoseStamped& global_pose,
       const nav_msgs::Odometry& base_odom,

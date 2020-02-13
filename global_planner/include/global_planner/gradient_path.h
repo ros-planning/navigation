@@ -40,6 +40,7 @@
 
 #include<global_planner/traceback.h>
 #include <math.h>
+#include <algorithm>
 
 namespace global_planner {
 

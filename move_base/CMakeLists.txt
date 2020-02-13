@@ -65,11 +65,14 @@ set_target_properties(move_base_node PROPERTIES OUTPUT_NAME move_base)
 
 install(
     TARGETS
-        move_base
         move_base_node
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(
+    TARGETS
+        move_base
+    DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
 ## Mark cpp header files for installation

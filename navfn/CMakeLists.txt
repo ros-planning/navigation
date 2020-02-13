@@ -55,6 +55,11 @@ catkin_package(
         visualization_msgs
 )
 
+check_include_file(sys/time.h HAVE_SYS_TIME_H)
+if (HAVE_SYS_TIME_H)
+  add_definitions(-DHAVE_SYS_TIME_H)
+endif (HAVE_SYS_TIME_H)
+
 add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
 target_link_libraries(navfn
     ${catkin_LIBRARIES}
@@ -66,10 +71,12 @@ target_link_libraries(navfn_node
     navfn
     )
 
-install(TARGETS navfn navfn_node
-       ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-       LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+install(TARGETS navfn_node
+       DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+       )
+
+install(TARGETS navfn
+       DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        )
 
 install(DIRECTORY include/navfn/

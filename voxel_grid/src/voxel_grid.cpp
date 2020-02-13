@@ -35,7 +35,10 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <voxel_grid/voxel_grid.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+
 #include <ros/console.h>
 
 namespace voxel_grid {
