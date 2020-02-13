@@ -200,6 +200,8 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         bool old_navfn_behavior_;
         float convert_offset_;
 
+        bool outline_map_;
+
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
         void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
 
