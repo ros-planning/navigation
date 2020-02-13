@@ -5,6 +5,8 @@
 
 namespace base_local_planner {
 
+constexpr double MAX_ANGLE_ERROR = 0.8;
+
 class AlignWithPathFunction : public base_local_planner::TrajectoryCostFunction {
 public:
   AlignWithPathFunction();
@@ -15,8 +17,12 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
 
+  bool isTurningRequired() const {
+    return std::abs(current_yaw_diff_) > MAX_ANGLE_ERROR;
+  }
+
 private:
-  bool current_yaw_diff_positive_;
+  double current_yaw_diff_;
 };
 
 } /* namespace base_local_planner */
