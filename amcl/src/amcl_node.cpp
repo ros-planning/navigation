@@ -575,6 +575,11 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   beam_skip_distance_ = config.beam_skip_distance; 
   beam_skip_threshold_ = config.beam_skip_threshold; 
   
+  // Clear queued laser objects so that their parameters get updated
+  lasers_.clear();
+  lasers_update_.clear();
+  frame_to_laser_.clear();
+
   if( pf_ != NULL )
   {
     pf_free( pf_ );
