@@ -85,7 +85,7 @@ namespace dwa_local_planner {
 
     twirling_costs_.setScale(config.twirling_scale);
 
-    prefer_forward_costs_.setScale(1.2 * config.sim_time * (2 * config.goal_distance_bias + config.path_distance_bias));
+    prefer_forward_costs_.setScale(1.2 * config.sim_time * (config.path_distance_bias + config.goal_distance_bias));
 
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
@@ -288,12 +288,18 @@ namespace dwa_local_planner {
     front_global_plan.back().pose.position.y = front_global_plan.back().pose.position.y + std::abs(forward_point_distance_) * sin(angle_to_goal);
 
     goal_front_costs_.setTargetPoses(front_global_plan);
-    
+
     // keeping the nose on the path
     if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
-      alignment_costs_.setScale(pdist_scale_);
-      // costs for robot being aligned with path (nose on path, not ju
-      alignment_costs_.setTargetPoses(global_plan_);
+      if (path_align_costs_.getScale() == 0) {
+        alignment_costs_.setScale(pdist_scale_);
+        goal_front_costs_.setScale(gdist_scale_);
+        // costs for robot being aligned with path (nose on path, not ju
+        alignment_costs_.setTargetPoses(global_plan_);
+      } else {
+         alignment_costs_.setScale(0.0);
+         goal_front_costs_.setScale(0.0);
+      }
     } else {
       // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
       alignment_costs_.setScale(0.0);
