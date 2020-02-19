@@ -62,15 +62,15 @@ void LayeredCostmap3D::updateMap(geometry_msgs::Pose robot_pose)
   // Lock the master costmap
   std::lock_guard<LayeredCostmap3D> lock(*this);
 
-  matchBoundsAndResolution();
-
-  num_updates_++;
-
   if (!costmap_)
   {
     // We don't have a costmap to update!
     return;
   }
+
+  matchBoundsAndResolution();
+
+  num_updates_++;
 
   Costmap3D bounds_map(costmap_->getResolution());
 
