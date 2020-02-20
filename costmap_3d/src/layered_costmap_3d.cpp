@@ -115,11 +115,13 @@ void LayeredCostmap3D::updateMap(geometry_msgs::Pose robot_pose)
       // pointer, so make the bounds map represent the entire universe.
       bounds_map.setNodeValueAtDepth(Costmap3DIndex(), 0, LETHAL);
     }
-
-    // Remove any out-of-bounds entries from the bounds map.
-    // This will prevent layers from copying back any data that is
-    // out-of-bounds below.
-    bounds_map.deleteAABB(aabb_min, aabb_max, true);
+    else
+    {
+      // Remove any out-of-bounds entries from the bounds map.
+      // This will prevent layers from copying back any data that is
+      // out-of-bounds below.
+      bounds_map.deleteAABB(aabb_min, aabb_max, true);
+    }
 
     // Delete the current cells that are being updated.
     costmap_->setTreeValues(NULL, &bounds_map, false, true);
