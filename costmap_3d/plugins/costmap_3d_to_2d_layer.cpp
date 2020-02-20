@@ -150,34 +150,54 @@ void Costmap3DTo2DLayer::updateBounds(double robot_x, double robot_y, double rob
       }
     }
 
+    // The updateMap method locks the master costmap, locking both the 2D
+    // and 3D costmaps (since they use the same lock). Therefore, the 3D
+    // costmap can not change, and trying to lock here would cause a deadlock.
+    Costmap3DConstPtr master_3d = layered_costmap_3d_->getCostmap3D();
+    Costmap3DIndex map_origin_index;
+    // Octomap cell coordinates are from center, where costmap_2d's are from
+    // bottom-left. We must move the origin to the center to get the correct
+    // results.
+    if (!master_3d->coordToKeyChecked(origin_x_ + resolution_/2.0, origin_y_ + resolution_/2.0, 0.0, map_origin_index))
     {
-      // The updateMap method locks the master costmap, locking both the 2D
-      // and 3D costmaps (since they use the same lock). Therefore, the 3D
-      // costmap can not change, and trying to lock here would cause a deadlock.
+      // We don't bother handling when the origin of the 2D map is off the 3D
+      // map space. Partial updating around the boundaries is tricky.
+      ROS_WARN_STREAM_THROTTLE(
+          5.0,
+          "Costmap3DTo2DLayer: 2D map origin is not in 3D map index space! "
+          "Marking layer as stale for safety.");
+      current_ = false;
+    }
+    else
+    {
+      current_ = true;
 
       // Update the regions that have changed
       // Create a bound-box iterator over the 3D costmap.
-      Costmap3DConstPtr master_3d = layered_costmap_3d_->getCostmap3D();
       Costmap3DIndex min_index, max_index;
       master_3d->coordToKeyClamped(extra_min_x_, extra_min_y_, -std::numeric_limits<double>::max(),
                                    min_index);
       master_3d->coordToKeyClamped(extra_max_x_, extra_max_y_, std::numeric_limits<double>::max(),
                                    max_index);
+      const octomap::key_type map_ox = map_origin_index[0];
+      const octomap::key_type map_oy = map_origin_index[1];
+      min_index[0] = std::max(min_index[0], map_ox);
+      min_index[1] = std::max(min_index[1], map_oy);
+      max_index[0] = std::min(max_index[0], map_ox + size_x_ - 1);
+      max_index[1] = std::min(max_index[1], map_oy + size_y_ - 1);
+      assert(map_ox <= min_index[0]);
+      assert(map_oy <= min_index[1]);
       auto it = master_3d->begin_leafs_bbx(min_index, max_index);
       auto end = master_3d->end_leafs_bbx();
 
       assert(resolution_ > 0.0);
       assert((master_3d->getResolution() - resolution_) < 1e-6);
-      const int map_ox = (int)std::round(origin_x_ / resolution_);
-      const int map_oy = (int)std::round(origin_y_ / resolution_);
-      const int map_3d_ox = (1 << (master_3d->getTreeDepth() - 1));
-      const int map_3d_oy = (1 << (master_3d->getTreeDepth() - 1));
 
       while (it != end)
       {
         Costmap3DIndex min_index_3d = it.getIndexKey();
-        const int min_x_3d = (int)min_index_3d[0] - map_3d_ox;
-        const int min_y_3d = (int)min_index_3d[1] - map_3d_oy;
+        octomap::key_type min_x_3d = min_index_3d[0];
+        octomap::key_type min_y_3d = min_index_3d[1];
         const octomap::key_type depth_diff_3d = master_3d->getTreeDepth() - it.getDepth();
         // avoid undefined behavior in the bit shift by special-case when
         // depth diff is at or beyond the key's bit width
@@ -185,23 +205,26 @@ void Costmap3DTo2DLayer::updateBounds(double robot_x, double robot_y, double rob
             depth_diff_3d >= octomap::KEY_BIT_WIDTH ?
             std::numeric_limits<octomap::key_type>::max() :
             (((octomap::key_type)1u)<<depth_diff_3d) - 1u);
-        const int max_x_3d = min_x_3d + size_3d;
-        const int max_y_3d = min_y_3d + size_3d;
+        octomap::key_type max_x_3d = min_x_3d + size_3d;
+        octomap::key_type max_y_3d = min_y_3d + size_3d;
         const unsigned char cost = toCostmap2D(it->getValue());
 
-        for (int y = min_y_3d; y <= max_y_3d; ++y)
+        // clip the octomap cell x-y box by the 2D map update dimensions
+        min_x_3d = std::max(min_x_3d, map_ox + min_map_x);
+        min_y_3d = std::max(min_y_3d, map_oy + min_map_y);
+        max_x_3d = std::min(max_x_3d, map_ox + max_map_x);
+        max_y_3d = std::min(max_y_3d, map_oy + max_map_y);
+        for (octomap::key_type y = min_y_3d; y <= max_y_3d; ++y)
         {
-          for (int x = min_x_3d; x <= max_x_3d; ++x)
+          for (octomap::key_type x = min_x_3d; x <= max_x_3d; ++x)
           {
-            const int map_x = x - map_ox;
-            const int map_y = y - map_oy;
-            if (map_x >= min_map_x && map_y >= min_map_y && map_x <= max_map_x && map_y <= max_map_y)
+            const unsigned int map_x = x - map_ox;
+            const unsigned int map_y = y - map_oy;
+            assert(map_x >= min_map_x && map_y >= min_map_y && map_x <= max_map_x && map_y <= max_map_y);
+            const unsigned int map_index = getIndex(map_x, map_y);
+            if (costmap_[map_index] == costmap_2d::NO_INFORMATION || cost > costmap_[map_index])
             {
-              const unsigned int map_index = getIndex(map_x, map_y);
-              if (costmap_[map_index] == costmap_2d::NO_INFORMATION || cost > costmap_[map_index])
-              {
-                costmap_[map_index] = cost;
-              }
+              costmap_[map_index] = cost;
             }
           }
         }
@@ -228,7 +251,6 @@ void Costmap3DTo2DLayer::updateFrom3D(LayeredCostmap3D* layered_costmap_3d, cons
   // Note: this function is only ever called during the costmap update
   // process, so we do not need to worry about synchronization w/ the layered
   // costmap.
-  current_ = true;
 
   // Get our extra bounds added for this update.
   Costmap3D::iterator it, end;
