@@ -1,19 +1,23 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rotate_recovery)
 
+set(PKG_DEPS
+  base_local_planner
+  costmap_2d
+  geometry_msgs
+  nav_core
+  pluginlib
+  roscpp
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+)
+
 find_package(catkin REQUIRED
   COMPONENTS
+    ${PKG_DEPS}
     angles
-    base_local_planner
     cmake_modules
-    costmap_2d
-    geometry_msgs
-    nav_core
-    pluginlib
-    roscpp
-    tf2
-    tf2_geometry_msgs
-    tf2_ros
 )
 
 find_package(Eigen3 REQUIRED)
@@ -28,13 +32,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES rotate_recovery
   CATKIN_DEPENDS
-    costmap_2d
-    geometry_msgs
-    nav_core
-    pluginlib
-    roscpp
-    tf2
-    tf2_ros
+    ${PKG_DEPS}
 )
 
 add_library(rotate_recovery src/rotate_recovery.cpp)
