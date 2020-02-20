@@ -94,18 +94,18 @@ void RotateRecovery::runBehavior()
   runBehavior(rotation_angle_);
 }
 
-void RotateRecovery::runBehavior(const double rotation_angle)
+bool RotateRecovery::runBehavior(const double rotation_angle)
 {
   if (!initialized_)
   {
     ROS_ERROR("This object must be initialized before runBehavior is called");
-    return;
+    return false;
   }
 
   if (local_costmap_ == NULL)
   {
     ROS_ERROR("The costmap passed to the RotateRecovery object cannot be NULL. Doing nothing.");
-    return;
+    return false;
   }
   ROS_WARN("Rotate recovery behavior started.");
 
@@ -156,7 +156,7 @@ void RotateRecovery::runBehavior(const double rotation_angle)
           cmd_vel.angular.z = 0.0;
 
            vel_pub.publish(cmd_vel);
-          return;
+          return false;
         }
         ROS_DEBUG("Rotate recovery slowing down because there is a potential collision %.2f [rad] away", sim_angle);
         break;
@@ -180,7 +180,7 @@ void RotateRecovery::runBehavior(const double rotation_angle)
 
     // if we're done with our in-place rotation... then return
     if(rotated_angle >= std::abs(rotation_angle) - tolerance_)
-      return;
+      return true;
 
     r.sleep();
   }
