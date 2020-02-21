@@ -5,21 +5,24 @@
 
 namespace base_local_planner {
 
+constexpr double MAX_ANGLE_ERROR = 0.8;
+
 class AlignWithPathFunction : public base_local_planner::TrajectoryCostFunction {
 public:
   AlignWithPathFunction();
 
-  void setTargetPoses(std::vector<geometry_msgs::PoseStamped>& target_poses);
+  void setTargetPoses(std::vector<geometry_msgs::PoseStamped>& target_poses, const geometry_msgs::PoseStamped& global_pose);
 
   bool prepare();
 
   double scoreTrajectory(Trajectory &traj);
 
+  bool isTurningRequired() const {
+    return std::abs(current_yaw_diff_) > MAX_ANGLE_ERROR;
+  }
+
 private:
-  double path_yaw_;
-  double goal_x_;
-  double goal_y_;
-  bool target_pose_valid_;
+  double current_yaw_diff_;
 };
 
 } /* namespace base_local_planner */
