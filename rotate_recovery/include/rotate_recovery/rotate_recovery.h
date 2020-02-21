@@ -80,7 +80,7 @@ protected:
   /**
    * @brief  Run the RotateRecovery recovery behavior with additional arguments.
    */
-  void runBehavior(const double rotation_angle);
+  bool runBehavior(const double rotation_angle);
 
 private:
   costmap_2d::Costmap2DROS* local_costmap_;
