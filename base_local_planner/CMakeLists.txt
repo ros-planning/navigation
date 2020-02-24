@@ -46,8 +46,8 @@ add_message_files(
         SpeedLimitRequest.msg
         Obstacle.msg
         Obstacles.msg
-        speed_limiter.msg
-        speed_limiters.msg
+        SpeedLimiterMsg.msg
+        SpeedLimitersMsg.msg
 )
 
 generate_messages(
