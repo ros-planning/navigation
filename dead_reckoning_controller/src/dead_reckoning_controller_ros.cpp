@@ -28,7 +28,7 @@ namespace dead_reckoning_controller {
 
       // update latched stop rotate controller configuration
 
-      // update dwa specific configuration
+      // update drc specific configuration
       drc_->reconfigure(config);
       canceled_ = false;
   }
@@ -78,12 +78,12 @@ namespace dead_reckoning_controller {
   {
     if (! isInitialized()) 
     {
-      ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+      ROS_WARN("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
     if (orig_global_plan.size() != 1)
     {
-      ROS_ERROR("Plan is not one point, failing");
+      ROS_WARN("Plan is not one point, failing");
       return false;
     }
     costmap_ros_->getRobotPose(current_pose_);
@@ -123,12 +123,12 @@ namespace dead_reckoning_controller {
   {
     if (! isInitialized()) 
     {
-      ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+      ROS_WARN("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
     if ( ! costmap_ros_->getRobotPose(current_pose_))
     {
-      ROS_ERROR("Could not get robot pose");
+      ROS_WARN("Could not get robot pose");
       return false;
     }
     if(drc_->isGoalReached(current_pose_))
@@ -153,10 +153,9 @@ namespace dead_reckoning_controller {
   bool DeadReckoningControllerROS::deadReckoningComputeVelocityCommands(tf::Stamped<tf::Pose> &global_pose, tf::Stamped<tf::Pose>& robot_vel,
     geometry_msgs::Twist& cmd_vel)
   {
-    // dynamic window sampling approach to get useful velocity commands
     if (! isInitialized())
     {
-      ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+      ROS_WARN("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
 
@@ -166,7 +165,9 @@ namespace dead_reckoning_controller {
     tf::Stamped<tf::Pose> drive_cmds;
     drive_cmds.frame_id_ = costmap_ros_->getBaseFrameID();
 
-    drc_->computeVelocity(global_pose, robot_vel, drive_cmds);
+    if(!drc_->computeVelocity(global_pose, robot_vel, drive_cmds)){
+      return false;
+    }
 
     //pass along drive commands
     cmd_vel.linear.x = drive_cmds.getOrigin().getX();
@@ -213,7 +214,7 @@ namespace dead_reckoning_controller {
       bool isOk = deadReckoningComputeVelocityCommands(current_pose_, robot_vel, cmd_vel);
       if (isOk) {
       } else {
-        ROS_DEBUG_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
+        ROS_DEBUG_NAMED("drd_local_planner", "DRC planner failed to produce path.");
       }
       return isOk;
     }

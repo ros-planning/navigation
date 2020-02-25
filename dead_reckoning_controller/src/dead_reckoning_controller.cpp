@@ -18,14 +18,25 @@
 
 namespace dead_reckoning_controller {
 
+  //             ^line_end
+  //             |
+  //     *_______|
+  //         d   |
+  //             |
+  //             |
+  //             |
+  //             |line_start
+  //    
+  // Calculate minimum distance from a line. If the point is left to the line, d is postivie, if to the right d is negative
+
   double DeadReckoningController::distanceFromLine(tf::Stamped<tf::Pose> line_start, tf::Stamped<tf::Pose> line_end, tf::Stamped<tf::Pose> point)
   {
-    //Calcluation to get distance from line. Will return postiive if left of line, and negative if right of line.
+    //calculation is essentially taking the hypotnuse(line start -> point) and subtracting one of the sides (dot(line, point)) to get the resulting vector from line to point.
     double numerator = -1 * ((line_end.getOrigin().getY() - line_start.getOrigin().getY()) * point.getOrigin().getX() - 
                           (line_end.getOrigin().getX() - line_start.getOrigin().getX()) * point.getOrigin().getY() +
                           line_end.getOrigin().getX() * line_start.getOrigin().getY() - 
                           line_end.getOrigin().getY() * line_start.getOrigin().getX());
-
+    //denominator is making sure that line_start to line_end is normalized.
     double denominator = sqrt(pow(line_end.getOrigin().getY() - line_start.getOrigin().getY(), 2) + pow(line_end.getOrigin().getX() - line_start.getOrigin().getX(), 2));
     if( denominator != 0) {
       return numerator/denominator;
@@ -44,16 +55,17 @@ namespace dead_reckoning_controller {
     ros::NodeHandle global_nh;
 
     std::string controller_frequency_param_name;
+    double default_frequency = 0.05;
     if(!global_nh.searchParam("controller_frequency", controller_frequency_param_name)) {
-      sim_period_ = 0.05;
+      sim_period_ = default_frequency;
     } else {
       double controller_frequency = 0;
-      global_nh.param(controller_frequency_param_name, controller_frequency, 20.0);
+      global_nh.param(controller_frequency_param_name, controller_frequency, 1.0 / default_frequency);
       if(controller_frequency > 0) {
         sim_period_ = 1.0 / controller_frequency;
       } else {
         ROS_WARN("A controller_frequency less than 0 has been set. Ignoring the parameter, assuming a rate of 20Hz");
-        sim_period_ = 0.05;
+        sim_period_ = default_frequency;
       }
     }
   }
@@ -68,7 +80,7 @@ namespace dead_reckoning_controller {
       ROS_ERROR("Robot too far from path, can't proceed");
       return false;
     }
-    do_tip_first_ = config_.tip_first;
+    do_turn_in_place_ = config_.tip_first;
     return true;
   }
 
@@ -78,7 +90,7 @@ namespace dead_reckoning_controller {
     //base velocity on the acceleration curve
     double p_error = sqrt(2*std::fabs(currentDistanceAway) * config_.acc_lim_x);
     
-    if(do_tip_first_){
+    if(do_turn_in_place_){
       return 0;
     }
     return std::min(config_.max_vel_x, p_error * config_.p_weight_linear); //reconfigurable and better variable names
@@ -89,28 +101,15 @@ namespace dead_reckoning_controller {
 
 
     double ang_vel_out;
-    //I dont like these lines, but I can't figure a non buggy way tf to get the angle diff with correct signs
+    
+
     double current_yaw;
     double end_pose_yaw;
     double current_vel_ang;
 
-    //yaw of current pose orientation
-    tf::Matrix3x3 current_pose_matrix(current_pose.getRotation());
-    double roll, pitch, yaw;
-    current_pose_matrix.getRPY(roll, pitch, yaw);
-    current_yaw = yaw;
-    
-
-    //yaw of path orientation
-    tf::Matrix3x3 end_pose_matrix(end_pose_.getRotation());
-    end_pose_matrix.getRPY(roll, pitch, yaw);
-    end_pose_yaw = yaw;
-
-
-    //angular velocity of current velocity orientation
-    tf::Matrix3x3 current_velocity_matrix(current_velocity.getRotation());
-    current_velocity_matrix.getRPY(roll, pitch, yaw);
-    current_vel_ang = yaw;
+    current_yaw = tf::getYaw(current_pose.getRotation());
+    end_pose_yaw = tf::getYaw(end_pose_.getRotation());
+    current_vel_ang = tf::getYaw(current_velocity.getRotation());
     
     //just get it in {-pi to pi} format
     double angleDiff;
@@ -121,14 +120,14 @@ namespace dead_reckoning_controller {
         angleDiff = angleDiff + 2*M_PI;
     }
 
-    if(do_tip_first_){
+    if(do_turn_in_place_){
       if(std::fabs(angleDiff) < config_.tip_difference_threshold) {
-        do_tip_first_ = false;
+        do_turn_in_place_ = false;
       }
       else{
-
+        //coming from the latched stop rotate code.
         //this is actually the gain conversion from distance to velocity
-        double v_theta_samp = std::min(config_.max_tip_ang_z, std::max(config_.max_tip_ang_z, fabs(angleDiff)));
+        double v_theta_samp = std::min(config_.max_tip_vel, std::max(config_.max_tip_vel, fabs(angleDiff)));
 
         double max_acc_vel = fabs(current_vel_ang) + config_.acc_lim_tip * sim_period_;
         double min_acc_vel = fabs(current_vel_ang) - config_.acc_lim_tip * sim_period_;
@@ -138,12 +137,12 @@ namespace dead_reckoning_controller {
         double max_speed_to_stop = sqrt(2 * config_.acc_lim_tip * fabs(angleDiff));
         v_theta_samp = std::min(max_speed_to_stop, fabs(v_theta_samp));
 
-        v_theta_samp = std::min(config_.max_tip_ang_z, std::max(config_.max_tip_ang_z, v_theta_samp));
+        v_theta_samp = std::min(config_.max_tip_vel, std::max(config_.max_tip_vel, v_theta_samp));
 
         if (angleDiff < 0) {
           v_theta_samp = - v_theta_samp;
         }
-        ang_vel_out = -1 * v_theta_samp;
+        ang_vel_out = - v_theta_samp;
       }
     }
     else{
@@ -166,45 +165,45 @@ namespace dead_reckoning_controller {
     }
     
     //make sure it's not above the max ang z limits
-    if (std::fabs(ang_vel_out) < config_.max_ang_z){
+    if (std::fabs(ang_vel_out) < config_.max_rot_vel){
       return ang_vel_out;
     }
     else if (ang_vel_out < 0) {
-      return -1 * config_.max_ang_z;
+      return -1 * config_.max_rot_vel;
     }
     else{
-      return config_.max_ang_z;
+      return config_.max_rot_vel;
     }
   }
 
   bool DeadReckoningController::isGoalReached(const tf::Stamped<tf::Pose> current_pose){
-    //need this to get a proper vector form current pose to the start pose.
-    tf::Pose current_pose_transform = start_pose_.inverseTimes(current_pose);
 
     //this does a check to see if the robot is past the goal vector's y axis.
-    //this is comparing start_pose -> current_pose and start_pose -> end_pose
-    if((current_pose_transform.getOrigin().getX() * path_.getOrigin().getX() + current_pose_transform.getOrigin().getY() * path_.getOrigin().getY()) > 
-      (path_.getOrigin().getX() * path_.getOrigin().getX() + path_.getOrigin().getY() * path_.getOrigin().getY())){
-        return true;
-
-    } else{
+    tf::StampedTransform transform;
+    tf::Pose current_pose_transform = end_pose_.inverseTimes(current_pose);
+    if(current_pose_transform.getOrigin().getX() > 0){
+      return true;
+    }
+    else{
       return false;
     }
-    
   };
 
-  void DeadReckoningController::computeVelocity(
+  bool DeadReckoningController::computeVelocity(
           tf::Stamped<tf::Pose> global_pose,
           tf::Stamped<tf::Pose> global_vel,
           tf::Stamped<tf::Pose>& drive_velocities) {
 
     double angular_velocity = calculateAngularVelocity(global_pose, global_vel);
-    double lienar_velocity = calculateLinearVelocity(global_pose, global_vel);
-    tf::Vector3 origin(lienar_velocity, 0, 0);
+    double linear_velocity = calculateLinearVelocity(global_pose, global_vel);
+    tf::Vector3 origin(linear_velocity, 0, 0);
     tf::Quaternion rotation;
-    rotation.setRPY(0,0,angular_velocity);
+    rotation.setRPY(0 ,0, angular_velocity);
     drive_velocities.setOrigin(origin);
     drive_velocities.setRotation(rotation);
+
+    //TO-DO do a check if we are in a good position and return false
+    return true;
   }
 
 

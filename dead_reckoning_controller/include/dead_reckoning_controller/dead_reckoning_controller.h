@@ -74,7 +74,7 @@ namespace dead_reckoning_controller {
        * @param global_vel The current velocity of the robot
        * @param drive_velocities The velocities to send to the robot base
        */
-      void computeVelocity(
+      bool computeVelocity(
           tf::Stamped<tf::Pose> global_pose,
           tf::Stamped<tf::Pose> global_vel,
           tf::Stamped<tf::Pose>& drive_velocities);
@@ -99,7 +99,7 @@ namespace dead_reckoning_controller {
       tf::Stamped<tf::Pose> start_pose_;
       tf::Stamped<tf::Pose> end_pose_;
       tf::Pose path_;
-      bool do_tip_first_ = false;
+      bool do_turn_in_place_ = false;
 
       double sim_period_;
 
