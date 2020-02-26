@@ -124,9 +124,9 @@ add_dependencies(trajectory_planner_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${ca
 target_link_libraries(trajectory_planner_ros
      base_local_planner)
 
-add_executable(point_grid src/point_grid.cpp)
+add_executable(point_grid src/point_grid_node.cpp)
 add_dependencies(point_grid ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(point_grid ${catkin_LIBRARIES})
+target_link_libraries(point_grid ${catkin_LIBRARIES} base_local_planner)
 
 install(TARGETS
             base_local_planner
