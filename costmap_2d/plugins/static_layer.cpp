@@ -170,7 +170,6 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   // resize costmap if size, resolution or origin do not match
   Costmap2D* master = layered_costmap_->getCostmap();
   if (!layered_costmap_->isRolling() &&
-      !layered_costmap_->isSizeLocked() &&
       (master->getSizeInCellsX() != size_x ||
        master->getSizeInCellsY() != size_y ||
        master->getResolution() != new_map->info.resolution ||
@@ -180,7 +179,8 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
     // Update the size of the layered costmap (and all layers, including this one)
     ROS_INFO("Resizing costmap to %d X %d at %f m/pix", size_x, size_y, new_map->info.resolution);
     layered_costmap_->resizeMap(size_x, size_y, new_map->info.resolution, new_map->info.origin.position.x,
-                                new_map->info.origin.position.y, true);
+                                new_map->info.origin.position.y,
+                                true /* set size_locked to true, prevents reconfigureCb from overriding map size*/);
   }
   else if (size_x_ != size_x || size_y_ != size_y ||
            resolution_ != new_map->info.resolution ||
