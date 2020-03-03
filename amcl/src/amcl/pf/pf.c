@@ -270,6 +270,8 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
 
   // Compute the sample weights
   total = (*sensor_fn) (sensor_data, set);
+
+  set->n_effective = 0;
   
   if (total > 0.0)
   {
@@ -280,6 +282,7 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
       sample = set->samples + i;
       w_avg += sample->weight;
       sample->weight /= total;
+      set->n_effective += sample->weight*sample->weight;
     }
     // Update running averages of likelihood of samples (Prob Rob p258)
     w_avg /= set->sample_count;
@@ -304,9 +307,51 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
     }
   }
 
+  set->n_effective = 1.0/set->n_effective;
   return;
 }
 
+// copy set a to set b
+void copy_set(pf_sample_set_t* set_a, pf_sample_set_t* set_b)
+{
+  int i;
+  double total;
+  pf_sample_t *sample_a, *sample_b;
+
+  // Clean set b's kdtree
+  pf_kdtree_clear(set_b->kdtree);
+
+  // Copy samples from set a to create set b
+  total = 0;
+  set_b->sample_count = 0;
+
+  for(i = 0; i < set_a->sample_count; i++)
+  {
+    sample_b = set_b->samples + set_b->sample_count++;
+
+    sample_a = set_a->samples + i;
+
+    assert(sample_a->weight > 0);
+
+    // Copy sample a to sample b
+    sample_b->pose = sample_a->pose;
+    sample_b->weight = sample_a->weight;
+
+    total += sample_b->weight;
+
+    // Add sample to histogram
+    pf_kdtree_insert(set_b->kdtree, sample_b->pose, sample_b->weight);
+  }
+
+  // Normalize weights
+  for (i = 0; i < set_b->sample_count; i++)
+  {
+    sample_b = set_b->samples + i;
+    sample_b->weight /= total;
+  }
+
+  set_b->converged = set_a->converged;
+}
 
 // Resample the distribution
 void pf_update_resample(pf_t *pf)
@@ -325,6 +370,22 @@ void pf_update_resample(pf_t *pf)
 
   set_a = pf->sets + pf->current_set;
   set_b = pf->sets + (pf->current_set + 1) % 2;
+
+  if (pf->selective_resampling != 0)
+  {
+    if (set_a->n_effective > 0.5*(set_a->sample_count))
+    {
+      // copy set a to b
+      copy_set(set_a,set_b);
+
+      // Re-compute cluster statistics
+      pf_cluster_stats(pf, set_b);
+
+      // Use the newly created sample set
+      pf->current_set = (pf->current_set + 1) % 2;
+      return;
+    }
+  }
 
   // Build up cumulative probability table for resampling.
   // TODO: Replace this with a more efficient procedure
@@ -600,6 +661,10 @@ void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set)
   return;
 }
 
+void pf_set_selective_resampling(pf_t *pf, int selective_resampling)
+{
+  pf->selective_resampling = selective_resampling;
+}
 
 // Compute the CEP statistics (mean and variance).
 void pf_get_cep_stats(pf_t *pf, pf_vector_t *mean, double *var)
