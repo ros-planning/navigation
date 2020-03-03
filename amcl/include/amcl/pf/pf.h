@@ -104,6 +104,7 @@ typedef struct _pf_sample_set_t
   pf_vector_t mean;
   pf_matrix_t cov;
   int converged; 
+  double n_effective;
 } pf_sample_set_t;
 
 
@@ -133,6 +134,9 @@ typedef struct _pf_t
 
   double dist_threshold; //distance threshold in each axis over which the pf is considered to not be converged
   int converged; 
+
+  // boolean parameter to enamble/diable selective resampling
+  int selective_resampling;
 } pf_t;
 
 
@@ -158,6 +162,9 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
 
 // Resample the distribution
 void pf_update_resample(pf_t *pf);
+
+// set selective resampling parameter
+void pf_set_selective_resampling(pf_t *pf, int selective_resampling);
 
 // Compute the CEP statistics (mean and variance).
 void pf_get_cep_stats(pf_t *pf, pf_vector_t *mean, double *var);
@@ -189,6 +196,8 @@ int pf_update_converged(pf_t *pf);
 
 //sets the current set and pf converged values to zero
 void pf_init_converged(pf_t *pf);
+
+void pf_copy_set(pf_sample_set_t* set_a, pf_sample_set_t* set_b);
 
 #ifdef __cplusplus
 }
