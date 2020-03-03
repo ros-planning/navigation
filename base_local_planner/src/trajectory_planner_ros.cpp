@@ -176,11 +176,11 @@ namespace base_local_planner {
                                                                   0.6);
       // values of the deprecated params need to be applied to the current params, as defaults 
       // of defined for dynamic reconfigure will override them otherwise.
-      if (private_nh.hasParam("pdist_scale"))
+      if (private_nh.hasParam("pdist_scale") & !private_nh.hasParam("path_distance_bias"))
       {
         private_nh.setParam("path_distance_bias", path_distance_bias);
       }
-      if (private_nh.hasParam("gdist_scale"))
+      if (private_nh.hasParam("gdist_scale") & !private_nh.hasParam("goal_distance_bias"))
       {
         private_nh.setParam("goal_distance_bias", goal_distance_bias);
       }
