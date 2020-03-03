@@ -137,8 +137,11 @@ class AmclNode
 
     /**
      * @brief Uses TF and LaserScan messages from bag file to drive AMCL instead
+     * @param in_bag_fn input bagfile
+     * @param trigger_global_localization whether to trigger global localization
+     * before starting to process the bagfile
      */
-    void runFromBag(const std::string &in_bag_fn);
+    void runFromBag(const std::string &in_bag_fn, bool trigger_global_localization = false);
 
     int process();
     void savePoseToServer();
@@ -319,9 +322,16 @@ main(int argc, char** argv)
     // run using ROS input
     ros::spin();
   }
-  else if ((argc == 3) && (std::string(argv[1]) == "--run-from-bag"))
+  else if ((argc >= 3) && (std::string(argv[1]) == "--run-from-bag"))
   {
-    amcl_node_ptr->runFromBag(argv[2]);
+    if (argc == 3)
+    {
+      amcl_node_ptr->runFromBag(argv[2]);
+    }
+    else if ((argc == 4) && (std::string(argv[3]) == "--global-localization"))
+    {
+      amcl_node_ptr->runFromBag(argv[2], true);
+    }
   }
 
   // Without this, our boost locks are not shut down nicely
@@ -652,7 +662,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
 }
 
 
-void AmclNode::runFromBag(const std::string &in_bag_fn)
+void AmclNode::runFromBag(const std::string &in_bag_fn, bool trigger_global_localization)
 {
   rosbag::Bag bag;
   bag.open(in_bag_fn, rosbag::bagmode::Read);
@@ -683,6 +693,12 @@ void AmclNode::runFromBag(const std::string &in_bag_fn)
     }
     ROS_INFO("Waiting for map...");
     ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0));
+  }
+
+  if (trigger_global_localization)
+  {
+    std_srvs::Empty empty_srv;
+    globalLocalizationCallback(empty_srv.request, empty_srv.response);
   }
 
   BOOST_FOREACH(rosbag::MessageInstance const msg, view)
