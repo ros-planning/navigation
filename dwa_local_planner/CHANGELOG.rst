@@ -2,6 +2,9 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.5 (2019-11-15)
 -------------------
 * ROS_DEBUG prints incorrect gen_id & incorrect namespace for /latch_xy_goal_tolerance (`#862 <https://github.com/ros-planning/navigation/issues/862>`_)

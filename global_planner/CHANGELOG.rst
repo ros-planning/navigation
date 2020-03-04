@@ -2,6 +2,9 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.5 (2019-11-15)
 -------------------
 * Remove unused costmap_pub_freq (`#864 <https://github.com/ros-planning/navigation/issues/864>`_)
