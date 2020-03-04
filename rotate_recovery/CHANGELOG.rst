@@ -2,6 +2,11 @@
 Changelog for package rotate_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Contributors: Sean Yen
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic

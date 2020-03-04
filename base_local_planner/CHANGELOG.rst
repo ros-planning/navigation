@@ -2,6 +2,17 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixes gdist- and pdist_scale node paramter names (`#936 <https://github.com/cobalt-robotics/navigation/issues/936>`_)
+  Renames goal and path distance dynamic reconfigure parameter
+  names in the cfg file in order to actually make the parameters
+  used by the trajectory planner changeable.
+  Fixes `#935 <https://github.com/cobalt-robotics/navigation/issues/935>`_
+* don't include a main() function in base_local_planner library (`#969 <https://github.com/cobalt-robotics/navigation/issues/969>`_)
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Contributors: David Leins, Sean Yen, ipa-fez
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic

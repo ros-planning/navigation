@@ -2,6 +2,17 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix published footprint topic name (`#947 <https://github.com/cobalt-robotics/navigation/issues/947>`_)
+  The default name of the topic will be updated in noetic
+* fix usage of size_locked, fixes `#959 <https://github.com/cobalt-robotics/navigation/issues/959>`_ (`#966 <https://github.com/cobalt-robotics/navigation/issues/966>`_)
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Merge pull request `#957 <https://github.com/cobalt-robotics/navigation/issues/957>`_ from Blindnology/melodic-updateOrigin
+  Optimize costmap_2d::updateOrigin
+* Optimize costmap_2d::updateOrigin
+* Contributors: Michael Ferguson, Pavlo Kolomiiets, Sean Yen, Yuki Furuta
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge pull request `#877 <https://github.com/ros-planning/navigation/issues/877>`_ from SteveMacenski/layer_clear_area-melodic

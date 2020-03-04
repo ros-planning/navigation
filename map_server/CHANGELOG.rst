@@ -2,6 +2,9 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic

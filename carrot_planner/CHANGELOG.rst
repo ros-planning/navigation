@@ -2,6 +2,11 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Contributors: Sean Yen
+
 1.16.3 (2019-11-15)
 -------------------
 

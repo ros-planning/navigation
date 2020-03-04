@@ -2,6 +2,15 @@
 Changelog for package move_slow_and_clear
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Merge pull request `#955 <https://github.com/cobalt-robotics/navigation/issues/955>`_ from isjfk/melodic-devel
+  Fix move_slow_and_clear sending obsolete params to dwa_local_planner
+* Fix move_slow_and_clear sending obsolete params to dwa_local_planner
+  issue.
+* Contributors: Jimmy F. Klarke, Michael Ferguson, Sean Yen
+
 1.16.3 (2019-11-15)
 -------------------
 

@@ -2,6 +2,17 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Add frame ID to empty NavFn paths (`#964 <https://github.com/cobalt-robotics/navigation/issues/964>`_)
+  * Don't publish empty paths
+  RViz will complain about not being able to transform the path if it doesn't have a frame ID, so we'll just drop these
+  Closes `#963 <https://github.com/cobalt-robotics/navigation/issues/963>`_
+  * Publish empty paths with a valid frame
+  * Fix indexing into empty plan for timestamp
+* Contributors: Nick Walker, Sean Yen
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes

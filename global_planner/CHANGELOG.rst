@@ -2,6 +2,12 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* parameter for enabling outlineMap added (`#926 <https://github.com/cobalt-robotics/navigation/issues/926>`_)
+* Contributors: Pavel Shumejko, Sean Yen
+
 1.16.3 (2019-11-15)
 -------------------
 * Remove unused visualize_potential (`#866 <https://github.com/ros-planning/navigation/issues/866>`_)
