@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.6 (2020-03-04)
+-------------------
 * Implement selective resampling (`#921 <https://github.com/cobalt-robotics/navigation/issues/921>`_)
 * Add CLI option to trigger global localization before processing a bagfile (`#816 <https://github.com/cobalt-robotics/navigation/issues/816>`_)
   Co-authored-by: alain-m <alain@savioke.com>
