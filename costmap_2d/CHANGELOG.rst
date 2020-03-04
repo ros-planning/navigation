@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.4 (2020-03-04)
+-------------------
 * fix published footprint topic name (`#947 <https://github.com/cobalt-robotics/navigation/issues/947>`_)
   The default name of the topic will be updated in noetic
 * fix usage of size_locked, fixes `#959 <https://github.com/cobalt-robotics/navigation/issues/959>`_ (`#966 <https://github.com/cobalt-robotics/navigation/issues/966>`_)

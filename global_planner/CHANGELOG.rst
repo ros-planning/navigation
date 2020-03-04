@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.4 (2020-03-04)
+-------------------
 * [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
 * parameter for enabling outlineMap added (`#926 <https://github.com/cobalt-robotics/navigation/issues/926>`_)
 * Contributors: Pavel Shumejko, Sean Yen

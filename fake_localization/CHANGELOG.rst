@@ -2,8 +2,8 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.4 (2020-03-04)
+-------------------
 * remove signals dep (`#945 <https://github.com/cobalt-robotics/navigation/issues/945>`_)
   Boost > 1.7 has signals by default
 * Contributors: acxz

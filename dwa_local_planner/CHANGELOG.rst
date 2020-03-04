@@ -2,8 +2,8 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.4 (2020-03-04)
+-------------------
 * Fixes gdist- and pdist_scale node paramter names (`#936 <https://github.com/cobalt-robotics/navigation/issues/936>`_)
   Renames goal and path distance dynamic reconfigure parameter
   names in the cfg file in order to actually make the parameters
