@@ -2,6 +2,9 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.6 (2020-03-04)
 -------------------
 * Implement selective resampling (`#921 <https://github.com/cobalt-robotics/navigation/issues/921>`_)
