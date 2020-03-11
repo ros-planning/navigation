@@ -179,8 +179,11 @@ bool RotateRecovery::runBehavior(const double rotation_angle)
     vel_pub.publish(cmd_vel);
 
     // if we're done with our in-place rotation... then return
-    if(rotated_angle >= std::abs(rotation_angle) - tolerance_)
+    if(rotated_angle >= std::abs(rotation_angle) - tolerance_) {
+      cmd_vel.angular.z = 0.0;
+      vel_pub.publish(cmd_vel);
       return true;
+    }
 
     r.sleep();
   }
