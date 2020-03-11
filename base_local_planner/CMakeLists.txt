@@ -131,7 +131,9 @@ target_link_libraries(point_grid ${catkin_LIBRARIES} base_local_planner)
 install(TARGETS
             base_local_planner
             trajectory_planner_ros
-       DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
        )
 
 install(FILES blp_plugin.xml
