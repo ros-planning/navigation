@@ -140,7 +140,6 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         planner_->setHasUnknown(allow_unknown_);
         private_nh.param("planner_window_x", planner_window_x_, 0.0);
         private_nh.param("planner_window_y", planner_window_y_, 0.0);
-        private_nh.param("default_tolerance", default_tolerance_, 0.0);
         private_nh.param("publish_scale", publish_scale_, 100);
         private_nh.param("outline_map", outline_map_, true);
 
@@ -163,19 +162,25 @@ void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, u
     planner_->setNeutralCost(config.neutral_cost);
     planner_->setFactor(config.cost_factor);
     publish_potential_ = config.publish_potential;
+    tolerance_max_cost_ = config.tolerance_max_cost;
+    default_tolerance_ = config.default_tolerance;
+    preserve_temporary_goal_ = config.preserve_temporary_goal;
     orientation_filter_->setMode(config.orientation_mode);
     orientation_filter_->setWindowSize(config.orientation_window_size);
 }
 
-void GlobalPlanner::clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my) {
+void GlobalPlanner::clearRobotCell(const geometry_msgs::PoseStamped& global_pose) {
     if (!initialized_) {
         ROS_ERROR(
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
         return;
     }
 
+    unsigned int mx_i, my_i;
+    costmap_->worldToMap(global_pose.pose.position.x, global_pose.pose.position.y, mx_i, my_i);
+
     //set the associated costs in the cost map to be free
-    costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
+    costmap_->setCost(mx_i, my_i, costmap_2d::FREE_SPACE);
 }
 
 bool GlobalPlanner::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp) {
@@ -208,6 +213,33 @@ bool GlobalPlanner::worldToMap(double wx, double wy, double& mx, double& my) {
     return false;
 }
 
+bool GlobalPlanner::computeCoordinates(double wx, double wy, double& mx, double& my) {
+    unsigned int mx_i, my_i;
+    if (!costmap_->worldToMap(wx, wy, mx_i, my_i)) {
+        return false;
+    }
+    if(old_navfn_behavior_){
+        mx = mx_i;
+        my = my_i;
+    }else{
+        worldToMap(wx, wy, mx, my);
+    }
+    return true;
+}
+
+bool GlobalPlanner::worldCost(double wx, double wy, unsigned char &cost) {
+
+  unsigned int wx_int, wy_int;
+
+  if (!costmap_->worldToMap(wx, wy, wx_int, wy_int)) {
+      ROS_ERROR_NAMED("global planner", "Unable to get world to map coordinates for %f, %f -> out of map bounds");
+      return false;
+  }
+
+  cost = costmap_->getCost(wx_int, wy_int);
+  return true;
+}
+
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                            std::vector<geometry_msgs::PoseStamped>& plan) {
     return makePlan(start, goal, default_tolerance_, plan);
@@ -221,12 +253,31 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
         return false;
     }
-
     //clear the plan, just in case
     plan.clear();
 
     ros::NodeHandle n;
     std::string global_frame = frame_id_;
+
+    geometry_msgs::PoseStamped goal_copy = goal;
+
+    if (preserve_temporary_goal_ && default_tolerance_ > 0.0)
+    {
+      // In case the planner is supposed to plan to a new position,
+      // reset the goal close by to make sure we're using the
+      // new location.
+      // Otherwise if the goal did not change but move_base simply
+      // performs a new iteration of makePlan we can stick with the goal
+      // close by to prevent oscillations.
+      if (fabs(official_goal_x_ - goal.pose.position.x) > 1e-9 || fabs(official_goal_y_ - goal.pose.position.y) > 1e-9) {
+        official_goal_x_ = goal.pose.position.x;
+        official_goal_y_ = goal.pose.position.y;
+        cur_goal_x_ = goal.pose.position.x;
+        cur_goal_y_ = goal.pose.position.y;
+        goal_copy.pose.position.x = cur_goal_x_;
+        goal_copy.pose.position.y = cur_goal_y_;
+      }
+    }
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if (goal.header.frame_id != global_frame) {
@@ -241,41 +292,22 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
         return false;
     }
 
-    double wx = start.pose.position.x;
-    double wy = start.pose.position.y;
 
-    unsigned int start_x_i, start_y_i, goal_x_i, goal_y_i;
     double start_x, start_y, goal_x, goal_y;
 
-    if (!costmap_->worldToMap(wx, wy, start_x_i, start_y_i)) {
+    if (!computeCoordinates(start.pose.position.x, start.pose.position.y, start_x, start_y)) {
         ROS_WARN(
                 "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
         return false;
     }
-    if(old_navfn_behavior_){
-        start_x = start_x_i;
-        start_y = start_y_i;
-    }else{
-        worldToMap(wx, wy, start_x, start_y);
-    }
 
-    wx = goal.pose.position.x;
-    wy = goal.pose.position.y;
-
-    if (!costmap_->worldToMap(wx, wy, goal_x_i, goal_y_i)) {
-        ROS_WARN_THROTTLE(1.0,
-                "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
+    if (!computeCoordinates(cur_goal_x_, cur_goal_y_, goal_x, goal_y)) {
+        ROS_WARN("The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
         return false;
-    }
-    if(old_navfn_behavior_){
-        goal_x = goal_x_i;
-        goal_y = goal_y_i;
-    }else{
-        worldToMap(wx, wy, goal_x, goal_y);
     }
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
-    clearRobotCell(start, start_x_i, start_y_i);
+    clearRobotCell(start);
 
     int nx = costmap_->getSizeInCellsX(), ny = costmap_->getSizeInCellsY();
 
@@ -288,19 +320,113 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     if(outline_map_)
         outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
 
+    ROS_INFO("got goal: %f %f", goal_x, goal_y);
+
     bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
                                                     nx * ny * 2, potential_array_);
 
-    if(!old_navfn_behavior_)
+    if (found_legal == false && default_tolerance_ > 0.0) {
+      // Search outwards for a feasible goal within the specified tolerance.
+      // This is essentially taken from the planService implemented in move_base.
+      float resolution = costmap_->getResolution();
+      float search_increment = resolution*3.0;
+      double orig_wx = goal.pose.position.x;
+      double orig_wy = goal.pose.position.y;
+      double temp_wx = goal.pose.position.x;
+      double temp_wy = goal.pose.position.y;
+      unsigned char cur_cost = 255;
+
+      ROS_INFO("Trying to find alternative pose");
+
+      //TODO: patch req.tolerance to something meaningful.
+      //if(req.tolerance > 0.0 && req.tolerance < search_increment) search_increment = req.tolerance;
+
+      for(float max_offset = search_increment; max_offset <= default_tolerance_ && !found_legal; max_offset += search_increment) {
+        for(float y_offset = 0; y_offset <= max_offset && !found_legal; y_offset += search_increment) {
+          for(float x_offset = 0; x_offset <= max_offset && !found_legal; x_offset += search_increment) {
+
+            //don't search again inside the current outer layer
+            if(x_offset < max_offset-1e-9 && y_offset < max_offset-1e-9) continue;
+
+            //search to both sides of the desired goal
+            for(float y_mult = -1.0; y_mult <= 1.0 + 1e-9 && !found_legal; y_mult += 2.0) {
+
+              //if one of the offsets is 0, -1*0 is still 0 (so get rid of one of the two)
+              if(y_offset < 1e-9 && y_mult < -1.0 + 1e-9) continue;
+
+              for(float x_mult = -1.0; x_mult <= 1.0 + 1e-9 && !found_legal; x_mult += 2.0) {
+                if(x_offset < 1e-9 && x_mult < -1.0 + 1e-9) continue;
+
+                temp_wx = orig_wx + x_offset * x_mult;
+                temp_wy = orig_wy + y_offset * y_mult;
+
+                computeCoordinates(temp_wx, temp_wy, goal_x, goal_y);
+
+//                if (!costmap_->worldToMap(temp_wx, temp_wy, temp_x_i, temp_y_i)) {
+//                    ROS_WARN_THROTTLE(1.0,
+//                            "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
+//                    return false;
+//                }
+//                if(old_navfn_behavior_){
+//                    goal_x = temp_x_i;
+//                    goal_y = temp_y_i;
+//                }else{
+//                    worldToMap(temp_wx, temp_wy, goal_x, goal_y);
+//                }
+
+                ROS_INFO("try at %f %f", temp_wx, temp_wy);
+
+                worldCost(temp_wx, temp_wy, cur_cost);
+
+                // only look for a path if the cell actually matches our desired
+                if (cur_cost < tolerance_max_cost_) {
+                  found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
+                                                                      nx * ny * 2, potential_array_);
+
+                  if(found_legal == true){
+                    ROS_INFO("I've found a valid pose!");
+                    goal_copy.pose.position.x = temp_wx;
+                    goal_copy.pose.position.y = temp_wy;
+
+                    break;
+                  }
+                }
+
+
+//                  if(!global_plan.empty()){
+
+//                    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
+//                    //(the reachable goal should have been added by the global planner)
+//                    global_plan.push_back(req.goal);
+
+//                    found_legal = true;
+//                    ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
+//                    break;
+//                  }
+//                }
+                else{
+                  ROS_DEBUG_NAMED("move_base","Failed to find a plan to point (%.2f, %.2f)", orig_wx, orig_wy);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if(!old_navfn_behavior_) {
+        unsigned int goal_x_i, goal_y_i;
+        costmap_->worldToMap(goal_copy.pose.position.x, goal_copy.pose.position.y, goal_x_i, goal_y_i);
         planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
+    }
     if(publish_potential_)
         publishPotential(potential_array_);
 
     if (found_legal) {
         //extract the plan
-        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
+        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal_copy, plan)) {
             //make sure the goal we push on has the same timestamp as the rest of the plan
-            geometry_msgs::PoseStamped goal_copy = goal;
+//            geometry_msgs::PoseStamped goal_copy = goal;
             goal_copy.header.stamp = ros::Time::now();
             plan.push_back(goal_copy);
         } else {

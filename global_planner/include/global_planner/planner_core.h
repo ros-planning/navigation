@@ -176,7 +176,9 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
     private:
         void mapToWorld(double mx, double my, double& wx, double& wy);
         bool worldToMap(double wx, double wy, double& mx, double& my);
-        void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
+        bool computeCoordinates(double wx, double wy, double& mx, double& my);
+        bool worldCost(double wx, double wy, unsigned char &cost);
+        void clearRobotCell(const geometry_msgs::PoseStamped& global_pose);
         void publishPotential(float* potential);
 
         double planner_window_x_, planner_window_y_, default_tolerance_;
@@ -189,8 +191,10 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         OrientationFilter* orientation_filter_;
 
         bool publish_potential_;
+        bool preserve_temporary_goal_;
         ros::Publisher potential_pub_;
         int publish_scale_;
+        int tolerance_max_cost_;
 
         void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
         unsigned char* cost_array_;
@@ -201,6 +205,9 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         float convert_offset_;
 
         bool outline_map_;
+
+        double cur_goal_x_, cur_goal_y_;
+        double official_goal_x_, official_goal_y_;
 
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
         void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
