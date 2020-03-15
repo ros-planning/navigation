@@ -2,8 +2,8 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.5 (2020-03-15)
+-------------------
 * [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
 * Contributors: Sean Yen
 
