@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(voxel_grid)
 
+include(CheckIncludeFile)
+
 find_package(catkin REQUIRED
   COMPONENTS
     roscpp
