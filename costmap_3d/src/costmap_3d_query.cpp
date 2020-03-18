@@ -156,6 +156,7 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
     // which ones might still be valid.
     milli_distance_cache_.clear();
     micro_distance_cache_.clear();
+    exact_distance_cache_.clear();
     printStatistics();
     clearStatistics();
     last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
