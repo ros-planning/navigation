@@ -2,6 +2,9 @@
 Changelog for package voxel_grid
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.16.5 (2020-03-15)
 -------------------
 * Fix Uknown CMake command check_include_file (`#974 <https://github.com/ros-planning/navigation/issues/974>`_)

@@ -2,6 +2,11 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix Unknown CMake command check_include_file (navfn & base_local_planner) (`#975 <https://github.com/ros-planning/navigation/issues/975>`_)
+* Contributors: Sam Pfeiffer
+
 1.16.5 (2020-03-15)
 -------------------
 * [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
