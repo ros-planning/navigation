@@ -615,7 +615,11 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
       new_entry,
       pose);
 
-  // Update distance caches
+  // Update distance caches.
+  // Note that it is possible for the result to be empty. The octomap might
+  // only contain non-lethal leaves and we may have missed every cache.
+  // If we get no result primitives, do not add null pointers to the cache!
+  if (new_entry.octomap_box && new_entry.mesh_triangle)
   {
     // Get write access
     unique_lock write_lock(upgrade_mutex_);
