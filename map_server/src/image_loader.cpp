@@ -42,16 +42,21 @@
 // We use SDL_image to load the image from disk
 #include <SDL/SDL_image.h>
 
-// Use Bullet's Quaternion object to create one from Euler angles
-#include <LinearMath/btQuaternion.h>
-
 #include "map_server/image_loader.h"
-
-// compute linear index for given map coords
-#define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
 
 namespace map_server
 {
+
+namespace
+{
+
+/// Compute a linear index given map coords
+size_t toMapIdx(const size_t sx, const size_t i, const size_t j)
+{
+  return (sx * j) + i;
+}
+
+}
 
 void
 loadMapFromFile(nav_msgs::GetMap::Response* resp,
@@ -87,13 +92,12 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   resp->map.info.origin.position.x = *(origin);
   resp->map.info.origin.position.y = *(origin+1);
   resp->map.info.origin.position.z = 0.0;
-  btQuaternion q;
-  // setEulerZYX(yaw, pitch, roll)
-  q.setEulerZYX(*(origin+2), 0, 0);
-  resp->map.info.origin.orientation.x = q.x();
-  resp->map.info.origin.orientation.y = q.y();
-  resp->map.info.origin.orientation.z = q.z();
-  resp->map.info.origin.orientation.w = q.w();
+
+  const double yaw = *(origin+2);
+  resp->map.info.origin.orientation.x = 0.0;
+  resp->map.info.origin.orientation.y = 0.0;
+  resp->map.info.origin.orientation.z = sin(yaw / 2.0);
+  resp->map.info.origin.orientation.w = cos(yaw / 2.0);
 
   // Allocate space to hold the data
   resp->map.data.resize(resp->map.info.width * resp->map.info.height);
@@ -132,7 +136,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
 
       if(mode==RAW){
           value = color_avg;
-          resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
+          resp->map.data[toMapIdx(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
           continue;
       }
 
@@ -155,7 +159,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
         value = 99 * ratio;
       }
 
-      resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
+      resp->map.data[toMapIdx(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
     }
   }
 
