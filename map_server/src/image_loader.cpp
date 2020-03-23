@@ -59,107 +59,108 @@ size_t toMapIdx(const size_t sx, const size_t i, const size_t j)
 }
 
 void
-loadMapFromFile(nav_msgs::GetMap::Response* resp,
-                const char* fname, double res, bool negate,
-                double occ_th, double free_th, double* origin,
-                MapMode mode)
+loadMapFromFile(const std::string& fname,
+                const double res, 
+                const bool negate,
+                const double occ_th,
+                const double free_th,
+                const std::array<double, 3>& origin,
+                const MapMode mode,
+                nav_msgs::GetMap::Response& resp)
 {
   SDL_Surface* img;
 
-  unsigned char* pixels;
-  unsigned char* p;
-  unsigned char value;
-  int rowstride, n_channels, avg_channels;
-  unsigned int i,j;
-  int k;
-  double occ;
-  int alpha;
-  int color_sum;
-  double color_avg;
-
   // Load the image using SDL.  If we get NULL back, the image load failed.
-  if(!(img = IMG_Load(fname)))
+  if(!(img = IMG_Load(fname.c_str())))
   {
-    std::string errmsg = std::string("failed to open image file \"") +
-            std::string(fname) + std::string("\": ") + IMG_GetError();
+    const std::string errmsg = std::string("failed to open image file \"") +
+                               fname + std::string("\": ") + IMG_GetError();
     throw std::runtime_error(errmsg);
   }
 
   // Copy the image data into the map structure
-  resp->map.info.width = img->w;
-  resp->map.info.height = img->h;
-  resp->map.info.resolution = res;
-  resp->map.info.origin.position.x = *(origin);
-  resp->map.info.origin.position.y = *(origin+1);
-  resp->map.info.origin.position.z = 0.0;
+  auto& info = resp.map.info;
+  info.width = img->w;
+  info.height = img->h;
+  info.resolution = res;
+  info.origin.position.x = origin[0];
+  info.origin.position.y = origin[1];
+  info.origin.position.z = 0.0;
 
-  const double yaw = *(origin+2);
-  resp->map.info.origin.orientation.x = 0.0;
-  resp->map.info.origin.orientation.y = 0.0;
-  resp->map.info.origin.orientation.z = sin(yaw / 2.0);
-  resp->map.info.origin.orientation.w = cos(yaw / 2.0);
+  const double yaw = origin[2];
+  info.origin.orientation.x = 0.0;
+  info.origin.orientation.y = 0.0;
+  info.origin.orientation.z = sin(yaw / 2.0);
+  info.origin.orientation.w = cos(yaw / 2.0);
 
   // Allocate space to hold the data
-  resp->map.data.resize(resp->map.info.width * resp->map.info.height);
+  resp.map.data.resize(info.width * info.height);
 
   // Get values that we'll need to iterate through the pixels
-  rowstride = img->pitch;
-  n_channels = img->format->BytesPerPixel;
+  const auto rowstride = img->pitch;  // the length of a row of pixels in bytes
+  const auto n_channels = img->format->BytesPerPixel;
 
   // NOTE: Trinary mode still overrides here to preserve existing behavior.
   // Alpha will be averaged in with color channels when using trinary mode.
-  if (mode==TRINARY || !img->format->Amask)
-    avg_channels = n_channels;
-  else
-    avg_channels = n_channels - 1;
+  const int avg_channels = (mode == MapMode::TRINARY || !img->format->Amask) ? n_channels : n_channels - 1;
 
   // Copy pixel data into the map structure
-  pixels = (unsigned char*)(img->pixels);
-  for(j = 0; j < resp->map.info.height; j++)
+  unsigned char* pixels = static_cast<unsigned char*>(img->pixels);
+  for(unsigned int j = 0; j < info.height; j++)
   {
-    for (i = 0; i < resp->map.info.width; i++)
+    for (unsigned int i = 0; i < info.width; i++)
     {
       // Compute mean of RGB for this pixel
-      p = pixels + j*rowstride + i*n_channels;
-      color_sum = 0;
-      for(k=0;k<avg_channels;k++)
-        color_sum += *(p + (k));
-      color_avg = color_sum / (double)avg_channels;
+      unsigned char* p = pixels + j*rowstride + i*n_channels;
+      int color_sum = 0;
+      for(int k = 0; k < avg_channels; k++)
+      {
+        color_sum += p[k];
+      }
+      double color_avg = color_sum / (double)avg_channels;
 
-      if (n_channels == 1)
-          alpha = 1;
-      else
-          alpha = *(p+n_channels-1);
+      if (negate)
+      {
+        color_avg = 255.0 - color_avg;
+      }
 
-      if(negate)
-        color_avg = 255 - color_avg;
+      int8_t value = 0;
 
-      if(mode==RAW){
+      if (mode == MapMode::RAW)
+      {
           value = color_avg;
-          resp->map.data[toMapIdx(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
+          resp.map.data[toMapIdx(info.width, i, info.height - j - 1)] = value;
           continue;
       }
 
-
       // If negate is true, we consider blacker pixels free, and whiter
       // pixels occupied.  Otherwise, it's vice versa.
-      occ = (255 - color_avg) / 255.0;
+      const double occ = (255 - color_avg) / 255.0;
+
+      const int alpha = (n_channels == 1) ? 1 : p[n_channels-1];
 
       // Apply thresholds to RGB means to determine occupancy values for
       // map.  Note that we invert the graphics-ordering of the pixels to
       // produce a map with cell (0,0) in the lower-left corner.
-      if(occ > occ_th)
-        value = +100;
-      else if(occ < free_th)
+      if (occ > occ_th)
+      {
+        value = 100;
+      }
+      else if (occ < free_th)
+      {
         value = 0;
-      else if(mode==TRINARY || alpha < 1.0)
+      }
+      else if (mode == MapMode::TRINARY || alpha < 1)
+      {
         value = -1;
-      else {
-        double ratio = (occ - free_th) / (occ_th - free_th);
+      }
+      else 
+      {
+        const double ratio = (occ - free_th) / (occ_th - free_th);
         value = 99 * ratio;
       }
 
-      resp->map.data[toMapIdx(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;
+      resp.map.data[toMapIdx(info.width, i, info.height - j - 1)] = value;
     }
   }
 

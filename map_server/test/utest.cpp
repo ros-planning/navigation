@@ -44,8 +44,15 @@ TEST(MapServer, loadValidPNG)
   try
   {
     nav_msgs::GetMap::Response map_resp;
-    double origin[3] = { 0.0, 0.0, 0.0 };
-    map_server::loadMapFromFile(&map_resp, g_valid_png_file, g_valid_image_res, false, 0.65, 0.1, origin);
+    const std::array<double, 3> origin = { 0.0, 0.0, 0.0 };
+    map_server::loadMapFromFile(g_valid_png_file,
+                                g_valid_image_res, 
+                                false, 
+                                0.65, 
+                                0.1, 
+                                origin, 
+                                map_server::MapMode::TRINARY, 
+                                map_resp);
     EXPECT_FLOAT_EQ(map_resp.map.info.resolution, g_valid_image_res);
     EXPECT_EQ(map_resp.map.info.width, g_valid_image_width);
     EXPECT_EQ(map_resp.map.info.height, g_valid_image_height);
@@ -65,8 +72,15 @@ TEST(MapServer, loadValidBMP)
   try
   {
     nav_msgs::GetMap::Response map_resp;
-    double origin[3] = { 0.0, 0.0, 0.0 };
-    map_server::loadMapFromFile(&map_resp, g_valid_bmp_file, g_valid_image_res, false, 0.65, 0.1, origin);
+    const std::array<double, 3> origin = { 0.0, 0.0, 0.0 };
+    map_server::loadMapFromFile(g_valid_bmp_file, 
+                                g_valid_image_res, 
+                                false, 
+                                0.65, 
+                                0.1, 
+                                origin, 
+                                map_server::MapMode::TRINARY, 
+                                map_resp);
     EXPECT_FLOAT_EQ(map_resp.map.info.resolution, g_valid_image_res);
     EXPECT_EQ(map_resp.map.info.width, g_valid_image_width);
     EXPECT_EQ(map_resp.map.info.height, g_valid_image_height);
@@ -86,8 +100,15 @@ TEST(MapServer, loadInvalidFile)
   try
   {
     nav_msgs::GetMap::Response map_resp;
-    double origin[3] = { 0.0, 0.0, 0.0 };
-    map_server::loadMapFromFile(&map_resp, "foo", 0.1, false, 0.65, 0.1, origin);
+    const std::array<double, 3> origin = { 0.0, 0.0, 0.0 };
+    map_server::loadMapFromFile("foo", 
+                                0.1, 
+                                false, 
+                                0.65, 
+                                0.1, 
+                                origin, 
+                                map_server::MapMode::TRINARY, 
+                                map_resp);
   }
   catch(std::runtime_error &e)
   {
