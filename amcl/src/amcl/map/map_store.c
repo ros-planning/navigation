@@ -54,13 +54,16 @@ int map_load_occ(map_t *map, const char *filename, double scale, int negate)
   }
 
   // Read ppm header
-  
+  // ignore the array-bounds warning. it will never be hit
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Warray-bounds"
   if ((fscanf(file, "%10s \n", magic) != 1) || (strcmp(magic, "P5") != 0))
   {
     fprintf(stderr, "incorrect image format; must be PGM/binary");
     return -1;
   }
-
+  #pragma clang diagnostic pop
+  
   // Ignore comments
   while ((ch = fgetc(file)) == '#')
     while (fgetc(file) != '\n');

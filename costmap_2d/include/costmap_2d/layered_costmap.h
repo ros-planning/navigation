@@ -69,6 +69,8 @@ public:
    */
   ~LayeredCostmap();
 
+  LayeredCostmap(const LayeredCostmap & other) = default;
+
   /**
    * @brief  Update the underlying costmap with new data.
    * If you want to update the map outside of the update loop that runs, you can call this.
