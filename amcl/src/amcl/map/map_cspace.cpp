@@ -95,8 +95,8 @@ void enqueue(map_t* map, unsigned int i, unsigned int j,
   if(marked[MAP_INDEX(map, i, j)])
     return;
 
-  unsigned int di = abs(i - src_i);
-  unsigned int dj = abs(j - src_j);
+  unsigned int di = static_cast<unsigned int>(i - src_i); // abs not needed here as the system is discarding signedness anyway
+  unsigned int dj = static_cast<unsigned int>(j - src_j);
   double distance = cdm->distances_[di][dj];
 
   if(distance > cdm->cell_radius_)
