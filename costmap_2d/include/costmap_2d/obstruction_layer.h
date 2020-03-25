@@ -124,14 +124,14 @@ public:
   }
 
   virtual ~ObstructionLayer();
-  virtual void onInitialize();
+  virtual void onInitialize() override;
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
-                            double* max_x, double* max_y);
-  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+                            double* max_x, double* max_y) override;
+  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) override;
 
-  virtual void activate();
-  virtual void deactivate();
-  virtual void reset();
+  virtual void activate() override;
+  virtual void deactivate() override;
+  virtual void reset() override;
 
   /**
    * @brief  A callback to handle buffering LaserScan messages
@@ -170,11 +170,11 @@ public:
   void clearStaticObservations(bool marking, bool clearing);
 
 
-  virtual void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn);
+  virtual void resetMap(unsigned int x0, unsigned int y0, unsigned int xn, unsigned int yn) override;
 
-  virtual void updateOrigin(double new_origin_x, double new_origin_y);
+  virtual void updateOrigin(double new_origin_x, double new_origin_y) override;
 
-  virtual LayerType getLayerType() {
+  virtual LayerType getLayerType() override {
     return LayerType::OBSTRUCTION;
   }
 
@@ -252,12 +252,12 @@ protected:
   /**
    * @brief  Deletes the costmap, static_map, and markers data structures
    */
-  virtual void deleteMaps();
+  virtual void deleteMaps() override;
 
   /**
    * @brief  Resets the obstruction map, but does not mark the obstructions as cleared.
    */
-  virtual void resetMaps();
+  virtual void resetMaps() override;
 
   /**
    * @brief Resets the obstruction map and marks them as cleared.
@@ -269,19 +269,19 @@ protected:
    * @param size_x The x size to use for map initialization
    * @param size_y The y size to use for map initialization
    */
-  virtual void initMaps(unsigned int size_x, unsigned int size_y);
+  virtual void initMaps(unsigned int size_x, unsigned int size_y) override;
 
   /**
    * Updates to run when the footprint has changed.
    */
-  virtual void onFootprintChanged();
+  virtual void onFootprintChanged() override;
 
   /**
    * Clears an individual grid cell
    * @param x x index
    * @param y y index
    */
-  virtual void clearGridCell(unsigned int x, unsigned int y);
+  virtual void clearGridCell(unsigned int x, unsigned int y) override;
 
   void setInflationParameters(double inflation_radius, double cost_scaling_factor);
 

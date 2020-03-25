@@ -296,7 +296,7 @@ void ShadowLayer::calculateShadowedObjects()
     shadowed_objects_ = std::make_shared<std::vector<geometry_msgs::Point>>();
   }
   shadowed_objects_->clear();
-  ROS_DEBUG("Checking %d shadowed points", shadowed_points_->size());
+  ROS_DEBUG("Checking %d shadowed points", static_cast<int>(shadowed_points_->size()));
   // Iterate over all of the shadowed_points_
   for (const auto& it : (*shadowed_points_))
   {
@@ -305,7 +305,7 @@ void ShadowLayer::calculateShadowedObjects()
       shadowed_objects_->push_back(createPointFromIndex(it));
     }
   }
-  ROS_DEBUG("Returned %d shadowed objects", shadowed_objects_->size());
+  ROS_DEBUG("Returned %d shadowed objects", static_cast<int>(shadowed_objects_->size()));
 }
 
 bool ShadowLayer::checkForShadowedObjectAtIndex(unsigned int idx)
