@@ -359,30 +359,34 @@ std::shared_ptr<Costmap3DQuery> Costmap3DROS::getQuery(const std::string& footpr
 
 double Costmap3DROS::footprintCost(geometry_msgs::Pose pose,
                                    const std::string& footprint_mesh_resource,
-                                   double padding)
+                                   double padding,
+                                   Costmap3DQuery::QueryRegion query_region)
 {
-  return getQuery(footprint_mesh_resource, padding)->footprintCost(pose);
+  return getQuery(footprint_mesh_resource, padding)->footprintCost(pose, query_region);
 }
 
 bool Costmap3DROS::footprintCollision(geometry_msgs::Pose pose,
                                       const std::string& footprint_mesh_resource,
-                                      double padding)
+                                      double padding,
+                                      Costmap3DQuery::QueryRegion query_region)
 {
-  return getQuery(footprint_mesh_resource, padding)->footprintCollision(pose);
+  return getQuery(footprint_mesh_resource, padding)->footprintCollision(pose, query_region);
 }
 
 double Costmap3DROS::footprintDistance(geometry_msgs::Pose pose,
                                        const std::string& footprint_mesh_resource,
-                                       double padding)
+                                       double padding,
+                                       Costmap3DQuery::QueryRegion query_region)
 {
-  return getQuery(footprint_mesh_resource, padding)->footprintDistance(pose);
+  return getQuery(footprint_mesh_resource, padding)->footprintDistance(pose, query_region);
 }
 
 double Costmap3DROS::footprintSignedDistance(geometry_msgs::Pose pose,
                                              const std::string& footprint_mesh_resource,
-                                             double padding)
+                                             double padding,
+                                             Costmap3DQuery::QueryRegion query_region)
 {
-  return getQuery(footprint_mesh_resource, padding)->footprintSignedDistance(pose);
+  return getQuery(footprint_mesh_resource, padding)->footprintSignedDistance(pose, query_region);
 }
 
 void Costmap3DROS::getPlanCost3DActionCallback(
@@ -442,6 +446,12 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
   {
     bool collision = false;
 
+    Costmap3DQuery::QueryRegion query_region = Costmap3DQuery::ALL;
+    if (i < request.cost_query_regions.size())
+    {
+      query_region = request.cost_query_regions[i];
+    }
+
     float timeout_seconds = (request.transform_wait_time_limit > 0) ? request.transform_wait_time_limit : 0.1;
 
     double pose_cost = -1.0;
@@ -454,19 +464,19 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
 
       if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_COLLISION_ONLY)
       {
-        pose_cost = query->footprintCollision(pose.pose) ? -1.0 : 0.0;
+        pose_cost = query->footprintCollision(pose.pose, query_region) ? -1.0 : 0.0;
       }
       else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE)
       {
-        pose_cost = query->footprintDistance(pose.pose);
+        pose_cost = query->footprintDistance(pose.pose, query_region);
       }
       else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
       {
-        pose_cost = query->footprintSignedDistance(pose.pose);
+        pose_cost = query->footprintSignedDistance(pose.pose, query_region);
       }
       else
       {
-        pose_cost = query->footprintCost(pose.pose);
+        pose_cost = query->footprintCost(pose.pose, query_region);
       }
     }
     else

@@ -59,6 +59,7 @@ Costmap3DQuery::Costmap3DQuery(
     unsigned int pose_micro_bins_per_meter,
     unsigned int pose_micro_bins_per_radian)
   : layered_costmap_3d_(layered_costmap_3d),
+    last_cache_entries_(Costmap3DQuery::MAX),
     pose_bins_per_meter_(pose_bins_per_meter),
     pose_bins_per_radian_(pose_bins_per_radian),
     pose_milli_bins_per_meter_(pose_milli_bins_per_meter),
@@ -80,6 +81,7 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
     unsigned int pose_micro_bins_per_meter,
     unsigned int pose_micro_bins_per_radian)
   : layered_costmap_3d_(nullptr),
+    last_cache_entries_(Costmap3DQuery::MAX),
     pose_bins_per_meter_(pose_bins_per_meter),
     pose_bins_per_radian_(pose_bins_per_radian),
     pose_milli_bins_per_meter_(pose_milli_bins_per_meter),
@@ -95,9 +97,6 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
   // couple millseconds and is better than leaving the costmap locked for
   // an entire planning cycle.
   octree_ptr_.reset(new Costmap3D(*costmap_3d));
-  std::shared_ptr<fcl::OcTree<FCLFloat>> fcl_octree_ptr;
-  fcl_octree_ptr.reset(new fcl::OcTree<FCLFloat>(octree_ptr_));
-  world_obj_ = FCLCollisionObjectPtr(new fcl::CollisionObject<FCLFloat>(fcl_octree_ptr));
   updateMeshResource(mesh_resource, padding);
 }
 
@@ -130,9 +129,6 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
     {
       // The octomap has been reallocated, change where we are pointing.
       octree_ptr_ = layered_costmap_3d_->getCostmap3D();
-      std::shared_ptr<fcl::OcTree<FCLFloat>> fcl_octree_ptr;
-      fcl_octree_ptr.reset(new fcl::OcTree<FCLFloat>(octree_ptr_));
-      world_obj_ = FCLCollisionObjectPtr(new fcl::CollisionObject<FCLFloat>(fcl_octree_ptr));
     }
     // The costmap has been updated since the last query, reset our caches
 
@@ -147,10 +143,11 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
     // best answer in the presence of a new closer octomap cell does not make
     // the result incorrect (just less efficient). However, such an improvement
     // may not yield any practical increase in performance due to the
-    // last_cache_entry and the fact that most queries query poses on a path,
+    // last_cache_entries_ and the fact that most queries query poses on a path,
     // which makes a distance_cache miss much less costly.
     distance_cache_.clear();
-    last_cache_entry = DistanceCacheEntry();
+    last_cache_entries_.clear();
+    last_cache_entries_.resize(MAX);
     // We must always drop the milli cache and micro cache, as new cells will
     // invalidate the old results, and there is no simple way to figure out
     // which ones might still be valid.
@@ -287,7 +284,6 @@ void Costmap3DQuery::updateMeshResource(const std::string& mesh_resource, double
   robot_model_->beginModel();
   addPCLPolygonMeshToRobotModel(robot_mesh_, padding, robot_model_.get());
   robot_model_->endModel();
-  robot_obj_ = FCLCollisionObjectPtr(new FCLCollisionObject(robot_model_));
 
   crop_hull_.setHullCloud(robot_mesh_points_);
   crop_hull_.setHullIndices(robot_mesh_.polygons);
@@ -336,20 +332,20 @@ std::string Costmap3DQuery::getFileNameFromPackageURL(const std::string& url)
   return mod_url;
 }
 
-double Costmap3DQuery::footprintCost(geometry_msgs::Pose pose)
+double Costmap3DQuery::footprintCost(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
 {
   // TODO: implement as cost query. For now, just translate a collision to cost
-  return footprintCollision(pose) ? -1.0 : 0.0;
+  return footprintCollision(pose, query_region) ? -1.0 : 0.0;
 }
 
-bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose)
+bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
 {
   // It is more correct and even more efficient to query the distance to find
   // collisions than it is to use FCL to directly find octomap collisions.
   // This is because our distance query correctly handles interior collisions,
   // which requires finding the nearest octomap box, which an FCL collision
   // will not do.
-  return footprintDistance(pose) <= 0.0;
+  return footprintDistance(pose, query_region) <= 0.0;
 }
 
 // Discern if the given octomap box is an interior collision and adjust
@@ -426,19 +422,59 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
   return distance;
 }
 
-double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_distance)
+Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getRobotCollisionObject(const geometry_msgs::Pose& pose) const
+{
+  // We must make our own FCLCollisionObject so we can modify the transform.
+  // Otherwise, the queries will not be thread safe, as we do not have a write
+  // lock except for maintaining the query caches.
+  FCLCollisionObjectPtr robot_obj(new FCLCollisionObject(robot_model_));
+  robot_obj->setTransform(poseToFCLTransform(pose));
+  return robot_obj;
+}
+
+Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getWorldCollisionObject(const geometry_msgs::Pose& pose,
+                                                                              Costmap3DQuery::QueryRegion query_region) const
+{
+  // We must make our own fcl::OcTree so we can modify the region of interest.
+  // Otherwise, the queries will not be thread safe, as we do not have a write
+  // lock except for maintaining the query caches.
+  FCLCollisionObjectPtr world_obj;
+  std::shared_ptr<fcl::OcTree<FCLFloat>> fcl_octree_ptr;
+  fcl_octree_ptr.reset(new fcl::OcTree<FCLFloat>(octree_ptr_));
+  if (query_region == LEFT || query_region == RIGHT)
+  {
+    fcl::Vector3<FCLFloat> normal;
+    // Note, for FCL halfspaces, the inside space is that below the plane, so
+    // the normal needs to point away from the query region
+    if (query_region == LEFT)
+    {
+      normal << 0.0, -1.0, 0.0;
+    }
+    else if(query_region == RIGHT)
+    {
+      normal << 0.0, 1.0, 0.0;
+    }
+    fcl::Halfspace<FCLFloat> halfspace(fcl::transform(
+        fcl::Halfspace<FCLFloat>(normal, 0.0), poseToFCLTransform(pose)));
+    fcl_octree_ptr->addToRegionOfInterest(halfspace);
+  }
+  world_obj = FCLCollisionObjectPtr(new fcl::CollisionObject<FCLFloat>(fcl_octree_ptr));
+  return world_obj;
+}
+
+double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_distance, Costmap3DQuery::QueryRegion query_region)
 {
   upgrade_lock upgrade_lock(upgrade_mutex_);
   std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
   queries_since_clear_.fetch_add(1, std::memory_order_relaxed);
-  if (!robot_obj_)
+  if (!robot_model_)
   {
     // We failed to create a robot model.
     // The failure would have been logged, so simply return collision.
     return -1.0;
   }
   checkCostmap(upgrade_lock);
-  assert(world_obj_);
+  assert(octree_ptr_);
 
   // FCL does not correctly handle an empty octomap.
   if (octree_ptr_->size() == 0)
@@ -446,7 +482,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     return std::numeric_limits<double>::max();
   }
 
-  DistanceCacheKey exact_cache_key(pose);
+  DistanceCacheKey exact_cache_key(pose, query_region);
   auto exact_cache_entry = exact_distance_cache_.find(exact_cache_key);
   if (exact_cache_entry != exact_distance_cache_.end())
   {
@@ -458,11 +494,11 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   }
 
   FCLCollisionObjectPtr robot(getRobotCollisionObject(pose));
-  FCLCollisionObjectPtr world(getWorldCollisionObject());
+  FCLCollisionObjectPtr world(getWorldCollisionObject(pose, query_region));
 
   FCLFloat pose_distance = std::numeric_limits<FCLFloat>::max();
 
-  DistanceCacheKey micro_cache_key(pose, pose_micro_bins_per_meter_, pose_micro_bins_per_radian_);
+  DistanceCacheKey micro_cache_key(pose, query_region, pose_micro_bins_per_meter_, pose_micro_bins_per_radian_);
   // if we hit the micro cache, use the result directly.
   auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
   if (micro_cache_entry != micro_distance_cache_.end())
@@ -479,7 +515,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     return distance;
   }
 
-  DistanceCacheKey milli_cache_key(pose, pose_milli_bins_per_meter_, pose_milli_bins_per_radian_);
+  DistanceCacheKey milli_cache_key(pose, query_region, pose_milli_bins_per_meter_, pose_milli_bins_per_radian_);
   auto milli_cache_entry = milli_distance_cache_.find(milli_cache_key);
   bool milli_hit = false;
   if (milli_cache_entry != milli_distance_cache_.end())
@@ -509,7 +545,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   fcl::DistanceRequest<FCLFloat> request;
   fcl::DistanceResult<FCLFloat> result;
 
-  DistanceCacheKey cache_key(pose, pose_bins_per_meter_, pose_bins_per_radian_);
+  DistanceCacheKey cache_key(pose, query_region, pose_bins_per_meter_, pose_bins_per_radian_);
   auto cache_entry = distance_cache_.find(cache_key);
   bool cache_hit = false;
   if (milli_cache_entry != milli_distance_cache_.end())
@@ -527,28 +563,17 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
 
     cache_entry->second.setupResult(&result);
   }
-  else if(!milli_hit && distance_cache_.size() > 0)
-  {
-    // Cache miss, use the beginning of the cache to set the initial guess.
-    // This still prunes the search better than no initial guess in certain
-    // circumstances and is relatively cheap to calculate. This guess is still
-    // a correct upper bound, as the minimum distance must be less or equal to
-    // the mesh triangle at the new pose and the old nearest octomap cell.
-    auto begin = distance_cache_.begin();
-    pose_distance = begin->second.distanceToNewPose(pose, signed_distance);
-    begin->second.setupResult(&result);
-  }
 
   // Check the distance from the last cache entry too, and use it if it is a
   // better match. This is especialy useful if we miss every cache, but have a
   // last entry, and the queries are being done on a path.
-  if (last_cache_entry.octomap_box)
+  if (last_cache_entries_[query_region].octomap_box)
   {
-    double last_entry_distance = last_cache_entry.distanceToNewPose(pose, signed_distance);
+    double last_entry_distance = last_cache_entries_[query_region].distanceToNewPose(pose, signed_distance);
     if (last_entry_distance < pose_distance)
     {
       pose_distance = last_entry_distance;
-      last_cache_entry.setupResult(&result);
+      last_cache_entries_[query_region].setupResult(&result);
     }
   }
 
@@ -595,35 +620,39 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     distance = fcl::distance(world.get(), robot.get(), request, result);
   }
 
-  const DistanceCacheEntry& new_entry = DistanceCacheEntry(result);
-
-  // Emulate signed distance in a similar way as FCL. FCL re-does the whole
-  // tree/BVH collision, but we already know the colliding primitives, so save
-  // time by calculating their penetration depth directly.
-  if (signed_distance && distance < 0.0)
-  {
-    distance = new_entry.distanceToNewPose(pose, true);
-  }
-
-  distance = handleDistanceInteriorCollisions(
-      distance,
-      signed_distance,
-      new_entry,
-      pose);
-
-  // Update distance caches.
   // Note that it is possible for the result to be empty. The octomap might
   // only contain non-lethal leaves and we may have missed every cache.
+  // Or the query region may be set to something other than ALL and there are
+  // no map entries in the queried region.
   // If we get no result primitives, do not add null pointers to the cache!
-  if (new_entry.octomap_box && new_entry.mesh_triangle)
+  if (result.primitive1 && result.primitive2)
   {
-    // Get write access
-    unique_lock write_lock(upgrade_mutex_);
-    last_cache_entry = new_entry;
-    distance_cache_[cache_key] = new_entry;
-    micro_distance_cache_[micro_cache_key] = new_entry;
-    milli_distance_cache_[milli_cache_key] = new_entry;
-    exact_distance_cache_[exact_cache_key] = distance;
+    const DistanceCacheEntry& new_entry = DistanceCacheEntry(result);
+
+    // Emulate signed distance in a similar way as FCL. FCL re-does the whole
+    // tree/BVH collision, but we already know the colliding primitives, so save
+    // time by calculating their penetration depth directly.
+    if (signed_distance && distance < 0.0)
+    {
+      distance = new_entry.distanceToNewPose(pose, true);
+    }
+
+    distance = handleDistanceInteriorCollisions(
+        distance,
+        signed_distance,
+        new_entry,
+        pose);
+
+    // Update distance caches.
+    {
+      // Get write access
+      unique_lock write_lock(upgrade_mutex_);
+      last_cache_entries_[query_region] = new_entry;
+      distance_cache_[cache_key] = new_entry;
+      micro_distance_cache_[micro_cache_key] = new_entry;
+      milli_distance_cache_[milli_cache_key] = new_entry;
+      exact_distance_cache_[exact_cache_key] = distance;
+    }
   }
 
   if (milli_hit)
@@ -654,14 +683,14 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   return distance;
 }
 
-double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose)
+double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
 {
-  return calculateDistance(pose);
+  return calculateDistance(pose, false, query_region);
 }
 
-double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose)
+double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
 {
-  return calculateDistance(pose, true);
+  return calculateDistance(pose, true, query_region);
 }
 
 }  // namespace costmap_3d

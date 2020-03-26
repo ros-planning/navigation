@@ -137,15 +137,18 @@ public:
    * @param pose                    pose to query
    * @param footprint_mesh_resource which footprint mesh to use, empty string means default
    * @param padding                 padding to add to the footprint. NAN means use default padding
+   * @param query_region            region of map to query at given pose
    *
    * @returns negative for lethal, otherwise the cost of the pose */
   virtual double footprintCost(geometry_msgs::Pose pose,
                                const std::string& footprint_mesh_resource = "",
-                               double padding = NAN);
+                               double padding = NAN,
+                               Costmap3DQuery::QueryRegion query_region = Costmap3DQuery::ALL);
 
   virtual double footprintCost(double x, double y, double theta,
                                const std::string& footprint_mesh_resource = "",
-                               double padding = NAN)
+                               double padding = NAN,
+                               Costmap3DQuery::QueryRegion query_region = Costmap3DQuery::ALL)
   {
     geometry_msgs::Pose pose;
     pose.position.x = x;
@@ -153,7 +156,7 @@ public:
     tf2::Quaternion q;
     q.setRPY(0, 0, theta);
     pose.orientation = tf2::toMsg(q);
-    return footprintCost(pose, footprint_mesh_resource, padding);
+    return footprintCost(pose, footprint_mesh_resource, padding, query_region);
   }
 
   /** @brief Return whether the given pose is in collision in the 3D costmap.
@@ -169,7 +172,8 @@ public:
    * @returns true if in collision, false otherwise */
   virtual bool footprintCollision(geometry_msgs::Pose pose,
                                   const std::string& footprint_mesh_resource = "",
-                                  double padding = NAN);
+                                  double padding = NAN,
+                                  Costmap3DQuery::QueryRegion query_region = Costmap3DQuery::ALL);
 
   /** @brief Return minimum distance to the nearest lethal 3D costmap object.
    * This returns the minimum unsigned distance or negative on a collision.
@@ -187,7 +191,8 @@ public:
    * @returns negative on collision, otherwise distance to nearest obstacle */
   virtual double footprintDistance(geometry_msgs::Pose pose,
                                    const std::string& footprint_mesh_resource = "",
-                                   double padding = NAN);
+                                   double padding = NAN,
+                                   Costmap3DQuery::QueryRegion query_region = Costmap3DQuery::ALL);
 
   /** @brief Return minimum signed distance to nearest 3D costmap object.
    * This returns the minimum signed distance. So, the deeper a pose goes into
@@ -203,7 +208,8 @@ public:
    * @returns exact signed distance to nearest obstacle */
   virtual double footprintSignedDistance(geometry_msgs::Pose pose,
                                          const std::string& footprint_mesh_resource = "",
-                                         double padding = NAN);
+                                         double padding = NAN,
+                                         Costmap3DQuery::QueryRegion query_region = Costmap3DQuery::ALL);
 
 protected:
   ros::NodeHandle private_nh_;

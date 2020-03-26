@@ -29,6 +29,16 @@ uint8 COST_QUERY_MODE_SIGNED_DISTANCE=3
 # The default is COST_QUERY_MODE_COST.
 uint8 cost_query_mode
 
+# Query entire map
+uint8 COST_QUERY_REGION_ALL=0
+# Query the map only to the left of each query pose.
+uint8 COST_QUERY_REGION_LEFT=1
+# Query the map only to the right of each query pose.
+uint8 COST_QUERY_REGION_RIGHT=2
+# Set to one of the above COST_QUERY_REGION_* to control query region per pose.
+# If the region is missing for a given pose, COST_QUERY_REGION_ALL is assumed.
+uint8[] cost_query_regions
+
 # An alternative footprint_mesh_resource to use (in base_footprint frame)
 # If empty, the default stored in the costmap will be used.
 string footprint_mesh_resource

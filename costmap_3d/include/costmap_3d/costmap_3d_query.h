@@ -54,6 +54,7 @@
 #include <tf2/utils.h>
 #include <costmap_3d/layered_costmap_3d.h>
 #include <costmap_3d/crop_hull.h>
+#include <costmap_3d/GetPlanCost3DService.h>
 
 namespace costmap_3d
 {
@@ -100,24 +101,37 @@ public:
 
   virtual ~Costmap3DQuery();
 
+  /// Which region of the map to query at the query pose.
+  using QueryRegion = uint8_t;
+  static constexpr QueryRegion ALL = GetPlanCost3DService::Request::COST_QUERY_REGION_ALL;
+  static constexpr QueryRegion LEFT = GetPlanCost3DService::Request::COST_QUERY_REGION_LEFT;
+  static constexpr QueryRegion RIGHT = GetPlanCost3DService::Request::COST_QUERY_REGION_RIGHT;
+  static constexpr QueryRegion MAX = RIGHT+1;
+
   /** @brief Get the cost to put the robot base at the given pose.
+   *
+   * The region of the map considered is limited by the query_region.
    *
    * It is assumed the pose is in the frame of the costmap.
    * return value represents the cost of the pose
    * negative is collision, zero is free.
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap. */
-  virtual double footprintCost(geometry_msgs::Pose pose);
+  virtual double footprintCost(geometry_msgs::Pose pose, QueryRegion query_region = ALL);
 
   /** @brief Return whether the given pose is in collision.
+   *
+   * The region of the map considered is limited by the query_region.
    *
    * It is assumed the pose is in the frame of the costmap.
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap.
    */
-  virtual bool footprintCollision(geometry_msgs::Pose pose);
+  virtual bool footprintCollision(geometry_msgs::Pose pose, QueryRegion query_region = ALL);
 
   /** @brief Return minimum distance to nearest costmap object.
+   *
+   * The region of the map considered is limited by the query_region.
    *
    * It is assumed the pose is in the frame of the costmap.
    * This returns the minimum distance, or negative for penetration.
@@ -128,9 +142,11 @@ public:
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap.
    */
-  virtual double footprintDistance(geometry_msgs::Pose pose);
+  virtual double footprintDistance(geometry_msgs::Pose pose, QueryRegion query_region = ALL);
 
   /** @brief Return minimum signed distance to nearest costmap object.
+   *
+   * The region of the map considered is limited by the query_region.
    *
    * It is assumed the pose is in the frame of the costmap.
    * This returns the signed distance. For non-pentration cases, the return
@@ -148,7 +164,7 @@ public:
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap.
    */
-  virtual double footprintSignedDistance(geometry_msgs::Pose pose);
+  virtual double footprintSignedDistance(geometry_msgs::Pose pose, QueryRegion query_region = ALL);
 
   /** @brief get a const reference to the padded robot mesh points being used */
   const pcl::PointCloud<pcl::PointXYZ>& getRobotMeshPoints() const {return *robot_mesh_points_;}
@@ -177,7 +193,9 @@ protected:
   virtual void updateMeshResource(const std::string& mesh_resource, double padding = 0.0);
 
   /** @brief core of distance calculations */
-  virtual double calculateDistance(geometry_msgs::Pose pose, bool signed_distance = false);
+  virtual double calculateDistance(geometry_msgs::Pose pose,
+                                   bool signed_distance = false,
+                                   QueryRegion query_region = ALL);
 
 private:
   // synchronize this object for parallel queries
@@ -200,11 +218,9 @@ private:
 
   using FCLCollisionObject = fcl::CollisionObject<FCLFloat>;
   using FCLCollisionObjectPtr = std::shared_ptr<FCLCollisionObject>;
-  FCLCollisionObjectPtr robot_obj_;
 
   std::shared_ptr<const octomap::OcTree> octree_ptr_;
-  FCLCollisionObjectPtr world_obj_;
-  inline const fcl::Transform3<FCLFloat> poseToFCLTransform(const geometry_msgs::Pose& pose)
+  inline const fcl::Transform3<FCLFloat> poseToFCLTransform(const geometry_msgs::Pose& pose) const
   {
     return fcl::Transform3<FCLFloat>(
         fcl::Translation3<FCLFloat>(pose.position.x, pose.position.y, pose.position.z) *
@@ -213,12 +229,9 @@ private:
                                   pose.orientation.y,
                                   pose.orientation.z));
   }
-  inline const FCLCollisionObjectPtr& getRobotCollisionObject(const geometry_msgs::Pose& pose)
-  {
-    robot_obj_->setTransform(poseToFCLTransform(pose));
-    return robot_obj_;
-  }
-  inline const FCLCollisionObjectPtr& getWorldCollisionObject() { return world_obj_; }
+  FCLCollisionObjectPtr getRobotCollisionObject(const geometry_msgs::Pose& pose) const;
+  FCLCollisionObjectPtr getWorldCollisionObject(const geometry_msgs::Pose& pose,
+                                                QueryRegion query_region) const;
 
   void padPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr points, float padding)
   {
@@ -264,14 +277,16 @@ private:
   class DistanceCacheKey
   {
   public:
-    DistanceCacheKey(const geometry_msgs::Pose& pose, int bins_per_meter, int bins_per_radian)
+    DistanceCacheKey(const geometry_msgs::Pose& pose, QueryRegion query_region, int bins_per_meter, int bins_per_radian)
     {
       binned_pose_ = binPose(pose, bins_per_meter, bins_per_radian);
+      query_region_ = query_region;
     }
     // Constructor for the "exact" cache where the poses are not binned
-    DistanceCacheKey(const geometry_msgs::Pose& pose)
+    DistanceCacheKey(const geometry_msgs::Pose& pose, QueryRegion query_region)
     {
       binned_pose_ = pose;
+      query_region_ = query_region;
     }
 
     size_t hash_value() const
@@ -284,6 +299,7 @@ private:
       hash_combine(rv, binned_pose_.position.x);
       hash_combine(rv, binned_pose_.position.y);
       hash_combine(rv, binned_pose_.position.z);
+      hash_combine(rv, query_region_);
       return rv;
     }
 
@@ -295,11 +311,13 @@ private:
              binned_pose_.orientation.w == rhs.binned_pose_.orientation.w &&
              binned_pose_.position.x == rhs.binned_pose_.position.x &&
              binned_pose_.position.y == rhs.binned_pose_.position.y &&
-             binned_pose_.position.z == rhs.binned_pose_.position.z;
+             binned_pose_.position.z == rhs.binned_pose_.position.z &&
+             query_region_ == rhs.query_region_;
     }
 
   protected:
     geometry_msgs::Pose binned_pose_;
+    QueryRegion query_region_;
 
     //! Borrow boost's hash_combine directly to avoid having to pull in boost
     template <class T>
@@ -431,7 +449,8 @@ private:
       const geometry_msgs::Pose& pose);
   using DistanceCache = std::unordered_map<DistanceCacheKey, DistanceCacheEntry, DistanceCacheKeyHash, DistanceCacheKeyEqual>;
   using ExactDistanceCache = std::unordered_map<DistanceCacheKey, double, DistanceCacheKeyHash, DistanceCacheKeyEqual>;
-  DistanceCacheEntry last_cache_entry;
+  /// Indexed by QueryRegion
+  std::vector<DistanceCacheEntry> last_cache_entries_;
   /**
    * The distance cache allows us to find a very good distance guess quickly.
    * The cache memorizes to a hash table for a pose rounded to the number of
