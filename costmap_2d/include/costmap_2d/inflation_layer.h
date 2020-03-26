@@ -41,7 +41,11 @@
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
+// suppress warnings in auto generated config file
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wliteral-conversion"
 #include <costmap_2d/InflationPluginConfig.h>
+#pragma clang diagnostic pop
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
 

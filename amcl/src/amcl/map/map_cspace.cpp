@@ -94,9 +94,14 @@ void enqueue(map_t* map, unsigned int i, unsigned int j,
 {
   if(marked[MAP_INDEX(map, i, j)])
     return;
-
+  // the following code most likely works by depending on unsigned ints being promoted to signed values and fed through abs as such
+  // this most likely prevents using very large indexes due to unsigned int overflow (when a value is negative)  
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Wabsolute-value"
   unsigned int di = abs(i - src_i);
   unsigned int dj = abs(j - src_j);
+  #pragma clang diagnostic pop
+  
   double distance = cdm->distances_[di][dj];
 
   if(distance > cdm->cell_radius_)
