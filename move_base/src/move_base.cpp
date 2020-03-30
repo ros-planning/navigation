@@ -79,6 +79,10 @@ namespace move_base {
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
 
+    // parameters of make_plan service
+    private_nh.param("make_plan_clear_costmap", make_plan_clear_costmap_, true);
+    private_nh.param("make_plan_add_unreachable_goal", make_plan_add_unreachable_goal_, true);
+
     //set up plan triple buffer
     planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();
     latest_plan_ = new std::vector<geometry_msgs::PoseStamped>();
@@ -260,6 +264,9 @@ namespace move_base {
       }
     }
 
+    make_plan_clear_costmap_ = config.make_plan_clear_costmap;
+    make_plan_add_unreachable_goal_ = config.make_plan_add_unreachable_goal;
+
     last_config_ = config;
   }
 
@@ -365,8 +372,10 @@ namespace move_base {
         start = req.start;
     }
 
-    //update the copy of the costmap the planner uses
-    clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
+    if (make_plan_clear_costmap_) {
+      //update the copy of the costmap the planner uses
+      clearCostmapWindows(2 * clearing_radius_, 2 * clearing_radius_);
+    }
 
     //first try to make a plan to the exact desired goal
     std::vector<geometry_msgs::PoseStamped> global_plan;
@@ -403,9 +412,11 @@ namespace move_base {
                 if(planner_->makePlan(start, p, global_plan)){
                   if(!global_plan.empty()){
 
-                    //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
-                    //(the reachable goal should have been added by the global planner)
-                    global_plan.push_back(req.goal);
+                    if (make_plan_add_unreachable_goal_) {
+                      //adding the (unreachable) original goal to the end of the global plan, in case the local planner can get you there
+                      //(the reachable goal should have been added by the global planner)
+                      global_plan.push_back(req.goal);
+                    }
 
                     found_legal = true;
                     ROS_DEBUG_NAMED("move_base", "Found a plan to point (%.2f, %.2f)", p.pose.position.x, p.pose.position.y);
