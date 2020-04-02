@@ -2,6 +2,13 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* increase required cmake version
+* Contributors: Michael Ferguson
+
 1.16.6 (2020-03-18)
 -------------------
 

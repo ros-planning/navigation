@@ -2,6 +2,15 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* map is not subscriptable in python3
+* fix python3 errors in basic_localization.py
+* use upstream pykdl
+* Contributors: Michael Ferguson
+
 1.16.6 (2020-03-18)
 -------------------
 

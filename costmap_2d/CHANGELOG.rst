@@ -2,6 +2,15 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* fix invalid memory access
+* attempt to get test to run
+* increase required cmake version
+* Contributors: Michael Ferguson
+
 1.16.6 (2020-03-18)
 -------------------
 
