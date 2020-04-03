@@ -404,14 +404,10 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
     if (signed_distance)
     {
       // Modify the signed distance.
-      // If not already in collision, negate the distance (so we have the
-      // negative of nearest octomap cell in interior of the volume)
-      if (distance > 0.0)
-      {
-        distance = -distance;
-      }
-      // Instead of attempting to exactly calculate the deepest point on the
-      // colliding octomap box, approximate the penetration depth by
+      // First negate the distance (so we have the negative of nearest octomap
+      // cell in interior of the volume, or the positive amount of overlap)
+      // Then, Instead of attempting to exactly calculate the deepest point on
+      // the colliding octomap box, approximate the penetration depth by
       // subtracting the bounding diameter of the box.
       // This results in exaggerated penetration distances in some cases (such
       // as on or near the boundary), and obviously also results in not enough
@@ -419,7 +415,7 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
       // distance only gives us the nearest octomap box to the mesh)
       // If exact signed distance were required, FCL would need to be modified
       // to work with general polyhedra volumes.
-      distance -= cache_entry.octomap_box->side.norm();
+      distance = -distance - cache_entry.octomap_box->side.norm();
     }
     else
     {
