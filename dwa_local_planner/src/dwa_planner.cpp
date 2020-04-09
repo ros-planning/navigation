@@ -299,6 +299,11 @@ namespace dwa_local_planner {
       goal_costs_.setScale(0.0);
       // disable alignment cost during turning because turning will inadvertedly move the nose off the path
       alignment_costs_.setScale(0.0);
+
+      // retract nose
+      goal_front_costs_.setXShift(0.0);
+      alignment_costs_.setXShift(0.0);
+
     } else {
       // disable turning penalty close to goal
       path_align_costs_.setScale(0.0);
@@ -312,6 +317,10 @@ namespace dwa_local_planner {
         // once we are close to goal, trying to keep the nose close to anything destabilizes behavior.
         alignment_costs_.setScale(0.0);
       }
+
+      // reset to forward_point_distance_
+      goal_front_costs_.setXShift(forward_point_distance_);
+      alignment_costs_.setXShift(forward_point_distance_);
     }
 
     // disable cost for backwards motion close to the goal
