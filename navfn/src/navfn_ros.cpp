@@ -313,7 +313,7 @@ namespace navfn {
       }
     }
 
-    if (visualize_potential_)
+    if (visualize_potential_ && potarr_pub_.getNumSubscribers() > 0)
     {
       // Publish the potentials as a PointCloud2
       sensor_msgs::PointCloud2 cloud;
