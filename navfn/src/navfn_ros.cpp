@@ -34,6 +34,7 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
+#include <iomanip>
 #include <navfn/navfn_ros.h>
 #include <pluginlib/class_list_macros.h>
 #include <costmap_2d/cost_values.h>
@@ -76,10 +77,13 @@ namespace navfn {
       if(visualize_potential_)
         potarr_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("potential", 1);
 
-      private_nh.param("allow_unknown", allow_unknown_, true);
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
-      private_nh.param("default_tolerance", default_tolerance_, 0.0);
+
+      dyncfg_srv_.reset(new dynamic_reconfigure::Server<navfn::NavfnROSConfig>(private_nh));
+      dynamic_reconfigure::Server<navfn::NavfnROSConfig>::CallbackType cb =
+          boost::bind(&NavfnROS::reconfigureCB, this, _1, _2);
+      dyncfg_srv_->setCallback(boost::bind(&NavfnROS::reconfigureCB, this, _1, _2));
 
       make_plan_srv_ =  private_nh.advertiseService("make_plan", &NavfnROS::makePlanService, this);
 
@@ -87,6 +91,15 @@ namespace navfn {
     }
     else
       ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");
+  }
+
+  void NavfnROS::reconfigureCB(NavfnROSConfig& config, uint32_t level)
+  {
+    (void)level;
+    allow_unknown_ = config.allow_unknown;
+    default_tolerance_ = config.default_tolerance;
+    ROS_INFO_STREAM("NavfnROS Reconfig: allow_unknown: " << std::boolalpha << allow_unknown_
+                    << " default_tolerance: " << default_tolerance_);
   }
 
   void NavfnROS::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){

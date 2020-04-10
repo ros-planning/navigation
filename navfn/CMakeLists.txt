@@ -17,6 +17,7 @@ find_package(catkin REQUIRED
         tf2_ros
         sensor_msgs
         visualization_msgs
+        dynamic_reconfigure
         )
 
 find_package(Eigen3 REQUIRED)
@@ -27,6 +28,9 @@ include_directories(
 )
 add_definitions(${EIGEN3_DEFINITIONS})
 
+generate_dynamic_reconfigure_options(
+    cfg/NavfnROS.cfg
+)
 
 # services
 add_service_files(
@@ -55,6 +59,7 @@ catkin_package(
         roscpp
         sensor_msgs
         visualization_msgs
+        dynamic_reconfigure
 )
 
 check_include_file(sys/time.h HAVE_SYS_TIME_H)

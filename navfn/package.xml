@@ -38,6 +38,7 @@
     <depend>sensor_msgs</depend>
     <depend>tf2_ros</depend>
     <depend>visualization_msgs</depend>
+    <depend>dynamic_reconfigure</depend>
 
     <exec_depend>message_runtime</exec_depend>
 
