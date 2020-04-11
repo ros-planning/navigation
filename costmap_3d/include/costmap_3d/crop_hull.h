@@ -38,6 +38,7 @@
 #ifndef COSTMAP_3D_PCL_CROP_HULL_H_
 #define COSTMAP_3D_PCL_CROP_HULL_H_
 
+#include <pcl/common/projection_matrix.h>
 #include <pcl/point_types.h>
 #include <pcl/Vertices.h>
 
@@ -114,7 +115,7 @@ public:
     * \param[out] indices the indices of the set of points that passed the filter.
     */
   void
-  applyFilter (const PointCloud& input, std::vector<int> &indices)
+  applyFilter (const PointCloud& input, std::vector<int> &indices) const
   {
     for (std::size_t index = 0; index < input.size(); index++)
     {

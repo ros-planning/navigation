@@ -4,7 +4,7 @@
  *
  *  Copyright (c) 2019, Badger Technologies LLC
  *  All rights reserved.
-  *
+ *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
  *  are met:
@@ -44,6 +44,7 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <tf/transform_datatypes.h>
+#include <costmap_3d/octree_solver.h>
 
 namespace costmap_3d
 {
@@ -102,6 +103,9 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
   // an entire planning cycle.
   octree_ptr_.reset(new Costmap3D(*costmap_3d));
   updateMeshResource(mesh_resource, padding);
+  // For a buffered query, go ahead and setup the interior collision LUT now,
+  // as the resolution can not change.
+  checkInteriorCollisionLUT();
 }
 
 Costmap3DQuery::~Costmap3DQuery()
@@ -113,6 +117,8 @@ void Costmap3DQuery::init()
   clearStatistics();
   milli_cache_threshold_ = 2.5 / pose_milli_bins_per_meter_;
   micro_cache_threshold_ = 2.5 / pose_micro_bins_per_meter_;
+  robot_model_halfspaces_.reset(new std::vector<fcl::Halfspace<FCLFloat>>);
+  last_octomap_resolution_ = 0.0;
 }
 
 // Caller must already hold an upgradable shared lock via the passed
@@ -125,6 +131,7 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
     if (layered_costmap_3d_)
     {
       if (layered_costmap_3d_->getCostmap3D() != octree_ptr_ ||
+         (last_octomap_resolution_ != layered_costmap_3d_->getCostmap3D()->getResolution()) ||
          (last_layered_costmap_update_number_ != layered_costmap_3d_->getNumberOfUpdates()))
       {
         need_update = true;
@@ -141,6 +148,7 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
       // The octomap has been reallocated, change where we are pointing.
       octree_ptr_ = layered_costmap_3d_->getCostmap3D();
     }
+    checkInteriorCollisionLUT();
     // The costmap has been updated since the last query, reset our caches
 
     // For simplicity, on every update, clear out the collision cache.
@@ -292,7 +300,7 @@ void Costmap3DQuery::addPCLPolygonMeshToRobotModel(
 
   for (auto pcl_point : *robot_mesh_points_)
   {
-    fcl_points.push_back(convertPCLPointToFCL(pcl_point));
+    fcl_points.push_back(convertPCLPointToFCL<FCLFloat>(pcl_point));
   }
 
   for (auto polygon : pcl_mesh.polygons)
@@ -321,10 +329,24 @@ void Costmap3DQuery::updateMeshResource(const std::string& mesh_resource, double
   robot_model_->beginModel();
   addPCLPolygonMeshToRobotModel(robot_mesh_, padding, robot_model_.get());
   robot_model_->endModel();
+  robot_model_->computeLocalAABB();
 
   crop_hull_.setHullCloud(robot_mesh_points_);
   crop_hull_.setHullIndices(robot_mesh_.polygons);
   crop_hull_.setCropOutside(true);
+
+  // Calculate halfspaces for each mesh triangle
+  robot_model_halfspaces_->clear();
+  robot_model_halfspaces_->resize(robot_model_->num_tris);
+  for (unsigned int i = 0; i < robot_model_->num_tris; ++i)
+  {
+    fcl::Triangle tri = robot_model_->tri_indices[i];
+    (*robot_model_halfspaces_)[i] = convertTriangleToHalfspace<FCLFloat>(
+        fcl::TriangleP<FCLFloat>(
+            robot_model_->vertices[tri[0]],
+            robot_model_->vertices[tri[1]],
+            robot_model_->vertices[tri[2]]));
+  }
 }
 
 std::string Costmap3DQuery::getFileNameFromPackageURL(const std::string& url)
@@ -391,82 +413,54 @@ bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose, Costmap3DQuery
 // meshes that represent closed polyhedra. FCL handles concave meshes as
 // surfaces, not volumes.
 double Costmap3DQuery::handleDistanceInteriorCollisions(
-      double distance,
-      bool signed_distance,
       const DistanceCacheEntry& cache_entry,
       const geometry_msgs::Pose& pose)
 {
+  FCLFloat distance;
+
+  // Turn pose into tf
+  const fcl::Transform3<FCLFloat> pose_tf(costmap_3d::poseToFCLTransform<FCLFloat>(pose));
+
+  // Start with the interior collision check as it is very fast.
+  // Find out if the center of the box is inside the given footprint volume mesh.
+  distance = interior_collision_lut_.distance(
+      *cache_entry.octomap_box,
+      cache_entry.octomap_box_tf,
+      pose_tf,
+      pose_tf.inverse());
+
   if (distance < 0.0)
   {
-    // Fast case, already a collision, nothing left to do.
-    // This is fine in the signed_distance case as it is already calculating
-    // the correct penetration depth.
     return distance;
   }
 
-  // First find the penetration depth between the box and the mesh triangle.
-  // If the box is outside the halfspace of the mesh triangle, the box is
-  // outside the mesh and we are done. If the box is inside, we will
-  // ultimately use this penetration depth as the new signed distance.
-  fcl::Transform3<FCLFloat> pose_tf = poseToFCLTransform<FCLFloat>(pose);
-  FCLFloat box_halfspace_distance = cache_entry.boxHalfspaceSignedDistance(pose_tf);
-  if (box_halfspace_distance > 0.0)
+  // We need to calculate the distance between the mesh triangle at the new
+  // pose and the box.
+  //
+  // As of the time this code was written, the normal FCL API does not
+  // allow box/triangle distance or signed distance queries.
+  // Yet FCL internally does such checks all the time, so use the
+  // internal mechanism for now.
+  fcl::detail::GJKSolver_libccd<FCLFloat> solver;
+  solver.shapeTriangleDistance(
+      *cache_entry.octomap_box,
+      cache_entry.octomap_box_tf,
+      cache_entry.mesh_triangle->a,
+      cache_entry.mesh_triangle->b,
+      cache_entry.mesh_triangle->c,
+      pose_tf,
+      &distance);
+
+  // Box/triangle intersect, use penetration depth with box/halfpsace model.
+  if (distance < 0.0)
   {
-    return distance;
+    distance = boxHalfspaceSignedDistance(
+        *cache_entry.octomap_box,
+        cache_entry.octomap_box_tf,
+        cache_entry.mesh_triangle_id,
+        pose_tf);
   }
 
-  // Find out if the center of the box is inside the given footprint volume mesh.
-  bool interior_collision = false;
-
-  // Find the transform from the given octomap box to the robot model at the given pose.
-  fcl::Transform3<FCLFloat> map_to_robot_transform(
-      pose_tf.inverse() * cache_entry.octomap_box_tf);
-
-  // transform the center of the box (which is the origin) into the robot frame
-  fcl::Vector3<FCLFloat> box_center(map_to_robot_transform * fcl::Vector3<FCLFloat>::Zero());
-
-  if (robot_model_->aabb_local.contain(box_center))
-  {
-    // The center of the octomap box is inside the AABB of the robot model
-    // It may be inside the volume of the mesh footprint.
-    // Create a PCL crop hull filter to see if the center of the box is inside
-    // the volume of the mesh.
-    pcl::PointCloud<pcl::PointXYZ> test_cloud;
-    test_cloud.resize(1);
-    test_cloud.is_dense = true;
-    test_cloud.width = 1;
-    test_cloud.height = 1;
-    test_cloud.points[0] = convertFCLPointToPCL(box_center);
-    std::vector<int> indices;
-    crop_hull_.applyFilter(test_cloud, indices);
-    if (indices.size() > 0)
-    {
-      interior_collision = true;
-    }
-  }
-  if (interior_collision)
-  {
-    if (signed_distance)
-    {
-      // It might be tempting to create a more accurate penetration distance
-      // than using the box-halfspace distance. However, it is important to
-      // stay consistent with the case when the mesh and box touch, which uses
-      // the box-halfspace distance for penetration depth. This is important,
-      // as planners which use the derivative to move a pose might get an
-      // inward derivative around a boundary if using a more accurate
-      // measurement here, as it may be closer than the penetration depth
-      // modeling with a halfspace near concave parts of the mesh.
-      distance = box_halfspace_distance;
-    }
-    else
-    {
-      // Non-signed distance case, just return a lethal collision
-      // Note we could use the box_halfspace_distance, but we would need to
-      // change 0.0 to a negative to indicate collision. Just always return
-      // -1.0 if doing non-signed distance.
-      distance = -1.0;
-    }
-  }
   return distance;
 }
 
@@ -510,6 +504,17 @@ Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getWorldCollisionObject(co
   return world_obj;
 }
 
+Costmap3DQuery::FCLFloat Costmap3DQuery::boxHalfspaceSignedDistance(
+    const fcl::Box<FCLFloat>& box,
+    const fcl::Transform3<FCLFloat>& box_tf,
+    int mesh_triangle_id,
+    const fcl::Transform3<FCLFloat>& mesh_tf) const
+{
+  fcl::Halfspace<FCLFloat> halfspace(fcl::transform(
+      (*robot_model_halfspaces_)[mesh_triangle_id], mesh_tf));
+  return costmap_3d::boxHalfspaceSignedDistance<FCLFloat>(box, box_tf, halfspace);
+}
+
 double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
                                          bool signed_distance,
                                          Costmap3DQuery::QueryRegion query_region,
@@ -542,8 +547,6 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     if (tls_last_cache_entries_[query_region])
     {
       double distance = handleDistanceInteriorCollisions(
-          tls_last_cache_entries_[query_region]->distanceToNewPose(pose, signed_distance),
-          signed_distance,
           *tls_last_cache_entries_[query_region],
           pose);
       reuse_results_since_clear_.fetch_add(1, std::memory_order_relaxed);
@@ -559,16 +562,6 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   if (exact_cache_entry != exact_distance_cache_.end())
   {
     double distance = exact_cache_entry->second.distance;
-    if (distance == -1.0 && signed_distance)
-    {
-      // This is a signed distance query, but we have cached an unsigned one.
-      // Instead of paying to store which kind of query was issued, just
-      // calculate the signed distance here and memorize it.
-      distance = exact_cache_entry->second.boxHalfspaceSignedDistance(
-          poseToFCLTransform<FCLFloat>(pose));
-      unique_lock write_lock(upgrade_mutex_);
-      exact_cache_entry->second.distance = distance;
-    }
     // Be sure to update the TLS last cache entry.
     // We do not need the write lock to update thread local storage.
     tls_last_cache_entries_[query_region] = &exact_cache_entry->second;
@@ -591,13 +584,11 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   bool milli_hit = false;
   if (milli_cache_entry != milli_distance_cache_.end())
   {
+    double distance = handleDistanceInteriorCollisions(
+        milli_cache_entry->second,
+        pose);
     if (milli_cache_entry->second.distance > milli_cache_threshold_)
     {
-      double distance = handleDistanceInteriorCollisions(
-          milli_cache_entry->second.distanceToNewPose(pose, signed_distance),
-          signed_distance,
-          milli_cache_entry->second,
-          pose);
       // Be sure to update the TLS last cache entry.
       // We do not need the write lock to update thread local storage.
       tls_last_cache_entries_[query_region] = &milli_cache_entry->second;
@@ -611,10 +602,6 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     {
       // we are too close to directly use the milli-cache, but use the
       // calculated distance as the pose_distance upper bound.
-      // The upper-bound distance must not go through
-      // handleDistanceInteriorCollisions, because that could artificially
-      // prevent fcl::distance from getting the box nearest the mesh.
-      double distance = milli_cache_entry->second.distanceToNewPose(pose, signed_distance);
       if (distance < pose_distance)
       {
         milli_hit = true;
@@ -629,13 +616,11 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   bool micro_hit = false;
   if (micro_cache_entry != micro_distance_cache_.end())
   {
+    double distance = handleDistanceInteriorCollisions(
+        micro_cache_entry->second,
+        pose);
     if (micro_cache_entry->second.distance > micro_cache_threshold_)
     {
-      double distance = handleDistanceInteriorCollisions(
-          micro_cache_entry->second.distanceToNewPose(pose, signed_distance),
-          signed_distance,
-          micro_cache_entry->second,
-          pose);
       // Be sure to update the TLS last cache entry.
       // We do not need the write lock to update thread local storage.
       tls_last_cache_entries_[query_region] = &micro_cache_entry->second;
@@ -649,10 +634,6 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     {
       // we are too close to directly use the micro-cache, but use the
       // calculated distance as the pose_distance upper bound.
-      // The upper-bound distance must not go through
-      // handleDistanceInteriorCollisions, because that could artificially
-      // prevent fcl::distance from getting the box nearest the mesh.
-      double distance = micro_cache_entry->second.distanceToNewPose(pose, signed_distance);
       if (distance < pose_distance)
       {
         micro_hit = true;
@@ -677,10 +658,9 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
       // and the octomap box, and use this as our initial guess in the result.
       // This greatly prunes the search tree, yielding a big increase in runtime
       // performance.
-      // This upper-bound distance must not go through
-      // handleDistanceInteriorCollisions, because that could artificially
-      // prevent fcl::distance from getting the box nearest the mesh.
-      pose_distance = cache_entry->second.distanceToNewPose(pose, signed_distance);
+      pose_distance = handleDistanceInteriorCollisions(
+          cache_entry->second,
+          pose);
       cache_entry->second.setupResult(&result);
     }
   }
@@ -690,7 +670,9 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   // last entry, and the queries are being done on a path.
   if (tls_last_cache_entries_[query_region])
   {
-    double last_entry_distance = tls_last_cache_entries_[query_region]->distanceToNewPose(pose, signed_distance);
+    double last_entry_distance = handleDistanceInteriorCollisions(
+        *tls_last_cache_entries_[query_region],
+        pose);
     if (last_entry_distance < pose_distance)
     {
       pose_distance = last_entry_distance;
@@ -711,35 +693,48 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   upgrade_lock.unlock();
 
   request.enable_nearest_points = true;
-  // We will emulate signed distance ourselves, as FCL only emulates it anyway,
-  // and for costmap query purposes, only getting one of the penetrations is
-  // good enough (not the most maximal).
-  request.enable_signed_distance = false;
+  request.enable_signed_distance = true;
 
   result.min_distance = pose_distance;
 
   double distance;
 
-  if (pose_distance <= 0.0)
+  // Because FCL's OcTree/Mesh distance treats the Mesh as hollow, we must
+  // use our own distance code which treats the Mesh as a closed mesh
+  // defining a filled volume. Otherwise, there are cases where an octomap
+  // box is inside the mesh, but the distance is positive.
+  // The solver and octree_solver need to be on the stack as they are not
+  // thread-safe.
+  FCLSolver solver;
+  // Use our interior collision LUT to model the robot as a volume.
+  // Use box-halfspace distance to model box/mesh penetrations for signed distance.
+  OcTreeMeshSolver<FCLSolver> octree_solver(
+      &solver,
+      std::bind(&InteriorCollisionLUT<FCLFloat>::distance,
+                &interior_collision_lut_,
+                std::placeholders::_1,
+                std::placeholders::_2,
+                std::placeholders::_3,
+                std::placeholders::_4,
+                std::placeholders::_5),
+      std::bind(&Costmap3DQuery::boxHalfspaceSignedDistance,
+                this,
+                std::placeholders::_1,
+                std::placeholders::_2,
+                std::placeholders::_3,
+                std::placeholders::_4));
+
+  if (result.min_distance > 0.0)
   {
-    // The cached objects collided at the new pose.
-    // FCL distance (signed or unsigned) between a mesh and octree
-    // is not guaranteed to give the most negative distance in such cases,
-    // as it stops as soon as a collision is found (due to the potentially very
-    // large number of collisions). For the costmap use case, it isn't
-    // super important that the most negative signed distance be found in the
-    // signed case, as generally the use case for finding signed distance
-    // is as an estimate of cost to move the robot to a pose, making it worse
-    // to penetrate slightly more. In such cases, the main thing is that the
-    // negative depth be one of the collisions, not necessarily the worst.
-    // In the non-signed case, there is clearly nothing more to calculate, as
-    // we already have a collision.
-    distance = pose_distance;
+    octree_solver.distance(
+        static_cast<const fcl::OcTree<FCLFloat>*>(world->collisionGeometry().get()),
+        static_cast<const FCLRobotModel*>(robot->collisionGeometry().get()),
+        world->getTransform(),
+        robot->getTransform(),
+        request,
+        &result);
   }
-  else
-  {
-    distance = fcl::distance(world.get(), robot.get(), request, result);
-  }
+  distance = result.min_distance;
 
   // Note that it is possible for the result to be empty. The octomap might
   // only contain non-lethal leaves and we may have missed every cache.
@@ -749,21 +744,6 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   if (result.primitive1 && result.primitive2)
   {
     DistanceCacheEntry new_entry(result);
-
-    // Emulate signed distance in a similar way as FCL. FCL re-does the whole
-    // tree/BVH collision, but we already know the colliding primitives, so save
-    // time by calculating their penetration depth directly.
-    if (signed_distance && distance < 0.0)
-    {
-      distance = new_entry.distanceToNewPose(pose, signed_distance);
-    }
-
-    distance = handleDistanceInteriorCollisions(
-        distance,
-        signed_distance,
-        new_entry,
-        pose);
-
     new_entry.distance = distance;
 
     // Update distance caches.
@@ -831,6 +811,21 @@ double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose,
                                                bool reuse_past_result)
 {
   return calculateDistance(pose, true, query_region, reuse_past_result);
+}
+
+void Costmap3DQuery::checkInteriorCollisionLUT()
+{
+  if (last_octomap_resolution_ != octree_ptr_->getResolution())
+  {
+    // Resolution changed, need to setup our interior collision LUT
+    last_octomap_resolution_ = octree_ptr_->getResolution();
+    const double box_size = last_octomap_resolution_;
+    // Instead of adding the orientation to the LUT, just be more than double the
+    // spatial resolution. This gives acceptable results without using much
+    // memory.
+    const double lut_res = box_size / 2.5;
+    interior_collision_lut_.setup(box_size, lut_res, *robot_model_, crop_hull_, robot_model_halfspaces_);
+  }
 }
 
 }  // namespace costmap_3d
