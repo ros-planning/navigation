@@ -371,13 +371,15 @@ private:
   public:
     DistanceCacheEntry() {}
     DistanceCacheEntry(const DistanceCacheEntry& rhs)
-        : octomap_box(rhs.octomap_box),
+        : distance(rhs.distance),
+          octomap_box(rhs.octomap_box),
           octomap_box_tf(rhs.octomap_box_tf),
           mesh_triangle(rhs.mesh_triangle)
     {
     }
     const DistanceCacheEntry& operator=(const DistanceCacheEntry& rhs)
     {
+      distance = rhs.distance;
       octomap_box = rhs.octomap_box;
       octomap_box_tf = rhs.octomap_box_tf;
       mesh_triangle = rhs.mesh_triangle;
@@ -387,6 +389,7 @@ private:
     {
       assert(result.primitive1);
       assert(result.primitive2);
+      distance = result.min_distance;
       octomap_box = std::dynamic_pointer_cast<fcl::Box<FCLFloat>>(result.primitive1);
       octomap_box_tf = result.tf1;
       mesh_triangle = std::dynamic_pointer_cast<fcl::TriangleP<FCLFloat>>(result.primitive2);
@@ -437,6 +440,7 @@ private:
       }
       return dist;
     }
+    FCLFloat distance;
     std::shared_ptr<fcl::Box<FCLFloat>> octomap_box;
     fcl::Transform3<FCLFloat> octomap_box_tf;
     std::shared_ptr<fcl::TriangleP<FCLFloat>> mesh_triangle;
