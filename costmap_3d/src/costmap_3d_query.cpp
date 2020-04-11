@@ -396,10 +396,22 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
       const DistanceCacheEntry& cache_entry,
       const geometry_msgs::Pose& pose)
 {
-  if (distance < 0.0 && !signed_distance)
+  if (distance < 0.0)
   {
-    // fast case, already a collision and doing normal distance check, nothing
-    // left to do.
+    // Fast case, already a collision, nothing left to do.
+    // This is fine in the signed_distance case as it is already calculating
+    // the correct penetration depth.
+    return distance;
+  }
+
+  // First find the penetration depth between the box and the mesh triangle.
+  // If the box is outside the halfspace of the mesh triangle, the box is
+  // outside the mesh and we are done. If the box is inside, we will
+  // ultimately use this penetration depth as the new signed distance.
+  fcl::Transform3<FCLFloat> pose_tf = poseToFCLTransform<FCLFloat>(pose);
+  FCLFloat box_halfspace_distance = cache_entry.boxHalfspaceSignedDistance(pose_tf);
+  if (box_halfspace_distance > 0.0)
+  {
     return distance;
   }
 
@@ -408,7 +420,7 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
 
   // Find the transform from the given octomap box to the robot model at the given pose.
   fcl::Transform3<FCLFloat> map_to_robot_transform(
-      poseToFCLTransform(pose).inverse() * cache_entry.octomap_box_tf);
+      pose_tf.inverse() * cache_entry.octomap_box_tf);
 
   // transform the center of the box (which is the origin) into the robot frame
   fcl::Vector3<FCLFloat> box_center(map_to_robot_transform * fcl::Vector3<FCLFloat>::Zero());
@@ -436,23 +448,22 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
   {
     if (signed_distance)
     {
-      // Modify the signed distance.
-      // First negate the distance (so we have the negative of nearest octomap
-      // cell in interior of the volume, or the positive amount of overlap)
-      // Then, Instead of attempting to exactly calculate the deepest point on
-      // the colliding octomap box, approximate the penetration depth by
-      // subtracting the bounding diameter of the box.
-      // This results in exaggerated penetration distances in some cases (such
-      // as on or near the boundary), and obviously also results in not enough
-      // penetration when there are multiple interior collisions (as fcl
-      // distance only gives us the nearest octomap box to the mesh)
-      // If exact signed distance were required, FCL would need to be modified
-      // to work with general polyhedra volumes.
-      distance = -distance - cache_entry.octomap_box->side.norm();
+      // It might be tempting to create a more accurate penetration distance
+      // than using the box-halfspace distance. However, it is important to
+      // stay consistent with the case when the mesh and box touch, which uses
+      // the box-halfspace distance for penetration depth. This is important,
+      // as planners which use the derivative to move a pose might get an
+      // inward derivative around a boundary if using a more accurate
+      // measurement here, as it may be closer than the penetration depth
+      // modeling with a halfspace near concave parts of the mesh.
+      distance = box_halfspace_distance;
     }
     else
     {
       // Non-signed distance case, just return a lethal collision
+      // Note we could use the box_halfspace_distance, but we would need to
+      // change 0.0 to a negative to indicate collision. Just always return
+      // -1.0 if doing non-signed distance.
       distance = -1.0;
     }
   }
@@ -465,7 +476,7 @@ Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getRobotCollisionObject(co
   // Otherwise, the queries will not be thread safe, as we do not have a write
   // lock except for maintaining the query caches.
   FCLCollisionObjectPtr robot_obj(new FCLCollisionObject(robot_model_));
-  robot_obj->setTransform(poseToFCLTransform(pose));
+  robot_obj->setTransform(poseToFCLTransform<FCLFloat>(pose));
   return robot_obj;
 }
 

@@ -59,6 +59,17 @@
 namespace costmap_3d
 {
 
+template <typename S>
+inline fcl::Transform3<S> poseToFCLTransform(const geometry_msgs::Pose& pose)
+{
+  return fcl::Transform3<S>(
+      fcl::Translation3<S>(pose.position.x, pose.position.y, pose.position.z) *
+      fcl::Quaternion<S>(pose.orientation.w,
+                         pose.orientation.x,
+                         pose.orientation.y,
+                         pose.orientation.z));
+}
+
 /** @brief Query a 3D Costmap. */
 class Costmap3DQuery
 {
@@ -237,15 +248,6 @@ private:
   using FCLCollisionObjectPtr = std::shared_ptr<FCLCollisionObject>;
 
   std::shared_ptr<const octomap::OcTree> octree_ptr_;
-  inline const fcl::Transform3<FCLFloat> poseToFCLTransform(const geometry_msgs::Pose& pose) const
-  {
-    return fcl::Transform3<FCLFloat>(
-        fcl::Translation3<FCLFloat>(pose.position.x, pose.position.y, pose.position.z) *
-        fcl::Quaternion<FCLFloat>(pose.orientation.w,
-                                  pose.orientation.x,
-                                  pose.orientation.y,
-                                  pose.orientation.z));
-  }
   FCLCollisionObjectPtr getRobotCollisionObject(const geometry_msgs::Pose& pose) const;
   FCLCollisionObjectPtr getWorldCollisionObject(const geometry_msgs::Pose& pose,
                                                 QueryRegion query_region) const;
@@ -419,15 +421,41 @@ private:
       result->primitive2 = mesh_triangle;
       result->tf1 = octomap_box_tf;
     }
+    // Note: this code assumes the box is only translated in the fixed frame,
+    // not rotated, which is true of octomap boxes
+    static inline FCLFloat boxHalfspaceSignedDistance(const fcl::Box<FCLFloat>& box, const fcl::Transform3<FCLFloat>& box_tf, const fcl::Halfspace<FCLFloat>& halfspace)
+    {
+      const fcl::Vector3<FCLFloat>& normal = halfspace.n;
+      fcl::Vector3<FCLFloat> n_dot_d_components(normal[0] * box.side[0], normal[1] * box.side[1], normal[2] * box.side[2]);
+      fcl::Vector3<FCLFloat> n_dot_d_abs = n_dot_d_components.cwiseAbs();
+      FCLFloat box_extent = 0.5 * (n_dot_d_abs[0] + n_dot_d_abs[1] + n_dot_d_abs[2]);
+      FCLFloat depth = box_extent - halfspace.signedDistance(box_tf.translation());
+      return -depth;
+    }
+    // Find the signed distance between the octomap box and a halfspace
+    // defined by the mesh triangle. This may not be a good estimate of the
+    // distance between the costmap and the mesh when not in collision, but a
+    // very good estimate when in collision, so this function is used to
+    // refine signed distance queries.
+    inline FCLFloat boxHalfspaceSignedDistance(const fcl::Transform3<FCLFloat>& mesh_tf) const
+    {
+      // Find the normal for this triangle in the mesh.
+      // Note: we could pre-calculate all the normals and half-spaces for the mesh.
+      fcl::Vector3<FCLFloat> vec_a_b = mesh_triangle->a - mesh_triangle->b;
+      fcl::Vector3<FCLFloat> vec_a_c = mesh_triangle->a - mesh_triangle->c;
+      fcl::Vector3<FCLFloat> normal = vec_a_b.cross(vec_a_c).normalized();
+      FCLFloat plane_distance = mesh_triangle->a.dot(normal);
+      // Transform the halfspace into the fixed frame at the new pose
+      fcl::Halfspace<FCLFloat> halfspace(fcl::transform(
+          fcl::Halfspace<FCLFloat>(normal, plane_distance), mesh_tf));
+      // Find the penetration depth of the box into the halfspace.
+      // FCL doesn't have a function to do this directly, unfortunately.
+      return boxHalfspaceSignedDistance(*octomap_box, octomap_box_tf, halfspace);
+    }
     FCLFloat distanceToNewPose(geometry_msgs::Pose pose, bool signed_distance=false) const
     {
       // Turn pose into tf
-      fcl::Transform3<FCLFloat> new_tf(
-          fcl::Translation3<FCLFloat>(pose.position.x, pose.position.y, pose.position.z) *
-          fcl::Quaternion<FCLFloat>(pose.orientation.w,
-                                    pose.orientation.x,
-                                    pose.orientation.y,
-                                    pose.orientation.z));
+      fcl::Transform3<FCLFloat> new_tf(costmap_3d::poseToFCLTransform<FCLFloat>(pose));
 
       FCLFloat dist;
       // As of the time this code was written, the normal FCL API does not
@@ -440,19 +468,7 @@ private:
                                    &dist);
       if (signed_distance && dist < 0.0)
       {
-        // The objects collide, so use the penetration depth as signed distance.
-        // We do not (yet) use the contact points or normal points
-        // We must provide contact points and normal vector to get penetration
-        // depth calculation.
-        fcl::Vector3<FCLFloat> contact_points;
-        fcl::Vector3<FCLFloat> normal_vector;
-        solver.shapeTriangleIntersect(*octomap_box, octomap_box_tf,
-                                      mesh_triangle->a, mesh_triangle->b, mesh_triangle->c, new_tf,
-                                      &contact_points,
-                                      &dist,
-                                      &normal_vector);
-        // Signed distance is the negative penetration depth
-        dist = -dist;
+        dist = boxHalfspaceSignedDistance(new_tf);
         assert(dist <= 0.0);
       }
       return dist;
