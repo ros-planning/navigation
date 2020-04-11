@@ -67,7 +67,7 @@ Costmap3DQuery::Costmap3DQuery(
     pose_micro_bins_per_meter_(pose_micro_bins_per_meter),
     pose_micro_bins_per_radian_(pose_micro_bins_per_radian)
 {
-  clearStatistics();
+  init();
   updateMeshResource(mesh_resource, padding);
 }
 
@@ -89,7 +89,7 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
     pose_micro_bins_per_meter_(pose_micro_bins_per_meter),
     pose_micro_bins_per_radian_(pose_micro_bins_per_radian)
 {
-  clearStatistics();
+  init();
   // Make a local copy of the costmap in question
   // It would be awesome if the Costmap3D had a way to snapshot
   // or copy-on-write. As it stands, for many scenarios involving
@@ -102,6 +102,13 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
 
 Costmap3DQuery::~Costmap3DQuery()
 {
+}
+
+void Costmap3DQuery::init()
+{
+  clearStatistics();
+  milli_cache_threshold_ = 2.5 / pose_milli_bins_per_meter_;
+  micro_cache_threshold_ = 2.5 / pose_micro_bins_per_meter_;
 }
 
 // Caller must already hold an upgradable shared lock via the passed
@@ -166,13 +173,15 @@ void Costmap3DQuery::clearStatistics()
   hits_since_clear_ = 0;
   fast_milli_hits_since_clear_ = 0;
   slow_milli_hits_since_clear_ = 0;
-  micro_hits_since_clear_ = 0;
+  fast_micro_hits_since_clear_ = 0;
+  slow_micro_hits_since_clear_ = 0;
   exact_hits_since_clear_ = 0;
   misses_since_clear_us_ = 0;
   hits_since_clear_us_ = 0;
   fast_milli_hits_since_clear_us_ = 0;
   slow_milli_hits_since_clear_us_ = 0;
-  micro_hits_since_clear_us_ = 0;
+  fast_micro_hits_since_clear_us_ = 0;
+  slow_micro_hits_since_clear_us_ = 0;
   exact_hits_since_clear_us_ = 0;
   hit_fcl_bv_distance_calculations_ = 0;
   hit_fcl_primative_distance_calculations_ = 0;
@@ -186,18 +195,21 @@ void Costmap3DQuery::printStatistics()
       hits_since_clear_ -
       fast_milli_hits_since_clear_ -
       slow_milli_hits_since_clear_ -
-      micro_hits_since_clear_ -
+      fast_micro_hits_since_clear_ -
+      slow_micro_hits_since_clear_ -
       exact_hits_since_clear_;
   double hit_ratio = (double)hits_since_clear_ / queries_since_clear_;
   double fast_milli_hit_ratio = (double)fast_milli_hits_since_clear_ / queries_since_clear_;
   double slow_milli_hit_ratio = (double)slow_milli_hits_since_clear_ / queries_since_clear_;
-  double micro_hit_ratio = (double)micro_hits_since_clear_ / queries_since_clear_;
+  double fast_micro_hit_ratio = (double)fast_micro_hits_since_clear_ / queries_since_clear_;
+  double slow_micro_hit_ratio = (double)slow_micro_hits_since_clear_ / queries_since_clear_;
   double exact_hit_ratio = (double)exact_hits_since_clear_ / queries_since_clear_;
   uint64_t total_us = misses_since_clear_us_ +
       hits_since_clear_us_ +
       fast_milli_hits_since_clear_us_ +
       slow_milli_hits_since_clear_us_ +
-      micro_hits_since_clear_us_ +
+      fast_micro_hits_since_clear_us_ +
+      slow_micro_hits_since_clear_us_ +
       exact_hits_since_clear_us_;
   ROS_DEBUG_STREAM_NAMED(
       "query_statistics",
@@ -210,8 +222,10 @@ void Costmap3DQuery::printStatistics()
       "\n\tslow milli cache hit ratio: " << slow_milli_hit_ratio <<
       "\n\tfast milli cache hits: " << fast_milli_hits_since_clear_ <<
       "\n\tfast milli cache hit ratio: " << fast_milli_hit_ratio <<
-      "\n\tmicro cache hits: " << micro_hits_since_clear_ <<
-      "\n\tmicro cache hit ratio: " << micro_hit_ratio <<
+      "\n\tslow micro cache hits: " << slow_micro_hits_since_clear_ <<
+      "\n\tslow micro cache hit ratio: " << slow_micro_hit_ratio <<
+      "\n\tfast micro cache hits: " << fast_micro_hits_since_clear_ <<
+      "\n\tfast micro cache hit ratio: " << fast_micro_hit_ratio <<
       "\n\texact cache hits: " << exact_hits_since_clear_ <<
       "\n\texact cache hit ratio: " << exact_hit_ratio <<
       "\n\ttotal usecs: " << total_us <<
@@ -219,7 +233,8 @@ void Costmap3DQuery::printStatistics()
       "\n\thit usecs/query: " << (double)hits_since_clear_us_ / hits_since_clear_ <<
       "\n\tslow milli hit usecs/query: " << (double)slow_milli_hits_since_clear_us_ / slow_milli_hits_since_clear_ <<
       "\n\tfast milli hit usecs/query: " << (double)fast_milli_hits_since_clear_us_ / fast_milli_hits_since_clear_ <<
-      "\n\tmicro hit usecs/query: " << (double)micro_hits_since_clear_us_ / micro_hits_since_clear_ <<
+      "\n\tslow micro hit usecs/query: " << (double)slow_micro_hits_since_clear_us_ / slow_micro_hits_since_clear_ <<
+      "\n\tfast micro hit usecs/query: " << (double)fast_micro_hits_since_clear_us_ / fast_micro_hits_since_clear_ <<
       "\n\texact hit usecs/query: " << (double)exact_hits_since_clear_us_ / exact_hits_since_clear_ <<
       "\n\tmiss FCL BV distance calculations: " << miss_fcl_bv_distance_calculations_ <<
       "\n\tmiss FCL primative distance calculations: " << miss_fcl_primative_distance_calculations_ <<
@@ -497,37 +512,21 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   FCLCollisionObjectPtr world(getWorldCollisionObject(pose, query_region));
 
   FCLFloat pose_distance = std::numeric_limits<FCLFloat>::max();
-
-  DistanceCacheKey micro_cache_key(pose, query_region, pose_micro_bins_per_meter_, pose_micro_bins_per_radian_);
-  // if we hit the micro cache, use the result directly.
-  auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
-  if (micro_cache_entry != micro_distance_cache_.end())
-  {
-    double distance = handleDistanceInteriorCollisions(
-        micro_cache_entry->second.distanceToNewPose(pose, signed_distance),
-        signed_distance,
-        micro_cache_entry->second,
-        pose);
-    micro_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
-    micro_hits_since_clear_us_.fetch_add(
-        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
-        std::memory_order_relaxed);
-    return distance;
-  }
+  fcl::DistanceRequest<FCLFloat> request;
+  fcl::DistanceResult<FCLFloat> result;
 
   DistanceCacheKey milli_cache_key(pose, query_region, pose_milli_bins_per_meter_, pose_milli_bins_per_radian_);
   auto milli_cache_entry = milli_distance_cache_.find(milli_cache_key);
   bool milli_hit = false;
   if (milli_cache_entry != milli_distance_cache_.end())
   {
-    milli_hit = true;
-    double distance = handleDistanceInteriorCollisions(
-        milli_cache_entry->second.distanceToNewPose(pose, signed_distance),
-        signed_distance,
-        milli_cache_entry->second,
-        pose);
-    if (distance > milli_cache_threshold_)
+    if (milli_cache_entry->second.distance > milli_cache_threshold_)
     {
+      double distance = handleDistanceInteriorCollisions(
+          milli_cache_entry->second.distanceToNewPose(pose, signed_distance),
+          signed_distance,
+          milli_cache_entry->second,
+          pose);
       fast_milli_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
       fast_milli_hits_since_clear_us_.fetch_add(
           std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
@@ -537,31 +536,76 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     else
     {
       // we are too close to directly use the milli-cache, but use the
-      // calculated distance as the pose_distance upper bound
-      pose_distance = distance;
+      // calculated distance as the pose_distance upper bound.
+      // The upper-bound distance must not go through
+      // handleDistanceInteriorCollisions, because that could artificially
+      // prevent fcl::distance from getting the box nearest the mesh.
+      double distance = milli_cache_entry->second.distanceToNewPose(pose, false);
+      if (distance < pose_distance)
+      {
+        milli_hit = true;
+        pose_distance = distance;
+        milli_cache_entry->second.setupResult(&result);
+      }
     }
   }
 
-  fcl::DistanceRequest<FCLFloat> request;
-  fcl::DistanceResult<FCLFloat> result;
+  DistanceCacheKey micro_cache_key(pose, query_region, pose_micro_bins_per_meter_, pose_micro_bins_per_radian_);
+  auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
+  bool micro_hit = false;
+  if (micro_cache_entry != micro_distance_cache_.end())
+  {
+    if (micro_cache_entry->second.distance > micro_cache_threshold_)
+    {
+      double distance = handleDistanceInteriorCollisions(
+          micro_cache_entry->second.distanceToNewPose(pose, signed_distance),
+          signed_distance,
+          micro_cache_entry->second,
+          pose);
+      fast_micro_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
+      fast_micro_hits_since_clear_us_.fetch_add(
+          std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+          std::memory_order_relaxed);
+      return distance;
+    }
+    else
+    {
+      // we are too close to directly use the micro-cache, but use the
+      // calculated distance as the pose_distance upper bound.
+      // The upper-bound distance must not go through
+      // handleDistanceInteriorCollisions, because that could artificially
+      // prevent fcl::distance from getting the box nearest the mesh.
+      double distance = micro_cache_entry->second.distanceToNewPose(pose, false);
+      if (distance < pose_distance)
+      {
+        micro_hit = true;
+        pose_distance = distance;
+        micro_cache_entry->second.setupResult(&result);
+      }
+    }
+  }
 
   DistanceCacheKey cache_key(pose, query_region, pose_bins_per_meter_, pose_bins_per_radian_);
-  auto cache_entry = distance_cache_.find(cache_key);
   bool cache_hit = false;
-  if (milli_cache_entry != milli_distance_cache_.end())
+  // Assume a milli hit or micro hit is much better than the normal distance
+  // cache at setting an upper bound, skip the normal cache lookup in such
+  // cases.
+  if (!milli_hit && !micro_hit)
   {
-    milli_cache_entry->second.setupResult(&result);
-  }
-  else if (cache_entry != distance_cache_.end())
-  {
-    cache_hit = true;
-    // Cache hit, find the distance between the mesh triangle at the new pose
-    // and the octomap box, and use this as our initial guess in the result.
-    // This greatly prunes the search tree, yielding a big increase in runtime
-    // performance.
-    pose_distance = cache_entry->second.distanceToNewPose(pose, signed_distance);
-
-    cache_entry->second.setupResult(&result);
+    auto cache_entry = distance_cache_.find(cache_key);
+    if (cache_entry != distance_cache_.end())
+    {
+      cache_hit = true;
+      // Cache hit, find the distance between the mesh triangle at the new pose
+      // and the octomap box, and use this as our initial guess in the result.
+      // This greatly prunes the search tree, yielding a big increase in runtime
+      // performance.
+      // This upper-bound distance must not go through
+      // handleDistanceInteriorCollisions, because that could artificially
+      // prevent fcl::distance from getting the box nearest the mesh.
+      pose_distance = cache_entry->second.distanceToNewPose(pose, false);
+      cache_entry->second.setupResult(&result);
+    }
   }
 
   // Check the distance from the last cache entry too, and use it if it is a
@@ -655,12 +699,23 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     }
   }
 
-  if (milli_hit)
+  if (micro_hit)
+  {
+    slow_micro_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
+    slow_micro_hits_since_clear_us_.fetch_add(
+        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+        std::memory_order_relaxed);
+    hit_fcl_bv_distance_calculations_.fetch_add(result.bv_distance_calculations);
+    hit_fcl_primative_distance_calculations_.fetch_add(result.primative_distance_calculations);
+  }
+  else if (milli_hit)
   {
     slow_milli_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
     slow_milli_hits_since_clear_us_.fetch_add(
         std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
         std::memory_order_relaxed);
+    hit_fcl_bv_distance_calculations_.fetch_add(result.bv_distance_calculations);
+    hit_fcl_primative_distance_calculations_.fetch_add(result.primative_distance_calculations);
   }
   else if (cache_hit)
   {

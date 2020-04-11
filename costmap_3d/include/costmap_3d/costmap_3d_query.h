@@ -198,6 +198,8 @@ protected:
                                    QueryRegion query_region = ALL);
 
 private:
+  // Common initialization between all constrcutors
+  void init();
   // synchronize this object for parallel queries
   upgrade_mutex upgrade_mutex_;
   // returns path to package file, or empty on error
@@ -471,21 +473,15 @@ private:
    * massive speed up for cases where the nearest obstacle is futher than the
    * milli_cache_threshold_
    */
-  double milli_cache_threshold_ = .125;
+  double milli_cache_threshold_;
   DistanceCache milli_distance_cache_;
   /**
-   * The micro-distance cache allows us to return a guess as to the distance
-   * based on hitting the micro-cache. The number of bins in the micro-cache
-   * must be large to prevent gross error. If the micro-cache is hit on a
-   * distance query, instead of making a query, the cached triangle is
-   * transformed to the new pose, and the distance between that triangle and
-   * the previous octomap box is returned immediately. This results in a
-   * massive speed-up when querying very small changes in pose (which may
-   * be done to calculate derivatives, for instance). Do note that this
-   * cache is a potential source of minor error, so in cases where that is
-   * important use a very high number of bins (which will reduce its
-   * efficiency for the sake of accuracy).
+   * The micro-distance cache allows a very fast path when the nearest
+   * obstacle is more than a threshold of distance away. This results in a
+   * massive speed up for cases where the nearest obstacle is futher than the
+   * micro_cache_threshold_
    */
+  double micro_cache_threshold_;
   DistanceCache micro_distance_cache_;
   // Immediately return the distance for an exact duplicate query
   // This avoid any calculation in the case that the calculation has been done
@@ -514,13 +510,15 @@ private:
   std::atomic<unsigned int> hits_since_clear_;
   std::atomic<unsigned int> fast_milli_hits_since_clear_;
   std::atomic<unsigned int> slow_milli_hits_since_clear_;
-  std::atomic<unsigned int> micro_hits_since_clear_;
+  std::atomic<unsigned int> fast_micro_hits_since_clear_;
+  std::atomic<unsigned int> slow_micro_hits_since_clear_;
   std::atomic<unsigned int> exact_hits_since_clear_;
   std::atomic<uint64_t> misses_since_clear_us_;
   std::atomic<uint64_t> hits_since_clear_us_;
   std::atomic<uint64_t> fast_milli_hits_since_clear_us_;
   std::atomic<uint64_t> slow_milli_hits_since_clear_us_;
-  std::atomic<uint64_t> micro_hits_since_clear_us_;
+  std::atomic<uint64_t> fast_micro_hits_since_clear_us_;
+  std::atomic<uint64_t> slow_micro_hits_since_clear_us_;
   std::atomic<uint64_t> exact_hits_since_clear_us_;
   std::atomic<size_t> hit_fcl_bv_distance_calculations_;
   std::atomic<size_t> hit_fcl_primative_distance_calculations_;
