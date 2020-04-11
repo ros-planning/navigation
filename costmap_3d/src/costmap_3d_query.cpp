@@ -48,6 +48,12 @@
 namespace costmap_3d
 {
 
+// Define and initialize static thread_local variables.
+// statics.
+thread_local unsigned int Costmap3DQuery::tls_last_layered_costmap_update_number_ = 0;
+thread_local Costmap3DQuery* Costmap3DQuery::tls_last_instance_ = nullptr;
+thread_local Costmap3DQuery::DistanceCacheEntry* Costmap3DQuery::tls_last_cache_entries_[Costmap3DQuery::MAX] = {nullptr};
+
 Costmap3DQuery::Costmap3DQuery(
     const LayeredCostmap3D* layered_costmap_3d,
     const std::string& mesh_resource,
@@ -59,7 +65,6 @@ Costmap3DQuery::Costmap3DQuery(
     unsigned int pose_micro_bins_per_meter,
     unsigned int pose_micro_bins_per_radian)
   : layered_costmap_3d_(layered_costmap_3d),
-    last_cache_entries_(Costmap3DQuery::MAX),
     pose_bins_per_meter_(pose_bins_per_meter),
     pose_bins_per_radian_(pose_bins_per_radian),
     pose_milli_bins_per_meter_(pose_milli_bins_per_meter),
@@ -81,7 +86,6 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
     unsigned int pose_micro_bins_per_meter,
     unsigned int pose_micro_bins_per_radian)
   : layered_costmap_3d_(nullptr),
-    last_cache_entries_(Costmap3DQuery::MAX),
     pose_bins_per_meter_(pose_bins_per_meter),
     pose_bins_per_radian_(pose_bins_per_radian),
     pose_milli_bins_per_meter_(pose_milli_bins_per_meter),
@@ -150,11 +154,9 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
     // best answer in the presence of a new closer octomap cell does not make
     // the result incorrect (just less efficient). However, such an improvement
     // may not yield any practical increase in performance due to the
-    // last_cache_entries_ and the fact that most queries query poses on a path,
+    // tls_last_cache_entries_ and the fact that most queries query poses on a path,
     // which makes a distance_cache miss much less costly.
     distance_cache_.clear();
-    last_cache_entries_.clear();
-    last_cache_entries_.resize(MAX);
     // We must always drop the milli cache and micro cache, as new cells will
     // invalidate the old results, and there is no simple way to figure out
     // which ones might still be valid.
@@ -164,6 +166,20 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
     printStatistics();
     clearStatistics();
     last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
+  }
+  // Check if any thread local state must be invalidated.
+  // We must handle if either the costmap has been updated since this thread's
+  // storage was invalidated, or if a different instance of the object is
+  // being used in the same thread.
+  if (tls_last_layered_costmap_update_number_ != last_layered_costmap_update_number_ ||
+      tls_last_instance_ != this)
+  {
+    for (unsigned int i=0; i<MAX; ++i)
+    {
+      tls_last_cache_entries_[i] = nullptr;
+    }
+    tls_last_layered_costmap_update_number_ = last_layered_costmap_update_number_;
+    tls_last_instance_ = this;
   }
 }
 
@@ -176,6 +192,7 @@ void Costmap3DQuery::clearStatistics()
   fast_micro_hits_since_clear_ = 0;
   slow_micro_hits_since_clear_ = 0;
   exact_hits_since_clear_ = 0;
+  reuse_results_since_clear_ = 0;
   misses_since_clear_us_ = 0;
   hits_since_clear_us_ = 0;
   fast_milli_hits_since_clear_us_ = 0;
@@ -183,6 +200,7 @@ void Costmap3DQuery::clearStatistics()
   fast_micro_hits_since_clear_us_ = 0;
   slow_micro_hits_since_clear_us_ = 0;
   exact_hits_since_clear_us_ = 0;
+  reuse_results_since_clear_us_ = 0;
   hit_fcl_bv_distance_calculations_ = 0;
   hit_fcl_primative_distance_calculations_ = 0;
   miss_fcl_bv_distance_calculations_ = 0;
@@ -197,6 +215,7 @@ void Costmap3DQuery::printStatistics()
       slow_milli_hits_since_clear_ -
       fast_micro_hits_since_clear_ -
       slow_micro_hits_since_clear_ -
+      reuse_results_since_clear_ -
       exact_hits_since_clear_;
   double hit_ratio = (double)hits_since_clear_ / queries_since_clear_;
   double fast_milli_hit_ratio = (double)fast_milli_hits_since_clear_ / queries_since_clear_;
@@ -210,6 +229,7 @@ void Costmap3DQuery::printStatistics()
       slow_milli_hits_since_clear_us_ +
       fast_micro_hits_since_clear_us_ +
       slow_micro_hits_since_clear_us_ +
+      reuse_results_since_clear_us_ +
       exact_hits_since_clear_us_;
   ROS_DEBUG_STREAM_NAMED(
       "query_statistics",
@@ -228,6 +248,7 @@ void Costmap3DQuery::printStatistics()
       "\n\tfast micro cache hit ratio: " << fast_micro_hit_ratio <<
       "\n\texact cache hits: " << exact_hits_since_clear_ <<
       "\n\texact cache hit ratio: " << exact_hit_ratio <<
+      "\n\treuse past results: " << reuse_results_since_clear_ <<
       "\n\ttotal usecs: " << total_us <<
       "\n\tmiss usecs/query: " << (double)misses_since_clear_us_ / cache_misses <<
       "\n\thit usecs/query: " << (double)hits_since_clear_us_ / hits_since_clear_ <<
@@ -236,6 +257,7 @@ void Costmap3DQuery::printStatistics()
       "\n\tslow micro hit usecs/query: " << (double)slow_micro_hits_since_clear_us_ / slow_micro_hits_since_clear_ <<
       "\n\tfast micro hit usecs/query: " << (double)fast_micro_hits_since_clear_us_ / fast_micro_hits_since_clear_ <<
       "\n\texact hit usecs/query: " << (double)exact_hits_since_clear_us_ / exact_hits_since_clear_ <<
+      "\n\treuse results usecs/query: " << (double)reuse_results_since_clear_us_ / reuse_results_since_clear_ <<
       "\n\tmiss FCL BV distance calculations: " << miss_fcl_bv_distance_calculations_ <<
       "\n\tmiss FCL primative distance calculations: " << miss_fcl_primative_distance_calculations_ <<
       "\n\thit FCL BV distance calculations: " << hit_fcl_bv_distance_calculations_ <<
@@ -470,14 +492,17 @@ Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getWorldCollisionObject(co
       normal << 0.0, 1.0, 0.0;
     }
     fcl::Halfspace<FCLFloat> halfspace(fcl::transform(
-        fcl::Halfspace<FCLFloat>(normal, 0.0), poseToFCLTransform(pose)));
+        fcl::Halfspace<FCLFloat>(normal, 0.0), poseToFCLTransform<FCLFloat>(pose)));
     fcl_octree_ptr->addToRegionOfInterest(halfspace);
   }
   world_obj = FCLCollisionObjectPtr(new fcl::CollisionObject<FCLFloat>(fcl_octree_ptr));
   return world_obj;
 }
 
-double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_distance, Costmap3DQuery::QueryRegion query_region)
+double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
+                                         bool signed_distance,
+                                         Costmap3DQuery::QueryRegion query_region,
+                                         bool reuse_past_result)
 {
   upgrade_lock upgrade_lock(upgrade_mutex_);
   std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
@@ -497,15 +522,40 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     return std::numeric_limits<double>::max();
   }
 
+  if (reuse_past_result)
+  {
+    // Reuse the past result (if there was one) and directly return the new distance.
+    // In cases where the caller knows this is the correct behavior (such as
+    // when making minor perturbations to estimate derivatives), this is
+    // faster than having to calculate the hash and find the cache entry.
+    if (tls_last_cache_entries_[query_region])
+    {
+      double distance = handleDistanceInteriorCollisions(
+          tls_last_cache_entries_[query_region]->distanceToNewPose(pose, signed_distance),
+          signed_distance,
+          *tls_last_cache_entries_[query_region],
+          pose);
+      reuse_results_since_clear_.fetch_add(1, std::memory_order_relaxed);
+      reuse_results_since_clear_us_.fetch_add(
+          std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
+          std::memory_order_relaxed);
+      return distance;
+    }
+  }
+
   DistanceCacheKey exact_cache_key(pose, query_region);
   auto exact_cache_entry = exact_distance_cache_.find(exact_cache_key);
   if (exact_cache_entry != exact_distance_cache_.end())
   {
+    double distance = exact_cache_entry->second.distance;
+    // Be sure to update the TLS last cache entry.
+    // We do not need the write lock to update thread local storage.
+    tls_last_cache_entries_[query_region] = &exact_cache_entry->second;
     exact_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
     exact_hits_since_clear_us_.fetch_add(
         std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
         std::memory_order_relaxed);
-    return exact_cache_entry->second;
+    return distance;
   }
 
   FCLCollisionObjectPtr robot(getRobotCollisionObject(pose));
@@ -527,6 +577,9 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
           signed_distance,
           milli_cache_entry->second,
           pose);
+      // Be sure to update the TLS last cache entry.
+      // We do not need the write lock to update thread local storage.
+      tls_last_cache_entries_[query_region] = &milli_cache_entry->second;
       fast_milli_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
       fast_milli_hits_since_clear_us_.fetch_add(
           std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
@@ -562,6 +615,9 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
           signed_distance,
           micro_cache_entry->second,
           pose);
+      // Be sure to update the TLS last cache entry.
+      // We do not need the write lock to update thread local storage.
+      tls_last_cache_entries_[query_region] = &micro_cache_entry->second;
       fast_micro_hits_since_clear_.fetch_add(1, std::memory_order_relaxed);
       fast_micro_hits_since_clear_us_.fetch_add(
           std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(),
@@ -611,13 +667,13 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   // Check the distance from the last cache entry too, and use it if it is a
   // better match. This is especialy useful if we miss every cache, but have a
   // last entry, and the queries are being done on a path.
-  if (last_cache_entries_[query_region].octomap_box)
+  if (tls_last_cache_entries_[query_region])
   {
-    double last_entry_distance = last_cache_entries_[query_region].distanceToNewPose(pose, signed_distance);
+    double last_entry_distance = tls_last_cache_entries_[query_region]->distanceToNewPose(pose, false);
     if (last_entry_distance < pose_distance)
     {
       pose_distance = last_entry_distance;
-      last_cache_entries_[query_region].setupResult(&result);
+      tls_last_cache_entries_[query_region]->setupResult(&result);
     }
   }
 
@@ -691,11 +747,13 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
     {
       // Get write access
       unique_lock write_lock(upgrade_mutex_);
-      last_cache_entries_[query_region] = new_entry;
+      // While it may seem expensive to copy the cache entries into the
+      // caches, it prevents cache aliasing and avoids dynamic memory.
       distance_cache_[cache_key] = new_entry;
       micro_distance_cache_[micro_cache_key] = new_entry;
       milli_distance_cache_[milli_cache_key] = new_entry;
-      exact_distance_cache_[exact_cache_key] = distance;
+      exact_distance_cache_[exact_cache_key] = new_entry;
+      tls_last_cache_entries_[query_region] = &exact_distance_cache_[exact_cache_key];
     }
   }
 
@@ -738,14 +796,18 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose, bool signed_d
   return distance;
 }
 
-double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
+double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose,
+                                         Costmap3DQuery::QueryRegion query_region,
+                                         bool reuse_past_result)
 {
-  return calculateDistance(pose, false, query_region);
+  return calculateDistance(pose, false, query_region, reuse_past_result);
 }
 
-double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
+double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose,
+                                               Costmap3DQuery::QueryRegion query_region,
+                                               bool reuse_past_result)
 {
-  return calculateDistance(pose, true, query_region);
+  return calculateDistance(pose, true, query_region, reuse_past_result);
 }
 
 }  // namespace costmap_3d
