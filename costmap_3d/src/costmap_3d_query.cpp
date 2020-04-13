@@ -559,6 +559,16 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   if (exact_cache_entry != exact_distance_cache_.end())
   {
     double distance = exact_cache_entry->second.distance;
+    if (distance == -1.0 && signed_distance)
+    {
+      // This is a signed distance query, but we have cached an unsigned one.
+      // Instead of paying to store which kind of query was issued, just
+      // calculate the signed distance here and memorize it.
+      distance = exact_cache_entry->second.boxHalfspaceSignedDistance(
+          poseToFCLTransform<FCLFloat>(pose));
+      unique_lock write_lock(upgrade_mutex_);
+      exact_cache_entry->second.distance = distance;
+    }
     // Be sure to update the TLS last cache entry.
     // We do not need the write lock to update thread local storage.
     tls_last_cache_entries_[query_region] = &exact_cache_entry->second;
