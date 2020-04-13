@@ -604,7 +604,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
       // The upper-bound distance must not go through
       // handleDistanceInteriorCollisions, because that could artificially
       // prevent fcl::distance from getting the box nearest the mesh.
-      double distance = milli_cache_entry->second.distanceToNewPose(pose, false);
+      double distance = milli_cache_entry->second.distanceToNewPose(pose, signed_distance);
       if (distance < pose_distance)
       {
         milli_hit = true;
@@ -642,7 +642,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
       // The upper-bound distance must not go through
       // handleDistanceInteriorCollisions, because that could artificially
       // prevent fcl::distance from getting the box nearest the mesh.
-      double distance = micro_cache_entry->second.distanceToNewPose(pose, false);
+      double distance = micro_cache_entry->second.distanceToNewPose(pose, signed_distance);
       if (distance < pose_distance)
       {
         micro_hit = true;
@@ -670,7 +670,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
       // This upper-bound distance must not go through
       // handleDistanceInteriorCollisions, because that could artificially
       // prevent fcl::distance from getting the box nearest the mesh.
-      pose_distance = cache_entry->second.distanceToNewPose(pose, false);
+      pose_distance = cache_entry->second.distanceToNewPose(pose, signed_distance);
       cache_entry->second.setupResult(&result);
     }
   }
@@ -680,7 +680,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   // last entry, and the queries are being done on a path.
   if (tls_last_cache_entries_[query_region])
   {
-    double last_entry_distance = tls_last_cache_entries_[query_region]->distanceToNewPose(pose, false);
+    double last_entry_distance = tls_last_cache_entries_[query_region]->distanceToNewPose(pose, signed_distance);
     if (last_entry_distance < pose_distance)
     {
       pose_distance = last_entry_distance;
@@ -745,7 +745,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     // time by calculating their penetration depth directly.
     if (signed_distance && distance < 0.0)
     {
-      distance = new_entry.distanceToNewPose(pose, true);
+      distance = new_entry.distanceToNewPose(pose, signed_distance);
     }
 
     distance = handleDistanceInteriorCollisions(
