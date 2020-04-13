@@ -738,7 +738,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   // If we get no result primitives, do not add null pointers to the cache!
   if (result.primitive1 && result.primitive2)
   {
-    const DistanceCacheEntry& new_entry = DistanceCacheEntry(result);
+    DistanceCacheEntry new_entry(result);
 
     // Emulate signed distance in a similar way as FCL. FCL re-does the whole
     // tree/BVH collision, but we already know the colliding primitives, so save
@@ -753,6 +753,8 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
         signed_distance,
         new_entry,
         pose);
+
+    new_entry.distance = distance;
 
     // Update distance caches.
     {
