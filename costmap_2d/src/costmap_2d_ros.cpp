@@ -184,6 +184,8 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 
 Costmap2DROS::~Costmap2DROS()
 {
+  timer_.stop();
+
   map_update_thread_shutdown_ = true;
   if (map_update_thread_ != NULL)
   {
