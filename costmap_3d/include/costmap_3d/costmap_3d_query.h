@@ -43,6 +43,7 @@
 #include <limits>
 #include <atomic>
 #include <boost/thread/shared_mutex.hpp>
+#include <Eigen/Dense>
 #include <fcl/geometry/bvh/BVH_model.h>
 #include <fcl/geometry/shape/utility.h>
 #include <fcl/narrowphase/collision_object.h>
@@ -346,19 +347,48 @@ private:
                                        int bins_per_radian)
     {
       geometry_msgs::Pose rv;
-      rv.position.x = std::round(pose.position.x * bins_per_meter) / bins_per_meter;
-      rv.position.y = std::round(pose.position.y * bins_per_meter) / bins_per_meter;
-      rv.position.z = std::round(pose.position.z * bins_per_meter) / bins_per_meter;
-      // bin orientation by RPY angles.
-      // another way of binning would be binning by axis/angle
-      double yaw, pitch, roll;
-      tf2::getEulerYPR<geometry_msgs::Quaternion>(pose.orientation, yaw, pitch, roll);
-      yaw = std::round(yaw * bins_per_radian) / bins_per_radian;
-      pitch = std::round(pitch * bins_per_radian) / bins_per_radian;
-      roll = std::round(roll * bins_per_radian) / bins_per_radian;
-      tf2::Quaternion binned_q;
-      binned_q.setRPY(roll, pitch, yaw);
-      rv.orientation = tf2::toMsg(binned_q);
+      rv.position.x = static_cast<double>(static_cast<int64_t>(pose.position.x * bins_per_meter)) / bins_per_meter;
+      rv.position.y = static_cast<double>(static_cast<int64_t>(pose.position.y * bins_per_meter)) / bins_per_meter;
+      rv.position.z = static_cast<double>(static_cast<int64_t>(pose.position.z * bins_per_meter)) / bins_per_meter;
+
+      // Speed up the orientation binning by rounding the cayley transform of
+      // the quaternion versor instead of binning by euler angles. It is more
+      // expensive to get the euler angles as it requires several atan2
+      // operations. Getting the cayley transform (and its inverse) requires
+      // negating the versor if the scalar is negative, then a few simple
+      // division/multiplication operations. The rounding error is fairly
+      // uniform across SO(3). For more information, see:
+      //
+      // https://marc-b-reynolds.github.io/quaternions/2017/05/02/QuatQuantPart1.html
+      //
+      // The old technique exactly matches what the above calls 'ZYX', and what
+      // is implemented below is the 'Basic Cayley'. If we ever find that the
+      // cayley transform is introducing too much angular error, another
+      // reasonable comprimise between runtime and accuracy is what the above
+      // calls the 'Basic Harmonic Mean' method.
+      double w = pose.orientation.w;
+      Eigen::Vector3f v(
+          pose.orientation.x,
+          pose.orientation.y,
+          pose.orientation.z);
+      if (w < 0.0)
+      {
+        w = -w;
+        v[0] = -v[0];
+        v[1] = -v[1];
+        v[2] = -v[2];
+      }
+      double s = 1.0 / (1.0 + w);
+      v *= s;
+      v[0] = static_cast<double>(static_cast<int64_t>(v[0] * bins_per_radian)) / bins_per_radian;
+      v[1] = static_cast<double>(static_cast<int64_t>(v[1] * bins_per_radian)) / bins_per_radian;
+      v[2] = static_cast<double>(static_cast<int64_t>(v[2] * bins_per_radian)) / bins_per_radian;
+      double s_inv = 2.0 / (1.0 + v.dot(v));
+      v *= s_inv;
+      rv.orientation.w = s_inv - 1.0;
+      rv.orientation.x = v[0];
+      rv.orientation.y = v[1];
+      rv.orientation.z = v[2];
       return rv;
     }
   };
