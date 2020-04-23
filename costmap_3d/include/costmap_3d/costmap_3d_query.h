@@ -244,9 +244,9 @@ private:
   using FCLCollisionObjectPtr = std::shared_ptr<FCLCollisionObject>;
 
   std::shared_ptr<const octomap::OcTree> octree_ptr_;
-  FCLCollisionObjectPtr getRobotCollisionObject(const geometry_msgs::Pose& pose) const;
-  FCLCollisionObjectPtr getWorldCollisionObject(const geometry_msgs::Pose& pose,
-                                                QueryRegion query_region) const;
+  void setupFCLOctree(const geometry_msgs::Pose& pose,
+                      QueryRegion query_region,
+                      fcl::OcTree<FCLFloat>* fcl_octree_ptr) const;
 
   void padPoints(pcl::PointCloud<pcl::PointXYZ>::Ptr points, float padding)
   {

@@ -464,25 +464,12 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
   return distance;
 }
 
-Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getRobotCollisionObject(const geometry_msgs::Pose& pose) const
+void Costmap3DQuery::setupFCLOctree(
+    const geometry_msgs::Pose& pose,
+    Costmap3DQuery::QueryRegion query_region,
+    fcl::OcTree<FCLFloat>* fcl_octree_ptr) const
 {
-  // We must make our own FCLCollisionObject so we can modify the transform.
-  // Otherwise, the queries will not be thread safe, as we do not have a write
-  // lock except for maintaining the query caches.
-  FCLCollisionObjectPtr robot_obj(new FCLCollisionObject(robot_model_));
-  robot_obj->setTransform(poseToFCLTransform<FCLFloat>(pose));
-  return robot_obj;
-}
-
-Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getWorldCollisionObject(const geometry_msgs::Pose& pose,
-                                                                              Costmap3DQuery::QueryRegion query_region) const
-{
-  // We must make our own fcl::OcTree so we can modify the region of interest.
-  // Otherwise, the queries will not be thread safe, as we do not have a write
-  // lock except for maintaining the query caches.
-  FCLCollisionObjectPtr world_obj;
-  std::shared_ptr<fcl::OcTree<FCLFloat>> fcl_octree_ptr;
-  fcl_octree_ptr.reset(new fcl::OcTree<FCLFloat>(octree_ptr_));
+  // Setup the ROI on the given fcl::OcTree depending on query_region and the pose.
   if (query_region == LEFT || query_region == RIGHT)
   {
     fcl::Vector3<FCLFloat> normal;
@@ -500,8 +487,6 @@ Costmap3DQuery::FCLCollisionObjectPtr Costmap3DQuery::getWorldCollisionObject(co
         fcl::Halfspace<FCLFloat>(normal, 0.0), poseToFCLTransform<FCLFloat>(pose)));
     fcl_octree_ptr->addToRegionOfInterest(halfspace);
   }
-  world_obj = FCLCollisionObjectPtr(new fcl::CollisionObject<FCLFloat>(fcl_octree_ptr));
-  return world_obj;
 }
 
 Costmap3DQuery::FCLFloat Costmap3DQuery::boxHalfspaceSignedDistance(
@@ -571,9 +556,6 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
         std::memory_order_relaxed);
     return distance;
   }
-
-  FCLCollisionObjectPtr robot(getRobotCollisionObject(pose));
-  FCLCollisionObjectPtr world(getWorldCollisionObject(pose, query_region));
 
   FCLFloat pose_distance = std::numeric_limits<FCLFloat>::max();
   fcl::DistanceRequest<FCLFloat> request;
@@ -726,11 +708,14 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
 
   if (result.min_distance > 0.0)
   {
+    fcl::OcTree<FCLFloat> fcl_octree(octree_ptr_);
+    setupFCLOctree(pose, query_region, &fcl_octree);
+
     octree_solver.distance(
-        static_cast<const fcl::OcTree<FCLFloat>*>(world->collisionGeometry().get()),
-        static_cast<const FCLRobotModel*>(robot->collisionGeometry().get()),
-        world->getTransform(),
-        robot->getTransform(),
+        &fcl_octree,
+        robot_model_.get(),
+        fcl::Transform3<FCLFloat>::Identity(),
+        poseToFCLTransform<FCLFloat>(pose),
         request,
         &result);
   }
