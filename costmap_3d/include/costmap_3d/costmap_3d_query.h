@@ -189,6 +189,25 @@ public:
   /** @brief get a const reference to the mesh polygons being used */
   const std::vector<pcl::Vertices>& getRobotMeshPolygons() const {return robot_mesh_.polygons;}
 
+  /** @brief set the layered costmap update number.
+   *
+   * This is useful for buffered queries to store which costmap update they represent.
+   */
+  void setLayeredCostmapUpdateNumber(unsigned int n) { last_layered_costmap_update_number_ = n; }
+
+  /** @brief get the layered costmap update number.
+   *
+   * This is useful for buffered queries to store which costmap update they represent.
+   */
+  unsigned int getLayeredCostmapUpdateNumber() const { return last_layered_costmap_update_number_; }
+
+  /** @brief change the costmap associated with this query.
+   *
+   * This is useful for a buffered query to save the robot mesh LUT, which would be
+   * re-created if a new query is allocated.
+   */
+  void updateCostmap(const Costmap3DConstPtr& costmap_3d);
+
 protected:
   const LayeredCostmap3D* layered_costmap_3d_;
 
@@ -203,8 +222,10 @@ protected:
    * the resolution changes.
    * Note: assumes the costmap is locked. The costmap should always be locked
    * during query calls when this is called.
+   * If the associated layered_costmap_3d_ is empty the new_octree is used instead.
    */
-  virtual void checkCostmap(upgrade_lock& upgrade_lock);
+  virtual void checkCostmap(upgrade_lock& upgrade_lock,
+                            std::shared_ptr<const octomap::OcTree> new_octree = nullptr);
 
   /** @brief Update the mesh to use for queries. */
   virtual void updateMeshResource(const std::string& mesh_resource, double padding = 0.0);

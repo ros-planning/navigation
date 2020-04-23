@@ -121,9 +121,18 @@ void Costmap3DQuery::init()
   last_octomap_resolution_ = 0.0;
 }
 
+void Costmap3DQuery::updateCostmap(const Costmap3DConstPtr& costmap_3d)
+{
+  // Copy the given costmap
+  std::shared_ptr<const octomap::OcTree> new_octree(new Costmap3D(*costmap_3d));
+  upgrade_lock upgrade_lock(upgrade_mutex_);
+  checkCostmap(upgrade_lock, new_octree);
+}
+
 // Caller must already hold an upgradable shared lock via the passed
 // upgrade_lock, which we can use to upgrade to exclusive access if necessary.
-void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
+void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock,
+                                  std::shared_ptr<const octomap::OcTree> new_octree)
 {
   // First check if we need to update w/ just the read lock held
   bool need_update = false;
@@ -137,16 +146,34 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
         need_update = true;
       }
     }
+    else if (new_octree)
+    {
+      if (new_octree != octree_ptr_)
+      {
+        need_update = true;
+      }
+    }
   }
   if (need_update)
   {
     // get write access
     upgrade_to_unique_lock write_lock(upgrade_lock);
 
-    if (layered_costmap_3d_->getCostmap3D() != octree_ptr_)
+    if (layered_costmap_3d_)
     {
-      // The octomap has been reallocated, change where we are pointing.
-      octree_ptr_ = layered_costmap_3d_->getCostmap3D();
+      if (layered_costmap_3d_->getCostmap3D() != octree_ptr_)
+      {
+        // The octomap has been reallocated, change where we are pointing.
+        octree_ptr_ = layered_costmap_3d_->getCostmap3D();
+      }
+    }
+    else if (new_octree)
+    {
+      if (new_octree != octree_ptr_)
+      {
+        // There is a new octomap allocated, change where we are pointing.
+        octree_ptr_ = new_octree;
+      }
     }
     checkInteriorCollisionLUT();
     // The costmap has been updated since the last query, reset our caches
@@ -173,7 +200,10 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock)
     exact_distance_cache_.clear();
     printStatistics();
     clearStatistics();
-    last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
+    if (layered_costmap_3d_)
+    {
+      last_layered_costmap_update_number_ = layered_costmap_3d_->getNumberOfUpdates();
+    }
   }
   // Check if any thread local state must be invalidated.
   // We must handle if either the costmap has been updated since this thread's

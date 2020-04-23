@@ -107,6 +107,9 @@ public:
           const std::string& footprint_mesh_resource = "",
           double padding = NAN);
 
+  /** @brief update the given buffered query to hold a copy of the current costmap */
+  virtual void updateBufferedQuery(std::shared_ptr<Costmap3DQuery> query);
+
   /** @brief Get a query object associated with our layered costmap.
    * Note: it is up to the caller to ensure the costmap is properly
    * locked while executing queries, or unpredictable behavior will occur!

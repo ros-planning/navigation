@@ -202,7 +202,25 @@ std::shared_ptr<Costmap3DQuery> Costmap3DROS::getBufferedQuery(
   const std::string& query_mesh(getFootprintMeshResource(footprint_mesh_resource));
   padding = getFootprintPadding(padding);
   std::lock_guard<LayeredCostmap3D> lock(layered_costmap_3d_);
-  return std::shared_ptr<Costmap3DQuery>(new Costmap3DQuery(layered_costmap_3d_.getCostmap3D(), query_mesh, padding));
+  std::shared_ptr<Costmap3DQuery> rv = std::shared_ptr<Costmap3DQuery>(
+      new Costmap3DQuery(layered_costmap_3d_.getCostmap3D(), query_mesh, padding));
+  rv->setLayeredCostmapUpdateNumber(layered_costmap_3d_.getNumberOfUpdates());
+  return rv;
+}
+
+void Costmap3DROS::updateBufferedQuery(std::shared_ptr<Costmap3DQuery> query)
+{
+  // Don't hold the lock while checking the update number, as that would defeat
+  // the point in having a copy of the most recent costmap. There is no need to
+  // hold the lock, as the number of updates is a simple integer, and if we miss
+  // a very recent update due to memory ordering, we will pick it up on the next
+  // cycle.
+  if (query->getLayeredCostmapUpdateNumber() != layered_costmap_3d_.getNumberOfUpdates())
+  {
+    std::lock_guard<LayeredCostmap3D> lock(layered_costmap_3d_);
+    query->setLayeredCostmapUpdateNumber(layered_costmap_3d_.getNumberOfUpdates());
+    query->updateCostmap(layered_costmap_3d_.getCostmap3D());
+  }
 }
 
 std::shared_ptr<Costmap3DQuery> Costmap3DROS::getAssociatedQuery(
