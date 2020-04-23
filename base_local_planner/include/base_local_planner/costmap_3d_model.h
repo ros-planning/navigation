@@ -64,6 +64,12 @@ class Costmap3DModel : public CostmapModel
   virtual ~Costmap3DModel() {}
 
   /**
+   * @brief Set the query object to use
+   * @param costmap_3d_query The Costmap3DQuery to use
+   */
+  void setQuery(costmap_3d::Costmap3DQueryPtr costmap_3d_query) { costmap_3d_query_ = costmap_3d_query; }
+
+  /**
    * @brief Checks if any obstacles in the 3D costmap lie inside the default 3D footprint
    *
    * The caller must have the costmap 3D associated with this object locked
@@ -114,6 +120,7 @@ class Costmap3DModel : public CostmapModel
 
  protected:
   costmap_3d::Costmap3DROS& costmap_3d_; ///< @brief To query 3D costmap
+  costmap_3d::Costmap3DQueryPtr costmap_3d_query_; ///< @brief Alternate interface, query direct
 };
 
 }  // namespace base_local_planner
