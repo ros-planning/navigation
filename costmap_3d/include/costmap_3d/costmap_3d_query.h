@@ -213,7 +213,8 @@ protected:
   virtual double calculateDistance(geometry_msgs::Pose pose,
                                    bool signed_distance = false,
                                    QueryRegion query_region = ALL,
-                                   bool reuse_past_result = false);
+                                   bool reuse_past_result = false,
+                                   bool collision_only = false);
 
 private:
   // Common initialization between all constrcutors

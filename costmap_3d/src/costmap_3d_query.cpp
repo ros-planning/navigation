@@ -404,7 +404,7 @@ bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose, Costmap3DQuery
   // This is because our distance query correctly handles interior collisions,
   // which requires finding the nearest octomap box, which an FCL collision
   // will not do.
-  return footprintDistance(pose, query_region) <= 0.0;
+  return calculateDistance(pose, false, query_region, false, true) <= 0.0;
 }
 
 // Discern if the given octomap box is an interior collision and adjust
@@ -503,7 +503,8 @@ Costmap3DQuery::FCLFloat Costmap3DQuery::boxHalfspaceSignedDistance(
 double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
                                          bool signed_distance,
                                          Costmap3DQuery::QueryRegion query_region,
-                                         bool reuse_past_result)
+                                         bool reuse_past_result,
+                                         bool collision_only)
 {
   upgrade_lock upgrade_lock(upgrade_mutex_);
   std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
@@ -711,6 +712,14 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     fcl::OcTree<FCLFloat> fcl_octree(octree_ptr_);
     setupFCLOctree(pose, query_region, &fcl_octree);
 
+    if (collision_only)
+    {
+      // For collision only queries, we only need to check when bounding volumes overlap.
+      // Make cache-misses in such cases very fast by limiting the bound distance.
+      // Bound to just above zero, as zero would be considered a collision.
+      // Remember that min for double is the smallest positive (normalized) double.
+      result.min_distance = std::numeric_limits<double>::min();
+    }
     octree_solver.distance(
         &fcl_octree,
         robot_model_.get(),
