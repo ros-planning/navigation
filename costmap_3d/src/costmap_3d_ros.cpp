@@ -255,7 +255,7 @@ void Costmap3DROS::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Poi
       ROS_INFO_STREAM("resetBoundingBox consider 3D layer: " << plugin_full_name <<
                       " last name: " << plugin_last_name_only);
       if (layers.find(plugin_full_name) != layers.end()
-          || plugin_last_name_only.size() > 0 && layers.find(plugin_last_name_only) != layers.end())
+          || (plugin_last_name_only.size() > 0 && layers.find(plugin_last_name_only) != layers.end()))
       {
         ROS_INFO_STREAM("resetBoundingBox 3D layer " << plugin->getName());
         plugin->resetBoundingBox(min, max);
