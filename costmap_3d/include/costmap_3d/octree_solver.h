@@ -135,6 +135,7 @@ private:
   mutable const fcl::DistanceRequest<S>* drequest_ = nullptr;
   mutable fcl::DistanceResult<S>* dresult_ = nullptr;
   mutable fcl::Transform3<S> mesh_tf_inverse_;
+  mutable double rel_err_factor_;
 
   template <typename BV>
   bool OcTreeMeshDistanceRecurse(const fcl::OcTree<S>* tree1,
@@ -161,6 +162,7 @@ void OcTreeMeshSolver<NarrowPhaseSolver>::distance(
 
   fcl::Transform3<S> mesh_tf = tf1.inverse() * tf2;
   mesh_tf_inverse_ = mesh_tf.inverse();
+  rel_err_factor_ = 1.0 - drequest_->rel_err;
 
   OcTreeMeshDistanceRecurse(tree1,
                             tree1->getRoot(),
@@ -365,14 +367,14 @@ bool OcTreeMeshSolver<NarrowPhaseSolver>::OcTreeMeshDistanceRecurse(
     }
     // Visit the octree from closest to furthest and quit early when we have
     // crossed the result min distance
-    while(min_distance < dresult_->min_distance)
+    while(min_distance < rel_err_factor_ * dresult_->min_distance)
     {
       next_min = std::numeric_limits<S>::max();
       for(unsigned int i = 0; i < nchildren; ++i)
       {
         if(distances[i] == min_distance)
         {
-          if(distances[i] < dresult_->min_distance)
+          if(distances[i] < rel_err_factor_ * dresult_->min_distance)
           {
             // Possible a better result is below, descend
             if(OcTreeMeshDistanceRecurse(tree1, children[i], child_bvs[i], tree2, root2, tf2, roi))
@@ -487,7 +489,7 @@ bool OcTreeMeshSolver<NarrowPhaseSolver>::OcTreeMeshDistanceRecurse(
     {
       for (int i=0; i<2; ++i)
       {
-        if(d[i] < dresult_->min_distance)
+        if(d[i] < rel_err_factor_ * dresult_->min_distance)
         {
           // Because we descend the octree first, there is no need to check the
           // ROI when descending the mesh.
@@ -500,7 +502,7 @@ bool OcTreeMeshSolver<NarrowPhaseSolver>::OcTreeMeshDistanceRecurse(
     {
       for (int i=1; i>-1; --i)
       {
-        if(d[i] < dresult_->min_distance)
+        if(d[i] < rel_err_factor_ * dresult_->min_distance)
         {
           // Because we descend the octree first, there is no need to check the
           // ROI when descending the mesh.

@@ -434,7 +434,7 @@ bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose, Costmap3DQuery
   // This is because our distance query correctly handles interior collisions,
   // which requires finding the nearest octomap box, which an FCL collision
   // will not do.
-  return calculateDistance(pose, false, query_region, false, true) <= 0.0;
+  return calculateDistance(pose, false, query_region, false, true, 0.0) <= 0.0;
 }
 
 // Discern if the given octomap box is an interior collision and adjust
@@ -534,7 +534,8 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
                                          bool signed_distance,
                                          Costmap3DQuery::QueryRegion query_region,
                                          bool reuse_past_result,
-                                         bool collision_only)
+                                         bool collision_only,
+                                         double relative_error)
 {
   upgrade_lock upgrade_lock(upgrade_mutex_);
   std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
@@ -705,6 +706,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   // distance query.
   upgrade_lock.unlock();
 
+  request.rel_err = relative_error;
   request.enable_nearest_points = true;
   request.enable_signed_distance = true;
 
@@ -825,16 +827,18 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
 
 double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose,
                                          Costmap3DQuery::QueryRegion query_region,
-                                         bool reuse_past_result)
+                                         bool reuse_past_result,
+                                         double relative_error)
 {
-  return calculateDistance(pose, false, query_region, reuse_past_result);
+  return calculateDistance(pose, false, query_region, reuse_past_result, false, relative_error);
 }
 
 double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose,
                                                Costmap3DQuery::QueryRegion query_region,
-                                               bool reuse_past_result)
+                                               bool reuse_past_result,
+                                               double relative_error)
 {
-  return calculateDistance(pose, true, query_region, reuse_past_result);
+  return calculateDistance(pose, true, query_region, reuse_past_result, false, relative_error);
 }
 
 void Costmap3DQuery::checkInteriorCollisionLUT()

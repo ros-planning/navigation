@@ -152,7 +152,8 @@ public:
    */
   virtual double footprintDistance(geometry_msgs::Pose pose,
                                    QueryRegion query_region = ALL,
-                                   bool reuse_past_result = false);
+                                   bool reuse_past_result = false,
+                                   double relative_error = 0.05);
 
   /** @brief Return minimum signed distance to nearest costmap object.
    *
@@ -181,7 +182,8 @@ public:
    */
   virtual double footprintSignedDistance(geometry_msgs::Pose pose,
                                          QueryRegion query_region = ALL,
-                                         bool reuse_past_result = false);
+                                         bool reuse_past_result = false,
+                                         double relative_error = 0.05);
 
   /** @brief get a const reference to the padded robot mesh points being used */
   const pcl::PointCloud<pcl::PointXYZ>& getRobotMeshPoints() const {return *robot_mesh_points_;}
@@ -235,7 +237,8 @@ protected:
                                    bool signed_distance = false,
                                    QueryRegion query_region = ALL,
                                    bool reuse_past_result = false,
-                                   bool collision_only = false);
+                                   bool collision_only = false,
+                                   double relative_error = 0.05);
 
 private:
   // Common initialization between all constrcutors
