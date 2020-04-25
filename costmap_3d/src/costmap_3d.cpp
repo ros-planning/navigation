@@ -42,6 +42,17 @@ namespace costmap_3d
 
 Costmap3D::Costmap3D(double resolution) : octomap::OcTree(resolution)
 {
+  init();
+}
+
+Costmap3D::Costmap3D(const Costmap3D& rhs) : octomap::OcTree(rhs)
+{
+  // Be sure to init() on copy, as the octomap copy constructor does not do this
+  init();
+}
+
+void Costmap3D::init()
+{
   setProbHit(octomap::probability(LETHAL-FREE));
   setProbMiss(octomap::probability(FREE-LETHAL));
   setClampingThresMin(octomap::probability(FREE));

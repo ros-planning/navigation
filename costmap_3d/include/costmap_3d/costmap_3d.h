@@ -67,6 +67,9 @@ class Costmap3D : public octomap::OcTree
 {
 public:
   Costmap3D(double resolution);
+  Costmap3D(const Costmap3D& rhs);
+protected:
+  virtual void init();
 };
 
 typedef std::shared_ptr<Costmap3D> Costmap3DPtr;
