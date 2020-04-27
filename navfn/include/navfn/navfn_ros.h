@@ -184,6 +184,8 @@ namespace navfn {
       void mapToWorld(double mx, double my, double& wx, double& wy);
       void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
       double planner_window_x_, planner_window_y_, default_tolerance_;
+      double tolerance_weight_dist_from_goal_;
+      double tolerance_weight_path_length_;
       boost::mutex mutex_;
       ros::ServiceServer make_plan_srv_;
       std::string global_frame_;

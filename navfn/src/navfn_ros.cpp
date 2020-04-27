@@ -34,6 +34,7 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
+#include <cmath>
 #include <iomanip>
 #include <navfn/navfn_ros.h>
 #include <pluginlib/class_list_macros.h>
@@ -98,6 +99,8 @@ namespace navfn {
     (void)level;
     allow_unknown_ = config.allow_unknown;
     default_tolerance_ = config.default_tolerance;
+    tolerance_weight_dist_from_goal_ = config.tolerance_weight_dist_from_goal;
+    tolerance_weight_path_length_ = config.tolerance_weight_path_length;
     ROS_INFO_STREAM("NavfnROS Reconfig: allow_unknown: " << std::boolalpha << allow_unknown_
                     << " default_tolerance: " << default_tolerance_);
   }
@@ -281,7 +284,7 @@ namespace navfn {
     p = goal;
 
     bool found_legal = false;
-    double best_sdist = DBL_MAX;
+    double best_cost = DBL_MAX;
 
     p.pose.position.y = goal.pose.position.y - tolerance;
 
@@ -289,11 +292,15 @@ namespace navfn {
       p.pose.position.x = goal.pose.position.x - tolerance;
       while(p.pose.position.x <= goal.pose.position.x + tolerance){
         double potential = getPointPotential(p.pose.position);
-        double sdist = sq_distance(p, goal);
-        if(potential < POT_HIGH && sdist < best_sdist){
-          best_sdist = sdist;
-          best_pose = p;
-          found_legal = true;
+        if(potential < POT_HIGH){
+          double dist = std::sqrt(sq_distance(p, goal));
+          double cost = dist * tolerance_weight_dist_from_goal_
+                        + potential * tolerance_weight_path_length_;
+          if(cost < best_cost){
+            found_legal = true;
+            best_cost = cost;
+            best_pose = p;
+          }
         }
         p.pose.position.x += resolution;
       }
