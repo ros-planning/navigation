@@ -10,10 +10,11 @@ import rospy
 import tf2_ros
 import tf2_geometry_msgs
 import tf.transformations
-import costmap_3d.srv
+import costmap_3d.msg
 import geometry_msgs.msg
 import sensor_msgs.msg
 import copy
+import actionlib
 
 
 if __name__ == "__main__":
@@ -36,20 +37,20 @@ if __name__ == "__main__":
     point_cloud_pub = rospy.Publisher("/test_costmap_3d/distance_cloud",
             sensor_msgs.msg.PointCloud, queue_size=1, latch=True)
     test_ns = "/move_base/local_costmap/"
-    get_cost_srv = rospy.ServiceProxy(test_ns + "get_plan_cost_3d",
-            costmap_3d.srv.GetPlanCost3DService)
+    get_cost_srv = actionlib.SimpleActionClient(test_ns + "get_plan_cost_3d",
+            costmap_3d.msg.GetPlanCost3DAction)
     frame = "odom"
     pose_array = geometry_msgs.msg.PoseArray()
     pose_array.header.frame_id = frame
     pose_array.header.stamp = rospy.Time.now()
-    req = costmap_3d.srv.GetPlanCost3DServiceRequest()
+    req = costmap_3d.msg.GetPlanCost3DGoal()
     req.lazy = False
-    req.buffered = False
+    req.buffered = True
     req.header.frame_id = frame
     req.header.stamp = pose_array.header.stamp
-    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_SIGNED_DISTANCE
-#    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_DISTANCE
-#    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_COLLISION_ONLY
+    req.cost_query_mode = costmap_3d.msg.GetPlanCost3DGoal.COST_QUERY_MODE_SIGNED_DISTANCE
+#    req.cost_query_mode = costmap_3d.msg.GetPlanCost3DGoal.COST_QUERY_MODE_DISTANCE
+#    req.cost_query_mode = costmap_3d.msg.GetPlanCost3DGoal.COST_QUERY_MODE_COLLISION_ONLY
     req.footprint_mesh_resource = ""
 #    req.footprint_mesh_resource = "package://ant_description/meshes/robot-get-close-to-obstacle-backward.stl"
     req.padding = 0.0
@@ -77,14 +78,17 @@ if __name__ == "__main__":
             pose.pose.orientation.z = q[2]
             pose.pose.orientation.w = q[3]
             req.poses.append(tf2_geometry_msgs.do_transform_pose(pose, xform))
-            regions.append(costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_REGION_ALL)
+            regions.append(costmap_3d.msg.GetPlanCost3DGoal.COST_QUERY_REGION_ALL)
             pose_array.poses.append(tf2_geometry_msgs.do_transform_pose(pose, xform).pose)
     req.cost_query_regions = regions
 
     pose_array_pub.publish(pose_array)
 
 #    rospy.loginfo("Request: " + str(req))
-    res = get_cost_srv(req)
+    get_cost_srv.wait_for_server()
+    get_cost_srv.send_goal(req)
+    get_cost_srv.wait_for_result()
+    res = get_cost_srv.get_result()
 
     point_cloud = sensor_msgs.msg.PointCloud()
     point_cloud.header = pose_array.header
