@@ -426,6 +426,11 @@ bool Costmap3DROS::getPlanCost3DServiceCallback(
 template <typename RequestType, typename ResponseType>
 void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& response)
 {
+  // Serialize service calls (see comment on service_mutex_)
+  // Be sure to get this lock first so we don't delay costmap updates waiting for
+  // the service lock.
+  std::lock_guard<std::mutex> service_lock(service_mutex_);
+
   // Be sure the costmap is locked while querying, if necessary.
   std::unique_lock <LayeredCostmap3D> lock(layered_costmap_3d_, std::defer_lock);
   std::shared_ptr<Costmap3DQuery> query;
@@ -438,8 +443,8 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
 
   if (request.buffered)
   {
-    // Buffered request, getBufferedQuery gets the lock directly
-    query = getBufferedQuery(request.footprint_mesh_resource, request.padding);
+    // Buffered request, getBufferedQueryForService gets the lock directly
+    query = getBufferedQueryForService(request.footprint_mesh_resource, request.padding);
   }
   else
   {
@@ -560,6 +565,30 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
   ROS_INFO_STREAM("Finished getting " << request.poses.size() << " poses in " <<
                   (ros::Time::now() - start_time).toSec() << " seconds.");
 #endif
+}
+
+std::shared_ptr<Costmap3DQuery> Costmap3DROS::getBufferedQueryForService(
+    const std::string& footprint_mesh_resource,
+    double padding)
+{
+  const std::string& query_mesh(getFootprintMeshResource(footprint_mesh_resource));
+  padding = getFootprintPadding(padding);
+  auto query_pair = std::make_pair(query_mesh, padding);
+  // No need to lock the service_buffered_query_map_ because we must be holding
+  // the service_mutex_
+  auto query_it = service_buffered_query_map_.find(query_pair);
+  if (query_it == service_buffered_query_map_.end())
+  {
+    // Query object does not exist, create it and add it to the map
+    std::shared_ptr<Costmap3DQuery> query = getBufferedQuery(query_mesh, padding);
+    query_it = service_buffered_query_map_.insert(std::make_pair(query_pair, query)).first;
+  }
+  else
+  {
+    // Buffered query exists, update it if necessary
+    updateBufferedQuery(query_it->second);
+  }
+  return query_it->second;
 }
 
 }  // namespace costmap_3d

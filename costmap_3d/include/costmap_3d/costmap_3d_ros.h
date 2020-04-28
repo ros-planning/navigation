@@ -232,13 +232,25 @@ private:
   actionlib::SimpleActionServer<GetPlanCost3DAction> get_plan_cost_action_srv_;
   ros::ServiceServer get_plan_cost_srv_;
 
+  // Because there are two entry points to the services, and because the
+  // services share buffered query maps, the octree being queries should
+  // not change mis-query. Even though the queries themselves are thread
+  // safe (for multi-threaded planners), to keep results consistent
+  // for a buffered query to a single copy of the costmap, serialize
+  // the ROS service and action server.
+  std::mutex service_mutex_;
   void getPlanCost3DActionCallback(const actionlib::SimpleActionServer<GetPlanCost3DAction>::GoalConstPtr& goal);
   bool getPlanCost3DServiceCallback(GetPlanCost3DService::Request& request, GetPlanCost3DService::Response& response);
   template <typename RequestType, typename ResponseType>
   void processPlanCost3D(RequestType& request, ResponseType& response);
+  // Should be holding the service mutex, but not the costmap mutex
+  virtual std::shared_ptr<Costmap3DQuery> getBufferedQueryForService(
+          const std::string& footprint_mesh_resource = "",
+          double padding = NAN);
 
   using QueryMap = std::map<std::pair<std::string, double>, std::shared_ptr<Costmap3DQuery>>;
   QueryMap query_map_;
+  QueryMap service_buffered_query_map_;
   using upgrade_mutex = boost::upgrade_mutex;
   using upgrade_lock = boost::upgrade_lock<upgrade_mutex>;
   using upgrade_to_unique_lock = boost::upgrade_to_unique_lock<upgrade_mutex>;
