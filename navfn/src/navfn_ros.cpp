@@ -106,6 +106,14 @@ namespace navfn {
   }
 
   void NavfnROS::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
+    // Check if we should run our own private costmap.
+    ros::NodeHandle private_nh("~/" + name);
+    if (private_nh.hasParam("costmap"))
+    {
+      private_costmap_.reset(new costmap_2d::Costmap2DROS(
+          name + "/costmap", costmap_ros->getTransformListener()));
+      costmap_ros = private_costmap_.get();
+    }
     initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
   }
 
