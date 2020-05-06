@@ -132,6 +132,14 @@ public:
       return stop_updates_;
     }
 
+  /** @brief Return the tranform listener.
+   *
+   * The global planner API does not pass the transform listener, so this is
+   * useful for setting up a private costmap when only given a pointer to an
+   * existing global Costmap2DROS.
+   */
+  virtual tf2_ros::Buffer& getTransformListener() { return tf_; }
+
   /**
    * @brief Is the costmap stopped
    */
