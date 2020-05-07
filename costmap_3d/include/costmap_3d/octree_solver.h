@@ -125,6 +125,13 @@ public:
                 const fcl::DistanceRequest<S>& request,
                 fcl::DistanceResult<S>* result) const;
 
+  /** Put the solver in uncertain only mode.
+   *
+   * In uncertain only mode, only uncertain obstacles are considered, and not
+   * free or occupied.
+   */
+  void setUncertainOnly(bool uncertain_only) { uncertain_only_ = uncertain_only; }
+
 private:
   const NarrowPhaseSolver* solver_;
   InteriorCollisionFunction interior_collision_function_;
@@ -136,6 +143,22 @@ private:
   mutable fcl::DistanceResult<S>* dresult_ = nullptr;
   mutable fcl::Transform3<S> mesh_tf_inverse_;
   mutable double rel_err_factor_;
+  bool uncertain_only_ = false;
+
+  inline bool isNodeConsideredOccupied(
+      const fcl::OcTree<S>* tree,
+      const typename fcl::OcTree<S>::OcTreeNode* node) const
+  {
+    // For inner nodes, vanilla octrees track the max child value in the inner
+    // node. For uncertain only, we have to descend if the cost is lethal in case
+    // its hiding up a non-lethal.
+    // This could be fixed by extending the octrees we use to track both the
+    // min and max child values in inner nodes at the expense of having to track
+    // two data values in the tree.
+    return uncertain_only_ ?
+        (tree->nodeHasChildren(node) ? !tree->isNodeFree(node) : tree->isNodeUncertain(node)) :
+        tree->isNodeOccupied(node);
+  }
 
   template <typename BV>
   bool OcTreeMeshDistanceRecurse(const fcl::OcTree<S>* tree1,
@@ -292,7 +315,7 @@ bool OcTreeMeshSolver<NarrowPhaseSolver>::OcTreeMeshDistanceRecurse(
 
   if(!tree1->nodeHasChildren(root1) && tree2->getBV(root2).isLeaf())
   {
-    if(tree1->isNodeOccupied(root1))
+    if(isNodeConsideredOccupied(tree1, root1))
     {
       fcl::Box<S> box;
       fcl::Transform3<S> box_tf;
@@ -333,7 +356,7 @@ bool OcTreeMeshSolver<NarrowPhaseSolver>::OcTreeMeshDistanceRecurse(
       return false;
   }
 
-  if(!tree1->isNodeOccupied(root1)) return false;
+  if(!isNodeConsideredOccupied(tree1, root1)) return false;
 
   if(tree1->nodeHasChildren(root1))
   {
@@ -350,7 +373,7 @@ bool OcTreeMeshSolver<NarrowPhaseSolver>::OcTreeMeshDistanceRecurse(
       if(tree1->nodeChildExists(root1, i))
       {
         const typename fcl::OcTree<S>::OcTreeNode* child = tree1->getNodeChild(root1, i);
-        if(tree1->isNodeOccupied(child))
+        if(isNodeConsideredOccupied(tree1, child))
         {
           children[nchildren] = child;
           computeChildBV(bv1, i, child_bvs[nchildren]);

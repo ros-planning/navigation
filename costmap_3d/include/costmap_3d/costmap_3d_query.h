@@ -111,6 +111,12 @@ public:
   static constexpr QueryRegion RIGHT = GetPlanCost3DService::Request::COST_QUERY_REGION_RIGHT;
   static constexpr QueryRegion MAX = RIGHT+1;
 
+  /// What kind of obstacles to consider for the query.
+  using QueryObstacles = uint8_t;
+  static constexpr QueryObstacles LETHAL_ONLY = GetPlanCost3DService::Request::COST_QUERY_OBSTACLES_LETHAL_ONLY;
+  static constexpr QueryObstacles NONLETHAL_ONLY = GetPlanCost3DService::Request::COST_QUERY_OBSTACLES_NONLETHAL_ONLY;
+  static constexpr QueryObstacles OBSTACLES_MAX = NONLETHAL_ONLY+1;
+
   /** @brief Get the cost to put the robot base at the given pose.
    *
    * The region of the map considered is limited by the query_region.
@@ -120,7 +126,7 @@ public:
    * negative is collision, zero is free.
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap. */
-  virtual double footprintCost(geometry_msgs::Pose pose, QueryRegion query_region = ALL);
+  virtual double footprintCost(const geometry_msgs::Pose& pose, QueryRegion query_region = ALL);
 
   /** @brief Return whether the given pose is in collision.
    *
@@ -130,7 +136,7 @@ public:
    * For query objects which track the master layered costmap,
    * the caller must be holding the lock on the associated costmap.
    */
-  virtual bool footprintCollision(geometry_msgs::Pose pose, QueryRegion query_region = ALL);
+  virtual bool footprintCollision(const geometry_msgs::Pose& pose, QueryRegion query_region = ALL);
 
   /** @brief Return minimum distance to nearest costmap object.
    *
@@ -150,7 +156,7 @@ public:
    * from attempting to find a better answer, so use with care, only when
    * altering the pose by a small amount.
    */
-  virtual double footprintDistance(geometry_msgs::Pose pose,
+  virtual double footprintDistance(const geometry_msgs::Pose& pose,
                                    QueryRegion query_region = ALL,
                                    bool reuse_past_result = false,
                                    double relative_error = 0.05);
@@ -180,10 +186,34 @@ public:
    * from attempting to find a better answer, so use with care, only when
    * altering the pose by a small amount.
    */
-  virtual double footprintSignedDistance(geometry_msgs::Pose pose,
+  virtual double footprintSignedDistance(const geometry_msgs::Pose& pose,
                                          QueryRegion query_region = ALL,
                                          bool reuse_past_result = false,
                                          double relative_error = 0.05);
+
+  using FCLFloat = double;
+  struct DistanceOptions
+  {
+    //! Which region of the costmap to query
+    QueryRegion query_region = ALL;
+    //! What kind of obstacles are considered for the query
+    QueryObstacles query_obstacles = LETHAL_ONLY;
+    //! Whether to find the signed distance on collision
+    bool signed_distance = false;
+    //! Whether to reuse the previous box/mesh triangle result directly
+    bool reuse_past_result = false;
+    //! Acceptable relative error limit (improves runtime)
+    double relative_error = 0.05;
+    /** Limit search distance.
+     * This is useful for very small limits (near zero) or very large limits.
+     * For in-between values it can defeat the usefulness of all the caches
+     * and actually result in worse performance.
+     */
+    FCLFloat distance_limit = std::numeric_limits<FCLFloat>::max();
+  };
+
+  /** @brief Alternate footprintDistance interface taking a DistanceOptions */
+  virtual double footprintDistance(const geometry_msgs::Pose& pose, const DistanceOptions& opts);
 
   /** @brief get a const reference to the padded robot mesh points being used */
   const pcl::PointCloud<pcl::PointXYZ>& getRobotMeshPoints() const {return *robot_mesh_points_;}
@@ -233,12 +263,8 @@ protected:
   virtual void updateMeshResource(const std::string& mesh_resource, double padding = 0.0);
 
   /** @brief core of distance calculations */
-  virtual double calculateDistance(geometry_msgs::Pose pose,
-                                   bool signed_distance = false,
-                                   QueryRegion query_region = ALL,
-                                   bool reuse_past_result = false,
-                                   bool collision_only = false,
-                                   double relative_error = 0.05);
+  virtual double calculateDistance(const geometry_msgs::Pose& pose,
+                                   const DistanceOptions& opts);
 
 private:
   // Common initialization between all constrcutors
@@ -255,7 +281,6 @@ private:
   // Use the costmap_3d version of CropHull that is thread safe
   CropHull<pcl::PointXYZ> crop_hull_;
 
-  using FCLFloat = double;
   using FCLSolver = fcl::detail::GJKSolver_libccd<FCLFloat>;
   using FCLRobotModel = fcl::BVHModel<fcl::OBBRSS<FCLFloat>>;
   using FCLRobotModelPtr = std::shared_ptr<FCLRobotModel>;
@@ -269,6 +294,12 @@ private:
   using FCLCollisionObjectPtr = std::shared_ptr<FCLCollisionObject>;
 
   std::shared_ptr<const octomap::OcTree> octree_ptr_;
+  // Store a copy of the octree with only nonlethal nodes present to make
+  // nonlethal queries more efficient. Since the vanilla octree only stores the
+  // maximum occupancy of children nodes inside inner nodes, there is no
+  // efficient way to query nonlethal. Fix this by making a copy of the octree
+  // when the first nonlethal query is issued to use for nonlethal queries.
+  std::shared_ptr<const octomap::OcTree> nonlethal_octree_ptr_;
   void setupFCLOctree(const geometry_msgs::Pose& pose,
                       QueryRegion query_region,
                       fcl::OcTree<FCLFloat>* fcl_octree_ptr) const;
@@ -316,21 +347,23 @@ private:
   class DistanceCacheKey
   {
   public:
-    DistanceCacheKey(const geometry_msgs::Pose& pose, QueryRegion query_region, int bins_per_meter, int bins_per_radian)
+    DistanceCacheKey(const geometry_msgs::Pose& pose, QueryRegion query_region, bool query_obstacles, int bins_per_meter, int bins_per_radian)
     {
       binned_pose_ = binPose(pose, bins_per_meter, bins_per_radian);
       query_region_ = query_region;
+      query_obstacles_ = query_obstacles;
     }
     // Constructor for the "exact" cache where the poses are not binned
-    DistanceCacheKey(const geometry_msgs::Pose& pose, QueryRegion query_region)
+    DistanceCacheKey(const geometry_msgs::Pose& pose, QueryRegion query_region, bool query_obstacles)
     {
       binned_pose_ = pose;
       query_region_ = query_region;
+      query_obstacles_ = query_obstacles;
     }
 
     size_t hash_value() const
     {
-      size_t rv = 0;
+      size_t rv = (size_t)query_region_ << 8 | (size_t)query_obstacles_;
       hash_combine(rv, binned_pose_.orientation.x);
       hash_combine(rv, binned_pose_.orientation.y);
       hash_combine(rv, binned_pose_.orientation.z);
@@ -338,7 +371,6 @@ private:
       hash_combine(rv, binned_pose_.position.x);
       hash_combine(rv, binned_pose_.position.y);
       hash_combine(rv, binned_pose_.position.z);
-      hash_combine(rv, query_region_);
       return rv;
     }
 
@@ -351,12 +383,14 @@ private:
              binned_pose_.position.x == rhs.binned_pose_.position.x &&
              binned_pose_.position.y == rhs.binned_pose_.position.y &&
              binned_pose_.position.z == rhs.binned_pose_.position.z &&
-             query_region_ == rhs.query_region_;
+             query_region_ == rhs.query_region_ &&
+             query_obstacles_ == rhs.query_obstacles_;
     }
 
   protected:
     geometry_msgs::Pose binned_pose_;
     QueryRegion query_region_;
+    bool query_obstacles_;
 
     //! Borrow boost's hash_combine directly to avoid having to pull in boost
     template <class T>
@@ -542,6 +576,7 @@ private:
   // The write lock will be held when resetting these so they all reset
   // atomically
   std::atomic<unsigned int> queries_since_clear_;
+  std::atomic<unsigned int> empties_since_clear_; // an empty is a query on an empty costmap
   std::atomic<unsigned int> hits_since_clear_;
   std::atomic<unsigned int> fast_milli_hits_since_clear_;
   std::atomic<unsigned int> slow_milli_hits_since_clear_;

@@ -475,6 +475,12 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
       query_region = request.cost_query_regions[i];
     }
 
+    Costmap3DQuery::QueryObstacles query_obstacles = Costmap3DQuery::LETHAL_ONLY;
+    if (i < request.cost_query_obstacles.size())
+    {
+      query_obstacles = request.cost_query_obstacles[i];
+    }
+
     float timeout_seconds = (request.transform_wait_time_limit > 0) ? request.transform_wait_time_limit : 0.1;
 
     double pose_cost = -1.0;
@@ -489,17 +495,20 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
       {
         pose_cost = query->footprintCollision(pose.pose, query_region) ? -1.0 : 0.0;
       }
-      else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE)
+      else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_COST)
       {
-        pose_cost = query->footprintDistance(pose.pose, query_region);
-      }
-      else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
-      {
-        pose_cost = query->footprintSignedDistance(pose.pose, query_region);
+        pose_cost = query->footprintCost(pose.pose, query_region);
       }
       else
       {
-        pose_cost = query->footprintCost(pose.pose, query_region);
+        Costmap3DQuery::DistanceOptions dopts;
+        dopts.query_region = query_region;
+        dopts.query_obstacles = query_obstacles;
+        if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
+        {
+          dopts.signed_distance = true;
+        }
+        pose_cost = query->footprintDistance(pose.pose, dopts);
       }
     }
     else

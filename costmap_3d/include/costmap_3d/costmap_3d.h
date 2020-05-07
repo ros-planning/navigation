@@ -56,6 +56,10 @@ typedef float Cost;
 // Sentinel. Don't choose NAN as it can't be pruned in octomap
 const Cost UNKNOWN = -200.0;
 const Cost FREE = -10.0;
+// A "nonlethal" Cost is any Cost strictly between FREE and LETHAL
+// Specifically, UNKNOWN is *not* nonlethal. Nonlethal is meant to
+// represent a sensed object that is desirable to avoid but would
+// likely be OK to collide with.
 const Cost LETHAL = 10.0;
 /* A log-odds between FREE and LETHAL represents a non-lethal,
  * but greater than zero cost for that space */
@@ -68,6 +72,14 @@ class Costmap3D : public octomap::OcTree
 public:
   Costmap3D(double resolution);
   Costmap3D(const Costmap3D& rhs);
+
+  // Return a new Costmap3D contatinaing only the nonlethal cells.
+  // This is useful for speeding up nonlethal only queries, as the tree only
+  // stores the maximum cost in the inner nodes it is impossible to cut off the
+  // searches early in the presence of lethal obstacles. This nonlethal only
+  // tree can be constructed when the costmap updates and stored and reused for
+  // all nonlethal queries.
+  std::shared_ptr<Costmap3D> nonlethalOnly() const;
 protected:
   virtual void init();
 };

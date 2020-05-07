@@ -165,6 +165,7 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock,
       {
         // The octomap has been reallocated, change where we are pointing.
         octree_ptr_ = layered_costmap_3d_->getCostmap3D();
+        nonlethal_octree_ptr_.reset();
       }
     }
     else if (new_octree)
@@ -173,6 +174,7 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock,
       {
         // There is a new octomap allocated, change where we are pointing.
         octree_ptr_ = new_octree;
+        nonlethal_octree_ptr_.reset();
       }
     }
     checkInteriorCollisionLUT();
@@ -224,6 +226,7 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock,
 void Costmap3DQuery::clearStatistics()
 {
   queries_since_clear_ = 0;
+  empties_since_clear_ = 0;
   hits_since_clear_ = 0;
   fast_milli_hits_since_clear_ = 0;
   slow_milli_hits_since_clear_ = 0;
@@ -248,6 +251,7 @@ void Costmap3DQuery::clearStatistics()
 void Costmap3DQuery::printStatistics()
 {
   unsigned int cache_misses = queries_since_clear_ -
+      empties_since_clear_ -
       hits_since_clear_ -
       fast_milli_hits_since_clear_ -
       slow_milli_hits_since_clear_ -
@@ -256,6 +260,7 @@ void Costmap3DQuery::printStatistics()
       reuse_results_since_clear_ -
       exact_hits_since_clear_;
   double hit_ratio = (double)hits_since_clear_ / queries_since_clear_;
+  double empty_ratio = (double)empties_since_clear_ / queries_since_clear_;
   double fast_milli_hit_ratio = (double)fast_milli_hits_since_clear_ / queries_since_clear_;
   double slow_milli_hit_ratio = (double)slow_milli_hits_since_clear_ / queries_since_clear_;
   double fast_micro_hit_ratio = (double)fast_micro_hits_since_clear_ / queries_since_clear_;
@@ -275,6 +280,7 @@ void Costmap3DQuery::printStatistics()
       "\n\tqueries this cycle: " << queries_since_clear_ <<
       "\n\tcache misses: " << cache_misses <<
       "\n\tcache hits: " << hits_since_clear_ <<
+      "\n\tempty query ratio: " << empty_ratio <<
       "\n\tcache hit ratio: " << hit_ratio <<
       "\n\tslow milli cache hits: " << slow_milli_hits_since_clear_ <<
       "\n\tslow milli cache hit ratio: " << slow_milli_hit_ratio <<
@@ -421,20 +427,29 @@ std::string Costmap3DQuery::getFileNameFromPackageURL(const std::string& url)
   return mod_url;
 }
 
-double Costmap3DQuery::footprintCost(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
+double Costmap3DQuery::footprintCost(const geometry_msgs::Pose& pose, Costmap3DQuery::QueryRegion query_region)
 {
   // TODO: implement as cost query. For now, just translate a collision to cost
   return footprintCollision(pose, query_region) ? -1.0 : 0.0;
 }
 
-bool Costmap3DQuery::footprintCollision(geometry_msgs::Pose pose, Costmap3DQuery::QueryRegion query_region)
+bool Costmap3DQuery::footprintCollision(const geometry_msgs::Pose& pose, Costmap3DQuery::QueryRegion query_region)
 {
   // It is more correct and even more efficient to query the distance to find
   // collisions than it is to use FCL to directly find octomap collisions.
   // This is because our distance query correctly handles interior collisions,
   // which requires finding the nearest octomap box, which an FCL collision
   // will not do.
-  return calculateDistance(pose, false, query_region, false, true, 0.0) <= 0.0;
+  DistanceOptions opts;
+  opts.query_region = query_region;
+  // For collision only queries, we only need to check when bounding volumes overlap.
+  // Make cache-misses in such cases very fast by limiting the bound distance.
+  // Bound to just above zero, as zero would be considered a collision.
+  // Remember that min for double is the smallest positive (normalized) double.
+  opts.distance_limit = std::numeric_limits<double>::min();
+  // We want exact answers for collision only checks.
+  opts.relative_error = 0.0;
+  return calculateDistance(pose, opts) <= 0.0;
 }
 
 // Discern if the given octomap box is an interior collision and adjust
@@ -499,6 +514,9 @@ void Costmap3DQuery::setupFCLOctree(
     Costmap3DQuery::QueryRegion query_region,
     fcl::OcTree<FCLFloat>* fcl_octree_ptr) const
 {
+  // Always setup the correct occupancy limits
+  fcl_octree_ptr->setFreeThres(octomap::probability(FREE));
+  fcl_octree_ptr->setOccupancyThres(octomap::probability(LETHAL));
   // Setup the ROI on the given fcl::OcTree depending on query_region and the pose.
   if (query_region == LEFT || query_region == RIGHT)
   {
@@ -530,13 +548,13 @@ Costmap3DQuery::FCLFloat Costmap3DQuery::boxHalfspaceSignedDistance(
   return costmap_3d::boxHalfspaceSignedDistance<FCLFloat>(box, box_tf, halfspace);
 }
 
-double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
-                                         bool signed_distance,
-                                         Costmap3DQuery::QueryRegion query_region,
-                                         bool reuse_past_result,
-                                         bool collision_only,
-                                         double relative_error)
+double Costmap3DQuery::calculateDistance(const geometry_msgs::Pose& pose,
+                                         const Costmap3DQuery::DistanceOptions& opts)
 {
+  // Make convenience aliases of some of the options
+  const QueryRegion query_region = opts.query_region;
+  const QueryObstacles query_obstacles = opts.query_obstacles;
+
   upgrade_lock upgrade_lock(upgrade_mutex_);
   std::chrono::high_resolution_clock::time_point start_time = std::chrono::high_resolution_clock::now();
   queries_since_clear_.fetch_add(1, std::memory_order_relaxed);
@@ -547,15 +565,38 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     return -1.0;
   }
   checkCostmap(upgrade_lock);
-  assert(octree_ptr_);
+  std::shared_ptr<const octomap::OcTree> octree_to_query;
+  if (query_obstacles == NONLETHAL_ONLY)
+  {
+    if (!nonlethal_octree_ptr_)
+    {
+      // We do not yet have a nonlethal copy of the tree, create one now and save it until
+      // the next costmap update. In order to do this safely we must grab the write lock.
+      // This is OK, it will only happen once per update cycle.
+      upgrade_to_unique_lock write_lock(upgrade_lock);
+      nonlethal_octree_ptr_ = std::static_pointer_cast<const Costmap3D>(octree_ptr_)->nonlethalOnly();
+    }
+    octree_to_query = nonlethal_octree_ptr_;
+  }
+  else
+  {
+    octree_to_query = octree_ptr_;
+  }
+  assert(octree_to_query);
 
   // FCL does not correctly handle an empty octomap.
-  if (octree_ptr_->size() == 0)
+  if (octree_to_query->size() == 0)
   {
+    empties_since_clear_.fetch_add(1, std::memory_order_relaxed);
     return std::numeric_limits<double>::max();
   }
 
-  if (reuse_past_result)
+  // Use the passed in distance limit up to the "min" float (close to zero)
+  // We do not want to use a zero or negative distance limit from the options
+  // because that will prevent us from correctly searching the octomap/mesh
+  FCLFloat pose_distance = std::max(opts.distance_limit, std::numeric_limits<FCLFloat>::min());
+
+  if (opts.reuse_past_result)
   {
     // Reuse the past result (if there was one) and directly return the new distance.
     // In cases where the caller knows this is the correct behavior (such as
@@ -572,9 +613,20 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
           std::memory_order_relaxed);
       return distance;
     }
+    else
+    {
+      // It is possible for the caller to have just previously called on this
+      // thread and got no results because of the way the query was limited.
+      // Assume that this query is limited the same way, and return the current
+      // pose_distance, which will be set from the passed in distance limit.
+      // This will be the exact same distance returned by the previous call,
+      // which is the desired result when the previous query resulted in
+      // nothing found.
+      return pose_distance;
+    }
   }
 
-  DistanceCacheKey exact_cache_key(pose, query_region);
+  DistanceCacheKey exact_cache_key(pose, query_region, query_obstacles);
   auto exact_cache_entry = exact_distance_cache_.find(exact_cache_key);
   if (exact_cache_entry != exact_distance_cache_.end())
   {
@@ -589,11 +641,10 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     return distance;
   }
 
-  FCLFloat pose_distance = std::numeric_limits<FCLFloat>::max();
   fcl::DistanceRequest<FCLFloat> request;
   fcl::DistanceResult<FCLFloat> result;
 
-  DistanceCacheKey milli_cache_key(pose, query_region, pose_milli_bins_per_meter_, pose_milli_bins_per_radian_);
+  DistanceCacheKey milli_cache_key(pose, query_region, query_obstacles, pose_milli_bins_per_meter_, pose_milli_bins_per_radian_);
   auto milli_cache_entry = milli_distance_cache_.find(milli_cache_key);
   bool milli_hit = false;
   if (milli_cache_entry != milli_distance_cache_.end())
@@ -625,7 +676,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     }
   }
 
-  DistanceCacheKey micro_cache_key(pose, query_region, pose_micro_bins_per_meter_, pose_micro_bins_per_radian_);
+  DistanceCacheKey micro_cache_key(pose, query_region, query_obstacles, pose_micro_bins_per_meter_, pose_micro_bins_per_radian_);
   auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
   bool micro_hit = false;
   if (micro_cache_entry != micro_distance_cache_.end())
@@ -657,7 +708,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     }
   }
 
-  DistanceCacheKey cache_key(pose, query_region, pose_bins_per_meter_, pose_bins_per_radian_);
+  DistanceCacheKey cache_key(pose, query_region, query_obstacles, pose_bins_per_meter_, pose_bins_per_radian_);
   bool cache_hit = false;
   // Assume a milli hit or micro hit is much better than the normal distance
   // cache at setting an upper bound, skip the normal cache lookup in such
@@ -667,15 +718,19 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
     auto cache_entry = distance_cache_.find(cache_key);
     if (cache_entry != distance_cache_.end())
     {
-      cache_hit = true;
       // Cache hit, find the distance between the mesh triangle at the new pose
       // and the octomap box, and use this as our initial guess in the result.
       // This greatly prunes the search tree, yielding a big increase in runtime
       // performance.
-      pose_distance = handleDistanceInteriorCollisions(
+      double distance = handleDistanceInteriorCollisions(
           cache_entry->second,
           pose);
-      cache_entry->second.setupResult(&result);
+      if (distance < pose_distance)
+      {
+        cache_hit = true;
+        pose_distance = distance;
+        cache_entry->second.setupResult(&result);
+      }
     }
   }
 
@@ -706,7 +761,7 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   // distance query.
   upgrade_lock.unlock();
 
-  request.rel_err = relative_error;
+  request.rel_err = opts.relative_error;
   request.enable_nearest_points = true;
   request.enable_signed_distance = true;
 
@@ -738,20 +793,16 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
                 std::placeholders::_2,
                 std::placeholders::_3,
                 std::placeholders::_4));
+  if (query_obstacles == NONLETHAL_ONLY)
+  {
+    octree_solver.setUncertainOnly(true);
+  }
 
   if (result.min_distance > 0.0)
   {
-    fcl::OcTree<FCLFloat> fcl_octree(octree_ptr_);
+    fcl::OcTree<FCLFloat> fcl_octree(octree_to_query);
     setupFCLOctree(pose, query_region, &fcl_octree);
 
-    if (collision_only)
-    {
-      // For collision only queries, we only need to check when bounding volumes overlap.
-      // Make cache-misses in such cases very fast by limiting the bound distance.
-      // Bound to just above zero, as zero would be considered a collision.
-      // Remember that min for double is the smallest positive (normalized) double.
-      result.min_distance = std::numeric_limits<double>::min();
-    }
     octree_solver.distance(
         &fcl_octree,
         robot_model_.get(),
@@ -784,6 +835,17 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
       exact_distance_cache_[exact_cache_key] = new_entry;
       tls_last_cache_entries_[query_region] = &exact_distance_cache_[exact_cache_key];
     }
+  }
+  else
+  {
+    // Need to erase the last cache since there was no result.
+    // This should only happen if the query was restricted such that no octomap
+    // cells were considered. One way this could happen is if the distance was
+    // limited by the caller. If the next call is a reuse_past_result query, we
+    // must set the last cache to nullptr to prevent erroneously using some
+    // other result.
+    // No need to lock TLS
+    tls_last_cache_entries_[query_region] = nullptr;
   }
 
   if (micro_hit)
@@ -825,20 +887,35 @@ double Costmap3DQuery::calculateDistance(geometry_msgs::Pose pose,
   return distance;
 }
 
-double Costmap3DQuery::footprintDistance(geometry_msgs::Pose pose,
+double Costmap3DQuery::footprintDistance(const geometry_msgs::Pose& pose,
                                          Costmap3DQuery::QueryRegion query_region,
                                          bool reuse_past_result,
                                          double relative_error)
 {
-  return calculateDistance(pose, false, query_region, reuse_past_result, false, relative_error);
+  DistanceOptions opts;
+  opts.query_region = query_region;
+  opts.reuse_past_result = reuse_past_result;
+  opts.relative_error = relative_error;
+  return calculateDistance(pose, opts);
 }
 
-double Costmap3DQuery::footprintSignedDistance(geometry_msgs::Pose pose,
+double Costmap3DQuery::footprintSignedDistance(const geometry_msgs::Pose& pose,
                                                Costmap3DQuery::QueryRegion query_region,
                                                bool reuse_past_result,
                                                double relative_error)
 {
-  return calculateDistance(pose, true, query_region, reuse_past_result, false, relative_error);
+  DistanceOptions opts;
+  opts.query_region = query_region;
+  opts.reuse_past_result = reuse_past_result;
+  opts.relative_error = relative_error;
+  opts.signed_distance = true;
+  return calculateDistance(pose, opts);
+}
+
+double Costmap3DQuery::footprintDistance(const geometry_msgs::Pose& pose,
+                                         const Costmap3DQuery::DistanceOptions& opts)
+{
+  return calculateDistance(pose, opts);
 }
 
 void Costmap3DQuery::checkInteriorCollisionLUT()

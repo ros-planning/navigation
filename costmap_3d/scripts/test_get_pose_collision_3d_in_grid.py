@@ -64,6 +64,7 @@ if __name__ == "__main__":
     x_n = 200
     y_n = 200
     regions = []
+    obstacles = []
     for i in range(x_0, x_n):
         for j in range(y_0, y_n):
             pose = geometry_msgs.msg.PoseStamped()
@@ -79,8 +80,10 @@ if __name__ == "__main__":
             pose.pose.orientation.w = q[3]
             req.poses.append(tf2_geometry_msgs.do_transform_pose(pose, xform))
             regions.append(costmap_3d.msg.GetPlanCost3DGoal.COST_QUERY_REGION_ALL)
+            obstacles.append(costmap_3d.msg.GetPlanCost3DGoal.COST_QUERY_OBSTACLES_LETHAL_ONLY)
             pose_array.poses.append(tf2_geometry_msgs.do_transform_pose(pose, xform).pose)
     req.cost_query_regions = regions
+    req.cost_query_obstacles = obstacles
 
     pose_array_pub.publish(pose_array)
 

@@ -39,6 +39,17 @@ uint8 COST_QUERY_REGION_RIGHT=2
 # If the region is missing for a given pose, COST_QUERY_REGION_ALL is assumed.
 uint8[] cost_query_regions
 
+# Query only lethal obstacles (default)
+uint8 COST_QUERY_OBSTACLES_LETHAL_ONLY=0
+# Query only nonlethal obstacles. Nonlethal is any cell that is between FREE and LETHAL.
+uint8 COST_QUERY_OBSTACLES_NONLETHAL_ONLY=1
+# Set to one of the above COST_QUERY_OBSTACLES_* to control what costs are
+# considered during a query. In lethal only, only lethal obstacles are
+# considered. In nonlethal only, only nonlethal (cost between FREE and LETHAL)
+# are considered. Other modes may be added to this list at a later time as they
+# are implemented.
+uint8[] cost_query_obstacles
+
 # An alternative footprint_mesh_resource to use (in base_footprint frame)
 # If empty, the default stored in the costmap will be used.
 string footprint_mesh_resource

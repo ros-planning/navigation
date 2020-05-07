@@ -71,6 +71,23 @@ void Costmap3D::init()
   // distance queries).
 }
 
+std::shared_ptr<Costmap3D> Costmap3D::nonlethalOnly() const
+{
+  std::shared_ptr<Costmap3D> out(new Costmap3D(resolution));
+  auto it = begin_leafs();
+  auto end = end_leafs();
+  while (it != end)
+  {
+    auto v = it->getLogOdds();
+    if (FREE < v && v < LETHAL)
+    {
+      out->setNodeValueAtDepth(it.getKey(), it.getDepth(), v);
+    }
+    ++it;
+  }
+  return out;
+}
+
 octomap::point3d toOctomapPoint(const geometry_msgs::Point& point)
 {
   return octomap::point3d(point.x, point.y, point.z);
