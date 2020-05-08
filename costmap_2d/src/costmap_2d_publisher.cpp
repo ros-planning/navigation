@@ -90,7 +90,7 @@ void Costmap2DPublisher::onNewSubscription(const ros::SingleSubscriberPublisher&
 void Costmap2DPublisher::prepareGrid()
 {
   boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
-  double resolution = costmap_->getResolution();
+  const double resolution = costmap_->getResolution();
 
   grid_.header.frame_id = global_frame_;
   grid_.header.stamp = ros::Time::now();
@@ -125,7 +125,7 @@ void Costmap2DPublisher::publishCostmap()
     return;
   }
 
-  float resolution = costmap_->getResolution();
+  const float resolution = costmap_->getResolution();
 
   if (always_send_full_costmap_ || grid_.info.resolution != resolution ||
       grid_.info.width != costmap_->getSizeInCellsX() ||
