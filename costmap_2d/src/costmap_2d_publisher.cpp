@@ -82,6 +82,9 @@ Costmap2DPublisher::~Costmap2DPublisher()
 
 void Costmap2DPublisher::onNewSubscription(const ros::SingleSubscriberPublisher& pub)
 {
+  boost::unique_lock <Costmap2D::mutex_t> map_lock(*(costmap_->getMutex()), boost::defer_lock);
+  boost::unique_lock <boost::mutex> grid_lock(grid_mutex_, boost::defer_lock);
+  boost::lock(map_lock, grid_lock);
   prepareGrid();
   pub.publish(grid_);
 }
@@ -89,7 +92,6 @@ void Costmap2DPublisher::onNewSubscription(const ros::SingleSubscriberPublisher&
 // prepare grid_ message for publication.
 void Costmap2DPublisher::prepareGrid()
 {
-  boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
   const double resolution = costmap_->getResolution();
 
   grid_.header.frame_id = global_frame_;
@@ -125,6 +127,9 @@ void Costmap2DPublisher::publishCostmap()
     return;
   }
 
+  boost::unique_lock <Costmap2D::mutex_t> map_lock(*(costmap_->getMutex()), boost::defer_lock);
+  boost::unique_lock <boost::mutex> grid_lock(grid_mutex_, boost::defer_lock);
+  boost::lock(map_lock, grid_lock);
   const float resolution = costmap_->getResolution();
 
   if (always_send_full_costmap_ || grid_.info.resolution != resolution ||
@@ -138,7 +143,6 @@ void Costmap2DPublisher::publishCostmap()
   }
   else if (x0_ < xn_)
   {
-    boost::unique_lock<Costmap2D::mutex_t> lock(*(costmap_->getMutex()));
     // Publish Just an Update
     map_msgs::OccupancyGridUpdate update;
     update.header.stamp = ros::Time::now();

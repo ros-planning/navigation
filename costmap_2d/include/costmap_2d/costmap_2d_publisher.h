@@ -65,6 +65,7 @@ public:
   /** @brief Include the given bounds in the changed-rectangle. */
   void updateBounds(unsigned int x0, unsigned int xn, unsigned int y0, unsigned int yn)
   {
+    boost::lock_guard<boost::mutex> grid_lock(grid_mutex_);
     x0_ = std::min(x0, x0_);
     xn_ = std::max(xn, xn_);
     y0_ = std::min(y0, y0_);
@@ -95,13 +96,16 @@ private:
   ros::NodeHandle* node;
   Costmap2D* costmap_;
   const std::string global_frame_;
-  unsigned int x0_, xn_, y0_, yn_;
-  double saved_origin_x_, saved_origin_y_;
   const bool active_;
   const bool always_send_full_costmap_;
   ros::Publisher costmap_pub_;
   ros::Publisher costmap_update_pub_;
-  nav_msgs::OccupancyGrid grid_;
+
+  boost::mutex grid_mutex_;                ///< Protects occupancy grid updates.
+  unsigned int x0_, xn_, y0_, yn_;         ///< Bounds for partial grid updates.
+  double saved_origin_x_, saved_origin_y_; ///< Previous costmap origin.
+  nav_msgs::OccupancyGrid grid_;           ///< Message for full grid updates.
+
   static char* cost_translation_table_;  ///< Translate from 0-255 values in costmap to -1 to 100 values in message.
 };
 }  // namespace costmap_2d
