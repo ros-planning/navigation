@@ -77,6 +77,8 @@ class Costmap3D : public octomap::OcTree
 {
 public:
   Costmap3D(double resolution, unsigned int depth = DEFAULT_DEPTH);
+  // Load a Costmap3D from a path to a binary octomap file
+  Costmap3D(std::string path);
   Costmap3D(const Costmap3D& rhs);
 
   // Return a new Costmap3D contatinaing only the nonlethal cells.

@@ -241,6 +241,20 @@ public:
    */
   void updateCostmap(const Costmap3DConstPtr& costmap_3d);
 
+  using FCLRobotModel = fcl::BVHModel<fcl::OBBRSS<FCLFloat>>;
+  using FCLRobotModelPtr = std::shared_ptr<FCLRobotModel>;
+  using FCLRobotModelConstPtr = std::shared_ptr<const FCLRobotModel>;
+
+  /** @brief get the FCL robot model being used.
+   *
+   * The main use-case of this method is for testing purposes to verify
+   * results by doing an FCL broadphase distance check.
+   */
+  FCLRobotModelConstPtr getFCLRobotModel() const { return robot_model_; }
+
+  // returns path to package file, or empty on error
+  static std::string getFileNameFromPackageURL(const std::string& url);
+
 protected:
   const LayeredCostmap3D* layered_costmap_3d_;
 
@@ -272,8 +286,6 @@ private:
   void init();
   // synchronize this object for parallel queries
   upgrade_mutex upgrade_mutex_;
-  // returns path to package file, or empty on error
-  std::string getFileNameFromPackageURL(const std::string& url);
 
   // Save the PCL model of the mesh to use with crop hull
   pcl::PolygonMesh robot_mesh_;
@@ -283,8 +295,6 @@ private:
   CropHull<pcl::PointXYZ> crop_hull_;
 
   using FCLSolver = fcl::detail::GJKSolver_libccd<FCLFloat>;
-  using FCLRobotModel = fcl::BVHModel<fcl::OBBRSS<FCLFloat>>;
-  using FCLRobotModelPtr = std::shared_ptr<FCLRobotModel>;
 
   FCLRobotModelPtr robot_model_;
   // The halfspaces are indexed the same as the robot model, and shared with

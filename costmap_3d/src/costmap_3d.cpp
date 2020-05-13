@@ -46,6 +46,11 @@ Costmap3D::Costmap3D(double resolution, unsigned int depth) : octomap::OcTree(re
   init();
 }
 
+Costmap3D::Costmap3D(std::string path) : octomap::OcTree(path)
+{
+  init();
+}
+
 Costmap3D::Costmap3D(const Costmap3D& rhs) : octomap::OcTree(rhs)
 {
   // Be sure to init() on copy, as the octomap copy constructor does not do this
