@@ -52,10 +52,6 @@ std::string PathSpeedLimiter::getName(){
 }
 
 bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
-  // Reset the maximum allowed velocity
-  max_allowed_linear_vel = max_linear_velocity_;
-  max_allowed_angular_vel = max_angular_velocity_;
-
   if (plan_.empty())
   {
     ROS_WARN_THROTTLE(1.0, "No global plan.");
@@ -65,13 +61,20 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
   tf::Stamped<tf::Pose> current_pose;
   if (!getCurrentPose(current_pose))
   {
-    ROS_WARN_THROTTLE(1.0, "No pose in shadow speed limiter");
+    ROS_WARN_THROTTLE(1.0, "No pose in path speed limiter");
     return false;
   }
   // Adjust the pose to be at the front of the robot.
   geometry_msgs::PoseStamped pose;
   tf::poseStampedTFToMsg(current_pose, pose);
+  return calculateLimitsFromPathAndPose(max_allowed_linear_vel, max_allowed_angular_vel, pose);
 
+}
+
+bool PathSpeedLimiter::calculateLimitsFromPathAndPose(double& max_allowed_linear_vel, double& max_allowed_angular_vel, geometry_msgs::PoseStamped& pose) {
+  // Reset the maximum allowed velocity
+  max_allowed_linear_vel = max_linear_velocity_;
+  max_allowed_angular_vel = max_angular_velocity_;
   // Determine the closest point on the global plan.
   // Then look forwards along the path a fixed distance.
   // Find the greatest heading difference to the robot's current heading.
@@ -93,19 +96,20 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
   double distance_from_robot = 0;
   double minimum_distance = params_.max_distance_from_path; // it needs to be at least this close
   double max_heading_diff = 0;
+  bool path_came_within_min_dist = false;
 
   Eigen::Vector3f plan_vec = poseToVector3f(plan_[0].pose);
 
   for (size_t k = 0; k < plan_.size() - 1; ++k)
   {
-    //ROS_DEBUG("Searching along plan at k=%zu", k);
+    ROS_DEBUG("Searching along plan at k=%zu", k);
+
     // Pull out the datas
     p0 = poseStampedToVector(plan_[k]);
     p1 = poseStampedToVector(plan_[k + 1]);
     segment_vec = p1 - p0;
     double segment_length = segment_vec.norm();
     double dist_from_path = distanceToLineSegment(pos2, p0, p1);
-    
     pose_to_point_vec = p0 - pos2;
     double bearing_to_point = atan2(pose_to_point_vec[1], pose_to_point_vec[0]);
 
@@ -114,12 +118,13 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
       minimum_distance = dist_from_path;
       // Reset distance
       distance_from_robot = std::max(0.0, segment_length - distanceAlongLineSegment(pos2, p0, p1));
+      path_came_within_min_dist = true;
     }
-    else
+    else if(path_came_within_min_dist)
     {
       if (distance_from_robot >= params_.min_lookahead_distance 
         && distance_from_robot < params_.max_lookahead_distance)
-      {
+      {  
         max_heading_diff = std::max(max_heading_diff, 
           std::fabs(angleMinusPiToPi(bearing_to_point - current_heading)));
       }
@@ -131,11 +136,10 @@ bool PathSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& m
     }
   }
 
-  ROS_DEBUG_THROTTLE(0.2, "Max heading diff: %f", max_heading_diff);
+  ROS_DEBUG("Max heading diff: %f", max_heading_diff);
   max_allowed_linear_vel = calculateAllowedLinearSpeed(max_heading_diff);
 
-  ROS_DEBUG_THROTTLE(0.2, "Setting path max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
-
+  ROS_DEBUG("Setting path max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
   return true;
 }
 

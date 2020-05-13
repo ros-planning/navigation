@@ -66,16 +66,19 @@ public:
    * @return true if preparations were successful
    */
   virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
-
-  std::string getName();
   
-private:
+  bool calculateLimitsFromPathAndPose(double& max_allowed_linear_vel, double& max_allowed_angular_vel, geometry_msgs::PoseStamped& pose);
+  
+  std::string getName();
+
   void reconfigure(PathSpeedLimiterConfig cfg) {
     params_ = cfg;
   }
-
+  
+  
+private:
   double calculateAllowedLinearSpeed(double heading_diff);
-
+  
   std::shared_ptr<dynamic_reconfigure::Client<PathSpeedLimiterConfig>> configClient_;
   PathSpeedLimiterConfig params_;
 };

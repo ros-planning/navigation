@@ -173,7 +173,9 @@ if(CATKIN_ENABLE_TESTING)
     test/map_grid_test.cpp
     test/critic_test_helpers.cpp
     test/odometry_helper_ros_test.cpp
+    test/path_speed_limiter_test.cpp
     )
+
   target_link_libraries(base_local_planner_utest
       base_local_planner trajectory_planner_ros
       )
