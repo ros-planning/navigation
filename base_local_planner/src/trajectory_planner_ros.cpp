@@ -343,30 +343,52 @@ namespace base_local_planner {
 
   bool TrajectoryPlannerROS::rotateToGoal(const geometry_msgs::PoseStamped& global_pose, const geometry_msgs::PoseStamped& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel){
     double yaw = tf2::getYaw(global_pose.pose.orientation);
+    // Somewhat deceivingly, this actualy is the rotational velocity measured from the odometry source.
+    // See odom_helper_.getRobotVel() for reference
     double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
+    // If we wanted to use the open-loop velocity estimate (commanded velocity from previous loop) instead of the measured current velocity
+    // then we could use the following:
+      // vel_yaw = prev_cmd_vel_angular_z == 0.0 ? vel_yaw :  prev_cmd_vel_angular_z;
+      // vel_yaw = ang_diff > 0.0 ? std::max(vel_yaw, min_in_place_speed_th_) : std::min(vel_yaw, -1.0 * min_in_place_speed_th_);
     cmd_vel.linear.x = 0;
     cmd_vel.linear.y = 0;
     double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
 
-    double v_theta_samp = ang_diff > 0.0 ? std::min(max_vel_th_,
-        std::max(min_in_place_speed_th_, ang_diff)) : std::max(min_vel_th_,
-        std::min(-1.0 * min_in_place_speed_th_, ang_diff));
+    // Compute the maximum and minimum velocities as allowed by the maximum angular acceleration
+    // v1 = v0 + a * dt
+    double max_acc_vel = vel_yaw + acc_lim_theta_ * sim_period_;
+    double min_acc_vel = vel_yaw - acc_lim_theta_ * sim_period_;
 
-    //take the acceleration limits of the robot into account
-    double max_acc_vel = fabs(vel_yaw) + acc_lim_theta_ * sim_period_;
-    double min_acc_vel = fabs(vel_yaw) - acc_lim_theta_ * sim_period_;
+    // We also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
+    // Compute the maximum speed we can send such that we will be able to stop in time before reaching the goal position
+    // while obeying our acceleration limits. v = sqrt(2 * a * dTheta)
+    double max_vel_to_stop = sign(ang_diff)*sqrt(2 * acc_lim_theta_ * fabs(ang_diff));
 
-    v_theta_samp = sign(v_theta_samp) * std::min(std::max(fabs(v_theta_samp), min_acc_vel), max_acc_vel);
+    // Impose both limits on the desired velocity. Let the acceleration limits take precedence over the stopping velocity.
+    // i.e. if the vehicle is somehow in a situation where commanding max_vel_to_stop would require us to decellerate faster than
+    // what the acceleration limit allows, then use the velocity imposed by the accelleration limit. This situation shouldn't arise
+    // very often, although it could happen when we change a rotational goal mid execution, or if an external disturbance is applied to the robot.
+    double v_theta_samp = max_vel_to_stop;
+    if (max_vel_to_stop < min_acc_vel) {
+      v_theta_samp = min_acc_vel;
+    }
+    else if (max_vel_to_stop > max_acc_vel) {
+      v_theta_samp = max_acc_vel;
+    }
+    // else if (max_vel_to_stop >= min_acc_vel && max_vel_to_stop <= max_acc_vel) {
+    //   v_theta_samp = max_vel_to_stop;
+    // }
 
-    //we also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
-    double max_speed_to_stop = sqrt(2 * acc_lim_theta_ * fabs(ang_diff)); 
-
-    v_theta_samp = sign(v_theta_samp) * std::min(max_speed_to_stop, fabs(v_theta_samp));
-
-    // Re-enforce min_in_place_speed_th_.  It is more important than the acceleration limits.
-    v_theta_samp = v_theta_samp > 0.0
-      ? std::min( max_vel_th_, std::max( min_in_place_speed_th_, v_theta_samp ))
-      : std::max( min_vel_th_, std::min( -1.0 * min_in_place_speed_th_, v_theta_samp ));
+    // The range of possible velocities is [min_vel_th_, -min_in_place_speed_th_] U [min_in_place_speed_theta, max_vel_th_]
+  
+    // Enforce min_in_place_speed_th_
+    // In the case that the desired speed is smaller than the min_in_place_speed_th_,
+    // command the minimum speed in the direction of the desired angular position delta.
+    if (fabs(v_theta_samp) <= min_in_place_speed_th_) {
+      v_theta_samp = (ang_diff < 0.0 ? -1.0 * min_in_place_speed_th_ : min_in_place_speed_th_);
+    }
+    // Enforce user defined max/min speed limits.
+    v_theta_samp = std::min(max_vel_th_, std::max(min_vel_th_, v_theta_samp));;
 
     //we still want to lay down the footprint of the robot and check if the action is legal
     bool valid_cmd = tc_->checkTrajectory(global_pose.pose.position.x, global_pose.pose.position.y, yaw,
