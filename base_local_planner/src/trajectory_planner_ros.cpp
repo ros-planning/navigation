@@ -198,7 +198,6 @@ namespace base_local_planner {
           double resolution = costmap_->getResolution();
           goal_distance_bias *= resolution;
           path_distance_bias *= resolution;
-          occdist_scale *= resolution;
         } else {
           ROS_WARN("Trajectory Rollout planner initialized with param meter_scoring set to false. Set it to true to make your settings robust against changes of costmap resolution.");
         }
