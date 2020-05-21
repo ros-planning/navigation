@@ -64,13 +64,19 @@ const Cost LETHAL = 10.0;
 /* A log-odds between FREE and LETHAL represents a non-lethal,
  * but greater than zero cost for that space */
 
+// Default depth for costmap octrees. This can be overriden in the constructor.
+// The default is 20 to be able to represent a large space (~5km in any
+// direction) at 1cm resolution. Increasing the depth allows larger spaces to
+// be reprsented at a slight increased CPU cost per costmap query.
+constexpr unsigned int DEFAULT_DEPTH = 20;
+
 using Costmap3DIndex = octomap::OcTreeKey;
 using Costmap3DIndexEntryType = octomap::key_type;
 
 class Costmap3D : public octomap::OcTree
 {
 public:
-  Costmap3D(double resolution);
+  Costmap3D(double resolution, unsigned int depth = DEFAULT_DEPTH);
   Costmap3D(const Costmap3D& rhs);
 
   // Return a new Costmap3D contatinaing only the nonlethal cells.

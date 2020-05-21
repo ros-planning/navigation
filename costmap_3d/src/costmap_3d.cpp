@@ -40,8 +40,9 @@
 namespace costmap_3d
 {
 
-Costmap3D::Costmap3D(double resolution) : octomap::OcTree(resolution)
+Costmap3D::Costmap3D(double resolution, unsigned int depth) : octomap::OcTree(resolution)
 {
+  setTreeDepth(depth);
   init();
 }
 
