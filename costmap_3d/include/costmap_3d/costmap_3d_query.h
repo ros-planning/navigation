@@ -42,6 +42,7 @@
 #include <unordered_map>
 #include <limits>
 #include <atomic>
+#include <cmath>
 #include <boost/thread/shared_mutex.hpp>
 #include <Eigen/Dense>
 #include <fcl/geometry/bvh/BVH_model.h>
@@ -507,6 +508,31 @@ private:
       result->primitive2 = mesh_triangle;
       result->tf1 = octomap_box_tf;
       result->b2 = mesh_triangle_id;
+    }
+    bool getCostmapIndexAndDepth(const octomap::OcTreeSpace& octree_space, Costmap3DIndex* index, unsigned int* depth)
+    {
+      if (octomap_box)
+      {
+        // Use the size and location of the box to derive the correct octree key
+        // (cell index) and depth.
+        //
+        // The depth can be found by looking at the ratio of the largest node
+        // size to the size of our box. The base-2 logarithm of that value
+        // will be the depth we are at, rounded to the nearest integer.
+        //
+        // Note: if this function needs to be optimized in the future, it could
+        // use __builtin_clz. The initial use case of this function only calls
+        // it for every main distance cache entry, which is small. Therefore
+        // a standard C++ implementation was choosen.
+        unsigned int d = static_cast<unsigned int>(std::round(std::log2(
+                    octree_space.getNodeSize(0) / octomap_box->side[0])));
+        const auto& box_center = octomap_box_tf.translation();
+        // Be sure to adjust the key based on the depth.
+        *index = octree_space.coordToKey(box_center[0], box_center[1], box_center[2], d);
+        *depth = d;
+        return true;
+      }
+      return false;
     }
     FCLFloat distance;
     std::shared_ptr<fcl::Box<FCLFloat>> octomap_box;

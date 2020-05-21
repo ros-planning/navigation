@@ -180,25 +180,81 @@ void Costmap3DQuery::checkCostmap(Costmap3DQuery::upgrade_lock& upgrade_lock,
     checkInteriorCollisionLUT();
     // The costmap has been updated since the last query, reset our caches
 
-    // For simplicity, on every update, clear out the collision cache.
-    // This is not strictly necessary in the case where the costmap has been
-    // updated. The mesh is stored in the cache and does not change. The only
-    // thing that changed is the costmap. We could go through the delta map
-    // and only remove entries that have had the corresponding octomap cell go
-    // away. This may be implemented as a future improvement. It would be OK
-    // to keep entries in the distance_cache_ as long as their respective
-    // octomap boxes did not get removed, as the distance_cache not having the
-    // best answer in the presence of a new closer octomap cell does not make
-    // the result incorrect (just less efficient). However, such an improvement
-    // may not yield any practical increase in performance due to the
-    // tls_last_cache_entries_ and the fact that most queries query poses on a path,
-    // which makes a distance_cache miss much less costly.
-    distance_cache_.clear();
-    // We must always drop the milli cache and micro cache, as new cells will
-    // invalidate the old results, and there is no simple way to figure out
-    // which ones might still be valid.
-    milli_distance_cache_.clear();
+    // Delete any distance cache entries that have had their corresponding
+    // octomap cells removed. It is fine to keep entries in the presence of
+    // additions, as the entry only defines an upper bound. Because the size of
+    // the tree is limited, the size of the cache has a natural limit. If this
+    // limit is ever too large, a separate cache size may need to be set.
+    {
+      auto it = distance_cache_.begin();
+      while (it != distance_cache_.end())
+      {
+        bool erase = true;
+        Costmap3DIndex index;
+        unsigned int depth;
+        if (it->second.getCostmapIndexAndDepth(*octree_ptr_, &index, &depth))
+        {
+          auto* node = octree_ptr_->search(index, depth);
+          if (node && !octree_ptr_->nodeHasChildren(node))
+          {
+            // The node exists and has no children (so its a leaf and not an inner node)
+            // Keep this entry.
+            erase = false;
+          }
+        }
+
+        if (erase)
+          it = distance_cache_.erase(it);
+        else
+          ++it;
+      }
+    }
+
+    // Delete any milli distance cache entries that have had their
+    // corresponding octomap cells removed. If the cell has not been removed,
+    // invalidate the milli cache entry from being used in the fast-path, but
+    // let it still be used as an upper-bound for the slow path, as it greatly
+    // reduces subsequent query times. Also note that the caches are always
+    // updated after a successful query, so the staleness of the bound will be
+    // fixed the next query that hits the cache.
+    {
+      auto it = milli_distance_cache_.begin();
+      while (it != milli_distance_cache_.end())
+      {
+        bool erase = true;
+        Costmap3DIndex index;
+        unsigned int depth;
+        if (it->second.getCostmapIndexAndDepth(*octree_ptr_, &index, &depth))
+        {
+          auto* node = octree_ptr_->search(index, depth);
+          if (node && !octree_ptr_->nodeHasChildren(node))
+          {
+            // The node exists and has no children (so its a leaf and not an inner node)
+            // Keep this entry.
+            erase = false;
+          }
+        }
+
+        if (erase)
+        {
+          it = milli_distance_cache_.erase(it);
+        }
+        else
+        {
+          // The code only uses the fast-path when the recorded distance is
+          // over the milli cache threshold, so set to the threshold.
+          it->second.distance = milli_cache_threshold_;
+          ++it;
+        }
+      }
+    }
+
+    // Drop the micro cache. It is not worth iterating over the (relatively
+    // large) micro cache.  New entries in the costmap make the upper bound
+    // fairly worthless and we can not use the fast path which is the micro
+    // cache's strong point.
     micro_distance_cache_.clear();
+    // We must drop the exact cache after the costmap has changed
     exact_distance_cache_.clear();
     printStatistics();
     clearStatistics();
