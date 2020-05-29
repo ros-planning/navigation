@@ -14,11 +14,18 @@ find_package(SDL_image REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(YAMLCPP yaml-cpp REQUIRED)
-if(YAMLCPP_VERSION VERSION_GREATER "0.5.0")
+pkg_check_modules(YAMLCPP yaml-cpp QUIET)
+if(NOT YAMLCPP_FOUND)
+  find_package(yaml-cpp 0.6 REQUIRED)
+  set(YAMLCPP_INCLUDE_DIRS ${YAML_CPP_INCLUDE_DIR})
+  set(YAMLCPP_LIBRARIES ${YAML_CPP_LIBRARIES})
+  add_definitions(-DHAVE_YAMLCPP_GT_0_5_0)
+else()
+  if(YAMLCPP_VERSION VERSION_GREATER "0.5.0")
     add_definitions(-DHAVE_YAMLCPP_GT_0_5_0)
+  endif()
+  link_directories(${YAMLCPP_LIBRARY_DIRS})
 endif()
-link_directories(${YAMLCPP_LIBRARY_DIRS})
 
 catkin_package(
     INCLUDE_DIRS
