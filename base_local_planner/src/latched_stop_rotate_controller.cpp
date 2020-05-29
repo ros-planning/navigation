@@ -162,7 +162,7 @@ bool LatchedStopRotateController::rotateToGoal(
   cmd_vel.linear.y = 0;
   double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
 
-  double v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_vel_theta, fabs(ang_diff)));
+  double v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_in_place_speed_theta, fabs(ang_diff)));
 
   //take the acceleration limits of the robot into account
   double max_acc_vel = fabs(vel_yaw) + acc_lim[2] * sim_period;
@@ -174,7 +174,7 @@ bool LatchedStopRotateController::rotateToGoal(
   double max_speed_to_stop = sqrt(2 * acc_lim[2] * fabs(ang_diff));
   v_theta_samp = std::min(max_speed_to_stop, fabs(v_theta_samp));
 
-  v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_vel_theta, v_theta_samp));
+  v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_in_place_speed_theta, v_theta_samp));
 
   if (ang_diff < 0) {
     v_theta_samp = - v_theta_samp;

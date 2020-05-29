@@ -71,9 +71,9 @@ namespace base_local_planner{
       max_vel_x_ = config.max_vel_x;
       min_vel_x_ = config.min_vel_x;
       
-      max_vel_th_ = config.max_vel_theta;
-      min_vel_th_ = config.min_vel_theta;
-      min_in_place_vel_th_ = config.min_in_place_vel_theta;
+      max_vel_th_ = config.max_speed_theta;
+      min_vel_th_ = -1.0 * max_vel_th_;
+      min_in_place_speed_th_ = config.min_in_place_speed_theta;
 
       sim_time_ = config.sim_time;
       sim_granularity_ = config.sim_granularity;
@@ -150,7 +150,7 @@ namespace base_local_planner{
       double escape_reset_dist, double escape_reset_theta,
       bool holonomic_robot,
       double max_vel_x, double min_vel_x,
-      double max_vel_th, double min_vel_th, double min_in_place_vel_th,
+      double max_vel_th, double min_vel_th, double min_in_place_speed_th,
       double backup_vel,
       bool dwa, bool heading_scoring, double heading_scoring_timestep, bool meter_scoring, bool simple_attractor,
       vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
@@ -166,7 +166,7 @@ namespace base_local_planner{
     oscillation_reset_dist_(oscillation_reset_dist), escape_reset_dist_(escape_reset_dist),
     escape_reset_theta_(escape_reset_theta), holonomic_robot_(holonomic_robot),
     max_vel_x_(max_vel_x), min_vel_x_(min_vel_x),
-    max_vel_th_(max_vel_th), min_vel_th_(min_vel_th), min_in_place_vel_th_(min_in_place_vel_th),
+    max_vel_th_(max_vel_th), min_vel_th_(min_vel_th), min_in_place_speed_th_(min_in_place_speed_th),
     backup_vel_(backup_vel),
     dwa_(dwa), heading_scoring_(heading_scoring), heading_scoring_timestep_(heading_scoring_timestep),
     simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer), sim_period_(sim_period)
@@ -655,8 +655,8 @@ namespace base_local_planner{
 
     for(int i = 0; i < vtheta_samples_; ++i) {
       //enforce a minimum rotational velocity because the base can't handle small in-place rotations
-      double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_vel_th_)
-        : min(vtheta_samp, -1.0 * min_in_place_vel_th_);
+      double vtheta_samp_limited = vtheta_samp > 0 ? max(vtheta_samp, min_in_place_speed_th_)
+        : min(vtheta_samp, -1.0 * min_in_place_speed_th_);
 
       generateTrajectory(x, y, theta, vx, vy, vtheta, vx_samp, vy_samp, vtheta_samp_limited,
           acc_x, acc_y, acc_theta, impossible_cost, *comp_traj);

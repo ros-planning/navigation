@@ -79,7 +79,7 @@ public:
 private:
   costmap_2d::Costmap2DROS* local_costmap_;
   bool initialized_;
-  double sim_granularity_, min_rotational_vel_, max_rotational_vel_, acc_lim_th_, tolerance_, frequency_;
+  double sim_granularity_, max_vel_th_, min_in_place_speed_th_, acc_lim_th_, tolerance_, frequency_;
   base_local_planner::CostmapModel* world_model_;
 };
 };  // namespace rotate_recovery

@@ -212,14 +212,22 @@ namespace base_local_planner {
       private_nh.param("max_vel_x", max_vel_x, 0.5);
       private_nh.param("min_vel_x", min_vel_x, 0.1);
 
-      double max_rotational_vel;
-      private_nh.param("max_rotational_vel", max_rotational_vel, 1.0);
-      max_vel_th_ = max_rotational_vel;
-      min_vel_th_ = -1.0 * max_rotational_vel;
+      private_nh.param("max_speed_theta", max_vel_th_, 1.0);
+      min_vel_th_ = -1.0 * max_vel_th_;
 
-      min_in_place_vel_th_ = nav_core::loadParameterWithDeprecation(private_nh,
-                                                                    "min_in_place_vel_theta",
+      if(private_nh.hasParam("max_vel_theta"))
+        ROS_ERROR("You are using max_vel_theta. Use max_speed_theta to set the maximum angular speed.");
+
+      if(private_nh.hasParam("max_rotational_vel"))
+        ROS_ERROR("You are using max_rotational_vel where you should be using max_speed_theta. Please change your configuration files appropriately.");
+
+      if(private_nh.hasParam("min_vel_theta"))
+        ROS_ERROR("The parameter min_vel_theta is unsupported. Use max_speed_theta to set the maximum angular speed and min_in_place_speed_theta to set the minimum angular speed.");
+
+      min_in_place_speed_th_ = nav_core::loadParameterWithDeprecation(private_nh,
+                                                                    "min_in_place_speed_theta",
                                                                     "min_in_place_rotational_vel", 0.4);
+                                                                    
       reached_goal_ = false;
       backup_vel = -0.1;
       if(private_nh.getParam("backup_vel", backup_vel))
@@ -254,7 +262,7 @@ namespace base_local_planner {
       tc_ = new TrajectoryPlanner(*world_model_, *costmap_, footprint_spec_,
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, path_distance_bias,
           goal_distance_bias, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
-          max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
+          max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_speed_th_, backup_vel,
           dwa, heading_scoring, heading_scoring_timestep, meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
 
       map_viz_.initialize(name, global_frame_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
@@ -341,8 +349,8 @@ namespace base_local_planner {
     double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
 
     double v_theta_samp = ang_diff > 0.0 ? std::min(max_vel_th_,
-        std::max(min_in_place_vel_th_, ang_diff)) : std::max(min_vel_th_,
-        std::min(-1.0 * min_in_place_vel_th_, ang_diff));
+        std::max(min_in_place_speed_th_, ang_diff)) : std::max(min_vel_th_,
+        std::min(-1.0 * min_in_place_speed_th_, ang_diff));
 
     //take the acceleration limits of the robot into account
     double max_acc_vel = fabs(vel_yaw) + acc_lim_theta_ * sim_period_;
@@ -355,10 +363,10 @@ namespace base_local_planner {
 
     v_theta_samp = sign(v_theta_samp) * std::min(max_speed_to_stop, fabs(v_theta_samp));
 
-    // Re-enforce min_in_place_vel_th_.  It is more important than the acceleration limits.
+    // Re-enforce min_in_place_speed_th_.  It is more important than the acceleration limits.
     v_theta_samp = v_theta_samp > 0.0
-      ? std::min( max_vel_th_, std::max( min_in_place_vel_th_, v_theta_samp ))
-      : std::max( min_vel_th_, std::min( -1.0 * min_in_place_vel_th_, v_theta_samp ));
+      ? std::min( max_vel_th_, std::max( min_in_place_speed_th_, v_theta_samp ))
+      : std::max( min_vel_th_, std::min( -1.0 * min_in_place_speed_th_, v_theta_samp ));
 
     //we still want to lay down the footprint of the robot and check if the action is legal
     bool valid_cmd = tc_->checkTrajectory(global_pose.pose.position.x, global_pose.pose.position.y, yaw,

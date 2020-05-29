@@ -136,9 +136,9 @@ namespace move_slow_and_clear
         ROS_ERROR("The planner %s, does not have the parameter max_vel_trans", planner_nh_.getNamespace().c_str());
       }
 
-      if(!planner_nh_.getParam("max_vel_theta", old_rot_speed_))
+      if(!planner_nh_.getParam("max_speed_theta", old_rot_speed_))
       {
-        ROS_ERROR("The planner %s, does not have the parameter max_vel_theta", planner_nh_.getNamespace().c_str());
+        ROS_ERROR("The planner %s, does not have the parameter max_speed_theta", planner_nh_.getNamespace().c_str());
       }
     }
 
@@ -208,7 +208,7 @@ namespace move_slow_and_clear
     {
       dynamic_reconfigure::Reconfigure rot_reconfigure;
       dynamic_reconfigure::DoubleParameter new_rot;
-      new_rot.name = "max_vel_theta";
+      new_rot.name = "max_speed_theta";
       new_rot.value = rot_speed;
       rot_reconfigure.request.config.doubles.push_back(new_rot);
       try {

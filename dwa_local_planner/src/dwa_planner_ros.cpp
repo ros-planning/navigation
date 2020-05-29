@@ -72,8 +72,9 @@ namespace dwa_local_planner {
       limits.min_vel_x = config.min_vel_x;
       limits.max_vel_y = config.max_vel_y;
       limits.min_vel_y = config.min_vel_y;
-      limits.max_vel_theta = config.max_vel_theta;
-      limits.min_vel_theta = config.min_vel_theta;
+      limits.max_vel_theta = config.max_speed_theta;
+      limits.min_vel_theta = -1.0 * limits.max_vel_theta;
+      limits.min_in_place_speed_theta = limits.min_in_place_speed_theta;
       limits.acc_lim_x = config.acc_lim_x;
       limits.acc_lim_y = config.acc_lim_y;
       limits.acc_lim_theta = config.acc_lim_theta;
@@ -125,8 +126,11 @@ namespace dwa_local_planner {
       // Warn about deprecated parameters -- remove this block in N-turtle
       nav_core::warnRenamedParameter(private_nh, "max_vel_trans", "max_trans_vel");
       nav_core::warnRenamedParameter(private_nh, "min_vel_trans", "min_trans_vel");
-      nav_core::warnRenamedParameter(private_nh, "max_vel_theta", "max_rot_vel");
-      nav_core::warnRenamedParameter(private_nh, "min_vel_theta", "min_rot_vel");
+      nav_core::warnRenamedParameter(private_nh, "max_speed_theta", "max_rot_vel");
+      nav_core::warnRenamedParameter(private_nh, "max_speed_theta", "max_vel_theta");
+      nav_core::warnRenamedParameter(private_nh, "min_in_place_speed_theta", "min_in_place_vel_theta");
+      nav_core::warnRenamedParameter(private_nh, "min_in_place_speed_theta", "min_vel_theta");
+      nav_core::warnRenamedParameter(private_nh, "min_in_place_speed_theta", "min_rot_vel");
       nav_core::warnRenamedParameter(private_nh, "acc_lim_trans", "acc_limit_trans");
       nav_core::warnRenamedParameter(private_nh, "theta_stopped_vel", "rot_stopped_vel");
 
