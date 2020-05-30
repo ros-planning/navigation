@@ -276,6 +276,7 @@ namespace base_local_planner {
 
       map_viz_.initialize(name, global_frame_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
+      first_goal_ = true;
 
       dsrv_ = new dynamic_reconfigure::Server<BaseLocalPlannerConfig>(private_nh);
       dynamic_reconfigure::Server<BaseLocalPlannerConfig>::CallbackType cb = boost::bind(&TrajectoryPlannerROS::reconfigureCB, this, _1, _2);
@@ -285,6 +286,16 @@ namespace base_local_planner {
       ROS_WARN("This planner has already been initialized, doing nothing");
     }
   }
+
+  bool TrajectoryPlannerROS::isSameGoal(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
+    {
+      double yaw_diff = fabs(tf2::getYaw(p1.pose.orientation) - tf2::getYaw(p2.pose.orientation));
+      double dist =  hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
+      if(yaw_diff == 0.0 && dist == 0.0) {
+        return true;
+      }
+      return false;
+    }
 
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
     std::vector<double> y_vels;
@@ -426,9 +437,22 @@ namespace base_local_planner {
     global_plan_ = orig_global_plan;
     
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
-    xy_tolerance_latch_ = false;
-    //reset the at goal flag
-    reached_goal_ = false;
+    geometry_msgs::PoseStamped current_global_goal = orig_global_plan.back();
+    
+        if (first_goal_) {
+          xy_tolerance_latch_ = false;
+          previous_global_goal_ = current_global_goal;
+          // Make it different from the current goal
+          previous_global_goal_.pose.position.x += 0.1;
+          first_goal_ = false;
+        } else {
+          if (!isSameGoal(current_global_goal, previous_global_goal_)) {
+            xy_tolerance_latch_ = false;
+            //reset the at goal flag
+            reached_goal_ = false;
+            previous_global_goal_ = current_global_goal;
+          }
+        }
     return true;
   }
 
