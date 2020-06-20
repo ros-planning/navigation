@@ -221,6 +221,7 @@ void Costmap2DROS::loadOldParameters(ros::NodeHandle& nh)
     move_parameter(nh, map_layer, "lethal_cost_threshold");
     move_parameter(nh, map_layer, "track_unknown_space", false);
   }
+  // need offlimit_map?
 
   ros::NodeHandle obstacles(nh, "obstacle_layer");
   if (nh.getParam("map_type", s) && s == "voxel")
