@@ -67,7 +67,8 @@ void OfflimitLayer::onInitialize()
   global_frame_ = layered_costmap_->getGlobalFrameID();
 
   std::string map_topic;
-  nh.param("map_topic", map_topic, std::string("map"));
+  // nh.param("map_topic", map_topic, std::string("map"));
+  nh.param("map_topic", map_topic, std::string("vector_map"));
   nh.param("first_map_only", first_map_only_, false);
   nh.param("subscribe_to_updates", subscribe_to_updates_, false);
 
@@ -293,7 +294,6 @@ void OfflimitLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 
 void OfflimitLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
-#if 0
   if (!map_received_)
     return;
 
@@ -347,7 +347,7 @@ void OfflimitLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, i
       }
     }
   }
-#endif
+#if 0
   // i : 左右
   // j : 上下
 
@@ -360,6 +360,7 @@ void OfflimitLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, i
           master_grid.setCost(i, j, LETHAL_OBSTACLE);
       }
   }
+#endif
 }
 
 }  // namespace costmap_2d
