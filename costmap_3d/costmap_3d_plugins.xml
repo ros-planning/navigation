@@ -9,5 +9,8 @@
     <class type="costmap_3d::PointCloudLayer3D" base_class_type="costmap_3d::Layer3D">
       <description>Overwrites the 3D costmap layer with the last point cloud received.</description>
     </class>
+    <class type="costmap_3d::Static2DLayer3D" base_class_type="costmap_3d::Layer3D">
+      <description>3D costmap layer that receives a static 2D map with behavior similar to costmap_2d::StaticLayer</description>
+    </class>
   </library>
 </class_libraries>

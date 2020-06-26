@@ -109,6 +109,7 @@ add_library(layers_3d
   plugins/point_cloud_layer_3d.cpp
   plugins/costmap_3d_to_2d_layer.cpp
   plugins/costmap_3d_to_2d_layer_3d.cpp
+  plugins/static_2d_layer_3d.cpp
 )
 add_dependencies(layers_3d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(layers_3d
