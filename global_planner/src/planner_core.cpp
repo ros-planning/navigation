@@ -46,6 +46,14 @@
 #include <global_planner/gradient_path.h>
 #include <global_planner/quadratic_calculator.h>
 
+#include <geometry_msgs/Twist.h>
+
+#include <math.h>
+#include <algorithm>
+#include <cmath>
+#define PI 3.14159265
+
+
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
 
@@ -208,6 +216,23 @@ bool GlobalPlanner::worldToMap(double wx, double wy, double& mx, double& my) {
     return false;
 }
 
+std::vector<std::pair<double, double>> GlobalPlanner::findToleratedPoints(double world_x, double world_y, double tolerance,  int resol) {
+    double alpha = 2*PI/resol;
+    std::vector<std::pair<double, double>> result;
+
+    double map_x, map_y;
+    worldToMap(world_x, world_y, map_x, map_y);
+    result.push_back({map_x, map_y});
+    for (size_t i = 0; i < resol; ++i) {
+        double x = world_x + tolerance*cos(alpha*i);
+        double y = world_y + tolerance*sin(alpha*i);
+        
+        worldToMap(x,y, x,y);
+        result.push_back({x,y});
+    }
+    return result;
+}
+
 bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                            std::vector<geometry_msgs::PoseStamped>& plan) {
     return makePlan(start, goal, default_tolerance_, plan);
@@ -221,6 +246,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
                 "This planner has not been initialized yet, but it is being used, please call initialize() before use");
         return false;
     }
+
 
     //clear the plan, just in case
     plan.clear();
@@ -287,27 +313,70 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     if(outline_map_)
         outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
+    
+    auto goals = findToleratedPoints(wx, wy, tolerance, 8);
 
-    bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
+
+
+    std::sort(std::next(goals.begin()), goals.end(), [&start_x, &start_y](const std::pair<double, double>& lhs, const std::pair<double, double>& rhs){
+                                            return pow( pow(start_x-lhs.first, 2.0) + pow(start_y-lhs.second, 2.0), 0.5) < pow( pow(start_x-rhs.first, 2.0) + pow(start_y-rhs.second, 2.0), 0.5);
+                                       });
+
+    for (auto item : goals) {
+
+        bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, item.first, item.second,
                                                     nx * ny * 2, potential_array_);
+   
+        
+        //change original goal to a tolerated one
+        double goal_x_world, goal_y_world; 
+        mapToWorld(item.first, item.second, goal_x_world, goal_y_world);
+        costmap_->worldToMap(goal_x_world, goal_y_world, goal_x_i, goal_y_i);
 
-    if(!old_navfn_behavior_)
-        planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
-    if(publish_potential_)
-        publishPotential(potential_array_);
+        geometry_msgs::PoseStamped goal_tol;
+        goal_tol.header = goal.header;
+        goal_tol.pose.position.x = goal_x_world;
+        goal_tol.pose.position.y = goal_y_world;
+        goal_tol.pose.position.z = goal.pose.position.z;
+        goal_tol.pose.orientation = goal.pose.orientation;
 
-    if (found_legal) {
-        //extract the plan
-        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
-            //make sure the goal we push on has the same timestamp as the rest of the plan
-            geometry_msgs::PoseStamped goal_copy = goal;
-            goal_copy.header.stamp = ros::Time::now();
-            plan.push_back(goal_copy);
-        } else {
-            ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
+        if(!old_navfn_behavior_)
+            planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
+        if(publish_potential_)
+            publishPotential(potential_array_);
+
+
+
+        if (found_legal) {
+            //extract the plan
+            if (getPlanFromPotential(start_x, start_y, item.first, item.second, goal_tol, plan)) {
+                //make sure the goal we push on has the same timestamp as the rest of the plan
+                geometry_msgs::PoseStamped goal_copy = goal_tol;
+                goal_copy.header.stamp = ros::Time::now();
+                plan.push_back(goal_copy);
+                break;
+            } else {
+                ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
+                break;
+            }
+        }else{
+            ROS_ERROR("Failed to get a plan.");
+
+            //robot should stop to prevent collision
+            ros::NodeHandle private_nh("~");
+            auto pub = private_nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
+            geometry_msgs::Twist vel;
+            vel.linear.x = 0.0;
+            vel.linear.y = 0.0;
+            vel.linear.z = 0.0;
+            vel.angular.x = 0.0;
+            vel.angular.y = 0.0;
+            vel.angular.z = 0.0;
+            pub.publish(vel);
+
+            //changing goal_x, goal_y inside of the tolerance radius
+            
         }
-    }else{
-        ROS_ERROR("Failed to get a plan.");
     }
 
     // add orientations if needed
@@ -316,6 +385,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete potential_array_;
+
     return !plan.empty();
 }
 

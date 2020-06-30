@@ -178,6 +178,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         bool worldToMap(double wx, double wy, double& mx, double& my);
         void clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my);
         void publishPotential(float* potential);
+	std::vector<std::pair<double, double>> findToleratedPoints(double world_x, double world_y, double tolerance,  int resol);
 
         double planner_window_x_, planner_window_y_, default_tolerance_;
         boost::mutex mutex_;
