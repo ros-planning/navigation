@@ -44,6 +44,7 @@
 // Messages that I need
 #include "sensor_msgs/LaserScan.h"
 #include "std_msgs/Float32.h"
+#include "std_msgs/Bool.h"
 #include "geometry_msgs/PoseWithCovarianceStamped.h"
 #include "move_base_msgs/PoseWithCovarianceStampedArray.h"
 #include "geometry_msgs/PoseArray.h"
@@ -249,6 +250,7 @@ class AmclNode
     ros::Publisher data_pub_; //pub to send amcl_data msg
     ros::Publisher particlecloud_pub_;
     ros::Publisher invalid_pose_percent_pub_;
+    ros::Publisher ready_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
     ros::ServiceServer set_map_srv_;
@@ -442,7 +444,7 @@ AmclNode::AmclNode() :
   analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics", 2, true);
   data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
   invalid_pose_percent_pub_ = nh_.advertise<std_msgs::Float32>("amcl_invalid_poses", 2);
-
+  ready_pub_ = nh_.advertise<std_msgs::Bool>("ready", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
 					 &AmclNode::globalLocalizationCallback,
@@ -477,6 +479,9 @@ AmclNode::AmclNode() :
   laser_check_interval_ = ros::Duration(15.0);
   check_laser_timer_ = nh_.createTimer(laser_check_interval_,
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
+
+  // publish ready signal
+  ready_pub_.publish(true);
 }
 
 void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
