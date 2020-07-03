@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(navfn)
 
+include(CheckIncludeFile)
+
 find_package(catkin REQUIRED
     COMPONENTS
         cmake_modules
@@ -55,6 +57,11 @@ catkin_package(
         visualization_msgs
 )
 
+check_include_file(sys/time.h HAVE_SYS_TIME_H)
+if (HAVE_SYS_TIME_H)
+  add_definitions(-DHAVE_SYS_TIME_H)
+endif (HAVE_SYS_TIME_H)
+
 add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
 target_link_libraries(navfn
     ${catkin_LIBRARIES}
@@ -66,10 +73,14 @@ target_link_libraries(navfn_node
     navfn
     )
 
-install(TARGETS navfn navfn_node
+install(TARGETS navfn_node
+       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+       )
+
+install(TARGETS navfn
        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+       RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
        )
 
 install(DIRECTORY include/navfn/

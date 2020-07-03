@@ -2,6 +2,39 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.6 (2020-03-18)
+-------------------
+* Fix Unknown CMake command check_include_file (navfn & base_local_planner) (`#975 <https://github.com/ros-planning/navigation/issues/975>`_)
+* Contributors: Sam Pfeiffer
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* Fixes gdist- and pdist_scale node paramter names (`#936 <https://github.com/cobalt-robotics/navigation/issues/936>`_)
+  Renames goal and path distance dynamic reconfigure parameter
+  names in the cfg file in order to actually make the parameters
+  used by the trajectory planner changeable.
+  Fixes `#935 <https://github.com/cobalt-robotics/navigation/issues/935>`_
+* don't include a main() function in base_local_planner library (`#969 <https://github.com/cobalt-robotics/navigation/issues/969>`_)
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Contributors: David Leins, Sean Yen, ipa-fez
+
+1.16.3 (2019-11-15)
+-------------------
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Provide different negative values for unknown and out-of-map costs (`#833 <https://github.com/ros-planning/navigation/issues/833>`_)
+* Merge pull request `#857 <https://github.com/ros-planning/navigation/issues/857>`_ from jspricke/add_include
+  Add missing header
+* Add missing header
+* [kinetic] Fix for adjusting plan resolution (`#819 <https://github.com/ros-planning/navigation/issues/819>`_)
+  * Fix for adjusting plan resolution
+  * Simpler math expression
+* Contributors: David V. Lu!!, Jochen Sprickerhof, Jorge Santos Simón, Michael Ferguson, Steven Macenski
+
 1.16.2 (2018-07-31)
 -------------------
 * Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes

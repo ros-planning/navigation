@@ -2,6 +2,22 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Contributors: Sean Yen
+
+1.16.3 (2019-11-15)
+-------------------
+
 1.16.2 (2018-07-31)
 -------------------
 * Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes

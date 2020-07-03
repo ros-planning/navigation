@@ -2,6 +2,29 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Contributors: Sean Yen
+
+1.16.3 (2019-11-15)
+-------------------
+* Merge pull request `#877 <https://github.com/ros-planning/navigation/issues/877>`_ from SteveMacenski/layer_clear_area-melodic
+  [melodic] moving clearing area method to costmap_layer so other applications can clear other types.
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Add force_updating and affected_maps parameters to tailor clear costmaps recovey (`#838 <https://github.com/ros-planning/navigation/issues/838>`_)
+  behavior
+* clear area in layer for melodic
+* Contributors: Jorge Santos Simón, Michael Ferguson, Steven Macenski, stevemacenski
+
 1.16.2 (2018-07-31)
 -------------------
 

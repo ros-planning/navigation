@@ -2,6 +2,55 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* Implement selective resampling (`#921 <https://github.com/cobalt-robotics/navigation/issues/921>`_) (`#971 <https://github.com/cobalt-robotics/navigation/issues/971>`_)
+  Co-authored-by: Adi Vardi <adidasv111@gmail.com>
+* Add CLI option to trigger global localization before processing a bagfile (`#816 <https://github.com/cobalt-robotics/navigation/issues/816>`_) (`#970 <https://github.com/cobalt-robotics/navigation/issues/970>`_)
+  Co-authored-by: alain-m <alain@savioke.com>
+* Fix some reconfigure parameters not being applied [amcl]. (`#952 <https://github.com/cobalt-robotics/navigation/issues/952>`_)
+* amcl: include missing CMake functions to fix build (`#946 <https://github.com/cobalt-robotics/navigation/issues/946>`_)
+* Set proper limits for the z-weights [amcl]. (`#953 <https://github.com/cobalt-robotics/navigation/issues/953>`_)
+* Merge pull request `#965 <https://github.com/cobalt-robotics/navigation/issues/965>`_ from nlimpert/nlimpert/fix_missing_cmake_include
+  Add missing CMake include(CheckSymbolExists) for CMake >= 3.15
+* amcl: add missing CMake include(CheckSymbolExists)
+  Starting with CMake 3.15 an explicit include(CheckSymbolExists)
+  is required to use the check_symbol_exists macro.
+* Contributors: Ben Wolsieffer, Michael Ferguson, Nicolas Limpert, Patrick Chin
+
+1.16.3 (2019-11-15)
+-------------------
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Fix typo in amcl_laser model header (`#918 <https://github.com/ros-planning/navigation/issues/918>`_)
+* Merge pull request `#849 <https://github.com/ros-planning/navigation/issues/849>`_ from seanyen/amcl_windows_fix
+  [Windows][melodic] AMCL Windows build bring up.
+* revert unrelated changes.
+* AMCL windows build bring up.
+  * Add HAVE_UNISTD and HAVE_DRAND48 and portable_utils.hpp for better cross compiling.
+  * Variable length array is not supported in MSVC, conditionally disable it.
+  * Fix install location for shared lib and executables on Windows.
+  * Use isfinite for better cross compiling.
+* feat: AMCL Diagnostics (`#807 <https://github.com/ros-planning/navigation/issues/807>`_)
+  Diagnostic task that monitors the estimated standard deviation of the filter.
+  By: reinzor <reinzor@gmail.com>
+* fix typo for parameter beam_skip_error_threshold but bandaged for other users in AMCL (`#790 <https://github.com/ros-planning/navigation/issues/790>`_)
+  * fix typo but bandage for other users
+* Merge pull request `#785 <https://github.com/ros-planning/navigation/issues/785>`_ from mintar/amcl_c++11
+  amcl: Add compile option C++11
+* amcl: Set C++ standard 11 if not set
+  This is required to build the melodic-devel branch of the navigation
+  stack on kinetic. Melodic sets CMAKE_CXX_STANDARD=14, but kinetic
+  doesn't set that variable at all.
+* Contributors: Hadi Tabatabaee, Martin Günther, Michael Ferguson, Rein Appeldoorn, Sean Yen, Steven Macenski
+
 1.16.2 (2018-07-31)
 -------------------
 * Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes

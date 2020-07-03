@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(amcl)
 
+include(CheckIncludeFile)
+include(CheckSymbolExists)
+
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 11)
 endif()
@@ -48,6 +51,17 @@ catkin_package(
 
 include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(src/include)
+
+check_include_file(unistd.h HAVE_UNISTD_H)
+if (HAVE_UNISTD_H)
+  add_definitions(-DHAVE_UNISTD_H)
+endif (HAVE_UNISTD_H)
+
+check_symbol_exists(drand48 stdlib.h HAVE_DRAND48)
+if (HAVE_DRAND48)
+  add_definitions(-DHAVE_DRAND48)
+endif (HAVE_DRAND48)
 
 add_library(amcl_pf
                     src/amcl/pf/pf.c
@@ -81,11 +95,16 @@ target_link_libraries(amcl
     ${catkin_LIBRARIES}
 )
 
-install( TARGETS
-    amcl amcl_sensors amcl_map amcl_pf
+install(TARGETS
+    amcl
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS
+    amcl_sensors amcl_map amcl_pf
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
 install(DIRECTORY include/amcl/

@@ -33,6 +33,7 @@
 //#include <gsl/gsl_randist.h>
 
 #include "amcl/pf/pf_pdf.h"
+#include "portable_utils.hpp"
 
 // Random number generator seed value
 static unsigned int pf_pdf_seed;

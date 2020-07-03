@@ -2,6 +2,52 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* fix published footprint topic name (`#947 <https://github.com/cobalt-robotics/navigation/issues/947>`_)
+  The default name of the topic will be updated in noetic
+* fix usage of size_locked, fixes `#959 <https://github.com/cobalt-robotics/navigation/issues/959>`_ (`#966 <https://github.com/cobalt-robotics/navigation/issues/966>`_)
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Merge pull request `#957 <https://github.com/cobalt-robotics/navigation/issues/957>`_ from Blindnology/melodic-updateOrigin
+  Optimize costmap_2d::updateOrigin
+* Optimize costmap_2d::updateOrigin
+* Contributors: Michael Ferguson, Pavlo Kolomiiets, Sean Yen, Yuki Furuta
+
+1.16.3 (2019-11-15)
+-------------------
+* Merge pull request `#877 <https://github.com/ros-planning/navigation/issues/877>`_ from SteveMacenski/layer_clear_area-melodic
+  [melodic] moving clearing area method to costmap_layer so other applications can clear other types.
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Drop Parameter Magic (`#893 <https://github.com/ros-planning/navigation/issues/893>`_)
+* Fixes `#782 <https://github.com/ros-planning/navigation/issues/782>`_ (`#892 <https://github.com/ros-planning/navigation/issues/892>`_)
+* Costmap_2d plugin universal parameters and pre-hydro warnings (`#738 <https://github.com/ros-planning/navigation/issues/738>`_)
+  * Comment and description clarification
+  * Renamed resetOldParameters to loadOldParameters
+  * Upscaled pre-hydro parameter info message to warning and added costmap-name
+  * Warn user when static_map or map_type is set but not used while plugins are used
+  * Added function that copies parent parameters inside each layer (makes it possible to set a global inflation_radius)
+  * use parameter magic
+* Changed logic for when to resize layered costmap in static layer (`#792 <https://github.com/ros-planning/navigation/issues/792>`_)
+  * Changed logic for when to resize layered costmap in static layer
+  -Now the master layered costmap should no longer get resized when
+  isSizeLocked returns true
+  * Fixing format for if loop
+* clear area in layer for melodic
+* [kinetic] Fix Bounds Bug (plus test) (`#871 <https://github.com/ros-planning/navigation/issues/871>`_) (`#875 <https://github.com/ros-planning/navigation/issues/875>`_)
+  * fix map bounds bug
+  * Add test
+* Fix install (`#855 <https://github.com/ros-planning/navigation/issues/855>`_)
+* Add additional linked libraries (`#803 <https://github.com/ros-planning/navigation/issues/803>`_)
+* Contributors: David V. Lu!!, Martin Ganeff, Michael Ferguson, Steven Macenski, stevemacenski
+
 1.16.2 (2018-07-31)
 -------------------
 * Merge pull request `#773 <https://github.com/ros-planning/navigation/issues/773>`_ from ros-planning/packaging_fixes

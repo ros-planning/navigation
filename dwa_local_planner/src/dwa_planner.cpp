@@ -62,14 +62,14 @@ namespace dwa_local_planner {
         sim_period_);
 
     double resolution = planner_util_->getCostmap()->getResolution();
-    pdist_scale_ = resolution * config.path_distance_bias;
+    path_distance_bias_ = resolution * config.path_distance_bias;
     // pdistscale used for both path and alignment, set  forward_point_distance to zero to discard alignment
-    path_costs_.setScale(pdist_scale_);
-    alignment_costs_.setScale(pdist_scale_);
+    path_costs_.setScale(path_distance_bias_);
+    alignment_costs_.setScale(path_distance_bias_);
 
-    gdist_scale_ = resolution * config.goal_distance_bias;
-    goal_costs_.setScale(gdist_scale_);
-    goal_front_costs_.setScale(gdist_scale_);
+    goal_distance_bias_ = resolution * config.goal_distance_bias;
+    goal_costs_.setScale(goal_distance_bias_);
+    goal_front_costs_.setScale(goal_distance_bias_);
 
     occdist_scale_ = config.occdist_scale;
     obstacle_costs_.setScale(occdist_scale_);
@@ -194,8 +194,8 @@ namespace dwa_local_planner {
     }
 
     total_cost =
-        pdist_scale_ * path_cost +
-        gdist_scale_ * goal_cost +
+        path_distance_bias_ * path_cost +
+        goal_distance_bias_ * goal_cost +
         occdist_scale_ * occ_cost;
     return true;
   }
@@ -277,7 +277,7 @@ namespace dwa_local_planner {
     
     // keeping the nose on the path
     if (sq_dist > forward_point_distance_ * forward_point_distance_ * cheat_factor_) {
-      alignment_costs_.setScale(pdist_scale_);
+      alignment_costs_.setScale(path_distance_bias_);
       // costs for robot being aligned with path (nose on path, not ju
       alignment_costs_.setTargetPoses(global_plan_);
     } else {

@@ -2,6 +2,28 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+
+1.16.3 (2019-11-15)
+-------------------
+* Merge branch 'melodic-devel' into layer_clear_area-melodic
+* Merge pull request `#850 <https://github.com/ros-planning/navigation/issues/850>`_ from seanyen/map_server_windows_fix
+  [Windows][melodic] map_server Windows build bring up
+* map_server Windows build bring up
+  * Fix install location for Windows build. (On Windows build, shared library uses RUNTIME location, but not LIBRARY)
+  * Use boost::filesystem::path to handle path logic and remove the libgen.h dependency for better cross platform.
+  * Fix gtest hard-coded and add YAML library dir in CMakeList.txt.
+* Contributors: Michael Ferguson, Sean Yen, Steven Macenski
+
 1.16.2 (2018-07-31)
 -------------------
 

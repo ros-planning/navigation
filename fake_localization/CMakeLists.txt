@@ -11,10 +11,11 @@ find_package(catkin REQUIRED
             roscpp
             rospy
             tf2_geometry_msgs
+            tf2_ros
         )
 
 
-find_package(Boost REQUIRED COMPONENTS signals)
+find_package(Boost REQUIRED)
 
 catkin_package(
     CATKIN_DEPENDS

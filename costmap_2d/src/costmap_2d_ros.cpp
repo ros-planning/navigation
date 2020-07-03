@@ -84,7 +84,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   ros::NodeHandle private_nh("~/" + name);
   ros::NodeHandle g_nh;
 
-  // get two frames
+  // get global and robot base frame names
   private_nh.param("global_frame", global_frame_, std::string("map"));
   private_nh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
 
@@ -116,7 +116,9 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   if (!private_nh.hasParam("plugins"))
   {
-    resetOldParameters(private_nh);
+    loadOldParameters(private_nh);
+  } else {
+    warnForOldParameters(private_nh);
   }
 
   if (private_nh.hasParam("plugins"))
@@ -127,7 +129,9 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     {
       std::string pname = static_cast<std::string>(my_list[i]["name"]);
       std::string type = static_cast<std::string>(my_list[i]["type"]);
-      ROS_INFO("Using plugin \"%s\"", pname.c_str());
+      ROS_INFO("%s: Using plugin \"%s\"", name_.c_str(), pname.c_str());
+
+      copyParentParameters(pname, type, private_nh);
 
       boost::shared_ptr<Layer> plugin = plugin_loader_.createInstance(type);
       layered_costmap_->addPlugin(plugin);
@@ -150,8 +154,8 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     topic_param = "published_footprint";
   }
 
-  private_nh.param(topic_param, topic, std::string("oriented_footprint"));
-  footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
+  private_nh.param(topic_param, topic, std::string("footprint"));  // TODO: revert to oriented_footprint in N-turtle
+  footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>(topic, 1);
 
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
 
@@ -180,6 +184,8 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 
 Costmap2DROS::~Costmap2DROS()
 {
+  timer_.stop();
+
   map_update_thread_shutdown_ = true;
   if (map_update_thread_ != NULL)
   {
@@ -193,9 +199,9 @@ Costmap2DROS::~Costmap2DROS()
   delete dsrv_;
 }
 
-void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
+void Costmap2DROS::loadOldParameters(ros::NodeHandle& nh)
 {
-  ROS_INFO("Loading from pre-hydro parameter style");
+  ROS_WARN("%s: Parameter \"plugins\" not provided, loading pre-Hydro parameters", name_.c_str());
   bool flag;
   std::string s;
   std::vector < XmlRpc::XmlRpcValue > plugins;
@@ -264,6 +270,52 @@ void Costmap2DROS::resetOldParameters(ros::NodeHandle& nh)
 
   super_array.setArray(&plugins);
   nh.setParam("plugins", super_array);
+}
+
+void Costmap2DROS::copyParentParameters(const std::string& plugin_name, const std::string& plugin_type, ros::NodeHandle& nh)
+{
+  ros::NodeHandle target_layer(nh, plugin_name);
+
+  if(plugin_type == "costmap_2d::StaticLayer")
+  {
+    move_parameter(nh, target_layer, "map_topic", false);
+    move_parameter(nh, target_layer, "unknown_cost_value", false);
+    move_parameter(nh, target_layer, "lethal_cost_threshold", false);
+    move_parameter(nh, target_layer, "track_unknown_space", false);
+  }
+  else if(plugin_type == "costmap_2d::VoxelLayer")
+  {
+    move_parameter(nh, target_layer, "origin_z", false);
+    move_parameter(nh, target_layer, "z_resolution", false);
+    move_parameter(nh, target_layer, "z_voxels", false);
+    move_parameter(nh, target_layer, "mark_threshold", false);
+    move_parameter(nh, target_layer, "unknown_threshold", false);
+    move_parameter(nh, target_layer, "publish_voxel_map", false);
+  }
+  else if(plugin_type == "costmap_2d::ObstacleLayer")
+  {
+    move_parameter(nh, target_layer, "max_obstacle_height", false);
+    move_parameter(nh, target_layer, "raytrace_range", false);
+    move_parameter(nh, target_layer, "obstacle_range", false);
+    move_parameter(nh, target_layer, "track_unknown_space", false);
+  }
+  else if(plugin_type == "costmap_2d::InflationLayer")
+  {
+    move_parameter(nh, target_layer, "cost_scaling_factor", false);
+    move_parameter(nh, target_layer, "inflation_radius", false);
+  }
+}
+
+void Costmap2DROS::warnForOldParameters(ros::NodeHandle& nh)
+{
+  checkOldParam(nh, "static_map");
+  checkOldParam(nh, "map_type");
+}
+
+void Costmap2DROS::checkOldParam(ros::NodeHandle& nh, const std::string &param_name){
+  if(nh.hasParam(param_name)){
+    ROS_WARN("%s: Pre-Hydro parameter \"%s\" unused since \"plugins\" is provided", name_.c_str(), param_name.c_str());
+  }
 }
 
 void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t level)
@@ -391,17 +443,22 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
   ros::Rate r(frequency);
   while (nh.ok() && !map_update_thread_shutdown_)
   {
+    #ifdef HAVE_SYS_TIME_H
     struct timeval start, end;
     double start_t, end_t, t_diff;
     gettimeofday(&start, NULL);
-
+    #endif
+    
     updateMap();
 
+    #ifdef HAVE_SYS_TIME_H
     gettimeofday(&end, NULL);
     start_t = start.tv_sec + double(start.tv_usec) / 1e6;
     end_t = end.tv_sec + double(end.tv_usec) / 1e6;
     t_diff = end_t - start_t;
     ROS_DEBUG("Map update time: %.9f", t_diff);
+    #endif
+    
     if (publish_cycle.toSec() > 0 && layered_costmap_->isInitialized())
     {
       unsigned int x0, y0, xn, yn;

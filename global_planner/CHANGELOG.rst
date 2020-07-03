@@ -2,6 +2,30 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* parameter for enabling outlineMap added (`#926 <https://github.com/cobalt-robotics/navigation/issues/926>`_)
+* Contributors: Pavel Shumejko, Sean Yen
+
+1.16.3 (2019-11-15)
+-------------------
+* Remove unused visualize_potential (`#866 <https://github.com/ros-planning/navigation/issues/866>`_)
+* remove unused costmap_pub_frequency (`#858 <https://github.com/ros-planning/navigation/issues/858>`_)
+* Fix `#845 <https://github.com/ros-planning/navigation/issues/845>`_ (`#846 <https://github.com/ros-planning/navigation/issues/846>`_)
+* Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes
+  [melodic] Remove leading slashes from default frame_id parameters
+* Remove leading slashes from default frame_id parameters
+* Contributors: David V. Lu, David V. Lu!!, Michael Ferguson, Stepan Kostusiev
+
 1.16.2 (2018-07-31)
 -------------------
 
