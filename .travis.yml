@@ -23,11 +23,9 @@ env:
   - PACKAGE=global_planner
   - PACKAGE=map_server
   - PACKAGE=move_base
-  - PACKAGE=move_base_msgs
   - PACKAGE=move_slow_and_clear
   - PACKAGE=nav_core
   - PACKAGE=navfn
-  - PACKAGE=robot_pose_ekf
   - PACKAGE=rotate_recovery
   - PACKAGE=voxel_grid
 
