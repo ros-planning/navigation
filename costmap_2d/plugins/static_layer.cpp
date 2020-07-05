@@ -335,10 +335,26 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
         // Set master_grid with cell from map
         if (worldToMap(p.x(), p.y(), mx, my))
         {
-          if (!use_maximum_)
-            master_grid.setCost(i, j, getCost(mx, my));
+          unsigned char cost = getCost(mx, my);
+          if (cost == NO_INFORMATION)
+              continue;
+
+          if(!use_maximum_)
+            master_grid.setCost(i, j, cost);
           else
-            master_grid.setCost(i, j, std::max(getCost(mx, my), master_grid.getCost(i, j)));
+          {
+            unsigned char old_cost = master_grid.getCost(i, j);
+            if (track_unknown_space_)
+              if (cost == LETHAL_OBSTACLE)
+                master_grid.setCost(i, j, cost);
+              else
+                master_grid.setCost(i, j, std::max(cost, old_cost));
+            else
+              if (old_cost == NO_INFORMATION)
+                master_grid.setCost(i, j, cost);
+              else
+                master_grid.setCost(i, j, std::max(cost, old_cost));
+          }
         }
       }
     }
