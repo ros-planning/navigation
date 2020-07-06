@@ -242,4 +242,12 @@ namespace base_local_planner {
       && fabs(base_odom.twist.twist.linear.x) <= trans_stopped_velocity
       && fabs(base_odom.twist.twist.linear.y) <= trans_stopped_velocity;
   }
+
+  bool stopped(const geometry_msgs::PoseStamped& robot_vel, const double& rot_stopped_velocity, const double& trans_stopped_velocity){
+     nav_msgs::Odometry base_odom;
+     base_odom.twist.twist.linear.x = robot_vel.pose.position.x;
+     base_odom.twist.twist.linear.y = robot_vel.pose.position.y;
+     base_odom.twist.twist.angular.z = tf2::getYaw(robot_vel.pose.orientation);
+     return stopped(base_odom, rot_stopped_velocity, trans_stopped_velocity);
+   }
 };

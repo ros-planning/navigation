@@ -149,5 +149,16 @@ namespace base_local_planner {
   bool stopped(const nav_msgs::Odometry& base_odom, 
       const double& rot_stopped_velocity,
       const double& trans_stopped_velocity);
+
+  /**
+   * @brief Check whether the robot is stopped or not
+   * @param robot_vel The current velocity information of the robot
+   * @param rot_stopped_velocity The rotational velocity below which the robot is considered stopped
+   * @param trans_stopped_velocity The translational velocity below which the robot is considered stopped
+   * @return True if the robot is stopped, false otherwise
+   */
+  bool stopped(const geometry_msgs::PoseStamped& robot_vel,
+       const double& rot_stopped_velocity,
+       const double& trans_stopped_velocity);
 };
 #endif
