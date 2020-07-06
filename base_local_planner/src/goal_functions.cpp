@@ -76,20 +76,27 @@ namespace base_local_planner {
 
   void prunePlan(const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& plan, std::vector<geometry_msgs::PoseStamped>& global_plan){
     ROS_ASSERT(global_plan.size() >= plan.size());
-    std::vector<geometry_msgs::PoseStamped>::iterator it = plan.begin();
-    std::vector<geometry_msgs::PoseStamped>::iterator global_it = global_plan.begin();
-    while(it != plan.end()){
-      const geometry_msgs::PoseStamped& w = *it;
-      // Fixed error bound of 2 meters for now. Can reduce to a portion of the map size or based on the resolution
-      double x_diff = global_pose.pose.position.x - w.pose.position.x;
-      double y_diff = global_pose.pose.position.y - w.pose.position.y;
-      double distance_sq = x_diff * x_diff + y_diff * y_diff;
-      if(distance_sq < 1){
-        ROS_DEBUG("Nearest waypoint to <%f, %f> is <%f, %f>\n", global_pose.pose.position.x, global_pose.pose.position.y, w.pose.position.x, w.pose.position.y);
-        break;
-      }
-      it = plan.erase(it);
-      global_it = global_plan.erase(global_it);
+    double min_plan_sq_dist = 1e6;
+    int current_waypoint_index = -1;
+
+    for(unsigned int i = 0; i < plan.size(); ++i){
+        double x_diff = global_pose.pose.position.x - plan[i].pose.position.x;
+        double y_diff = global_pose.pose.position.y - plan[i].pose.position.y;
+        double sq_plan_dist = x_diff * x_diff + y_diff * y_diff;
+
+        if (sq_plan_dist < min_plan_sq_dist){
+            current_waypoint_index = i;
+            min_plan_sq_dist = sq_plan_dist;
+        }
+    }
+
+    //! Prune the plan
+    if (current_waypoint_index >= 0)
+    {
+        ROS_DEBUG("Nearest waypoint to <%f, %f> is <%f, %f>\n", global_pose.pose.position.x, global_pose.pose.position.y,
+                  plan[current_waypoint_index].pose.position.x, plan[current_waypoint_index].pose.position.y);
+        plan = std::vector<geometry_msgs::PoseStamped>(plan.begin() + current_waypoint_index, plan.end());
+        global_plan = std::vector<geometry_msgs::PoseStamped>(global_plan.begin() + current_waypoint_index, global_plan.end());
     }
   }
 
