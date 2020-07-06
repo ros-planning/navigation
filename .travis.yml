@@ -1,5 +1,5 @@
-sudo: true
-
+os: linux
+dist: xenial
 language: cpp
 
 services:
@@ -10,7 +10,8 @@ before_install:
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/build-package.sh
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/packages.sh
   # Determine packages modified in this commit
-  - source packages.sh # add all folders which need to be excluded as an argument
+  - ALL=$([ "$TRAVIS_EVENT_TYPE" == "cron" ] && echo "true") || true
+  - source packages.sh --commit-range=$TRAVIS_COMMIT_RANGE --all=$ALL
 
 env:
   - PACKAGE=amcl
