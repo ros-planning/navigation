@@ -16,6 +16,7 @@ find_package(catkin REQUIRED
             tf2
             tf2_geometry_msgs
             tf2_ros
+            visualization_msgs
         )
 
 find_package(Eigen3 REQUIRED)
@@ -44,9 +45,10 @@ catkin_package(
         roscpp
         tf2
         tf2_ros
+        visualization_msgs
 )
 
-add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)
+add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp src/visualization.cpp)
 add_dependencies(dwa_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(dwa_local_planner ${catkin_LIBRARIES})
 

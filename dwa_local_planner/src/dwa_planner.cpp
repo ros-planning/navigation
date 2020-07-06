@@ -179,18 +179,9 @@ namespace dwa_local_planner {
       occ_vel_costs_(planner_util->getCostmap()),
       plan_costs_(planner_util->getCostmap()),
       goal_costs_(planner_util->getCostmap()),
-      obstacle_costs_(planner_util->getCostmap())
+      obstacle_costs_(planner_util->getCostmap()),
+      vis_(planner_util->getCostmap(), goal_costs_, plan_costs_, planner_util->getGlobalFrame())
   {
-    ros::NodeHandle private_nh("~/" + name);
-
-    private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
-    map_viz_.initialize(name, planner_util->getGlobalFrame(), boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
-
-    private_nh.param("global_frame_id", frame_id_, std::string("odom"));
-
-    traj_cloud_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("trajectory_cloud", 1);
-    private_nh.param("publish_traj_pc", publish_traj_pc_, false);
-
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
@@ -206,25 +197,6 @@ namespace dwa_local_planner {
     generator_list.push_back(&generator_);
 
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
-  }
-
-  // used for visualization only, total_costs are not really total costs
-  bool DWAPlanner::getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost) {
-
-    path_cost = plan_costs_.getCellCosts(cx, cy);
-    goal_cost = goal_costs_.getCellCosts(cx, cy);
-    occ_cost = planner_util_->getCostmap()->getCost(cx, cy);
-    if (path_cost == plan_costs_.obstacleCosts() ||
-        path_cost == plan_costs_.unreachableCellCosts() ||
-        occ_cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-      return false;
-    }
-
-    total_cost =
-        path_distance_bias_ * path_cost +
-        goal_distance_bias_ * goal_cost +
-        occdist_scale_ * occ_cost;
-    return true;
   }
 
   void DWAPlanner::updatePlanAndLocalCosts(
@@ -341,53 +313,9 @@ namespace dwa_local_planner {
     std::vector<base_local_planner::Trajectory> all_explored;
     scored_sampling_planner_.findBestTrajectory(result_traj, &all_explored);
 
-    if(publish_traj_pc_)
-    {
-        sensor_msgs::PointCloud2 traj_cloud;
-        traj_cloud.header.frame_id = frame_id_;
-        traj_cloud.header.stamp = ros::Time::now();
-
-        sensor_msgs::PointCloud2Modifier cloud_mod(traj_cloud);
-        cloud_mod.setPointCloud2Fields(5, "x", 1, sensor_msgs::PointField::FLOAT32,
-                                          "y", 1, sensor_msgs::PointField::FLOAT32,
-                                          "z", 1, sensor_msgs::PointField::FLOAT32,
-                                          "theta", 1, sensor_msgs::PointField::FLOAT32,
-                                          "cost", 1, sensor_msgs::PointField::FLOAT32);
-
-        unsigned int num_points = 0;
-        for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); ++t)
-        {
-            if (t->cost_<0)
-              continue;
-            num_points += t->getPointsSize();
-        }
-
-        cloud_mod.resize(num_points);
-        sensor_msgs::PointCloud2Iterator<float> iter_x(traj_cloud, "x");
-        for(std::vector<base_local_planner::Trajectory>::iterator t=all_explored.begin(); t != all_explored.end(); ++t)
-        {
-            if(t->cost_<0)
-                continue;
-            // Fill out the plan
-            for(unsigned int i = 0; i < t->getPointsSize(); ++i) {
-                double p_x, p_y, p_th;
-                t->getPoint(i, p_x, p_y, p_th);
-                iter_x[0] = p_x;
-                iter_x[1] = p_y;
-                iter_x[2] = 0.0;
-                iter_x[3] = p_th;
-                iter_x[4] = t->cost_;
-                ++iter_x;
-            }
-        }
-        traj_cloud_pub_.publish(traj_cloud);
-    }
-
-    // verbose publishing of point clouds
-    if (publish_cost_grid_pc_) {
-      //we'll publish the visualization of the costs to rviz before returning our best trajectory
-      map_viz_.publishCostCloud(planner_util_->getCostmap());
-    }
+    vis_.publishDesiredOrientation(alignment_costs_.getDesiredOrientation(), global_pose);
+    vis_.publishCostGrid();
+    vis_.publishTrajectoryCloud(all_explored);
 
     return result_traj;
   }
