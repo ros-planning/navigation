@@ -92,15 +92,6 @@ namespace dwa_local_planner {
        */
       bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
 
-
-      /**
-       * @brief  Given the current position, orientation, and velocity of the robot,
-       * compute velocity commands to send to the base, using dynamic window approach
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
-       */
-      bool dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose, geometry_msgs::Twist& cmd_vel);
-
       /**
        * @brief  Set the plan that the controller is following
        * @param orig_global_plan The plan to pass to the controller
@@ -114,8 +105,6 @@ namespace dwa_local_planner {
        */
       bool isGoalReached();
 
-
-
       bool isInitialized() {
         return initialized_;
       }
@@ -126,14 +115,13 @@ namespace dwa_local_planner {
        */
       void reconfigureCB(DWAPlannerConfig &config, uint32_t level);
 
-      void publishLocalPlan(std::vector<geometry_msgs::PoseStamped>& path);
+      void publishTrajectory(const base_local_planner::Trajectory& traj); ///< @brief Converts the traj into a vector of stampedposes and publishes
 
-      void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
-
-      tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
+      bool getRobotState(geometry_msgs::PoseStamped& robot_pose, geometry_msgs::PoseStamped& robot_vel);
+      bool getRobotStateAndLocalPlan(geometry_msgs::PoseStamped& robot_pose, geometry_msgs::PoseStamped& robot_vel, std::vector<geometry_msgs::PoseStamped>& local_plan);
 
       // for visualisation, publishers of global and local plan
-      ros::Publisher g_plan_pub_, l_plan_pub_;
+      ros::Publisher l_plan_pub_, l_traj_pub_;
 
       base_local_planner::LocalPlannerUtil planner_util_;
 
@@ -144,16 +132,10 @@ namespace dwa_local_planner {
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;
       bool setup_;
-      geometry_msgs::PoseStamped current_pose_;
-
-      base_local_planner::LatchedStopRotateController latchedStopRotateController_;
-
 
       bool initialized_;
 
-
       base_local_planner::OdometryHelperRos odom_helper_;
-      std::string odom_topic_;
   };
 };
 #endif

@@ -57,12 +57,23 @@
 #include <base_local_planner/oscillation_cost_function.h>
 #include <base_local_planner/map_grid_cost_function.h>
 #include <base_local_planner/obstacle_cost_function.h>
+#include <base_local_planner/occupancy_velocity_cost_function.h>
+#include <base_local_planner/alignment_cost_function.h>
+#include <base_local_planner/cmd_vel_cost_function.h>
 #include <base_local_planner/twirling_cost_function.h>
 #include <base_local_planner/simple_scored_sampling_planner.h>
 
 #include <nav_msgs/Path.h>
 
 namespace dwa_local_planner {
+  /** Describes the state of the planner. This may influence cost functions and generator
+    * Default:  normal operating conditions
+    * Arrive:   the robot is close (with switch dist) of its goal
+    * Align:    there is a large orientation error between robot and path
+  */
+  enum LocalPlannerState {Default, Arrive, Align, NotMoving, None};
+  static const char * StateName[] = { "Default", "Arrive", "Align", "NotMoving" };
+
   /**
    * @class DWAPlanner
    * @brief A class implementing a local planner using the Dynamic Window Approach
@@ -83,33 +94,22 @@ namespace dwa_local_planner {
       void reconfigure(DWAPlannerConfig &cfg);
 
       /**
-       * @brief  Check if a trajectory is legal for a position/velocity pair
-       * @param pos The robot's position
-       * @param vel The robot's velocity
-       * @param vel_samples The desired velocity
-       * @return True if the trajectory is valid, false otherwise
-       */
-      bool checkTrajectory(
-          const Eigen::Vector3f pos,
-          const Eigen::Vector3f vel,
-          const Eigen::Vector3f vel_samples);
-
-      /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
-       * @param global_pose The current position of the robot 
-       * @param global_vel The current velocity of the robot 
-       * @param drive_velocities The velocities to send to the robot base
+       * @param global_pose The current position of the robot
+       * @param global_vel The current velocity of the robot
+       * @param goal_pose The velocities to send to the robot base
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
       base_local_planner::Trajectory findBestPath(
           const geometry_msgs::PoseStamped& global_pose,
           const geometry_msgs::PoseStamped& global_vel,
-          geometry_msgs::PoseStamped& drive_velocities);
+          const geometry_msgs::PoseStamped& goal_pose);
 
       /**
        * @brief  Update the cost functions before planning
-       * @param  global_pose The robot's current pose
-       * @param  new_plan The new global plan
+       * @param  robot_pose The robot's current pose
+       * @param  local_plan The new global plan
+       * @param  lookahead distance
        * @param  footprint_spec The robot's footprint
        *
        * The obstacle cost function gets the footprint.
@@ -117,15 +117,17 @@ namespace dwa_local_planner {
        * The alignment cost functions get a version of the global plan
        *   that is modified based on the global_pose 
        */
-      void updatePlanAndLocalCosts(const geometry_msgs::PoseStamped& global_pose,
-          const std::vector<geometry_msgs::PoseStamped>& new_plan,
-          const std::vector<geometry_msgs::Point>& footprint_spec);
+      void updatePlanAndLocalCosts(const geometry_msgs::PoseStamped& robot_pose,
+                                   const std::vector<geometry_msgs::PoseStamped>& local_plan,
+                                   double lookahead,
+                                   const std::vector<geometry_msgs::Point>& footprint_spec);
 
       /**
        * @brief Get the period at which the local planner is expected to run
        * @return The simulation period
        */
       double getSimPeriod() { return sim_period_; }
+      double getSimTime() { return sim_time_; }
 
       /**
        * @brief Compute the components and total cost for a map grid cell
@@ -140,11 +142,33 @@ namespace dwa_local_planner {
       bool getCellCosts(int cx, int cy, float &path_cost, float &goal_cost, float &occ_cost, float &total_cost);
 
       /**
-       * sets new plan and resets state
+       * @brief Sets the stamp of the last motion to the current time. This is used to determine whether the robot is and should be moving.
        */
-      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+      void resetMotionStamp() { stamp_last_motion_ = ros::Time::now(); }
 
     private:
+
+      /**
+       * @brief determine the state of the DWA Planner
+       * @param robot_pose
+       * @param yaw_error
+       * @param plan_distance
+       * @param goal_distance
+       * @return The resulting state of the planner
+       */
+      LocalPlannerState determineState(const geometry_msgs::PoseStamped& robot_pose, double yaw_error, double plan_distance, double goal_distance);
+
+      /**
+       * @brief Checks if the robot is moving. Although somewhat arbitrary:
+       * if it hasn't moved at least 10 cm in the past 10 seconds,
+       * it is assumed the robot is not moving.
+       * @param robot_pose current pose of the robot
+       */
+      bool isMoving(const geometry_msgs::PoseStamped& robot_pose);
+
+      double switch_yaw_error_;
+      double switch_plan_distance_;
+      double switch_goal_distance_;
 
       base_local_planner::LocalPlannerUtil *planner_util_;
 
@@ -153,11 +177,7 @@ namespace dwa_local_planner {
       Eigen::Vector3f vsamples_;
 
       double sim_period_;///< @brief The number of seconds to use to compute max/min vels for dwa
-      base_local_planner::Trajectory result_traj_;
-
-      double forward_point_distance_;
-
-      std::vector<geometry_msgs::PoseStamped> global_plan_;
+      double sim_time_;
 
       boost::mutex configuration_mutex_;
       std::string frame_id_;
@@ -165,21 +185,44 @@ namespace dwa_local_planner {
       bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud
       bool publish_traj_pc_;
 
-      double cheat_factor_;
-
       base_local_planner::MapGridVisualizer map_viz_; ///< @brief The map grid visualizer for outputting the potential field generated by the cost function
 
       // see constructor body for explanations
       base_local_planner::SimpleTrajectoryGenerator generator_;
-      base_local_planner::OscillationCostFunction oscillation_costs_;
-      base_local_planner::ObstacleCostFunction obstacle_costs_;
-      base_local_planner::MapGridCostFunction path_costs_;
-      base_local_planner::MapGridCostFunction goal_costs_;
-      base_local_planner::MapGridCostFunction goal_front_costs_;
-      base_local_planner::MapGridCostFunction alignment_costs_;
-      base_local_planner::TwirlingCostFunction twirling_costs_;
+
+      base_local_planner::OccupancyVelocityCostFunction occ_vel_costs_; /// <@brief discards trajectories that on which the velocity is not allowed
+
+      base_local_planner::MapGridCostFunction plan_costs_; /// <@brief prefers trajectories on plan
+      double align_plan_scale_;
+      double default_plan_scale_;
+      double arrive_plan_scale_;
+
+      base_local_planner::MapGridCostFunction goal_costs_; /// <@brief prefers trajectories that go towards (local) goal, based on wave propagation
+      double align_goal_scale_;
+      double default_goal_scale_;
+      double arrive_goal_scale_;
+
+      base_local_planner::AlignmentCostFunction alignment_costs_;  /// <@brief prefers trajectories that align with plan
+      double align_align_scale_;
+      double default_align_scale_;
+      double arrive_align_scale_;
+
+      base_local_planner::CmdVelCostFunction cmd_vel_costs_; /// <@brief penalizes directions to achieve certain behaviors
+      double align_cmd_scale_;
+      double default_cmd_scale_;
+      double arrive_cmd_scale_;
+      double align_cmd_px_, align_cmd_nx_, align_cmd_py_, align_cmd_ny_, align_cmd_pth_, align_cmd_nth_;
+      double default_cmd_px_, default_cmd_nx_, default_cmd_py_, default_cmd_ny_, default_cmd_pth_, default_cmd_nth_;
+      double arrive_cmd_px_, arrive_cmd_nx_, arrive_cmd_py_, arrive_cmd_ny_, arrive_cmd_pth_, arrive_cmd_nth_;
+
+      base_local_planner::ObstacleCostFunction obstacle_costs_; /// <@brief penalizes trajectories close to obstacles
+      double align_obstacle_scale_;
+      double default_obstacle_scale_;
+      double arrive_obstacle_scale_;
 
       base_local_planner::SimpleScoredSamplingPlanner scored_sampling_planner_;
+
+      ros::Time stamp_last_motion_; /// <@briefROS time when the robot was last moving
   };
 };
 #endif
