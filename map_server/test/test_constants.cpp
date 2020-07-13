@@ -57,6 +57,7 @@ const char g_valid_image_content[] = {
 
 const char* g_valid_png_file = "test/testmap.png";
 const char* g_valid_bmp_file = "test/testmap.bmp";
+const char* g_spectrum_png_file = "test/spectrum.png";
 
 const float g_valid_image_res = 0.1;
 
