@@ -26,7 +26,7 @@ class TestBasicLocalization(unittest.TestCase):
                 self.tf = t.transform
                 (a_curr, a_diff) = self.compute_angle_diff()
                 print('Curr:\t %16.6f %16.6f %16.6f' % (self.tf.translation.x, self.tf.translation.y, a_curr))
-                print('Target:\t %16.6f %16.6f %16.6f' % (self.target_x, self.target_y, self.target_a)
+                print('Target:\t %16.6f %16.6f %16.6f' % (self.target_x, self.target_y, self.target_a))
                 print('Diff:\t %16.6f %16.6f %16.6f' % (
                     abs(self.tf.translation.x - self.target_x), abs(self.tf.translation.y - self.target_y), a_diff))
 
