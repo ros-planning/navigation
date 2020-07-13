@@ -68,7 +68,7 @@ class TestBasicLocalization(unittest.TestCase):
         print('Curr:\t %16.6f %16.6f %16.6f' % (self.tf.translation.x, self.tf.translation.y, a_curr))
         print('Target:\t %16.6f %16.6f %16.6f' % (self.target_x, self.target_y, self.target_a))
         print('Diff:\t %16.6f %16.6f %16.6f' % (
-            abs(self.tf.translation.x - self.target_x), abs(self.tf.translation.y - self.target_y), a_diff)
+            abs(self.tf.translation.x - self.target_x), abs(self.tf.translation.y - self.target_y), a_diff))
         self.assertNotEquals(self.tf, None)
         self.assertTrue(abs(self.tf.translation.x - self.target_x) <= tolerance_d)
         self.assertTrue(abs(self.tf.translation.y - self.target_y) <= tolerance_d)
