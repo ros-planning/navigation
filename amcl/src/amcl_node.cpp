@@ -75,6 +75,11 @@
 #include <srslib_timing/ScopedTimingSampleRecorder.hpp>
 #include <srslib_timing/MasterTimingDataRecorder.hpp>
 
+#include <actionlib/server/simple_action_server.h>
+
+#include <move_base_msgs/SetInitialPoseAction.h>
+#include <move_base_msgs/SetInitialPoseResult.h>
+
 
 #define NEW_UNIFORM_SAMPLING 1
 
@@ -165,8 +170,8 @@ class AmclNode
     void laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan);
     void initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg);
     void initialPosesReceived(const move_base_msgs::PoseWithCovarianceStampedArrayConstPtr& msg);
-    void handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg);
-    void handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStampedArray& msg);
+    bool handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg);
+    bool handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStampedArray& msg);
     void mapReceived(const nav_msgs::OccupancyGridConstPtr& msg);
 
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
@@ -176,6 +181,9 @@ class AmclNode
     void applyInitialPose();
 
     double getYaw(tf::Pose& t);
+
+    //callback for action server
+    void executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal);
 
     //parameter for what odom to use
     std::string odom_frame_id_;
@@ -287,6 +295,11 @@ class AmclNode
     void checkLaserReceived(const ros::TimerEvent& event);
 
     srs::MasterTimingDataRecorder tdr_;
+
+    // set inital pose using action
+    actionlib::SimpleActionServer<move_base_msgs::SetInitialPoseAction> set_inital_pose_action_;
+    move_base_msgs::SetInitialPoseResult set_initial_pose_action_result_;
+
 };
 
 std::vector<std::pair<int,int> > AmclNode::free_space_indices;
@@ -343,7 +356,8 @@ AmclNode::AmclNode() :
         initial_poses_hyp_(),
         first_map_received_(false),
         first_reconfigure_call_(true),
-        tdr_("AMCL")
+        tdr_("AMCL"),
+        set_inital_pose_action_(nh_, "initial_pose_server", boost::bind(&AmclNode::executeInitialPoseCB, this, _1), false)
 {
   boost::recursive_mutex::scoped_lock l(configuration_mutex_);
 
@@ -444,7 +458,7 @@ AmclNode::AmclNode() :
   analytics_pub_ = nh_.advertise<move_base_msgs::amcl_analytics>("amcl_analytics", 2, true);
   data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
   invalid_pose_percent_pub_ = nh_.advertise<std_msgs::Float32>("amcl_invalid_poses", 2);
-  ready_pub_ = nh_.advertise<std_msgs::Bool>("ready", 2, true);
+  ready_pub_ = nh_.advertise<std_msgs::Bool>("/amcl/ready", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
 					 &AmclNode::globalLocalizationCallback,
@@ -482,6 +496,24 @@ AmclNode::AmclNode() :
 
   // publish ready signal
   ready_pub_.publish(true);
+
+  //start action server
+  set_inital_pose_action_.start();
+}
+
+void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal)
+{
+  ROS_INFO("Executing, inital pose server action");
+  
+  set_initial_pose_action_result_.initialPoseSet = handleInitialPoseMessage(goal->initialPose);
+
+  if(set_initial_pose_action_result_.initialPoseSet == true) {
+    ROS_INFO("Succeeded. Result: %d", set_initial_pose_action_result_.initialPoseSet);
+    set_inital_pose_action_.setSucceeded(set_initial_pose_action_result_);
+  } else {
+    ROS_INFO("Aborted. Result: %d", set_initial_pose_action_result_.initialPoseSet);
+    set_inital_pose_action_.setAborted(set_initial_pose_action_result_);
+  }
 }
 
 void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
@@ -1525,22 +1557,22 @@ AmclNode::initialPosesReceived(const move_base_msgs::PoseWithCovarianceStampedAr
   force_update_ = true;
 }
 
-void
+bool
 AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg)
 {
 	move_base_msgs::PoseWithCovarianceStampedArray arrayMsg;
 	arrayMsg.header = msg.header;
 	arrayMsg.poses.push_back(msg.pose);
-	handleInitialPosesMessage(arrayMsg);
+	return handleInitialPosesMessage(arrayMsg);
 }
 
-void
+bool
 AmclNode::handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStampedArray& msg)
 {
   if(msg.poses.size() == 0)
   {
-	ROS_ERROR("Received an empty initial pose array.");
-	return;
+	  ROS_ERROR("Received an empty initial pose array.");
+	  return false;
   }
 
   boost::recursive_mutex::scoped_lock prl(configuration_mutex_);
@@ -1555,7 +1587,7 @@ AmclNode::handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStam
     ROS_WARN("Ignoring initial pose in frame \"%s\"; initial poses must be in the global frame, \"%s\"",
              msg.header.frame_id.c_str(),
              global_frame_id_.c_str());
-    return;
+    return false;
   }
 
   // In case the client sent us a pose estimate in the past, integrate the
@@ -1629,6 +1661,7 @@ AmclNode::handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStam
   ROS_INFO_STREAM( strData );
 
   applyInitialPose();
+  return true;
 }
 
 /**

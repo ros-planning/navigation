@@ -1,0 +1,7 @@
+# goal
+geometry_msgs/PoseWithCovarianceStamped initialPose
+---
+# result
+bool initialPoseSet
+---
+# feedback

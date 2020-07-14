@@ -32,6 +32,7 @@
     <exec_depend>map_server</exec_depend>
     <exec_depend>move_slow_and_clear</exec_depend>
     <exec_depend>voxel_grid</exec_depend>
+    <exec_depend>robot_initial_pose</exec_depend>
 
     <export>
         <metapackage/>
