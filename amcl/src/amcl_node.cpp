@@ -197,6 +197,7 @@ class AmclNode
 
     bool use_map_topic_;
     bool first_map_only_;
+    bool use_emulator_;
 
     ros::Duration gui_publish_period;
     ros::Time save_pose_last_time;
@@ -390,6 +391,7 @@ AmclNode::AmclNode() :
   private_nh_.param("beam_skip_distance", beam_skip_distance_, 0.5);
   private_nh_.param("beam_skip_threshold", beam_skip_threshold_, 0.3);
   private_nh_.param("beam_skip_error_threshold", beam_skip_error_threshold_, 0.9);
+  private_nh_.param("use_emulator", use_emulator_, false);
 
   private_nh_.param("laser_z_hit", z_hit_, 0.95);
   private_nh_.param("laser_z_short", z_short_, 0.1);
@@ -508,10 +510,12 @@ AmclNode::AmclNode() :
 void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal)
 {
   ROS_INFO("Executing, inital pose server action");
-  
-  driver_pose_pub_.publish(goal->initialPose);
-  ROS_INFO("Sleeping for odomtery");
-  ros::Duration(1.0).sleep();
+  if(use_emulator_)
+  {
+    driver_pose_pub_.publish(goal->initialPose);
+    ROS_INFO("Sleeping for brainstem to publish new tf/odometry");
+    ros::Duration(1.0).sleep();
+  }
   geometry_msgs::PoseWithCovarianceStamped msg;
   msg = goal->initialPose;
   msg.header.stamp = ros::Time::now();
