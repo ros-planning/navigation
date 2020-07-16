@@ -178,7 +178,7 @@ class AmclNode
     void freeMapDependentMemory();
     map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
     void updatePoseFromServer();
-    void applyInitialPose();
+    bool applyInitialPose();
 
     double getYaw(tf::Pose& t);
 
@@ -264,6 +264,8 @@ class AmclNode
     ros::ServiceServer set_map_srv_;
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
+
+    ros::Publisher driver_pose_pub_;
 
     std::vector<amcl_hyp_t> initial_poses_hyp_;
     bool first_map_received_;
@@ -499,13 +501,21 @@ AmclNode::AmclNode() :
 
   //start action server
   set_inital_pose_action_.start();
+
+  driver_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/request/odometry/initial_pose", 2, true);
 }
 
 void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal)
 {
   ROS_INFO("Executing, inital pose server action");
   
-  set_initial_pose_action_result_.initialPoseSet = handleInitialPoseMessage(goal->initialPose);
+  driver_pose_pub_.publish(goal->initialPose);
+  ROS_INFO("Sleeping for odomtery");
+  ros::Duration(1.0).sleep();
+  geometry_msgs::PoseWithCovarianceStamped msg;
+  msg = goal->initialPose;
+  msg.header.stamp = ros::Time::now();
+  set_initial_pose_action_result_.initialPoseSet = handleInitialPoseMessage(msg);
 
   if(set_initial_pose_action_result_.initialPoseSet == true) {
     ROS_INFO("Succeeded. Result: %d", set_initial_pose_action_result_.initialPoseSet);
@@ -1660,8 +1670,7 @@ AmclNode::handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStam
 
   ROS_INFO_STREAM( strData );
 
-  applyInitialPose();
-  return true;
+  return applyInitialPose();
 }
 
 /**
@@ -1669,7 +1678,7 @@ AmclNode::handleInitialPosesMessage(const move_base_msgs::PoseWithCovarianceStam
  * pose to the particle filter state.  initial_pose_hyp_ is deleted
  * and set to NULL after it is used.
  */
-void
+bool
 AmclNode::applyInitialPose()
 {
   boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
@@ -1688,4 +1697,5 @@ AmclNode::applyInitialPose()
 
     initial_poses_hyp_.erase(initial_poses_hyp_.begin(), initial_poses_hyp_.end());
   }
+  return true;
 }
