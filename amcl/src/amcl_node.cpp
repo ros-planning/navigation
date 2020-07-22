@@ -79,7 +79,7 @@
 
 #include <move_base_msgs/SetInitialPoseAction.h>
 #include <move_base_msgs/SetInitialPoseResult.h>
-
+#include <srslib_framework/chuck/ChuckTopics.hpp>
 
 #define NEW_UNIFORM_SAMPLING 1
 
@@ -504,7 +504,7 @@ AmclNode::AmclNode() :
   //start action server
   set_inital_pose_action_.start();
 
-  driver_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/request/odometry/initial_pose", 2, true);
+  driver_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(srs::ChuckTopics::internal::ODOMETRY_INITIAL_POSE, 2, true);
 }
 
 void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal)

@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
             srslib_timing
             geometry_msgs
             move_base_msgs
+            srslib_framework
         )
 
 find_package(Boost REQUIRED)
