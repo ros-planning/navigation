@@ -247,7 +247,7 @@ class FakeOdomNode
       geometry_msgs::TransformStamped baseInMap;
       try{
 	// just get the latest
-        baseInMap = m_tfBuffer->lookupTransform(base_frame_id_, global_frame_id_, msg->header.stamp);
+        baseInMap = m_tfBuffer->lookupTransform(base_frame_id_, global_frame_id_, ros::Time(0));
       } catch(tf2::TransformException){
         ROS_WARN("Failed to lookup transform!");
         return;
