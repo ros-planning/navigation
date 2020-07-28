@@ -182,6 +182,8 @@ class AmclNode
 
     double getYaw(tf::Pose& t);
 
+    void publishAmclReadySignal(bool signal);
+
     //callback for action server
     void executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal);
 
@@ -266,7 +268,7 @@ class AmclNode
     ros::Subscriber initial_pose_sub_old_;
     ros::Subscriber map_sub_;
 
-    ros::Publisher driver_pose_pub_;
+    ros::Publisher brainstem_driver_pose_pub_;
 
     std::vector<amcl_hyp_t> initial_poses_hyp_;
     bool first_map_received_;
@@ -498,13 +500,19 @@ AmclNode::AmclNode() :
   check_laser_timer_ = nh_.createTimer(laser_check_interval_,
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
 
-  // publish ready signal
-  ready_pub_.publish(true);
+  
 
   //start action server
   set_inital_pose_action_.start();
 
-  driver_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(srs::ChuckTopics::internal::ODOMETRY_INITIAL_POSE, 2, true);
+  brainstem_driver_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(srs::ChuckTopics::internal::ODOMETRY_INITIAL_POSE, 2, true);
+  publishAmclReadySignal(true);
+}
+
+void AmclNode::publishAmclReadySignal(bool signal)
+{
+  // publish ready signal
+  ready_pub_.publish(signal);
 }
 
 void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal)
@@ -512,7 +520,7 @@ void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalCons
   ROS_INFO("Executing, inital pose server action");
   if(use_emulator_)
   {
-    driver_pose_pub_.publish(goal->initialPose);
+    brainstem_driver_pose_pub_.publish(goal->initialPose);
     ROS_INFO("Sleeping for brainstem to publish new tf/odometry");
     ros::Duration(1.0).sleep();
   }
