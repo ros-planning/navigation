@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
             srslib_timing
             geometry_msgs
             move_base_msgs
+            srslib_framework
         )
 
 find_package(Boost REQUIRED)
@@ -27,12 +28,13 @@ catkin_package(
         roscpp
         dynamic_reconfigure
         tf
+        srslib_framework
   INCLUDE_DIRS include
   LIBRARIES amcl_sensors amcl_map amcl_pf
 )
 
 include_directories(include/amcl include/amcl/map include/amcl/sensors include/amcl/pf)
-include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${srslib_framework_INCLUDE_DIRS})
 
 add_library(amcl_pf
                     src/amcl/pf/pf.c
@@ -53,7 +55,7 @@ add_library(amcl_sensors
                     src/amcl/sensors/amcl_sensor.cpp
                     src/amcl/sensors/amcl_odom.cpp
                     src/amcl/sensors/amcl_laser.cpp)
-target_link_libraries(amcl_sensors amcl_map amcl_pf)
+target_link_libraries(amcl_sensors amcl_map amcl_pf ${srslib_framework_LIBRARIES})
 
 
 add_executable(amcl

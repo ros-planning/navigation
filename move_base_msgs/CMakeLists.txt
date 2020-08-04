@@ -20,6 +20,7 @@ add_action_files(
     DIRECTORY action
     FILES
         MoveBase.action
+        SetInitialPose.action
 )
 
 add_message_files(
