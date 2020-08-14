@@ -28,15 +28,39 @@
  */
 
 #include <global_planner/quadratic_calculator.h>
+#include <ros/console.h>
 
 namespace global_planner {
 float QuadraticCalculator::calculatePotential(float* potential, unsigned char cost, int n, float prev_potential) {
     // get neighbors
     float u, d, l, r;
+
+    if (n - 1 < 0) 
+    {
+      // ROS_ERROR_STREAM("Index n=" << n << "out of bounds left");
+      return potential[n];
+    }
+    if (n + 1 >= nx_ * ny_)
+    {
+      // ROS_ERROR_STREAM("Index n=" << n << "out of bounds right");
+      return potential[n];
+    }
+    if(n - nx_ < 0)
+    {
+      // ROS_ERROR_STREAM("Index n=" << n << "out of bounds up");
+      return potential[n];
+    }
+    if(n + nx_ >= nx_ * ny_)
+    {
+      // ROS_ERROR_STREAM("Index n=" << n << "out of bounds down");
+      return potential[n];
+    }
+
     l = potential[n - 1];
     r = potential[n + 1];
     u = potential[n - nx_];
     d = potential[n + nx_];
+
     //  ROS_INFO("[Update] c: %f  l: %f  r: %f  u: %f  d: %f\n",
     //     potential[n], l, r, u, d);
     //  ROS_INFO("[Update] cost: %d\n", costs[n]);

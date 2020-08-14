@@ -79,8 +79,14 @@ class Expander {
             for(int i=-s;i<=s;i++){
             for(int j=-s;j<=s;j++){
                 int n = startCell+i+nx_*j;
+
+                // Skip clearing cells outside of the border
+                if (n < 1 || n >= nx_ * ny_)
+                    continue;
+
                 if(potential[n]<POT_HIGH)
                     continue;
+
                 float c = costs[n]+neutral_cost_;
                 float pot = p_calc_->calculatePotential(potential, c, n);
                 potential[n] = pot;

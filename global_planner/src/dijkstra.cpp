@@ -149,7 +149,11 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x
         pb = currentBuffer_;
         i = currentEnd_;
         while (i-- > 0)
-            updateCell(costs, potential, *pb++);
+        {
+          if (*pb < nx_)
+            continue;
+          updateCell(costs, potential, *pb++);
+        }
 
         // swap priority blocks currentBuffer_ <=> nextBuffer_
         currentEnd_ = nextEnd_;
