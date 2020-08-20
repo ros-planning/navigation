@@ -517,12 +517,16 @@ int pf_resample_limit(pf_t *pf, int k)
   double a, b, c, x;
   int n;
 
-  assert(k > 0);
+  // Return max_samples in case k is outside expected range, this shouldn't
+  // happen, but is added to prevent any runtime errors
+  if (k < 1 || k > pf->max_samples)
+      return pf->max_samples;
 
+  // Return value if cache is valid, which means value is non-zero positive
   if (pf->limit_cache[k-1] > 0)
     return pf->limit_cache[k-1];
 
-  if (k <= 1)
+  if (k == 1)
   {
     pf->limit_cache[k-1] = pf->max_samples;
     return pf->max_samples;
