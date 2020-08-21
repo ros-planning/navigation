@@ -70,6 +70,9 @@ pf_t *pf_alloc(int min_samples, int max_samples,
   pf->pop_err = 0.01;
   pf->pop_z = 3;
   pf->dist_threshold = 0.5; 
+
+  // Number of leaf nodes is never higher than the max number of samples
+  pf->limit_cache = calloc(max_samples, sizeof(int));
   
   pf->current_set = 0;
   for (j = 0; j < 2; j++)
@@ -115,7 +118,9 @@ pf_t *pf_alloc(int min_samples, int max_samples,
 void pf_free(pf_t *pf)
 {
   int i;
-  
+
+  free(pf->limit_cache);
+
   for (i = 0; i < 2; i++)
   {
     free(pf->sets[i].clusters);
@@ -512,8 +517,20 @@ int pf_resample_limit(pf_t *pf, int k)
   double a, b, c, x;
   int n;
 
-  if (k <= 1)
+  // Return max_samples in case k is outside expected range, this shouldn't
+  // happen, but is added to prevent any runtime errors
+  if (k < 1 || k > pf->max_samples)
+      return pf->max_samples;
+
+  // Return value if cache is valid, which means value is non-zero positive
+  if (pf->limit_cache[k-1] > 0)
+    return pf->limit_cache[k-1];
+
+  if (k == 1)
+  {
+    pf->limit_cache[k-1] = pf->max_samples;
     return pf->max_samples;
+  }
 
   a = 1;
   b = 2 / (9 * ((double) k - 1));
@@ -523,10 +540,17 @@ int pf_resample_limit(pf_t *pf, int k)
   n = (int) ceil((k - 1) / (2 * pf->pop_err) * x * x * x);
 
   if (n < pf->min_samples)
+  {
+    pf->limit_cache[k-1] = pf->min_samples;
     return pf->min_samples;
+  }
   if (n > pf->max_samples)
+  {
+    pf->limit_cache[k-1] = pf->max_samples;
     return pf->max_samples;
+  }
   
+  pf->limit_cache[k-1] = n;
   return n;
 }
 
