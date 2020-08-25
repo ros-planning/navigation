@@ -4,7 +4,7 @@ setting pose: 30.329 34.644 3.142
 <launch>
     <param name="/use_sim_time" value="true"/>
     <node name="rosbag" pkg="rosbag" type="play" 
-        args="-d 5 -r 1 --clock --hz 10 $(find amcl)/test/basic_localization_stage_indexed.bag"/>
+        args="-d 5 -r 5 --clock --hz 10 $(find amcl)/test/basic_localization_stage_indexed.bag"/>
     <node name="map_server" pkg="map_server" type="map_server" args="$(find amcl)/test/willow-full.pgm 0.1"/>
     <node name="pose_setter" pkg="amcl" type="set_pose.py" args="47.443 21.421 -1.003"/>
     <!-- The bagfile starts at 34.6s. We try to send the same initial pose as above with stamp 34.8 at 5 seconds

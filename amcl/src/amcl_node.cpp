@@ -512,7 +512,9 @@ AmclNode::AmclNode() :
 void AmclNode::publishAmclReadySignal(bool signal)
 {
   // publish ready signal
-  ready_pub_.publish(signal);
+  std_msgs::Bool ready_msg;
+  ready_msg.data = signal;
+  ready_pub_.publish(ready_msg);
 }
 
 void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal)
