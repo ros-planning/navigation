@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.1 (2020-08-27)
+-------------------
 * Fix `#933 <https://github.com/ros-planning/navigation/issues/933>`_ (`#988 <https://github.com/ros-planning/navigation/issues/988>`_)
 * Contributors: David V. Lu!!
 

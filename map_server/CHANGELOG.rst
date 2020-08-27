@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.1 (2020-08-27)
+-------------------
 * Initial map_server map_mode tests (`#1006 <https://github.com/ros-planning/navigation/issues/1006>`_)
 * [noetic] Adding CMake way to find yaml-cpp (`#998 <https://github.com/ros-planning/navigation/issues/998>`_)
 * Contributors: David V. Lu!!, Sean Yen

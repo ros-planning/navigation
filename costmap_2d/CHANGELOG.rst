@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.1 (2020-08-27)
+-------------------
 * add explicit call to ros::Timer::stop in the destructor (`#984 <https://github.com/ros-planning/navigation/issues/984>`_)
   Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
 * Exposing stopped\_ variable in costmap2D_ros with the getter function isStopped (`#913 <https://github.com/ros-planning/navigation/issues/913>`_)
