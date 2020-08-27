@@ -2,6 +2,12 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Initial map_server map_mode tests (`#1006 <https://github.com/ros-planning/navigation/issues/1006>`_)
+* [noetic] Adding CMake way to find yaml-cpp (`#998 <https://github.com/ros-planning/navigation/issues/998>`_)
+* Contributors: David V. Lu!!, Sean Yen
+
 1.17.0 (2020-04-02)
 -------------------
 * Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep

@@ -2,6 +2,11 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* (AMCL) add resample limit cache [Noetic] (`#1014 <https://github.com/ros-planning/navigation/issues/1014>`_)
+* Contributors: Matthijs van der Burgh
+
 1.17.0 (2020-04-02)
 -------------------
 * Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep

@@ -2,6 +2,14 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add explicit call to ros::Timer::stop in the destructor (`#984 <https://github.com/ros-planning/navigation/issues/984>`_)
+  Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
+* Exposing stopped\_ variable in costmap2D_ros with the getter function isStopped (`#913 <https://github.com/ros-planning/navigation/issues/913>`_)
+* use const for getter methods (`#948 <https://github.com/ros-planning/navigation/issues/948>`_)
+* Contributors: Dima Dorezyuk, Marco Bassa, Yuki Furuta
+
 1.17.0 (2020-04-02)
 -------------------
 * Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
