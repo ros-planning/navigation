@@ -2,6 +2,9 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.7 (2020-03-10)
 -------------------
 * fix usage of size_locked, fixes `#959 <https://github.com/ros-planning/navigation/issues/959>`_ (`#966 <https://github.com/ros-planning/navigation/issues/966>`_) (`#972 <https://github.com/ros-planning/navigation/issues/972>`_)

@@ -2,6 +2,9 @@
 Changelog for package rotate_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.7 (2020-03-10)
 -------------------
 
