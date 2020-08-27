@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.7 (2020-08-27)
+-------------------
 * add explicit call to ros::Timer::stop in the destructor (`#984 <https://github.com/ros-planning/navigation/issues/984>`_)
   Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
 * backport noetic memory fixes (`#983 <https://github.com/ros-planning/navigation/issues/983>`_)

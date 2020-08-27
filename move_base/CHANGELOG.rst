@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.16.7 (2020-08-27)
+-------------------
 * move_base: Add options for make_plan service (`#981 <https://github.com/ros-planning/navigation/issues/981>`_)
   Adds the following two parameters for the ~make_plan service:
   1. make_plan_clear_costmap
