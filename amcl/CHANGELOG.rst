@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.8 (2020-08-27)
+-------------------
 * (AMCL) add resample limit cache [Kinetic] (`#1013 <https://github.com/ros-planning/navigation/issues/1013>`_)
 * Contributors: Matthijs van der Burgh
 
