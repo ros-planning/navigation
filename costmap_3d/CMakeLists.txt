@@ -43,6 +43,7 @@ link_directories(
 
 generate_dynamic_reconfigure_options(
   cfg/Costmap3D.cfg
+  cfg/CylinderClearingPlugin.cfg
   cfg/GenericPlugin.cfg
 )
 
@@ -110,6 +111,7 @@ add_library(layers_3d
   plugins/costmap_3d_to_2d_layer.cpp
   plugins/costmap_3d_to_2d_layer_3d.cpp
   plugins/static_2d_layer_3d.cpp
+  plugins/cylinder_clearing_layer_3d.cpp
 )
 add_dependencies(layers_3d ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(layers_3d
