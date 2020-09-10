@@ -320,7 +320,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     //publish the plan for visualization purposes
     publishPlan(plan);
-    delete potential_array_;
+    delete[] potential_array_;
     return !plan.empty();
 }
 
