@@ -510,7 +510,7 @@ namespace base_local_planner{
     if(cost >= 0) {
       return true;
     }
-    ROS_WARN("Invalid Trajectory %f, %f, %f, cost: %f", vx_samp, vy_samp, vtheta_samp, cost);
+    ROS_WARN_THROTTLE(0.1,"Invalid Trajectory %f, %f, %f, cost: %f", vx_samp, vy_samp, vtheta_samp, cost);
 
     //otherwise the check fails
     return false;
