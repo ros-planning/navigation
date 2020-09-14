@@ -424,7 +424,7 @@ namespace base_local_planner {
 
     const double top = y_goal_tolerance_ * -1;
     const double left = x_goal_tolerance_ * -1;
-    const double botom = y_goal_tolerance_;
+    const double bottom = y_goal_tolerance_;
     const double right = x_goal_tolerance_;
 
     double rotated_top_left_x     = left  * cos(yaw) - top    * sin(yaw) + goal_x;
@@ -479,7 +479,7 @@ namespace base_local_planner {
     total_angle += atan2(axb, avb);
 
     bool is_xy_goal = false;
-    if(fabs(2*M_PI-fabs(angle)) < 0.001) {
+    if(fabs(2*M_PI-fabs(total_angle)) < 0.001) {
         is_xy_goal = true;
     }
 
