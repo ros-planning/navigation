@@ -117,7 +117,8 @@ namespace base_local_planner {
       private_nh.param("prune_plan", prune_plan_, true);
 
       private_nh.param("yaw_goal_tolerance", yaw_goal_tolerance_, 0.05);
-      private_nh.param("xy_goal_tolerance", xy_goal_tolerance_, 0.10);
+      private_nh.param("x_goal_tolerance", x_goal_tolerance_, 0.20);
+      private_nh.param("y_goal_tolerance", y_goal_tolerance_, 0.40);
       private_nh.param("acc_lim_x", acc_lim_x_, 2.5);
       private_nh.param("acc_lim_y", acc_lim_y_, 2.5);
       private_nh.param("acc_lim_theta", acc_lim_theta_, 3.2);
@@ -421,8 +422,69 @@ namespace base_local_planner {
 
     double goal_th = yaw;
 
+    const double top = y_goal_tolerance_ * -1;
+    const double left = x_goal_tolerance_ * -1;
+    const double botom = y_goal_tolerance_;
+    const double right = x_goal_tolerance_;
+
+    double rotated_top_left_x     = left  * cos(yaw) - top    * sin(yaw) + goal_x;
+    double rotated_top_left_y     = left  * sin(yaw) + top    * cos(yaw) + goal_y;
+    double rotated_bottom_left_x  = left  * cos(yaw) - bottom * sin(yaw) + goal_x;
+    double rotated_bottom_left_y  = left  * sin(yaw) + bottom * sin(yaw) + goal_y;
+    double rotated_top_right_x    = right * cos(yaw) - top    * sin(yaw) + goal_x;
+    double rotated_top_right_y    = right * sin(yaw) + top    * cos(yaw) + goal_y;
+    double rotated_bottom_right_x = right * cos(yaw) - bottom * sin(yaw) + goal_x;
+    double rotated_bottom_right_y = right * sin(yaw) + bottom * sin(yaw) + goal_y;
+
+    double ax, ay, bx, by;
+    double axb, avb;
+    double total_angle;
+
+    total_angle = 0.0;
+
+    // top_left x top_right
+    ax = rotated_top_left_x - global_pose.pose.position.x;
+    ay = rotated_top_left_y - global_pose.pose.position.y;
+    bx = rotated_top_right_x - global_pose.pose.position.x;
+    by = rotated_top_right_y - global_pose.pose.position.y;
+    axb = ax * bx + ay * by;
+    avb = ax * by - ay * bx;
+    total_angle += atan2(axb, avb);
+
+    // top_right x bottom_right
+    ax = rotated_top_right_x - global_pose.pose.position.x;
+    ay = rotated_top_right_y - global_pose.pose.position.y;
+    bx = rotated_bottom_right_x - global_pose.pose.position.x;
+    by = rotated_bottom_right_y - global_pose.pose.position.y;
+    axb = ax * bx + ay * by;
+    avb = ax * by - ay * bx;
+    total_angle += atan2(axb, avb);
+
+    // bottom_right x bottom_left
+    ax = rotated_bottom_right_x - global_pose.pose.position.x;
+    ay = rotated_bottom_right_y - global_pose.pose.position.y;
+    bx = rotated_bottom_left_x - global_pose.pose.position.x;
+    by = rotated_bottom_left_y - global_pose.pose.position.y;
+    axb = ax * bx + ay * by;
+    avb = ax * by - ay * bx;
+    total_angle += atan2(axb, avb);
+
+    // bottom_left x top_left
+    ax = rotated_bottom_left_x - global_pose.pose.position.x;
+    ay = rotated_bottom_left_y - global_pose.pose.position.y;
+    bx = rotated_top_left_x - global_pose.pose.position.x;
+    by = rotated_top_left_y - global_pose.pose.position.y;
+    axb = ax * bx + ay * by;
+    avb = ax * by - ay * bx;
+    total_angle += atan2(axb, avb);
+
+    bool is_xy_goal = false;
+    if(fabs(2*M_PI-fabs(angle)) < 0.001) {
+        is_xy_goal = true;
+    }
+
     //check to see if we've reached the goal position
-    if (xy_tolerance_latch_ || (getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance_)) {
+    if (xy_tolerance_latch_ || is_xy_goal) {
 
       //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
       //just rotate in place

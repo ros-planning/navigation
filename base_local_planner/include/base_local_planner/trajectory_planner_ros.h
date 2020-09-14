@@ -203,7 +203,7 @@ namespace base_local_planner {
       nav_msgs::Odometry base_odom_; ///< @brief Used to get the velocity of the robot
       std::string robot_base_frame_; ///< @brief Used as the base frame id of the robot
       double rot_stopped_velocity_, trans_stopped_velocity_;
-      double xy_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_;
+      double x_goal_tolerance_, y_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_;
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       bool prune_plan_;
       boost::recursive_mutex odom_lock_;
