@@ -479,7 +479,7 @@ namespace base_local_planner {
     total_angle += atan2(axb, avb);
 
     bool is_xy_goal = false;
-    if(fabs(2*M_PI-fabs(total_angle)) < 0.001) {
+    if(fabs(2*M_PI-fabs(total_angle)) < 0.001 || fabs(total_angle) < 0.001) {
         is_xy_goal = true;
     }
 
