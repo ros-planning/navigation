@@ -68,11 +68,13 @@ void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned 
 }
 
 GlobalPlanner::GlobalPlanner() :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        costmap_(NULL), initialized_(false), allow_unknown_(true),
+        p_calc_(NULL), planner_(NULL), path_maker_(NULL), orientation_filter_(NULL),
+        potential_array_(NULL) {
 }
 
 GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        GlobalPlanner() {
     //initialize the planner
     initialize(name, costmap, frame_id);
 }

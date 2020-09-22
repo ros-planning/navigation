@@ -195,7 +195,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         int publish_scale_;
 
         void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
-        unsigned char* cost_array_;
+
         float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
 
