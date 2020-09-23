@@ -194,7 +194,7 @@ void PointCloudLayer3D::pointCloudCallback(const typename CloudType::ConstPtr& c
   {
     last_update_stamp_ = stamp;
     Costmap3D new_cells(costmap_->getResolution());
-    for (auto pt : cloud_msg->points)
+    for (auto pt : cloud_ptr->points)
     {
       Cost pt_cost = pointIntensityToCost(pt);
       geometry_msgs::Point point;
