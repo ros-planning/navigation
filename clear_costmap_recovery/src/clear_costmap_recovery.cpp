@@ -99,7 +99,6 @@ void ClearCostmapRecovery::runBehavior(){
   if (!invert_area_to_clear_){
     ROS_WARN("Clearing %s costmap%s outside a square (%.2fm) large centered on the robot.", affected_maps_.c_str(),
            affected_maps_ == "both" ? "s" : "", reset_distance_);
-           affected_maps_ == "both" ? "s" : "", reset_distance_);
   }else {
     ROS_WARN("Clearing %s costmap%s inside a square (%.2fm) large centered on the robot.", affected_maps_.c_str(),
            affected_maps_ == "both" ? "s" : "", reset_distance_);
