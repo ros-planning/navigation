@@ -52,6 +52,7 @@ public:
   double min_vel_y;
   double max_vel_theta;
   double min_vel_theta;
+  double min_in_place_speed_theta;
   double acc_lim_x;
   double acc_lim_y;
   double acc_lim_theta;
@@ -74,6 +75,7 @@ public:
       double nmin_vel_y,
       double nmax_vel_theta,
       double nmin_vel_theta,
+      double nmin_in_place_speed_theta,
       double nacc_lim_x,
       double nacc_lim_y,
       double nacc_lim_theta,
@@ -91,6 +93,7 @@ public:
         min_vel_y(nmin_vel_y),
         max_vel_theta(nmax_vel_theta),
         min_vel_theta(nmin_vel_theta),
+        min_in_place_speed_theta(nmin_in_place_speed_theta),
         acc_lim_x(nacc_lim_x),
         acc_lim_y(nacc_lim_y),
         acc_lim_theta(nacc_lim_theta),

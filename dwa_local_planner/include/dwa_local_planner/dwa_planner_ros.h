@@ -114,7 +114,13 @@ namespace dwa_local_planner {
        */
       bool isGoalReached();
 
-
+      /**
+       * @brief  Compare two gual poses to determine if they are equal
+       * @param p1 The first pose to compare
+       * @param p2 The second pose to compare against p1
+       * @return True if the two messages represent the same poses
+       */
+      bool isSameGoal(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
 
       bool isInitialized() {
         return initialized_;
@@ -147,10 +153,10 @@ namespace dwa_local_planner {
       geometry_msgs::PoseStamped current_pose_;
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
-
+      geometry_msgs::PoseStamped previous_global_goal_;
 
       bool initialized_;
-
+      bool first_goal_;
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;

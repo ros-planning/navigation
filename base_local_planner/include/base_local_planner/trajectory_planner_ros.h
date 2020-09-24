@@ -128,6 +128,14 @@ namespace base_local_planner {
       bool isGoalReached();
 
       /**
+       * @brief  Compare two gual poses to determine if they are equal
+       * @param p1 The first pose to compare
+       * @param p2 The second pose to compare against p1
+       * @return True if the two messages represent the same poses
+       */
+      bool isSameGoal(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2);
+
+      /**
        * @brief  Generate and score a single trajectory
        * @param vx_samp The x velocity used to seed the trajectory
        * @param vy_samp The y velocity used to seed the trajectory
@@ -203,7 +211,7 @@ namespace base_local_planner {
       nav_msgs::Odometry base_odom_; ///< @brief Used to get the velocity of the robot
       std::string robot_base_frame_; ///< @brief Used as the base frame id of the robot
       double rot_stopped_velocity_, trans_stopped_velocity_;
-      double xy_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_;
+      double xy_goal_tolerance_, yaw_goal_tolerance_, min_in_place_speed_th_;
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       bool prune_plan_;
       boost::recursive_mutex odom_lock_;
@@ -215,13 +223,15 @@ namespace base_local_planner {
       bool reached_goal_;
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
 
+      geometry_msgs::PoseStamped previous_global_goal_;
+
       ros::Publisher g_plan_pub_, l_plan_pub_;
 
       dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
       base_local_planner::BaseLocalPlannerConfig default_config_;
+
       bool setup_;
-
-
+      bool first_goal_;
       bool initialized_;
       base_local_planner::OdometryHelperRos odom_helper_;
 

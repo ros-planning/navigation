@@ -72,8 +72,9 @@ namespace dwa_local_planner {
       limits.min_vel_x = config.min_vel_x;
       limits.max_vel_y = config.max_vel_y;
       limits.min_vel_y = config.min_vel_y;
-      limits.max_vel_theta = config.max_vel_theta;
-      limits.min_vel_theta = config.min_vel_theta;
+      limits.max_vel_theta = config.max_speed_theta;
+      limits.min_vel_theta = -1.0 * limits.max_vel_theta;
+      limits.min_in_place_speed_theta = limits.min_in_place_speed_theta;
       limits.acc_lim_x = config.acc_lim_x;
       limits.acc_lim_y = config.acc_lim_y;
       limits.acc_lim_theta = config.acc_lim_theta;
@@ -121,12 +122,16 @@ namespace dwa_local_planner {
       }
       
       initialized_ = true;
+      first_goal_ = true;
 
       // Warn about deprecated parameters -- remove this block in N-turtle
       nav_core::warnRenamedParameter(private_nh, "max_vel_trans", "max_trans_vel");
       nav_core::warnRenamedParameter(private_nh, "min_vel_trans", "min_trans_vel");
-      nav_core::warnRenamedParameter(private_nh, "max_vel_theta", "max_rot_vel");
-      nav_core::warnRenamedParameter(private_nh, "min_vel_theta", "min_rot_vel");
+      nav_core::warnRenamedParameter(private_nh, "max_speed_theta", "max_rot_vel");
+      nav_core::warnRenamedParameter(private_nh, "max_speed_theta", "max_vel_theta");
+      nav_core::warnRenamedParameter(private_nh, "min_in_place_speed_theta", "min_in_place_vel_theta");
+      nav_core::warnRenamedParameter(private_nh, "min_in_place_speed_theta", "min_vel_theta");
+      nav_core::warnRenamedParameter(private_nh, "min_in_place_speed_theta", "min_rot_vel");
       nav_core::warnRenamedParameter(private_nh, "acc_lim_trans", "acc_limit_trans");
       nav_core::warnRenamedParameter(private_nh, "theta_stopped_vel", "rot_stopped_vel");
 
@@ -139,13 +144,37 @@ namespace dwa_local_planner {
     }
   }
   
+  bool DWAPlannerROS::isSameGoal(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2) {
+      double yaw_diff = fabs(tf2::getYaw(p1.pose.orientation) - tf2::getYaw(p2.pose.orientation));
+      double dist =  hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
+      if(yaw_diff == 0.0 && dist == 0.0) {
+        return true;
+      }
+      return false;
+  }
+
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
+
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
-    latchedStopRotateController_.resetLatching();
+    geometry_msgs::PoseStamped current_global_goal = orig_global_plan.back();
+
+    if (first_goal_) {
+      latchedStopRotateController_.resetLatching();
+      // Make it different from the current goal
+      previous_global_goal_.pose.position.x += 0.1;
+      first_goal_ = false;
+    } else {
+      if (!isSameGoal(current_global_goal, previous_global_goal_)) {
+        latchedStopRotateController_.resetLatching();
+        previous_global_goal_ = current_global_goal;
+      }
+    }
+    
+
 
     ROS_INFO("Got new plan");
     return dp_->setPlan(orig_global_plan);

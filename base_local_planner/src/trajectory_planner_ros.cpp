@@ -71,7 +71,16 @@ namespace base_local_planner {
         default_config_ = config;
         setup_ = true;
       }
+      // Update params in tc_
       tc_->reconfigure(config);
+      // Update relevant params in this class
+      acc_lim_x_ = config.acc_lim_x;
+      acc_lim_y_ = config.acc_lim_y;
+      acc_lim_theta_ = config.acc_lim_theta;
+      max_vel_th_ = config.max_speed_theta;
+      min_vel_th_ = -1.0 * max_vel_th_;
+      min_in_place_speed_th_ = config.min_in_place_speed_theta;
+
       reached_goal_ = false;
   }
 
@@ -211,14 +220,22 @@ namespace base_local_planner {
       private_nh.param("max_vel_x", max_vel_x, 0.5);
       private_nh.param("min_vel_x", min_vel_x, 0.1);
 
-      double max_rotational_vel;
-      private_nh.param("max_rotational_vel", max_rotational_vel, 1.0);
-      max_vel_th_ = max_rotational_vel;
-      min_vel_th_ = -1.0 * max_rotational_vel;
+      private_nh.param("max_speed_theta", max_vel_th_, 1.0);
+      min_vel_th_ = -1.0 * max_vel_th_;
 
-      min_in_place_vel_th_ = nav_core::loadParameterWithDeprecation(private_nh,
-                                                                    "min_in_place_vel_theta",
+      if(private_nh.hasParam("max_vel_theta"))
+        ROS_ERROR("You are using max_vel_theta. Use max_speed_theta to set the maximum angular speed.");
+
+      if(private_nh.hasParam("max_rotational_vel"))
+        ROS_ERROR("You are using max_rotational_vel where you should be using max_speed_theta. Please change your configuration files appropriately.");
+
+      if(private_nh.hasParam("min_vel_theta"))
+        ROS_ERROR("The parameter min_vel_theta is unsupported. Use max_speed_theta to set the maximum angular speed and min_in_place_speed_theta to set the minimum angular speed.");
+
+      min_in_place_speed_th_ = nav_core::loadParameterWithDeprecation(private_nh,
+                                                                    "min_in_place_speed_theta",
                                                                     "min_in_place_rotational_vel", 0.4);
+                                                                    
       reached_goal_ = false;
       backup_vel = -0.1;
       if(private_nh.getParam("backup_vel", backup_vel))
@@ -253,11 +270,12 @@ namespace base_local_planner {
       tc_ = new TrajectoryPlanner(*world_model_, *costmap_, footprint_spec_,
           acc_lim_x_, acc_lim_y_, acc_lim_theta_, sim_time, sim_granularity, vx_samples, vtheta_samples, path_distance_bias,
           goal_distance_bias, occdist_scale, heading_lookahead, oscillation_reset_dist, escape_reset_dist, escape_reset_theta, holonomic_robot,
-          max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_vel_th_, backup_vel,
+          max_vel_x, min_vel_x, max_vel_th_, min_vel_th_, min_in_place_speed_th_, backup_vel,
           dwa, heading_scoring, heading_scoring_timestep, meter_scoring, simple_attractor, y_vels, stop_time_buffer, sim_period_, angular_sim_granularity);
 
       map_viz_.initialize(name, global_frame_, boost::bind(&TrajectoryPlanner::getCellCosts, tc_, _1, _2, _3, _4, _5, _6));
       initialized_ = true;
+      first_goal_ = true;
 
       dsrv_ = new dynamic_reconfigure::Server<BaseLocalPlannerConfig>(private_nh);
       dynamic_reconfigure::Server<BaseLocalPlannerConfig>::CallbackType cb = boost::bind(&TrajectoryPlannerROS::reconfigureCB, this, _1, _2);
@@ -267,6 +285,16 @@ namespace base_local_planner {
       ROS_WARN("This planner has already been initialized, doing nothing");
     }
   }
+
+  bool TrajectoryPlannerROS::isSameGoal(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
+    {
+      double yaw_diff = fabs(tf2::getYaw(p1.pose.orientation) - tf2::getYaw(p2.pose.orientation));
+      double dist =  hypot(p1.pose.position.x - p2.pose.position.x, p1.pose.position.y - p2.pose.position.y);
+      if(yaw_diff == 0.0 && dist == 0.0) {
+        return true;
+      }
+      return false;
+    }
 
   std::vector<double> TrajectoryPlannerROS::loadYVels(ros::NodeHandle node){
     std::vector<double> y_vels;
@@ -334,30 +362,52 @@ namespace base_local_planner {
 
   bool TrajectoryPlannerROS::rotateToGoal(const geometry_msgs::PoseStamped& global_pose, const geometry_msgs::PoseStamped& robot_vel, double goal_th, geometry_msgs::Twist& cmd_vel){
     double yaw = tf2::getYaw(global_pose.pose.orientation);
+    // Somewhat deceivingly, this actualy is the rotational velocity measured from the odometry source.
+    // See odom_helper_.getRobotVel() for reference
     double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
+    // If we wanted to use the open-loop velocity estimate (commanded velocity from previous loop) instead of the measured current velocity
+    // then we could use the following:
+      // vel_yaw = prev_cmd_vel_angular_z == 0.0 ? vel_yaw :  prev_cmd_vel_angular_z;
+      // vel_yaw = ang_diff > 0.0 ? std::max(vel_yaw, min_in_place_speed_th_) : std::min(vel_yaw, -1.0 * min_in_place_speed_th_);
     cmd_vel.linear.x = 0;
     cmd_vel.linear.y = 0;
     double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
 
-    double v_theta_samp = ang_diff > 0.0 ? std::min(max_vel_th_,
-        std::max(min_in_place_vel_th_, ang_diff)) : std::max(min_vel_th_,
-        std::min(-1.0 * min_in_place_vel_th_, ang_diff));
+    // Compute the maximum and minimum velocities as allowed by the maximum angular acceleration
+    // v1 = v0 + a * dt
+    double max_acc_vel = vel_yaw + acc_lim_theta_ * sim_period_;
+    double min_acc_vel = vel_yaw - acc_lim_theta_ * sim_period_;
 
-    //take the acceleration limits of the robot into account
-    double max_acc_vel = fabs(vel_yaw) + acc_lim_theta_ * sim_period_;
-    double min_acc_vel = fabs(vel_yaw) - acc_lim_theta_ * sim_period_;
+    // We also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
+    // Compute the maximum speed we can send such that we will be able to stop in time before reaching the goal position
+    // while obeying our acceleration limits. v = sqrt(2 * a * dTheta)
+    double max_vel_to_stop = sign(ang_diff)*sqrt(2 * acc_lim_theta_ * fabs(ang_diff));
 
-    v_theta_samp = sign(v_theta_samp) * std::min(std::max(fabs(v_theta_samp), min_acc_vel), max_acc_vel);
+    // Impose both limits on the desired velocity. Let the acceleration limits take precedence over the stopping velocity.
+    // i.e. if the vehicle is somehow in a situation where commanding max_vel_to_stop would require us to decellerate faster than
+    // what the acceleration limit allows, then use the velocity imposed by the accelleration limit. This situation shouldn't arise
+    // very often, although it could happen when we change a rotational goal mid execution, or if an external disturbance is applied to the robot.
+    double v_theta_samp = max_vel_to_stop;
+    if (max_vel_to_stop < min_acc_vel) {
+      v_theta_samp = min_acc_vel;
+    }
+    else if (max_vel_to_stop > max_acc_vel) {
+      v_theta_samp = max_acc_vel;
+    }
+    // else if (max_vel_to_stop >= min_acc_vel && max_vel_to_stop <= max_acc_vel) {
+    //   v_theta_samp = max_vel_to_stop;
+    // }
 
-    //we also want to make sure to send a velocity that allows us to stop when we reach the goal given our acceleration limits
-    double max_speed_to_stop = sqrt(2 * acc_lim_theta_ * fabs(ang_diff)); 
-
-    v_theta_samp = sign(v_theta_samp) * std::min(max_speed_to_stop, fabs(v_theta_samp));
-
-    // Re-enforce min_in_place_vel_th_.  It is more important than the acceleration limits.
-    v_theta_samp = v_theta_samp > 0.0
-      ? std::min( max_vel_th_, std::max( min_in_place_vel_th_, v_theta_samp ))
-      : std::max( min_vel_th_, std::min( -1.0 * min_in_place_vel_th_, v_theta_samp ));
+    // The range of possible velocities is [min_vel_th_, -min_in_place_speed_th_] U [min_in_place_speed_theta, max_vel_th_]
+  
+    // Enforce min_in_place_speed_th_
+    // In the case that the desired speed is smaller than the min_in_place_speed_th_,
+    // command the minimum speed in the direction of the desired angular position delta.
+    if (fabs(v_theta_samp) <= min_in_place_speed_th_) {
+      v_theta_samp = (ang_diff < 0.0 ? -1.0 * min_in_place_speed_th_ : min_in_place_speed_th_);
+    }
+    // Enforce user defined max/min speed limits.
+    v_theta_samp = std::min(max_vel_th_, std::max(min_vel_th_, v_theta_samp));;
 
     //we still want to lay down the footprint of the robot and check if the action is legal
     bool valid_cmd = tc_->checkTrajectory(global_pose.pose.position.x, global_pose.pose.position.y, yaw,
@@ -386,9 +436,22 @@ namespace base_local_planner {
     global_plan_ = orig_global_plan;
     
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
-    xy_tolerance_latch_ = false;
-    //reset the at goal flag
-    reached_goal_ = false;
+    geometry_msgs::PoseStamped current_global_goal = orig_global_plan.back();
+    
+        if (first_goal_) {
+          xy_tolerance_latch_ = false;
+          previous_global_goal_ = current_global_goal;
+          // Make it different from the current goal
+          previous_global_goal_.pose.position.x += 0.1;
+          first_goal_ = false;
+        } else {
+          if (!isSameGoal(current_global_goal, previous_global_goal_)) {
+            xy_tolerance_latch_ = false;
+            //reset the at goal flag
+            reached_goal_ = false;
+            previous_global_goal_ = current_global_goal;
+          }
+        }
     return true;
   }
 
