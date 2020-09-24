@@ -59,6 +59,7 @@ void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
+    private_nh.param("invert_area_to_clear", invert_area_to_clear_, false);
     private_nh.param("force_updating", force_updating_, false);
     private_nh.param("affected_maps", affected_maps_, std::string("both"));
     if (affected_maps_ != "local" && affected_maps_ != "global" && affected_maps_ != "both")
@@ -95,8 +96,13 @@ void ClearCostmapRecovery::runBehavior(){
     return;
   }
 
-  ROS_WARN("Clearing %s costmap%s to unstuck robot (%.2fm).", affected_maps_.c_str(),
+  if (!invert_area_to_clear_){
+    ROS_WARN("Clearing %s costmap%s outside a square (%.2fm) large centered on the robot.", affected_maps_.c_str(),
            affected_maps_ == "both" ? "s" : "", reset_distance_);
+  }else {
+    ROS_WARN("Clearing %s costmap%s inside a square (%.2fm) large centered on the robot.", affected_maps_.c_str(),
+           affected_maps_ == "both" ? "s" : "", reset_distance_);
+  }
 
   ros::WallTime t0 = ros::WallTime::now();
   if (affected_maps_ == "global" || affected_maps_ == "both")
@@ -164,7 +170,7 @@ void ClearCostmapRecovery::clearMap(boost::shared_ptr<costmap_2d::CostmapLayer> 
   costmap->worldToMapNoBounds(start_point_x, start_point_y, start_x, start_y);
   costmap->worldToMapNoBounds(end_point_x, end_point_y, end_x, end_y);
 
-  costmap->clearArea(start_x, start_y, end_x, end_y);
+  costmap->clearArea(start_x, start_y, end_x, end_y, invert_area_to_clear_);
 
   double ox = costmap->getOriginX(), oy = costmap->getOriginY();
   double width = costmap->getSizeInMetersX(), height = costmap->getSizeInMetersY();
