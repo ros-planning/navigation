@@ -86,6 +86,7 @@ namespace dwa_local_planner {
       limits.acc_limit_trans = config.acc_limit_trans;
       limits.acc_limit_tip = config.acc_limit_tip;
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
+      limits.xy_goal_overshoot_tolerance = config.xy_goal_overshoot_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
       limits.prune_plan = config.prune_plan;
       limits.trans_stopped_vel = config.trans_stopped_vel;
@@ -95,9 +96,18 @@ namespace dwa_local_planner {
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
       // odom_helper_.setWheelbase(config.wheelbase);
 
+      // pass use overshoot tolerance to latched stop rotate controller
+      ROS_INFO("Updating overshoot tolerance flag to %s", config.use_overshoot_tolerance ? "true" : "false");
+      latchedStopRotateController_.setUseOvershootTolerance(config.use_overshoot_tolerance);
+      use_overshoot_tolerance_ = config.use_overshoot_tolerance;
+
       // update latched stop rotate controller configuration
       ROS_INFO("Updating latching to  %d", config.latch_xy_goal_tolerance);
       latchedStopRotateController_.setLatch(config.latch_xy_goal_tolerance);
+
+      // update latched stop rotate controller configuration
+      ROS_INFO("Updating yaw latching to  %d", config.latch_yaw_goal_tolerance);
+      latchedStopRotateController_.setYawLatch(config.latch_yaw_goal_tolerance);
 
       // update dwa specific configuration
       dp_->reconfigure(config);
@@ -149,8 +159,13 @@ namespace dwa_local_planner {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-    //when we get a new plan, we also want to clear any latch we may have on goal tolerances
-    latchedStopRotateController_.resetLatching();
+    //when we get a new plan, we also want to clear any latch we may have on goal tolerances if the goal is different
+    if (!use_overshoot_tolerance_ || !planner_util_.isGoalTheSame(orig_global_plan)) {
+      ROS_INFO("DWA Planner got new goal, resetting latch.");
+      latchedStopRotateController_.resetLatching();
+    } else {
+      ROS_DEBUG("Goal is the same, not resetting latch.");
+    }
 
     ROS_DEBUG("Got new plan");
     return dp_->setPlan(orig_global_plan);
@@ -198,10 +213,11 @@ namespace dwa_local_planner {
       cmd_vel.linear.y = 0.0;
       cmd_vel.angular.z = 0.0;
       odom_helper_.setCmdVel(cmd_vel);
-      ROS_INFO("Cancelled called on DWA Planner.");
       ROS_DEBUG_NAMED("dwa_local_planner","Cancelled called on DWA Planner.");
       local_plan.clear();
       publishLocalPlan(local_plan);
+      ROS_INFO("dwa_local_planner", "Clearing latching in dwa planner");
+      latchedStopRotateController_.resetLatching();
       canceled_ = false;
       return false;
     }
@@ -344,8 +360,11 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlannerROS::cancel() {
-  canceled_ = true;
-  return true;
+    // if we cancel, reset the latching
+    ROS_WARN("dwa_local_planner", "Clearing latching in dwa cancel. How did we get here?");
+    latchedStopRotateController_.resetLatching();
+    canceled_ = true;
+    return true;
   }
 
 };

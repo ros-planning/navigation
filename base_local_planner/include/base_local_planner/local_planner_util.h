@@ -116,6 +116,9 @@ public:
   std::string getGlobalFrame(){ return global_frame_; }
 
   double distanceToPlanDivergence(const std::vector<geometry_msgs::PoseStamped>& new_plan);
+
+  bool isGoalTheSame(const std::vector<geometry_msgs::PoseStamped>& new_plan);
+
 };
 
 

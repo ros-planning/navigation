@@ -158,6 +158,7 @@ namespace dwa_local_planner {
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
       bool initialized_;
+      bool use_overshoot_tolerance_;
 
 
       base_local_planner::OdometryHelperRos odom_helper_;

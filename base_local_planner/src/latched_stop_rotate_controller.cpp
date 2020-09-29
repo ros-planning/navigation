@@ -21,6 +21,8 @@ namespace base_local_planner {
 
 LatchedStopRotateController::LatchedStopRotateController(const std::string& name) {
   latch_xy_goal_tolerance_ = true;
+  latch_yaw_goal_tolerance_ = false;
+
   rotating_to_goal_ = false;
 }
 
@@ -35,7 +37,7 @@ LatchedStopRotateController::~LatchedStopRotateController() {}
 bool LatchedStopRotateController::isPositionReached(LocalPlannerUtil* planner_util,
     tf::Stamped<tf::Pose> global_pose) {
   double xy_goal_tolerance = planner_util->getCurrentLimits().xy_goal_tolerance;
-
+  double xy_goal_overshoot_tolerance = planner_util->getCurrentLimits().xy_goal_overshoot_tolerance;
   //we assume the global goal is the last point in the global plan
   tf::Stamped<tf::Pose> goal_pose;
   if ( ! planner_util->getGoal(goal_pose)) {
@@ -46,8 +48,9 @@ bool LatchedStopRotateController::isPositionReached(LocalPlannerUtil* planner_ut
   double goal_y = goal_pose.getOrigin().getY();
 
   //check to see if we've reached the goal position
+  const double goal_position_distance = base_local_planner::getGoalPositionDistance(global_pose, goal_x, goal_y);
   if ((latch_xy_goal_tolerance_ && xy_tolerance_latch_) ||
-      base_local_planner::getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance) {
+      goal_position_distance <= xy_goal_tolerance) {
     xy_tolerance_latch_ = true;
     return true;
   }
@@ -63,6 +66,7 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
     OdometryHelperRos& odom_helper,
     tf::Stamped<tf::Pose> global_pose) {
   double xy_goal_tolerance = planner_util->getCurrentLimits().xy_goal_tolerance;
+  double xy_goal_overshoot_tolerance = planner_util->getCurrentLimits().xy_goal_overshoot_tolerance;
   double rot_stopped_vel = planner_util->getCurrentLimits().rot_stopped_vel;
   double trans_stopped_vel = planner_util->getCurrentLimits().trans_stopped_vel;
 
@@ -81,23 +85,37 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
 
   base_local_planner::LocalPlannerLimits limits = planner_util->getCurrentLimits();
 
-  //check to see if we've reached the goal position
+  //check to see if we've reached the goal position,
+  //or have moved out of latching outer tolerance
+  const double goal_position_distance = base_local_planner::getGoalPositionDistance(global_pose, goal_x, goal_y);
+  if (use_overshoot_tolerance_ && xy_tolerance_latch_ && (goal_position_distance >= xy_goal_overshoot_tolerance)) {
+    ROS_INFO_NAMED("latched_stop_rotate", "Goal is farther than overshoot tolerance, resetting latching");
+    resetLatching();
+  }
+
   if ((latch_xy_goal_tolerance_ && xy_tolerance_latch_) ||
-      base_local_planner::getGoalPositionDistance(global_pose, goal_x, goal_y) <= xy_goal_tolerance) {
+     goal_position_distance <= xy_goal_tolerance) {
     //if the user wants to latch goal tolerance, if we ever reach the goal location, we'll
     //just rotate in place
     if (latch_xy_goal_tolerance_ && ! xy_tolerance_latch_) {
-      ROS_DEBUG_NAMED("latched_stop_rotate", "Goal position reached (%f, %f) (check), stopping and turning in place", goal_x, goal_y);
+      ROS_INFO_NAMED("latched_stop_rotate", "Goal position reached (%f, %f) (check), stopping and turning in place", goal_x, goal_y);
       xy_tolerance_latch_ = true;
     }
     double goal_th = tf::getYaw(goal_pose.getRotation());
 
     double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
     //check to see if the goal orientation has been reached
-    if (fabs(angle) <= limits.yaw_goal_tolerance) {
+    if ((fabs(angle) <= limits.yaw_goal_tolerance) || (latch_yaw_goal_tolerance_ && yaw_tolerance_latch_)){
+
+      // Set the latch yaw if need be
+      if (latch_yaw_goal_tolerance_ && ! yaw_tolerance_latch_) {
+        ROS_INFO_NAMED("latched_stop_rotate", "Yaw position reached stopping.  Setting latch.");
+        yaw_tolerance_latch_ = true;
+      }
+
       //make sure that we're actually stopped before returning success
       if (base_local_planner::stopped(base_odom, rot_stopped_vel, trans_stopped_vel)) {
-        ROS_DEBUG_NAMED("latched_stop_rotate", "Finally stopped at (%f, %f, %f) for goal (%f, %f, %f) with tolerance %f",
+        ROS_INFO_NAMED("latched_stop_rotate", "Finally stopped at (%f, %f, %f) for goal (%f, %f, %f) with tolerance %f",
           global_pose.getOrigin().getX(), global_pose.getOrigin().getY(), angle,
           goal_x, goal_y, goal_th, xy_goal_tolerance);
         return true;
@@ -105,6 +123,7 @@ bool LatchedStopRotateController::isGoalReached(LocalPlannerUtil* planner_util,
     }
 
   }
+
   return false;
 }
 
@@ -208,6 +227,7 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
                           Eigen::Vector3f vel_samples)> obstacle_check) {
   //we assume the global goal is the last point in the global plan
   tf::Stamped<tf::Pose> goal_pose;
+
   if ( ! planner_util->getGoal(goal_pose)) {
     ROS_ERROR("Could not get goal pose");
     return false;
@@ -221,10 +241,17 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
     ROS_INFO("Goal position reached, stopping and turning in place");
     xy_tolerance_latch_ = true;
   }
+
   //check to see if the goal orientation has been reached
   double goal_th = tf::getYaw(goal_pose.getRotation());
   double angle = base_local_planner::getGoalOrientationAngleDifference(global_pose, goal_th);
-  if (fabs(angle) <= limits.yaw_goal_tolerance) {
+  if ((fabs(angle) <= limits.yaw_goal_tolerance ) || (latch_yaw_goal_tolerance_ && yaw_tolerance_latch_)) {
+    // Set the yaw latch if need be.
+      if (latch_yaw_goal_tolerance_ && ! yaw_tolerance_latch_) {
+        ROS_INFO_NAMED("latched_stop_rotate", "Yaw position reached in compute velocity commands");
+        yaw_tolerance_latch_ = true;
+      }
+
     //set the velocity command to zero
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;

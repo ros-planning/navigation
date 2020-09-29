@@ -143,6 +143,37 @@ double LocalPlannerUtil::distanceToPlanDivergence(const std::vector<geometry_msg
   return distance;
 }
 
+bool LocalPlannerUtil::isGoalTheSame(const std::vector<geometry_msgs::PoseStamped>& new_plan)
+{
+  double EPSILON = 0.01;
+  if (new_plan.empty() || global_plan_.empty())
+  {
+    return false;
+  }
+  geometry_msgs::PoseStamped new_plan_pose = new_plan.back();
+  geometry_msgs::PoseStamped global_plan_pose = global_plan_.back();
+
+  double x_diff = std::fabs(new_plan_pose.pose.position.x - global_plan_pose.pose.position.x);
+  double y_diff = std::fabs(new_plan_pose.pose.position.y - global_plan_pose.pose.position.y);
+  double raw_theta_diff = tf::getYaw(new_plan_pose.pose.orientation) - tf::getYaw(global_plan_pose.pose.orientation);
+  while (raw_theta_diff > M_PI)
+  {
+    raw_theta_diff -= 2 * M_PI;
+  }
+
+  while (raw_theta_diff < -M_PI)
+  {
+    raw_theta_diff += 2 * M_PI;
+  }
+  double theta_diff = std::fabs(raw_theta_diff);
+
+
+  return x_diff < EPSILON
+    && y_diff < EPSILON
+    && theta_diff < EPSILON;
+}
+
+
 bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vector<geometry_msgs::PoseStamped>& transformed_plan) {
   //get the global plan in our frame
   if(!base_local_planner::transformGlobalPlan(

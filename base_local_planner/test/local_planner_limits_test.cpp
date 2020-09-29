@@ -29,6 +29,7 @@ std::shared_ptr<base_local_planner::LocalPlannerLimits> makeLimits(float max_x, 
     2.0, // acc_lim_theta
     1.0, // acc_lim_trans
     0.15, // xy_gal_tolerance
+    0.30, // xy_overshoot_tolerance
     0.1  // yaw_goal_tolerance
     );
 }
