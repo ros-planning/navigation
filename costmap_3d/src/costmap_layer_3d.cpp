@@ -180,7 +180,7 @@ void CostmapLayer3D::resetBoundingBoxUnlocked(Costmap3DIndex min, Costmap3DIndex
 
 void CostmapLayer3D::touch(const octomap::OcTree& touch_map)
 {
-  if (changed_cells_ && enabled_)
+  if (changed_cells_)
   {
     changed_cells_->setTreeValues(&touch_map, false, false,
                                   [](const Costmap3D::NodeType*, Costmap3D::NodeType* node, bool, const octomap::OcTreeKey&, unsigned int)
