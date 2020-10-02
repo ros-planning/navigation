@@ -321,7 +321,7 @@ void LayeredCostmap3D::matchBoundsAndResolution(double min_z, double max_z)
       max.y != max_point_.y ||
       max.z != max_point_.z)
   {
-    ROS_DEBUG_STREAM("LayeredCostmap3D: min point " << min << " max point " << max);
+    ROS_INFO_STREAM("LayeredCostmap3D: min point " << min << " max point " << max);
     min_point_ = min;
     max_point_ = max;
     change_size = true;
@@ -329,6 +329,7 @@ void LayeredCostmap3D::matchBoundsAndResolution(double min_z, double max_z)
   double resolution = layered_costmap_2d_->getCostmap()->getResolution();
   if (resolution > 0.0 && resolution != resolution_)
   {
+    ROS_INFO_STREAM("LayeredCostmap3D: resolution " << resolution);
     resolution_ = resolution;
     change_size = true;
   }
