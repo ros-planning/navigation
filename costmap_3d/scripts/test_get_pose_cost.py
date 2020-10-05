@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """
-Test the performance of 3D costmap by sending a veyr large get plan cost service requests.
+Test the performance of the 2D costmap_monitor layer by sending a very large
+get plan cost service request. This is a useful baseline for comparing its
+performance with the 3D version.
 """
 
 import sys
@@ -10,7 +12,7 @@ import rospy
 import tf2_ros
 import tf2_geometry_msgs
 import tf.transformations
-import costmap_monitor.srv
+import costmap_monitor_msgs.srv
 import geometry_msgs.msg
 
 
@@ -30,8 +32,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     get_cost_srv = rospy.ServiceProxy("/move_base/local_costmap/costmap_monitor/get_plan_cost",
-            costmap_monitor.srv.GetPlanCostService)
-    req = costmap_monitor.srv.GetPlanCostServiceRequest()
+            costmap_monitor_msgs.srv.GetPlanCostService)
+    req = costmap_monitor_msgs.srv.GetPlanCostServiceRequest()
     req.lazy = False
     req.header.frame_id = "odom"
     req.padding = 0.0
