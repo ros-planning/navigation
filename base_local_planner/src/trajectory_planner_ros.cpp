@@ -422,6 +422,7 @@ namespace base_local_planner {
 
     double goal_th = yaw;
 
+#if 0
     const double top = y_goal_tolerance_ * -1;
     const double left = x_goal_tolerance_ * -1;
     const double bottom = y_goal_tolerance_;
@@ -482,6 +483,9 @@ namespace base_local_planner {
     if(fabs(2*M_PI-fabs(total_angle)) < 0.001 || fabs(total_angle) < 0.001) {
         is_xy_goal = true;
     }
+#else
+    bool is_xy_goal = getGoalPositionDistance(global_pose, goal_x, goal_y) <= x_goal_tolerance_;
+#endif
 
     //check to see if we've reached the goal position
     if (xy_tolerance_latch_ || is_xy_goal) {
