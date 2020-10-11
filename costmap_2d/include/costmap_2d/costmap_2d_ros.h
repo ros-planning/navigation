@@ -133,7 +133,7 @@ public:
   bool getRobotPose(geometry_msgs::PoseStamped& global_pose) const;
 
   /** @brief Returns costmap name */
-  std::string getName() const
+  inline const std::string& getName() const noexcept
     {
       return name_;
     }
@@ -156,7 +156,7 @@ public:
    * @brief  Returns the global frame of the costmap
    * @return The global frame of the costmap
    */
-  std::string getGlobalFrameID() const
+  inline const std::string& getGlobalFrameID() const noexcept
     {
       return global_frame_;
     }
@@ -165,7 +165,7 @@ public:
    * @brief  Returns the local frame of the costmap
    * @return The local frame of the costmap
    */
-  std::string getBaseFrameID() const
+  inline const std::string& getBaseFrameID() const noexcept
     {
       return robot_base_frame_;
     }
@@ -188,7 +188,7 @@ public:
    * The footprint initially comes from the rosparam "footprint" but
    * can be overwritten by dynamic reconfigure or by messages received
    * on the "footprint" topic. */
-  std::vector<geometry_msgs::Point> getRobotFootprint() const
+  inline const std::vector<geometry_msgs::Point>& getRobotFootprint() const noexcept
   {
     return padded_footprint_;
   }
@@ -200,7 +200,7 @@ public:
    * The footprint initially comes from the rosparam "footprint" but
    * can be overwritten by dynamic reconfigure or by messages received
    * on the "footprint" topic. */
-  std::vector<geometry_msgs::Point> getUnpaddedRobotFootprint() const
+  inline const std::vector<geometry_msgs::Point>& getUnpaddedRobotFootprint() const noexcept
   {
     return unpadded_footprint_;
   }

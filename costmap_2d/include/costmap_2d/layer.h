@@ -98,7 +98,7 @@ public:
   /** @brief Implement this to make this layer match the size of the parent costmap. */
   virtual void matchSize() {}
 
-  std::string getName() const
+  inline const std::string& getName() const noexcept
   {
     return name_;
   }
