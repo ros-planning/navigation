@@ -115,6 +115,8 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)
   {
+    if(!(*plugin)->isEnabled())
+      continue;
     double prev_minx = minx_;
     double prev_miny = miny_;
     double prev_maxx = maxx_;
@@ -148,7 +150,8 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
        ++plugin)
   {
-    (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
+    if((*plugin)->isEnabled())
+      (*plugin)->updateCosts(costmap_, x0, y0, xn, yn);
   }
 
   bx0_ = x0;
@@ -165,7 +168,8 @@ bool LayeredCostmap::isCurrent()
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
       ++plugin)
   {
-    current_ = current_ && (*plugin)->isCurrent();
+    if((*plugin)->isEnabled())
+      current_ = current_ && (*plugin)->isCurrent();
   }
   return current_;
 }
