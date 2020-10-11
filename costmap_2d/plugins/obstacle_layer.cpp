@@ -57,7 +57,6 @@ namespace costmap_2d
 void ObstacleLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
-  rolling_window_ = layered_costmap_->isRolling();
 
   bool track_unknown_space;
   nh.param("track_unknown_space", track_unknown_space, layered_costmap_->isTrackingUnknown());
@@ -330,11 +329,15 @@ void ObstacleLayer::pointCloud2Callback(const sensor_msgs::PointCloud2ConstPtr& 
   buffer->unlock();
 }
 
+void ObstacleLayer::onOriginChanged()
+{
+  const Costmap2D* master = layered_costmap_->getCostmap();
+  updateOrigin(master->getOriginX(), master->getOriginY());
+}
+
 void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                           double* min_y, double* max_x, double* max_y)
 {
-  if (rolling_window_)
-    updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   if (!enabled_)
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);

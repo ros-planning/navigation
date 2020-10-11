@@ -66,6 +66,8 @@ public:
 
   virtual void matchSize();
 
+  virtual void onOriginChanged();
+
 private:
   /**
    * @brief  Callback to update the costmap's map from the map_server

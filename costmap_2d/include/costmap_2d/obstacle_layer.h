@@ -76,6 +76,7 @@ public:
   virtual void activate();
   virtual void deactivate();
   virtual void reset();
+  virtual void onOriginChanged();
 
   /**
    * @brief  A callback to handle buffering LaserScan messages
@@ -146,7 +147,7 @@ protected:
 
   std::vector<geometry_msgs::Point> transformed_footprint_;
   bool footprint_clearing_enabled_;
-  void updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y, 
+  void updateFootprint(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                        double* max_x, double* max_y);
 
   std::string global_frame_;  ///< @brief The global frame for the costmap
@@ -163,7 +164,6 @@ protected:
   // Used only for testing purposes
   std::vector<costmap_2d::Observation> static_clearing_observations_, static_marking_observations_;
 
-  bool rolling_window_;
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig> *dsrv_;
 
   int combination_method_;

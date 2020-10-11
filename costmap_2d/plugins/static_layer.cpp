@@ -267,6 +267,12 @@ void StaticLayer::reset()
   }
 }
 
+void StaticLayer::onOriginChanged()
+{
+  // we need to repaint everything
+  has_updated_data_ = true;
+}
+
 void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                                double* max_x, double* max_y)
 {
@@ -275,6 +281,11 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
     if (!map_received_ || !(has_updated_data_ || has_extra_bounds_))
       return;
   }
+
+  // if the origin has not changed, skip the re-painting, since we cannot add
+  // any new information
+  if(!has_updated_data_)
+    return;
 
   useExtraBounds(min_x, min_y, max_x, max_y);
 
