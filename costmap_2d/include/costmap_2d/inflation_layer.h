@@ -192,7 +192,6 @@ private:
   std::vector<std::vector<CellData>> inflation_cells_;
 
   bool* seen_;
-  bool* queued_;
   int seen_size_;
 
   unsigned char** cached_costs_;
