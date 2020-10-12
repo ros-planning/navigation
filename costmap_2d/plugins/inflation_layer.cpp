@@ -227,7 +227,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
       unsigned char cost = master_array[index];
       if (cost == LETHAL_OBSTACLE)
       {
-        obs_bin.push_back(CellData(index, i, j, i, j));
+        obs_bin.emplace_back(index, i, j, i, j);
       }
     }
   }
@@ -295,7 +295,7 @@ inline void InflationLayer::enqueue(unsigned int index, unsigned int mx, unsigne
     const int r = cell_inflation_radius_ + 2;
 
     // push the cell data onto the inflation list and mark
-    inflation_cells_[distance_matrix_[mx - src_x+r][my - src_y+r]].push_back(CellData(index, mx, my, src_x, src_y));
+    inflation_cells_[distance_matrix_[mx - src_x+r][my - src_y+r]].emplace_back(index, mx, my, src_x, src_y);
   }
 }
 
