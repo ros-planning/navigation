@@ -41,7 +41,6 @@
 #include <costmap_2d/footprint.h>
 #include <boost/thread.hpp>
 #include <pluginlib/class_list_macros.h>
-#include <vector>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
 
@@ -62,7 +61,6 @@ InflationLayer::InflationLayer()
   , cached_cell_inflation_radius_(0)
   , dsrv_(NULL)
   , seen_(NULL)
-  , queued_(NULL)
   , cached_costs_(NULL)
   , cached_distances_(NULL)
   , last_min_x_(-std::numeric_limits<float>::max())
@@ -82,9 +80,6 @@ void InflationLayer::onInitialize()
     if (seen_)
       delete[] seen_;
     seen_ = NULL;
-    if (queued_)
-      delete[] queued_;
-    queued_ = NULL;
     seen_size_ = 0;
     need_reinflation_ = false;
 
@@ -129,9 +124,6 @@ void InflationLayer::matchSize()
     delete[] seen_;
   seen_size_ = size_x * size_y;
   seen_ = new bool[seen_size_];
-  if (queued_)
-    delete[] queued_;
-  queued_ = new bool[seen_size_];
 }
 
 void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
@@ -199,19 +191,15 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
     ROS_WARN("InflationLayer::updateCosts(): seen_ array is NULL");
     seen_size_ = size_x * size_y;
     seen_ = new bool[seen_size_];
-    queued_ = new bool[seen_size_];
   }
   else if (seen_size_ != size_x * size_y)
   {
     ROS_WARN("InflationLayer::updateCosts(): seen_ array size is wrong");
     delete[] seen_;
-    delete[] queued_;
     seen_size_ = size_x * size_y;
     seen_ = new bool[seen_size_];
-    queued_ = new bool[seen_size_];
   }
   memset(seen_, false, size_x * size_y * sizeof(bool));
-  memset(queued_, false, size_x * size_y * sizeof(bool));
 
   // We need to include in the inflation cells outside the bounding
   // box min_i...max_j, by the amount cell_inflation_radius_.  Cells
@@ -296,7 +284,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
 inline void InflationLayer::enqueue(unsigned int index, unsigned int mx, unsigned int my,
                                     unsigned int src_x, unsigned int src_y)
 {
-  if (!seen_[index] && !queued_[index])
+  if (!seen_[index])
   {
     // we compute our distance table one cell further than the inflation radius dictates so we can make the check below
     double distance = distanceLookup(mx, my, src_x, src_y);
@@ -304,11 +292,10 @@ inline void InflationLayer::enqueue(unsigned int index, unsigned int mx, unsigne
     // we only want to put the cell in the list if it is within the inflation radius of the obstacle point
     if (distance > cell_inflation_radius_)
       return;
-    const int r = cell_inflation_radius_+2;
+    const int r = cell_inflation_radius_ + 2;
 
     // push the cell data onto the inflation list and mark
     inflation_cells_[distance_matrix_[mx - src_x+r][my - src_y+r]].push_back(CellData(index, mx, my, src_x, src_y));
-    queued_[index]=true;
   }
 }
 
@@ -347,7 +334,7 @@ void InflationLayer::computeCaches()
   }
   int max_dist = generateIntegerDistances();
   inflation_cells_.clear();
-  inflation_cells_.resize(max_dist+1);
+  inflation_cells_.resize(max_dist + 1);
   for (auto& dist : inflation_cells_)
   {
       dist.reserve(200);
