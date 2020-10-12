@@ -35,6 +35,9 @@
  * Author: C. Andy Martin
  *********************************************************************/
 #include <costmap_3d/costmap_3d_publisher.h>
+
+#include <cmath>
+
 #include <octomap_msgs/conversions.h>
 
 namespace costmap_3d
@@ -46,7 +49,15 @@ Costmap3DPublisher::Costmap3DPublisher(const ros::NodeHandle& nh,
     : nh_(nh), layered_costmap_3d_(layered_costmap_3d)
 {
   costmap_pub_ = nh_.advertise<octomap_msgs::Octomap>(topic_name, 1);
-  costmap_update_pub_ = nh_.advertise<octomap_msgs::OctomapUpdate>(topic_name + "_updates", 3,
+  // Make the send queue size 3 times the update frequency as currently configured.
+  // Cap the minimum queue size to 3.
+  double update_frequency;
+  nh_.param("update_frequency", update_frequency, 5.0);
+  uint32_t queue_size = 3 * update_frequency;
+  if (queue_size < 3)
+    queue_size = 3;
+  ROS_INFO_STREAM("Costmap3DPublisher publish queue size set to " << queue_size);
+  costmap_update_pub_ = nh_.advertise<octomap_msgs::OctomapUpdate>(topic_name + "_updates", queue_size,
                                                       std::bind(&Costmap3DPublisher::connectCallback, this,
                                                                 std::placeholders::_1));
 
