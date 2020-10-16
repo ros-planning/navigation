@@ -439,7 +439,6 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
     }
     if(old_navfn_behavior_){
             plan.push_back(goal);
-            ROS_WARN("old behavior");
     }
     return !plan.empty();
 }
