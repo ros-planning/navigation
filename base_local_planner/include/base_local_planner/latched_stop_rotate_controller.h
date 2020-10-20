@@ -34,7 +34,7 @@ public:
   void resetLatching() {
     xy_tolerance_latch_ = false;
     yaw_tolerance_latch_ = false;
-    ROS_INFO("Resetting latch");
+    ROS_DEBUG("Resetting latch");
   }
 
   void setLatch(bool latch_xy_goal_tolerance) {

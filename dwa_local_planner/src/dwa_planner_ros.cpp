@@ -161,7 +161,7 @@ namespace dwa_local_planner {
     }
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances if the goal is different
     if (!use_overshoot_tolerance_ || !planner_util_.isGoalTheSame(orig_global_plan)) {
-      ROS_INFO("DWA Planner got new goal, resetting latch.");
+      ROS_DEBUG("DWA Planner got new goal, resetting latch.");
       latchedStopRotateController_.resetLatching();
     } else {
       ROS_DEBUG("Goal is the same, not resetting latch.");
@@ -216,7 +216,7 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner","Cancelled called on DWA Planner.");
       local_plan.clear();
       publishLocalPlan(local_plan);
-      ROS_INFO("dwa_local_planner", "Clearing latching in dwa planner");
+      ROS_DEBUG_NAMED("dwa_local_planner", "Clearing latching in dwa planner");
       latchedStopRotateController_.resetLatching();
       canceled_ = false;
       return false;
@@ -361,7 +361,7 @@ namespace dwa_local_planner {
 
   bool DWAPlannerROS::cancel() {
     // if we cancel, reset the latching
-    ROS_WARN("dwa_local_planner", "Clearing latching in dwa cancel. How did we get here?");
+    ROS_WARN_NAMED("dwa_local_planner", "Clearing latching in dwa cancel. How did we get here?");
     latchedStopRotateController_.resetLatching();
     canceled_ = true;
     return true;
