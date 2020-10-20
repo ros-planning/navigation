@@ -70,8 +70,8 @@ class MapServer
       std::string frame_id;
       ros::NodeHandle private_nh("~");
       private_nh.param("frame_id", frame_id, std::string("map"));
-      deprecated = (res != 0);
-      if (!deprecated) {
+      deprecated_ = (res != 0);
+      if (!deprecated_) {
         //mapfname = fname + ".pgm";
         //std::ifstream fin((fname + ".yaml").c_str());
         std::ifstream fin(fname.c_str());
@@ -187,24 +187,24 @@ class MapServer
                map_resp_.map.info.resolution);
       meta_data_message_ = map_resp_.map.info;
 
-      service = n.advertiseService("static_map", &MapServer::mapCallback, this);
-      //pub = n.advertise<nav_msgs::MapMetaData>("map_metadata", 1,
+      get_map_service_ = nh_.advertiseService("static_map", &MapServer::mapCallback, this);
+      //pub = nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1,
 
       // Latched publisher for metadata
-      metadata_pub= n.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
-      metadata_pub.publish( meta_data_message_ );
+      metadata_pub_= nh_.advertise<nav_msgs::MapMetaData>("map_metadata", 1, true);
+      metadata_pub_.publish( meta_data_message_ );
 
       // Latched publisher for data
-      map_pub = n.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
-      map_pub.publish( map_resp_.map );
+      map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1, true);
+      map_pub_.publish( map_resp_.map );
     }
 
   private:
-    ros::NodeHandle n;
-    ros::Publisher map_pub;
-    ros::Publisher metadata_pub;
-    ros::ServiceServer service;
-    bool deprecated;
+    ros::NodeHandle nh_;
+    ros::Publisher map_pub_;
+    ros::Publisher metadata_pub_;
+    ros::ServiceServer get_map_service_;
+    bool deprecated_;
 
     /** Callback invoked when someone requests our service */
     bool mapCallback(nav_msgs::GetMap::Request  &req,
@@ -260,4 +260,3 @@ int main(int argc, char **argv)
 
   return 0;
 }
-
