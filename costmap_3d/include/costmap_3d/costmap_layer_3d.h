@@ -53,7 +53,7 @@ class CostmapLayer3D : public Layer3D
   using super = Layer3D;
 public:
   CostmapLayer3D();
-  virtual ~CostmapLayer3D();
+  virtual ~CostmapLayer3D() = 0;
 
   /** @brief Add nodes to bounds_map for any cells that have changed
    *
