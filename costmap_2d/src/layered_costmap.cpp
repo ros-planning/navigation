@@ -144,7 +144,13 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   ROS_DEBUG("Updating area x: [%d, %d] y: [%d, %d]", x0, xn, y0, yn);
 
   if (xn < x0 || yn < y0)
+  {
+    bx0_ = x0;
+    bxn_ = xn;
+    by0_ = y0;
+    byn_ = yn;
     return;
+  }
 
   costmap_.resetMap(x0, y0, xn, yn);
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
