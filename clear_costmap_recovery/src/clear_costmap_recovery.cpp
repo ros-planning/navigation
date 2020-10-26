@@ -44,6 +44,58 @@ PLUGINLIB_EXPORT_CLASS(clear_costmap_recovery::ClearCostmapRecovery, nav_core::R
 using costmap_2d::NO_INFORMATION;
 
 namespace clear_costmap_recovery {
+
+/**
+ * @brief return the names of the layers in the costmap, each prefixed with prefix
+ */
+std::vector<std::string> getLayerNames(const costmap_2d::Costmap2DROS& costmap)
+{
+  std::vector<std::string> names;
+  std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = costmap.getLayeredCostmap()->getPlugins();
+  for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::const_iterator pluginp = plugins->begin();
+       pluginp != plugins->end();
+       ++pluginp) {
+    names.push_back((*pluginp)->getName());
+  }
+  return names;
+}
+
+/**
+ * @brief A layer is considered "matching" if the raw name (after the slash) is in the name_specs set
+ */
+bool isMatchingLayerName(const std::string& layer_name, const std::set<std::string>& name_specs)
+{
+  size_t slash = layer_name.rfind('/');
+  if(slash != std::string::npos)
+  {
+    // If no slash, use whole string
+    return name_specs.count(layer_name) != 0;
+  }
+  else
+  {
+    // Check the part after the slash
+    return name_specs.count(layer_name.substr(slash + 1)) != 0;
+  }
+}
+
+/**
+ * @brief Returns the subset of layer_names which match the name spec
+ */
+std::vector<std::string> getLayerMatches(const std::vector<std::string>& layer_names,
+                                         const std::set<std::string>& name_specs)
+{
+  std::vector<std::string> matches;
+  for (unsigned int i = 0; i < layer_names.size(); i++)
+  {
+    if (isMatchingLayerName(layer_names[i], name_specs))
+    {
+      matches.push_back(layer_names[i]);
+    }
+  }
+  return matches;
+}
+
+
 ClearCostmapRecovery::ClearCostmapRecovery(): global_costmap_(NULL), local_costmap_(NULL),
   tf_(NULL), initialized_(false) {}
 
@@ -69,13 +121,55 @@ void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
       affected_maps_ = "both";
     }
 
-    std::vector<std::string> clearable_layers_default, clearable_layers;
-    clearable_layers_default.push_back( std::string("obstacles") );
-    private_nh.param("layer_names", clearable_layers, clearable_layers_default);
+    // Get a list of layer names
+    std::vector<std::string> layer_names = getLayerNames(*global_costmap_);
+    std::vector<std::string> local_layer_names = getLayerNames(*local_costmap_);
+    layer_names.insert(layer_names.end(), local_layer_names.begin(), local_layer_names.end());
 
-    for(unsigned i=0; i < clearable_layers.size(); i++) {
-        ROS_INFO("Recovery behavior will clear layer '%s'", clearable_layers[i].c_str());
-        clearable_layers_.insert(clearable_layers[i]);
+    std::vector<std::string> clearable_layers_vector;
+    if (private_nh.getParam("layer_names", clearable_layers_vector))
+    {
+      clearable_layers_ = std::set<std::string>(clearable_layers_vector.begin(), clearable_layers_vector.end());
+    }
+    else
+    {
+      // If the parameter is not specified, try two different defaults
+      std::vector<std::string> possible_defaults {"obstacles", "obstacle_layer"};
+      for (unsigned int i = 0; i < possible_defaults.size(); i++)
+      {
+        std::set<std::string> default_set;
+        default_set.insert(possible_defaults[i]);
+        if (getLayerMatches(layer_names, default_set).size() > 0)
+        {
+          clearable_layers_ = default_set;
+          break;
+        }
+      }
+    }
+
+    std::vector<std::string> clearable_layer_names = getLayerMatches(layer_names, clearable_layers_);
+    if (clearable_layer_names.empty())
+    {
+      ROS_ERROR("In recovery behavior %s, none of the layer names match the layer_names parameter.", name.c_str());
+      ROS_ERROR("Layer names:");
+      for (unsigned int i = 0; i < layer_names.size(); i++)
+      {
+        ROS_ERROR("\t%s", layer_names[i].c_str());
+      }
+      ROS_ERROR("Value of %s:", private_nh.resolveName("layer_names").c_str());
+      for (std::set<std::string>::const_iterator it = clearable_layers_.begin();
+           it != clearable_layers_.end();
+           ++it) {
+        ROS_ERROR("\t%s", it->c_str());
+      }
+    }
+    else
+    {
+      ROS_INFO("Recovery behavior %s will clear layers:", name.c_str());
+      for(unsigned int i = 0; i < clearable_layer_names.size(); i++)
+      {
+        ROS_INFO("\t%s", clearable_layer_names[i].c_str());
+      }
     }
 
     initialized_ = true;
@@ -142,13 +236,8 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
 
   for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
     boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
-    std::string name = plugin->getName();
-    int slash = name.rfind('/');
-    if( slash != std::string::npos ){
-        name = name.substr(slash+1);
-    }
-
-    if(clearable_layers_.count(name)!=0){
+    if (isMatchingLayerName(plugin->getName(), clearable_layers_))
+    {
       boost::shared_ptr<costmap_2d::CostmapLayer> costmap;
       costmap = boost::static_pointer_cast<costmap_2d::CostmapLayer>(plugin);
       clearMap(costmap, x, y);
