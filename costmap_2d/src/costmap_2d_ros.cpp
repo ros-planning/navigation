@@ -700,7 +700,7 @@ void Costmap2DROS::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Poi
     {
       break;
     }
-    ROS_ERROR_STREAM_DELAYED_THROTTLE(5.0, "Costmap " << name_ << " waiting for update after reset");
+    ROS_WARN_STREAM_DELAYED_THROTTLE(5.0, "Costmap " << name_ << " waiting for update after reset");
   }
 }
 
