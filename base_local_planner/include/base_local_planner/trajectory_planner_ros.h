@@ -105,7 +105,7 @@ namespace base_local_planner {
        * @brief  Destructor for the wrapper
        */
       ~TrajectoryPlannerROS();
-      
+
       /**
        * @brief  Given the current position, orientation, and velocity of the robot,
        * compute velocity commands to send to the base
@@ -191,6 +191,11 @@ namespace base_local_planner {
         return x < 0.0 ? -1.0 : 1.0;
       }
 
+      void publishGoalAreaMarker(const geometry_msgs::PoseStamped &goal);
+
+      bool isInGoal(const geometry_msgs::PoseStamped &goal_pose, const geometry_msgs::PoseStamped &robot_pose);
+
+
       WorldModel* world_model_; ///< @brief The world model that the controller will use
       TrajectoryPlanner* tc_; ///< @brief The trajectory controller
 
@@ -216,6 +221,7 @@ namespace base_local_planner {
       bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
 
       ros::Publisher g_plan_pub_, l_plan_pub_;
+      ros::Publisher goal_marker_pub_;
 
       dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
       base_local_planner::BaseLocalPlannerConfig default_config_;
