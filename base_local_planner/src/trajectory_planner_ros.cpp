@@ -53,6 +53,8 @@
 #include <nav_core/parameter_magic.h>
 #include <tf2/utils.h>
 
+#include <visualization_msgs/Marker.h>
+
 //register this planner as a BaseLocalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(base_local_planner::TrajectoryPlannerROS, nav_core::BaseLocalPlanner)
 
@@ -91,6 +93,7 @@ namespace base_local_planner {
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
+      goal_marker_pub_ = private_nh.advertise<visualization_msgs::Marker>("goal_area", 1, true);
 
 
       tf_ = tf;
@@ -422,70 +425,10 @@ namespace base_local_planner {
 
     double goal_th = yaw;
 
-#if 0
-    const double top = y_goal_tolerance_ * -1;
-    const double left = x_goal_tolerance_ * -1;
-    const double bottom = y_goal_tolerance_;
-    const double right = x_goal_tolerance_;
+    bool is_xy_goal = isInGoal(goal_point, global_pose);
 
-    double rotated_top_left_x     = left  * cos(yaw) - top    * sin(yaw) + goal_x;
-    double rotated_top_left_y     = left  * sin(yaw) + top    * cos(yaw) + goal_y;
-    double rotated_bottom_left_x  = left  * cos(yaw) - bottom * sin(yaw) + goal_x;
-    double rotated_bottom_left_y  = left  * sin(yaw) + bottom * sin(yaw) + goal_y;
-    double rotated_top_right_x    = right * cos(yaw) - top    * sin(yaw) + goal_x;
-    double rotated_top_right_y    = right * sin(yaw) + top    * cos(yaw) + goal_y;
-    double rotated_bottom_right_x = right * cos(yaw) - bottom * sin(yaw) + goal_x;
-    double rotated_bottom_right_y = right * sin(yaw) + bottom * sin(yaw) + goal_y;
-
-    double ax, ay, bx, by;
-    double axb, avb;
-    double total_angle;
-
-    total_angle = 0.0;
-
-    // top_left x top_right
-    ax = rotated_top_left_x - global_pose.pose.position.x;
-    ay = rotated_top_left_y - global_pose.pose.position.y;
-    bx = rotated_top_right_x - global_pose.pose.position.x;
-    by = rotated_top_right_y - global_pose.pose.position.y;
-    axb = ax * bx + ay * by;
-    avb = ax * by - ay * bx;
-    total_angle += atan2(axb, avb);
-
-    // top_right x bottom_right
-    ax = rotated_top_right_x - global_pose.pose.position.x;
-    ay = rotated_top_right_y - global_pose.pose.position.y;
-    bx = rotated_bottom_right_x - global_pose.pose.position.x;
-    by = rotated_bottom_right_y - global_pose.pose.position.y;
-    axb = ax * bx + ay * by;
-    avb = ax * by - ay * bx;
-    total_angle += atan2(axb, avb);
-
-    // bottom_right x bottom_left
-    ax = rotated_bottom_right_x - global_pose.pose.position.x;
-    ay = rotated_bottom_right_y - global_pose.pose.position.y;
-    bx = rotated_bottom_left_x - global_pose.pose.position.x;
-    by = rotated_bottom_left_y - global_pose.pose.position.y;
-    axb = ax * bx + ay * by;
-    avb = ax * by - ay * bx;
-    total_angle += atan2(axb, avb);
-
-    // bottom_left x top_left
-    ax = rotated_bottom_left_x - global_pose.pose.position.x;
-    ay = rotated_bottom_left_y - global_pose.pose.position.y;
-    bx = rotated_top_left_x - global_pose.pose.position.x;
-    by = rotated_top_left_y - global_pose.pose.position.y;
-    axb = ax * bx + ay * by;
-    avb = ax * by - ay * bx;
-    total_angle += atan2(axb, avb);
-
-    bool is_xy_goal = false;
-    if(fabs(2*M_PI-fabs(total_angle)) < 0.001 || fabs(total_angle) < 0.001) {
-        is_xy_goal = true;
-    }
-#else
-    bool is_xy_goal = getGoalPositionDistance(global_pose, goal_x, goal_y) <= x_goal_tolerance_;
-#endif
+    if (!global_plan_.empty())
+      publishGoalAreaMarker(global_plan_.back());
 
     //check to see if we've reached the goal position
     if (xy_tolerance_latch_ || is_xy_goal) {
@@ -660,5 +603,36 @@ namespace base_local_planner {
     }
     //return flag set in controller
     return reached_goal_; 
+  }
+
+  bool TrajectoryPlannerROS::isInGoal(const geometry_msgs::PoseStamped &goal_pose,
+                                      const geometry_msgs::PoseStamped &robot_pose)
+  {
+    tf2::Transform goal_pose_tf, robot_pose_tf;
+    tf2::fromMsg(goal_pose.pose, goal_pose_tf);
+    tf2::fromMsg(robot_pose.pose, robot_pose_tf);
+    const auto goal_to_robot = goal_pose_tf.inverseTimes(robot_pose_tf).getOrigin();
+    return std::fabs(goal_to_robot.getX()) < x_goal_tolerance_ &&
+           std::fabs(goal_to_robot.getY()) < y_goal_tolerance_;
+  }
+
+  void TrajectoryPlannerROS::publishGoalAreaMarker(const geometry_msgs::PoseStamped &goal)
+  {
+    visualization_msgs::Marker m;
+    m.header = goal.header;
+    m.ns = "goal area";
+    m.id = 0;
+    m.type = visualization_msgs::Marker::CUBE;
+    m.action = visualization_msgs::Marker::ADD;
+    m.pose = goal.pose;
+    m.scale.x = x_goal_tolerance_;
+    m.scale.y = y_goal_tolerance_;
+    m.scale.z = 0.1;
+    m.color.a = 0.5;
+    m.color.r = 0.2;
+    m.color.g = 0.2;
+    m.color.b = 1.0;
+    m.lifetime = ros::Duration(0);
+    goal_marker_pub_.publish(m);
   }
 };
