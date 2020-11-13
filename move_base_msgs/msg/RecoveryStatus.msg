@@ -1,4 +1,0 @@
-geometry_msgs/PoseStamped pose_stamped
-uint16 current_recovery_number
-uint16 total_number_of_recoveries
-string recovery_behavior_name
