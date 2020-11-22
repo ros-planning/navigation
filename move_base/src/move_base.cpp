@@ -36,6 +36,7 @@
 *         Mike Phillips (put the planner in its own thread)
 *********************************************************************/
 #include <move_base/move_base.h>
+#include <move_base_msgs/RecoveryStatus.h>
 #include <cmath>
 
 #include <boost/algorithm/string.hpp>
@@ -97,6 +98,7 @@ namespace move_base {
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
+    recovery_status_pub_= action_nh.advertise<move_base_msgs::RecoveryStatus>("recovery_status", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
@@ -951,6 +953,15 @@ namespace move_base {
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
+
+          move_base_msgs::RecoveryStatus msg;
+          msg.pose_stamped = current_position;
+          msg.current_recovery_number = recovery_index_;
+          msg.total_number_of_recoveries = recovery_behaviors_.size();
+          msg.recovery_behavior_name =  recovery_behavior_names_[recovery_index_];
+
+          recovery_status_pub_.publish(msg);
+
           recovery_behaviors_[recovery_index_]->runBehavior();
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
@@ -1066,6 +1077,7 @@ namespace move_base {
 
             //initialize the recovery behavior with its name
             behavior->initialize(behavior_list[i]["name"], &tf_, planner_costmap_ros_, controller_costmap_ros_);
+            recovery_behavior_names_.push_back(behavior_list[i]["name"]);
             recovery_behaviors_.push_back(behavior);
           }
           catch(pluginlib::PluginlibException& ex){
