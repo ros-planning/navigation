@@ -66,9 +66,9 @@ LayeredCostmap::LayeredCostmap(std::string global_frame, bool rolling_window, bo
     inscribed_radius_(0.1)
 {
   if (track_unknown)
-    costmap_.setDefaultValue(255);
+    costmap_.setDefaultValue(NO_INFORMATION);
   else
-    costmap_.setDefaultValue(0);
+    costmap_.setDefaultValue(FREE_SPACE);
 }
 
 LayeredCostmap::~LayeredCostmap()
