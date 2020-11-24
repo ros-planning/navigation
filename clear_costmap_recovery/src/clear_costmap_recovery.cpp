@@ -36,6 +36,7 @@
 *********************************************************************/
 #include <clear_costmap_recovery/clear_costmap_recovery.h>
 #include <pluginlib/class_list_macros.h>
+#include <boost/pointer_cast.hpp>
 #include <vector>
 
 //register this planner as a RecoveryBehavior plugin
@@ -149,6 +150,13 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
     }
 
     if(clearable_layers_.count(name)!=0){
+
+      // check if the value is convertable
+      if(!dynamic_cast<costmap_2d::CostmapLayer*>(plugin.get())){
+        ROS_ERROR_STREAM("Layer " << name << " is not derived from costmap_2d::CostmapLayer");
+        continue;
+      }
+
       boost::shared_ptr<costmap_2d::CostmapLayer> costmap;
       costmap = boost::static_pointer_cast<costmap_2d::CostmapLayer>(plugin);
       clearMap(costmap, x, y);
