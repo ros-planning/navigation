@@ -66,6 +66,11 @@ namespace carrot_planner{
       CarrotPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
       /**
+       * @brief Destructor
+       */
+      ~CarrotPlanner();
+
+      /**
        * @brief  Initialization function for the CarrotPlanner
        * @param  name The name of this planner
        * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning

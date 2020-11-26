@@ -52,6 +52,11 @@ namespace carrot_planner {
   : costmap_ros_(NULL), initialized_(false){
     initialize(name, costmap_ros);
   }
+
+  CarrotPlanner::~CarrotPlanner() {
+    // deleting a nullptr is a noop
+    delete world_model_;
+  }
   
   void CarrotPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){
     if(!initialized_){
