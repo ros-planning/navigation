@@ -34,6 +34,7 @@
 *
 * Authors: Eitan Marder-Eppstein, Sachin Chitta
 *********************************************************************/
+#include <angles/angles.h>
 #include <carrot_planner/carrot_planner.h>
 #include <pluginlib/class_list_macros.h>
 #include <tf2/convert.h>
