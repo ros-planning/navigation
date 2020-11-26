@@ -21,6 +21,7 @@
 
     <build_depend>tf2_geometry_msgs</build_depend>
 
+    <depend>angles</depend>
     <depend>base_local_planner</depend>
     <depend>costmap_2d</depend>
     <depend>eigen</depend>
