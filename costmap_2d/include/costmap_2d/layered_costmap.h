@@ -71,7 +71,7 @@ public:
    */
   void updateMap(double robot_x, double robot_y, double robot_yaw);
 
-  std::string getGlobalFrameID() const
+  inline const std::string& getGlobalFrameID() const noexcept
   {
     return global_frame_;
   }
