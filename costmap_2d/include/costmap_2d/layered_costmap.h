@@ -154,6 +154,20 @@ public:
    * This is updated by setFootprint(). */
   double getInscribedRadius() { return inscribed_radius_; }
 
+  /**
+   * @brief updates the origin of this class and notifies all plugins
+   *
+   * The function will update the own origin and then notify every registered
+   * plugin by calling Layer::onOriginChanged.
+   *
+   * Note: The function is a no-op, if the passed origin is equal to the current
+   * origin
+   *
+   * @param x new x value
+   * @param y new y value
+   */
+  void updateOrigin(double x, double y);
+
 private:
   Costmap2D costmap_;
   std::string global_frame_;

@@ -116,8 +116,6 @@ void VoxelLayer::resetMaps()
 void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
                                        double* min_y, double* max_x, double* max_y)
 {
-  if (rolling_window_)
-    updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
   if (!enabled_)
     return;
   useExtraBounds(min_x, min_y, max_x, max_y);

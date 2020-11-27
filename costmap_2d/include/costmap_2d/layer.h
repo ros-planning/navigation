@@ -111,6 +111,14 @@ public:
    * notified of changes to the robot's footprint. */
   virtual void onFootprintChanged() {}
 
+  /**
+   * @brief Called from LayeredCostmap::updateOrigin
+   *
+   * Overwrite this method in order to implement custom reactions to a changed
+   * origin of the LayeredCostmap.
+   */
+  virtual void onOriginChanged() {}
+
 protected:
   /** @brief This is called at the end of initialize().  Override to
    * implement subclass-specific initialization.

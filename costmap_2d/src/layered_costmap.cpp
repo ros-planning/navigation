@@ -103,7 +103,7 @@ void LayeredCostmap::updateMap(double robot_x, double robot_y, double robot_yaw)
   {
     double new_origin_x = robot_x - costmap_.getSizeInMetersX() / 2;
     double new_origin_y = robot_y - costmap_.getSizeInMetersY() / 2;
-    costmap_.updateOrigin(new_origin_x, new_origin_y);
+    updateOrigin(new_origin_x, new_origin_y);
   }
 
   if (plugins_.size() == 0)
@@ -179,6 +179,23 @@ void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footp
       ++plugin)
   {
     (*plugin)->onFootprintChanged();
+  }
+}
+
+void LayeredCostmap::updateOrigin(double x, double y) {
+  // if the map's origin has not changed, skip
+  if(x == costmap_.getOriginX() && y == costmap_.getOriginY())
+    return;
+
+  // set the origin in the master layer
+  costmap_.updateOrigin(x, y);
+
+  // notify all plugins
+  typedef vector<boost::shared_ptr<Layer> >::iterator iterator;
+
+  for (iterator plugin = plugins_.begin(); plugin != plugins_.end(); ++plugin)
+  {
+    (*plugin)->onOriginChanged();
   }
 }
 
