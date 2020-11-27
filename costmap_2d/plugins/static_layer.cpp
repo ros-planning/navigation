@@ -296,9 +296,6 @@ void StaticLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
   if (!map_received_)
     return;
 
-  if (!enabled_)
-    return;
-
   if (!layered_costmap_->isRolling())
   {
     // if not rolling, the layered costmap (master_grid) has same coordinates as this layer
