@@ -94,6 +94,9 @@ namespace base_local_planner {
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
       goal_marker_pub_ = private_nh.advertise<visualization_msgs::Marker>("goal_area", 1, true);
+      constant_vector_pub_ = private_nh.advertise<visualization_msgs::Marker>("constant_vector", 1, true);
+      agv_marker_pub_ = private_nh.advertise<visualization_msgs::Marker>("agv_marker", 1, true);
+      switching_vector_pub_ = private_nh.advertise<visualization_msgs::Marker>("switching_vector", 1, true);
 
 
       tf_ = tf;
@@ -125,6 +128,7 @@ namespace base_local_planner {
       private_nh.param("acc_lim_x", acc_lim_x_, 2.5);
       private_nh.param("acc_lim_y", acc_lim_y_, 2.5);
       private_nh.param("acc_lim_theta", acc_lim_theta_, 3.2);
+      private_nh.param("constant_vector_length", constant_vector_length_, 2.0);
 
       private_nh.param("stop_time_buffer", stop_time_buffer, 0.2);
 
@@ -429,6 +433,7 @@ namespace base_local_planner {
 
     if (!global_plan_.empty())
       publishGoalAreaMarker(global_plan_.back());
+      computeSwitchingVector(global_plan_.back(), global_pose);
 
     //check to see if we've reached the goal position
     if (xy_tolerance_latch_ || is_xy_goal) {
@@ -634,5 +639,117 @@ namespace base_local_planner {
     m.color.b = 1.0;
     m.lifetime = ros::Duration(0);
     goal_marker_pub_.publish(m);
+  }
+
+  void TrajectoryPlannerROS::computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot)
+  {
+    const double goal_x = goal.pose.position.x;
+    const double goal_y = goal.pose.position.y;
+    const double goal_yaw = tf2::getYaw(goal.pose.orientation);
+    const double agv_x = goal_x + cos(goal_yaw) * constant_vector_length_;
+    const double agv_y = goal_y + sin(goal_yaw) * constant_vector_length_;
+    const double robot_x = robot.pose.position.x;
+    const double robot_y = robot.pose.position.y;
+    const double x_diff = agv_x - robot_x;
+    const double y_diff = agv_y - robot_y;
+    const double total_dist = pow( (pow(x_diff, 2.0) + pow(y_diff, 2.0)), 0.5);
+    const double pi = acos(-1);
+    double new_yaw = 0.0;
+
+    visualization_msgs::Marker m1;
+    m1.header = goal.header;
+    m1.ns = "constant vector";
+    m1.id = 0;
+    m1.type = visualization_msgs::Marker::ARROW;
+    m1.action = visualization_msgs::Marker::ADD;
+    m1.pose = goal.pose;
+    m1.scale.x = constant_vector_length_;
+    m1.scale.y = 0.05;
+    m1.scale.z = m1.scale.y;
+    m1.color.a = 0.5;
+    m1.color.r = 1.0;
+    m1.color.g = 0.0;
+    m1.color.b = 0.0;
+    m1.lifetime = ros::Duration(0);
+    constant_vector_pub_.publish(m1);
+    
+    // Visuzalize the point on the AGV line, specified by constant_vector_length_ and goal pose
+    visualization_msgs::Marker m2;
+    m2.header = goal.header;
+    m2.ns = "agv point";
+    m2.id = 0;
+    m2.type = visualization_msgs::Marker::SPHERE;
+    m2.action = visualization_msgs::Marker::ADD;
+    m2.pose = goal.pose;
+    m2.pose.position.x = agv_x;
+    m2.pose.position.y = agv_y;
+    m2.scale.x = 0.05;
+    m2.scale.y = m2.scale.x;
+    m2.scale.z = m2.scale.x;
+    m2.color.a = 0.5;
+    m2.color.r = 1.0;
+    m2.color.g = 1.0;
+    m2.color.b = 1.0;
+    m2.lifetime = ros::Duration(0);
+    agv_marker_pub_.publish(m2);
+
+    // Specify marker for switching vector
+    visualization_msgs::Marker m3;
+    m3.header = robot.header;
+    m3.ns = "switching vector";
+    m3.id = 0;
+    m3.type = visualization_msgs::Marker::ARROW;
+
+    if (isInGoal(goal, robot))
+    {
+      if (x_diff == 0)
+      {
+        if (y_diff == 0)
+          new_yaw = 0.0;
+        else if (y_diff > 0)
+          new_yaw = pi / 2.0;
+        else
+          new_yaw = -pi / 2.0;
+      }
+      else if (y_diff == 0)
+      {
+        if (x_diff > 0)
+          new_yaw = 0.0;
+        else
+          new_yaw = -pi;
+      }
+      else
+      {
+        new_yaw = atan((double)abs(y_diff) / (double)abs(x_diff));
+        // check quadrants
+        if (x_diff < 0 and y_diff > 0)
+          new_yaw = pi - new_yaw;
+        else if (x_diff < 0 and y_diff < 0)
+          new_yaw = pi + new_yaw;
+        else if (x_diff > 0 and y_diff < 0)
+          new_yaw = -new_yaw;
+      }
+
+      tf2::Quaternion q;
+      q.setRPY(0, 0, new_yaw);
+      q.normalize();
+
+      // Show switching vector
+      m3.action = visualization_msgs::Marker::ADD;
+      m3.pose = robot.pose;
+      m3.pose.orientation.x = q[0];
+      m3.pose.orientation.y = q[1];
+      m3.pose.orientation.z = q[2];
+      m3.pose.orientation.w = q[3];
+      m3.scale.x = total_dist;
+      m3.scale.y = 0.05;
+      m3.scale.z = m3.scale.y;
+      m3.color.a = 0.5;
+      m3.color.r = 0.0;
+      m3.color.g = 0.0;
+      m3.color.b = 0.0;
+      m3.lifetime = ros::Duration(0);
+      switching_vector_pub_.publish(m3);
+    }
   }
 };
