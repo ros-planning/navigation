@@ -195,7 +195,7 @@ namespace base_local_planner {
 
       bool isInGoal(const geometry_msgs::PoseStamped &goal_pose, const geometry_msgs::PoseStamped &robot_pose);
 
-      void computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot);
+      double computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot);
 
 
       WorldModel* world_model_; ///< @brief The world model that the controller will use

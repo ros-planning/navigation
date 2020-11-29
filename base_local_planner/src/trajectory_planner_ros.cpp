@@ -432,8 +432,11 @@ namespace base_local_planner {
     bool is_xy_goal = isInGoal(goal_point, global_pose);
 
     if (!global_plan_.empty())
+    {
       publishGoalAreaMarker(global_plan_.back());
-      computeSwitchingVector(global_plan_.back(), global_pose);
+      // Update the switching vector (i.e. the expected orientation of the robot at the goal)
+      goal_th = computeSwitchingVector(global_plan_.back(), global_pose);
+    }
 
     //check to see if we've reached the goal position
     if (xy_tolerance_latch_ || is_xy_goal) {
@@ -641,7 +644,7 @@ namespace base_local_planner {
     goal_marker_pub_.publish(m);
   }
 
-  void TrajectoryPlannerROS::computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot)
+  double TrajectoryPlannerROS::computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot)
   {
     const double goal_x = goal.pose.position.x;
     const double goal_y = goal.pose.position.y;
@@ -704,7 +707,7 @@ namespace base_local_planner {
     {
       if (x_diff == 0)
       {
-        if (y_diff == 0)
+        if (y_diff == 0)	//Think of what to do in this case
           new_yaw = 0.0;
         else if (y_diff > 0)
           new_yaw = pi / 2.0;
@@ -751,5 +754,11 @@ namespace base_local_planner {
       m3.lifetime = ros::Duration(0);
       switching_vector_pub_.publish(m3);
     }
+    else
+    {
+      m3.action = visualization_msgs::Marker::DELETE;
+    }
+
+    return new_yaw;
   }
 };
