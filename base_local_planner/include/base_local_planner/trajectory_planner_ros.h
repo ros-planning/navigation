@@ -195,6 +195,8 @@ namespace base_local_planner {
 
       bool isInGoal(const geometry_msgs::PoseStamped &goal_pose, const geometry_msgs::PoseStamped &robot_pose);
 
+      double computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot);
+
 
       WorldModel* world_model_; ///< @brief The world model that the controller will use
       TrajectoryPlanner* tc_; ///< @brief The trajectory controller
@@ -208,7 +210,7 @@ namespace base_local_planner {
       nav_msgs::Odometry base_odom_; ///< @brief Used to get the velocity of the robot
       std::string robot_base_frame_; ///< @brief Used as the base frame id of the robot
       double rot_stopped_velocity_, trans_stopped_velocity_;
-      double x_goal_tolerance_, y_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_;
+      double x_goal_tolerance_, y_goal_tolerance_, yaw_goal_tolerance_, min_in_place_vel_th_, constant_vector_length_;
       std::vector<geometry_msgs::PoseStamped> global_plan_;
       bool prune_plan_;
       boost::recursive_mutex odom_lock_;
@@ -222,6 +224,10 @@ namespace base_local_planner {
 
       ros::Publisher g_plan_pub_, l_plan_pub_;
       ros::Publisher goal_marker_pub_;
+      ros::Publisher constant_vector_pub_;
+      ros::Publisher agv_marker_pub_;
+      ros::Publisher switching_vector_pub_;
+
 
       dynamic_reconfigure::Server<BaseLocalPlannerConfig> *dsrv_;
       base_local_planner::BaseLocalPlannerConfig default_config_;
