@@ -582,7 +582,17 @@ bool Costmap2DROS::getRobotPose(geometry_msgs::PoseStamped& global_pose) const
   // get the global pose of the robot
   try
   {
-    tf_.transform(robot_pose, global_pose, global_frame_);
+    // use current time if possible (makes sure it's not in the future)
+    if (tf_.canTransform(global_frame_, robot_base_frame_, current_time))
+    {
+      geometry_msgs::TransformStamped transform = tf_.lookupTransform(global_frame_, robot_base_frame_, current_time);
+      tf2::doTransform(robot_pose, global_pose, transform);
+    }
+    // use the latest otherwise
+    else
+    {
+      tf_.transform(robot_pose, global_pose, global_frame_);
+    }
   }
   catch (tf2::LookupException& ex)
   {
