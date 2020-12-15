@@ -190,16 +190,6 @@ namespace navfn {
     return planner_->calcNavFnDijkstra();
   }
 
-  void NavfnROS::clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my){
-    if(!initialized_){
-      ROS_ERROR("This planner has not been initialized yet, but it is being used, please call initialize() before use");
-      return;
-    }
-
-    //set the associated costs in the cost map to be free
-    costmap_->setCost(mx, my, costmap_2d::FREE_SPACE);
-  }
-
   bool NavfnROS::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp){
     makePlan(req.start, req.goal, resp.plan.poses);
 
@@ -253,9 +243,6 @@ namespace navfn {
       ROS_WARN("The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
       return false;
     }
-
-    //clear the starting cell within the costmap because we know it can't be an obstacle
-    clearRobotCell(start, mx, my);
 
     //make sure to resize the underlying array that Navfn uses
     planner_->setNavArr(costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
