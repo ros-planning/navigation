@@ -78,6 +78,7 @@ Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* co
 
 Costmap2DPublisher::~Costmap2DPublisher()
 {
+  delete[] cost_translation_table_;
 }
 
 void Costmap2DPublisher::onNewSubscription(const ros::SingleSubscriberPublisher& pub)
