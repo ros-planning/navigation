@@ -359,7 +359,9 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
 
   old_config_ = config;
 
-  map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+  // only construct the thread if the frequency is positive
+  if(map_update_frequency > 0.0)
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 }
 
 void Costmap2DROS::readFootprintFromConfig(const costmap_2d::Costmap2DConfig &new_config,
@@ -435,10 +437,6 @@ void Costmap2DROS::movementCB(const ros::TimerEvent &event)
 
 void Costmap2DROS::mapUpdateLoop(double frequency)
 {
-  // the user might not want to run the loop every cycle
-  if (frequency == 0.0)
-    return;
-
   ros::NodeHandle nh;
   ros::Rate r(frequency);
   while (nh.ok() && !map_update_thread_shutdown_)
@@ -522,8 +520,9 @@ void Costmap2DROS::start()
   stop_updates_ = false;
 
   // block until the costmap is re-initialized.. meaning one update cycle has run
+  // note: this does not hold, if the user has disabled map-updates allgother
   ros::Rate r(100.0);
-  while (ros::ok() && !initialized_)
+  while (ros::ok() && !initialized_ && map_update_thread_)
     r.sleep();
 }
 
