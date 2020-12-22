@@ -435,7 +435,7 @@ namespace base_local_planner {
     {
       publishGoalAreaMarker(global_plan_.back());
       // Update the switching vector (i.e. the expected orientation of the robot at the goal)
-      goal_th = computeSwitchingVector(global_plan_.back(), global_pose);
+      goal_th = visualizeSwitchingVector(global_plan_.back(), global_pose);
     }
 
     //check to see if we've reached the goal position
@@ -644,21 +644,17 @@ namespace base_local_planner {
     goal_marker_pub_.publish(m);
   }
 
-  double TrajectoryPlannerROS::computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot)
+  double TrajectoryPlannerROS::visualizeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot)
   {
     const double goal_x = goal.pose.position.x;
     const double goal_y = goal.pose.position.y;
     const double goal_yaw = tf2::getYaw(goal.pose.orientation);
-    const double agv_x = goal_x + cos(goal_yaw) * constant_vector_length_;
-    const double agv_y = goal_y + sin(goal_yaw) * constant_vector_length_;
     const double robot_x = robot.pose.position.x;
     const double robot_y = robot.pose.position.y;
-    const double x_diff = agv_x - robot_x;
-    const double y_diff = agv_y - robot_y;
-    const double total_dist = pow( (pow(x_diff, 2.0) + pow(y_diff, 2.0)), 0.5);
-    const double pi = acos(-1);
-    double new_yaw = 0.0;
+    double agv_x, agv_y, total_dist;
+    double new_yaw = computeSwitchingVectorAngle(goal_x, goal_y, goal_yaw, robot_x, robot_y, constant_vector_length_, &agv_x, &agv_y, &total_dist);
 
+    // Visualize the constant vector, a vector pointing from the designated goal to the point on the AGV line
     visualization_msgs::Marker m1;
     m1.header = goal.header;
     m1.ns = "constant vector";
@@ -705,34 +701,6 @@ namespace base_local_planner {
 
     if (isInGoal(goal, robot))
     {
-      if (x_diff == 0)
-      {
-        if (y_diff == 0)	//Think of what to do in this case
-          new_yaw = 0.0;
-        else if (y_diff > 0)
-          new_yaw = pi / 2.0;
-        else
-          new_yaw = -pi / 2.0;
-      }
-      else if (y_diff == 0)
-      {
-        if (x_diff > 0)
-          new_yaw = 0.0;
-        else
-          new_yaw = -pi;
-      }
-      else
-      {
-        new_yaw = atan((double)abs(y_diff) / (double)abs(x_diff));
-        // check quadrants
-        if (x_diff < 0 and y_diff > 0)
-          new_yaw = pi - new_yaw;
-        else if (x_diff < 0 and y_diff < 0)
-          new_yaw = pi + new_yaw;
-        else if (x_diff > 0 and y_diff < 0)
-          new_yaw = -new_yaw;
-      }
-
       tf2::Quaternion q;
       q.setRPY(0, 0, new_yaw);
       q.normalize();
@@ -757,6 +725,48 @@ namespace base_local_planner {
     else
     {
       m3.action = visualization_msgs::Marker::DELETE;
+    }
+
+    return new_yaw;
+  }
+
+  double TrajectoryPlannerROS::computeSwitchingVectorAngle(const double goal_x, const double goal_y, const double goal_yaw, const double robot_x, const double robot_y, const double constant_vector_length, double* agv_x, double* agv_y, double* total_dist)
+  {
+    *agv_x = goal_x + cos(goal_yaw) * constant_vector_length_;
+    *agv_y = goal_y + sin(goal_yaw) * constant_vector_length_;
+    const double x_diff = *agv_x - robot_x;
+    const double y_diff = *agv_y - robot_y;
+    const double pi = acos(-1);
+    double new_yaw = 0.0;
+
+    *total_dist = pow( (pow(x_diff, 2.0) + pow(y_diff, 2.0)), 0.5);
+
+    if (x_diff == 0)
+    {
+      if (y_diff == 0)	//Think of what to do in this case
+        new_yaw = 0.0;
+      else if (y_diff > 0)
+        new_yaw = pi / 2.0;
+      else
+        new_yaw = -pi / 2.0;
+    }
+    else if (y_diff == 0)
+    {
+      if (x_diff > 0)
+        new_yaw = 0.0;
+      else
+        new_yaw = -pi;
+    }
+    else
+    {
+      new_yaw = atan((double)abs(y_diff) / (double)abs(x_diff));
+      // check quadrants
+      if (x_diff < 0 and y_diff > 0)
+        new_yaw = pi - new_yaw;
+      else if (x_diff < 0 and y_diff < 0)
+        new_yaw = pi + new_yaw;
+      else if (x_diff > 0 and y_diff < 0)
+        new_yaw = -new_yaw;
     }
 
     return new_yaw;
