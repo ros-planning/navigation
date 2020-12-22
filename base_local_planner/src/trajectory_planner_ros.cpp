@@ -732,8 +732,8 @@ namespace base_local_planner {
 
   double TrajectoryPlannerROS::computeSwitchingVectorAngle(const double goal_x, const double goal_y, const double goal_yaw, const double robot_x, const double robot_y, const double constant_vector_length, double* agv_x, double* agv_y, double* total_dist)
   {
-    *agv_x = goal_x + cos(goal_yaw) * constant_vector_length_;
-    *agv_y = goal_y + sin(goal_yaw) * constant_vector_length_;
+    *agv_x = goal_x + cos(goal_yaw) * constant_vector_length;
+    *agv_y = goal_y + sin(goal_yaw) * constant_vector_length;
     const double x_diff = *agv_x - robot_x;
     const double y_diff = *agv_y - robot_y;
     const double pi = acos(-1);
@@ -741,10 +741,12 @@ namespace base_local_planner {
 
     *total_dist = pow( (pow(x_diff, 2.0) + pow(y_diff, 2.0)), 0.5);
 
+    std::cout << "agv_x = " << agv_x << ", agv_y = " << agv_y << ", x_diff = " << x_diff << ", y_diff = " << y_diff << "\n";
+
     if (x_diff == 0)
     {
       if (y_diff == 0)	//Think of what to do in this case
-        new_yaw = 0.0;
+        new_yaw = goal_yaw;
       else if (y_diff > 0)
         new_yaw = pi / 2.0;
       else
@@ -766,8 +768,11 @@ namespace base_local_planner {
       else if (x_diff < 0 and y_diff < 0)
         new_yaw = pi + new_yaw;
       else if (x_diff > 0 and y_diff < 0)
-        new_yaw = -new_yaw;
+        new_yaw = 2*pi -new_yaw;
     }
+
+    if (new_yaw >= 2*pi)
+      new_yaw -= 2*pi;
 
     return new_yaw;
   }

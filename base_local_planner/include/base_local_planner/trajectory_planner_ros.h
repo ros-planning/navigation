@@ -153,6 +153,8 @@ namespace base_local_planner {
        */
       double scoreTrajectory(double vx_samp, double vy_samp, double vtheta_samp, bool update_map = true);
 
+      double computeSwitchingVectorAngle(const double goal_x, const double goal_y, const double goal_yaw, const double robot_x, const double robot_y, const double constant_vector_length, double* agv_x, double* agv_y, double* total_dist);
+
       bool isInitialized() {
         return initialized_;
       }
@@ -196,8 +198,6 @@ namespace base_local_planner {
       bool isInGoal(const geometry_msgs::PoseStamped &goal_pose, const geometry_msgs::PoseStamped &robot_pose);
 
       double visualizeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot);
-
-      double computeSwitchingVectorAngle(const double goal_x, const double goal_y, const double goal_yaw, const double robot_x, const double robot_y, const double constant_vector_length, double* agv_x, double* agv_y, double* total_dist);
 
 
       WorldModel* world_model_; ///< @brief The world model that the controller will use
