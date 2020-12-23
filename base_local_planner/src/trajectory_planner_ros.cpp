@@ -741,8 +741,6 @@ namespace base_local_planner {
 
     *total_dist = pow( (pow(x_diff, 2.0) + pow(y_diff, 2.0)), 0.5);
 
-    //std::cout << "agv_x = " << agv_x << ", agv_y = " << agv_y << ", x_diff = " << x_diff << ", y_diff = " << y_diff << "\n";
-
     if (x_diff == 0)
     {
       if (y_diff == 0)	//Think of what to do in this case
