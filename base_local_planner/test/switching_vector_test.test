@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+  <test name="switching_vector_test" test-name="switching_vector_test" pkg="base_local_planner" type="switching_vector_test" />
+</launch>

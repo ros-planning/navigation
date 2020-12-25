@@ -433,9 +433,11 @@ namespace base_local_planner {
 
     if (!global_plan_.empty())
     {
-      publishGoalAreaMarker(global_plan_.back());
+      publishGoalAreaMarker(goal_point);
       // Update the switching vector (i.e. the expected orientation of the robot at the goal)
-      goal_th = computeSwitchingVector(global_plan_.back(), global_pose);
+      goal_th = computeSwitchingVectorAngle(goal_point, global_pose, constant_vector_length_);
+      // Optional: for visualization of vectors on RVIZ
+      visualizeSwitchingVector(goal_point, global_pose, constant_vector_length_, goal_th);
     }
 
     //check to see if we've reached the goal position
@@ -644,21 +646,20 @@ namespace base_local_planner {
     goal_marker_pub_.publish(m);
   }
 
-  double TrajectoryPlannerROS::computeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot)
+  void TrajectoryPlannerROS::visualizeSwitchingVector(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot, const double constant_vector_length, const double required_yaw)
   {
     const double goal_x = goal.pose.position.x;
     const double goal_y = goal.pose.position.y;
     const double goal_yaw = tf2::getYaw(goal.pose.orientation);
-    const double agv_x = goal_x + cos(goal_yaw) * constant_vector_length_;
-    const double agv_y = goal_y + sin(goal_yaw) * constant_vector_length_;
     const double robot_x = robot.pose.position.x;
     const double robot_y = robot.pose.position.y;
+    const double agv_x = goal_x + cos(goal_yaw) * constant_vector_length;
+    const double agv_y = goal_y + sin(goal_yaw) * constant_vector_length;
     const double x_diff = agv_x - robot_x;
     const double y_diff = agv_y - robot_y;
-    const double total_dist = pow( (pow(x_diff, 2.0) + pow(y_diff, 2.0)), 0.5);
-    const double pi = acos(-1);
-    double new_yaw = 0.0;
+    double total_dist = pow( (pow(x_diff, 2.0) + pow(y_diff, 2.0)), 0.5);
 
+    // Visualize the constant vector, a vector pointing from the designated goal to the point on the AGV line
     visualization_msgs::Marker m1;
     m1.header = goal.header;
     m1.ns = "constant vector";
@@ -666,7 +667,7 @@ namespace base_local_planner {
     m1.type = visualization_msgs::Marker::ARROW;
     m1.action = visualization_msgs::Marker::ADD;
     m1.pose = goal.pose;
-    m1.scale.x = constant_vector_length_;
+    m1.scale.x = constant_vector_length;
     m1.scale.y = 0.05;
     m1.scale.z = m1.scale.y;
     m1.color.a = 0.5;
@@ -705,36 +706,8 @@ namespace base_local_planner {
 
     if (isInGoal(goal, robot))
     {
-      if (x_diff == 0)
-      {
-        if (y_diff == 0)	//Think of what to do in this case
-          new_yaw = 0.0;
-        else if (y_diff > 0)
-          new_yaw = pi / 2.0;
-        else
-          new_yaw = -pi / 2.0;
-      }
-      else if (y_diff == 0)
-      {
-        if (x_diff > 0)
-          new_yaw = 0.0;
-        else
-          new_yaw = -pi;
-      }
-      else
-      {
-        new_yaw = atan((double)abs(y_diff) / (double)abs(x_diff));
-        // check quadrants
-        if (x_diff < 0 and y_diff > 0)
-          new_yaw = pi - new_yaw;
-        else if (x_diff < 0 and y_diff < 0)
-          new_yaw = pi + new_yaw;
-        else if (x_diff > 0 and y_diff < 0)
-          new_yaw = -new_yaw;
-      }
-
       tf2::Quaternion q;
-      q.setRPY(0, 0, new_yaw);
+      q.setRPY(0, 0, required_yaw);
       q.normalize();
 
       // Show switching vector
@@ -758,6 +731,54 @@ namespace base_local_planner {
     {
       m3.action = visualization_msgs::Marker::DELETE;
     }
+  }
+
+  double TrajectoryPlannerROS::computeSwitchingVectorAngle(const geometry_msgs::PoseStamped &goal, const geometry_msgs::PoseStamped &robot, const double constant_vector_length)
+  {
+    const double goal_x = goal.pose.position.x;
+    const double goal_y = goal.pose.position.y;
+    const double goal_yaw = tf2::getYaw(goal.pose.orientation);
+    const double robot_x = robot.pose.position.x;
+    const double robot_y = robot.pose.position.y;
+    const double agv_x = goal_x + cos(goal_yaw) * constant_vector_length;
+    const double agv_y = goal_y + sin(goal_yaw) * constant_vector_length;
+    const double x_diff = agv_x - robot_x;
+    const double y_diff = agv_y - robot_y;
+    const double pi = acos(-1);
+    double new_yaw = 0.0;
+
+    if (x_diff == 0)
+    {
+      if (y_diff == 0)	//Think of what to do in this case
+        new_yaw = goal_yaw;
+      else if (y_diff > 0)
+        new_yaw = pi / 2.0;
+      else
+        new_yaw = 2* pi -pi / 2.0;
+    }
+    else if (y_diff == 0)
+    {
+      if (x_diff > 0)
+        new_yaw = 0.0;
+      else
+        new_yaw = pi;
+    }
+    else
+    {
+      new_yaw = atan((double)abs(y_diff) / (double)abs(x_diff));
+      // check quadrants
+      if (x_diff < 0 and y_diff > 0)
+        new_yaw = pi - new_yaw;
+      else if (x_diff < 0 and y_diff < 0)
+        new_yaw = pi + new_yaw;
+      else if (x_diff > 0 and y_diff < 0)
+        new_yaw = 2*pi -new_yaw;
+    }
+
+    if (new_yaw >= 2*pi)
+      new_yaw -= 2*pi;
+    else if (new_yaw < 0)
+      new_yaw += 2*pi;
 
     return new_yaw;
   }
