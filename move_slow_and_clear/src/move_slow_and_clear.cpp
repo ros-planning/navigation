@@ -62,6 +62,8 @@ namespace move_slow_and_clear
     private_nh_.param("limited_trans_speed", limited_trans_speed_, 0.25);
     private_nh_.param("limited_rot_speed", limited_rot_speed_, 0.45);
     private_nh_.param("limited_distance", limited_distance_, 0.3);
+    private_nh_.param("max_trans_param_name", max_trans_param_name_, std::string("max_trans_vel"));
+    private_nh_.param("max_rot_param_name", max_rot_param_name_, std::string("max_rot_vel"));
 
     std::string planner_namespace;
     private_nh_.param("planner_namespace", planner_namespace, std::string("DWAPlannerROS"));
@@ -131,14 +133,14 @@ namespace move_slow_and_clear
     //get the old maximum speed for the robot... we'll want to set it back
     if(!limit_set_)
     {
-      if(!planner_nh_.getParam("max_vel_trans", old_trans_speed_))
+      if(!planner_nh_.getParam(max_trans_param_name_, old_trans_speed_))
       {
-        ROS_ERROR("The planner %s, does not have the parameter max_vel_trans", planner_nh_.getNamespace().c_str());
+        ROS_ERROR("The planner %s, does not have the parameter %s", planner_nh_.getNamespace().c_str(), max_trans_param_name_.c_str());
       }
 
-      if(!planner_nh_.getParam("max_vel_theta", old_rot_speed_))
+      if(!planner_nh_.getParam(max_rot_param_name_, old_rot_speed_))
       {
-        ROS_ERROR("The planner %s, does not have the parameter max_vel_theta", planner_nh_.getNamespace().c_str());
+        ROS_ERROR("The planner %s, does not have the parameter %s", planner_nh_.getNamespace().c_str(), max_rot_param_name_.c_str());
       }
     }
 
@@ -194,7 +196,7 @@ namespace move_slow_and_clear
     {
       dynamic_reconfigure::Reconfigure vel_reconfigure;
       dynamic_reconfigure::DoubleParameter new_trans;
-      new_trans.name = "max_vel_trans";
+      new_trans.name = max_trans_param_name_;
       new_trans.value = trans_speed;
       vel_reconfigure.request.config.doubles.push_back(new_trans);
       try {
@@ -208,7 +210,7 @@ namespace move_slow_and_clear
     {
       dynamic_reconfigure::Reconfigure rot_reconfigure;
       dynamic_reconfigure::DoubleParameter new_rot;
-      new_rot.name = "max_vel_theta";
+      new_rot.name = max_rot_param_name_;
       new_rot.value = rot_speed;
       rot_reconfigure.request.config.doubles.push_back(new_rot);
       try {
