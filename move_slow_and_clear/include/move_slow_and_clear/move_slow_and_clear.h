@@ -72,6 +72,7 @@ namespace move_slow_and_clear
       bool initialized_;
       double clearing_distance_, limited_distance_;
       double limited_trans_speed_, limited_rot_speed_, old_trans_speed_, old_rot_speed_;
+      std::string max_trans_param_name_, max_rot_param_name_;
       ros::Timer distance_check_timer_;
       geometry_msgs::PoseStamped speed_limit_pose_;
       boost::thread* remove_limit_thread_;
