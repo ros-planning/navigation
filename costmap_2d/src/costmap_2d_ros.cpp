@@ -326,6 +326,7 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
     map_update_thread_shutdown_ = true;
     map_update_thread_->join();
     delete map_update_thread_;
+    map_update_thread_ = NULL;
   }
   map_update_thread_shutdown_ = false;
   double map_update_frequency = config.update_frequency;
