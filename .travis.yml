@@ -11,7 +11,7 @@ before_install:
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/test-package.sh
   - wget https://raw.githubusercontent.com/tue-robotics/tue-env/master/ci/packages.sh
   - ALL=$([ "$TRAVIS_EVENT_TYPE" == "cron" ] && echo "true") || true
-  - source packages.sh --commit-range=$TRAVIS_COMMIT_RANGE --all=$ALL
+  - source packages.sh --pullrequest=$TRAVIS_PULL_REQUEST --branch=$TRAVIS_PULL_REQUEST_BRANCH --commit-range=$TRAVIS_COMMIT_RANGE --all=$ALL
 
 env:
   - PACKAGE=amcl
