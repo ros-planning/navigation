@@ -1,0 +1,35 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  matrix:
+    name: Determine modified packages
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.modified-packages.outputs.packages }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 300
+      - name: Commit Range
+        id: commit-range
+        uses: tue-robotics/tue-env/ci/commit-range@master
+      - name: Modified packages
+        id: modified-packages
+        uses: tue-robotics/tue-env/ci/modified-packages@master
+        with:
+          commit-range: ${{ steps.commit-range.outputs.commit-range }}
+  tue-ci:
+    name: TUe CI - ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    needs: matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.matrix.outputs.packages) }}
+    steps:
+      - name: TUe CI
+        uses: tue-robotics/tue-env/ci/main@master
+        with:
+          package: ${{ matrix.package }}
