@@ -2,6 +2,18 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Publish recovery behavior kinetic (`#1007 <https://github.com/ros-planning/navigation/issues/1007>`_)
+  * First prototype of publishing recovery status
+  custom message tells you where the behavior occured, the name, index,
+  and total number of behaviors.
+  * fix message field typos
+  * move_base crash when using default recovery behaviors (`#1071 <https://github.com/ros-planning/navigation/issues/1071>`_)
+  Co-authored-by: Peter Mitrano <mitranopeter@gmail.com>
+  Co-authored-by: mattp256 <11513260+mattp256@users.noreply.github.com>
+* Contributors: David V. Lu!!
+
 1.14.8 (2020-08-27)
 -------------------
 

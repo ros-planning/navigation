@@ -2,6 +2,11 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* (amcl) fix missing '#if NEW_UNIFORM_SAMPLING' (`#1081 <https://github.com/ros-planning/navigation/issues/1081>`_)
+* Contributors: Matthijs van der Burgh
+
 1.14.8 (2020-08-27)
 -------------------
 * (AMCL) add resample limit cache [Kinetic] (`#1013 <https://github.com/ros-planning/navigation/issues/1013>`_)

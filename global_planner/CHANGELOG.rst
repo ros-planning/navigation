@@ -2,6 +2,16 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix kinetic build (`#1082 <https://github.com/ros-planning/navigation/issues/1082>`_)
+  delgating constructors are only allowed in C++11 and later, which
+  kinetic is not supporting. fix a build warning introduced in `#1028 <https://github.com/ros-planning/navigation/issues/1028>`_
+* Fixes `#1026 <https://github.com/ros-planning/navigation/issues/1026>`_ (`#1028 <https://github.com/ros-planning/navigation/issues/1028>`_)
+* correctly delete previously allocated array (`#1025 <https://github.com/ros-planning/navigation/issues/1025>`_)
+  Co-authored-by: Fedor Vlasov <fedor.vlasov@de.kaercher.com>
+* Contributors: David V. Lu!!, Michael Ferguson, mechatheo
+
 1.14.8 (2020-08-27)
 -------------------
 

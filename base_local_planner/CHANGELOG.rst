@@ -2,6 +2,9 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.8 (2020-08-27)
 -------------------
 
