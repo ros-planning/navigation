@@ -2,8 +2,8 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.9 (2021-01-05)
+-------------------
 * fix kinetic build (`#1082 <https://github.com/ros-planning/navigation/issues/1082>`_)
   delgating constructors are only allowed in C++11 and later, which
   kinetic is not supporting. fix a build warning introduced in `#1028 <https://github.com/ros-planning/navigation/issues/1028>`_

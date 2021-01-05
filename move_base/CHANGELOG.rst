@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.9 (2021-01-05)
+-------------------
 * Publish recovery behavior kinetic (`#1007 <https://github.com/ros-planning/navigation/issues/1007>`_)
   * First prototype of publishing recovery status
   custom message tells you where the behavior occured, the name, index,

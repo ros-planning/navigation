@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.9 (2021-01-05)
+-------------------
 * (map_server) add rtest dependency to tests (`#1062 <https://github.com/ros-planning/navigation/issues/1062>`_)
 * Contributors: Matthijs van der Burgh
 

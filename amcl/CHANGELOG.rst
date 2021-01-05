@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.9 (2021-01-05)
+-------------------
 * (amcl) fix missing '#if NEW_UNIFORM_SAMPLING' (`#1081 <https://github.com/ros-planning/navigation/issues/1081>`_)
 * Contributors: Matthijs van der Burgh
 
