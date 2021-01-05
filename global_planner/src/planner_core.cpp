@@ -74,7 +74,9 @@ GlobalPlanner::GlobalPlanner() :
 }
 
 GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
-        GlobalPlanner() {
+        costmap_(NULL), initialized_(false), allow_unknown_(true),
+        p_calc_(NULL), planner_(NULL), path_maker_(NULL), orientation_filter_(NULL),
+        potential_array_(NULL) {
     //initialize the planner
     initialize(name, costmap, frame_id);
 }
