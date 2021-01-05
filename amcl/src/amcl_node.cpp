@@ -273,7 +273,9 @@ class AmclNode
     void checkLaserReceived(const ros::TimerEvent& event);
 };
 
+#if NEW_UNIFORM_SAMPLING
 std::vector<std::pair<int,int> > AmclNode::free_space_indices;
+#endif
 
 #define USAGE "USAGE: amcl"
 
