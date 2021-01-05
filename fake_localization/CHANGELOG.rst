@@ -2,6 +2,12 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.14.8 (2020-08-27)
+-------------------
+* Fix `#796 <https://github.com/ros-planning/navigation/issues/796>`_ (`#1017 <https://github.com/ros-planning/navigation/issues/1017>`_)
+  Use ros::Time(0) instead of timestamp in message so as not to fail to lookupTransform.
+* Contributors: Ryo KOYAMA
+
 1.14.7 (2020-03-10)
 -------------------
 

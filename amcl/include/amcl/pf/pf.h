@@ -116,6 +116,9 @@ typedef struct _pf_t
 
   // Population size parameters
   double pop_err, pop_z;
+
+  // Resample limit cache
+  int *limit_cache;
   
   // The sample sets.  We keep two sets and use [current_set]
   // to identify the active set.
