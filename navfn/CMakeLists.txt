@@ -101,7 +101,7 @@ message (STATUS "NAVFN_HAVE_FLTK: ${NAVFN_HAVE_FLTK}, NETPBM: ${NAVFN_HAVE_NETPB
 # Just linking -lfltk is not sufficient on OS X
 if (NAVFN_HAVE_FLTK AND NAVFN_HAVE_NETPBM AND NOT APPLE)
   message (STATUS "FLTK found: adding navtest to build")
-  add_executable (navtest src/navtest.cpp src/navwin.cpp)
+  add_executable (navtest src/navtest/navtest.cpp src/navtest/navwin.cpp)
   set (FLTK_SKIP_FLUID 1)
   set (FLTK_SKIP_FORMS 1)
   set (FLTK_SKIP_IMAGES 1)
