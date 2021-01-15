@@ -37,5 +37,5 @@
       <param name="initial_pose_a" value="0.0"/>
     </node>
     <test time-limit="350" test-name="texas_willow_hallway_loop_corrected" pkg="amcl"
-          type="basic_localization.py" args="0 77.993 22.130 -2.603 0.75 0.75 250.0"/>
+          type="basic_localization.py" args="0 32.36 31.44 6.18 0.75 0.75 250.0"/>
 </launch>
