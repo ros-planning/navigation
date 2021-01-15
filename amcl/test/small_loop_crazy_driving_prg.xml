@@ -1,7 +1,8 @@
+<?xml version="1.0" ?>
 <launch>
     <param name="/use_sim_time" value="true"/>
-    <node name="rosbag" pkg="rosbag" type="play" 
-        args="-s 0.0 -d 5 -r 1 --clock --hz 10 $(find amcl)/test/small_loop_crazy_driving_prg_indexed.bag"/>
+    <node name="rosbag" pkg="rosbag" type="play"
+          args="-s 0.0 -d 5 -r 1 --clock --hz 10 $(find amcl)/test/small_loop_crazy_driving_prg_indexed.bag"/>
     <node name="map_sever" pkg="map_server" type="map_server" args="$(find amcl)/test/willow-full.pgm 0.1"/>
     <node pkg="amcl" type="amcl" name="amcl" respawn="false" output="screen">
       <remap from="scan" to="base_scan" />
@@ -13,13 +14,14 @@
       <param name="max_particles" value="5000"/>
       <param name="kld_err" value="0.05"/>
       <param name="kld_z" value="0.99"/>
+
       <param name="odom_model_type" value="omni"/>
       <param name="odom_alpha1" value="0.2"/>
       <param name="odom_alpha2" value="0.2"/>
-      <!-- translation std dev, m -->
       <param name="odom_alpha3" value="0.8"/>
       <param name="odom_alpha4" value="0.2"/>
       <param name="odom_alpha5" value="0.1"/>
+
       <param name="laser_z_hit" value="0.5"/>
       <param name="laser_z_short" value="0.05"/>
       <param name="laser_z_max" value="0.05"/>
@@ -28,8 +30,8 @@
       <param name="laser_lambda_short" value="0.1"/>
       <param name="laser_lambda_short" value="0.1"/>
       <param name="laser_model_type" value="likelihood_field"/>
-      <!-- <param name="laser_model_type" value="beam"/> -->
       <param name="laser_likelihood_max_dist" value="2.0"/>
+
       <param name="update_min_d" value="0.2"/>
       <param name="update_min_a" value="0.5"/>
       <param name="odom_frame_id" value="odom_combined"/>
@@ -37,13 +39,13 @@
       <param name="transform_tolerance" value="0.1"/>
       <param name="recovery_alpha_slow" value="0.0"/>
       <param name="recovery_alpha_fast" value="0.0"/>
-      <param name="initial_pose_x" value="14.016"/> 
+      <param name="initial_pose_x" value="14.016"/>
       <param name="initial_pose_y" value="25.7500"/>
       <param name="initial_pose_a" value="-3.0"/>
-      <param name="initial_cov_xx" value="0.1"/> 
+      <param name="initial_cov_xx" value="0.1"/>
       <param name="initial_cov_yy" value="0.1"/>
       <param name="initial_cov_aa" value="0.1"/>
     </node>
-  <test time-limit="180" test-name="small_loop_crazy_driving_prg" pkg="amcl" 
-        type="basic_localization.py" args="0 14.115 25.559 3.121 0.75 0.75 90.0"/>
+    <test time-limit="180" test-name="small_loop_crazy_driving_prg" pkg="amcl"
+          type="basic_localization.py" args="0 14.115 25.559 3.121 0.75 0.75 90.0"/>
 </launch>
