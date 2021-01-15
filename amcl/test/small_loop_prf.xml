@@ -44,5 +44,5 @@
       <param name="initial_pose_a" value="-0.006"/>
     </node>
     <test time-limit="180" test-name="basic_localization_small_loop_prf" pkg="amcl"
-          type="basic_localization.py" args="0 16.387 27.779 2.613 0.75 0.75 66.0"/>
+          type="basic_localization.py" args="0 13.94 23.02 4.72 0.75 0.75 66.0"/>
 </launch>

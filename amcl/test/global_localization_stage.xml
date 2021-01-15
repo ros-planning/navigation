@@ -44,5 +44,5 @@ setting pose: 30.329 34.644 3.142
       <param name="recovery_alpha_fast" value="0.0"/>
     </node>
     <test time-limit="180" test-name="global_localization_stage" pkg="amcl"
-          type="basic_localization.py" args="1 46.519 21.384 3.099 0.25 0.25 28.0" />
+          type="basic_localization.py" args="1 10.00 9.67 6.21 0.25 0.25 28.0" />
 </launch>
