@@ -47,5 +47,5 @@ Setting pose: 33.118 34.530 -0.519
       <param name="initial_pose_a" value="1.583"/>
     </node>
     <test time-limit="180" test-name="basic_localization_stage_rosie" pkg="amcl"
-          type="basic_localization.py" args="0 42.08 16.43 1.56 0.75 0.4 103.5"/>
+          type="basic_localization.py" args="0 33.12 34.53 -0.52 0.75 0.4 103.5"/>
 </launch>
