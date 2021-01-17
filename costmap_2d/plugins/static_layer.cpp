@@ -282,11 +282,6 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
       return;
   }
 
-  // if the origin has not changed, skip the re-painting, since we cannot add
-  // any new information
-  if(!has_updated_data_)
-    return;
-
   useExtraBounds(min_x, min_y, max_x, max_y);
 
   double wx, wy;
