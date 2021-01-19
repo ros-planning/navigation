@@ -20,6 +20,7 @@ jobs:
         uses: tue-robotics/tue-env/ci/modified-packages@master
         with:
           commit-range: ${{ steps.commit-range.outputs.commit-range }}
+          ignored-packages: navigation
   tue-ci:
     name: TUe CI - ${{ matrix.package }}
     runs-on: ubuntu-latest
