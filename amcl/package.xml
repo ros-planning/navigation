@@ -40,4 +40,6 @@
 
     <test_depend>rostest</test_depend>
     <test_depend>map_server</test_depend>
+    <test_depend>tf2_py</test_depend>
+    <test_depend>tf2_ros</test_depend>
 </package>

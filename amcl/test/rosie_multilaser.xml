@@ -1,10 +1,11 @@
+<?xml version="1.0" ?>
 <!-- Setting pose: 42.378 17.730 1.583
 Setting pose: 33.118 34.530 -0.519
 103.5s -->
 <launch>
     <param name="/use_sim_time" value="true"/>
-    <node name="rosbag" pkg="rosbag" type="play" 
-        args="-d 5 -r 1 --clock --hz 10 $(find amcl)/test/rosie_localization_stage.bag"/>
+    <node name="rosbag" pkg="rosbag" type="play"
+          args="-d 5 -r 1 --clock --hz 10 $(find amcl)/test/rosie_localization_stage.bag"/>
     <node name="map_server" pkg="map_server" type="map_server" args="$(find amcl)/test/willow-full-0.05.pgm 0.05"/>
     <node pkg="amcl" type="amcl" name="amcl" respawn="false" output="screen">
       <remap from="scan" to="base_scan" />
@@ -16,13 +17,14 @@ Setting pose: 33.118 34.530 -0.519
       <param name="max_particles" value="5000"/>
       <param name="kld_err" value="0.05"/>
       <param name="kld_z" value="0.99"/>
+
       <param name="odom_model_type" value="omni"/>
       <param name="odom_alpha1" value="0.2"/>
       <param name="odom_alpha2" value="0.2"/>
-      <!-- translation std dev, m -->
       <param name="odom_alpha3" value="0.8"/>
       <param name="odom_alpha4" value="0.2"/>
       <param name="odom_alpha5" value="0.1"/>
+
       <param name="laser_z_hit" value="0.5"/>
       <param name="laser_z_short" value="0.05"/>
       <param name="laser_z_max" value="0.05"/>
@@ -31,8 +33,8 @@ Setting pose: 33.118 34.530 -0.519
       <param name="laser_lambda_short" value="0.1"/>
       <param name="laser_lambda_short" value="0.1"/>
       <param name="laser_model_type" value="likelihood_field"/>
-      <!-- <param name="laser_model_type" value="beam"/> -->
       <param name="laser_likelihood_max_dist" value="2.0"/>
+
       <param name="update_min_d" value="0.2"/>
       <param name="update_min_a" value="0.5"/>
       <param name="odom_frame_id" value="odom"/>
@@ -44,6 +46,6 @@ Setting pose: 33.118 34.530 -0.519
       <param name="initial_pose_y" value="17.730"/>
       <param name="initial_pose_a" value="1.583"/>
     </node>
-  <test time-limit="180" test-name="basic_localization_stage_rosie" pkg="amcl"
-        type="basic_localization.py" args="0 42.08 16.43 1.56 0.75 0.4 103.5"/>
+    <test time-limit="180" test-name="basic_localization_stage_rosie" pkg="amcl"
+          type="basic_localization.py" args="0 33.12 34.53 -0.52 0.75 0.4 103.5"/>
 </launch>
