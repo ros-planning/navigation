@@ -163,17 +163,10 @@ if(CATKIN_ENABLE_TESTING)
   add_rostest(test/set_initial_pose.xml)
   add_rostest(test/set_initial_pose_delayed.xml)
   add_rostest(test/basic_localization_stage.xml)
+  add_rostest(test/global_localization_stage.xml)
   add_rostest(test/small_loop_prf.xml)
   add_rostest(test/small_loop_crazy_driving_prg.xml)
   add_rostest(test/texas_greenroom_loop.xml)
   add_rostest(test/rosie_multilaser.xml)
   add_rostest(test/texas_willow_hallway_loop.xml)
-
-# Not sure when or if this actually passed.
-#
-# The point of this is that you start with an even probability
-# distribution over the whole map and the robot localizes itself after
-# some number of iterations of sensing and motion.
-#
-#  add_rostest(test/global_localization_stage.xml)
 endif()
