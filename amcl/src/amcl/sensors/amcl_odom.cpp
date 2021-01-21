@@ -263,11 +263,15 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
     // Avoid computing a bearing from two poses that are extremely near each
     // other (happens on in-place rotation).
     if(sqrt(ndata->delta.v[1]*ndata->delta.v[1] + 
-            ndata->delta.v[0]*ndata->delta.v[0]) < 0.01)
-      delta_rot1 = 0.0;
-    else
+            ndata->delta.v[0]*ndata->delta.v[0]) < 0.01) {
+      // Make sure we still update translation in right direction!
+      double projected_movement = cos(old_pose.v[2])*ndata->delta.v[0] +
+                                  sin(old_pose.v[2])*ndata->delta.v[1];
+      delta_rot1 = projected_movement < 0.0 ? M_PI : 0.0; // or M_PI
+    } else {
       delta_rot1 = angle_diff(atan2(ndata->delta.v[1], ndata->delta.v[0]),
                               old_pose.v[2]);
+    }
     delta_trans = sqrt(ndata->delta.v[0]*ndata->delta.v[0] +
                        ndata->delta.v[1]*ndata->delta.v[1]);
     delta_rot2 = angle_diff(ndata->delta.v[2], delta_rot1);
@@ -297,7 +301,7 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
                                                        this->alpha2*delta_trans*delta_trans)));
 
       // Apply sampled update to particle pose
-      sample->pose.v[0] += delta_trans_hat * 
+      sample->pose.v[0] += delta_trans_hat *
               cos(sample->pose.v[2] + delta_rot1_hat);
       sample->pose.v[1] += delta_trans_hat * 
               sin(sample->pose.v[2] + delta_rot1_hat);
