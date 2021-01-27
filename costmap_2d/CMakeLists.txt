@@ -137,6 +137,14 @@ target_link_libraries(costmap_2d_node
     ${catkin_LIBRARIES}
 )
 
+add_executable(object_classifier_scan src/object_classifier_test.cpp)
+add_dependencies(object_classifier_scan ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(object_classifier_scan
+    costmap_2d
+    ${Boost_LIBRARIES}
+    ${catkin_LIBRARIES}
+)
+
 ## Configure Tests
 if(CATKIN_ENABLE_TESTING)
   # Find package test dependencies
