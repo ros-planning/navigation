@@ -27,14 +27,14 @@ void scanCallBack(const sensor_msgs::LaserScan& msg)
 
 void areaCallBack(const std_msgs::String& msg)
 {
-    if (msg.data.find(STATIC_AREA) != std::string::npos)
+    if (msg.data.find(STATIC_AREA) != std::string::npos || msg.data.find("obstacle") != std::string::npos)
     {
-        ROS_INFO("static area!");   // TODO: delete
+        //ROS_INFO("static area!");   // TODO: delete
         is_in_static = true;
     }
     else
     {
-        ROS_INFO("Not static!");    // TODO: delete
+        //ROS_INFO("Not static!");    // TODO: delete
         is_in_static = false;
     }
 }
@@ -46,10 +46,11 @@ int main(int argc, char** argv)
     ros::Subscriber scan_data = n.subscribe("scan", 1, scanCallBack);
     ros::Subscriber scanned_area = n.subscribe("robot_area", 1, areaCallBack);
     ros::Publisher pub_scan_point_pose = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 1);
+    ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);
     ros::Rate rate(1);
 
     float i;
-    int j;
+    int j, k;
 
     sensor_msgs::LaserScan filtered_scan;
     
@@ -65,10 +66,12 @@ int main(int argc, char** argv)
     while(ros::ok())
     {
         j = 0;
+        k = 0;      // TODO: delete
         filtered_scan.ranges = current_scan.ranges;
 
         for(i = current_scan.angle_min; i < current_scan.angle_max; i += current_scan.angle_increment)
         {
+            // TODO: transform to robot frame?
             scan_point_pose.pose.pose.position.x = current_scan.ranges[j] * cos(i);
             scan_point_pose.pose.pose.position.y = current_scan.ranges[j] * sin(i);
 
@@ -76,10 +79,17 @@ int main(int argc, char** argv)
             ros::spinOnce();
 
             if(is_in_static)
+            {
                 filtered_scan.ranges[j] = MAX_DIST;
+                k++;                                    // TODO: delete. Counter for number of static objects
+            }
+
 
             j++;
         }
+
+        pub_filtered_scan.publish(filtered_scan);
+        ROS_INFO("Number of static objects: %i\n", k);
 
         ros::spinOnce();
         rate.sleep();
