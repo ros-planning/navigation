@@ -1,0 +1,3 @@
+geometry_msgs/PoseArray pose_array_msg
+---
+bool success
