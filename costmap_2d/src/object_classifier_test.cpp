@@ -41,11 +41,11 @@ void areaCallBack(const std_msgs::String& msg)
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "obstacle_classifer_scan");
+    ros::init(argc, argv, "object_classifier_scan");
     ros::NodeHandle n;
     ros::Subscriber scan_data = n.subscribe("scan", 1, scanCallBack);
-    ros::Subscriber scanned_area = n.subscribe("robot_area", 1, areaCallBack);
-    ros::Publisher pub_scan_point_pose = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 1);
+    ros::Subscriber scanned_area = n.subscribe("scanned_area", 1, areaCallBack);
+    ros::Publisher pub_scan_point_pose = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("scan_pose", 1);
     ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);
     ros::Rate rate(1);
 
@@ -84,6 +84,8 @@ int main(int argc, char** argv)
                 k++;                                    // TODO: delete. Counter for number of static objects
             }
 
+            if(j % 100 == 0)
+                ROS_INFO("%i", j);
 
             j++;
         }
