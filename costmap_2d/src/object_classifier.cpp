@@ -1,85 +1,106 @@
 /*
 #include <ros/ros.h>
 #include <math.h>
-#include <string>
+#include <string.h>
 #include <std_msgs/String.h>
 #include <sensor_msgs/LaserScan.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 
-sensor_msgs::LaserScan current_scan;
-ros::Publisher pub_scan_result;
-std::string = scan_point_area;
+#define STATIC_AREA "obstacle"     // value of key from vector map for areas where static objects are expected
+#define MAX_DIST 61.5                   // TODO: distance output from LiDAR when no object is detected
+// #define SCAN_NUM 1440                   // TODO: number of scan points in one scan
 
-void sensorCallback(const sensor_msgs::LaserScan& msg)
+sensor_msgs::LaserScan current_scan;
+geometry_msgs::PoseWithCovarianceStamped scan_point_pose;
+bool is_in_static = false;
+std::string check = "obstacle";
+
+void scanCallBack(const sensor_msgs::LaserScan& msg)
 {
-    current_scan = msg;
-    pub_scan_result.publish(current_scan);
+    // Constant values that do not change. Need to be run only once
+    current_scan.angle_min = msg.angle_min;
+    current_scan.angle_max = msg.angle_max;
+    current_scan.angle_increment = msg.angle_increment;
+    current_scan.scan_time = msg.scan_time;
+    current_scan.range_max = msg.range_max;
+    current_scan.range_min = msg.range_min;
+
+    scan_point_pose.header = msg.header;
+    current_scan.ranges = msg.ranges;
 }
 
-void robotAreaCallback(const std_msgs::String& msg)
+void areaCallBack(const std_msgs::String::ConstPtr& msg)
 {
-    scan_point_area.assign(msg);
+    ROS_INFO("%s", msg->data.c_str());
+    if(msg->data.find(check) != std::string::npos)
+        is_in_static = true;
+    else
+        is_in_static = false;
 }
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "object_classifier");
     ros::NodeHandle n;
-    ros::Subscriber sensor_data = n.subscribe("scan", 1, sensorCallback);                       // Subscribe to LiDAR's scan data
-    ros::Subscriber from_vectormap = n.subscribe("robot_area", 1, robotAreaCallback);           // Subscribe to robot_area's information. TODO: remap in launch file?
-    ros::Publisher dynamic_object = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);     // Publish to a new topic
-    ros::Publisher to_vectormap = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("amcl_pose", 1);   // Publish to /amcl_pose. TODO: remap in launch file?
-    pub_scan_result = n.advertise<sensor_msgs::LaserScan>("current_scan", 1);
-    ros::Rate rate(5);
+    ros::Subscriber scan_data = n.subscribe("scan", 1, scanCallBack);
+    ros::Subscriber scanned_area = n.subscribe("scanned_area", 1, areaCallBack);
+    ros::Publisher pub_scan_point_pose = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("scan_pose", 1);
+    ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);
+    ros::Rate rate(0.1);
 
-    double i;
-    int j;
+    float i;
+    int j, k;
 
-    // For storing filtered scan data (only dynamic obstacles)
-    sensor_msgs::LaserScan scan_dynamic;
-    scan_dynamic = current_scan;
-
-    // For sending to VectorMap
-    geometry_msgs::PoseWithCovarianceStamped scan_pose;
-    scan_pose.pose.position.z = 0.0;
-    scan_pose.header = current_scan.header;
-    tf2:Quaternion q;
-    q.setRPY(0, 0, 0);
-    q.normalize();
-    scan_pose.pose.orientation.x = q[0];
-    scan_pose.pose.orientation.y = q[1];
-    scan_pose.pose.orientation.z = q[2];
-    scan_pose.pose.orientation.w = q[3];
-    scan_pose.pose.covariance = ;   //TODO: need to assign
+    sensor_msgs::LaserScan filtered_scan;
+    filtered_scan.intensities = {0};
+    
+    scan_point_pose.pose.pose.position.z = 0.0; //TODO: check if zero is okay. Need to adjust to the actual height ~= 0.23m?
+    // Identity quaternion (1, 0, 0, 0) means no rotation
+    scan_point_pose.pose.pose.orientation.x = 1;
+    scan_point_pose.pose.pose.orientation.y = 0;
+    scan_point_pose.pose.pose.orientation.z = 0;
+    scan_point_pose.pose.pose.orientation.w = 0;
+    // Make a zero covariance matrix since scan points' positions are independent of other variables
+    scan_point_pose.pose.covariance = {0};  // TODO: NOT effective for initializing a zero matrix 
 
     while(ros::ok())
     {
         j = 0;
-        
-        for(i = current_scan.angle_min; i <= current_scan.angle_max; i += current_scan.angle_increment)
-        {
-            scan_pose.pose.position.x = current_scan.ranges[j] * cos(i); //TODO: check if i is in rad or deg
-            scan_pose.pose.position.y = current_scan.ranges[j] * sin(i);
+        k = 0;      // TODO: delete
 
-            // if scanned point's value of area_info (key) is static_object
-            // do nothing or set the distance to max_distance?
-            // else
-            // register as dynamic_object (simply copy the distance)
-            to_vectormap.publish(scan_pose);
-            if (scan_point_area.find("static_object") != string::npos)  // TODO: use #define?
+        // TODO: run these parts only once?
+        filtered_scan.angle_max = current_scan.angle_max;
+        filtered_scan.angle_min = current_scan.angle_min;
+        filtered_scan.angle_increment = current_scan.angle_increment;
+        filtered_scan.range_max = current_scan.range_max;
+        filtered_scan.range_min = current_scan.range_min;
+
+        filtered_scan.header = scan_point_pose.header;
+        filtered_scan.ranges = current_scan.ranges;
+
+        for(i = current_scan.angle_min; i < current_scan.angle_max; i += current_scan.angle_increment)
+        {
+            // TODO: transform to robot frame?
+            scan_point_pose.pose.pose.position.x = current_scan.ranges[j] * cos(i);
+            scan_point_pose.pose.pose.position.y = current_scan.ranges[j] * sin(i);
+
+            pub_scan_point_pose.publish(scan_point_pose);
+            ros::spinOnce();
+
+            if(is_in_static)
             {
-                scan_dynamic.ranges[j] = scan_dynamic.range_max;
+                filtered_scan.ranges[j] = MAX_DIST;
+                k++;                                    // TODO: delete. Counter for number of static objects
             }
-            else
-            {
-                scan_dynamic.ranges[j] = current_scan.ranges[j];
-            }
+
+            if(j % 100 == 0)
+                ROS_INFO("%i", j);
 
             j++;
         }
 
-        dynamic_object.publish(scan_dynamic);
+        pub_filtered_scan.publish(filtered_scan);
+        ROS_INFO("Number of static objects: %i\n", k);
 
         ros::spinOnce();
         rate.sleep();
