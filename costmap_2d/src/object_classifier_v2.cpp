@@ -7,7 +7,8 @@
 #include <geometry_msgs/TransformStamped.h>
 
 #define UNOCCUPIED 0            // value of key from vector map for areas where static objects are expected
-#define MAX_DIST 61.5          // TODO: distance output from LiDAR when no object is detected
+#define MAX_DIST 61.5           // TODO: distance output from LiDAR when no object is detected
+#define RATE 40                 // the rate at which scan data are processed
 
 sensor_msgs::LaserScan current_scan;
 nav_msgs::OccupancyGrid vector_map_msg;
@@ -40,7 +41,7 @@ void vectormapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     vector_map_msg.data = msg->data;
 
     is_ready = true;
-    // ROS_INFO("I am called %i", vector_map_msg.data[0]);
+    ROS_INFO("I am called %i", vector_map_msg.data[0]);
 }
 
 int main(int argc, char** argv)
@@ -50,10 +51,10 @@ int main(int argc, char** argv)
     ros::Subscriber sub_scan = n.subscribe("scan", 1, scanCallback);
     ros::Subscriber sub_vectormap = n.subscribe("vector_map", 1, vectormapCallback);
     ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);
-    ros::Rate rate(1);
+    ros::Rate rate(RATE);
 
     sensor_msgs::LaserScan filtered_dynamic;
-    vector_map_msg.data = {0};
+    // vector_map_msg.data = {0};
     float angle;
     int i, j, k;
     double x, y;
@@ -63,6 +64,14 @@ int main(int argc, char** argv)
         i = 0;
         j = 0;
         k = 0;
+
+        // TODO: need to run only once
+        filtered_dynamic.range_max = current_scan.range_max;
+        filtered_dynamic.range_min = current_scan.range_min;
+        filtered_dynamic.angle_max = current_scan.angle_max;
+        filtered_dynamic.angle_min = current_scan.angle_min;
+        filtered_dynamic.angle_increment = current_scan.angle_increment;
+
         filtered_dynamic.header = current_scan.header;
         filtered_dynamic.ranges = current_scan.ranges;
         filtered_dynamic.intensities = current_scan.intensities;
@@ -71,7 +80,7 @@ int main(int argc, char** argv)
         {
             for(angle = current_scan.angle_min; angle < current_scan.angle_max; angle += current_scan.angle_increment)
             {
-                /*tf transform from scan frame to map frame
+                /* tf transform from scan frame to map frame
                 tf2::BufferCore buffer_core;
                 geometry_msgs::TransformStamped ts1;
                 ts1.header.frame_id = "map";
@@ -87,7 +96,7 @@ int main(int argc, char** argv)
                 x = ts_lookup.transform.translation.x;
                 y = ts_lookup.transform.translation.y;
                 */
-
+                
                 x = filtered_dynamic.ranges[i] * cos(angle);
                 y = filtered_dynamic.ranges[i] * sin(angle);
 
@@ -95,11 +104,11 @@ int main(int argc, char** argv)
                 // We need to transform 2D coordinate system of the map to 1D
                 j = floor((x - vector_map_msg.info.origin.position.x) / vector_map_msg.info.resolution) + floor((y - vector_map_msg.info.origin.position.y) / vector_map_msg.info.resolution) * vector_map_msg.info.width;
                 
-                if(vector_map_msg.data[j] == UNOCCUPIED)
+                // Not unoccupied means either unknown or obstacle. Anything in the "not unoccupied" zone is considered to be dynamic objects
+                if(vector_map_msg.data[j] != UNOCCUPIED)
                 {
                     filtered_dynamic.ranges[i] = MAX_DIST;
                     k++;
-                    // ROS_INFO("Number of static objects scanned: %i", k);    // TODO: only for debugging purpose
                 }
 
                 i++;
@@ -107,7 +116,7 @@ int main(int argc, char** argv)
                     ROS_INFO("Process running %i", i); 
             }
             
-            ROS_INFO("Number of static objects scanned: %i", k);
+            ROS_INFO("Number of dynamic objects scanned: %i", k);
             pub_filtered_scan.publish(filtered_dynamic);
         }
 
