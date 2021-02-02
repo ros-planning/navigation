@@ -1,17 +1,20 @@
 #include <ros/ros.h>
-#include <tf/tf.h>
-#include <tf2/buffer_core.h>
+#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <math.h>
 #include <sensor_msgs/LaserScan.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/Pose.h>
 #include <geometry_msgs/TransformStamped.h>
 
-#define UNOCCUPIED 0            // value of key from vector map for areas where static objects are expected
+#define STATIC_OBJECT 100       // value of key from vector map for areas where static objects are expected
 #define MAX_DIST 61.5           // TODO: distance output from LiDAR when no object is detected
-#define RATE 40                 // the rate at which scan data are processed
+#define RATE 10                 // the rate at which scan data are processed
 
 sensor_msgs::LaserScan current_scan;
 nav_msgs::OccupancyGrid vector_map_msg;
+geometry_msgs::TransformStamped transformStamped;
 bool is_ready = false;
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
@@ -41,7 +44,6 @@ void vectormapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     vector_map_msg.data = msg->data;
 
     is_ready = true;
-    ROS_INFO("I am called %i", vector_map_msg.data[0]);
 }
 
 int main(int argc, char** argv)
@@ -53,11 +55,15 @@ int main(int argc, char** argv)
     ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);
     ros::Rate rate(RATE);
 
+    geometry_msgs::Pose v;
+    geometry_msgs::Pose tv;
     sensor_msgs::LaserScan filtered_dynamic;
-    // vector_map_msg.data = {0};
     float angle;
     int i, j, k;
     double x, y;
+
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener(tfBuffer);
 
     while(ros::ok())
     {
@@ -76,36 +82,44 @@ int main(int argc, char** argv)
         filtered_dynamic.ranges = current_scan.ranges;
         filtered_dynamic.intensities = current_scan.intensities;
 
+        try
+        {
+            ros::Time now = filtered_dynamic.header.stamp;
+            //transformStamped = tfBuffer.lookupTransform("map", "hokuyo_link", now);  <--問題の再現
+            //transformStamped = tfBuffer.lookupTransform("map", "hokuyo_link", ros::Time(0));    // <-- Works!
+            transformStamped = tfBuffer.lookupTransform("map", "hokuyo_link", now, ros::Duration(3.0));
+        }
+        catch(tf::TransformException& ex)
+        {
+            ROS_INFO("%s", ex.what());
+        }
+
         if(is_ready)
         {
             for(angle = current_scan.angle_min; angle < current_scan.angle_max; angle += current_scan.angle_increment)
-            {
-                /* tf transform from scan frame to map frame
-                tf2::BufferCore buffer_core;
-                geometry_msgs::TransformStamped ts1;
-                ts1.header.frame_id = "map";
-                ts1.child_frame_id = "hokuyo_laser";        // TODO: fix
-                ts1.transform.translation.x = filtered_dynamic.ranges[i] * cos(angle);
-                ts1.transform.translation.y = filtered_dynamic.ranges[i] * sin(angle);
-                ts1.transform.translation.z = 0;
-                ts1.transform.rotation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, 0);
-                buffer_core.setTransform(ts1, "default_authority", true);
-                geometry_msgs::TransformStamped ts_lookup;
-                ts_lookup = buffer_core.lookupTransform("map", "hokuyo_link", ros::Time(0));
+            {                
+                v.position.x = filtered_dynamic.ranges[i] * cos(angle);
+                v.position.y = filtered_dynamic.ranges[i] * sin(angle);
+                v.orientation.w = 1.0;
 
-                x = ts_lookup.transform.translation.x;
-                y = ts_lookup.transform.translation.y;
-                */
+                try
+                {
+                    tf2::doTransform(v, tv, transformStamped);
+                    x = tv.position.x;
+                    y = tv.position.y;
+                }
+                catch(tf::TransformException& ex)
+                {
+                    ROS_INFO("%s", ex.what());
+                    break;
+                }
                 
-                x = filtered_dynamic.ranges[i] * cos(angle);
-                y = filtered_dynamic.ranges[i] * sin(angle);
-
                 // vector_map.data is a 1D array.
                 // We need to transform 2D coordinate system of the map to 1D
                 j = floor((x - vector_map_msg.info.origin.position.x) / vector_map_msg.info.resolution) + floor((y - vector_map_msg.info.origin.position.y) / vector_map_msg.info.resolution) * vector_map_msg.info.width;
                 
-                // Not unoccupied means either unknown or obstacle. Anything in the "not unoccupied" zone is considered to be dynamic objects
-                if(vector_map_msg.data[j] != UNOCCUPIED)
+                // Anything in the unoccupied and unknown zone is considered to be dynamic objects
+                if(vector_map_msg.data[j] == STATIC_OBJECT)
                 {
                     filtered_dynamic.ranges[i] = MAX_DIST;
                     k++;
@@ -116,7 +130,7 @@ int main(int argc, char** argv)
                     ROS_INFO("Process running %i", i); 
             }
             
-            ROS_INFO("Number of dynamic objects scanned: %i", k);
+            ROS_INFO("Number of static objects filtered out: %i", k);
             pub_filtered_scan.publish(filtered_dynamic);
         }
 
