@@ -1,109 +1,138 @@
-/*
 #include <ros/ros.h>
+#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <math.h>
-#include <string.h>
-#include <std_msgs/String.h>
 #include <sensor_msgs/LaserScan.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/TransformStamped.h>
 
-#define STATIC_AREA "obstacle"     // value of key from vector map for areas where static objects are expected
-#define MAX_DIST 61.5                   // TODO: distance output from LiDAR when no object is detected
-// #define SCAN_NUM 1440                   // TODO: number of scan points in one scan
+#define MAP_FRAME       "map"           // name of /map frame
+#define SCAN_FRAME_SIM  "hokuyo_link"   // name of /scan frame in simulation
+#define SCAN_FRAME_REAL "scan"          // TODO: name of /scan frame in real
+#define STATIC_OBJECT   100             // value of key from vector map for areas where static objects are expected
+#define MAX_DIST        61.5            // TODO: distance output from LiDAR when no object is detected
+#define RATE            40              // the rate at which scan data are processed
 
+bool is_ready = false;
 sensor_msgs::LaserScan current_scan;
-geometry_msgs::PoseWithCovarianceStamped scan_point_pose;
-bool is_in_static = false;
-std::string check = "obstacle";
+nav_msgs::OccupancyGrid vector_map_msg;
+geometry_msgs::TransformStamped transformStamped;
 
-void scanCallBack(const sensor_msgs::LaserScan& msg)
+void scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
     // Constant values that do not change. Need to be run only once
-    current_scan.angle_min = msg.angle_min;
-    current_scan.angle_max = msg.angle_max;
-    current_scan.angle_increment = msg.angle_increment;
-    current_scan.scan_time = msg.scan_time;
-    current_scan.range_max = msg.range_max;
-    current_scan.range_min = msg.range_min;
+    current_scan.angle_min = msg->angle_min;
+    current_scan.angle_max = msg->angle_max;
+    current_scan.angle_increment = msg->angle_increment;
+    current_scan.scan_time = msg->scan_time;
+    current_scan.range_max = msg->range_max;
+    current_scan.range_min = msg->range_min;
 
-    scan_point_pose.header = msg.header;
-    current_scan.ranges = msg.ranges;
+    current_scan.header = msg->header;
+    current_scan.ranges = msg->ranges;
+    current_scan.intensities = msg->intensities;
 }
 
-void areaCallBack(const std_msgs::String::ConstPtr& msg)
+void vectormapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    ROS_INFO("%s", msg->data.c_str());
-    if(msg->data.find(check) != std::string::npos)
-        is_in_static = true;
-    else
-        is_in_static = false;
+    // Constant values that do not change. Need to be run only once
+    vector_map_msg.info.resolution = msg->info.resolution;
+    vector_map_msg.info.height = msg->info.height;
+    vector_map_msg.info.width = msg->info.width;
+    vector_map_msg.info.origin.position.x = msg->info.origin.position.x;
+    vector_map_msg.info.origin.position.y = msg->info.origin.position.y;
+    is_ready = true;
+
+    vector_map_msg.data = msg->data;
 }
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "object_classifier");
+    ros::init(argc, argv, "obstacle_classifier");
     ros::NodeHandle n;
-    ros::Subscriber scan_data = n.subscribe("scan", 1, scanCallBack);
-    ros::Subscriber scanned_area = n.subscribe("scanned_area", 1, areaCallBack);
-    ros::Publisher pub_scan_point_pose = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("scan_pose", 1);
+    ros::Subscriber sub_scan = n.subscribe("scan", 1, scanCallback);
+    ros::Subscriber sub_vectormap = n.subscribe("vector_map", 1, vectormapCallback);
     ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);
-    ros::Rate rate(0.1);
+    ros::Rate rate(RATE);
 
-    float i;
-    int j, k;
-
-    sensor_msgs::LaserScan filtered_scan;
-    filtered_scan.intensities = {0};
-    
-    scan_point_pose.pose.pose.position.z = 0.0; //TODO: check if zero is okay. Need to adjust to the actual height ~= 0.23m?
-    // Identity quaternion (1, 0, 0, 0) means no rotation
-    scan_point_pose.pose.pose.orientation.x = 1;
-    scan_point_pose.pose.pose.orientation.y = 0;
-    scan_point_pose.pose.pose.orientation.z = 0;
-    scan_point_pose.pose.pose.orientation.w = 0;
-    // Make a zero covariance matrix since scan points' positions are independent of other variables
-    scan_point_pose.pose.covariance = {0};  // TODO: NOT effective for initializing a zero matrix 
+    float angle;
+    int i, j, k;
+    double x, y;
+    geometry_msgs::Pose v;
+    geometry_msgs::Pose tv;
+    sensor_msgs::LaserScan filtered_dynamic;
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener(tfBuffer);
 
     while(ros::ok())
     {
+        i = 0;
         j = 0;
-        k = 0;      // TODO: delete
+        k = 0;
 
-        // TODO: run these parts only once?
-        filtered_scan.angle_max = current_scan.angle_max;
-        filtered_scan.angle_min = current_scan.angle_min;
-        filtered_scan.angle_increment = current_scan.angle_increment;
-        filtered_scan.range_max = current_scan.range_max;
-        filtered_scan.range_min = current_scan.range_min;
+        // Constant values that do not change. Need to be run only once
+        filtered_dynamic.range_max = current_scan.range_max;
+        filtered_dynamic.range_min = current_scan.range_min;
+        filtered_dynamic.angle_max = current_scan.angle_max;
+        filtered_dynamic.angle_min = current_scan.angle_min;
+        filtered_dynamic.angle_increment = current_scan.angle_increment;
 
-        filtered_scan.header = scan_point_pose.header;
-        filtered_scan.ranges = current_scan.ranges;
+        filtered_dynamic.header = current_scan.header;
+        filtered_dynamic.ranges = current_scan.ranges;
+        filtered_dynamic.intensities = current_scan.intensities;
 
-        for(i = current_scan.angle_min; i < current_scan.angle_max; i += current_scan.angle_increment)
+        try
         {
-            // TODO: transform to robot frame?
-            scan_point_pose.pose.pose.position.x = current_scan.ranges[j] * cos(i);
-            scan_point_pose.pose.pose.position.y = current_scan.ranges[j] * sin(i);
-
-            pub_scan_point_pose.publish(scan_point_pose);
-            ros::spinOnce();
-
-            if(is_in_static)
-            {
-                filtered_scan.ranges[j] = MAX_DIST;
-                k++;                                    // TODO: delete. Counter for number of static objects
-            }
-
-            if(j % 100 == 0)
-                ROS_INFO("%i", j);
-
-            j++;
+            ros::Time now = filtered_dynamic.header.stamp;
+            transformStamped = tfBuffer.lookupTransform(MAP_FRAME, SCAN_FRAME_SIM, now, ros::Duration(0.5));
+        }
+        catch(tf::TransformException& ex)
+        {
+            ROS_INFO("%s", ex.what());
         }
 
-        pub_filtered_scan.publish(filtered_scan);
-        ROS_INFO("Number of static objects: %i\n", k);
+        if(is_ready)
+        {
+            for(angle = current_scan.angle_min; angle < current_scan.angle_max; angle += current_scan.angle_increment)
+            {                
+                v.position.x = filtered_dynamic.ranges[i] * cos(angle);
+                v.position.y = filtered_dynamic.ranges[i] * sin(angle);
+                v.orientation.w = 1.0;
+
+                try
+                {
+                    tf2::doTransform(v, tv, transformStamped);
+                    x = tv.position.x;
+                    y = tv.position.y;
+                }
+                catch(tf::TransformException& ex)
+                {
+                    ROS_INFO("%s", ex.what());
+                    break;
+                }
+                
+                // Transform 2D coordinate system from the map to 1D
+                j = floor((x - vector_map_msg.info.origin.position.x) / vector_map_msg.info.resolution) + floor((y - vector_map_msg.info.origin.position.y) / vector_map_msg.info.resolution) * vector_map_msg.info.width;
+                
+                // Anything in the unoccupied and unknown zone is considered to be dynamic objects
+                // Anything in the static object zone will be filtered out
+                if(vector_map_msg.data[j] == STATIC_OBJECT)
+                {
+                    filtered_dynamic.ranges[i] = MAX_DIST;
+                    k++;
+                }
+                i++; 
+            }
+            
+            ROS_INFO("Number of static objects filtered out: %i", k);
+            pub_filtered_scan.publish(filtered_dynamic);
+        }
 
         ros::spinOnce();
         rate.sleep();
     }
+
+    return 0;
 }
-*/

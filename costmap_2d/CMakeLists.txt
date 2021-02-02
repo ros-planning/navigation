@@ -138,7 +138,7 @@ target_link_libraries(costmap_2d_node
     ${catkin_LIBRARIES}
 )
 
-add_executable(object_classifier src/object_classifier_v2.cpp)
+add_executable(object_classifier src/object_classifier.cpp)
 add_dependencies(object_classifier ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(object_classifier
     costmap_2d
