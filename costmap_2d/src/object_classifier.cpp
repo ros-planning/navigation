@@ -9,8 +9,6 @@
 #include <geometry_msgs/TransformStamped.h>
 
 #define MAP_FRAME       "map"           // name of /map frame
-#define SCAN_FRAME_SIM  "hokuyo_link"   // name of /scan frame in simulation
-#define SCAN_FRAME_REAL "scan"          // TODO: name of /scan frame in real
 #define STATIC_OBJECT   100             // value of key from vector map for areas where static objects are expected
 #define MAX_DIST        61.5            // TODO: distance output from LiDAR when no object is detected
 #define RATE            40              // the rate at which scan data are processed
@@ -60,6 +58,8 @@ int main(int argc, char** argv)
     float angle;
     int i, j, k;
     double x, y;
+    std::string scan_frame_name;
+    n.param<std::string>("scan_frame_name", scan_frame_name, "laser");
     geometry_msgs::Pose v;
     geometry_msgs::Pose tv;
     sensor_msgs::LaserScan filtered_dynamic;
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
         try
         {
             ros::Time now = filtered_dynamic.header.stamp;
-            transformStamped = tfBuffer.lookupTransform(MAP_FRAME, SCAN_FRAME_SIM, now, ros::Duration(0.5));
+            transformStamped = tfBuffer.lookupTransform(MAP_FRAME, scan_frame_name, now, ros::Duration(0.5));
         }
         catch(tf::TransformException& ex)
         {
