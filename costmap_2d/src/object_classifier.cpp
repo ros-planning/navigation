@@ -48,7 +48,7 @@ void vectormapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "obstacle_classifier");
+    ros::init(argc, argv, "object_classifier");
     ros::NodeHandle n;
     ros::Subscriber sub_scan = n.subscribe("scan", 1, scanCallback);
     ros::Subscriber sub_vectormap = n.subscribe("vector_map", 1, vectormapCallback);
