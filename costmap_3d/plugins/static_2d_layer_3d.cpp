@@ -64,11 +64,13 @@ void Static2DLayer3D::initialize(LayeredCostmap3D* parent, std::string name, tf2
   map_topic_ = pnh_.param("map_topic", std::string("map"));
   height_ = pnh_.param("height", 0.0);
   lethal_cost_threshold_ = static_cast<int8_t>(pnh_.param<int>("lethal_cost_threshold", 100));
+  unknown_to_lethal_ = pnh_.param<bool>("unknown_to_lethal", false);
 
   ROS_INFO_STREAM("Static2DLayer3D " << name << ": initializing");
   ROS_INFO_STREAM("  map_topic: " << map_topic_);
   ROS_INFO_STREAM("  height: " << height_);
   ROS_INFO_STREAM("  lethal_cost_threshold: " << static_cast<int>(lethal_cost_threshold_));
+  ROS_INFO_STREAM("  unknown_to_lethal: " << unknown_to_lethal_);
 
   dsrv_.reset(new dynamic_reconfigure::Server<costmap_3d::GenericPluginConfig>(pnh_));
   dsrv_->setCallback(std::bind(&Static2DLayer3D::reconfigureCallback, this,
@@ -187,7 +189,10 @@ void Static2DLayer3D::matchSize(const geometry_msgs::Point& min, const geometry_
 Cost Static2DLayer3D::occupancyGridToCost(int8_t grid_cost)
 {
   if (grid_cost < 0)
-    return UNKNOWN;
+    if (unknown_to_lethal_)
+      return LETHAL;
+    else
+      return UNKNOWN;
   else if (grid_cost >= lethal_cost_threshold_)
     return LETHAL;
   return FREE;

@@ -98,6 +98,7 @@ protected:
   ros::Subscriber map_sub_;
   double height_;
   uint8_t lethal_cost_threshold_;
+  bool unknown_to_lethal_;
 };
 
 }  // namespace costmap_3d
