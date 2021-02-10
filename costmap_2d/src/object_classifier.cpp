@@ -17,6 +17,7 @@ bool is_ready = false;
 sensor_msgs::LaserScan current_scan;
 nav_msgs::OccupancyGrid vector_map_msg;
 geometry_msgs::TransformStamped transformStamped;
+size_t vector_map_size;
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
@@ -44,6 +45,7 @@ void vectormapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     is_ready = true;
 
     vector_map_msg.data = msg->data;
+    vector_map_size = vector_map_msg.data.size();
 }
 
 int main(int argc, char** argv)
@@ -52,7 +54,7 @@ int main(int argc, char** argv)
     ros::NodeHandle n;
     ros::Subscriber sub_scan = n.subscribe("scan", 1, scanCallback);
     ros::Subscriber sub_vectormap = n.subscribe("vector_map", 1, vectormapCallback);
-    ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 50);
+    ros::Publisher pub_filtered_scan = n.advertise<sensor_msgs::LaserScan>("scan_dynamic", 1);
     ros::Rate rate(RATE);
 
     float angle;
@@ -80,18 +82,8 @@ int main(int argc, char** argv)
         filtered_dynamic.angle_increment = current_scan.angle_increment;
 
         filtered_dynamic.header = current_scan.header;
-
-        int num_readings;
-        num_readings = (current_scan.angle_max - current_scan.angle_min) / current_scan.angle_increment;
-        filtered_dynamic.ranges.resize(num_readings);
-        filtered_dynamic.intensities.resize(num_readings);
-        for(unsigned int count = 0; count < num_readings; count++)
-        {
-            filtered_dynamic.ranges[count] = current_scan.ranges[count];
-            filtered_dynamic.intensities[count] = current_scan.intensities[count];
-        }
-        //filtered_dynamic.ranges = current_scan.ranges;
-        //filtered_dynamic.intensities = current_scan.intensities;
+        filtered_dynamic.ranges = current_scan.ranges;
+        filtered_dynamic.intensities = current_scan.intensities;
 
         try
         {
@@ -129,7 +121,10 @@ int main(int argc, char** argv)
                 
                 // Anything in the unoccupied and unknown zone is considered to be dynamic objects
                 // Anything in the static object zone will be filtered out
-                if(vector_map_msg.data[j] == STATIC_OBJECT)
+                if(j < 0 || j > vector_map_size){
+                    ROS_INFO("Index error: computed index %i, maximum is %zu", j, vector_map_size);
+                }
+                else if (vector_map_msg.data[j] == STATIC_OBJECT)
                 {
                     filtered_dynamic.ranges[i] = MAX_DIST;
                     k++;
