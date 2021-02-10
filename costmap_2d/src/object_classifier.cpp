@@ -10,7 +10,7 @@
 
 #define MAP_FRAME       "map"           // name of /map frame
 #define STATIC_OBJECT   100             // value of key from vector map for areas where static objects are expected
-#define MAX_DIST        61.5            // TODO: distance output from LiDAR when no object is detected
+#define MAX_DIST        60              // distance output from LiDAR when no object is detected
 #define RATE            40              // the rate at which scan data are processed
 
 bool is_ready = false;
@@ -99,7 +99,6 @@ int main(int argc, char** argv)
         {
             for(angle = current_scan.angle_min; angle < current_scan.angle_max; angle += current_scan.angle_increment)
             {
-                ROS_INFO("Hi %i", i);                
                 v.position.x = filtered_dynamic.ranges[i] * cos(angle);
                 v.position.y = filtered_dynamic.ranges[i] * sin(angle);
                 v.orientation.w = 1.0;
@@ -123,7 +122,7 @@ int main(int argc, char** argv)
                 // Anything in the static object zone will be filtered out
                 if(j < 0 || j > vector_map_size){
                     ROS_INFO("Index error: computed index %i, maximum is %zu", j, vector_map_size);
-                }
+		}
                 else if (vector_map_msg.data[j] == STATIC_OBJECT)
                 {
                     filtered_dynamic.ranges[i] = MAX_DIST;
@@ -131,7 +130,6 @@ int main(int argc, char** argv)
                 }
                 i++; 
             }
-            
             ROS_INFO("Number of static objects filtered out: %i", k);
             pub_filtered_scan.publish(filtered_dynamic);
         }
