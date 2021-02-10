@@ -152,6 +152,15 @@ namespace dwa_local_planner {
       return false;
     }
 
+    // Set current time that will be used by LocalPlannerUtil for TF extraction
+    // during current move_base control loop cycle.
+    // If not set, LocalPlannerUtil will wait for TF transform each time
+    // getGoal or getLocalPlan is called incurring multiple delays.
+    // Current robot pose must be obtained prior to this (and not updated later)
+    // to avoid possible TF extrapolation error,
+    // as getLocalPlan will also try to transform at its time stamp.
+    planner_util_.setTime(ros::Time::now());
+
     if(latchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_)) {
       ROS_INFO("Goal reached");
       return true;
@@ -253,10 +262,6 @@ namespace dwa_local_planner {
 
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
-    if ( ! costmap_ros_->getRobotPose(current_pose_)) {
-      ROS_ERROR("Could not get robot pose");
-      return false;
-    }
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     if ( ! planner_util_.getLocalPlan(current_pose_, transformed_plan)) {
       ROS_ERROR("Could not get local plan");

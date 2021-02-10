@@ -79,12 +79,22 @@ LocalPlannerLimits LocalPlannerUtil::getCurrentLimits() {
   return limits_;
 }
 
+inline ros::Time LocalPlannerUtil::getTime() {
+  //use current time if not set
+  ros::Time time;
+  if (time_set_)
+    time = time_;
+  else
+    time = ros::Time::now();
+  return time;
+}
 
 bool LocalPlannerUtil::getGoal(tf::Stamped<tf::Pose>& goal_pose) {
   //we assume the global goal is the last point in the global plan
   return base_local_planner::getGoalPose(*tf_,
         global_plan_,
         global_frame_,
+        getTime(),
         goal_pose);
 }
 
@@ -110,6 +120,7 @@ bool LocalPlannerUtil::getLocalPlan(tf::Stamped<tf::Pose>& global_pose, std::vec
       global_pose,
       *costmap_,
       global_frame_,
+      getTime(),
       transformed_plan)) {
     ROS_WARN("Could not transform the global plan to the frame of the controller");
     return false;

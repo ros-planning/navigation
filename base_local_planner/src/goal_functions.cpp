@@ -91,6 +91,7 @@ namespace base_local_planner {
       const tf::Stamped<tf::Pose>& global_pose,
       const costmap_2d::Costmap2D& costmap,
       const std::string& global_frame,
+      const ros::Time& time,
       std::vector<geometry_msgs::PoseStamped>& transformed_plan){
     transformed_plan.clear();
 
@@ -103,12 +104,8 @@ namespace base_local_planner {
     try {
       // get plan_to_global_transform from plan frame to global_frame
       tf::StampedTransform plan_to_global_transform;
-      tf.waitForTransform(global_frame, ros::Time::now(),
-                          plan_pose.header.frame_id, plan_pose.header.stamp,
-                          plan_pose.header.frame_id, ros::Duration(0.5));
-      tf.lookupTransform(global_frame, ros::Time(),
-                         plan_pose.header.frame_id, plan_pose.header.stamp, 
-                         plan_pose.header.frame_id, plan_to_global_transform);
+      tf.waitForTransform(global_frame, plan_pose.header.frame_id, time, ros::Duration(0.5));
+      tf.lookupTransform(global_frame, plan_pose.header.frame_id, time, plan_to_global_transform);
 
       //let's get the pose of the robot in the frame of the plan
       tf::Stamped<tf::Pose> robot_pose;
@@ -175,7 +172,7 @@ namespace base_local_planner {
 
   bool getGoalPose(const tf::TransformListener& tf,
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
-      const std::string& global_frame, tf::Stamped<tf::Pose>& goal_pose) {
+      const std::string& global_frame, const ros::Time& time, tf::Stamped<tf::Pose>& goal_pose) {
     if (global_plan.empty())
     {
       ROS_ERROR("Received plan with zero length");
@@ -185,12 +182,8 @@ namespace base_local_planner {
     const geometry_msgs::PoseStamped& plan_goal_pose = global_plan.back();
     try{
       tf::StampedTransform transform;
-      tf.waitForTransform(global_frame, ros::Time::now(),
-                          plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
-                          plan_goal_pose.header.frame_id, ros::Duration(0.5));
-      tf.lookupTransform(global_frame, ros::Time(),
-                         plan_goal_pose.header.frame_id, plan_goal_pose.header.stamp,
-                         plan_goal_pose.header.frame_id, transform);
+      tf.waitForTransform(global_frame, plan_goal_pose.header.frame_id, time, ros::Duration(0.5));
+      tf.lookupTransform(global_frame, plan_goal_pose.header.frame_id, time, transform);
 
       poseStampedMsgToTF(plan_goal_pose, goal_pose);
       goal_pose.setData(transform * goal_pose);
@@ -220,6 +213,7 @@ namespace base_local_planner {
       const std::vector<geometry_msgs::PoseStamped>& global_plan,
       const costmap_2d::Costmap2D& costmap __attribute__((unused)),
       const std::string& global_frame,
+      const ros::Time& time,
       tf::Stamped<tf::Pose>& global_pose,
       const nav_msgs::Odometry& base_odom,
       double rot_stopped_vel, double trans_stopped_vel,
@@ -227,7 +221,7 @@ namespace base_local_planner {
 
     //we assume the global goal is the last point in the global plan
     tf::Stamped<tf::Pose> goal_pose;
-    getGoalPose(tf, global_plan, global_frame, goal_pose);
+    getGoalPose(tf, global_plan, global_frame, time, goal_pose);
 
     double goal_x = goal_pose.getOrigin().getX();
     double goal_y = goal_pose.getOrigin().getY();
