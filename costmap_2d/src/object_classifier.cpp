@@ -17,6 +17,7 @@ bool is_ready = false;
 sensor_msgs::LaserScan current_scan;
 nav_msgs::OccupancyGrid vector_map_msg;
 geometry_msgs::TransformStamped transformStamped;
+std::vector<double> scan_ranges;
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
@@ -29,8 +30,12 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
     current_scan.range_min = msg->range_min;
 
     current_scan.header = msg->header;
-    current_scan.ranges = msg->ranges;
+    // current_scan.ranges = msg->ranges;
     current_scan.intensities = msg->intensities;
+    scan_ranges = {};
+    for(int i = 0; (current_scan.angle_max - current_scan.angle_min) / current_scan.angle_increment; i++){
+        scan_ranges.push_back(msg->ranges[i]);
+    }
 }
 
 void vectormapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
@@ -86,7 +91,7 @@ int main(int argc, char** argv)
         try
         {
             ros::Time now = filtered_dynamic.header.stamp;
-            transformStamped = tfBuffer.lookupTransform(MAP_FRAME, scan_frame_name, now, ros::Duration(0.5));
+            transformStamped = tfBuffer.lookupTransform(MAP_FRAME, scan_frame_name, now, ros::Duration(1.0));
         }
         catch(tf::TransformException& ex)
         {
@@ -95,10 +100,14 @@ int main(int argc, char** argv)
 
         if(is_ready)
         {
-            for(angle = current_scan.angle_min; angle < current_scan.angle_max; angle += current_scan.angle_increment)
+            size_t size = scan_ranges.size();
+            //for(angle = current_scan.angle_min; angle < current_scan.angle_max; angle += current_scan.angle_increment)
+            for(int i = 0; i < size; i++)
             {                
-                v.position.x = filtered_dynamic.ranges[i] * cos(angle);
-                v.position.y = filtered_dynamic.ranges[i] * sin(angle);
+                //v.position.x = filtered_dynamic.ranges[i] * cos(angle);
+                //v.position.y = filtered_dynamic.ranges[i] * sin(angle);
+                v.position.x = filtered_dynamic.ranges[i] * cos(current_scan.angle_min + i * current_scan.angle_increment);
+                v.position.y = filtered_dynamic.ranges[i] * sin(current_scan.angle_min + i * current_scan.angle_increment);
                 v.orientation.w = 1.0;
 
                 try
@@ -123,9 +132,8 @@ int main(int argc, char** argv)
                     filtered_dynamic.ranges[i] = MAX_DIST;
                     k++;
                 }
-                i++; 
+                //i++; 
             }
-            
             ROS_INFO("Number of static objects filtered out: %i", k);
             pub_filtered_scan.publish(filtered_dynamic);
         }
