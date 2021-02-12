@@ -58,7 +58,7 @@ int main(int argc, char** argv)
     ros::Rate rate(RATE);
 
     float angle;
-    int i, j, k;
+    int i, j, static_object_count;
     double x, y;
     std::string scan_frame_name;
     n.param<std::string>("scan_frame_name", scan_frame_name, "laser");
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     {
         i = 0;
         j = 0;
-        k = 0;
+        static_object_count = 0;
 
         // Constant values that do not change. Need to be run only once
         filtered_dynamic.range_max = current_scan.range_max;
@@ -125,12 +125,12 @@ int main(int argc, char** argv)
 		}
                 else if (vector_map_msg.data[j] == STATIC_OBJECT)
                 {
-                    filtered_dynamic.ranges[i] = MAX_DIST;
-                    k++;
+                    filtered_dynamic.ranges[i] = filtered_dynamic.range_max;
+                    static_object_count++;
                 }
                 i++; 
             }
-            ROS_INFO("Number of static objects filtered out: %i", k);
+            ROS_INFO("Number of static objects filtered out: %i", static_object_count);
             pub_filtered_scan.publish(filtered_dynamic);
         }
 
