@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
             roscpp
             sensor_msgs
             std_msgs
+            tf
             tf2
             tf2_geometry_msgs
             tf2_ros
@@ -136,6 +137,10 @@ target_link_libraries(costmap_2d_node
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
 )
+
+add_executable(object_classifier src/object_classifier.cpp)
+add_dependencies(object_classifier ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(object_classifier ${catkin_LIBRARIES})
 
 ## Configure Tests
 if(CATKIN_ENABLE_TESTING)
