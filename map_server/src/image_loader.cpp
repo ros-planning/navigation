@@ -39,6 +39,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "ros/ros.h"
+#include "ros/console.h"
+
 // We use SDL_image to load the image from disk
 #include <SDL/SDL_image.h>
 
@@ -52,6 +55,34 @@
 
 namespace map_server
 {
+
+void
+loadMapFromFile(nav_msgs::GetMap::Response* resp,
+                const char* fname, double res, bool negate,
+                double occ_th, double free_th, double* origin)
+{
+  loadMapFromFile(resp,
+                  fname, res, negate,
+                  occ_th, free_th, origin,
+                  TRINARY);
+}
+
+void
+loadMapFromFile(nav_msgs::GetMap::Response* resp,
+                const char* fname, double res, bool negate,
+                double occ_th, double free_th, double* origin,
+                bool trinary)
+{
+  ROS_WARN(
+    "map_server::loadMapFromFile with trinary as bool has been deprecated.",
+    "Please update your code to use MapMode enumerable."
+  );
+  MapMode mode = (trinary)?TRINARY:SCALE;
+  loadMapFromFile(resp,
+                  fname, res, negate,
+                  occ_th, free_th, origin,
+                  mode);
+}
 
 void
 loadMapFromFile(nav_msgs::GetMap::Response* resp,
