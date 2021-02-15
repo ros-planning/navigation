@@ -44,13 +44,6 @@
 namespace costmap_3d
 {
 
-enum CombinationMethod
-{
-  OVERWRITE = 0,
-  MAXIMUM = 1,
-  NOTHING = 99,
-};
-
 /* OccupancyOcTree Log odds values for various costmap states. */
 typedef float Cost;
 // Sentinel. Don't choose NAN as it can't be pruned in octomap
