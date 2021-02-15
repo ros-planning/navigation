@@ -86,6 +86,18 @@ void CostmapLayer3D::updateCosts(const Costmap3D& bounds_map, Costmap3D* master_
       case GenericPlugin_Maximum:
         master_map->setTreeValues(static_cast<const Costmap3D*>(costmap_.get()), &bounds_map, true, false);
         break;
+      case GenericPlugin_IfUnknown:
+        master_map->setTreeValues(static_cast<const Costmap3D*>(costmap_.get()), &bounds_map, false, false,
+                                  [](const Costmap3D::NodeType* layer_node, Costmap3D::NodeType* master_node, bool node_just_created, const octomap::OcTreeKey&, unsigned int)
+                                  {
+                                    // Only copy data for newly created nodes.
+                                    // A new node indicates that the node did not exist in the master map.
+                                    if (node_just_created)
+                                    {
+                                      master_node->copyData(*layer_node);
+                                    }
+                                  });
+        break;
       default:
       case GenericPlugin_Nothing:
         // In case this was a mistake, give info once that we are using NOTHING
