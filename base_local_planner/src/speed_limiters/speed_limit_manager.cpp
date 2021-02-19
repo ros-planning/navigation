@@ -73,7 +73,7 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap, std::strin
   limiters_.push_back(external_limiter);
 
   // Static
-  auto static_limiter = std::make_shared<StaticSpeedLimiter>(costmap);
+  auto static_limiter = std::make_shared<StaticObjectSpeedLimiter>(costmap);
   static_limiter->initialize(name);
   limiters_.push_back(static_limiter);
 
@@ -129,8 +129,8 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
     else if(temp.name == "External"){
       limiterArray.external = temp;
     }
-    else if(temp.name == "Static"){
-      limiterArray.static = temp;
+    else if(temp.name == "StaticObject"){
+      limiterArray.staticObject = temp;
     }
     max_allowed_linear_vel = std::min(max_allowed_linear_vel, linear);
     max_allowed_angular_vel = std::min(max_allowed_angular_vel, angular);

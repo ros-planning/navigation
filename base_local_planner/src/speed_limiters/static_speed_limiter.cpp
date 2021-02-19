@@ -36,6 +36,7 @@
  *********************************************************************/
 
 #include <base_local_planner/speed_limiters/static_speed_limiter.h>
+#include <base_local_planner/speed_limiters/safety_ce_bounds_data.h>
 #include <base_local_planner/geometry_math_helpers.h>
 #include <base_local_planner/Obstacles.h>
 #include <tf/transform_datatypes.h>
@@ -43,20 +44,20 @@
 
 namespace base_local_planner {
 
-void StaticSpeedLimiter::initialize(std::string name) {
+void StaticObjectSpeedLimiter::initialize(std::string name) {
   ros::NodeHandle private_nh(name + "/static");
   
-  configClient_ = std::make_shared<dynamic_reconfigure::Client<StaticSpeedLimiterConfig>>(name + "/static");
-  configClient_->setConfigurationCallback(boost::bind(&StaticSpeedLimiter::reconfigure, this, _1));
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>>(name + "/static");
+  configClient_->setConfigurationCallback(boost::bind(&StaticObjectSpeedLimiter::reconfigure, this, _1));
 
   static_pub = private_nh.advertise<base_local_planner::Obstacles>("obstacle_info", 5, true);
 }
 
-std::string StaticSpeedLimiter::getName(){
+std::string StaticObjectSpeedLimiter::getName(){
   return std::string("Static");
 }
 
-bool StaticSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
+bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
   // Reset the maximum allowed velocity
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
@@ -64,18 +65,14 @@ bool StaticSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
   // Collect all of the necessary values
   calculateFootprintBounds(costmap_->getRobotFootprint());
 
+
+/*
   Get the CE stopping path edges to get the distance from the static object map. This would then test against the configured distances.  
   Doing a non-linear mapping versus distance with more slowing the closer the static object is.
   This will be interesting as the slower the speed the tighter the region
   Smoothing speed will need to be done. Otherwise the Chuck will cycle between speeding up and slowing down.
- 
-  double distance_from_static = layered_costmap_->getDistanceFromStaticMap(px, py) * resolution_;
-  auto obstructions = costmap_->getLayeredCostmap()->getObstructions();
-  if (!obstructions)
-  {
-    ROS_WARN_THROTTLE(1.0, "No obstructions in speed limiter");
-    return false;
-  }
+ */
+  double distance_from_static = layered_costmap_->getDistanceFromStaticMap(px, py);
 
   tf::Stamped<tf::Pose> current_pose;
   if (!getCurrentPose(current_pose))
@@ -168,12 +165,12 @@ bool StaticSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double&
   return true;
 }
 
-double StaticSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionMsg& obs)
+double StaticObjectSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionMsg& obs)
 {
   return atan2(obs.y, obs.x);
 }
 
-StaticSpeedLimiter::LinearSpeedLimiterResult StaticSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs)
+StaticObjectSpeedLimiter::LinearSpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs)
 {
   LinearSpeedLimiterResult result;
 
@@ -259,7 +256,7 @@ StaticSpeedLimiter::LinearSpeedLimiterResult StaticSpeedLimiter::calculateAllowe
   }
 }
 
-double StaticSpeedLimiter::calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs)
+double StaticObjectSpeedLimiter::calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs)
 {
   double distance_to_obstruction = std::sqrt(obs.x * obs.x + obs.y * obs.y) - circumscribed_radius_;
 
@@ -270,7 +267,7 @@ double StaticSpeedLimiter::calculateAllowedAngularSpeed(const costmap_2d::Obstru
 }
 
 
-costmap_2d::ObstructionMsg StaticSpeedLimiter::obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in,
+costmap_2d::ObstructionMsg StaticObjectSpeedLimiter::obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in,
   const tf::Pose& current_pose_inv_tf)
 {
   if (in.frame_id == costmap_->getBaseFrameID())
@@ -296,7 +293,7 @@ costmap_2d::ObstructionMsg StaticSpeedLimiter::obstructionToBodyFrame(const cost
   return out;
 }
 
-void StaticSpeedLimiter::calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint)
+void StaticObjectSpeedLimiter::calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint)
 {
   if (footprint.empty())
   {

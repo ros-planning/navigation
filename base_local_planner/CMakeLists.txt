@@ -63,6 +63,7 @@ generate_dynamic_reconfigure_options(
     cfg/ObstacleSpeedLimiter.cfg
     cfg/PathSpeedLimiter.cfg
     cfg/ShadowSpeedLimiter.cfg
+    cfg/StaticSpeedLimiter.cfg
 )
 
 catkin_package(

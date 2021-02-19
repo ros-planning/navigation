@@ -39,7 +39,7 @@
 #define STATIC_SPEED_LIMITER_H_
 
 #include <base_local_planner/speed_limiters/speed_limiter.h>
-#include <base_local_planner/StaticSpeedLimiterConfig.h>
+#include <base_local_planner/StaticObjectSpeedLimiterConfig.h>
 #include <costmap_2d/ObstructionMsg.h>
 #include <tf/tf.h>
 
@@ -50,17 +50,17 @@ namespace base_local_planner {
  *
  * It will limit the speed near static obstacle to limit false safety trips
  */
-class StaticSpeedLimiter : public SpeedLimiter {
+class StaticObjectSpeedLimiter : public SpeedLimiter {
 public:
   /**
    * Constructor
    */
-  StaticSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
+  StaticObjectSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
 
   /**
    * Destructor
    */
-  virtual ~StaticSpeedLimiter() {}
+  virtual ~StaticObjectSpeedLimiter() {}
 
   virtual void initialize(std::string name);
 
@@ -73,7 +73,7 @@ public:
   std::string getName();
   
 private:
-  void reconfigure(StaticSpeedLimiterConfig cfg) {
+  void reconfigure(StaticObjectSpeedLimiterConfig cfg) {
     params_ = cfg;
   };
 
@@ -95,8 +95,8 @@ private:
 
   void calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint);
 
-  std::shared_ptr<dynamic_reconfigure::Client<StaticSpeedLimiterConfig>> configClient_;
-  StaticSpeedLimiterConfig params_;
+  std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
+  StaticObjectSpeedLimiterConfig params_;
 
   double footprint_min_x_ = -0.4;
   double footprint_max_x_ = 0.4;
