@@ -170,6 +170,8 @@ protected:
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
+  // Retrieve a parameter which can have two names (an old and a new one). If the old was found, print a warning.
+  static void getParam(ros::NodeHandle& nh, const std::string& oldName, const std::string& newName, double& value);
 };
 
 }  // namespace costmap_2d

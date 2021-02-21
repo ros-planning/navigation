@@ -147,7 +147,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
 
     const pcl::PointCloud<pcl::PointXYZ>& cloud = *(obs.cloud_);
 
-    double sq_obstacle_range = obs.obstacle_range_ * obs.obstacle_range_;
+    double sq_max_obstacle_range = obs.max_obstacle_range_ * obs.max_obstacle_range_;
 
     for (unsigned int i = 0; i < cloud.points.size(); ++i)
     {
@@ -161,7 +161,7 @@ void VoxelLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, 
           + (cloud.points[i].z - obs.origin_.z) * (cloud.points[i].z - obs.origin_.z);
 
       // if the point is far enough away... we won't consider it
-      if (sq_dist >= sq_obstacle_range)
+      if (sq_dist >= sq_max_obstacle_range)
         continue;
 
       // now we need to compute the map coordinates for the observation
@@ -352,14 +352,14 @@ void VoxelLayer::raytraceFreespace(const Observation& clearing_observation, doub
     double point_x, point_y, point_z;
     if (worldToMap3DFloat(wpx, wpy, wpz, point_x, point_y, point_z))
     {
-      unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
+      unsigned int cell_raytrace_range = cellDistance(clearing_observation.max_raytrace_range_);
 
       // voxel_grid_.markVoxelLine(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z);
       voxel_grid_.clearVoxelLineInMap(sensor_x, sensor_y, sensor_z, point_x, point_y, point_z, costmap_,
                                       unknown_threshold_, mark_threshold_, FREE_SPACE, NO_INFORMATION,
                                       cell_raytrace_range);
 
-      updateRaytraceBounds(ox, oy, wpx, wpy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
+      updateRaytraceBounds(ox, oy, wpx, wpy, clearing_observation.max_raytrace_range_, min_x, min_y, max_x, max_y);
 
       if (publish_clearing_points)
       {

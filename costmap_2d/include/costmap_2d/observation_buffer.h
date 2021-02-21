@@ -63,22 +63,45 @@ class ObservationBuffer
 public:
   /**
    * @brief  Constructs an observation buffer
+   * This constructor is deprecated, use the constructor with min and max raytrace range.
    * @param  topic_name The topic of the observations, used as an identifier for error and warning messages
    * @param  observation_keep_time Defines the persistence of observations in seconds, 0 means only keep the latest
    * @param  expected_update_rate How often this buffer is expected to be updated, 0 means there is no limit
    * @param  min_obstacle_height The minimum height of a hitpoint to be considered legal
    * @param  max_obstacle_height The minimum height of a hitpoint to be considered legal
-   * @param  obstacle_range The range to which the sensor should be trusted for inserting obstacles
+   * @param  max_obstacle_range The range to which the sensor should be trusted for inserting obstacles
    * @param  raytrace_range The range to which the sensor should be trusted for raytracing to clear out space
    * @param  tf A reference to a TransformListener
    * @param  global_frame The frame to transform PointClouds into
    * @param  sensor_frame The frame of the origin of the sensor, can be left blank to be read from the messages
    * @param  tf_tolerance The amount of time to wait for a transform to be available when setting a new global frame
    */
+  ROS_DEPRECATED
   ObservationBuffer(std::string topic_name, double observation_keep_time, double expected_update_rate,
-                    double min_obstacle_height, double max_obstacle_height, double obstacle_range,
-                    double raytrace_range, tf::TransformListener& tf, std::string global_frame,
+                    double min_obstacle_height, double max_obstacle_height, double max_obstacle_range,
+                    double max_raytrace_range, tf::TransformListener& tf, std::string global_frame,
                     std::string sensor_frame, double tf_tolerance);
+
+  /**
+   * @brief  Constructs an observation buffer
+   * @param  topic_name The topic of the observations, used as an identifier for error and warning messages
+   * @param  observation_keep_time Defines the persistence of observations in seconds, 0 means only keep the latest
+   * @param  expected_update_rate How often this buffer is expected to be updated, 0 means there is no limit
+   * @param  min_obstacle_height The minimum height of a hitpoint to be considered legal
+   * @param  max_obstacle_height The minimum height of a hitpoint to be considered legal
+   * @param  min_obstacle_range The range from which the sensor should be trusted for inserting obstacles
+   * @param  max_obstacle_range The range to which the sensor should be trusted for inserting obstacles
+   * @param  min_raytrace_range The range from which the sensor start to be trusted for raytracing to clear out space
+   * @param  max_raytrace_range The range to which the sensor should be trusted for raytracing to clear out space
+   * @param  tf A reference to a TransformListener
+   * @param  global_frame The frame to transform PointClouds into
+   * @param  sensor_frame The frame of the origin of the sensor, can be left blank to be read from the messages
+   * @param  tf_tolerance The amount of time to wait for a transform to be available when setting a new global frame
+   */
+  ObservationBuffer(std::string topic_name, double observation_keep_time, double expected_update_rate,
+                    double min_obstacle_height, double max_obstacle_height, double min_obstacle_range,
+                    double max_obstacle_range, double min_raytrace_range, double max_raytrace_range,
+                    tf::TransformListener& tf, std::string global_frame, std::string sensor_frame, double tf_tolerance);
 
   /**
    * @brief  Destructor... cleans up
@@ -157,7 +180,7 @@ private:
   std::string topic_name_;
   double min_obstacle_height_, max_obstacle_height_;
   boost::recursive_mutex lock_;  ///< @brief A lock for accessing data in callbacks safely
-  double obstacle_range_, raytrace_range_;
+  double min_obstacle_range_, max_obstacle_range_, min_raytrace_range_, max_raytrace_range_;
   double tf_tolerance_;
 };
 }  // namespace costmap_2d
