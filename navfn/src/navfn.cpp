@@ -136,7 +136,7 @@ namespace navfn {
     // path buffers
     npathbuf = npath = 0;
     pathx = pathy = NULL;
-    pathStep = 0.5;
+    pathStep = 1.0;
   }
 
 
