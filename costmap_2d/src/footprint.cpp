@@ -208,6 +208,8 @@ bool makeFootprintFromString(const std::string& footprint_string, std::vector<ge
   return true;
 }
 
+static std::string actuator_state;
+
 void actuator_state_callback(const std_msgs::Int32 msg)
 {
   ROS_INFO("actuator callback");

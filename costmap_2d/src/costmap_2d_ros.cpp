@@ -49,7 +49,6 @@ using namespace std;
 
 namespace costmap_2d
 {
-  extern std::string actuator_state;
 
 void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string name, bool should_delete = true)
 {
