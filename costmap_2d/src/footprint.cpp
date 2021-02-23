@@ -217,12 +217,10 @@ void actuator_state_callback(const int msg)
   {
     actuator_state = "HIGH";
     ROS_INFO("actuator state is updated to be /"HIGH/"");
-    return 0;
   }
   else{
     actuator_state = "LOW";
     ROS_INFO("actuator state is updated to be /"LOW/"");
-    return 0;
   }
 }
 
