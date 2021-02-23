@@ -34,6 +34,7 @@
 #include <costmap_2d/footprint.h>
 #include <costmap_2d/array_parser.h>
 #include<geometry_msgs/Point32.h>
+#include<std_msgs/Int32.h>
 
 namespace costmap_2d
 {
@@ -207,13 +208,12 @@ bool makeFootprintFromString(const std::string& footprint_string, std::vector<ge
   return true;
 }
 
-void actuator_state_callback(const int msg)
+void actuator_state_callback(const std_msgs::Int32 msg)
 {
   ROS_INFO("actuator callback");
   //static int actuator_state = msg; //0=low, 1=mid, 2=high
   
-  static std::string actuator_state;
-  if (msg==2)
+  if (msg->data.c_str()==2)
   {
     actuator_state = "HIGH";
     ROS_INFO("actuator state is updated to be HIGH");
@@ -226,6 +226,7 @@ void actuator_state_callback(const int msg)
 
 std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
 {
+  static std::string actuator_state;
   ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
 
   std::string full_param_name;
@@ -309,7 +310,6 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
   }
   else{
     ROS_ERROR("actuator state not published or received");
-    return 1;
   }
   //return points;
 }
