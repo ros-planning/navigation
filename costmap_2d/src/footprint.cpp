@@ -213,7 +213,7 @@ void actuator_state_callback(const std_msgs::Int32 msg)
   ROS_INFO("actuator callback");
   //static int actuator_state = msg; //0=low, 1=mid, 2=high
   
-  if (msg==2)
+  if (msg.data==2)
   {
     actuator_state = "HIGH";
     ROS_INFO("actuator state is updated to be HIGH");
@@ -226,7 +226,6 @@ void actuator_state_callback(const std_msgs::Int32 msg)
 
 std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
 {
-  static std::string actuator_state;
   ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
 
   std::string full_param_name;
