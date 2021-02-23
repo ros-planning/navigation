@@ -216,18 +216,17 @@ void actuator_state_callback(const int msg)
   if (msg==2)
   {
     actuator_state = "HIGH";
-    ROS_INFO("actuator state is updated to be /"HIGH/"");
+    ROS_INFO("actuator state is updated to be HIGH");
   }
   else{
     actuator_state = "LOW";
-    ROS_INFO("actuator state is updated to be /"LOW/"");
+    ROS_INFO("actuator state is updated to be LOW");
   }
 }
 
 std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
 {
-
-actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, actuator_state_callback );
+  ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
 
   std::string full_param_name;
   std::string full_radius_param_name;
