@@ -208,7 +208,7 @@ bool makeFootprintFromString(const std::string& footprint_string, std::vector<ge
   return true;
 }
 
-static std::string actuator_state;
+//static std::string actuator_state;
 
 /*
 void actuator_state_callback(const std_msgs::Int32 msg)
@@ -227,7 +227,7 @@ void actuator_state_callback(const std_msgs::Int32 msg)
   }
 }
 */
-std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
+std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, const std::string actuator_state)
 {
   //ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
 
