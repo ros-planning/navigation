@@ -162,7 +162,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
 
   //subscribe if robot is carrying sth bt reading actuator_state topic
-  ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
+  ros::Subscriber actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, actuator_state_callback );
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap",
