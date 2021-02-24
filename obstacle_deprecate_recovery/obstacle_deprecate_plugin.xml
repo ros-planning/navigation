@@ -1,0 +1,7 @@
+<library path="lib/libobstacle_deprecate_recovery">
+	<class name="obstacle_deprecate_recovery/ObstacleDeprecateRecovery" type="obstacle_deprecate_recovery::ObstacleDeprecateRecovery" base_class_type="nav_core::RecoveryBehavior">
+		<description>
+			A recovery behavior that deprecates obstacles by lowering the inflation and occdist_scale. Consult with the safety requirements before using this recovery plugin.
+		</description>
+	</class>
+</library>
