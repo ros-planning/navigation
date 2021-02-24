@@ -61,6 +61,8 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
   if (should_delete) old_h.deleteParam(name);
 }
 
+ros::Subscriber actuator_state_sub_;
+
 Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     layered_costmap_(NULL),
     name_(name),
@@ -157,6 +159,8 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   private_nh.param(topic_param, topic, std::string("oriented_footprint"));
   footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
 
+  //subscribe if robot is carrying sth bt reading actuator_state topic
+  ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap",
@@ -175,6 +179,22 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1,
                                                                               _2);
   dsrv_->setCallback(cb);
+}
+
+void actuator_state_callback(const std_msgs::Int32 msg)
+{
+  ROS_INFO("actuator callback");
+  //static int actuator_state = msg; //0=low, 1=mid, 2=high
+  
+  if (msg.data==2)
+  {
+    actuator_state = "HIGH";
+    ROS_INFO("actuator state is updated to be HIGH");
+  }
+  else{
+    actuator_state = "LOW";
+    ROS_INFO("actuator state is updated to be LOW");
+  }
 }
 
 void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint)
