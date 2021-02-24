@@ -313,7 +313,7 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
   return points;
   }
   else{
-    ROS_ERROR("actuator state not published or received");
+    ROS_WARN("actuator state not published or received");
   }
   //return points;
 }
