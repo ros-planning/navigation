@@ -62,6 +62,7 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
 }
 
 ros::Subscriber actuator_state_sub_;
+static std::string actuator_state;
 
 Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     layered_costmap_(NULL),
