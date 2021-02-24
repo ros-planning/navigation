@@ -231,7 +231,7 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
 //std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, const std::string actuator_state)
 {
   //ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
-  ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback, this);
+  ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback);
 
   std::string full_param_name;
   std::string full_radius_param_name;

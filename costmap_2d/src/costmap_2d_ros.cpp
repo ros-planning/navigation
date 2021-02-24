@@ -192,7 +192,7 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
   setUnpaddedRobotFootprint(toPointVector(footprint));
 }
 
-/*
+//*
 void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
 {
   ROS_INFO("actuator callback");
@@ -208,7 +208,7 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
     ROS_INFO("actuator state is updated to be LOW");
   }
 }
-*/
+//*/
 Costmap2DROS::~Costmap2DROS()
 {
   map_update_thread_shutdown_ = true;
