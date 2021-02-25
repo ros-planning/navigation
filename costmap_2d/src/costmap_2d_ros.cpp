@@ -169,7 +169,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, &Costmap2DROS::actuator_state_callback, this);
   //setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh, actuator_state));
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh,actuator_state));
-  setUnpaddedRobotFootprint(dynamicFootprintFromParams(private_nh));
+  setUnpaddedRobotFootprint(Costmap2DROS::dynamicFootprintFromParams(private_nh));
 
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap",
