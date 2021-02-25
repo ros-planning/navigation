@@ -229,14 +229,16 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg, ros::Node
       if (makeFootprintFromString(std::string(footprint_xmlrpc), points))
       {
         writeFootprintToParam(nh, points);
-        return points;
+        setUnpaddedRobotFootprint(points);
+        return;
       }
     }
     else if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray)
     {
       points = makeFootprintFromXMLRPC(footprint_xmlrpc, full_param_name);
       writeFootprintToParam(nh, points);
-      return points;
+      setUnpaddedRobotFootprint(points);
+      return;
     }
   }
 
@@ -250,7 +252,8 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg, ros::Node
   // Else neither param was found anywhere this knows about, so
   // defaults will come from dynamic_reconfigure stuff, set in
   // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
-  return points;
+  setUnpaddedRobotFootprint(points);
+  return;
   //
   }
   else if(actuator_state == "HIGH")
@@ -266,14 +269,16 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg, ros::Node
       if (makeFootprintFromString(std::string(footprint_xmlrpc), points))
       {
         writeFootprintToParam(nh, points);
-        return points;
+        setUnpaddedRobotFootprint(points);
+        return;
       }
     }
     else if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray)
     {
       points = makeFootprintFromXMLRPC(footprint_xmlrpc, full_param_name);
       writeFootprintToParam(nh, points);
-      return points;
+      setUnpaddedRobotFootprint(points);
+      return;
     }
     //
   }
