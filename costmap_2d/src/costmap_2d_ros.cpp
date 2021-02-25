@@ -293,7 +293,8 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg, ros::Node
   // Else neither param was found anywhere this knows about, so
   // defaults will come from dynamic_reconfigure stuff, set in
   // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
-  return points;
+  setUnpaddedRobotFootprint(points);
+  return;
   }
 }
 
