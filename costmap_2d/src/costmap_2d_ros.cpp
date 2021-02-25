@@ -197,7 +197,7 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 //*
 void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
 {
-  ROS_INFO("actuator callback");
+  //ROS_INFO("actuator callback");
   //static int actuator_state = msg; //0=low, 1=mid, 2=high
   
   if (msg.data==2)
