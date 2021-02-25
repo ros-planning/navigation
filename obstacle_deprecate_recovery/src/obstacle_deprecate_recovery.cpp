@@ -35,11 +35,13 @@ namespace obstacle_deprecate_recovery{
             return;
         }
 
+        ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
+
         if(blp_nh.getParam("sim_time", sim_time_old_)){
-            ROS_INFO("Parameter sim_time is set to %d", sim_time_old_);
+            ROS_INFO("Parameter sim_time is set to %f", sim_time_old_);
             if(sim_time_old_ < max_sim_time_){
                 blp_nh.setParam("sim_time", max_sim_time_);
-                ROS_INFO("Updated sim_time from %d to %d", sim_time_old_, max_sim_time_);
+                ROS_INFO("Updated sim_time from %f to %f", sim_time_old_, max_sim_time_);
             }
             else{
                 ROS_INFO("Parameter sim_time is already greater than or equal to its max value");
@@ -51,10 +53,10 @@ namespace obstacle_deprecate_recovery{
         }
 
         if(blp_nh.getParam("occdist_scale", occdist_scale_old_)){
-            ROS_INFO("Parameter occdist_scale is set to %d", occdist_scale_old_);
+            ROS_INFO("Parameter occdist_scale is set to %f", occdist_scale_old_);
             if(occdist_scale_old_ < min_occdist_scale_){
                 blp_nh.setParam("occdist_scale", min_occdist_scale_);
-                ROS_INFO("Updated occdist_scale from %d to %d", occdist_scale_old_, min_occdist_scale_);
+                ROS_INFO("Updated occdist_scale from %f to %f", occdist_scale_old_, min_occdist_scale_);
             }
             else{
                 ROS_INFO("Parameter occdist_scale is already greater than or equal to its max value");
