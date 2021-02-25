@@ -166,7 +166,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   //subscribe if robot is carrying sth bt reading actuator_state topic
   //ros::Subscriber 
-  actuator_state_sub_ = private_nh.subscribe<std_msgs::Int32>("actuator_status", 10, const boost::bind(&Costmap2DROS::actuator_state_callback, this, _1, private_nh));
+  actuator_state_sub_ = private_nh.subscribe<std_msgs::Int32>("actuator_status", 10, boost::bind(&Costmap2DROS::actuator_state_callback, this, _1, private_nh));
   //setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh, actuator_state));
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh,actuator_state));
   setUnpaddedRobotFootprint(Costmap2DROS::dynamicFootprintFromParams(private_nh));
