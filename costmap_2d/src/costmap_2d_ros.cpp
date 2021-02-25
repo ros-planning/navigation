@@ -213,7 +213,7 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
 }
 
 
-std::vector<geometry_msgs::Point> dynamicFootprintFromParams(ros::NodeHandle& nh)
+std::vector<geometry_msgs::Point> Costmap2DROS::dynamicFootprintFromParams(ros::NodeHandle& nh)
 {
   //ros::Subscriber actuator_state_sub_ = nh.subscribe("/actuator_status", 10, actuator_state_callback);
 
