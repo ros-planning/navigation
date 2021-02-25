@@ -208,7 +208,7 @@ bool makeFootprintFromString(const std::string& footprint_string, std::vector<ge
   return true;
 }
 
-static std::string actuator_state;
+static std::string actuator_state = "LOW";
 
 //
 void actuator_state_callback(const std_msgs::Int32 msg)
@@ -228,17 +228,13 @@ void actuator_state_callback(const std_msgs::Int32 msg)
 }
 //
 std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
-//std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, const std::string actuator_state)
 {
-  //ros::Subscriber actuator_state_sub_ = nh.subscribe("actuator_status", 10, actuator_state_callback );
   ros::Subscriber actuator_state_sub_ = nh.subscribe("/actuator_status", 10, actuator_state_callback);
 
   std::string full_param_name;
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
 
-//act_client = private_nh.advertise<lexxauto_msgs::Actuator>("act");
-//body_control_act_client = nh.serviceClient<lexxauto_msgs::Actuator>("/body_control/act");
   if (actuator_state == "LOW") 
   //actuator is not high enough = pulling nothing but only its own body
   // robot size is limited to the original size
