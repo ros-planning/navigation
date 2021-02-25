@@ -41,29 +41,35 @@ namespace obstacle_deprecate_recovery{
             ROS_INFO("Parameter sim_time is set to %f", sim_time_old_);
             if(sim_time_old_ < max_sim_time_){
                 blp_nh.setParam("sim_time", max_sim_time_);
-                ROS_INFO("Updated sim_time from %f to %f", sim_time_old_, max_sim_time_);
+                //ROS_INFO("Updated sim_time from %f to %f", sim_time_old_, max_sim_time_);
+                std::cout << "Updated sim_time from" << sim_time_old_ << "to" << max_sim_time_;
             }
             else{
-                ROS_INFO("Parameter sim_time is already greater than or equal to its max value");
+                //ROS_INFO("Parameter sim_time is already greater than or equal to its max value");
+                std::cout << "Parameter sim_time is already greater than or equal to its max value";
             }
         }
         else{
-            ROS_ERROR("Parameter of name sim_time could not be found, doing nothing");
+            //ROS_ERROR("Parameter of name sim_time could not be found, doing nothing");
+            std::cout << "Parameter of name sim_time could not be found, doing nothing";
             return;
         }
 
         if(blp_nh.getParam("occdist_scale", occdist_scale_old_)){
             ROS_INFO("Parameter occdist_scale is set to %f", occdist_scale_old_);
-            if(occdist_scale_old_ < min_occdist_scale_){
+            if(occdist_scale_old_ > min_occdist_scale_){
                 blp_nh.setParam("occdist_scale", min_occdist_scale_);
-                ROS_INFO("Updated occdist_scale from %f to %f", occdist_scale_old_, min_occdist_scale_);
+                //ROS_INFO("Updated occdist_scale from %f to %f", occdist_scale_old_, min_occdist_scale_);
+                std::cout << "Updated occdist_scale from" << occdist_scale_old_ << "to" << min_occdist_scale_;
             }
             else{
-                ROS_INFO("Parameter occdist_scale is already greater than or equal to its max value");
+                //ROS_INFO("Parameter occdist_scale is already greater than or equal to its max value");
+                std::cout << "Parameter occdist_scale is already greater than or equal to its max value";
             }
         }
         else{
-            ROS_ERROR("Parameter of name occdist_scale could not be found, doing nothing");
+            //ROS_ERROR("Parameter of name occdist_scale could not be found, doing nothing");
+            std::cout << "Parameter of name occdist_scale could not be found, doing nothing";
             return;
         }
 
