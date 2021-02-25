@@ -306,7 +306,7 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, s
     double robot_radius;
     nh.param(full_radius_param_name, robot_radius, 1.234);
     points = makeFootprintFromRadius(robot_radius);
-    nh.setParam("robot_radius", robot_radius);
+    nh.setParam("extended_robot_radius", robot_radius);
   }
   // Else neither param was found anywhere this knows about, so
   // defaults will come from dynamic_reconfigure stuff, set in

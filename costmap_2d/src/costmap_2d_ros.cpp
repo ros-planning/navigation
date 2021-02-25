@@ -203,11 +203,11 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
   if (msg.data==2)
   {
     actuator_state = "HIGH";
-    ROS_INFO("actuator state is HIGH");
+    //ROS_INFO("actuator state is HIGH");
   }
   else{
     actuator_state = "LOW";
-    ROS_INFO("actuator state is LOW");
+    //ROS_INFO("actuator state is LOW");
   }
 }
 //*/
