@@ -166,7 +166,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   //subscribe if robot is carrying sth bt reading actuator_state topic
   //ros::Subscriber 
-  actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, &Costmap2DROS::actuator_state_callback, this);
+  actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, boost::bind(&Costmap2DROS::actuator_state_callback, this, _1, private_nh));
   //setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh, actuator_state));
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh,actuator_state));
   setUnpaddedRobotFootprint(Costmap2DROS::dynamicFootprintFromParams(private_nh));
@@ -196,7 +196,7 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 }
 
 //*
-void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
+void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg, ros::NodeHandle nh)
 {
   //ROS_INFO("actuator callback");
   //static int actuator_state = msg; //0=low, 1=mid, 2=high
@@ -209,6 +209,86 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
   else{
     actuator_state = "LOW";
     //ROS_INFO("actuator state is LOW");
+  }
+
+  ROS_INFO("actuator status: %s", actuator_state.c_str());
+  ROS_INFO("function called");
+//
+  if (actuator_state == "LOW") 
+  //actuator is not high enough = pulling nothing but only its own body
+  // robot size is limited to the original size
+{
+  //
+  if (nh.searchParam("footprint", full_param_name))
+  {
+    XmlRpc::XmlRpcValue footprint_xmlrpc;
+    nh.getParam(full_param_name, footprint_xmlrpc);
+    if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString &&
+        footprint_xmlrpc != "" && footprint_xmlrpc != "[]")
+    {
+      if (makeFootprintFromString(std::string(footprint_xmlrpc), points))
+      {
+        writeFootprintToParam(nh, points);
+        return points;
+      }
+    }
+    else if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray)
+    {
+      points = makeFootprintFromXMLRPC(footprint_xmlrpc, full_param_name);
+      writeFootprintToParam(nh, points);
+      return points;
+    }
+  }
+
+  if (nh.searchParam("robot_radius", full_radius_param_name))
+  {
+    double robot_radius;
+    nh.param(full_radius_param_name, robot_radius, 1.234);
+    points = makeFootprintFromRadius(robot_radius);
+    nh.setParam("robot_radius", robot_radius);
+  }
+  // Else neither param was found anywhere this knows about, so
+  // defaults will come from dynamic_reconfigure stuff, set in
+  // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
+  return points;
+  //
+  }
+  else if(actuator_state == "HIGH")
+  { //actuator is high
+    //actuator is not pulling sth and size is big
+  if (nh.searchParam("extended_footprint", full_param_name))
+  {
+    XmlRpc::XmlRpcValue footprint_xmlrpc;
+    nh.getParam(full_param_name, footprint_xmlrpc);
+    if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString &&
+        footprint_xmlrpc != "" && footprint_xmlrpc != "[]")
+    {
+      if (makeFootprintFromString(std::string(footprint_xmlrpc), points))
+      {
+        writeFootprintToParam(nh, points);
+        return points;
+      }
+    }
+    else if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray)
+    {
+      points = makeFootprintFromXMLRPC(footprint_xmlrpc, full_param_name);
+      writeFootprintToParam(nh, points);
+      return points;
+    }
+    //
+  }
+
+  if (nh.searchParam("extended_robot_radius", full_radius_param_name))
+  {
+    double robot_radius;
+    nh.param(full_radius_param_name, robot_radius, 1.234);
+    points = makeFootprintFromRadius(robot_radius);
+    nh.setParam("extended_robot_radius", robot_radius);
+  }
+  // Else neither param was found anywhere this knows about, so
+  // defaults will come from dynamic_reconfigure stuff, set in
+  // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
+  return points;
   }
 }
 

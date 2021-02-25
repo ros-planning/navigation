@@ -228,7 +228,7 @@ public:
    * getUnpaddedRobotFootprint(). */
   void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
 
-  void actuator_state_callback(const std_msgs::Int32& msg);
+  void actuator_state_callback(const std_msgs::Int32& msg, ros::NodeHandle nh);
 
   std::vector<geometry_msgs::Point> dynamicFootprintFromParams(ros::NodeHandle& nh);
 
