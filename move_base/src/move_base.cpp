@@ -1088,6 +1088,11 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
+      //Newly added: load a recovery behavior to update sim_time and occdist_scale to improve performance in narrow pathways
+      boost::shared_prt<nav_core::RecoveryBehavior> obs_deprecate(recovery_loader_.createInstance("obstacle_deprecate_recovery/ObstacleDeprecateRecovery"));
+      obs_deprecate->initialize("obstacle_deprecate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(obs_deprecate);
+
       //first, we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
