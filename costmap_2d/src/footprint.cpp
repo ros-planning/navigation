@@ -236,6 +236,7 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, s
   std::vector<geometry_msgs::Point> points;
 
   ROS_INFO("actuator status: %s", actuator_state.c_str());
+  ROS_INFO("function called");
 //
   if (actuator_state == "LOW") 
   //actuator is not high enough = pulling nothing but only its own body
