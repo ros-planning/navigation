@@ -15,12 +15,13 @@ namespace obstacle_deprecate_recovery{
 
             void runBehavior();
 
-            ~ObstacleDeprecateRecovery();
+            //~ObstacleDeprecateRecovery();
 
         private:
             costmap_2d::Costmap2DROS* global_costmap_, *local_costmap_;
             bool initialized_;
-            double min_inflation_, min_occdist_scale_;
+            double min_inflation_, min_occdist_scale_, max_sim_time_;
+            double occdist_scale_old_, sim_time_old_;
     };
 };
 #endif
