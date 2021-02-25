@@ -211,6 +211,10 @@ void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg, ros::Node
     //ROS_INFO("actuator state is LOW");
   }
 
+  std::string full_param_name;
+  std::string full_radius_param_name;
+  std::vector<geometry_msgs::Point> points;
+
   ROS_INFO("actuator status: %s", actuator_state.c_str());
   ROS_INFO("function called");
 //
