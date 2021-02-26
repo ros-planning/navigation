@@ -35,36 +35,55 @@
  * Author: Thomas Preisner
  *********************************************************************/
 
-#include <base_local_planner/speed_limiters/static_speed_limiter.h>
+#include <base_local_planner/speed_limiters/static_object_speed_limiter.h>
 #include <base_local_planner/speed_limiters/safety_ce_bounds_data.h>
 #include <base_local_planner/geometry_math_helpers.h>
 #include <base_local_planner/Obstacles.h>
+#include <srslib_framework/chuck/ChuckChassisGenerations.hpp>
+#include <srslib_framework/math/AngleMath.hpp>
+#include <srslib_framework/ros/message/VelocityMessageFactory.hpp>
 #include <tf/transform_datatypes.h>
 #include <costmap_2d/footprint.h>
 
 namespace base_local_planner {
 
-void StaticObjectSpeedLimiter::initialize(std::string name) {
-  ros::NodeHandle private_nh(name + "/static");
-  
-  configClient_ = std::make_shared<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>>(name + "/static");
+void StaticObjectSpeedLimiter::initialize(std::string name) {  
+  configClient_ = std::make_shared<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>>(name + "/staticObject");
   configClient_->setConfigurationCallback(boost::bind(&StaticObjectSpeedLimiter::reconfigure, this, _1));
 
-  static_pub = private_nh.advertise<base_local_planner::Obstacles>("obstacle_info", 5, true);
+
+  std::string inTopic = "/sensors/odometry/velocity/cmd_unfiltered";
+  subscriber_ = nh_.subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
 }
 
-std::string StaticObjectSpeedLimiter::getName(){
-  return std::string("Static");
+std::string StaticObjectSpeedLimiter::getName() {
+  return std::string("StaticObject");
+}
+
+void StaticObjectSpeedLimiter::msgCallback(const geometry_msgs::Twist::ConstPtr& msg) {
+  velocity_ = srs::VelocityMessageFactory::msg2Velocity(msg);
 }
 
 bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
+
   // Reset the maximum allowed velocity
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
+  if (params_.timeout > 0 && (ros::Time::now() - last_time_ < ros::Duration(params_.timeout))) {
+    if ( cachedMaxLinearVelocity_ > 0.0 ) {
+      max_allowed_linear_vel = cachedMaxLinearVelocity_;
+    }
+    if ( cachedMaxAngularVelocity_> 0.0 ) {
+      max_allowed_angular_vel = cachedMaxAngularVelocity_;
+    }
+    return true;
+  }
+  last_time_ = ros::Time::now();
 
-  // Collect all of the necessary values
-  calculateFootprintBounds(costmap_->getRobotFootprint());
-
+  //Cache off the current velocity so it can't be changed during processing
+  const float currLinearVel = velocity_.linear;
+  const float currAngularVel = fabs( velocity_.angular );
+  const bool flipAngular = velocity_.angular < 0.0;
 
 /*
   Get the CE stopping path edges to get the distance from the static object map. This would then test against the configured distances.  
@@ -72,262 +91,208 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
   This will be interesting as the slower the speed the tighter the region
   Smoothing speed will need to be done. Otherwise the Chuck will cycle between speeding up and slowing down.
  */
-  double distance_from_static = layered_costmap_->getDistanceFromStaticMap(px, py);
 
   tf::Stamped<tf::Pose> current_pose;
-  if (!getCurrentPose(current_pose))
-  {
-    ROS_WARN_THROTTLE(1.0, "No pose in shadow speed limiter");
+  if (!getCurrentPose(current_pose)) {
+    ROS_WARN_THROTTLE(1.0, "No pose in static object speed limiter");
     return false;
   }
 
-  tf::Pose current_pose_inv_tf = current_pose.inverse();
-
-  // Find the nearest obstruction to the robot that is within the allowed range
-  // Loop over all of the obstructions
-  double max_obstacle_distance = 10; //arbitrary distance
-  double distance_limiting = max_obstacle_distance;
-  double heading_limiting = 0;
-  double distance_nearest = max_obstacle_distance;
-  double heading_nearest = 0;
-  std::string name_nearest, name_limiting;
-
-  double obstacle_speed_nearest = max_allowed_linear_vel;
-
-  for (const auto& obs : (*obstructions))
-  {
-    // Skip non-dynamic things or things that have been cleared
-    if (obs.type != costmap_2d::ObstructionMsg::DYNAMIC || obs.cleared)
-    {
-      continue;
+  int linearIndex, angularIndex = 0;
+  for ( int i  = 0; i < NUM_PLANE_LINEAR_SPEEDS; ++i ) {
+    if ( LINEAR_SPEED_TO_INDEX_ARRAY[i] > currLinearVel ) {
+      break;
     }
-    costmap_2d::ObstructionMsg obs_body_frame = obstructionToBodyFrame(obs, current_pose_inv_tf);
-    LinearSpeedLimiterResult result;
-    result = calculateAllowedLinearSpeed(obs_body_frame);
-    if(result.limiting)
-    {
-      if(result.speed < max_allowed_linear_vel)
-      {
+    linearIndex = i;
+  }
+
+  for ( int i  = 0; i < NUM_PLANE_ANGULAR_SPEEDS; ++i ) {
+    if ( ANGULAR_SPEED_TO_INDEX_ARRAY[i] > currAngularVel ) {
+      break;
+    }
+    angularIndex = i;
+  }
+
+  geometry_msgs::Point left, right;
+  //The plane tables indicate left right pairs of x,y coords
+/*  if ( chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS ) {
+    left.x = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][0][0];
+    leftY = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][0][1];
+    rightX = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][0];
+    rightY = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][1];
+  }
+  else if ( chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5 )
+*/  {
+    left.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][0];
+    left.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][1];
+    right.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][0];
+    right.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][1];
+  }
+/*  else {
+    return true;  //<  Not valid for this version, so don't run but let the other limiters run
+  }
+*/
+  if ( flipAngular ) {
+    left.x *= -1.0;
+    right.x *= -1.0;
+  }
+
+  double resolution = costmap_->getCostmap()->getResolution();
+  // Transform the points based on the chucks position and orientation
+  geometry_msgs::PoseStamped pose;
+  tf::poseStampedTFToMsg(current_pose, pose);
+  double pose_yaw = tf::getYaw(pose.pose.orientation) + srs::AngleMath::deg2Rad<double>(-90.0);
+  double cos_yaw = cos(pose_yaw);
+  double sin_yaw = sin(pose_yaw);
+
+  double leftX = left.x;
+  double leftY = left.y;
+  double rightX = right.x;
+  double rightY = right.y;
+
+  left.x = pose.pose.position.x + ( (cos_yaw * leftX) - (sin_yaw * leftY) );
+  left.y = pose.pose.position.y + ( (cos_yaw * leftY) + (sin_yaw * leftX) );
+  right.x = pose.pose.position.x + ( (cos_yaw * rightX) - (sin_yaw * rightY) );
+  right.y = pose.pose.position.y + ( (cos_yaw * rightY) + (sin_yaw * rightX) );
+  
+  double px = left.x;
+  double py = left.y;
+  double distance_from_static_left = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
+
+  px = right.x;
+  py = right.y;
+  double distance_from_static_right = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
+
+  distance_from_static_left *= resolution;
+  distance_from_static_right *= resolution;
+
+  if ( currLinearVel >= params_.min_linear_velocity_test_speed && 
+       currLinearVel <= params_.max_linear_velocity_test_speed ) {
+    SpeedLimiterResult result = calculateAllowedLinearSpeed(distance_from_static_left, distance_from_static_right, max_allowed_linear_vel);
+    if (result.limiting) {
+      if (result.speed < currLinearVel) {
+        cachedMaxLinearVelocity_ = result.speed;
         max_allowed_linear_vel = result.speed;
-        distance_limiting = result.distance;
-        heading_limiting = result.heading;
-        name_limiting = obs_body_frame.costmap_name;
       }
-      else if(result.speed == max_allowed_linear_vel) //could reach min_linear_velocity. Takes minimum distance instead
-      {
-        if(result.distance < distance_limiting)
-        {
-          distance_limiting = result.distance;
-          heading_limiting = result.heading;
-          name_limiting = obs_body_frame.costmap_name;
-        }
-      }
-    }
-    if(result.speed < obstacle_speed_nearest)
-    {
-      obstacle_speed_nearest = result.speed;
-      distance_nearest = result.distance;
-      heading_nearest = result.heading;
-      name_nearest = obs_body_frame.costmap_name;
-    }
-    else if(result.speed == obstacle_speed_nearest) //could reach min_linear_velocity. Takes minimum distance instead
-    {
-      if(result.distance < distance_nearest)
-      {
-        distance_nearest = result.distance;
-        heading_nearest = result.heading;
-        name_nearest = obs_body_frame.costmap_name;
-      }
-    }
-
-    double angular_speed = calculateAllowedAngularSpeed(obs_body_frame);
-    if (angular_speed < max_allowed_angular_vel)
-    {
-      max_allowed_angular_vel = angular_speed;
     }
   }
-  if(distance_limiting >= max_obstacle_distance){
-    distance_limiting = -1;
-  }
-  if(distance_nearest >= max_obstacle_distance){
-    distance_nearest = -1;
+  
+  if ( currAngularVel >= params_.min_angular_velocity_test_speed && 
+       currAngularVel <= params_.max_angular_velocity_test_speed ) {
+    SpeedLimiterResult result = calculateAllowedAngularSpeed(distance_from_static_left, distance_from_static_right, max_allowed_angular_vel);
+    if (result.limiting) {
+       if (result.speed < currAngularVel) {
+        cachedMaxAngularVelocity_ = result.speed;
+        max_allowed_linear_vel = result.speed;
+      }
+    }
   }
 
-  ROS_DEBUG_THROTTLE(0.2, "Setting max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
-  base_local_planner::Obstacles obstacle_msg;
-  obstacle_msg.limiting.distance = distance_limiting;
-  obstacle_msg.limiting.heading = heading_limiting;
-  obstacle_msg.limiting.layer_name = name_limiting;
-  obstacle_msg.nearest.distance = distance_nearest;
-  obstacle_msg.nearest.heading = heading_nearest;
-  obstacle_msg.nearest.layer_name = name_nearest;
-  obstacle_pub.publish(obstacle_msg);
   return true;
 }
 
-double StaticObjectSpeedLimiter::getBearingToObstacle(const costmap_2d::ObstructionMsg& obs)
+StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedLinearSpeed(const double distLeft, const double distRight, const double speed) const
 {
-  return atan2(obs.y, obs.x);
+  SpeedLimiterData data;
+  data.distLeft = distLeft;
+  data.distRight = distRight;
+  data.speed = speed;
+  data.minVelocity = params_.min_linear_velocity;
+  data.minTestDistance = params_.min_linear_velocity_distance;
+  data.maxTestDistance = params_.max_linear_velocity_distance;
+  data.minTestVelocity = params_.min_linear_velocity_test_speed;
+  data.maxTestVelocity = params_.max_linear_velocity_test_speed;
+  data.minDegredation = params_.min_linear_velocity_degredation;
+  data.maxDegredation = params_.max_linear_velocity_degredation;
+  
+  return calculateAllowedSpeed(data);
 }
 
-StaticObjectSpeedLimiter::LinearSpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs)
+StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedAngularSpeed(const double distLeft, const double distRight, const double speed) const
 {
-  LinearSpeedLimiterResult result;
+  SpeedLimiterData data;
+  data.distLeft = distLeft;
+  data.distRight = distRight;
+  data.speed = speed;
+  data.minVelocity = params_.min_angular_velocity;
+  data.minTestDistance = params_.min_angular_velocity_distance;
+  data.maxTestDistance = params_.max_angular_velocity_distance;
+  data.minTestVelocity = params_.min_angular_velocity_test_speed;
+  data.maxTestVelocity = params_.max_angular_velocity_test_speed;
+  data.minDegredation = params_.min_angular_velocity_degredation;
+  data.maxDegredation = params_.max_angular_velocity_degredation;
+  
+  return calculateAllowedSpeed(data);
+}
 
-  double abs_y_dist = 0;
-  if (obs.y < footprint_min_y_)
-  {
-    abs_y_dist = footprint_min_y_ - obs.y;
+StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedSpeed(const SpeedLimiterData& data) const
+{
+  SpeedLimiterResult result;
+
+  if ( data.speed < data.minTestVelocity ) {
+    return result;
   }
-  else if (obs.y > footprint_max_y_)
-  {
-    abs_y_dist = obs.y - footprint_max_y_;
+
+  double resultSpeed = data.speed;
+
+  if ( data.distLeft >= data.minTestDistance && data.distLeft <= data.maxTestDistance ) {
+    double testSize = data.maxTestDistance;
+    if ( params_.test_distance_changes_with_speed ) {
+      testSize = data.distLeft - data.minTestDistance;
+
+      double sizeDelta = twoLevelInterpolation(testSize, 
+                            data.minTestDistance, data.maxTestDistance,
+                            data.minTestDistance, data.maxTestDistance );
+
+      if ( params_.test_distance_grows_with_speed ) {
+        testSize = sizeDelta + data.minTestDistance;
+      } else {
+        testSize = data.maxTestDistance - sizeDelta;
+      }
+    }
+  
+    if ( data.distLeft <= testSize ) {
+      double speedDelta = twoLevelInterpolation(testSize, 
+                            data.minTestDistance, data.maxTestDistance,
+                            data.minDegredation, data.maxDegredation );
+      if ( (data.speed - speedDelta >= data.minVelocity) && (resultSpeed > data.speed - speedDelta) ) {
+        resultSpeed = data.speed - speedDelta;
+      }
+    }
   }
 
-  double abs_x_dist = 0;
-  if (obs.x < footprint_min_x_)
-  {
-    abs_x_dist = footprint_min_x_ - obs.x;
+  if ( data.distRight >= data.minTestDistance && data.distRight <= data.maxTestDistance ) {
+    double testSize = data.maxTestDistance;
+    if ( params_.test_distance_changes_with_speed ) {
+      testSize = data.distRight - data.minTestDistance;
+
+      double sizeDelta = twoLevelInterpolation(testSize, 
+                            data.minTestDistance, data.maxTestDistance,
+                            data.minTestDistance, data.maxTestDistance );
+
+      if ( params_.test_distance_grows_with_speed ) {
+        testSize = sizeDelta + data.minTestDistance;
+      } else {
+        testSize = data.maxTestDistance - sizeDelta;
+      }
+    }
+
+    if ( data.distRight <= testSize ) {
+      double speedDelta = twoLevelInterpolation(testSize, 
+                            data.minTestDistance, data.maxTestDistance,
+                            data.minDegredation, data.maxDegredation );
+      if ( (data.speed - speedDelta >= data.minVelocity) && (resultSpeed > data.speed - speedDelta) ) {
+        resultSpeed = data.speed - speedDelta;
+      }
+    }
   }
-  else if (obs.x > footprint_max_x_)
-  {
-    abs_x_dist = obs.x - footprint_max_x_;
-  }
-
-  double x_dist_with_buffer = std::max(0.0, abs_x_dist - params_.x_buffer);
-  double y_dist_with_buffer = std::max(0.0, abs_y_dist - params_.y_buffer);
-
-  double x_dist_without_buffer = std::abs(obs.x);
-  double y_dist_without_buffer = std::abs(obs.y);
-
-  double distance_to_obstruction = std::sqrt(x_dist_with_buffer * x_dist_with_buffer + y_dist_with_buffer * y_dist_with_buffer);
-  double distance_to_obstruction_actual = std::sqrt(x_dist_without_buffer * x_dist_without_buffer + y_dist_without_buffer * y_dist_without_buffer);
-
-  result.distance = distance_to_obstruction_actual;
-  result.heading = getBearingToObstacle(obs);
-
-
-  costmap_2d::ObstructionMsg obs_offset = obs;
-  obs_offset.x -= params_.forward_offset;
-  // Check if the bearing to the obstacle is acceptable
-  if (std::fabs(getBearingToObstacle(obs_offset)) > params_.half_angle)
-  {
-    result.limiting = false;
-  }
-  else{
+ 
+  if ( resultSpeed > data.minVelocity && resultSpeed <= data.speed ) {
+    result.speed = resultSpeed;
     result.limiting = true;
   }
-  double speed = 0.0;
-  if(params_.wally_speed_profile)
-  {
-    speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.extended_obstacle_curve);
-    if (speed < params_.min_linear_velocity)
-    {
-      speed = params_.min_linear_velocity;
-    }
-    else if (speed > max_linear_velocity_)
-    {
-      speed = max_linear_velocity_;
-    }
-    else if (distance_to_obstruction > params_.nominal_range_min){
-      speed = threeLevelInterpolation(distance_to_obstruction,
-                                    params_.min_range, params_.nominal_range_min,
-                                    params_.nominal_range_max, params_.max_range,
-                                    std::min(params_.min_linear_velocity, max_linear_velocity_),
-                                    std::min(params_.nominal_linear_velocity, max_linear_velocity_),
-                                    max_linear_velocity_);
-    }
-    result.speed = speed;
-    return result;
-  }
-  else
-  {
-    speed = pow(std::fabs(distance_to_obstruction), 1.0 / params_.extended_obstacle_curve);
-    if (speed < params_.min_linear_velocity)
-    {
-      speed = params_.min_linear_velocity;
-    }
-    else if (speed > max_linear_velocity_)
-    {
-      speed = max_linear_velocity_;
-    }
-    result.speed = speed;
-    return result;
-  }
-}
 
-double StaticObjectSpeedLimiter::calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs)
-{
-  double distance_to_obstruction = std::sqrt(obs.x * obs.x + obs.y * obs.y) - circumscribed_radius_;
-
-  return twoLevelInterpolation(distance_to_obstruction, 
-    params_.min_angular_velocity_effect_distance, params_.max_angular_velocity_effect_distance,
-    std::min(params_.min_angular_velocity, max_angular_velocity_), 
-    max_angular_velocity_);
-}
-
-
-costmap_2d::ObstructionMsg StaticObjectSpeedLimiter::obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in,
-  const tf::Pose& current_pose_inv_tf)
-{
-  if (in.frame_id == costmap_->getBaseFrameID())
-  {
-    return in;
-  }
-  else if (in.frame_id != costmap_->getGlobalFrameID())
-  {
-    ROS_ERROR_THROTTLE(1.0, "Received obstruction with unknown frame_id %s", in.frame_id.c_str());
-    return in;
-  }
-
-  costmap_2d::ObstructionMsg out = in;
-
-  // transform the point
-  tf::Vector3 pt_in(in.x, in.y, 0);
-
-  tf::Vector3 pt_out = current_pose_inv_tf * pt_in;
-  out.x = pt_out[0];
-  out.y = pt_out[1];
-
-
-  return out;
-}
-
-void StaticObjectSpeedLimiter::calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint)
-{
-  if (footprint.empty())
-  {
-    ROS_ERROR_THROTTLE(1.0, "Trying to calculate footprint bounds in speed cost function, but footprint is empty");
-    // Set 0 values
-    footprint_max_x_ = 0;
-    footprint_max_y_ = 0;
-    footprint_min_y_ = 0;
-    footprint_min_x_ = 0;
-
-    circumscribed_radius_ = 0;
-  }
-  else
-  {
-    // Reset the bounds
-    footprint_max_x_ = -std::numeric_limits<double>::max();
-    footprint_max_y_ = -std::numeric_limits<double>::max();
-    footprint_min_y_ = std::numeric_limits<double>::max();
-    footprint_min_x_ = std::numeric_limits<double>::max();
-
-    circumscribed_radius_ = 0;
-
-    for (auto pt : footprint)
-    {
-      if (pt.x < footprint_min_x_) {footprint_min_x_ = pt.x;}
-      if (pt.x > footprint_max_x_) {footprint_max_x_ = pt.x;}
-      if (pt.y < footprint_min_y_) {footprint_min_y_ = pt.y;}
-      if (pt.y > footprint_max_y_) {footprint_max_y_ = pt.y;}
-    }
-  }
-
-  double inscribed_radius = 0.0;
-
-  costmap_2d::calculateMinAndMaxDistances(footprint, inscribed_radius, circumscribed_radius_);
+  return result;
 }
 
 } /* namespace base_local_planner */

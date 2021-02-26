@@ -35,12 +35,15 @@
  * Author: Thomas Preisner
  *********************************************************************/
 
-#ifndef STATIC_SPEED_LIMITER_H_
-#define STATIC_SPEED_LIMITER_H_
+#ifndef STATIC_OBJECT_SPEED_LIMITER_H_
+#define STATIC_OBJECT_SPEED_LIMITER_H_
 
 #include <base_local_planner/speed_limiters/speed_limiter.h>
 #include <base_local_planner/StaticObjectSpeedLimiterConfig.h>
+#include <base_local_planner/SpeedLimitRequest.h>
 #include <costmap_2d/ObstructionMsg.h>
+#include <geometry_msgs/Twist.h>
+#include <srslib_framework/robotics/Velocity.hpp>
 #include <tf/tf.h>
 
 namespace base_local_planner {
@@ -77,34 +80,43 @@ private:
     params_ = cfg;
   };
 
-  struct LinearSpeedLimiterResult {
+  void msgCallback(const geometry_msgs::Twist::ConstPtr& msg);
+
+  struct SpeedLimiterResult {
       double speed = 0.0;
-      double heading = 0.0;
-      double distance = 0.0;
       bool limiting = false;
   };
 
-  double getBearingToObstacle(const costmap_2d::ObstructionMsg& obs);
+  struct SpeedLimiterData {
+    double distLeft = 0.0;
+    double distRight = 0.0;
+    double speed = 0.0;
+    double minVelocity = 0.0;
+    double minTestDistance = 0.0;
+    double maxTestDistance = 0.0;
+    double minTestVelocity = 0.0;
+    double maxTestVelocity = 0.0;
+    double minDegredation = 0.0;
+    double maxDegredation = 0.0;
+  };
 
-  LinearSpeedLimiterResult calculateAllowedLinearSpeed(const costmap_2d::ObstructionMsg& obs);
+  SpeedLimiterResult calculateAllowedLinearSpeed(const double distLeft, const double distRight, const double speed) const;
+  SpeedLimiterResult calculateAllowedAngularSpeed(const double distLeft, const double distRight, const double speed) const;
 
-  double calculateAllowedAngularSpeed(const costmap_2d::ObstructionMsg& obs);
+  SpeedLimiterResult calculateAllowedSpeed(const SpeedLimiterData& data) const;
 
-  costmap_2d::ObstructionMsg obstructionToBodyFrame(const costmap_2d::ObstructionMsg& in,
-    const tf::Pose& current_pose_inv_tf);
-
-  void calculateFootprintBounds(const std::vector<geometry_msgs::Point>& footprint);
+  ros::NodeHandle nh_;
+  ros::Subscriber subscriber_;
 
   std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
   StaticObjectSpeedLimiterConfig params_;
 
-  double footprint_min_x_ = -0.4;
-  double footprint_max_x_ = 0.4;
-  double footprint_min_y_ = -0.4;
-  double footprint_max_y_ = 0.4;
-  double circumscribed_radius_ = 0.7;
-  ros::Publisher static_pub;
+  ros::Time last_time_ = ros::Time(0);
+  double cachedMaxLinearVelocity_ = -1.0;
+  double cachedMaxAngularVelocity_ = -1.0;
+
+  srs::Velocity<> velocity_;
 };
 
 } /* namespace base_local_planner */
-#endif /* STATIC_SPEED_LIMITER_H_ */
+#endif /* STATIC_OBJECT_SPEED_LIMITER_H_ */

@@ -40,7 +40,7 @@
 #include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
 #include <base_local_planner/speed_limiters/path_speed_limiter.h>
 #include <base_local_planner/speed_limiters/external_speed_limiter.h>
-#include <base_local_planner/speed_limiters/static_speed_limiter.h>
+#include <base_local_planner/speed_limiters/static_object_speed_limiter.h>
 #include <std_msgs/String.h>
 #include <base_local_planner/SpeedLimitersMsg.h>
 #include <base_local_planner/SpeedLimiterMsg.h>

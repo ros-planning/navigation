@@ -1,3 +1,6 @@
+#ifndef SAFETY_CE_BOUNDS_DATA_H_
+#define SAFETY_CE_BOUNDS_DATA_H_
+
 #define NUM_PLANE_LINEAR_SPEEDS 25
 #define NUM_PLANE_ANGULAR_SPEEDS 16
 #define NUM_PLANE_POINT_SETS 2
@@ -11,7 +14,7 @@ static const double ANGULAR_SPEED_TO_INDEX_ARRAY[NUM_PLANE_ANGULAR_SPEEDS] =
 
 typedef const double srsSC_plane_lookupTable_t[NUM_PLANE_LINEAR_SPEEDS][NUM_PLANE_ANGULAR_SPEEDS][NUM_PLANE_POINT_SETS][NUM_PLANE_POINT_COUNT];
 
-static srsSC_plane_lookupTable_t LOOKUP_TABLE_CHUCK_FRONT_PLANE __attribute__ ((space(psv))) =
+static srsSC_plane_lookupTable_t LOOKUP_TABLE_CHUCK_FRONT_PLANE =
 {
     // -0.3 m/s
     {
@@ -490,7 +493,7 @@ static srsSC_plane_lookupTable_t LOOKUP_TABLE_CHUCK_FRONT_PLANE __attribute__ ((
     } 
 };
 
-static srsSC_plane_lookupTable_t LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE __attribute__ ((space(psv))) =
+static srsSC_plane_lookupTable_t LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE =
 {
     // -0.3 m/s
     {
@@ -968,3 +971,6 @@ static srsSC_plane_lookupTable_t LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE __attribute
         { {0.0,0.0},{0.0,0.0} } 	 // 999 rad/s
     } 
 };
+
+
+#endif  // SAFETY_CE_BOUNDS_DATA_H_
