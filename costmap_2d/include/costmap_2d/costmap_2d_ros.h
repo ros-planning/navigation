@@ -231,7 +231,8 @@ public:
   //void actuator_state_callback(const std_msgs::Int32& msg, ros::NodeHandle& nh);
   void actuator_state_callback(const std_msgs::Int32& msg);
 
-  std::vector<geometry_msgs::Point> dynamicFootprintFromParams(ros::NodeHandle& nh);
+  //std::vector<geometry_msgs::Point>
+  void dynamicFootprintFromParams(ros::NodeHandle& nh);
 
 protected:
   LayeredCostmap* layered_costmap_;
