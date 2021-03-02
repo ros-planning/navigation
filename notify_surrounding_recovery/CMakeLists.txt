@@ -5,7 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   nav_core
   pluginlib
-  lexx_auto_msgs
+  lexxauto_msgs
 )
 
 catkin_package(
@@ -13,7 +13,7 @@ catkin_package(
   roscpp
   nav_core
   pluginlib
-  lexx_auto_msgs
+  lexxauto_msgs
 )
 
 include_directories(
@@ -26,7 +26,7 @@ add_dependencies(notify_surrounding_recovery ${${PROJECT_NAME}_EXPORTED_TARGETS}
 target_link_libraries(notify_surrounding_recovery ${catkin_LIBRARIES})
 
 install(TARGETS notify_surrounding_recovery
-  ARCHIVE_DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 

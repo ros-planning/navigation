@@ -17,13 +17,15 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>lexx_auto_msgs</build_depend>
+  <!-- <build_depend>lexxauto_msgs</build_depend> -->
   
   <depend>roscpp</depend>
-  <depend>nav_core</roscpp>
+  <depend>nav_core</depend>
   <depend>pluginlib</depend>
+  <depend>lexxauto_msgs</depend>
 
   <export>
     <nav_core plugin="${prefix}/notify_surrounding_plugin.xml"/>
   </export>
+
 </package>
