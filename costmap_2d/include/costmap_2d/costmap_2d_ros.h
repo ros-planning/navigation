@@ -50,6 +50,7 @@
 #include <pluginlib/class_loader.hpp>
 #include <tf2/LinearMath/Transform.h>
 #include<std_msgs/Int32.h>
+#include<geometry_msgs/Point32.h>
 
 class SuperValue : public XmlRpc::XmlRpcValue
 {
@@ -232,7 +233,10 @@ public:
   void actuator_state_callback(const std_msgs::Int32& msg);
 
   //std::vector<geometry_msgs::Point>
-  void dynamicFootprintFromParams(ros::NodeHandle& nh);
+  void dynamicFootprintFromParams();
+
+  std::vector<geometry_msgs::Point> load_original_footprint(ros::NodeHandle& nh);
+  std::vector<geometry_msgs::Point> load_original_footprint(ros::NodeHandle& nh);
 
 protected:
   LayeredCostmap* layered_costmap_;
