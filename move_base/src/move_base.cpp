@@ -1113,6 +1113,11 @@ namespace move_base {
       //we'll rotate in-place one more time
       if(clearing_rotation_allowed_)
         recovery_behaviors_.push_back(rotate);
+
+      //Newly added: load a recovery behavior to notify the surrounding (light up LED)
+      boost::shared_ptr<nav_core::RecoveryBehavior> notify_surrounding(recovery_loader_.createInstance("notify_surrounding_recovery/NotifySurroundingRecovery"));
+      notify_surrounding->initialize("notify_surrounding_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(notify_surrounding);
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
