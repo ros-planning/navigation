@@ -65,7 +65,7 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
 //ros::Subscriber actuator_state_sub_;
 static std::string actuator_state;
 static geometry_msgs::PolygonStamped extended_footprint;
-static ros::NodeHandle footprint_nh;
+//static ros::NodeHandle footprint_nh;
 /////
 
 
@@ -92,7 +92,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   ros::NodeHandle private_nh("~/" + name);
   ros::NodeHandle g_nh;
-  footprint_nh = private_nh;
+  static ros::NodeHandle footprint_nh = private_nh;
 
   // get global and robot base frame names
   private_nh.param("global_frame", global_frame_, std::string("map"));
