@@ -297,14 +297,16 @@ void Costmap2DROS::dynamicFootprintFromParams()
   std::string full_param_name;
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
-  ros::NodeHandle nh("/move_base/global_costmap");
+  ros::NodeHandle global_map_nh("/move_base/global_costmap");
+  ros::NodeHandle local_map_nh("/move_base/local_costmap");
 
   //ROS_INFO("actuator status: %s", actuator_state.c_str());
   //ROS_INFO("function called");
 //
   if (actuator_state != "HIGH") 
   {
-    writeFootprintToParam(nh, original_footprint);
+    writeFootprintToParam(global_map_nh, original_footprint);
+    writeFootprintToParam(local_map_nh, original_footprint);
     setUnpaddedRobotFootprint(original_footprint);
   /*
   setUnpaddedRobotFootprint(makeFootprintFromParams());
@@ -348,7 +350,8 @@ void Costmap2DROS::dynamicFootprintFromParams()
   else if(actuator_state == "HIGH")
   { //actuator is high
     //actuator is not pulling sth and size is big
-    writeFootprintToParam(nh, extended_footprint);
+    writeFootprintToParam(global_map_nh, extended_footprint);
+    writeFootprintToParam(local_map_nh, extended_footprint);
     setUnpaddedRobotFootprint(extended_footprint);
     /*
   if (nh.searchParam("/move_base/local_costmap/extended_footprint", full_param_name))
