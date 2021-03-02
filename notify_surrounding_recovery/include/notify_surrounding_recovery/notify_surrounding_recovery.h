@@ -6,20 +6,24 @@
 
 namespace notify_surrounding_recovery
 {
-class NotifySurroundingRecovery : public nav_core::RecoveryBehavior
-{
-public:
-    NotifySurroundingRecovery();
+    class NotifySurroundingRecovery : public nav_core::RecoveryBehavior
+    {
+        public:
+            NotifySurroundingRecovery();
 
-    void initialize(std::string name, tf2_ros::Buffer*,
-                    costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS*);
+            void initialize(std::string name, tf2_ros::Buffer*,
+                            costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS*);
 
-    void runBehavior();
+            void runBehavior();
 
-    ~NotifySurroundingRecovery();
+            //~NotifySurroundingRecovery();
 
-private:
-    bool initialized_;
-};
+        private:
+            bool initialized_;
+            std::string led_pattern_;
+            ros::NodeHandle n;
+            ros::ServiceClient led_recovery_client;
+            lexxauto_msgs::Led srv;
+    };
 };  // namespace notify_surrounding_recovery
 #endif
