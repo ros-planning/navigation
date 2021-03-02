@@ -1,0 +1,7 @@
+<library path="lib/libnotify_surrounding_recovery">
+  <class name="notify_surrounding_recovery/NotifySurroundingRecovery" type="notify_surrounding_recovery::NotifySurroundingRecovery" base_class_type="nav_core::RecoveryBehavior">
+    <description>
+      A recovery behavior that notifies the robot's current situation to the surrounding in various ways.
+    </description>
+  </class>
+</library>
