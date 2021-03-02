@@ -236,7 +236,7 @@ public:
   void dynamicFootprintFromParams();
 
   std::vector<geometry_msgs::Point> load_original_footprint(ros::NodeHandle& nh);
-  std::vector<geometry_msgs::Point> load_original_footprint(ros::NodeHandle& nh);
+  std::vector<geometry_msgs::Point> load_extended_footprint(ros::NodeHandle& nh);
 
 protected:
   LayeredCostmap* layered_costmap_;
