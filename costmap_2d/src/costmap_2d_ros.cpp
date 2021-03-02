@@ -171,7 +171,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   extended_footprint = Costmap2DROS::load_extended_footprint(private_nh);
   original_footprint = Costmap2DROS::load_original_footprint(private_nh);
   if(extended_footprint.empty()) {
-    ROS_ERROR("empty vector loaded")
+    ROS_ERROR("empty vector loaded");
   }
   else{
     ROS_INFO("x: %f", extended_footprint[0].x);
