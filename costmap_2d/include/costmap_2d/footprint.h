@@ -121,7 +121,7 @@ bool makeFootprintFromString(const std::string& footprint_string, std::vector<ge
  * @brief Read the ros-params "footprint" and/or "robot_radius" from
  * the given NodeHandle using searchParam() to go up the tree.
  */
-std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, std::string& actuator_state);
+std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh);//, std::string& actuator_state);
 
 /**
  * @brief Create the footprint from the given XmlRpcValue.

@@ -227,7 +227,7 @@ void actuator_state_callback(const std_msgs::Int32 msg)
   }
 }
 */
-std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, std::string& actuator_state)
+std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)//, std::string& actuator_state)
 {
   //ros::Subscriber actuator_state_sub_ = nh.subscribe("/actuator_status", 10, actuator_state_callback);
 
@@ -235,13 +235,13 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, s
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
 
-  ROS_INFO("actuator status: %s", actuator_state.c_str());
-  ROS_INFO("function called");
+  //ROS_INFO("actuator status: %s", actuator_state.c_str());
+  //ROS_INFO("function called");
 //
-  if (actuator_state == "LOW") 
+  //if (actuator_state != "HIGH") 
   //actuator is not high enough = pulling nothing but only its own body
   // robot size is limited to the original size
-{
+//{
   //
   if (nh.searchParam("footprint", full_param_name))
   {
@@ -276,10 +276,12 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, s
   // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
   return points;
   //
-  }
-  else if(actuator_state == "HIGH")
-  { //actuator is high
+  //}
+  //else if(actuator_state == "HIGH")
+  //{ //actuator is high
     //actuator is not pulling sth and size is big
+
+    /*
   if (nh.searchParam("extended_footprint", full_param_name))
   {
     XmlRpc::XmlRpcValue footprint_xmlrpc;
@@ -299,6 +301,7 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, s
       writeFootprintToParam(nh, points);
       return points;
     }
+    
     //
   }
 
@@ -313,7 +316,8 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, s
   // defaults will come from dynamic_reconfigure stuff, set in
   // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
   return points;
-  }
+  //}
+  */
   //return points;
 }
 
