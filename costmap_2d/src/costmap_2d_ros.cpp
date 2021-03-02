@@ -170,7 +170,12 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   extended_footprint = Costmap2DROS::load_extended_footprint(private_nh);
   original_footprint = Costmap2DROS::load_original_footprint(private_nh);
-  if(extended_footprint.empty()) ROS_ERROR("empty vector loaded");
+  if(extended_footprint.empty()) {
+    ROS_ERROR("empty vector loaded")
+  }
+  else{
+    ROS_INFO("x: %f", extended_footprint[0].x);
+  }
   //subscribe if robot is carrying sth bt reading actuator_state topic
   //ros::Subscriber 
   actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, &Costmap2DROS::actuator_state_callback, this);
@@ -299,7 +304,7 @@ void Costmap2DROS::dynamicFootprintFromParams()
 //
   if (actuator_state != "HIGH") 
   {
-    writeFootprintToParam(nh, points);
+    writeFootprintToParam(nh, original_footprint);
     setUnpaddedRobotFootprint(original_footprint);
   /*
   setUnpaddedRobotFootprint(makeFootprintFromParams());
@@ -343,7 +348,7 @@ void Costmap2DROS::dynamicFootprintFromParams()
   else if(actuator_state == "HIGH")
   { //actuator is high
     //actuator is not pulling sth and size is big
-    writeFootprintToParam(nh, points);
+    writeFootprintToParam(nh, extended_footprint);
     setUnpaddedRobotFootprint(extended_footprint);
     /*
   if (nh.searchParam("/move_base/local_costmap/extended_footprint", full_param_name))
