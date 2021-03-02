@@ -389,13 +389,8 @@ void Costmap2DROS::dynamicFootprintFromParams()
   }
   */
   }
-  // Else neither param was found anywhere this knows about, so
-  // defaults will come from dynamic_reconfigure stuff, set in
-  // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
-        setUnpaddedRobotFootprint(original_footprint);
+        setUnpaddedRobotFootprint(points); //insert empty footprint
         return;
-  
-  
 }
 
 //*/
