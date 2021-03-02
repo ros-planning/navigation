@@ -308,6 +308,7 @@ void Costmap2DROS::dynamicFootprintFromParams()
     writeFootprintToParam(global_map_nh, original_footprint);
     writeFootprintToParam(local_map_nh, original_footprint);
     setUnpaddedRobotFootprint(original_footprint);
+    return;
   /*
   setUnpaddedRobotFootprint(makeFootprintFromParams());
   if (nh.searchParam("/move_base/local_costmap/footprint", full_param_name))
@@ -353,6 +354,7 @@ void Costmap2DROS::dynamicFootprintFromParams()
     writeFootprintToParam(global_map_nh, extended_footprint);
     writeFootprintToParam(local_map_nh, extended_footprint);
     setUnpaddedRobotFootprint(extended_footprint);
+    return;
     /*
   if (nh.searchParam("/move_base/local_costmap/extended_footprint", full_param_name))
   {
@@ -390,7 +392,7 @@ void Costmap2DROS::dynamicFootprintFromParams()
   // Else neither param was found anywhere this knows about, so
   // defaults will come from dynamic_reconfigure stuff, set in
   // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
-        setUnpaddedRobotFootprint(points);
+        setUnpaddedRobotFootprint(original_footprint);
         return;
   
   
