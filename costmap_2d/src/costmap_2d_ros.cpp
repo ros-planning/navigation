@@ -292,8 +292,8 @@ void Costmap2DROS::dynamicFootprintFromParams()
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
 
-  ROS_INFO("actuator status: %s", actuator_state.c_str());
-  ROS_INFO("function called");
+  //ROS_INFO("actuator status: %s", actuator_state.c_str());
+  //ROS_INFO("function called");
 //
   if (actuator_state != "HIGH") 
   {
