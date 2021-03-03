@@ -236,7 +236,7 @@ public:
   void dynamicFootprintFromParams();
 
   void load_footprints(ros::NodeHandle& nh, std::vector<geometry_msgs::Point>& extended_footprint, std::vector<geometry_msgs::Point>& original_footprint);
-  std::vector<geometry_msgs::Point> Costmap2DROS::return_footprint(const XmlRpc::XmlRpcValue& footprint_xmlrpc);
+  std::vector<geometry_msgs::Point> return_footprint(const XmlRpc::XmlRpcValue& footprint_xmlrpc);
 protected:
   LayeredCostmap* layered_costmap_;
   std::string name_;
