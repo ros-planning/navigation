@@ -192,7 +192,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   dsrv_->setCallback(cb);
 }
 
-void load_footprints(ros::NodeHandle& nh, std::vector<geometry_msgs::Point>& extended_footprint, std::vector<geometry_msgs::Point>& original_footprint)
+void Costmap2DROS::load_footprints(ros::NodeHandle& nh, std::vector<geometry_msgs::Point>& extended_footprint, std::vector<geometry_msgs::Point>& original_footprint)
 {
   XmlRpc::XmlRpcValue footprint_xmlrpc1, footprint_xmlrpc2;
   nh.getParam("extended_footprint", footprint_xmlrpc1);
