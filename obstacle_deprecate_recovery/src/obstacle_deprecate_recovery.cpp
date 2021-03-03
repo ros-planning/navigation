@@ -37,7 +37,7 @@ namespace obstacle_deprecate_recovery{
             if(sim_time_old_ < max_sim_time_){
                 blp_nh.setParam("sim_time", max_sim_time_);
                 //ROS_INFO("Updated sim_time from %f to %f", sim_time_old_, max_sim_time_);
-                std::cout << "Updated sim_time from" << sim_time_old_ << "to" << max_sim_time_;
+                std::cout << "Updated sim_time from " << sim_time_old_ << " to " << max_sim_time_ << "\n";
             }
             else{
                 //ROS_INFO("Parameter sim_time is already greater than or equal to its max value");
@@ -55,7 +55,7 @@ namespace obstacle_deprecate_recovery{
             if(occdist_scale_old_ > min_occdist_scale_){
                 blp_nh.setParam("occdist_scale", min_occdist_scale_);
                 //ROS_INFO("Updated occdist_scale from %f to %f", occdist_scale_old_, min_occdist_scale_);
-                std::cout << "Updated occdist_scale from" << occdist_scale_old_ << "to" << min_occdist_scale_;
+                std::cout << "Updated occdist_scale from " << occdist_scale_old_ << " to " << min_occdist_scale_ << "\n";
             }
             else{
                 //ROS_INFO("Parameter occdist_scale is already greater than or equal to its max value");
