@@ -202,7 +202,7 @@ void load_footprints(ros::NodeHandle& nh, std::vector<geometry_msgs::Point>& ext
   original_footprint = Costmap2DROS::return_footprint(footprint_xmlrpc2);
 }
 
-std::vector<geometry_msgs::Point> Costmap2DROS::return_footprint(const XmlRpc::XmlRpcValue& footprint_xmlrpc)
+std::vector<geometry_msgs::Point> return_footprint(const XmlRpc::XmlRpcValue& footprint_xmlrpc)
 {
   std::string full_param_name;
   std::vector<geometry_msgs::Point> points;
