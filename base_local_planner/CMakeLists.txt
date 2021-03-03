@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
             costmap_2d
             pluginlib
             angles
+            srslib_framework
             srslib_timing
         )
 
@@ -63,6 +64,7 @@ generate_dynamic_reconfigure_options(
     cfg/ObstacleSpeedLimiter.cfg
     cfg/PathSpeedLimiter.cfg
     cfg/ShadowSpeedLimiter.cfg
+    cfg/StaticObjectSpeedLimiter.cfg
 )
 
 catkin_package(
@@ -117,6 +119,7 @@ add_library(base_local_planner
     src/speed_limiters/path_speed_limiter.cpp
     src/speed_limiters/obstacle_speed_limiter.cpp
     src/speed_limiters/external_speed_limiter.cpp
+    src/speed_limiters/static_object_speed_limiter.cpp
     src/stationary_trajectory_generator.cpp
     src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp

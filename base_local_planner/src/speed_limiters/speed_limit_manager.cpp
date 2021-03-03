@@ -40,6 +40,7 @@
 #include <base_local_planner/speed_limiters/shadow_speed_limiter.h>
 #include <base_local_planner/speed_limiters/path_speed_limiter.h>
 #include <base_local_planner/speed_limiters/external_speed_limiter.h>
+#include <base_local_planner/speed_limiters/static_object_speed_limiter.h>
 #include <std_msgs/String.h>
 #include <base_local_planner/SpeedLimitersMsg.h>
 #include <base_local_planner/SpeedLimiterMsg.h>
@@ -70,6 +71,11 @@ void SpeedLimitManager::initialize(costmap_2d::Costmap2DROS* costmap, std::strin
   auto external_limiter = std::make_shared<ExternalSpeedLimiter>(costmap);
   external_limiter->initialize(name);
   limiters_.push_back(external_limiter);
+
+  // Static
+  auto static_limiter = std::make_shared<StaticObjectSpeedLimiter>(costmap);
+  static_limiter->initialize(name);
+  limiters_.push_back(static_limiter);
 
   // Create the dynamic reconfigure
   ros::NodeHandle private_nh(name);
@@ -122,6 +128,9 @@ bool SpeedLimitManager::calculateLimits(double& max_allowed_linear_vel, double& 
     }
     else if(temp.name == "External"){
       limiterArray.external = temp;
+    }
+    else if(temp.name == "StaticObject"){
+      limiterArray.staticObject = temp;
     }
     max_allowed_linear_vel = std::min(max_allowed_linear_vel, linear);
     max_allowed_angular_vel = std::min(max_allowed_angular_vel, angular);
