@@ -24,8 +24,9 @@ class GoBackRecovery : public nav_core::RecoveryBehavior
     private:
         costmap_2d::Costmap2DROS* local_costmap_;
         bool initialized_;
-        double frequency_, sim_granularity_, min_vel_x_, max_vel_x_;
+        double frequency_, sim_granularity_, min_vel_x_, max_vel_x_, inscribed_radius_, circumscribed_radius_;
         base_local_planner::CostmapModel* world_model_;
+        double calculateDist(geometry_msgs::PoseStamped initial, geometry_msgs::PoseStamped current);
 };
 };  // namespace go_back_recovery
 

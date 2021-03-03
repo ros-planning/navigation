@@ -25,6 +25,8 @@ void GoBackRecovery::initialize(std::string name, tf2_ros::Buffer*,
         frequency_ = nav_core::loadParameterWithDeprecation(blp_nh, "controller_frequency", "frequency", 20.0);
         min_vel_x_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_vel_x", "min_trans_x", 0.05);
         max_vel_x_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_x", "max_trans_x", 2.0);
+        inscribed_radius_ = nav_core::loadParameterWithDeprecation(blp_nh, "local_costmap/inscribed_radius", "inscribed_radius", 0.325);
+        circumscribed_radius_ = nav_core::loadParameterWithDeprecation(blp_nh, "local_costmap/circumscribed_radius", "circumscribed_radius", 0.46);
 
         world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
         initialized_ = true;
@@ -38,6 +40,11 @@ void GoBackRecovery::initialize(std::string name, tf2_ros::Buffer*,
 GoBackRecovery::~GoBackRecovery()
 {
     delete world_model_;
+}
+
+double GoBackRecovery::calculateDist(geometry_msgs::PoseStamped initial, geometry_msgs::PoseStamped current)
+{
+    return sqrt(pow((initial.pose.position.x - current.pose.position.x), 2.0) + pow((initial.pose.position.y - current.pose.position.y), 2.0));
 }
 
 void GoBackRecovery::runBehavior()
@@ -59,14 +66,17 @@ void GoBackRecovery::runBehavior()
     ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
     geometry_msgs::PoseStamped global_pose;
-    local_costmap_->getRobotPose(global_pose);
-    double current_angle = tf2::getYaw(global_pose.pose.orientation);
+    geometry_msgs::PoseStamped initial_pose;
+    local_costmap_->getRobotPose(initial_pose);
+    double current_angle = tf2::getYaw(initial_pose.pose.orientation);
+    double dist_travelled = 0.0;
 
-    while(n.ok())
+    while(n.ok() && dist_travelled < 2.0)
     {
         // update current position of the robot
         local_costmap_->getRobotPose(global_pose);
         double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
+        dist_travelled = GoBackRecovery::calculateDist(initial_pose, global_pose);
 
         // conduct forward simulation
         double dist_left = 1.0;
@@ -77,7 +87,7 @@ void GoBackRecovery::runBehavior()
             double sim_y = y + sim_distance * sin(current_angle);
 
             // make sure that the point is legal. Else, abort
-            double footprint_cost = world_model_->footprintCost(sim_x, sim_y, current_angle, local_costmap_->getRobotFootprint(), 0.0, 0.0);
+            double footprint_cost = world_model_->footprintCost(sim_x, sim_y, current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
             if(footprint_cost < 0.0)
             {
                 ROS_ERROR("Go back recovery can't be conducted because there is a potential collision. Cost: %.2f", footprint_cost);
@@ -87,11 +97,11 @@ void GoBackRecovery::runBehavior()
             sim_distance += sim_granularity_;
         }
 
-        double vel = 0.1;
+        double vel = 0.05;
         vel = std::min(std::max(vel, min_vel_x_), max_vel_x_);
 
         geometry_msgs::Twist cmd_vel;
-        cmd_vel.linear.x = vel;
+        cmd_vel.linear.x = -vel;
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
 
@@ -99,5 +109,7 @@ void GoBackRecovery::runBehavior()
 
         r.sleep();
     }
+
+    return;
 }
 };  // namespace go_back_recovery
