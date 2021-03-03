@@ -2,18 +2,20 @@ cmake_minimum_required(VERSION 3.0.2)
 project(notify_surrounding_recovery)
 
 find_package(catkin REQUIRED COMPONENTS
-  roscpp
+  lexxauto_msgs
   nav_core
   pluginlib
-  lexxauto_msgs
+  roscpp
 )
 
 catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES go_back_recovery
   CATKIN_DEPENDS
-  roscpp
+  lexxauto_msgs
   nav_core
   pluginlib
-  lexxauto_msgs
+  roscpp
 )
 
 include_directories(
