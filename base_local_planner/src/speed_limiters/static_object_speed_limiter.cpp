@@ -51,13 +51,23 @@ void StaticObjectSpeedLimiter::initialize(std::string name) {
   configClient_ = std::make_shared<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>>(name + "/staticObject");
   configClient_->setConfigurationCallback(boost::bind(&StaticObjectSpeedLimiter::reconfigure, this, _1));
 
-
   std::string inTopic = "/sensors/odometry/velocity/cmd_unfiltered";
   subscriber_ = nh_.subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
+
+
+  bool emu = false;
+  ros::NodeHandle privateNh;
+  privateNh.param("emulation_mode", emulationMode_, false);
+
+  chassis_generation_sub_ = nh_.subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 }
 
 std::string StaticObjectSpeedLimiter::getName() {
   return std::string("StaticObject");
+}
+
+void StaticObjectSpeedLimiter::chassisConfigCallback(const srslib_framework::MsgChassisConfig& config){
+  chassis_generation_ = static_cast<srs::ChuckChassisGenerations::ChuckChassisType>( config.chassisFootprintType );
 }
 
 void StaticObjectSpeedLimiter::msgCallback(const geometry_msgs::Twist::ConstPtr& msg) {
@@ -79,7 +89,9 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
     return true;
   }
   last_time_ = ros::Time::now();
-
+  cachedMaxLinearVelocity_ = max_linear_velocity_;
+  cachedMaxAngularVelocity_ = max_angular_velocity_;
+  
   //Cache off the current velocity so it can't be changed during processing
   const float currLinearVel = velocity_.linear;
   const float currAngularVel = fabs( velocity_.angular );
@@ -115,26 +127,32 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
 
   geometry_msgs::Point left, right;
   //The plane tables indicate left right pairs of x,y coords
-/*  if ( chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS ) {
+  if ( chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS ) {
     left.x = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][0][0];
-    leftY = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][0][1];
-    rightX = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][0];
-    rightY = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][1];
-  }
-  else if ( chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5 )
-*/  {
+    left.y = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][0][1];
+    right.x = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][0];
+    right.y = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][1];
+  } else if ( chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5 ) {
     left.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][0];
     left.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][1];
     right.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][0];
     right.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][1];
-  }
-/*  else {
+  } else if ( emulationMode_ ) {
+    // Pretend that it is chuck 5 for emulation purposes
+    left.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][0];
+    left.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][1];
+    right.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][0];
+    right.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][1];
+  } else {
     return true;  //<  Not valid for this version, so don't run but let the other limiters run
   }
-*/
-  if ( flipAngular ) {
+
+  if ( flipAngular ) {    
     left.x *= -1.0;
     right.x *= -1.0;
+    geometry_msgs::Point temp = left;
+    left = right;
+    right = temp;
   }
 
   double resolution = costmap_->getCostmap()->getResolution();
@@ -154,7 +172,7 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
   left.y = pose.pose.position.y + ( (cos_yaw * leftY) + (sin_yaw * leftX) );
   right.x = pose.pose.position.x + ( (cos_yaw * rightX) - (sin_yaw * rightY) );
   right.y = pose.pose.position.y + ( (cos_yaw * rightY) + (sin_yaw * rightX) );
-  
+
   double px = left.x;
   double py = left.y;
   double distance_from_static_left = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
@@ -181,13 +199,13 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
        currAngularVel <= params_.max_angular_velocity_test_speed ) {
     SpeedLimiterResult result = calculateAllowedAngularSpeed(distance_from_static_left, distance_from_static_right, max_allowed_angular_vel);
     if (result.limiting) {
-       if (result.speed < currAngularVel) {
+      if (result.speed < currAngularVel) {
         cachedMaxAngularVelocity_ = result.speed;
-        max_allowed_linear_vel = result.speed;
+        max_allowed_angular_vel = result.speed;
       }
     }
   }
-
+  
   return true;
 }
 
@@ -202,9 +220,9 @@ StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculate
   data.maxTestDistance = params_.max_linear_velocity_distance;
   data.minTestVelocity = params_.min_linear_velocity_test_speed;
   data.maxTestVelocity = params_.max_linear_velocity_test_speed;
-  data.minDegredation = params_.min_linear_velocity_degredation;
-  data.maxDegredation = params_.max_linear_velocity_degredation;
-  
+  data.minReduction = params_.min_linear_velocity_reduction;
+  data.maxReduction = params_.max_linear_velocity_reduction;
+
   return calculateAllowedSpeed(data);
 }
 
@@ -219,9 +237,9 @@ StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculate
   data.maxTestDistance = params_.max_angular_velocity_distance;
   data.minTestVelocity = params_.min_angular_velocity_test_speed;
   data.maxTestVelocity = params_.max_angular_velocity_test_speed;
-  data.minDegredation = params_.min_angular_velocity_degredation;
-  data.maxDegredation = params_.max_angular_velocity_degredation;
-  
+  data.minReduction = params_.min_angular_velocity_reduction;
+  data.maxReduction = params_.max_angular_velocity_reduction;
+
   return calculateAllowedSpeed(data);
 }
 
@@ -235,26 +253,24 @@ StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculate
 
   double resultSpeed = data.speed;
 
-  if ( data.distLeft >= data.minTestDistance && data.distLeft <= data.maxTestDistance ) {
-    double testSize = data.maxTestDistance;
-    if ( params_.test_distance_changes_with_speed ) {
-      testSize = data.distLeft - data.minTestDistance;
+  double sizeDelta = ( data.speed - data.minTestVelocity ) / ( data.maxTestVelocity - data.minTestVelocity);
+  sizeDelta *= ( data.maxTestDistance - data.minTestDistance );
 
-      double sizeDelta = twoLevelInterpolation(testSize, 
-                            data.minTestDistance, data.maxTestDistance,
-                            data.minTestDistance, data.maxTestDistance );
-
-      if ( params_.test_distance_grows_with_speed ) {
-        testSize = sizeDelta + data.minTestDistance;
-      } else {
-        testSize = data.maxTestDistance - sizeDelta;
-      }
+  double testSize = data.maxTestDistance;
+  if ( params_.test_distance_changes_with_speed ) {
+    if ( params_.test_distance_grows_with_speed ) {
+      testSize = sizeDelta + data.minTestDistance;
+    } else {
+      testSize = data.maxTestDistance - sizeDelta;
     }
-  
+    testSize = std::max(std::min(data.maxTestDistance, testSize), data.minTestDistance);
+  }
+
+  if ( data.distLeft >= data.minTestDistance && data.distLeft <= data.maxTestDistance ) {
     if ( data.distLeft <= testSize ) {
       double speedDelta = twoLevelInterpolation(testSize, 
                             data.minTestDistance, data.maxTestDistance,
-                            data.minDegredation, data.maxDegredation );
+                            data.minReduction, data.maxReduction );
       if ( (data.speed - speedDelta >= data.minVelocity) && (resultSpeed > data.speed - speedDelta) ) {
         resultSpeed = data.speed - speedDelta;
       }
@@ -262,25 +278,10 @@ StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculate
   }
 
   if ( data.distRight >= data.minTestDistance && data.distRight <= data.maxTestDistance ) {
-    double testSize = data.maxTestDistance;
-    if ( params_.test_distance_changes_with_speed ) {
-      testSize = data.distRight - data.minTestDistance;
-
-      double sizeDelta = twoLevelInterpolation(testSize, 
-                            data.minTestDistance, data.maxTestDistance,
-                            data.minTestDistance, data.maxTestDistance );
-
-      if ( params_.test_distance_grows_with_speed ) {
-        testSize = sizeDelta + data.minTestDistance;
-      } else {
-        testSize = data.maxTestDistance - sizeDelta;
-      }
-    }
-
     if ( data.distRight <= testSize ) {
       double speedDelta = twoLevelInterpolation(testSize, 
                             data.minTestDistance, data.maxTestDistance,
-                            data.minDegredation, data.maxDegredation );
+                            data.minReduction, data.maxReduction );
       if ( (data.speed - speedDelta >= data.minVelocity) && (resultSpeed > data.speed - speedDelta) ) {
         resultSpeed = data.speed - speedDelta;
       }

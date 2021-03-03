@@ -43,6 +43,8 @@
 #include <base_local_planner/SpeedLimitRequest.h>
 #include <costmap_2d/ObstructionMsg.h>
 #include <geometry_msgs/Twist.h>
+#include <srslib_framework/MsgChassisConfig.h>
+#include <srslib_framework/chuck/ChuckChassisGenerations.hpp>
 #include <srslib_framework/robotics/Velocity.hpp>
 #include <tf/tf.h>
 
@@ -81,6 +83,7 @@ private:
   };
 
   void msgCallback(const geometry_msgs::Twist::ConstPtr& msg);
+  void chassisConfigCallback(const srslib_framework::MsgChassisConfig& config);
 
   struct SpeedLimiterResult {
       double speed = 0.0;
@@ -96,8 +99,8 @@ private:
     double maxTestDistance = 0.0;
     double minTestVelocity = 0.0;
     double maxTestVelocity = 0.0;
-    double minDegredation = 0.0;
-    double maxDegredation = 0.0;
+    double minReduction = 0.0;
+    double maxReduction = 0.0;
   };
 
   SpeedLimiterResult calculateAllowedLinearSpeed(const double distLeft, const double distRight, const double speed) const;
@@ -107,15 +110,18 @@ private:
 
   ros::NodeHandle nh_;
   ros::Subscriber subscriber_;
+  ros::Subscriber chassis_generation_sub_;
 
   std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
   StaticObjectSpeedLimiterConfig params_;
 
+  bool emulationMode_ = false;
   ros::Time last_time_ = ros::Time(0);
   double cachedMaxLinearVelocity_ = -1.0;
   double cachedMaxAngularVelocity_ = -1.0;
 
   srs::Velocity<> velocity_;
+  srs::ChuckChassisGenerations::ChuckChassisType chassis_generation_ = srs::ChuckChassisGenerations::ChuckChassisType::INVALID;
 };
 
 } /* namespace base_local_planner */
