@@ -49,7 +49,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <pluginlib/class_loader.hpp>
 #include <tf2/LinearMath/Transform.h>
-#include <std_msgs/Int32.h>
+#include <std_msgs/String.h>
 #include <geometry_msgs/Point32.h>
 
 class SuperValue : public XmlRpc::XmlRpcValue
@@ -229,8 +229,7 @@ public:
    * getUnpaddedRobotFootprint(). */
   void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
 
-  //void actuator_state_callback(const std_msgs::Int32& msg, ros::NodeHandle& nh);
-  void actuator_state_callback(const std_msgs::Int32& msg);
+  void actuator_state_callback(const std_msgs::String& msg);
 
   //std::vector<geometry_msgs::Point>
   void dynamicFootprintFromParams();

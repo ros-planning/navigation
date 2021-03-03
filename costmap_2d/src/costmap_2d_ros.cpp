@@ -44,7 +44,7 @@
 #include <tf2/convert.h>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <std_msgs/Int32.h>
+#include <std_msgs/String.h>
 
 using namespace std;
 
@@ -232,20 +232,9 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
   setUnpaddedRobotFootprint(toPointVector(footprint));
 }
 
-void Costmap2DROS::actuator_state_callback(const std_msgs::Int32& msg)
+void Costmap2DROS::actuator_state_callback(const std_msgs::String& msg)
 {
-  //ROS_INFO("actuator callback");
-  //static int actuator_state = msg; //0=low, 1=mid, 2=high
-  
-  if (msg.data==2)
-  {
-    actuator_state = "HIGH";
-    //ROS_INFO("actuator state is HIGH");
-  }
-  else{
-    actuator_state = "LOW";
-    //ROS_INFO("actuator state is LOW");
-  }
+  actuator_state = msg.data; //currently receive only either std_msgs::String.data "HIGH" or "LOW" 
 }
 
 
