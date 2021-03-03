@@ -33,8 +33,8 @@
 #include <boost/algorithm/string.hpp>
 #include <costmap_2d/footprint.h>
 #include <costmap_2d/array_parser.h>
-#include<geometry_msgs/Point32.h>
-#include<std_msgs/Int32.h>
+#include <geometry_msgs/Point32.h>
+#include <std_msgs/Int32.h>
 
 namespace costmap_2d
 {
@@ -207,42 +207,15 @@ bool makeFootprintFromString(const std::string& footprint_string, std::vector<ge
 
   return true;
 }
-/*
-static std::string actuator_state = "LOW";
 
-//
-void actuator_state_callback(const std_msgs::Int32 msg)
-{
-  ROS_INFO("actuator callback");
-  //static int actuator_state = msg; //0=low, 1=mid, 2=high
-  
-  if (msg.data==2)
-  {
-    actuator_state = "HIGH";
-    ROS_INFO("actuator state is updated to be HIGH");
-  }
-  else{
-    actuator_state = "LOW";
-    ROS_INFO("actuator state is updated to be LOW");
-  }
-}
-*/
-std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)//, std::string& actuator_state)
-{
-  //ros::Subscriber actuator_state_sub_ = nh.subscribe("/actuator_status", 10, actuator_state_callback);
 
+
+std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
+{
   std::string full_param_name;
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
 
-  //ROS_INFO("actuator status: %s", actuator_state.c_str());
-  //ROS_INFO("function called");
-//
-  //if (actuator_state != "HIGH") 
-  //actuator is not high enough = pulling nothing but only its own body
-  // robot size is limited to the original size
-//{
-  //
   if (nh.searchParam("footprint", full_param_name))
   {
     XmlRpc::XmlRpcValue footprint_xmlrpc;
@@ -275,50 +248,6 @@ std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)//
   // defaults will come from dynamic_reconfigure stuff, set in
   // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
   return points;
-  //
-  //}
-  //else if(actuator_state == "HIGH")
-  //{ //actuator is high
-    //actuator is not pulling sth and size is big
-
-    /*
-  if (nh.searchParam("extended_footprint", full_param_name))
-  {
-    XmlRpc::XmlRpcValue footprint_xmlrpc;
-    nh.getParam(full_param_name, footprint_xmlrpc);
-    if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString &&
-        footprint_xmlrpc != "" && footprint_xmlrpc != "[]")
-    {
-      if (makeFootprintFromString(std::string(footprint_xmlrpc), points))
-      {
-        writeFootprintToParam(nh, points);
-        return points;
-      }
-    }
-    else if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray)
-    {
-      points = makeFootprintFromXMLRPC(footprint_xmlrpc, full_param_name);
-      writeFootprintToParam(nh, points);
-      return points;
-    }
-    
-    //
-  }
-
-  if (nh.searchParam("extended_robot_radius", full_radius_param_name))
-  {
-    double robot_radius;
-    nh.param(full_radius_param_name, robot_radius, 1.234);
-    points = makeFootprintFromRadius(robot_radius);
-    nh.setParam("extended_robot_radius", robot_radius);
-  }
-  // Else neither param was found anywhere this knows about, so
-  // defaults will come from dynamic_reconfigure stuff, set in
-  // cfg/Costmap2D.cfg and read in this file in reconfigureCB().
-  return points;
-  //}
-  */
-  //return points;
 }
 
 void writeFootprintToParam(ros::NodeHandle& nh, const std::vector<geometry_msgs::Point>& footprint)
