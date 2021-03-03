@@ -1098,6 +1098,11 @@ namespace move_base {
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
 
+      //Newly added: load a recovery bhavior to move backwards
+      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
+      go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(go_back);
+
       //next, we'll load a recovery behavior to rotate in place
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
