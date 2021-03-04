@@ -2,6 +2,7 @@
 #include <nav_core/parameter_magic.h>
 #include <pluginlib/class_list_macros.h>
 #include <tf2/utils.h>
+#include "move_base/move_base.h"
 
 PLUGINLIB_EXPORT_CLASS(go_back_recovery::GoBackRecovery, nav_core::RecoveryBehavior)
 
@@ -19,7 +20,7 @@ void GoBackRecovery::initialize(std::string name, tf2_ros::Buffer*,
 
         // get some parameters from the parameter server
         ros::NodeHandle nh("~/" + name);
-        ros::NodeHandle blp_nh("~/TrahectoryPlannerROS");
+        ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
 
         nh.param("sim_granularity", sim_granularity_, 0.1);
         frequency_ = nav_core::loadParameterWithDeprecation(blp_nh, "controller_frequency", "frequency", 20.0);
@@ -100,8 +101,7 @@ void GoBackRecovery::runBehavior()
         double vel = 0.05;
         vel = std::min(std::max(vel, min_vel_x_), max_vel_x_);
 
-        geometry_msgs::Twist cmd_vel;
-        cmd_vel.linear.x = -vel;
+        cmd_vel.linear.x = -abs(vel);
         cmd_vel.linear.y = 0.0;
         cmd_vel.angular.z = 0.0;
 
@@ -110,6 +110,12 @@ void GoBackRecovery::runBehavior()
         r.sleep();
     }
 
+    ROS_INFO("Go back recovery ended because the robot travelled %fm\n", dist_travelled);
+    cmd_vel.linear.x = 0.0;
+    cmd_vel.linear.y = 0.0;
+    cmd_vel.angular.z = 0.0;
+
+    vel_pub.publish(cmd_vel);
     return;
 }
 };  // namespace go_back_recovery
