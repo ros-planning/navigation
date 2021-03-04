@@ -33,8 +33,7 @@
 #include <boost/algorithm/string.hpp>
 #include <costmap_2d/footprint.h>
 #include <costmap_2d/array_parser.h>
-#include <geometry_msgs/Point32.h>
-#include <std_msgs/Int32.h>
+#include<geometry_msgs/Point32.h>
 
 namespace costmap_2d
 {
