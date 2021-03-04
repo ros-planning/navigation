@@ -193,11 +193,11 @@ namespace move_base {
       double planner_patience_, controller_patience_;
       int32_t max_planning_retries_;
       uint32_t planning_retries_;
-      double conservative_reset_dist_, clearing_radius_;
+      double conservative_reset_dist_, clearing_radius_, max_sim_time_, min_occdist_scale_;
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
       ros::Subscriber goal_sub_;
       ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
-      bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
+      bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_, backward_movement_allowed_, abort_after_recovery_allowed_;
       double oscillation_timeout_, oscillation_distance_;
 
       MoveBaseState state_;
