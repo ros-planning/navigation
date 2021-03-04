@@ -218,7 +218,7 @@ std::vector<geometry_msgs::Point> return_footprint(XmlRpc::XmlRpcValue footprint
   else if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray)
   {
     points = makeFootprintFromXMLRPC(footprint_xmlrpc, full_param_name);
-      return points;
+    return points;
   }
   else
   {
