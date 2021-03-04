@@ -49,6 +49,8 @@
 #include <dynamic_reconfigure/server.h>
 #include <pluginlib/class_loader.hpp>
 #include <tf2/LinearMath/Transform.h>
+#include <std_msgs/String.h>
+#include <geometry_msgs/Point32.h>
 
 class SuperValue : public XmlRpc::XmlRpcValue
 {
@@ -227,6 +229,12 @@ public:
    * getUnpaddedRobotFootprint(). */
   void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
 
+  void actuator_state_callback(const std_msgs::String& msg);
+
+  //std::vector<geometry_msgs::Point>
+  void dynamicFootprintFromParams();
+
+  void load_footprints(ros::NodeHandle& nh, std::vector<geometry_msgs::Point>& extended_footprint, std::vector<geometry_msgs::Point>& original_footprint);
 protected:
   LayeredCostmap* layered_costmap_;
   std::string name_;
@@ -265,11 +273,14 @@ private:
 
   ros::Subscriber footprint_sub_;
   ros::Publisher footprint_pub_;
+  ros::Subscriber actuator_state_sub_;////
   std::vector<geometry_msgs::Point> unpadded_footprint_;
   std::vector<geometry_msgs::Point> padded_footprint_;
   float footprint_padding_;
   costmap_2d::Costmap2DConfig old_config_;
 };
+
+std::vector<geometry_msgs::Point> return_footprint(XmlRpc::XmlRpcValue footprint_xmlrpc);
 // class Costmap2DROS
 }  // namespace costmap_2d
 
