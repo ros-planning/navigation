@@ -45,7 +45,7 @@ namespace global_planner {
 class GridPath : public Traceback {
     public:
         GridPath(PotentialCalculator* p_calc): Traceback(p_calc){}
-        virtual Traceback() {}
+        virtual ~Traceback() {}
         bool getPath(float* potential, double start_x, double start_y, double end_x, double end_y, std::vector<std::pair<float, float> >& path);
 };
 
