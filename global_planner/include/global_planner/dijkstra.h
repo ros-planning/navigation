@@ -56,7 +56,7 @@ namespace global_planner {
 class DijkstraExpansion : public Expander {
     public:
         DijkstraExpansion(PotentialCalculator* p_calc, int nx, int ny);
-        virtual ~DijkstraExpansion();
+        ~DijkstraExpansion();
         bool calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y, int cycles,
                                 float* potential);
 

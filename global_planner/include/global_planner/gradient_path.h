@@ -47,7 +47,7 @@ namespace global_planner {
 class GradientPath : public Traceback {
     public:
         GradientPath(PotentialCalculator* p_calc);
-        virtual ~GradientPath();
+        ~GradientPath();
 
         void setSize(int xs, int ys);
 
