@@ -424,13 +424,8 @@ void GlobalPlanner::publishPotential(float* potential)
     for (unsigned int i = 0; i < grid.data.size(); i++) {
         if (potential_array_[i] >= POT_HIGH) {
             grid.data[i] = -1;
-        } else {
-            if (fabs(max) < DBL_EPSILON) {
-                grid.data[i] = -1;
-            } else {
-                grid.data[i] = potential_array_[i] * publish_scale_ / max;
-            }
-        }
+        } else
+            grid.data[i] = potential_array_[i] * publish_scale_ / max;
     }
     potential_pub_.publish(grid);
 }
