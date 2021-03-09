@@ -72,11 +72,12 @@ void GoBackRecovery::runBehavior()
     double current_angle = tf2::getYaw(initial_pose.pose.orientation);
     double dist_travelled = 0.0;
 
-    while(n.ok() && dist_travelled < 2.0)
+    while(n.ok() && dist_travelled < 1.0)
     {
         // update current position of the robot
         local_costmap_->getRobotPose(global_pose);
         double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
+        current_angle = tf2::getYaw(global_pose.pose.orientation);
         dist_travelled = GoBackRecovery::calculateDist(initial_pose, global_pose);
 
         // conduct forward simulation
