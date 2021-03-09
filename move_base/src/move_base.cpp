@@ -106,7 +106,7 @@ namespace move_base {
     private_nh.param("clearing_radius", clearing_radius_, circumscribed_radius_);
     private_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
     private_nh.param("max_sim_time", max_sim_time_, 4.0);
-    private_nh.param("min_occdist_scale", min_occdist_scale_, 0.0);
+    private_nh.param("min_occdist_scale", min_occdist_scale_, 0.1);
 
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
