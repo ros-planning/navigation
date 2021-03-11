@@ -36,6 +36,7 @@ namespace notify_surrounding_recovery
 
         led_recovery_client = n.serviceClient<lexxauto_msgs::Led>("/led");
         srv.request.pattern = led_pattern_;
+        ROS_INFO("Recovery request has been sent");
         
         if(led_recovery_client.call(srv))
         {
