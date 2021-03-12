@@ -81,7 +81,7 @@ void GoBackRecovery::runBehavior()
         dist_travelled = GoBackRecovery::calculateDist(initial_pose, global_pose);
 
         // conduct forward simulation
-        double dist_left = 1.0;
+        double dist_left = 0.1;
         double sim_distance = 0.0;
         while(sim_distance < dist_left)
         {
