@@ -975,7 +975,7 @@ namespace move_base {
             }
             else{
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+              as_->setPreempted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
             }
           }
           else if(recovery_trigger_ == PLANNING_R){
@@ -985,7 +985,7 @@ namespace move_base {
             }
             else{
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+              as_->setPreempted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
             }
           }
           else if(recovery_trigger_ == OSCILLATION_R){
@@ -995,7 +995,7 @@ namespace move_base {
             }
             else{
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+              as_->setPreempted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
             }
           }
           resetState();
