@@ -22,7 +22,7 @@ void GoBackRecovery::initialize(std::string name, tf2_ros::Buffer*,
         ros::NodeHandle nh("~/" + name);
         ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
 
-        nh.param("sim_granularity", sim_granularity_, 0.1);
+        nh.param("sim_granularity", sim_granularity_, 0.01);
         frequency_ = nav_core::loadParameterWithDeprecation(blp_nh, "controller_frequency", "frequency", 20.0);
         min_vel_x_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_vel_x", "min_trans_x", 0.05);
         max_vel_x_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_x", "max_trans_x", 2.0);
@@ -93,6 +93,11 @@ void GoBackRecovery::runBehavior()
             if(footprint_cost < 0.0)
             {
                 ROS_ERROR("Go back recovery can't be conducted because there is a potential collision. Cost: %.2f", footprint_cost);
+                cmd_vel.linear.x = 0.0;
+                cmd_vel.linear.y = 0.0;
+                cmd_vel.angular.z = 0.0;
+
+                vel_pub.publish(cmd_vel);
                 return;
             }
 
