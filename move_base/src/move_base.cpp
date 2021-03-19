@@ -111,7 +111,7 @@ namespace move_base {
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
-    private_nh.param("backward_movement_allowed", backward_movement_allowed_, false);
+    private_nh.param("backward_recovery_allowed", backward_recovery_allowed_, false);
     private_nh.param("abort_after_recovery_allowed", abort_after_recovery_allowed_, false);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
@@ -975,7 +975,7 @@ namespace move_base {
             }
             else{
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setPreempted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
             }
           }
           else if(recovery_trigger_ == PLANNING_R){
@@ -985,7 +985,7 @@ namespace move_base {
             }
             else{
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setPreempted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
             }
           }
           else if(recovery_trigger_ == OSCILLATION_R){
@@ -995,7 +995,7 @@ namespace move_base {
             }
             else{
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setPreempted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
             }
           }
           resetState();
@@ -1122,7 +1122,7 @@ namespace move_base {
 
       //Newly added: load a recovery bhavior to move backwards
       boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
-      if(backward_movement_allowed_){
+      if(backward_recovery_allowed_){
         go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(go_back);
       }
