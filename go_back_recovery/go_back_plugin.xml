@@ -1,0 +1,7 @@
+<library path="lib/libgo_back_recovery">
+    <class name="go_back_recovery/GoBackRecovery" type="go_back_recovery::GoBackRecovery" base_class_type="nav_core::RecoveryBehavior">
+        <description>
+            A recovery behavior that moves the robot backwards to where it came from by following the same path.
+        </description>
+    </class>
+</library>

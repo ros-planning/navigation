@@ -105,10 +105,14 @@ namespace move_base {
     private_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
     private_nh.param("clearing_radius", clearing_radius_, circumscribed_radius_);
     private_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
+    private_nh.param("max_sim_time", max_sim_time_, 4.0);
+    private_nh.param("min_occdist_scale", min_occdist_scale_, 0.1);
 
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
+    private_nh.param("backward_recovery_allowed", backward_recovery_allowed_, false);
+    private_nh.param("abort_after_recovery_allowed", abort_after_recovery_allowed_, false);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
@@ -965,16 +969,34 @@ namespace move_base {
           ROS_DEBUG_NAMED("move_base_recovery","Something should abort after this.");
 
           if(recovery_trigger_ == CONTROLLING_R){
-            ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
+            if(abort_after_recovery_allowed_){
+              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
+              as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
+            }
+            else{
+              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
+              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+            }
           }
           else if(recovery_trigger_ == PLANNING_R){
-            ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
+            if(abort_after_recovery_allowed_){
+              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
+              as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
+            }
+            else{
+              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
+              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+            }
           }
           else if(recovery_trigger_ == OSCILLATION_R){
-            ROS_ERROR("Aborting because the robot appears to be oscillating over and over. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Robot is oscillating. Even after executing recovery behaviors.");
+            if(abort_after_recovery_allowed_){
+              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
+              as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
+            }
+            else{
+              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
+              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
+            }
           }
           resetState();
           return true;
@@ -1088,10 +1110,23 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
+      //Newly added: load a recovery behavior to update sim_time and occdist_scale to improve performance in narrow pathways
+      boost::shared_ptr<nav_core::RecoveryBehavior> obs_deprecate(recovery_loader_.createInstance("obstacle_deprecate_recovery/ObstacleDeprecateRecovery"));
+      obs_deprecate->initialize("obstacle_deprecate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(obs_deprecate);
+
       //first, we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
+
+      //Newly added: load a recovery bhavior to move backwards
+      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
+      if(backward_recovery_allowed_){
+        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(go_back);
+      }
+      
 
       //next, we'll load a recovery behavior to rotate in place
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
@@ -1108,6 +1143,11 @@ namespace move_base {
       //we'll rotate in-place one more time
       if(clearing_rotation_allowed_)
         recovery_behaviors_.push_back(rotate);
+
+      //Newly added: load a recovery behavior to notify the surrounding (light up LED)
+      boost::shared_ptr<nav_core::RecoveryBehavior> notify_surrounding(recovery_loader_.createInstance("notify_surrounding_recovery/NotifySurroundingRecovery"));
+      notify_surrounding->initialize("notify_surrounding_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(notify_surrounding);
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());

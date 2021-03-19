@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>notify_surrounding_recovery</name>
+  <version>0.0.0</version>
+  <description>
+
+    This package provides a recovery behavior for the navigation stack that attempts to notify the robot status to the surrounding.
+  
+  </description>
+  <maintainer email="hayato.terao@lexxpluss.com">Hayato Terao</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+    
+  <depend>lexxauto_msgs</depend>
+  <depend>nav_core</depend>
+  <depend>pluginlib</depend>
+  <depend>roscpp</depend>
+
+  <export>
+    <nav_core plugin="${prefix}/notify_surrounding_plugin.xml"/>
+  </export>
+
+</package>
