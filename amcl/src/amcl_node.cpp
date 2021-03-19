@@ -24,6 +24,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <math.h>
 
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
@@ -136,6 +137,7 @@ class AmclNode
 
     int process();
     void savePoseToServer();
+    void deletePoseFromServer();
 
   private:
     tf::TransformBroadcaster* tfb_;
@@ -177,7 +179,7 @@ class AmclNode
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
     void freeMapDependentMemory();
     map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
-    void updatePoseFromServer();
+    bool updatePoseFromServer();
     bool applyInitialPose();
 
     double getYaw(tf::Pose& t);
@@ -315,8 +317,8 @@ boost::shared_ptr<AmclNode> amcl_node_ptr;
 
 void sigintHandler(int sig)
 {
-  // Save latest pose as we're shutting down.
-  amcl_node_ptr->savePoseToServer();
+  // Delete latest pose as we're shutting down.
+  amcl_node_ptr->deletePoseFromServer();
   ros::shutdown();
 }
 
@@ -794,46 +796,89 @@ void AmclNode::savePoseToServer()
                                   last_published_pose.pose.covariance[6*5+5]);
 }
 
-void AmclNode::updatePoseFromServer()
+void AmclNode::deletePoseFromServer()
 {
+  private_nh_.deleteParam("initial_pose_x");
+  private_nh_.deleteParam("initial_pose_y");
+  private_nh_.deleteParam("initial_pose_a");
+  private_nh_.deleteParam("initial_cov_xx");
+  private_nh_.deleteParam("initial_cov_yy");
+  private_nh_.deleteParam("initial_cov_aa");
+  ROS_INFO("Delete pose from server");
+}
+
+bool AmclNode::updatePoseFromServer()
+{
+  if(private_nh_.hasParam("initial_pose_x") &&
+      private_nh_.hasParam("initial_pose_y") &&
+      private_nh_.hasParam("initial_pose_a") &&
+      private_nh_.hasParam("initial_cov_xx") &&
+      private_nh_.hasParam("initial_cov_yy") &&
+      private_nh_.hasParam("initial_cov_aa"))
+  {
+    ROS_INFO("Using update pose from server since we have all params.");
+    // Check for NAN on input from param server, #5239
+    double tmp_pos;
+    private_nh_.getParam("initial_pose_x", tmp_pos);
+
+    if(!std::isnan(tmp_pos)) {
+      init_pose_[0] = tmp_pos;
+    } else {
+      ROS_WARN("ignoring NAN in initial pose X position");
+      goto initialize_with_default;
+    }
+
+    private_nh_.getParam("initial_pose_y", tmp_pos);
+    if(!std::isnan(tmp_pos)) {
+      init_pose_[1] = tmp_pos;
+    } else {
+      ROS_WARN("ignoring NAN in initial pose Y position");
+      goto initialize_with_default;
+    }
+
+    private_nh_.getParam("initial_pose_a", tmp_pos);
+    if(!std::isnan(tmp_pos)) {
+      init_pose_[2] = tmp_pos;
+    } else {
+      ROS_WARN("ignoring NAN in initial pose Yaw");
+      goto initialize_with_default;
+    }
+
+    private_nh_.getParam("initial_cov_xx", tmp_pos);
+    if(!std::isnan(tmp_pos)) {
+      init_cov_[0] =tmp_pos;
+    } else {
+      ROS_WARN("ignoring NAN in initial covariance XX");
+      goto initialize_with_default;
+    }
+
+    private_nh_.getParam("initial_cov_yy", tmp_pos);
+    if(!std::isnan(tmp_pos)) {
+      init_cov_[1] = tmp_pos;
+    } else {
+      ROS_WARN("ignoring NAN in initial covariance YY");
+      goto initialize_with_default;
+    }
+
+    private_nh_.getParam("initial_cov_aa", tmp_pos);
+    if(!std::isnan(tmp_pos)) {
+      init_cov_[2] = tmp_pos;
+    } else {
+      ROS_WARN("ignoring NAN in initial covariance AA");
+      goto initialize_with_default;
+    }
+    return true;
+  }
+  initialize_with_default:
+  ROS_DEBUG("Initialize pose with defaults.");
+  // default values
   init_pose_[0] = 0.0;
   init_pose_[1] = 0.0;
   init_pose_[2] = 0.0;
   init_cov_[0] = 0.5 * 0.5;
   init_cov_[1] = 0.5 * 0.5;
   init_cov_[2] = (M_PI/12.0) * (M_PI/12.0);
-  // Check for NAN on input from param server, #5239
-  double tmp_pos;
-  private_nh_.param("initial_pose_x", tmp_pos, init_pose_[0]);
-  if(!std::isnan(tmp_pos))
-    init_pose_[0] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial pose X position");
-  private_nh_.param("initial_pose_y", tmp_pos, init_pose_[1]);
-  if(!std::isnan(tmp_pos))
-    init_pose_[1] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial pose Y position");
-  private_nh_.param("initial_pose_a", tmp_pos, init_pose_[2]);
-  if(!std::isnan(tmp_pos))
-    init_pose_[2] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial pose Yaw");
-  private_nh_.param("initial_cov_xx", tmp_pos, init_cov_[0]);
-  if(!std::isnan(tmp_pos))
-    init_cov_[0] =tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial covariance XX");
-  private_nh_.param("initial_cov_yy", tmp_pos, init_cov_[1]);
-  if(!std::isnan(tmp_pos))
-    init_cov_[1] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial covariance YY");
-  private_nh_.param("initial_cov_aa", tmp_pos, init_cov_[2]);
-  if(!std::isnan(tmp_pos))
-    init_cov_[2] = tmp_pos;
-  else
-    ROS_WARN("ignoring NAN in initial covariance AA");
+  return false;
 }
 
 void
@@ -914,7 +959,10 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_->pop_z = pf_z_;
 
   // Initialize the filter
-  updatePoseFromServer();
+  bool initial_pose_found_from_server = updatePoseFromServer();
+  // delete all the params for next map update
+  deletePoseFromServer();
+
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
   pf_init_pose_mean.v[0] = init_pose_[0];
   pf_init_pose_mean.v[1] = init_pose_[1];
@@ -958,6 +1006,8 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   // In case the initial pose message arrived before the first map,
   // try to apply the initial pose now that the map has arrived.
   applyInitialPose();
+
+  //if we didn't initialize using param server tell core (publish)
 
 }
 
@@ -1544,15 +1594,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
                                           transform_expiration,
                                           global_frame_id_, odom_frame_id_);
       this->tfb_->sendTransform(tmp_tf_stamped);
-    }
-
-    // Is it time to save our last pose to the param server
-    ros::Time now = ros::Time::now();
-    if((save_pose_period.toSec() > 0.0) &&
-       (now - save_pose_last_time) >= save_pose_period)
-    {
-      this->savePoseToServer();
-      save_pose_last_time = now;
     }
   }
 
