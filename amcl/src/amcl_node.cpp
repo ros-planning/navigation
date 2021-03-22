@@ -179,7 +179,7 @@ class AmclNode
     void handleMapMessage(const nav_msgs::OccupancyGrid& msg);
     void freeMapDependentMemory();
     map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
-    bool updatePoseFromServer();
+    void updatePoseFromServer();
     bool applyInitialPose();
 
     double getYaw(tf::Pose& t);
@@ -508,7 +508,7 @@ AmclNode::AmclNode() :
   set_inital_pose_action_.start();
 
   brainstem_driver_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(srs::ChuckTopics::internal::ODOMETRY_INITIAL_POSE, 2, true);
-  publishAmclReadySignal(true);
+
 }
 
 void AmclNode::publishAmclReadySignal(bool signal)
@@ -807,70 +807,8 @@ void AmclNode::deletePoseFromServer()
   ROS_INFO("Delete pose from server");
 }
 
-bool AmclNode::updatePoseFromServer()
+void AmclNode::updatePoseFromServer()
 {
-  if(private_nh_.hasParam("initial_pose_x") &&
-      private_nh_.hasParam("initial_pose_y") &&
-      private_nh_.hasParam("initial_pose_a") &&
-      private_nh_.hasParam("initial_cov_xx") &&
-      private_nh_.hasParam("initial_cov_yy") &&
-      private_nh_.hasParam("initial_cov_aa"))
-  {
-    ROS_INFO("Using update pose from server since we have all params.");
-    // Check for NAN on input from param server, #5239
-    double tmp_pos;
-    private_nh_.getParam("initial_pose_x", tmp_pos);
-
-    if(!std::isnan(tmp_pos)) {
-      init_pose_[0] = tmp_pos;
-    } else {
-      ROS_WARN("ignoring NAN in initial pose X position");
-      goto initialize_with_default;
-    }
-
-    private_nh_.getParam("initial_pose_y", tmp_pos);
-    if(!std::isnan(tmp_pos)) {
-      init_pose_[1] = tmp_pos;
-    } else {
-      ROS_WARN("ignoring NAN in initial pose Y position");
-      goto initialize_with_default;
-    }
-
-    private_nh_.getParam("initial_pose_a", tmp_pos);
-    if(!std::isnan(tmp_pos)) {
-      init_pose_[2] = tmp_pos;
-    } else {
-      ROS_WARN("ignoring NAN in initial pose Yaw");
-      goto initialize_with_default;
-    }
-
-    private_nh_.getParam("initial_cov_xx", tmp_pos);
-    if(!std::isnan(tmp_pos)) {
-      init_cov_[0] =tmp_pos;
-    } else {
-      ROS_WARN("ignoring NAN in initial covariance XX");
-      goto initialize_with_default;
-    }
-
-    private_nh_.getParam("initial_cov_yy", tmp_pos);
-    if(!std::isnan(tmp_pos)) {
-      init_cov_[1] = tmp_pos;
-    } else {
-      ROS_WARN("ignoring NAN in initial covariance YY");
-      goto initialize_with_default;
-    }
-
-    private_nh_.getParam("initial_cov_aa", tmp_pos);
-    if(!std::isnan(tmp_pos)) {
-      init_cov_[2] = tmp_pos;
-    } else {
-      ROS_WARN("ignoring NAN in initial covariance AA");
-      goto initialize_with_default;
-    }
-    return true;
-  }
-  initialize_with_default:
-  ROS_DEBUG("Initialize pose with defaults.");
   // default values
   init_pose_[0] = 0.0;
   init_pose_[1] = 0.0;
@@ -878,7 +816,38 @@ bool AmclNode::updatePoseFromServer()
   init_cov_[0] = 0.5 * 0.5;
   init_cov_[1] = 0.5 * 0.5;
   init_cov_[2] = (M_PI/12.0) * (M_PI/12.0);
-  return false;
+  // Check for NAN on input from param server, #5239
+  double tmp_pos;
+  private_nh_.param("initial_pose_x", tmp_pos, init_pose_[0]);
+  if(!std::isnan(tmp_pos))
+    init_pose_[0] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial pose X position");
+  private_nh_.param("initial_pose_y", tmp_pos, init_pose_[1]);
+  if(!std::isnan(tmp_pos))
+    init_pose_[1] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial pose Y position");
+  private_nh_.param("initial_pose_a", tmp_pos, init_pose_[2]);
+  if(!std::isnan(tmp_pos))
+    init_pose_[2] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial pose Yaw");
+  private_nh_.param("initial_cov_xx", tmp_pos, init_cov_[0]);
+  if(!std::isnan(tmp_pos))
+    init_cov_[0] =tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial covariance XX");
+  private_nh_.param("initial_cov_yy", tmp_pos, init_cov_[1]);
+  if(!std::isnan(tmp_pos))
+    init_cov_[1] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial covariance YY");
+  private_nh_.param("initial_cov_aa", tmp_pos, init_cov_[2]);
+  if(!std::isnan(tmp_pos))
+    init_cov_[2] = tmp_pos;
+  else
+    ROS_WARN("ignoring NAN in initial covariance AA");
 }
 
 void
@@ -959,7 +928,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_->pop_z = pf_z_;
 
   // Initialize the filter
-  bool initial_pose_found_from_server = updatePoseFromServer();
+  updatePoseFromServer();
   // delete all the params for next map update
   deletePoseFromServer();
 
@@ -1008,7 +977,8 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   applyInitialPose();
 
   //if we didn't initialize using param server tell core (publish)
-
+  // once we update map we are ready
+  publishAmclReadySignal(true);
 }
 
 void
@@ -1596,7 +1566,6 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       this->tfb_->sendTransform(tmp_tf_stamped);
     }
   }
-
 }
 
 double
