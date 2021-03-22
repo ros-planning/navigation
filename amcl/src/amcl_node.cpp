@@ -81,6 +81,7 @@
 #include <move_base_msgs/SetInitialPoseAction.h>
 #include <move_base_msgs/SetInitialPoseResult.h>
 #include <srslib_framework/chuck/ChuckTopics.hpp>
+#include <srslib_framework/AmclStatusOnNewWorkArea.h>
 
 #define NEW_UNIFORM_SAMPLING 1
 
@@ -180,11 +181,14 @@ class AmclNode
     void freeMapDependentMemory();
     map_t* convertMap( const nav_msgs::OccupancyGrid& map_msg );
     void updatePoseFromServer();
+    bool checkPoseParamOnServer();
     bool applyInitialPose();
 
     double getYaw(tf::Pose& t);
 
     void publishAmclReadySignal(bool signal);
+
+    void publishStatusOnNewWorkArea(bool mapUpdated, bool initialPoseUpdated);
 
     //callback for action server
     void executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal);
@@ -264,6 +268,7 @@ class AmclNode
     ros::Publisher particlecloud_pub_;
     ros::Publisher invalid_pose_percent_pub_;
     ros::Publisher ready_pub_;
+    ros::Publisher status_on_new_work_area_pub_;
     ros::ServiceServer global_loc_srv_;
     ros::ServiceServer nomotion_update_srv_; //to let amcl update samples without requiring motion
     ros::ServiceServer set_map_srv_;
@@ -467,6 +472,7 @@ AmclNode::AmclNode() :
   data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
   invalid_pose_percent_pub_ = nh_.advertise<std_msgs::Float32>("amcl_invalid_poses", 2);
   ready_pub_ = nh_.advertise<std_msgs::Bool>("/amcl/ready", 2, true);
+  status_on_new_work_area_pub_ = nh_.advertise<srslib_framework::AmclStatusOnNewWorkArea>("/amcl/status_on_new_work_area", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
 					 &AmclNode::globalLocalizationCallback,
@@ -509,6 +515,7 @@ AmclNode::AmclNode() :
 
   brainstem_driver_pose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(srs::ChuckTopics::internal::ODOMETRY_INITIAL_POSE, 2, true);
 
+  publishAmclReadySignal(true);
 }
 
 void AmclNode::publishAmclReadySignal(bool signal)
@@ -517,6 +524,15 @@ void AmclNode::publishAmclReadySignal(bool signal)
   std_msgs::Bool ready_msg;
   ready_msg.data = signal;
   ready_pub_.publish(ready_msg);
+}
+
+void AmclNode::publishStatusOnNewWorkArea(bool mapUpdated, bool initialPoseUpdated)
+{
+  // publish status signal for core
+  srslib_framework::AmclStatusOnNewWorkArea amcl_status_msg;
+  amcl_status_msg.mapUpdated = mapUpdated;
+  amcl_status_msg.initialPoseUpdated = initialPoseUpdated;
+  status_on_new_work_area_pub_.publish(amcl_status_msg);
 }
 
 void AmclNode::executeInitialPoseCB(const move_base_msgs::SetInitialPoseGoalConstPtr &goal)
@@ -807,6 +823,21 @@ void AmclNode::deletePoseFromServer()
   ROS_INFO("Delete pose from server");
 }
 
+bool AmclNode::checkPoseParamOnServer()
+{
+  if(private_nh_.hasParam("initial_pose_x") &&
+      private_nh_.hasParam("initial_pose_y") &&
+      private_nh_.hasParam("initial_pose_a") &&
+      private_nh_.hasParam("initial_cov_xx") &&
+      private_nh_.hasParam("initial_cov_yy") &&
+      private_nh_.hasParam("initial_cov_aa"))
+  {
+    ROS_INFO("Using pose from server since we have all params.");
+    return true;
+  }
+  return false;
+}
+
 void AmclNode::updatePoseFromServer()
 {
   // default values
@@ -927,6 +958,8 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
 
+  // check if we can localize from initial pose params on server or not
+  bool initial_pose_found_from_server = checkPoseParamOnServer();
   // Initialize the filter
   updatePoseFromServer();
   // delete all the params for next map update
@@ -977,8 +1010,8 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
   applyInitialPose();
 
   //if we didn't initialize using param server tell core (publish)
-  // once we update map we are ready
-  publishAmclReadySignal(true);
+  publishStatusOnNewWorkArea(true, initial_pose_found_from_server);
+
 }
 
 void
