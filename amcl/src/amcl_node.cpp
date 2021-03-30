@@ -472,7 +472,7 @@ AmclNode::AmclNode() :
   data_pub_ = nh_.advertise<move_base_msgs::amcl_data>("amcl_data",2,true);
   invalid_pose_percent_pub_ = nh_.advertise<std_msgs::Float32>("amcl_invalid_poses", 2);
   ready_pub_ = nh_.advertise<std_msgs::Bool>("/amcl/ready", 2, true);
-  status_on_new_work_area_pub_ = nh_.advertise<srslib_framework::AmclStatusOnNewWorkArea>("/amcl/status_on_new_work_area", 2, false);
+  status_on_new_work_area_pub_ = nh_.advertise<srslib_framework::AmclStatusOnNewWorkArea>("/amcl/status_on_new_work_area", 2, true);
   particlecloud_pub_ = nh_.advertise<geometry_msgs::PoseArray>("particlecloud", 2, true);
   global_loc_srv_ = nh_.advertiseService("global_localization",
 					 &AmclNode::globalLocalizationCallback,
