@@ -54,7 +54,7 @@ void StaticObjectSpeedLimiter::initialize(std::string name) {
   std::string inTopic = "/sensors/odometry/velocity/cmd_unfiltered";
   subscriber_ = nh_.subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
 
-  emulation_mode_sub_ = nh_.subscribe("emulator/enabled", 10, &StaticObjectSpeedLimiter::emulationModeCallback, this);
+  //emulation_mode_sub_ = nh_.subscribe("emulator/enabled", 10, &StaticObjectSpeedLimiter::emulationModeCallback, this);
 
   chassis_generation_sub_ = nh_.subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 }
