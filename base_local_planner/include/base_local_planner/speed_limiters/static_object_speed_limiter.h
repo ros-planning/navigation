@@ -47,6 +47,7 @@
 #include <srslib_framework/chuck/ChuckChassisGenerations.hpp>
 #include <srslib_framework/robotics/Velocity.hpp>
 #include <tf/tf.h>
+#include <std_msgs/Bool.h>
 
 namespace base_local_planner {
 
@@ -83,6 +84,7 @@ private:
   };
 
   void msgCallback(const geometry_msgs::Twist::ConstPtr& msg);
+  void emulationModeCallback(const std_msgs::Bool& emulationMode);
   void chassisConfigCallback(const srslib_framework::MsgChassisConfig& config);
 
   struct SpeedLimiterResult {
@@ -110,6 +112,7 @@ private:
 
   ros::NodeHandle nh_;
   ros::Subscriber subscriber_;
+  ros::Subscriber emulation_mode_sub_;
   ros::Subscriber chassis_generation_sub_;
 
   std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;

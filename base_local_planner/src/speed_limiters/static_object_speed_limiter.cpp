@@ -54,10 +54,7 @@ void StaticObjectSpeedLimiter::initialize(std::string name) {
   std::string inTopic = "/sensors/odometry/velocity/cmd_unfiltered";
   subscriber_ = nh_.subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
 
-
-  bool emu = false;
-  ros::NodeHandle privateNh;
-  privateNh.param("emulation_mode", emulationMode_, false);
+  emulation_mode_sub_ = nh_.subscribe("emulator/enabled", 10, &StaticObjectSpeedLimiter::emulationModeCallback, this);
 
   chassis_generation_sub_ = nh_.subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 }
@@ -68,6 +65,10 @@ std::string StaticObjectSpeedLimiter::getName() {
 
 void StaticObjectSpeedLimiter::chassisConfigCallback(const srslib_framework::MsgChassisConfig& config){
   chassis_generation_ = static_cast<srs::ChuckChassisGenerations::ChuckChassisType>( config.chassisFootprintType );
+}
+
+void StaticObjectSpeedLimiter::emulationModeCallback(const std_msgs::Bool& emulationMode) {
+  emulationMode_ = emulationMode.data;
 }
 
 void StaticObjectSpeedLimiter::msgCallback(const geometry_msgs::Twist::ConstPtr& msg) {
@@ -124,6 +125,23 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
     }
     angularIndex = i;
   }
+
+  ros::NodeHandle nh;
+  ros::NodeHandle local_nh("~");
+  if (nh.hasParam("use_emulator")) {
+    bool emulation;
+    nh.getParam("use_emulator", emulation);
+    ROS_ERROR("XXXXXXXX nh emulationMode_: %s", emulation ? "true": "false");
+  }
+
+  if (local_nh.hasParam("use_emulator")) {
+    bool emulation;
+    local_nh.getParam("use_emulator", emulation);
+    ROS_ERROR("XXXXXXXX local_nh emulationMode_: %s", emulation ? "true": "false");
+  }
+
+  ROS_ERROR("XXXXXXXX chassis_generation_: %d", chassis_generation_);
+  ROS_ERROR("XXXXXXXX emulationMode_: %s", emulationMode_ ? "true": "false");
 
   geometry_msgs::Point left, right;
   //The plane tables indicate left right pairs of x,y coords
@@ -256,6 +274,7 @@ StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculate
   double sizeDelta = ( data.speed - data.minTestVelocity ) / ( data.maxTestVelocity - data.minTestVelocity);
   sizeDelta *= ( data.maxTestDistance - data.minTestDistance );
 
+  ROS_ERROR("XXXXXXXX SizeDelta: %lf", sizeDelta);
   double testSize = data.maxTestDistance;
   if ( params_.test_distance_changes_with_speed ) {
     if ( params_.test_distance_grows_with_speed ) {
