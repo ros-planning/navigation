@@ -101,16 +101,14 @@ namespace base_local_planner {
   }
 
   void planFromLookahead(const std::vector<geometry_msgs::PoseStamped>& plan, double lookahead, std::vector<geometry_msgs::PoseStamped>& new_plan){
-    double waypoint_dist_sq_sum = 0;
+    double waypoint_dist_sum = 0;
     unsigned int target_waypoint_index = plan.size() - 1;
-    // lookahead becomes lookahead^2
-    lookahead = lookahead * lookahead;
     for(unsigned int i = 1; i < plan.size(); ++i){
       double x_diff = plan[i].pose.position.x - plan[i-1].pose.position.x;
       double y_diff = plan[i].pose.position.y - plan[i-1].pose.position.y;
-      double waypoint_dist_sq = x_diff * x_diff + y_diff * y_diff;
-      waypoint_dist_sq_sum += sqrt(waypoint_dist_sq);
-      if (waypoint_dist_sq_sum > lookahead)
+      double waypoint_dist = sqrt(x_diff * x_diff + y_diff * y_diff);
+      waypoint_dist_sum += waypoint_dist;
+      if (waypoint_dist_sum > lookahead)
       {
         target_waypoint_index = i;
         break;
