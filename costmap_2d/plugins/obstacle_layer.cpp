@@ -229,9 +229,9 @@ void ObstacleLayer::onInitialize()
       observation_notifiers_.back()->setTargetFrames(target_frames);
     }
   }
-
   dsrv_ = NULL;
   setupDynamicReconfigure(nh);
+  layer_initialized_ = true;
 }
 
 void ObstacleLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
@@ -593,6 +593,7 @@ void ObstacleLayer::activate()
     if (observation_buffers_[i])
       observation_buffers_[i]->resetLastUpdated();
   }
+  layer_initialized_ = true;
 }
 void ObstacleLayer::deactivate()
 {
@@ -601,6 +602,7 @@ void ObstacleLayer::deactivate()
     if (observation_subscribers_[i] != NULL)
       observation_subscribers_[i]->unsubscribe();
   }
+  layer_initialized_ = false;
 }
 
 void ObstacleLayer::updateRaytraceBounds(double ox, double oy, double wx, double wy, double range,

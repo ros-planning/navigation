@@ -80,34 +80,27 @@ void StaticLayer::onInitialize()
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
 
-  // Only resubscribe if topic has changed
-  if (map_sub_.getTopic() != ros::names::resolve(map_topic))
+
+  // we'll subscribe to the latched topic that the map server uses
+  ROS_INFO("Requesting the map...");
+  map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
+  map_received_ = false;
+  has_updated_data_ = false;
+
+  ros::Rate r(10);
+  while (!map_received_ && g_nh.ok())
   {
-    // we'll subscribe to the latched topic that the map server uses
-    ROS_INFO("Requesting the map...");
-    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
-    map_received_ = false;
-    has_updated_data_ = false;
-
-    ros::Rate r(10);
-    while (!map_received_ && g_nh.ok())
-    {
-      ros::spinOnce();
-      r.sleep();
-    }
-
-    ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
-
-    if (subscribe_to_updates_)
-    {
-      ROS_INFO("Subscribing to updates");
-      map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
-
-    }
+    ros::spinOnce();
+    r.sleep();
   }
-  else
+
+  ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+
+  if (subscribe_to_updates_)
   {
-    has_updated_data_ = true;
+    ROS_INFO("Subscribing to updates");
+    map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
+
   }
 
   if (dsrv_)
@@ -119,6 +112,7 @@ void StaticLayer::onInitialize()
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
       &StaticLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+  layer_initialized_ = true;
 }
 
 void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
@@ -212,7 +206,6 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   height_ = size_y_;
   map_received_ = true;
   has_updated_data_ = true;
-
   // shutdown the map subscrber if firt_map_only_ flag is on
   if (first_map_only_)
   {
@@ -247,6 +240,7 @@ void StaticLayer::activate()
 
 void StaticLayer::deactivate()
 {
+  layer_initialized_ = false;
   map_sub_.shutdown();
   if (subscribe_to_updates_)
     map_update_sub_.shutdown();
@@ -260,7 +254,8 @@ void StaticLayer::reset()
   }
   else
   {
-    onInitialize();
+    deactivate();
+    activate();
   }
 }
 

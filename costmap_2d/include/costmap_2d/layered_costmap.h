@@ -82,6 +82,8 @@ public:
     return global_frame_;
   }
 
+  bool areAllLayersInitialized();
+
   void resizeMap(unsigned int size_x, unsigned int size_y, double resolution, double origin_x, double origin_y,
                  bool size_locked = false);
 
