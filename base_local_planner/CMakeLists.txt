@@ -81,6 +81,8 @@ catkin_package(
         costmap_2d
         nav_core
         angles
+        srslib_timing
+        srslib_framework
 )
 
 #uncomment for profiling
