@@ -48,6 +48,7 @@
 #include <srslib_framework/robotics/Velocity.hpp>
 #include <tf/tf.h>
 #include <std_msgs/Bool.h>
+#include <srslib_framework/MsgCERealTimeData.h>
 
 namespace base_local_planner {
 
@@ -86,6 +87,7 @@ private:
   void msgCallback(const geometry_msgs::Twist::ConstPtr& msg);
   void emulationModeCallback(const std_msgs::Bool& emulationMode);
   void chassisConfigCallback(const srslib_framework::MsgChassisConfig& config);
+  void ceSensorArrayCallback(const srslib_framework::MsgCERealTimeData& msg);
 
   struct SpeedLimiterResult {
       double speed = 0.0;
@@ -114,10 +116,12 @@ private:
   ros::Subscriber subscriber_;
   ros::Subscriber emulation_mode_sub_;
   ros::Subscriber chassis_generation_sub_;
+  ros::Subscriber hardware_version_sub_;
 
   std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
   StaticObjectSpeedLimiterConfig params_;
 
+  bool enabledFirmwareVersion = false;
   bool emulationMode_ = false;
   ros::Time last_time_ = ros::Time(0);
   double cachedMaxLinearVelocity_ = -1.0;

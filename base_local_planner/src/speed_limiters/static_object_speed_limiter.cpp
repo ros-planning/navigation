@@ -57,6 +57,8 @@ void StaticObjectSpeedLimiter::initialize(std::string name) {
   emulation_mode_sub_ = nh_.subscribe("emulator/enabled", 10, &StaticObjectSpeedLimiter::emulationModeCallback, this);
 
   chassis_generation_sub_ = nh_.subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
+  
+  hardware_version_sub_ = nh_.subscribe("/drivers/brainstem/state/ce_realtime_data", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 }
 
 std::string StaticObjectSpeedLimiter::getName() {
@@ -75,11 +77,21 @@ void StaticObjectSpeedLimiter::msgCallback(const geometry_msgs::Twist::ConstPtr&
   velocity_ = srs::VelocityMessageFactory::msg2Velocity(msg);
 }
 
+void StaticObjectSpeedLimiter::ceSensorArrayCallback(const srslib_framework::MsgCERealTimeData& msg) {
+    if (msg.firmwareId == 6) {
+        enabledFirmwareVersion = true;
+    }
+}
+
 bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
 
   // Reset the maximum allowed velocity
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
+  if (params_.enabled == false || enabledFirmwareVersion == false) {
+    return true;
+  }
+
   if (params_.timeout > 0 && (ros::Time::now() - last_time_ < ros::Duration(params_.timeout))) {
     if ( cachedMaxLinearVelocity_ > 0.0 ) {
       max_allowed_linear_vel = cachedMaxLinearVelocity_;
