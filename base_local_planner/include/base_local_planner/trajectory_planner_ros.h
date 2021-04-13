@@ -240,6 +240,8 @@ namespace base_local_planner {
       base_local_planner::OdometryHelperRos odom_helper_;
 
       std::vector<geometry_msgs::Point> footprint_spec_;
+      
+      double xy_goal_tolerance_;
   };
 };
 #endif
