@@ -78,7 +78,7 @@ void StaticObjectSpeedLimiter::msgCallback(const geometry_msgs::Twist::ConstPtr&
 }
 
 void StaticObjectSpeedLimiter::ceSensorArrayCallback(const srslib_framework::MsgCERealTimeData& msg) {
-    if (msg.firmwareId == 6) {
+    if ( msg.firmwareId == 6 ) {
         enabledFirmwareVersion = true;
     }
 }
@@ -88,11 +88,11 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
   // Reset the maximum allowed velocity
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
-  if (params_.enabled == false || enabledFirmwareVersion == false) {
+  if ( params_.enabled == false || enabledFirmwareVersion == false ) {
     return true;
   }
 
-  if (params_.timeout > 0 && (ros::Time::now() - last_time_ < ros::Duration(params_.timeout))) {
+  if ( params_.timeout > 0 && (ros::Time::now() - last_time_ < ros::Duration(params_.timeout) ) ) {
     if ( cachedMaxLinearVelocity_ > 0.0 ) {
       max_allowed_linear_vel = cachedMaxLinearVelocity_;
     }
@@ -222,8 +222,7 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
   return true;
 }
 
-StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedLinearSpeed(const double distLeft, const double distRight, const double speed) const
-{
+StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedLinearSpeed(const double distLeft, const double distRight, const double speed) const {
   SpeedLimiterData data;
   data.distLeft = distLeft;
   data.distRight = distRight;
@@ -239,8 +238,7 @@ StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculate
   return calculateAllowedSpeed(data);
 }
 
-StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedAngularSpeed(const double distLeft, const double distRight, const double speed) const
-{
+StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedAngularSpeed(const double distLeft, const double distRight, const double speed) const {
   SpeedLimiterData data;
   data.distLeft = distLeft;
   data.distRight = distRight;
@@ -256,8 +254,7 @@ StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculate
   return calculateAllowedSpeed(data);
 }
 
-StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedSpeed(const SpeedLimiterData& data) const
-{
+StaticObjectSpeedLimiter::SpeedLimiterResult StaticObjectSpeedLimiter::calculateAllowedSpeed(const SpeedLimiterData& data) const {
   SpeedLimiterResult result;
 
   if ( data.speed < data.minTestVelocity ) {
