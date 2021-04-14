@@ -71,9 +71,9 @@ using namespace costmap_2d;
  */
 
 const unsigned int BIGMAP_OBSTACLES = 47790;
-const unsigned int NUM_UPDATES = 100;
-const unsigned int NUM_OBSTACLES = 350;
-const float OBSTRUCTION_SPREAD = 32.0;
+const unsigned int NUM_UPDATES = 3;
+const unsigned int NUM_OBSTACLES = 10;
+const float OBSTRUCTION_SPREAD = 20.0;
 
 /**
  * Time map updates.
@@ -85,7 +85,7 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   addStaticLayer(layers, tf);
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
-  InflationLayer* ilayer = addInflationLayer(layers, tf);
+  // InflationLayer* ilayer = addInflationLayer(layers, tf);
 
   std::vector<geometry_msgs::Point> polygon = setRadii(layers, 1, 1.75, 3);
   layers.setFootprint(polygon);
@@ -105,16 +105,30 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   std::cerr << "Time for second update " << sw.elapsedMicroseconds() << std::endl;
   layers.updateMap(rx, ry, rth);
 
-  // Time 100 map updates
+  // obstacle count == static layer obstacle count
+  Costmap2D* costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES);
+  
+
   std::default_random_engine generator;
   std::uniform_real_distribution<double> distribution(-OBSTRUCTION_SPREAD, OBSTRUCTION_SPREAD);
   sw.reset();
   for (unsigned int k = 0; k < NUM_UPDATES; ++k) {
-    // Add 5 obstacles
+   
     for (unsigned int jj = 0; jj < NUM_OBSTACLES; ++jj)
     {
-      addObservation(olayer, rx + distribution(generator), ry + distribution(generator),
-        0.1, rx, ry);
+      float obs_x;
+      float obs_y;
+      
+      unsigned char cost = costmap_2d::LETHAL_OBSTACLE;
+      while (cost == costmap_2d::LETHAL_OBSTACLE) {
+        obs_x = rx + distribution(generator);
+        obs_y = ry + distribution(generator);
+        unsigned int map_obs_x, map_obs_y;
+        layers.getCostmap()->worldToMap(obs_x, obs_y, map_obs_x, map_obs_y);
+        cost = layers.getCostmap()->getCost(map_obs_x, map_obs_y); 
+      }
+      addObservation(olayer, obs_x, obs_y, 0.1, rx, ry);
     }
     layers.updateMap(rx, ry, rth);
     olayer->clearStaticObservations(true, true);
@@ -122,8 +136,8 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   std::cerr << "Time for next updates: " << (double)sw.elapsedMicroseconds() / NUM_UPDATES << " ms per update" << std::endl;
 
   // Print result and verify the correct number of obstacles
-  Costmap2D* costmap = layers.getCostmap();
-  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_OBSTACLES);
+  costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), NUM_OBSTACLES * NUM_UPDATES + BIGMAP_OBSTACLES);
 }
 
 /**
@@ -154,6 +168,9 @@ TEST(costmap, testTimeMapUpdatesNew) {
   layers.updateMap(rx, ry, rth);
   std::cerr << "Time for second update " << sw.elapsedMicroseconds() << std::endl;
   layers.updateMap(rx, ry, rth);
+  // obstacle count == static layer obstacle count
+  Costmap2D* costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES);
 
   std::default_random_engine generator;
   std::uniform_real_distribution<double> distribution(-OBSTRUCTION_SPREAD, OBSTRUCTION_SPREAD);
@@ -161,17 +178,27 @@ TEST(costmap, testTimeMapUpdatesNew) {
   for (unsigned int k = 0; k < NUM_UPDATES; ++k) {
     for (unsigned int jj = 0; jj < NUM_OBSTACLES; ++jj)
     {
-      addObservation(olayer, rx + distribution(generator), ry + distribution(generator),
-        0.1, rx, ry);
+      float obs_x;
+      float obs_y;
+      
+      unsigned char cost = costmap_2d::LETHAL_OBSTACLE;
+      while (cost == costmap_2d::LETHAL_OBSTACLE) {
+        obs_x = rx + distribution(generator);
+        obs_y = ry + distribution(generator);
+        unsigned int map_obs_x, map_obs_y;
+        layers.getCostmap()->worldToMap(obs_x, obs_y, map_obs_x, map_obs_y);
+        cost = layers.getCostmap()->getCost(map_obs_x, map_obs_y);
+      }
+      addObservation(olayer, obs_x, obs_y, 0.1, rx, ry);
     }
     layers.updateMap(rx, ry, rth);
     olayer->clearStaticObservations(true, true);
   }
   std::cerr << "Time for next updates " << (double)sw.elapsedMicroseconds() / NUM_UPDATES << " ms per update" << std::endl;
-
+  
   // Print result and verify the correct number of obstacles
-  Costmap2D* costmap = layers.getCostmap();
-  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_OBSTACLES);
+  costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_UPDATES * NUM_OBSTACLES);
 }
 
 
