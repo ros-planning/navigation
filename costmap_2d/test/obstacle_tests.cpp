@@ -381,7 +381,7 @@ TEST(costmap, testMultipleAdditions){
 }
 
 /**
- * Tests the reset method
+ * Tests the onInitialize method
  */
 TEST(costmap, ObstacleMapOnInitialize){
 
@@ -396,7 +396,7 @@ TEST(costmap, ObstacleMapOnInitialize){
 }
 
 /**
- * Tests the reset method
+ * Tests the activate method
  */
 TEST(costmap, ObstacleMapDeactivated){
 
@@ -412,7 +412,7 @@ TEST(costmap, ObstacleMapDeactivated){
 }
 
 /**
- * Tests the reset method
+ * Tests the deactivate and activate method
  */
 TEST(costmap, ObstacleMapDeactivateAndActivate){
 

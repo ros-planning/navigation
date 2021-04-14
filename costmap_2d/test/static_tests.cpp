@@ -46,7 +46,7 @@
 using namespace costmap_2d;
 
 /**
- * Tests the reset method
+ * Tests On Initialize method
  */
 TEST(costmap, StaticMapOnInitialize){
 
@@ -60,7 +60,7 @@ TEST(costmap, StaticMapOnInitialize){
 }
 
 /**
- * Tests the reset method
+ * Tests the deactivate method
  */
 TEST(costmap, StaticMapDeactivated){
 
@@ -75,7 +75,7 @@ TEST(costmap, StaticMapDeactivated){
 }
 
 /**
- * Tests the reset method
+ * Tests the deactivate and activate method
  */
 TEST(costmap, StaticMapDeactivateAndActivate){
 
@@ -119,11 +119,14 @@ TEST(costmap, testResetForStaticMap){
       staticMap.push_back(costmap_2d::LETHAL_OBSTACLE);
     }
   }
+
   // Allocate the cost map, with a inflation to 3 cells all around
   Costmap2D map(10, 10, RESOLUTION, 0.0, 0.0, 3, 3, 3, OBSTACLE_RANGE, MAX_Z, RAYTRACE_RANGE, 25, staticMap, THRESHOLD);
+
   // Populate the cost map with a wall around the perimeter. Free space should clear out the room.
   pcl::PointCloud<pcl::PointXYZ> cloud;
   cloud.points.resize(40);
+
   // Left wall
   unsigned int ind = 0;
   for (unsigned int i = 0; i < 10; i++){
@@ -132,22 +135,26 @@ TEST(costmap, testResetForStaticMap){
     cloud.points[ind].y = i;
     cloud.points[ind].z = MAX_Z;
     ind++;
+
     // Top
     cloud.points[ind].x = i;
     cloud.points[ind].y = 0;
     cloud.points[ind].z = MAX_Z;
     ind++;
+
     // Right
     cloud.points[ind].x = 9;
     cloud.points[ind].y = i;
     cloud.points[ind].z = MAX_Z;
     ind++;
+
     // Bottom
     cloud.points[ind].x = i;
     cloud.points[ind].y = 9;
     cloud.points[ind].z = MAX_Z;
     ind++;
   }
+
   double wx = 5.0, wy = 5.0;
   geometry_msgs::Point p;
   p.x = wx;
@@ -156,8 +163,10 @@ TEST(costmap, testResetForStaticMap){
   Observation obs(p, cloud, OBSTACLE_RANGE, RAYTRACE_RANGE);
   std::vector<Observation> obsBuf;
   obsBuf.push_back(obs);
+
   // Update the cost map for this observation
   map.updateWorld(wx, wy, obsBuf, obsBuf);
+
   // Verify that we now have only 36 cells with lethal cost, thus provong that we have correctly cleared
   // free space
   int hitCount = 0;
@@ -169,6 +178,7 @@ TEST(costmap, testResetForStaticMap){
     }
   }
   ASSERT_EQ(hitCount, 36);
+
   // Veriy that we have 64 non-leathal
   hitCount = 0;
   for(unsigned int i=0; i < 10; ++i){
@@ -178,6 +188,7 @@ TEST(costmap, testResetForStaticMap){
     }
   }
   ASSERT_EQ(hitCount, 64);
+
   // Now if we reset the cost map, we should have our map go back to being completely occupied
   map.resetMapOutsideWindow(wx, wy, 0.0, 0.0);
   //We should now go back to everything being occupied
@@ -232,146 +243,146 @@ TEST(costmap, testWindowCopy){
     //printf("\n");
   }
 
-}*/
+}
 
-//test for updating costmaps with static data
-// TEST(costmap, testFullyContainedStaticMapUpdate){
-//   Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
-//       10.0, MAX_Z, 10.0, 25, MAP_5_BY_5, THRESHOLD);
+test for updating costmaps with static data
+TEST(costmap, testFullyContainedStaticMapUpdate){
+  Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_5_BY_5, THRESHOLD);
 
-//   Costmap2D static_map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
-//       10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+  Costmap2D static_map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-//   map.updateStaticMapWindow(0, 0, 10, 10, MAP_10_BY_10);
+  map.updateStaticMapWindow(0, 0, 10, 10, MAP_10_BY_10);
 
-//   for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
-//     for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
-//       ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
-//     }
-//   }
-// }
+  for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
+    for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
+      ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
+    }
+  }
+}
 
-// TEST(costmap, testOverlapStaticMapUpdate){
-//   Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
-//       10.0, MAX_Z, 10.0, 25, MAP_5_BY_5, THRESHOLD);
+TEST(costmap, testOverlapStaticMapUpdate){
+  Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_5_BY_5, THRESHOLD);
 
-//   Costmap2D static_map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
-//       10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
+  Costmap2D static_map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-//   map.updateStaticMapWindow(-10, -10, 10, 10, MAP_10_BY_10);
+  map.updateStaticMapWindow(-10, -10, 10, 10, MAP_10_BY_10);
 
-//   ASSERT_FLOAT_EQ(map.getOriginX(), -10);
-//   ASSERT_FLOAT_EQ(map.getOriginX(), -10);
-//   ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)15);
-//   ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)15);
-//   for(unsigned int i = 0; i < 10; ++i){
-//     for(unsigned int j = 0; j < 10; ++j){
-//       ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
-//     }
-//   }
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)15);
+  ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)15);
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      ASSERT_EQ(map.getCost(i, j), static_map.getCost(i, j));
+    }
+  }
 
-//   std::vector<unsigned char> blank(100);
+  std::vector<unsigned char> blank(100);
 
-//   //check to make sure that inflation on updates are being done correctly
-//   map.updateStaticMapWindow(-10, -10, 10, 10, blank);
+  //check to make sure that inflation on updates are being done correctly
+  map.updateStaticMapWindow(-10, -10, 10, 10, blank);
 
-//   for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
-//     for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
-//       ASSERT_EQ(map.getCost(i, j), 0);
-//     }
-//   }
+  for(unsigned int i = 0; i < map.getSizeInCellsX(); ++i){
+    for(unsigned int j = 0; j < map.getSizeInCellsY(); ++j){
+      ASSERT_EQ(map.getCost(i, j), 0);
+    }
+  }
 
-//   std::vector<unsigned char> fully_contained(25);
-//   fully_contained[0] = 254;
-//   fully_contained[4] = 254;
-//   fully_contained[5] = 254;
-//   fully_contained[9] = 254;
+  std::vector<unsigned char> fully_contained(25);
+  fully_contained[0] = 254;
+  fully_contained[4] = 254;
+  fully_contained[5] = 254;
+  fully_contained[9] = 254;
 
-//   Costmap2D small_static_map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
-//       10.0, MAX_Z, 10.0, 25, fully_contained, THRESHOLD);
+  Costmap2D small_static_map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
+      10.0, MAX_Z, 10.0, 25, fully_contained, THRESHOLD);
 
-//   map.updateStaticMapWindow(0, 0, 5, 5, fully_contained);
+  map.updateStaticMapWindow(0, 0, 5, 5, fully_contained);
 
-//   ASSERT_FLOAT_EQ(map.getOriginX(), -10);
-//   ASSERT_FLOAT_EQ(map.getOriginX(), -10);
-//   ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)15);
-//   ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)15);
-//   for(unsigned int j = 0; j < 5; ++j){
-//     for(unsigned int i = 0; i < 5; ++i){
-//       ASSERT_EQ(map.getCost(i + 10, j + 10), small_static_map.getCost(i, j));
-//     }
-//   }
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_FLOAT_EQ(map.getOriginX(), -10);
+  ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)15);
+  ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)15);
+  for(unsigned int j = 0; j < 5; ++j){
+    for(unsigned int i = 0; i < 5; ++i){
+      ASSERT_EQ(map.getCost(i + 10, j + 10), small_static_map.getCost(i, j));
+    }
+  }
 
-// }
-
-
-// TEST(costmap, testStaticMap){
-//   Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
-//       10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
-
-//   ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)10);
-//   ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)10);
-
-//   // Verify that obstacles correctly identified from the static map.
-//   std::vector<unsigned int> occupiedCells;
-
-//   for(unsigned int i = 0; i < 10; ++i){
-//     for(unsigned int j = 0; j < 10; ++j){
-//       if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE){
-//         occupiedCells.push_back(map.getIndex(i, j));
-//       }
-//     }
-//   }
-
-//   ASSERT_EQ(occupiedCells.size(), (unsigned int)20);
-
-//   // Iterate over all id's and verify that they are present according to their
-//   for(std::vector<unsigned int>::const_iterator it = occupiedCells.begin(); it != occupiedCells.end(); ++it){
-//     unsigned int ind = *it;
-//     unsigned int x, y;
-//     map.indexToCells(ind, x, y);
-//     ASSERT_EQ(find(occupiedCells, map.getIndex(x, y)), true);
-//     ASSERT_EQ(MAP_10_BY_10[ind] >= 100, true);
-//     ASSERT_EQ(map.getCost(x, y) >= 100, true);
-//   }
-
-//   // Block of 200
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(7, 2)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(8, 2)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(9, 2)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(7, 3)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(8, 3)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(9, 3)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(7, 4)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(8, 4)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(9, 4)), true);
-
-//   // Block of 100
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(4, 3)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(4, 4)), true);
-
-//   // Block of 200
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(3, 7)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(4, 7)), true);
-//   ASSERT_EQ(find(occupiedCells, map.getIndex(5, 7)), true);
+}
 
 
-//   // Verify Coordinate Transformations, ROW MAJOR ORDER
-//   ASSERT_EQ(worldToIndex(map, 0.0, 0.0), (unsigned int)0);
-//   ASSERT_EQ(worldToIndex(map, 0.0, 0.99), (unsigned int)0);
-//   ASSERT_EQ(worldToIndex(map, 0.0, 1.0), (unsigned int)10);
-//   ASSERT_EQ(worldToIndex(map, 1.0, 0.99), (unsigned int)1);
-//   ASSERT_EQ(worldToIndex(map, 9.99, 9.99), (unsigned int)99);
-//   ASSERT_EQ(worldToIndex(map, 8.2, 3.4), (unsigned int)38);
+TEST(costmap, testStaticMap){
+  Costmap2D map(GRID_WIDTH, GRID_HEIGHT, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS, 
+      10.0, MAX_Z, 10.0, 25, MAP_10_BY_10, THRESHOLD);
 
-//   // Ensure we hit the middle of the cell for world co-ordinates
-//   double wx, wy;
-//   indexToWorld(map, 99, wx, wy);
-//   ASSERT_EQ(wx, 9.5);
-//   ASSERT_EQ(wy, 9.5);
-// }
+  ASSERT_EQ(map.getSizeInCellsX(), (unsigned int)10);
+  ASSERT_EQ(map.getSizeInCellsY(), (unsigned int)10);
 
-//*/
+  // Verify that obstacles correctly identified from the static map.
+  std::vector<unsigned int> occupiedCells;
+
+  for(unsigned int i = 0; i < 10; ++i){
+    for(unsigned int j = 0; j < 10; ++j){
+      if(map.getCost(i, j) == costmap_2d::LETHAL_OBSTACLE){
+        occupiedCells.push_back(map.getIndex(i, j));
+      }
+    }
+  }
+
+  ASSERT_EQ(occupiedCells.size(), (unsigned int)20);
+
+  // Iterate over all id's and verify that they are present according to their
+  for(std::vector<unsigned int>::const_iterator it = occupiedCells.begin(); it != occupiedCells.end(); ++it){
+    unsigned int ind = *it;
+    unsigned int x, y;
+    map.indexToCells(ind, x, y);
+    ASSERT_EQ(find(occupiedCells, map.getIndex(x, y)), true);
+    ASSERT_EQ(MAP_10_BY_10[ind] >= 100, true);
+    ASSERT_EQ(map.getCost(x, y) >= 100, true);
+  }
+
+  // Block of 200
+  ASSERT_EQ(find(occupiedCells, map.getIndex(7, 2)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(8, 2)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(9, 2)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(7, 3)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(8, 3)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(9, 3)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(7, 4)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(8, 4)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(9, 4)), true);
+
+  // Block of 100
+  ASSERT_EQ(find(occupiedCells, map.getIndex(4, 3)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(4, 4)), true);
+
+  // Block of 200
+  ASSERT_EQ(find(occupiedCells, map.getIndex(3, 7)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(4, 7)), true);
+  ASSERT_EQ(find(occupiedCells, map.getIndex(5, 7)), true);
+
+
+  // Verify Coordinate Transformations, ROW MAJOR ORDER
+  ASSERT_EQ(worldToIndex(map, 0.0, 0.0), (unsigned int)0);
+  ASSERT_EQ(worldToIndex(map, 0.0, 0.99), (unsigned int)0);
+  ASSERT_EQ(worldToIndex(map, 0.0, 1.0), (unsigned int)10);
+  ASSERT_EQ(worldToIndex(map, 1.0, 0.99), (unsigned int)1);
+  ASSERT_EQ(worldToIndex(map, 9.99, 9.99), (unsigned int)99);
+  ASSERT_EQ(worldToIndex(map, 8.2, 3.4), (unsigned int)38);
+
+  // Ensure we hit the middle of the cell for world co-ordinates
+  double wx, wy;
+  indexToWorld(map, 99, wx, wy);
+  ASSERT_EQ(wx, 9.5);
+  ASSERT_EQ(wy, 9.5);
+}
+
+*/
 
 
 int main(int argc, char** argv){

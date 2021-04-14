@@ -202,7 +202,7 @@ TEST(costmap, testTimeMapUpdatesNew) {
 }
 
 /**
- * Tests the reset method
+ * Tests the onInitialize method
  */
 TEST(costmap, StaticLayerWithInflationMapOnInitialize){
 
@@ -216,7 +216,7 @@ TEST(costmap, StaticLayerWithInflationMapOnInitialize){
 }
 
 /**
- * Tests the reset method
+ * Tests the deactivate method
  */
 TEST(costmap, StaticLayerWithInflationMapDeactivated){
 
@@ -231,7 +231,7 @@ TEST(costmap, StaticLayerWithInflationMapDeactivated){
 }
 
 /**
- * Tests the reset method
+ * Tests the deactivate and activate method
  */
 TEST(costmap, StaticLayerWithInflationMapDeactivateAndActivate){
 
