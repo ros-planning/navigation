@@ -28,7 +28,7 @@
  */
 
 /**
- * @author Daniel Grieneisen
+ * @author Daniel Grieneisen, Sindhura Chayapathy
  * Test harness for StaticLayerWithInflation for Costmap2D
  */
 
@@ -201,6 +201,68 @@ TEST(costmap, testTimeMapUpdatesNew) {
   ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_UPDATES * NUM_OBSTACLES);
 }
 
+/**
+ * Tests the reset method
+ */
+TEST(costmap, StaticLayerWithInflationMapOnInitialize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticLayerWithInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reset method
+ */
+TEST(costmap, StaticLayerWithInflationMapDeactivated){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticInflation map
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  // call deactivate function
+  (*(plugin->begin()))->deactivate();
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 0);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 0);
+}
+
+/**
+ * Tests the reset method
+ */
+TEST(costmap, StaticLayerWithInflationMapDeactivateAndActivate){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  (*(plugin->begin()))->deactivate();
+  (*(plugin->begin()))->activate();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reset method
+ */
+TEST(costmap, StaticLayerWithInflationMapReset){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticLayerWithInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+
+  (*(plugin->begin()))->reset();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "inflation_tests");
