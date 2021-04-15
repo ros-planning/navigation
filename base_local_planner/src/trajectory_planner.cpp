@@ -136,11 +136,6 @@ namespace base_local_planner{
       }
 
       y_vels_ = y_vels;
-     
-      xy_goal_tolerance_ = config.xy_goal_tolerance;
-      x_goal_tolerance_ = config.x_goal_tolerance;
-      y_goal_tolerance_ = config.y_goal_tolerance;
-      yaw_goal_tolerance_ = config.yaw_goal_tolerance;
   }
 
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model,
@@ -157,9 +152,7 @@ namespace base_local_planner{
       double max_vel_th, double min_vel_th, double min_in_place_vel_th,
       double backup_vel,
       bool dwa, bool heading_scoring, double heading_scoring_timestep, bool meter_scoring, bool simple_attractor,
-      vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity,
-      double xy_goal_tolerance, double x_goal_tolerance,
-      double y_goal_tolerance, double yaw_goal_tolerance)
+      vector<double> y_vels, double stop_time_buffer, double sim_period, double angular_sim_granularity)
     : path_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
       goal_map_(costmap.getSizeInCellsX(), costmap.getSizeInCellsY()),
       costmap_(costmap),
@@ -175,9 +168,7 @@ namespace base_local_planner{
     max_vel_th_(max_vel_th), min_vel_th_(min_vel_th), min_in_place_vel_th_(min_in_place_vel_th),
     backup_vel_(backup_vel),
     dwa_(dwa), heading_scoring_(heading_scoring), heading_scoring_timestep_(heading_scoring_timestep),
-    simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer), sim_period_(sim_period),
-    xy_goal_tolerance_(xy_goal_tolerance), x_goal_tolerance_(x_goal_tolerance),
-    y_goal_tolerance_(y_goal_tolerance), yaw_goal_tolerance_(yaw_goal_tolerance)
+    simple_attractor_(simple_attractor), y_vels_(y_vels), stop_time_buffer_(stop_time_buffer), sim_period_(sim_period)
   {
     //the robot is not stuck to begin with
     stuck_left = false;

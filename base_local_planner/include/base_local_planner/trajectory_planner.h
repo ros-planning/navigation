@@ -120,9 +120,7 @@ namespace base_local_planner {
           bool simple_attractor = false,
           std::vector<double> y_vels = std::vector<double>(0),
           double stop_time_buffer = 0.2,
-          double sim_period = 0.1, double angular_sim_granularity = 0.025,
-	  double xy_goal_tolerance = 0.1, double x_goal_tolerance = 0.1,
-	  double y_goal_tolerance = 0.1, double yaw_goal_tolerance = 0.1);
+          double sim_period = 0.1, double angular_sim_granularity = 0.025);
 
       /**
        * @brief  Destructs a trajectory controller
@@ -318,11 +316,6 @@ namespace base_local_planner {
       double inscribed_radius_, circumscribed_radius_;
 
       boost::mutex configuration_mutex_;
-
-      double xy_goal_tolerance_;
-      double x_goal_tolerance_;
-      double y_goal_tolerance_;
-      double yaw_goal_tolerance_;
 
       /**
        * @brief  Compute x position based on velocity
