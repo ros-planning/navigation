@@ -67,10 +67,16 @@ namespace base_local_planner {
         config.restore_defaults = false;
       }
       if ( ! setup_) {
+        // config.yaw_goal_tolerance = yaw_goal_tolerance_;
+        // config.x_goal_tolerance = x_goal_tolerance_;
+        // config.y_goal_tolerance = y_goal_tolerance_;
         default_config_ = config;
         setup_ = true;
       }
       tc_->reconfigure(config);
+      x_goal_tolerance_ = config.x_goal_tolerance;
+      y_goal_tolerance_ = config.y_goal_tolerance;
+      yaw_goal_tolerance_ = config.yaw_goal_tolerance;
       reached_goal_ = false;
   }
 

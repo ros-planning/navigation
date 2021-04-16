@@ -136,7 +136,6 @@ namespace base_local_planner{
       }
 
       y_vels_ = y_vels;
-      
   }
 
   TrajectoryPlanner::TrajectoryPlanner(WorldModel& world_model,
