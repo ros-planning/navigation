@@ -264,6 +264,23 @@ TEST(costmap, StaticLayerWithInflationMapReset){
   ASSERT_EQ(layers.areAllLayersInitialized(), 1);
 }
 
+/**
+ * Tests the reset method
+ */
+TEST(costmap, StaticLayerWithInflationMapReinitialize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticLayerWithInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+
+  (*(plugin->begin()))->reinitialize();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
 int main(int argc, char** argv){
   ros::init(argc, argv, "inflation_tests");
   testing::InitGoogleTest(&argc, argv);

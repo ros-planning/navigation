@@ -80,27 +80,34 @@ void StaticLayer::onInitialize()
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
 
-
-  // we'll subscribe to the latched topic that the map server uses
-  ROS_INFO("Requesting the map...");
-  map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
-  map_received_ = false;
-  has_updated_data_ = false;
-
-  ros::Rate r(10);
-  while (!map_received_ && g_nh.ok())
+  // resubscribe if it is unsubscribed or the map topic has changed
+  if (!map_sub_ || map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
-    ros::spinOnce();
-    r.sleep();
+    // we'll subscribe to the latched topic that the map server uses
+    ROS_INFO("Requesting the map...");
+    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayer::incomingMap, this);
+    map_received_ = false;
+    has_updated_data_ = false;
+
+    ros::Rate r(10);
+    while (!map_received_ && g_nh.ok())
+    {
+      ros::spinOnce();
+      r.sleep();
+    }
+
+    ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+
+    if (subscribe_to_updates_)
+    {
+      ROS_INFO("Subscribing to updates");
+      map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
+
+    }
   }
-
-  ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
-
-  if (subscribe_to_updates_)
+  else
   {
-    ROS_INFO("Subscribing to updates");
-    map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayer::incomingUpdate, this);
-
+    has_updated_data_ = true;
   }
 
   if (dsrv_)
@@ -247,6 +254,19 @@ void StaticLayer::deactivate()
 }
 
 void StaticLayer::reset()
+{
+  layer_initialized_ = false;
+  if (first_map_only_)
+  {
+    has_updated_data_ = true;
+  }
+  else
+  {
+    onInitialize();
+  }
+}
+
+void StaticLayer::reinitialize()
 {
   if (first_map_only_)
   {

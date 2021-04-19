@@ -91,6 +91,8 @@ public:
 
   virtual void reset() {}
 
+  virtual void reinitialize() {}
+
   virtual ~Layer() {}
 
   /**

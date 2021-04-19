@@ -110,6 +110,22 @@ TEST(costmap, StaticMapReset){
 
 /**
  * Tests the reset method
+ */
+TEST(costmap, StaticMapReinitialize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayer(layers, tf);  // This adds the static map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* static_plugin = layers.getPlugins();
+
+  (*(static_plugin->begin()))->reinitialize();
+
+  ASSERT_EQ((*(static_plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+/**
+ * Tests the reset method
  *
 TEST(costmap, testResetForStaticMap){
   // Define a static map with a large object in the center

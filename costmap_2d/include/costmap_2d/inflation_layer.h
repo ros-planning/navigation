@@ -100,6 +100,8 @@ public:
 
   virtual void reset() { onInitialize(); }
 
+  virtual void reinitialize() { reset(); }
+
   /** @brief  Given a distance, compute a cost.
    * @param  distance The distance from an obstacle in cells
    * @return A cost value for the distance */

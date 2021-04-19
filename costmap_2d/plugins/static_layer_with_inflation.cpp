@@ -105,27 +105,35 @@ void StaticLayerWithInflation::onInitialize()
     // delete inflation_layer_;
     secondary_inflation_layer_->reset();
   }
- 
-  // we'll subscribe to the latched topic that the map server uses
-  ROS_INFO("Requesting the map on topic %s", map_topic.c_str());
-  map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayerWithInflation::incomingMap, this);
-  map_received_ = false;
-  has_updated_data_ = false;
-
-  ros::Rate r(10);
-  while (!map_received_ && g_nh.ok())
+  
+  // resubscribe if it is unsubscribed or the map topic has changed
+  if (!map_sub_ || map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
-    ros::spinOnce();
-    r.sleep();
+    // we'll subscribe to the latched topic that the map server uses
+    ROS_INFO("Requesting the map on topic %s", map_topic.c_str());
+    map_sub_ = g_nh.subscribe(map_topic, 1, &StaticLayerWithInflation::incomingMap, this);
+    map_received_ = false;
+    has_updated_data_ = false;
+
+    ros::Rate r(10);
+    while (!map_received_ && g_nh.ok())
+    {
+      ros::spinOnce();
+      r.sleep();
+    }
+
+    ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
+
+    if (subscribe_to_updates_)
+    {
+      ROS_INFO("Subscribing to updates");
+      map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayerWithInflation::incomingUpdate, this);
+
+    }
   }
-
-  ROS_INFO("Received a %d X %d map at %f m/pix", getSizeInCellsX(), getSizeInCellsY(), getResolution());
-
-  if (subscribe_to_updates_)
+  else
   {
-    ROS_INFO("Subscribing to updates");
-    map_update_sub_ = g_nh.subscribe(map_topic + "_updates", 10, &StaticLayerWithInflation::incomingUpdate, this);
-
+    has_updated_data_ = true;
   }
 
   if (dsrv_)
@@ -312,10 +320,22 @@ void StaticLayerWithInflation::deactivate()
   map_sub_.shutdown();
   if (subscribe_to_updates_)
     map_update_sub_.shutdown();
-
 }
 
 void StaticLayerWithInflation::reset()
+{
+  layer_initialized_ = false;
+  if (first_map_only_)
+  {
+    has_updated_data_ = true;
+  }
+  else
+  {
+    onInitialize();
+  }
+}
+
+void StaticLayerWithInflation::reinitialize()
 {
   if (first_map_only_)
   {
