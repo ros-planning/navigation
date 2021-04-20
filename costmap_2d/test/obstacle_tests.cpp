@@ -448,7 +448,7 @@ TEST(costmap, ObstacleMapReset){
 }
 
 /**
- * Tests the reset method
+ * Tests the reinitialize method
  */
 TEST(costmap, ObstacleMapReinitailize){
 

@@ -77,7 +77,7 @@ public:
   virtual void deactivate();
   virtual void reset();
 
-  virtual void reinitialize() {reset();}
+  virtual void reinitialize() { reset(); }
 
   /**
    * @brief  A callback to handle buffering LaserScan messages

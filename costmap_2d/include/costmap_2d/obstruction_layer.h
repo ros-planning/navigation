@@ -132,7 +132,7 @@ public:
   virtual void activate() override;
   virtual void deactivate() override;
   virtual void reset() override;
-  virtual void reinitialize() {reset();}
+  virtual void reinitialize() { reset(); }
 
   /**
    * @brief  A callback to handle buffering LaserScan messages

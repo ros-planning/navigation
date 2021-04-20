@@ -85,7 +85,6 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   addStaticLayer(layers, tf);
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
-  // InflationLayer* ilayer = addInflationLayer(layers, tf);
 
   std::vector<geometry_msgs::Point> polygon = setRadii(layers, 1, 1.75, 3);
   layers.setFootprint(polygon);
@@ -108,7 +107,6 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   // obstacle count == static layer obstacle count
   Costmap2D* costmap = layers.getCostmap();
   ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES);
-  
 
   std::default_random_engine generator;
   std::uniform_real_distribution<double> distribution(-OBSTRUCTION_SPREAD, OBSTRUCTION_SPREAD);
@@ -195,7 +193,7 @@ TEST(costmap, testTimeMapUpdatesNew) {
     olayer->clearStaticObservations(true, true);
   }
   std::cerr << "Time for next updates " << (double)sw.elapsedMicroseconds() / NUM_UPDATES << " ms per update" << std::endl;
-  
+
   // Print result and verify the correct number of obstacles
   costmap = layers.getCostmap();
   ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_UPDATES * NUM_OBSTACLES);
@@ -265,7 +263,7 @@ TEST(costmap, StaticLayerWithInflationMapReset){
 }
 
 /**
- * Tests the reset method
+ * Tests the reinitialize method
  */
 TEST(costmap, StaticLayerWithInflationMapReinitialize){
 
