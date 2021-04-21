@@ -117,6 +117,7 @@ private:
   ros::Subscriber emulation_mode_sub_;
   ros::Subscriber chassis_generation_sub_;
   ros::Subscriber hardware_version_sub_;
+  ros::Publisher staticObject_pub;
 
   std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
   StaticObjectSpeedLimiterConfig params_;

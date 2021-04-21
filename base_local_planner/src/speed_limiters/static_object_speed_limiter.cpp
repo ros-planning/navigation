@@ -59,6 +59,8 @@ void StaticObjectSpeedLimiter::initialize(std::string name) {
   chassis_generation_sub_ = nh_.subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
   
   hardware_version_sub_ = nh_.subscribe("/drivers/brainstem/state/ce_realtime_data", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
+
+  staticObject_pub = private_nh.advertise<base_local_planner::StaticObject>("staticObject_info", 5, true);
 }
 
 std::string StaticObjectSpeedLimiter::getName() {
@@ -219,6 +221,12 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
     }
   }
   
+  ROS_DEBUG_THROTTLE(0.2, "Setting max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
+  base_local_planner::StaticObject staticObject_msg;
+  staticObject_msg.distance_from_static_left = distance_from_static_left;
+  staticObject_msg.distance_from_static_right = distance_from_static_right;
+  staticObject_pub.publish(staticObject_msg);
+
   return true;
 }
 
