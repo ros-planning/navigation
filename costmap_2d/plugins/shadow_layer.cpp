@@ -66,6 +66,7 @@ void ShadowLayer::onInitialize()
   setupDynamicReconfigure(nh);
 
   visualization_publisher_ = nh.advertise<visualization_msgs::Marker> ("shadow_points", 1);
+  layer_initialized_ = true;
 
 }
 

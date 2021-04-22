@@ -83,6 +83,8 @@ public:
 
   virtual void reset() { onInitialize(); }
 
+  virtual void reInitailize() { reset(); }
+
   /** @brief  Given a distance, compute a cost.
    * @param  obs_distance The distance from an obstacle in cells
    * @param  vor_distance

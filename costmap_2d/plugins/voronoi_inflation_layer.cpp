@@ -89,6 +89,7 @@ void VoronoiInflationLayer::onInitialize()
   }
 
   matchSize();
+  layer_initialized_ = true;
 }
 
 void VoronoiInflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)

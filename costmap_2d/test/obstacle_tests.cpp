@@ -380,6 +380,90 @@ TEST(costmap, testMultipleAdditions){
 
 }
 
+/**
+ * Tests the onInitialize method
+ */
+TEST(costmap, ObstacleMapOnInitialize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(olayer->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the activate method
+ */
+TEST(costmap, ObstacleMapDeactivated){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  // call deactivate function
+  (*(plugin->begin()))->deactivate();
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 0);
+  ASSERT_EQ(olayer->layerInitialized(), 0);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 0);
+}
+
+/**
+ * Tests the deactivate and activate method
+ */
+TEST(costmap, ObstacleMapDeactivateAndActivate){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  (*(plugin->begin()))->deactivate();
+  (*(plugin->begin()))->activate();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(olayer->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reset method
+ */
+TEST(costmap, ObstacleMapReset){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+
+  (*(plugin->begin()))->reset();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(olayer->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reinitialize method
+ */
+TEST(costmap, ObstacleMapReinitailize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  ObstacleLayer* olayer = addObstacleLayer(layers, tf);
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+
+  (*(plugin->begin()))->reinitialize();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(olayer->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "obstacle_tests");

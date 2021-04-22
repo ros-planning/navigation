@@ -84,12 +84,14 @@ public:
   virtual void updateCosts(Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) {}
 
   /** @brief Stop publishers. */
-  virtual void deactivate() {}
+  virtual void deactivate() {layer_initialized_ = false;}
 
   /** @brief Restart publishers if they've been stopped. */
-  virtual void activate() {}
+  virtual void activate() {layer_initialized_ = true;}
 
   virtual void reset() {}
+
+  virtual void reinitialize() {}
 
   virtual ~Layer() {}
 
@@ -107,6 +109,9 @@ public:
   {
     return current_;
   }
+
+
+  bool layerInitialized() {return layer_initialized_;}
 
   /** @brief Implement this to make this layer match the size of the parent costmap. */
   virtual void matchSize() {}
@@ -173,6 +178,7 @@ protected:
   bool enabled_;  ///< Currently this var is managed by subclasses. TODO: make this managed by this class and/or container class.
   std::string name_;
   std::string shortname_;
+  bool layer_initialized_;
   tf::TransformListener* tf_;
 
 private:

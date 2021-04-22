@@ -111,6 +111,11 @@ public:
    */
   void resetLayers();
 
+    /**
+   * @brief Reset each individual layer
+   */
+  void reinitializeLayers();
+
   /** @brief Same as getLayeredCostmap()->isCurrent(). */
   bool isCurrent()
     {
