@@ -49,6 +49,7 @@ add_message_files(
         Obstacles.msg
         SpeedLimiterMsg.msg
         SpeedLimitersMsg.msg
+        StaticObjects.msg
 )
 
 generate_messages(

@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2020, 6 River Systems
+ *  Copyright (c) 2021, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@
 #include <base_local_planner/speed_limiters/static_object_speed_limiter.h>
 #include <base_local_planner/speed_limiters/safety_ce_bounds_data.h>
 #include <base_local_planner/geometry_math_helpers.h>
-#include <base_local_planner/Obstacles.h>
+#include <base_local_planner/StaticObjects.h>
 #include <srslib_framework/chuck/ChuckChassisGenerations.hpp>
 #include <srslib_framework/math/AngleMath.hpp>
 #include <srslib_framework/ros/message/VelocityMessageFactory.hpp>
@@ -60,7 +60,8 @@ void StaticObjectSpeedLimiter::initialize(std::string name) {
   
   hardware_version_sub_ = nh_.subscribe("/drivers/brainstem/state/ce_realtime_data", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 
-  staticObject_pub = private_nh.advertise<base_local_planner::StaticObject>("staticObject_info", 5, true);
+  ros::NodeHandle private_nh(name + "/staticObject");
+  staticObject_pub = private_nh.advertise<base_local_planner::StaticObjects>("staticObject_info", 5, true);
 }
 
 std::string StaticObjectSpeedLimiter::getName() {
@@ -220,9 +221,9 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
       }
     }
   }
-  
+
   ROS_DEBUG_THROTTLE(0.2, "Setting max speed to %f, %f", max_allowed_linear_vel, max_allowed_angular_vel);
-  base_local_planner::StaticObject staticObject_msg;
+  base_local_planner::StaticObjects staticObject_msg;
   staticObject_msg.distance_from_static_left = distance_from_static_left;
   staticObject_msg.distance_from_static_right = distance_from_static_right;
   staticObject_pub.publish(staticObject_msg);
