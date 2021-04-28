@@ -46,10 +46,10 @@ struct _rtk_fig_t;
 typedef struct
 {
   // Occupancy state (-1 = free, 0 = unknown, +1 = occ)
-  int occ_state;
+  int8_t occ_state;
 
   // Distance to the nearest occupied cell
-  double occ_dist;
+  float occ_dist;
 
   // Wifi levels
   //int wifi_levels[MAP_WIFI_MAX_LEVELS];
