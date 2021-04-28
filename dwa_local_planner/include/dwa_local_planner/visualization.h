@@ -36,13 +36,13 @@ public:
      * @param  robot_pose current robot pose in specified frame
      * @param  frame coordinate frame
      */
-    void publishDesiredOrientation(double yaw, const geometry_msgs::PoseStamped& robot_pose, const std::string& frame = "/map");
+    void publishDesiredOrientation(double yaw, const geometry_msgs::PoseStamped& robot_pose, const std::string& frame = "map");
 
     /**
      * @brief  Visualization generated trajectories
      * @param  trajectories All trajectories
      */
-    void publishTrajectoryCloud(const std::vector<base_local_planner::Trajectory>& trajectories, const std::string& frame = "/map");
+    void publishTrajectoryCloud(const std::vector<base_local_planner::Trajectory>& trajectories, const std::string& frame = "map");
 
     void publishCostGrid();
 
