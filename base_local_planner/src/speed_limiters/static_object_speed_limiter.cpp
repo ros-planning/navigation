@@ -95,6 +95,15 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
     return true;
   }
 
+  if (const char* env_var = std::getenv("ROSEVN_STATICOBJECTLIMITERENABLED")) {
+    std::string val( env_var );
+
+    std::transform(val.begin(), val.end(), val.begin(), ::tolower);
+    if (val == "false") {
+      return true;
+    }
+  }
+
   if ( params_.timeout > 0 && (ros::Time::now() - last_time_ < ros::Duration(params_.timeout) ) ) {
     if ( cachedMaxLinearVelocity_ > 0.0 ) {
       max_allowed_linear_vel = cachedMaxLinearVelocity_;
