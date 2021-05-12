@@ -233,8 +233,8 @@ private:
   ros::ServiceServer get_plan_cost_srv_;
 
   // Because there are two entry points to the services, and because the
-  // services share buffered query maps, the octree being queries should
-  // not change mis-query. Even though the queries themselves are thread
+  // services share buffered query maps, the octree being queried should
+  // not change mid-query. Even though the queries themselves are thread
   // safe (for multi-threaded planners), to keep results consistent
   // for a buffered query to a single copy of the costmap, serialize
   // the ROS service and action server.
