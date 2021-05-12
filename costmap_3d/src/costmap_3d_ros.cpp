@@ -46,6 +46,7 @@
 #include <costmap_3d/layered_costmap_3d.h>
 #include <tf/transform_datatypes.h>
 #include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 
 namespace costmap_3d
 {
@@ -62,6 +63,11 @@ Costmap3DROS::Costmap3DROS(const std::string& name, tf2_ros::Buffer& tf)
         private_nh_,
         "get_plan_cost_3d",
         std::bind(&Costmap3DROS::getPlanCost3DActionCallback, this, std::placeholders::_1),
+        false),
+    ray_query_action_srv_(
+        private_nh_,
+        "ray_query_3d",
+        std::bind(&Costmap3DROS::rayQuery3DActionCallback, this, std::placeholders::_1),
         false)
 {
   {
@@ -100,6 +106,7 @@ Costmap3DROS::Costmap3DROS(const std::string& name, tf2_ros::Buffer& tf)
       ROS_WARN_STREAM("3D costmap \"" << name << "\" has no 3D plugin layers, will be 2D only");
     }
     footprint_pub_ = private_nh_.advertise<visualization_msgs::Marker>("footprint_3d", 1, true);
+    ray_query_3d_visualization_pub_ = private_nh_.advertise<visualization_msgs::MarkerArray>("ray_query_3d_visualization", 1, true);
     initialized_ = true;
   }
 
@@ -116,6 +123,12 @@ Costmap3DROS::Costmap3DROS(const std::string& name, tf2_ros::Buffer& tf)
       "get_plan_cost_3d",
       &Costmap3DROS::getPlanCost3DServiceCallback,
       this);
+
+  ray_query_action_srv_.start();
+  ray_query_srv_ = private_nh_.advertiseService(
+      "ray_query_3d",
+      &Costmap3DROS::rayQuery3DServiceCallback,
+      this);
 }
 
 Costmap3DROS::~Costmap3DROS()
@@ -131,6 +144,8 @@ void Costmap3DROS::reconfigureCB(Costmap3DConfig &config, uint32_t level)
   footprint_3d_padding_ = config.footprint_3d_padding;
 
   publishFootprint();
+
+  visualize_ray_query_miss_ = config.visualize_ray_query_miss;
 }
 
 void Costmap3DROS::updateMap()
@@ -357,20 +372,39 @@ void Costmap3DROS::publishFootprint()
   footprint_pub_.publish(marker);
 }
 
-std::shared_ptr<Costmap3DQuery> Costmap3DROS::getQuery(const std::string& footprint_mesh_resource, double padding)
+std::shared_ptr<Costmap3DQuery> Costmap3DROS::getQuery(
+    const std::string& footprint_mesh_resource,
+    double padding,
+    Costmap3DQuery::QueryRegionScale query_region_scale,
+    unsigned int pose_bins_per_meter,
+    unsigned int pose_bins_per_radian,
+    unsigned int pose_milli_bins_per_meter,
+    unsigned int pose_milli_bins_per_radian,
+    unsigned int pose_micro_bins_per_meter,
+    unsigned int pose_micro_bins_per_radian)
 {
   const std::string& query_mesh(getFootprintMeshResource(footprint_mesh_resource));
   padding = getFootprintPadding(padding);
-  auto query_pair = std::make_pair(query_mesh, padding);
+  auto query_key = std::make_tuple(query_mesh, padding, query_region_scale);
   upgrade_lock upgrade_lock(query_map_mutex_);
-  auto query_it = query_map_.find(query_pair);
+  auto query_it = query_map_.find(query_key);
   if (query_it == query_map_.end())
   {
     // Query object does not exist, create it and add it to the map
     std::shared_ptr<Costmap3DQuery> query;
-    query.reset(new Costmap3DQuery(&layered_costmap_3d_, query_mesh, padding));
+    query.reset(new Costmap3DQuery(
+            &layered_costmap_3d_,
+            query_mesh,
+            padding,
+            query_region_scale,
+            pose_bins_per_meter,
+            pose_bins_per_radian,
+            pose_milli_bins_per_meter,
+            pose_milli_bins_per_radian,
+            pose_micro_bins_per_meter,
+            pose_micro_bins_per_radian));
     upgrade_to_unique_lock write_lock(upgrade_lock);
-    query_it = query_map_.insert(std::make_pair(query_pair, query)).first;
+    query_it = query_map_.insert(std::make_pair(query_key, query)).first;
   }
   return query_it->second;
 }
@@ -582,15 +616,15 @@ std::shared_ptr<Costmap3DQuery> Costmap3DROS::getBufferedQueryForService(
 {
   const std::string& query_mesh(getFootprintMeshResource(footprint_mesh_resource));
   padding = getFootprintPadding(padding);
-  auto query_pair = std::make_pair(query_mesh, padding);
+  auto query_key = std::make_tuple(query_mesh, padding, Costmap3DQuery::QueryRegionScale::Zero());
   // No need to lock the service_buffered_query_map_ because we must be holding
   // the service_mutex_
-  auto query_it = service_buffered_query_map_.find(query_pair);
+  auto query_it = service_buffered_query_map_.find(query_key);
   if (query_it == service_buffered_query_map_.end())
   {
     // Query object does not exist, create it and add it to the map
     std::shared_ptr<Costmap3DQuery> query = getBufferedQuery(query_mesh, padding);
-    query_it = service_buffered_query_map_.insert(std::make_pair(query_pair, query)).first;
+    query_it = service_buffered_query_map_.insert(std::make_pair(query_key, query)).first;
   }
   else
   {
@@ -599,5 +633,198 @@ std::shared_ptr<Costmap3DQuery> Costmap3DROS::getBufferedQueryForService(
   }
   return query_it->second;
 }
+
+void Costmap3DROS::rayQuery3DActionCallback(
+    const actionlib::SimpleActionServer<RayQuery3DAction>::GoalConstPtr& goal)
+{
+  RayQuery3DResult result;
+  if (processRayQuery3D(*goal, result))
+  {
+    ray_query_action_srv_.setSucceeded(result);
+  }
+  else
+  {
+    ray_query_action_srv_.setAborted();
+  }
+}
+
+bool Costmap3DROS::rayQuery3DServiceCallback(
+    RayQuery3DService::Request& request,
+    RayQuery3DService::Response& response)
+{
+  return processRayQuery3D(request, response);
+}
+
+static void setTriangleListRectangle(const geometry_msgs::Point& upper_left,
+                                     const geometry_msgs::Point& upper_right,
+                                     const geometry_msgs::Point& lower_right,
+                                     const geometry_msgs::Point& lower_left,
+                                     visualization_msgs::Marker* marker)
+{
+  marker->points.push_back(upper_left);
+  marker->points.push_back(upper_right);
+  marker->points.push_back(lower_right);
+  marker->points.push_back(upper_left);
+  marker->points.push_back(lower_right);
+  marker->points.push_back(lower_left);
+}
+
+static void setRectangularPrismMarker(double width, double height, double distance, visualization_msgs::Marker* marker)
+{
+  // Cap distance to 1000 km to avoid overflow around max double.
+  distance = std::min(distance, 1000000.0);
+
+  marker->points.clear();
+
+  geometry_msgs::Point base_upper_left;
+  base_upper_left.x = 0.0;
+  base_upper_left.y = -width / 2.0;
+  base_upper_left.z = height / 2.0;
+  geometry_msgs::Point base_upper_right;
+  base_upper_right.x = 0.0;
+  base_upper_right.y = width / 2.0;
+  base_upper_right.z = height / 2.0;
+  geometry_msgs::Point base_lower_right;
+  base_lower_right.x = 0.0;
+  base_lower_right.y = width / 2.0;
+  base_lower_right.z = -height / 2.0;
+  geometry_msgs::Point base_lower_left;
+  base_lower_left.x = 0.0;
+  base_lower_left.y = -width / 2.0;
+  base_lower_left.z = -height / 2.0;
+  geometry_msgs::Point top_upper_left;
+  top_upper_left.x = distance;
+  top_upper_left.y = -width / 2.0;
+  top_upper_left.z = height / 2.0;
+  geometry_msgs::Point top_upper_right;
+  top_upper_right.x = distance;
+  top_upper_right.y = width / 2.0;
+  top_upper_right.z = height / 2.0;
+  geometry_msgs::Point top_lower_right;
+  top_lower_right.x = distance;
+  top_lower_right.y = width / 2.0;
+  top_lower_right.z = -height / 2.0;
+  geometry_msgs::Point top_lower_left;
+  top_lower_left.x = distance;
+  top_lower_left.y = -width / 2.0;
+  top_lower_left.z = -height / 2.0;
+
+  setTriangleListRectangle(base_upper_left,
+                           base_upper_right,
+                           base_lower_right,
+                           base_lower_left,
+                           marker);
+  setTriangleListRectangle(base_upper_left,
+                           top_upper_left,
+                           top_upper_right,
+                           base_upper_right,
+                           marker);
+  setTriangleListRectangle(base_upper_right,
+                           top_upper_right,
+                           top_lower_right,
+                           base_lower_right,
+                           marker);
+  setTriangleListRectangle(base_lower_right,
+                           top_lower_right,
+                           top_lower_left,
+                           base_lower_left,
+                           marker);
+  setTriangleListRectangle(base_lower_left,
+                           top_lower_left,
+                           top_upper_left,
+                           base_upper_left,
+                           marker);
+  setTriangleListRectangle(top_upper_right,
+                           top_upper_left,
+                           top_lower_left,
+                           top_lower_right,
+                           marker);
+}
+
+template <typename RequestType, typename ResponseType>
+bool Costmap3DROS::processRayQuery3D(RequestType& request, ResponseType& response)
+{
+  float timeout_seconds = (request.transform_wait_time_limit > 0) ?
+    request.transform_wait_time_limit : 0.1;
+  if (!tf_.canTransform(layered_costmap_3d_.getGlobalFrameID(), request.header.frame_id,
+                        request.header.stamp, ros::Duration(timeout_seconds)))
+  {
+    return false;
+  }
+
+  // Be sure the costmap is locked while querying
+  std::unique_lock <LayeredCostmap3D> lock(layered_costmap_3d_);
+  std::shared_ptr<Costmap3DQuery> query;
+
+#if (COSTMAP_3D_ROS_AUTO_PROFILE_QUERY) > 0
+  ROS_INFO("Starting rayQuery3DServiceCallback");
+  ros::Time start_time = ros::Time::now();
+  kill(getpid(), 12);
+#endif
+
+  Costmap3DQuery::QueryRegionScale scale;
+  scale(0) = 0.0;
+  scale(1) = request.width;
+  scale(2) = request.height;
+
+  // Always use a point for the "mesh"
+  query = getQuery("package://costmap_3d/meshes/point.stl", 0.0, scale);
+
+  Costmap3DQuery::DistanceOptions dopts;
+  dopts.query_region = Costmap3DQuery::RECTANGULAR_PRISM;
+  dopts.relative_error = 0.0;
+
+  visualization_msgs::MarkerArray marker_array;
+  std::string ns = private_nh_.getNamespace() + "/ray_query_3d_visualization";
+  unsigned int marker_id = 1;
+  visualization_msgs::Marker marker;
+
+  marker.header = request.header;
+  marker.ns = private_nh_.getNamespace();
+  marker.type = visualization_msgs::Marker::TRIANGLE_LIST;
+  marker.action = visualization_msgs::Marker::DELETEALL;
+  marker.scale.x = 1.0;
+  marker.scale.y = 1.0;
+  marker.scale.z = 1.0;
+  marker.color.a = 0.25;
+  marker.color.r = 1.0;
+  marker.color.g = 1.0;
+  marker.color.b = 0.0;
+
+  response.distances.reserve(request.ray_poses.size());
+  marker_array.markers.reserve(request.ray_poses.size()+1);
+  marker_array.markers.push_back(marker);
+  marker.action = visualization_msgs::Marker::ADD;
+  for (int i = 0; i < request.ray_poses.size(); ++i)
+  {
+    geometry_msgs::PoseStamped ray_pose, query_pose;
+
+    ray_pose.header = request.header;
+    ray_pose.pose = request.ray_poses[i];
+    query_pose = tf_.transform(ray_pose, layered_costmap_3d_.getGlobalFrameID());
+
+    double pose_distance = query->footprintDistance(query_pose.pose, dopts);
+
+    response.distances.push_back(pose_distance);
+
+    if (visualize_ray_query_miss_ || pose_distance < std::numeric_limits<double>::max())
+    {
+      marker.id = marker_id++;
+      marker.pose = ray_pose.pose;
+      setRectangularPrismMarker(request.width, request.height, pose_distance, &marker);
+      marker_array.markers.push_back(marker);
+    }
+  }
+  ray_query_3d_visualization_pub_.publish(marker_array);
+
+#if (COSTMAP_3D_ROS_AUTO_PROFILE_QUERY) > 0
+  kill(getpid(), 12);
+  ROS_INFO_STREAM("Finished getting " << request.poses.size() << " poses in " <<
+                  (ros::Time::now() - start_time).toSec() << " seconds.");
+#endif
+
+  return true;
+}
+
 
 }  // namespace costmap_3d

@@ -1,0 +1,29 @@
+# Get the distances to nearest occupied voxel on rectangular prismatic rays.
+# For each ray pose, the rectangular prism is assumed to be originated at (0,
+# 0, 0) and oriented along the x-axis with the width on the y-axis and the
+# height on the z-axis.
+Header header
+
+# Rays to query. The prism is transformed using each pose into
+# header.frame_id at time header.stamp, and then into the fixed frame of the
+# costmap to perform the query. Essentially, each ray pose defines a temporary
+# frame of reference for the rectangular prism for each query ray.
+geometry_msgs/Pose[] ray_poses
+
+# Width of rectangular prism query region in meters.
+float64 width
+
+# Height of rectangular prism query region in meters.
+float64 height
+
+# The maximum amount of time (seconds) to wait for a transform to become
+# available to transform a pose. (default=0.1, any values <= 0 will be
+# converted to the default.)
+float32 transform_wait_time_limit
+---
+# The distance from the origin of each ray pose to the nearest costmap voxel
+# inside the region of interest defined by the rectangular prism.
+# If no voxel was found, the distance will be +inf.
+float64[] distances
+---
+# no feedback

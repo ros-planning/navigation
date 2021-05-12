@@ -50,11 +50,13 @@ generate_dynamic_reconfigure_options(
 add_action_files(
   FILES
   GetPlanCost3D.action
+  RayQuery3D.action
 )
 
 add_service_files(
   FILES
   GetPlanCost3DService.srv
+  RayQuery3DService.srv
 )
 
 generate_messages(
@@ -157,4 +159,8 @@ install(FILES
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
+
+install(DIRECTORY meshes
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

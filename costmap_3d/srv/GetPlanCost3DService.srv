@@ -35,6 +35,11 @@ uint8 COST_QUERY_REGION_ALL=0
 uint8 COST_QUERY_REGION_LEFT=1
 # Query the map only to the right of each query pose.
 uint8 COST_QUERY_REGION_RIGHT=2
+# Query a 1m by 1m rectangular prism starting at the origin of each pose.
+# To alter the size of the prism in the frame of the pose, scale the
+# pose's quaternion appropriately to scale the prism when it is transformed.
+# To scale the width differently from the height, use the ray query interface.
+uint8 COST_QUERY_REGION_RECTANGULAR_PRISM=3
 # Set to one of the above COST_QUERY_REGION_* to control query region per pose.
 # If the region is missing for a given pose, COST_QUERY_REGION_ALL is assumed.
 uint8[] cost_query_regions

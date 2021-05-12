@@ -41,6 +41,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <tuple>
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
 #include <costmap_2d/costmap_2d_ros.h>
@@ -49,6 +50,8 @@
 #include <costmap_3d/costmap_3d_query.h>
 #include <costmap_3d/GetPlanCost3DAction.h>
 #include <costmap_3d/GetPlanCost3DService.h>
+#include <costmap_3d/RayQuery3DAction.h>
+#include <costmap_3d/RayQuery3DService.h>
 #include <costmap_3d/Costmap3DConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <pluginlib/class_loader.hpp>
@@ -228,9 +231,13 @@ private:
   pluginlib::ClassLoader<Layer3D> plugin_loader_;
   Costmap3DPublisher publisher_;
   ros::Publisher footprint_pub_;
+  bool visualize_ray_query_miss_ = true;
+  ros::Publisher ray_query_3d_visualization_pub_;
   dynamic_reconfigure::Server<costmap_3d::Costmap3DConfig> dsrv_;
   actionlib::SimpleActionServer<GetPlanCost3DAction> get_plan_cost_action_srv_;
   ros::ServiceServer get_plan_cost_srv_;
+  actionlib::SimpleActionServer<RayQuery3DAction> ray_query_action_srv_;
+  ros::ServiceServer ray_query_srv_;
 
   // Because there are two entry points to the services, and because the
   // services share buffered query maps, the octree being queried should
@@ -248,7 +255,54 @@ private:
           const std::string& footprint_mesh_resource = "",
           double padding = NAN);
 
-  using QueryMap = std::map<std::pair<std::string, double>, std::shared_ptr<Costmap3DQuery>>;
+  void rayQuery3DActionCallback(const actionlib::SimpleActionServer<RayQuery3DAction>::GoalConstPtr& goal);
+  bool rayQuery3DServiceCallback(RayQuery3DService::Request& request, RayQuery3DService::Response& response);
+  template <typename RequestType, typename ResponseType>
+  bool processRayQuery3D(RequestType& request, ResponseType& response);
+
+  using QueryMapKey = std::tuple<std::string, double, Costmap3DQuery::QueryRegionScale>;
+  // std::less does not work on Eigen3 vectors, so use this comparator.
+  struct QueryMapKeyCompare
+  {
+    bool operator()(const QueryMapKey& lhs, const QueryMapKey& rhs)
+    {
+      const auto& lhs0 = std::get<0>(lhs);
+      const auto& lhs1 = std::get<1>(lhs);
+      const auto& lhs2 = std::get<2>(lhs);
+      const auto& rhs0 = std::get<0>(rhs);
+      const auto& rhs1 = std::get<1>(rhs);
+      const auto& rhs2 = std::get<2>(rhs);
+      if (lhs0 < rhs0)
+      {
+        return true;
+      }
+      if (lhs0 > rhs0)
+      {
+        return false;
+      }
+      if (lhs1 < rhs1)
+      {
+        return true;
+      }
+      if (lhs1 > rhs1)
+      {
+        return false;
+      }
+      for (unsigned int i=0; i<3; ++i)
+      {
+        if (lhs2(i) < rhs2(i))
+        {
+          return true;
+        }
+        if (lhs2(i) > rhs2(i))
+        {
+          return false;
+        }
+      }
+      return false;
+    }
+  };
+  using QueryMap = std::map<QueryMapKey, std::shared_ptr<Costmap3DQuery>, QueryMapKeyCompare>;
   QueryMap query_map_;
   QueryMap service_buffered_query_map_;
   using upgrade_mutex = boost::upgrade_mutex;
@@ -259,8 +313,18 @@ private:
   const std::string& getFootprintMeshResource(const std::string& alt_mesh);
   double getFootprintPadding(double alt_padding);
   // assumes costmap is locked
-  std::shared_ptr<Costmap3DQuery> getQuery(const std::string& footprint_mesh_resource, double padding);
+  std::shared_ptr<Costmap3DQuery> getQuery(
+      const std::string& footprint_mesh_resource,
+      double padding,
+      Costmap3DQuery::QueryRegionScale query_region_scale = Costmap3DQuery::QueryRegionScale::Zero(),
+      unsigned int pose_bins_per_meter = 4,
+      unsigned int pose_bins_per_radian = 4,
+      unsigned int pose_milli_bins_per_meter = 20,
+      unsigned int pose_milli_bins_per_radian = 20,
+      unsigned int pose_micro_bins_per_meter = 1024,
+      unsigned int pose_micro_bins_per_radian = 1024);
   void publishFootprint();
+  void publishRegionOfInterest(std::shared_ptr<Costmap3DQuery> query, const geometry_msgs::PoseStamped& query_pose);
 
   std::string footprint_mesh_resource_;
   double footprint_3d_padding_;

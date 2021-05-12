@@ -59,6 +59,7 @@ Costmap3DQuery::Costmap3DQuery(
     const LayeredCostmap3D* layered_costmap_3d,
     const std::string& mesh_resource,
     double padding,
+    Costmap3DQuery::QueryRegionScale query_region_scale,
     unsigned int pose_bins_per_meter,
     unsigned int pose_bins_per_radian,
     unsigned int pose_milli_bins_per_meter,
@@ -66,6 +67,7 @@ Costmap3DQuery::Costmap3DQuery(
     unsigned int pose_micro_bins_per_meter,
     unsigned int pose_micro_bins_per_radian)
   : layered_costmap_3d_(layered_costmap_3d),
+    query_region_scale_(query_region_scale),
     pose_bins_per_meter_(pose_bins_per_meter),
     pose_bins_per_radian_(pose_bins_per_radian),
     pose_milli_bins_per_meter_(pose_milli_bins_per_meter),
@@ -80,6 +82,7 @@ Costmap3DQuery::Costmap3DQuery(
 Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
     const std::string& mesh_resource,
     double padding,
+    Costmap3DQuery::QueryRegionScale query_region_scale,
     unsigned int pose_bins_per_meter,
     unsigned int pose_bins_per_radian,
     unsigned int pose_milli_bins_per_meter,
@@ -87,6 +90,7 @@ Costmap3DQuery::Costmap3DQuery(const Costmap3DConstPtr& costmap_3d,
     unsigned int pose_micro_bins_per_meter,
     unsigned int pose_micro_bins_per_radian)
   : layered_costmap_3d_(nullptr),
+    query_region_scale_(query_region_scale),
     pose_bins_per_meter_(pose_bins_per_meter),
     pose_bins_per_radian_(pose_bins_per_radian),
     pose_milli_bins_per_meter_(pose_milli_bins_per_meter),
@@ -565,34 +569,6 @@ double Costmap3DQuery::handleDistanceInteriorCollisions(
   return distance;
 }
 
-void Costmap3DQuery::setupFCLOctree(
-    const geometry_msgs::Pose& pose,
-    Costmap3DQuery::QueryRegion query_region,
-    fcl::OcTree<FCLFloat>* fcl_octree_ptr) const
-{
-  // Always setup the correct occupancy limits
-  fcl_octree_ptr->setFreeThres(octomap::probability(FREE));
-  fcl_octree_ptr->setOccupancyThres(octomap::probability(LETHAL));
-  // Setup the ROI on the given fcl::OcTree depending on query_region and the pose.
-  if (query_region == LEFT || query_region == RIGHT)
-  {
-    fcl::Vector3<FCLFloat> normal;
-    // Note, for FCL halfspaces, the inside space is that below the plane, so
-    // the normal needs to point away from the query region
-    if (query_region == LEFT)
-    {
-      normal << 0.0, -1.0, 0.0;
-    }
-    else if(query_region == RIGHT)
-    {
-      normal << 0.0, 1.0, 0.0;
-    }
-    fcl::Halfspace<FCLFloat> halfspace(fcl::transform(
-        fcl::Halfspace<FCLFloat>(normal, 0.0), poseToFCLTransform<FCLFloat>(pose)));
-    fcl_octree_ptr->addToRegionOfInterest(halfspace);
-  }
-}
-
 Costmap3DQuery::FCLFloat Costmap3DQuery::boxHalfspaceSignedDistance(
     const fcl::Box<FCLFloat>& box,
     const fcl::Transform3<FCLFloat>& box_tf,
@@ -658,6 +634,9 @@ double Costmap3DQuery::calculateDistance(const geometry_msgs::Pose& pose,
     // In cases where the caller knows this is the correct behavior (such as
     // when making minor perturbations to estimate derivatives), this is
     // faster than having to calculate the hash and find the cache entry.
+    // Do not check if the entry is in the query region still, it is assumed
+    // the caller wants to ignore the potential error this would cause, as this
+    // interface is mainly useful for very small perturbations.
     if (tls_last_cache_entries_[query_region])
     {
       double distance = handleDistanceInteriorCollisions(
@@ -700,10 +679,17 @@ double Costmap3DQuery::calculateDistance(const geometry_msgs::Pose& pose,
   fcl::DistanceRequest<FCLFloat> request;
   fcl::DistanceResult<FCLFloat> result;
 
+  // Setup the regions of interest corresponding to the query region.
+  // This has to be done prior to checking the distance caches, so the cache entry
+  // can be checked to ensure it is still inside the region.
+  // Store the region on the stack to avoid dynamic memory allocation.
+  RegionsOfInterestAtPose rois(query_region, query_region_scale_, pose);
+
   DistanceCacheKey milli_cache_key(pose, query_region, query_obstacles, pose_milli_bins_per_meter_, pose_milli_bins_per_radian_);
   auto milli_cache_entry = milli_distance_cache_.find(milli_cache_key);
   bool milli_hit = false;
-  if (milli_cache_entry != milli_distance_cache_.end())
+  if (milli_cache_entry != milli_distance_cache_.end() &&
+      rois.distanceCacheEntryInside(milli_cache_entry->second))
   {
     double distance = handleDistanceInteriorCollisions(
         milli_cache_entry->second,
@@ -735,7 +721,8 @@ double Costmap3DQuery::calculateDistance(const geometry_msgs::Pose& pose,
   DistanceCacheKey micro_cache_key(pose, query_region, query_obstacles, pose_micro_bins_per_meter_, pose_micro_bins_per_radian_);
   auto micro_cache_entry = micro_distance_cache_.find(micro_cache_key);
   bool micro_hit = false;
-  if (micro_cache_entry != micro_distance_cache_.end())
+  if (micro_cache_entry != micro_distance_cache_.end() &&
+      rois.distanceCacheEntryInside(micro_cache_entry->second))
   {
     double distance = handleDistanceInteriorCollisions(
         micro_cache_entry->second,
@@ -772,7 +759,8 @@ double Costmap3DQuery::calculateDistance(const geometry_msgs::Pose& pose,
   if (!milli_hit && !micro_hit)
   {
     auto cache_entry = distance_cache_.find(cache_key);
-    if (cache_entry != distance_cache_.end())
+    if (cache_entry != distance_cache_.end() &&
+        rois.distanceCacheEntryInside(cache_entry->second))
     {
       // Cache hit, find the distance between the mesh triangle at the new pose
       // and the octomap box, and use this as our initial guess in the result.
@@ -793,7 +781,8 @@ double Costmap3DQuery::calculateDistance(const geometry_msgs::Pose& pose,
   // Check the distance from the last cache entry too, and use it if it is a
   // better match. This is especialy useful if we miss every cache, but have a
   // last entry, and the queries are being done on a path.
-  if (tls_last_cache_entries_[query_region])
+  if (tls_last_cache_entries_[query_region] &&
+      rois.distanceCacheEntryInside(*tls_last_cache_entries_[query_region]))
   {
     double last_entry_distance = handleDistanceInteriorCollisions(
         *tls_last_cache_entries_[query_region],
@@ -857,7 +846,10 @@ double Costmap3DQuery::calculateDistance(const geometry_msgs::Pose& pose,
   if (result.min_distance > 0.0)
   {
     fcl::OcTree<FCLFloat> fcl_octree(octree_to_query);
-    setupFCLOctree(pose, query_region, &fcl_octree);
+    // Always setup the correct occupancy limits
+    fcl_octree.setFreeThres(octomap::probability(FREE));
+    fcl_octree.setOccupancyThres(octomap::probability(LETHAL));
+    rois.setupFCLOctree(&fcl_octree);
 
     octree_solver.distance(
         &fcl_octree,
