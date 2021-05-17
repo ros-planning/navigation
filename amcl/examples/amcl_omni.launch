@@ -3,7 +3,6 @@
   <!-- Publish scans from best pose at a max of 10 Hz -->
   <param name="odom_model_type" value="omni"/>
   <param name="odom_alpha5" value="0.1"/>
-  <param name="transform_tolerance" value="0.2" />
   <param name="gui_publish_rate" value="10.0"/>
   <param name="laser_max_beams" value="30"/>
   <param name="min_particles" value="500"/>
@@ -20,7 +19,6 @@
   <param name="laser_z_max" value="0.05"/>
   <param name="laser_z_rand" value="0.5"/>
   <param name="laser_sigma_hit" value="0.2"/>
-  <param name="laser_lambda_short" value="0.1"/>
   <param name="laser_lambda_short" value="0.1"/>
   <param name="laser_model_type" value="likelihood_field"/>
   <!-- <param name="laser_model_type" value="beam"/> -->
