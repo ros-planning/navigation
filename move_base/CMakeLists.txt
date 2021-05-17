@@ -32,6 +32,11 @@ generate_dynamic_reconfigure_options(
 )
 
 catkin_package(
+
+    INCLUDE_DIRS
+        include
+        ${EIGEN3_INCLUDE_DIRS}
+    LIBRARIES move_base
     CATKIN_DEPENDS
         dynamic_reconfigure
         geometry_msgs
