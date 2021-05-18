@@ -45,6 +45,7 @@
 #include <geometry_msgs/Twist.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <move_base/Path.h>
 
 namespace move_base {
 
@@ -95,6 +96,9 @@ namespace move_base {
     //for commanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
+
+	//to publish path length and time left to goal
+	move_base_simple_pub_ = private_nh.advertise<move_base::Path>("move_base_simple/feedback", 1);
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
@@ -815,6 +819,9 @@ namespace move_base {
     feedback.base_position = current_position;
     as_->publishFeedback(feedback);
 
+	//publish path left and time left to the goal
+	publishPathMsg(current_position, goal);
+
     //check to see if we've moved far enough to reset our oscillation timeout
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
     {
@@ -1200,4 +1207,19 @@ namespace move_base {
 
     return true;
   }
+
+  // publish in context of action feedback, path left and time left to the goal
+  void MoveBase::publishPathMsg(const geometry_msgs::PoseStamped& current_position, const geometry_msgs::PoseStamped& goal)
+  {
+    move_base::Path msg;
+    msg.current_pose = current_position;
+    msg.goal_pose = goal;
+    msg.dist_to_goal = distance(current_position, goal);
+    geometry_msgs::Twist cmd_vel;
+    tc_->computeVelocityCommands(cmd_vel);
+    msg.time_to_goal = msg.dist_to_goal/(cmd_vel.linear.x ? cmd_vel.linear.x : 1.0);
+    move_base_simple_pub_.publish(msg);
+	
+  }
+  
 };

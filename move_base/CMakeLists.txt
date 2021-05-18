@@ -26,6 +26,21 @@ find_package(catkin REQUIRED
 find_package(Eigen3 REQUIRED)
 add_definitions(${EIGEN3_DEFINITIONS})
 
+###############################################################################
+# MESSAGES, SERVICES AND ACTIONS
+###############################################################################
+
+add_message_files(
+	DIRECTORY msg
+	FILES
+	Path.msg
+)
+
+generate_messages(
+	DEPENDENCIES
+	geometry_msgs
+)
+
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
     cfg/MoveBase.cfg
@@ -38,6 +53,7 @@ catkin_package(
         move_base_msgs
         nav_msgs
         roscpp
+		message_runtime
 )
 
 include_directories(
