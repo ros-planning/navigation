@@ -170,7 +170,7 @@ namespace move_base {
 
       geometry_msgs::PoseStamped goalToGlobalFrame(const geometry_msgs::PoseStamped& goal_pose_msg);
      
-	  void publishPathMsg(const geometry_msgs::PoseStamped& current_position, const geometry_msgs::PoseStamped& goal);
+      void publishPathMsg(const geometry_msgs::PoseStamped& current_position, const geometry_msgs::PoseStamped& goal);
 
       /**
        * @brief This is used to wake the planner at periodic intervals.
