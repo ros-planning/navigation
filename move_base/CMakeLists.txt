@@ -31,14 +31,14 @@ add_definitions(${EIGEN3_DEFINITIONS})
 ###############################################################################
 
 add_message_files(
-	DIRECTORY msg
-	FILES
-	Path.msg
+    DIRECTORY msg
+    FILES
+    Path.msg
 )
 
 generate_messages(
-	DEPENDENCIES
-	geometry_msgs
+    DEPENDENCIES
+    geometry_msgs
 )
 
 # dynamic reconfigure
@@ -53,7 +53,7 @@ catkin_package(
         move_base_msgs
         nav_msgs
         roscpp
-		message_runtime
+        message_runtime
 )
 
 include_directories(
