@@ -122,9 +122,17 @@ double ObstacleCostFunction::footprintCost (
     costmap_2d::Costmap2D* costmap,
     base_local_planner::WorldModel* world_model) {
 
+  std::vector<geometry_msgs::Point> scaled_footprint;
+  for(unsigned int i  = 0; i < footprint_spec.size(); ++i) {
+    geometry_msgs::Point new_pt;
+    new_pt.x = scale * footprint_spec[i].x;
+    new_pt.y = scale * footprint_spec[i].y;
+    scaled_footprint.push_back(new_pt);
+  }
+
   //check if the footprint is legal
   // TODO: Cache inscribed radius
-  double footprint_cost = world_model->footprintCost(x, y, th, footprint_spec);
+  double footprint_cost = world_model->footprintCost(x, y, th, scaled_footprint);
 
   if (footprint_cost < 0) {
     return -6.0;
