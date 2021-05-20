@@ -50,87 +50,92 @@
 #include <std_msgs/Bool.h>
 #include <srslib_framework/MsgCERealTimeData.h>
 
-namespace base_local_planner {
+namespace base_local_planner
+{
 
-/**
+  /**
  * This class provides cost speed and distance from static obstacles
  *
  * It will limit the speed near static obstacle to limit false safety trips
  */
-class StaticObjectSpeedLimiter : public SpeedLimiter {
-public:
-  /**
+  class StaticObjectSpeedLimiter : public SpeedLimiter
+  {
+  public:
+    /**
    * Constructor
    */
-  StaticObjectSpeedLimiter(costmap_2d::Costmap2DROS* costmap) : SpeedLimiter(costmap) {};
+    StaticObjectSpeedLimiter(costmap_2d::Costmap2DROS *costmap) : SpeedLimiter(costmap){};
 
-  /**
+    /**
    * Destructor
    */
-  virtual ~StaticObjectSpeedLimiter() {}
+    virtual ~StaticObjectSpeedLimiter() {}
 
-  virtual void initialize(std::string name);
+    virtual void initialize(std::string name);
 
-  /**
+    /**
    * Prepare for operation.
    * @return true if preparations were successful
    */
-  virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
+    virtual bool calculateLimits(double &max_allowed_linear_vel, double &max_allowed_angular_vel);
 
-  std::string getName();
-  
-private:
-  void reconfigure(StaticObjectSpeedLimiterConfig cfg) {
-    params_ = cfg;
-  };
+    std::string getName();
 
-  void msgCallback(const geometry_msgs::Twist::ConstPtr& msg);
-  void emulationModeCallback(const std_msgs::Bool& emulationMode);
-  void chassisConfigCallback(const srslib_framework::MsgChassisConfig& config);
-  void ceSensorArrayCallback(const srslib_framework::MsgCERealTimeData& msg);
+  private:
+    void reconfigure(StaticObjectSpeedLimiterConfig cfg)
+    {
+      params_ = cfg;
+    };
 
-  struct SpeedLimiterResult {
+    void msgCallback(const geometry_msgs::Twist::ConstPtr &msg);
+    void emulationModeCallback(const std_msgs::Bool &emulationMode);
+    void chassisConfigCallback(const srslib_framework::MsgChassisConfig &config);
+    void ceSensorArrayCallback(const srslib_framework::MsgCERealTimeData &msg);
+
+    struct SpeedLimiterResult
+    {
       double speed = 0.0;
       bool limiting = false;
+    };
+
+    struct SpeedLimiterData
+    {
+      double distLeft = 0.0;
+      double distRight = 0.0;
+      double speed = 0.0;
+      double minVelocity = 0.0;
+      double minTestDistance = 0.0;
+      double maxTestDistance = 0.0;
+      double minTestVelocity = 0.0;
+      double maxTestVelocity = 0.0;
+      double minReduction = 0.0;
+      double maxReduction = 0.0;
+    };
+
+    SpeedLimiterResult calculateAllowedLinearSpeed(const double distLeft, const double distRight, const double speed) const;
+    SpeedLimiterResult calculateAllowedAngularSpeed(const double distLeft, const double distRight, const double speed) const;
+
+    SpeedLimiterResult calculateAllowedSpeed(const SpeedLimiterData &data) const;
+
+    ros::NodeHandle nh_;
+    ros::Subscriber subscriber_;
+    ros::Subscriber emulation_mode_sub_;
+    ros::Subscriber chassis_generation_sub_;
+    ros::Subscriber hardware_version_sub_;
+    ros::Publisher staticObject_pub;
+
+    std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
+    StaticObjectSpeedLimiterConfig params_;
+
+    bool enabledFirmwareVersion = false;
+    bool emulationMode_ = false;
+    ros::Time last_time_ = ros::Time(0);
+    double cachedMaxLinearVelocity_ = -1.0;
+    double cachedMaxAngularVelocity_ = -1.0;
+
+    srs::Velocity<> velocity_;
+    srs::ChuckChassisGenerations::ChuckChassisType chassis_generation_ = srs::ChuckChassisGenerations::ChuckChassisType::INVALID;
   };
-
-  struct SpeedLimiterData {
-    double distLeft = 0.0;
-    double distRight = 0.0;
-    double speed = 0.0;
-    double minVelocity = 0.0;
-    double minTestDistance = 0.0;
-    double maxTestDistance = 0.0;
-    double minTestVelocity = 0.0;
-    double maxTestVelocity = 0.0;
-    double minReduction = 0.0;
-    double maxReduction = 0.0;
-  };
-
-  SpeedLimiterResult calculateAllowedLinearSpeed(const double distLeft, const double distRight, const double speed) const;
-  SpeedLimiterResult calculateAllowedAngularSpeed(const double distLeft, const double distRight, const double speed) const;
-
-  SpeedLimiterResult calculateAllowedSpeed(const SpeedLimiterData& data) const;
-
-  ros::NodeHandle nh_;
-  ros::Subscriber subscriber_;
-  ros::Subscriber emulation_mode_sub_;
-  ros::Subscriber chassis_generation_sub_;
-  ros::Subscriber hardware_version_sub_;
-  ros::Publisher staticObject_pub;
-
-  std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
-  StaticObjectSpeedLimiterConfig params_;
-
-  bool enabledFirmwareVersion = false;
-  bool emulationMode_ = false;
-  ros::Time last_time_ = ros::Time(0);
-  double cachedMaxLinearVelocity_ = -1.0;
-  double cachedMaxAngularVelocity_ = -1.0;
-
-  srs::Velocity<> velocity_;
-  srs::ChuckChassisGenerations::ChuckChassisType chassis_generation_ = srs::ChuckChassisGenerations::ChuckChassisType::INVALID;
-};
 
 } /* namespace base_local_planner */
 #endif /* STATIC_OBJECT_SPEED_LIMITER_H_ */
