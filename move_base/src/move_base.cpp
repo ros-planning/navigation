@@ -90,6 +90,7 @@ namespace move_base {
     //for commanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
+    amr_status_pub_ = nh.advertise<std_msgs::String>("amr_status", 1);
 
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
@@ -642,6 +643,8 @@ namespace move_base {
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
+      amr_status_msg_.data = "ABORTED";
+      amr_status_pub_.publish(amr_status_msg_);
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
     }
@@ -688,6 +691,8 @@ namespace move_base {
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
 
           if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
+            amr_status_msg_.data = "ABORTED";
+            amr_status_pub_.publish(amr_status_msg_);
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
             return;
           }
@@ -718,6 +723,9 @@ namespace move_base {
         else {
           //if we've been preempted explicitly we need to shut things down
           resetState();
+
+          amr_status_msg_.data = "PREEMPTED";
+          amr_status_pub_.publish(amr_status_msg_);
 
           //notify the ActionServer that we've successfully preempted
           ROS_DEBUG_NAMED("move_base","Move base preempting the current goal");
@@ -782,6 +790,8 @@ namespace move_base {
     lock.unlock();
 
     //if the node is killed then we'll abort and return
+    amr_status_msg_.data = "ABORTED";
+    amr_status_pub_.publish(amr_status_msg_);
     as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on the goal because the node has been killed");
     return;
   }
@@ -850,6 +860,9 @@ namespace move_base {
         runPlanner_ = false;
         lock.unlock();
 
+        amr_status_msg_.data = "ABORTED";
+        amr_status_pub_.publish(amr_status_msg_);
+        
         as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to pass global plan to the controller.");
         return true;
       }
@@ -868,6 +881,8 @@ namespace move_base {
           runPlanner_ = true;
           planner_cond_.notify_one();
         }
+        amr_status_msg_.data = "PLANNING";
+        amr_status_pub_.publish(amr_status_msg_);
         ROS_DEBUG_NAMED("move_base","Waiting for plan, in the planning state.");
         break;
 
@@ -885,9 +900,15 @@ namespace move_base {
           runPlanner_ = false;
           lock.unlock();
 
+          amr_status_msg_.data = "SUCCEEDED";
+          amr_status_pub_.publish(amr_status_msg_);
+
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           return true;
         }
+
+        amr_status_msg_.data = "CONTROLLING";
+        amr_status_pub_.publish(amr_status_msg_);
 
         //check for an oscillation condition
         if(oscillation_timeout_ > 0.0 &&
@@ -944,6 +965,9 @@ namespace move_base {
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
         if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
+          amr_status_msg_.data = "RECOVERY";
+          amr_status_pub_.publish(amr_status_msg_);
+
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
 
@@ -960,6 +984,9 @@ namespace move_base {
           recovery_index_++;
         }
         else{
+          amr_status_msg_.data = "RECOVERY_FAILED";
+          amr_status_pub_.publish(amr_status_msg_);
+
           ROS_DEBUG_NAMED("move_base_recovery","All recovery behaviors have failed, locking the planner and disabling it.");
           //disable the planner thread
           boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
@@ -968,27 +995,7 @@ namespace move_base {
 
           ROS_DEBUG_NAMED("move_base_recovery","Something should abort after this.");
 
-          if(recovery_trigger_ == CONTROLLING_R){
-            if(abort_after_recovery_allowed_){
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
-              as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
-            }
-            else{
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
-            }
-          }
-          else if(recovery_trigger_ == PLANNING_R){
-            if(abort_after_recovery_allowed_){
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
-              as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
-            }
-            else{
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
-            }
-          }
-          else if(recovery_trigger_ == OSCILLATION_R){
+          if(recovery_trigger_ == CONTROLLING_R || recovery_trigger_ == PLANNING_R || recovery_trigger_ == OSCILLATION_R){
             if(abort_after_recovery_allowed_){
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
               as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
@@ -1003,6 +1010,8 @@ namespace move_base {
         }
         break;
       default:
+        amr_status_msg_.data = "ERROR";
+        amr_status_pub_.publish(amr_status_msg_);
         ROS_ERROR("This case should never be reached, something is wrong, aborting");
         resetState();
         //disable the planner thread
