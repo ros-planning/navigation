@@ -90,10 +90,13 @@ namespace move_base {
     //for commanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
-    amr_status_pub_ = nh.advertise<std_msgs::String>("amr_status", 1);
-
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
+
+    //for robot status
+    amr_status_pub_ = nh.advertise<std_msgs::String>("amr_status", 1);
+    carrying_status_sub_ = nh.subscribe<lexxauto_msgs::CarryingStatus>("carrying_status", 1, boost::bind(&MoveBase::carryingStatusCB, this, _1));
+    carrying_object = "unknown";
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
@@ -275,6 +278,11 @@ namespace move_base {
     action_goal.goal.target_pose = *goal;
 
     action_goal_pub_.publish(action_goal);
+  }
+
+  void MoveBase::carryingStatusCB(const lexxauto_msgs::CarryingStatus::ConstPtr& msg)
+  {
+    carrying_object = msg->carrying_object;
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){

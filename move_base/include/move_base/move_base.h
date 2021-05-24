@@ -52,6 +52,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GetPlan.h>
+#include <lexxauto_msgs/CarryingStatus.h>
 
 #include <pluginlib/class_loader.hpp>
 #include <std_srvs/Empty.h>
@@ -158,6 +159,8 @@ namespace move_base {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
+      void carryingStatusCB(const lexxauto_msgs::CarryingStatus::ConstPtr& msg);
+
       void planThread();
 
       void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
@@ -196,10 +199,11 @@ namespace move_base {
       uint32_t planning_retries_;
       double conservative_reset_dist_, clearing_radius_, max_sim_time_, min_occdist_scale_;
       ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_, amr_status_pub_;
-      ros::Subscriber goal_sub_;
+      ros::Subscriber goal_sub_, carrying_status_sub_;
       ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_, backward_recovery_allowed_, abort_after_recovery_allowed_;
       double oscillation_timeout_, oscillation_distance_;
+      std::string carrying_object;
 
       MoveBaseState state_;
       RecoveryTrigger recovery_trigger_;
