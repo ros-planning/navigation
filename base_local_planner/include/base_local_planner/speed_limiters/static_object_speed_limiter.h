@@ -69,8 +69,10 @@ public:
 
   explicit StaticObjectSpeedLimiter_TEST(StaticObjectSpeedLimiter* limiter) : speed_limiter_(limiter) {}
 
-  virtual bool calculateLimits_Test(const SpeedLimiterTestData* data, double& max_allowed_linear_vel,
-                                    double& max_allowed_angular_vel);
+  void getLimits_Test(double& max_allowed_linear_vel, double& max_allowed_angular_vel);
+
+  bool calculateLimits_Test(const SpeedLimiterTestData* data, double& max_allowed_linear_vel,
+                            double& max_allowed_angular_vel);
 
 private:
   StaticObjectSpeedLimiter_TEST() {}  // not accessable
@@ -149,7 +151,7 @@ private:
   std::shared_ptr<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>> configClient_;
   StaticObjectSpeedLimiterConfig params_;
 
-  bool enabledFirmwareVersion = false;
+  bool enabledFirmwareVersion_ = false;
   bool emulationMode_ = false;
   ros::Time last_time_ = ros::Time(0);
   double cachedMaxLinearVelocity_ = -1.0;

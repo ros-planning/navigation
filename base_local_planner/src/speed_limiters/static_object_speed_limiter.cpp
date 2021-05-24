@@ -83,7 +83,7 @@ void StaticObjectSpeedLimiter::msgCallback(const geometry_msgs::Twist::ConstPtr&
 
 void StaticObjectSpeedLimiter::ceSensorArrayCallback(const srslib_framework::MsgCERealTimeData& msg) {
   if (msg.firmwareId == 6) {
-    enabledFirmwareVersion = true;
+    enabledFirmwareVersion_ = true;
   }
 }
 
@@ -91,8 +91,10 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
   // Reset the maximum allowed velocity
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
-  if (params_.enabled == false || enabledFirmwareVersion == false) {
-    return true;
+  if (params_.enabled == false || enabledFirmwareVersion_ == false) {
+    if (testData_ == nullptr || testData_->enabledfirmwareVersion == false) {
+      return true;
+    }
   }
 
   if (const char* env_var = std::getenv("ROSEVN_STATICOBJECTLIMITERENABLED")) {
@@ -118,9 +120,15 @@ bool StaticObjectSpeedLimiter::calculateLimits(double& max_allowed_linear_vel, d
   cachedMaxAngularVelocity_ = max_angular_velocity_;
 
   // Cache off the current velocity so it can't be changed during processing
-  const float currLinearVel = velocity_.linear;
-  const float currAngularVel = fabs(velocity_.angular);
-  const bool flipAngular = velocity_.angular < 0.0;
+  float currLinearVel = velocity_.linear;
+  float currAngularVel = fabs(velocity_.angular);
+  bool flipAngular = velocity_.angular < 0.0;
+
+  if (testData_ != nullptr) {
+    currLinearVel = testData_->velocity.linear;
+    currAngularVel = testData_->velocity.angular;
+    flipAngular = testData_->velocity.angular < 0.0;
+  }
 
   /*
 Get the CE stopping path edges to get the distance from the static object map. This would then test against the
@@ -151,13 +159,18 @@ Chuck will cycle between speeding up and slowing down.
   }
 
   geometry_msgs::Point left, right;
+  srs::ChuckChassisGenerations::ChuckChassisType chassis = chassis_generation_;
+  if (testData_ != nullptr) {
+    chassis = testData_->chassis_generation_;
+  }
+
   // The plane tables indicate left right pairs of x,y coords
-  if (chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS) {
+  if (chassis == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS) {
     left.x = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][0][0];
     left.y = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][0][1];
     right.x = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][0];
     right.y = LOOKUP_TABLE_CHUCK_PLUS_FRONT_PLANE[linearIndex][angularIndex][1][1];
-  } else if (chassis_generation_ == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5) {
+  } else if (chassis == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5) {
     left.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][0];
     left.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][1];
     right.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][0];
@@ -180,34 +193,41 @@ Chuck will cycle between speeding up and slowing down.
     right = temp;
   }
 
-  double resolution = costmap_->getCostmap()->getResolution();
-  // Transform the points based on the chucks position and orientation
-  geometry_msgs::PoseStamped pose;
-  tf::poseStampedTFToMsg(current_pose, pose);
-  double pose_yaw = tf::getYaw(pose.pose.orientation) + srs::AngleMath::deg2Rad<double>(-90.0);
-  double cos_yaw = cos(pose_yaw);
-  double sin_yaw = sin(pose_yaw);
+  double distance_from_static_left = 0.0;
+  double distance_from_static_right = 0.0;
+  if (testData_ != nullptr) {
+    distance_from_static_left = testData_->distance_from_static_left;
+    distance_from_static_right = testData_->distance_from_static_right;
+  } else {
+    double resolution = costmap_->getCostmap()->getResolution();
+    // Transform the points based on the chucks position and orientation
+    geometry_msgs::PoseStamped pose;
+    tf::poseStampedTFToMsg(current_pose, pose);
+    double pose_yaw = tf::getYaw(pose.pose.orientation) + srs::AngleMath::deg2Rad<double>(-90.0);
+    double cos_yaw = cos(pose_yaw);
+    double sin_yaw = sin(pose_yaw);
 
-  double leftX = left.x;
-  double leftY = left.y;
-  double rightX = right.x;
-  double rightY = right.y;
+    double leftX = left.x;
+    double leftY = left.y;
+    double rightX = right.x;
+    double rightY = right.y;
 
-  left.x = pose.pose.position.x + ((cos_yaw * leftX) - (sin_yaw * leftY));
-  left.y = pose.pose.position.y + ((cos_yaw * leftY) + (sin_yaw * leftX));
-  right.x = pose.pose.position.x + ((cos_yaw * rightX) - (sin_yaw * rightY));
-  right.y = pose.pose.position.y + ((cos_yaw * rightY) + (sin_yaw * rightX));
+    left.x = pose.pose.position.x + ((cos_yaw * leftX) - (sin_yaw * leftY));
+    left.y = pose.pose.position.y + ((cos_yaw * leftY) + (sin_yaw * leftX));
+    right.x = pose.pose.position.x + ((cos_yaw * rightX) - (sin_yaw * rightY));
+    right.y = pose.pose.position.y + ((cos_yaw * rightY) + (sin_yaw * rightX));
 
-  double px = left.x;
-  double py = left.y;
-  double distance_from_static_left = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
+    double px = left.x;
+    double py = left.y;
+    distance_from_static_left = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
 
-  px = right.x;
-  py = right.y;
-  double distance_from_static_right = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
+    px = right.x;
+    py = right.y;
+    distance_from_static_right = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
 
-  distance_from_static_left *= resolution;
-  distance_from_static_right *= resolution;
+    distance_from_static_left *= resolution;
+    distance_from_static_right *= resolution;
+  }
 
   if (currLinearVel >= params_.min_linear_velocity_test_speed &&
       currLinearVel <= params_.max_linear_velocity_test_speed) {
@@ -328,6 +348,12 @@ StaticObjectSpeedLimiter::calculateAllowedSpeed(const SpeedLimiterData& data) co
 }
 
 /////  TESTING
+void StaticObjectSpeedLimiter_TEST::getLimits_Test(double& max_allowed_linear_vel, double& max_allowed_angular_vel) {
+  assert(speed_limiter_ != nullptr);
+  max_allowed_linear_vel = speed_limiter_->max_linear_velocity_;
+  max_allowed_angular_vel = speed_limiter_->max_angular_velocity_;
+}
+
 bool StaticObjectSpeedLimiter_TEST::calculateLimits_Test(const SpeedLimiterTestData* data,
                                                          double& max_allowed_linear_vel,
                                                          double& max_allowed_angular_vel) {
