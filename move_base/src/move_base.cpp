@@ -109,14 +109,13 @@ namespace move_base {
     private_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
     private_nh.param("clearing_radius", clearing_radius_, circumscribed_radius_);
     private_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
-    private_nh.param("max_sim_time", max_sim_time_, 4.0);
-    private_nh.param("min_occdist_scale", min_occdist_scale_, 0.1);
 
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
     private_nh.param("backward_recovery_allowed", backward_recovery_allowed_, false);
     private_nh.param("abort_after_recovery_allowed", abort_after_recovery_allowed_, false);
+    private_nh.param("rotate_small_angle", rotate_small_angle_, 0.0);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
@@ -1188,6 +1187,13 @@ namespace move_base {
       //we'll move backwards one more time
       if(backward_recovery_allowed_)
         recovery_behaviors_carrying_.push_back(go_back);
+      
+      //Newly added: load a recovery behavior to rotate small angle
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
+      if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
+        go_back->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_carrying_.push_back(rotate_small);
+      }
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
