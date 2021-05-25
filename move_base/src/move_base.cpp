@@ -1121,30 +1121,19 @@ namespace move_base {
   //we'll load our default recovery behaviors here
   void MoveBase::loadDefaultRecoveryBehaviors(){
     recovery_behaviors_.clear();
+    recovery_behaviors_carrying_.clear();
     try{
       //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
-      //Newly added: load a recovery behavior to update sim_time and occdist_scale to improve performance in narrow pathways
-      boost::shared_ptr<nav_core::RecoveryBehavior> obs_deprecate(recovery_loader_.createInstance("obstacle_deprecate_recovery/ObstacleDeprecateRecovery"));
-      obs_deprecate->initialize("obstacle_deprecate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-      recovery_behaviors_.push_back(obs_deprecate);
-
+      ///RECOVERY BEHAVIOURS WHEN ROBOT IS NOT CARRYING ANYTHING
       //first, we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
-
-      //Newly added: load a recovery bhavior to move backwards
-      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
-      if(backward_recovery_allowed_){
-        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(go_back);
-      }
       
-
       //next, we'll load a recovery behavior to rotate in place
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
@@ -1160,11 +1149,25 @@ namespace move_base {
       //we'll rotate in-place one more time
       if(clearing_rotation_allowed_)
         recovery_behaviors_.push_back(rotate);
+      
 
-      //Newly added: load a recovery behavior to notify the surrounding (light up LED)
-      boost::shared_ptr<nav_core::RecoveryBehavior> notify_surrounding(recovery_loader_.createInstance("notify_surrounding_recovery/NotifySurroundingRecovery"));
-      notify_surrounding->initialize("notify_surrounding_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-      recovery_behaviors_.push_back(notify_surrounding);
+      ///RECOVERY BEHAVIOURS WHEN ROBOT IS CARRYING/TOWING
+      //first, we'll load a recovery behavior to clear the costmap
+      recovery_behaviors_carrying_.push_back(cons_clear);
+
+      //Newly added: load a recovery behavior to move backwards
+      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
+      if(backward_recovery_allowed_){
+        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_carrying_.push_back(go_back);
+      }
+
+      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
+      recovery_behaviors_carrying_.push_back(ags_clear);
+
+      //we'll move backwards one more time
+      if(backward_recovery_allowed_)
+        recovery_behaviors_carrying_.push_back(go_back);
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());

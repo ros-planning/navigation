@@ -188,7 +188,7 @@ namespace move_base {
       boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_;
       std::string robot_base_frame_, global_frame_;
 
-      std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
+      std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_, recovery_behaviors_carrying_;
       unsigned int recovery_index_;
 
       geometry_msgs::PoseStamped global_pose_;
