@@ -91,8 +91,8 @@ void GoBackRecovery::runBehavior()
         double sim_distance = 0.0;
         while(sim_distance < dist_left)
         {
-            double sim_x = x + sim_distance * cos(current_angle);
-            double sim_y = y + sim_distance * sin(current_angle);
+            double sim_x = x - sim_distance * cos(current_angle);
+            double sim_y = y - sim_distance * sin(current_angle);
 
             // make sure that the point is legal. Else, abort
             double footprint_cost = world_model_->footprintCost(sim_x, sim_y, current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
