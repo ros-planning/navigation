@@ -3,6 +3,7 @@ project(rotate_small_recovery)
 
 find_package(catkin REQUIRED 
   COMPONENTS
+    angles
     base_local_planner
     cmake_modules
     costmap_2d
