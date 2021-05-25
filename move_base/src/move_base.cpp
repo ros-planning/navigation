@@ -446,6 +446,7 @@ namespace move_base {
 
   MoveBase::~MoveBase(){
     recovery_behaviors_.clear();
+    recovery_behaviors_carrying_.clear();
 
     delete dsrv_;
 
@@ -972,12 +973,31 @@ namespace move_base {
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
-        if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
+        if(recovery_behavior_enabled_ && carrying_object == "none" && recovery_index_ < recovery_behaviors_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
+
+          //we at least want to give the robot some time to stop oscillating after executing the behavior
+          last_oscillation_reset_ = ros::Time::now();
+
+          //we'll check if the recovery behavior actually worked
+          ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
+          last_valid_plan_ = ros::Time::now();
+          planning_retries_ = 0;
+          state_ = PLANNING;
+
+          //update the index of the next recovery behavior that we'll try
+          recovery_index_++;
+        }
+        else if(recovery_behavior_enabled_ && (carrying_object == "towing" || carrying_object == "under_cart") && recovery_index_ < recovery_behaviors_carrying_.size()){
+          amr_status_msg_.data = "RECOVERY";
+          amr_status_pub_.publish(amr_status_msg_);
+
+          ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
+          recovery_behaviors_carrying_[recovery_index_]->runBehavior();
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
