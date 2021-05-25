@@ -17,9 +17,7 @@ public:
                             double& max_allowed_linear_vel, double& max_allowed_angular_vel);
 
 private:
-  tf::TransformListener* tf_ = nullptr;
-  costmap_2d::Costmap2DROS* map_ = nullptr;
-  StaticObjectSpeedLimiter* speed_limiter_ = nullptr;
+  StaticObjectSpeedLimiter speed_limiter_ = StaticObjectSpeedLimiter(nullptr);
   StaticObjectSpeedLimiter_TEST* speed_limiter_test_ = nullptr;
 };
 
@@ -27,22 +25,29 @@ private:
  * Constructor
  */
 StaticObjectSpeedLimiterTestHarness::StaticObjectSpeedLimiterTestHarness() {
-  tf_ = new tf::TransformListener(ros::Duration(10));
-  map_ = new costmap_2d::Costmap2DROS("testSOSLMap", *tf_);
-  speed_limiter_ = new StaticObjectSpeedLimiter(map_);
-
   StaticObjectSpeedLimiterConfig cfg;
   cfg.enabled = true;
   cfg.timeout = 0.0;  // Always run
+  cfg.min_linear_velocity = 0.3;
+  cfg.min_angular_velocity = 0.4;
+  cfg.test_distance_changes_with_speed = true;
+  cfg.test_distance_grows_with_speed = true;
   cfg.min_linear_velocity_test_speed = 0.3;
   cfg.max_linear_velocity_test_speed = 1.35;
   cfg.min_angular_velocity_test_speed = 0.1;
   cfg.max_angular_velocity_test_speed = 0.8;
-  cfg.min_linear_velocity = 0.3;
-  cfg.min_angular_velocity = 0.4;
-  speed_limiter_->reconfigure(cfg);
+  cfg.min_linear_velocity_distance = 0.05;
+  cfg.max_linear_velocity_distance = 0.75;
+  cfg.min_angular_velocity_distance = 0.05;
+  cfg.max_angular_velocity_distance = 0.75;
+  cfg.min_linear_velocity_reduction = 0.05;
+  cfg.max_linear_velocity_reduction = 0.2;
+  cfg.min_angular_velocity_reduction = 0.05;
+  cfg.max_angular_velocity_reduction = 0.2;
+  speed_limiter_.reconfigure(cfg);
+  speed_limiter_.setMaxLimits(1.3, 0.7); //< default high
 
-  speed_limiter_test_ = new StaticObjectSpeedLimiter_TEST(speed_limiter_);
+  speed_limiter_test_ = new StaticObjectSpeedLimiter_TEST(&speed_limiter_);
 }
 
 /**
@@ -51,15 +56,6 @@ StaticObjectSpeedLimiterTestHarness::StaticObjectSpeedLimiterTestHarness() {
 StaticObjectSpeedLimiterTestHarness::~StaticObjectSpeedLimiterTestHarness() {
   delete (speed_limiter_test_);
   speed_limiter_test_ = nullptr;
-
-  delete (speed_limiter_);
-  speed_limiter_ = nullptr;
-
-  delete (map_);
-  map_ = nullptr;
-
-  delete (tf_);
-  tf_ = nullptr;
 }
 
 /**
@@ -71,9 +67,9 @@ void StaticObjectSpeedLimiterTestHarness::getLimits_Test(double& max_allowed_lin
   speed_limiter_test_->getLimits_Test(max_allowed_linear_vel, max_allowed_angular_vel);
 }
 
-bool StaticObjectSpeedLimiterTestHarness::calculateLimits_Test(const StaticObjectSpeedLimiter_TEST::SpeedLimiterTestData* data,
-                                                               double& max_allowed_linear_vel,
-                                                               double& max_allowed_angular_vel) {
+bool StaticObjectSpeedLimiterTestHarness::calculateLimits_Test(
+    const StaticObjectSpeedLimiter_TEST::SpeedLimiterTestData* data, double& max_allowed_linear_vel,
+    double& max_allowed_angular_vel) {
   assert(speed_limiter_test_ != nullptr);
   return speed_limiter_test_->calculateLimits_Test(data, max_allowed_linear_vel, max_allowed_angular_vel);
 }
@@ -88,6 +84,7 @@ bool StaticObjectSpeedLimiterTestHarness::calculateLimits_Test(const StaticObjec
  */
 TEST(StaticObjectSpeedLimiter, no_op_testing) {
   base_local_planner::StaticObjectSpeedLimiterTestHarness testHarness;
+  ros::Time::init();
 
   double max_allowed_linear_vel;
   double max_allowed_angular_vel;
@@ -131,6 +128,9 @@ TEST(StaticObjectSpeedLimiter, no_op_testing) {
   data.distance_from_static_right = 10.0;
   data.velocity.linear = 1.0;
   data.velocity.angular = 0.5;
+  testHarness.calculateLimits_Test(&data, max_allowed_linear_vel_result, max_allowed_angular_vel_result);
+  EXPECT_EQ(max_allowed_linear_vel, max_allowed_linear_vel_result);
+  EXPECT_EQ(max_allowed_angular_vel_result, max_allowed_angular_vel_result);
 
   data.chassis_generation_ = srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS;
   testHarness.calculateLimits_Test(&data, max_allowed_linear_vel_result, max_allowed_angular_vel_result);
@@ -149,7 +149,7 @@ TEST(StaticObjectSpeedLimiter, no_op_testing) {
   EXPECT_EQ(max_allowed_angular_vel_result, max_allowed_angular_vel_result);
 
   data.velocity.linear = 1.0;
-  data.velocity.angular = 0.1;
+  data.velocity.angular = 0.05;
   testHarness.calculateLimits_Test(&data, max_allowed_linear_vel_result, max_allowed_angular_vel_result);
   EXPECT_EQ(max_allowed_linear_vel, max_allowed_linear_vel_result);
   EXPECT_EQ(max_allowed_angular_vel_result, max_allowed_angular_vel_result);
@@ -202,6 +202,7 @@ TEST(StaticObjectSpeedLimiter, no_op_testing) {
  */
 TEST(StaticObjectSpeedLimiter, limiter_in_action) {
   base_local_planner::StaticObjectSpeedLimiterTestHarness testHarness;
+  ros::Time::init();
 
   double max_allowed_linear_vel;
   double max_allowed_angular_vel;
@@ -211,15 +212,15 @@ TEST(StaticObjectSpeedLimiter, limiter_in_action) {
   double max_allowed_angular_vel_result = max_allowed_angular_vel;
 
   StaticObjectSpeedLimiter_TEST::SpeedLimiterTestData data;
-  data.enabledfirmwareVersion = false;
+  data.enabledfirmwareVersion = true;
   data.chassis_generation_ = srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5;
   data.distance_from_static_left = 0.5;
   data.distance_from_static_right = 0.5;
-  data.velocity.linear = 1.0;
-  data.velocity.angular = 0.5;
+  data.velocity.linear = 1.34;
+  data.velocity.angular = 0.79;
   testHarness.calculateLimits_Test(&data, max_allowed_linear_vel_result, max_allowed_angular_vel_result);
   EXPECT_NE(max_allowed_linear_vel, max_allowed_linear_vel_result);
-  EXPECT_NE(max_allowed_angular_vel_result, max_allowed_angular_vel_result);
+  EXPECT_NE(max_allowed_angular_vel, max_allowed_angular_vel_result);
 
   max_allowed_linear_vel_result = max_allowed_linear_vel;
   max_allowed_angular_vel_result = max_allowed_angular_vel;
@@ -227,14 +228,14 @@ TEST(StaticObjectSpeedLimiter, limiter_in_action) {
   data.chassis_generation_ = srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS;
   testHarness.calculateLimits_Test(&data, max_allowed_linear_vel_result, max_allowed_angular_vel_result);
   EXPECT_NE(max_allowed_linear_vel, max_allowed_linear_vel_result);
-  EXPECT_NE(max_allowed_angular_vel_result, max_allowed_angular_vel_result);
+  EXPECT_NE(max_allowed_angular_vel, max_allowed_angular_vel_result);
 }
 
 // Run all the tests that were declared with TEST()
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
+
   return RUN_ALL_TESTS();
 }
 
-}
+}  // namespace base_local_planner

@@ -94,7 +94,10 @@ public:
   /**
    * Destructor
    */
-  virtual ~StaticObjectSpeedLimiter() {}
+  virtual ~StaticObjectSpeedLimiter() {
+    delete (nh_);
+    nh_ = nullptr;
+  }
 
   virtual void initialize(std::string name);
 
@@ -141,7 +144,7 @@ private:
 
   SpeedLimiterResult calculateAllowedSpeed(const SpeedLimiterData& data) const;
 
-  ros::NodeHandle nh_;
+  ros::NodeHandle* nh_ = nullptr;
   ros::Subscriber subscriber_;
   ros::Subscriber emulation_mode_sub_;
   ros::Subscriber chassis_generation_sub_;

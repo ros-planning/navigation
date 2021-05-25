@@ -51,17 +51,19 @@ void StaticObjectSpeedLimiter::initialize(std::string name) {
   configClient_ = std::make_shared<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>>(name + "/staticObject");
   configClient_->setConfigurationCallback(boost::bind(&StaticObjectSpeedLimiter::reconfigure, this, _1));
 
+  nh_ = new ros::NodeHandle();
+
   std::string inTopic = "/sensors/odometry/velocity/cmd_unfiltered";
   subscriber_ =
-      nh_.subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
+      nh_->subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
 
-  emulation_mode_sub_ = nh_.subscribe("emulator/enabled", 10, &StaticObjectSpeedLimiter::emulationModeCallback, this);
+  emulation_mode_sub_ = nh_->subscribe("emulator/enabled", 10, &StaticObjectSpeedLimiter::emulationModeCallback, this);
 
   chassis_generation_sub_ =
-      nh_.subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
+      nh_->subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 
-  hardware_version_sub_ = nh_.subscribe("/drivers/brainstem/state/ce_realtime_data", 10,
-                                        &StaticObjectSpeedLimiter::chassisConfigCallback, this);
+  hardware_version_sub_ = nh_->subscribe("/drivers/brainstem/state/ce_realtime_data", 10,
+                                         &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 
   ros::NodeHandle private_nh(name + "/staticObject");
   staticObject_pub = private_nh.advertise<base_local_planner::StaticObjects>("staticObject_info", 5, true);
@@ -138,7 +140,8 @@ Chuck will cycle between speeding up and slowing down.
 */
 
   tf::Stamped<tf::Pose> current_pose;
-  if (!getCurrentPose(current_pose)) {
+
+  if (testData_ == nullptr && !getCurrentPose(current_pose)) {
     ROS_WARN_THROTTLE(1.0, "No pose in static object speed limiter");
     return false;
   }
