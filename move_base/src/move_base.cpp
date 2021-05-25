@@ -991,7 +991,7 @@ namespace move_base {
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
         }
-        else if(recovery_behavior_enabled_ && (carrying_object == "towing" || carrying_object == "under_cart") && recovery_index_ < recovery_behaviors_carrying_.size()){
+        else if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_carrying_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
@@ -1191,7 +1191,7 @@ namespace move_base {
       //Newly added: load a recovery behavior to rotate small angle
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
       if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
-        go_back->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_carrying_.push_back(rotate_small);
       }
     }
