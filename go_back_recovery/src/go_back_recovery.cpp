@@ -27,7 +27,7 @@ void GoBackRecovery::initialize(std::string name, tf2_ros::Buffer*,
 
         blp_nh.param("max_vel_x", max_vel_x_, 2.0); 
         blp_nh.param("min_vel_x", min_vel_x_, 0.05);
-        blp_nh.param("local_costmap/inscribed_radius", , 0.325);
+        blp_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
         blp_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
         blp_nh.param("x_goal_tolerance", tolerance_, 0.10);
         
