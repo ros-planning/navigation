@@ -1,0 +1,7 @@
+<library path="lib/librotate_small_recovery">
+  <class name="rotate_small_recovery/RotateSmallRecovery" type="rotate_small_recovery::RotateSmallRecovery" base_class_type="nav_core::RecoveryBehavior">
+    <description>
+      A recovery behavior that performs an in-place rotation by 30 degrees or any designated amount.
+    </description>
+  </class>
+</library>
