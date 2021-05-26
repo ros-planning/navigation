@@ -238,6 +238,7 @@ class MapServer
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "map_server", ros::init_options::AnonymousName);
+  ros::NodeHandle nh("~");
   if(argc != 3 && argc != 2)
   {
     ROS_ERROR("%s", USAGE);
