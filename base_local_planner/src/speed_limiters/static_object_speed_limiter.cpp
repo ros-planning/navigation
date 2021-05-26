@@ -59,8 +59,6 @@ namespace base_local_planner
     subscriber_ =
         nh_->subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
 
-    emulation_mode_sub_ = nh_->subscribe("emulator/enabled", 10, &StaticObjectSpeedLimiter::emulationModeCallback, this);
-
     chassis_generation_sub_ =
         nh_->subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 
@@ -76,11 +74,6 @@ namespace base_local_planner
   void StaticObjectSpeedLimiter::chassisConfigCallback(const srslib_framework::MsgChassisConfig &config)
   {
     chassis_generation_ = static_cast<srs::ChuckChassisGenerations::ChuckChassisType>(config.chassisFootprintType);
-  }
-
-  void StaticObjectSpeedLimiter::emulationModeCallback(const std_msgs::Bool &emulationMode)
-  {
-    emulationMode_ = emulationMode.data;
   }
 
   void StaticObjectSpeedLimiter::msgCallback(const geometry_msgs::Twist::ConstPtr &msg)
@@ -101,7 +94,7 @@ namespace base_local_planner
     // Reset the maximum allowed velocity
     max_allowed_linear_vel = max_linear_velocity_;
     max_allowed_angular_vel = max_angular_velocity_;
-    if (params_.enabled == false || enabledFirmwareVersion_ == false)
+    if (forceEnabled_ == false && (params_.enabled == false || enabledFirmwareVersion_ == false))
     {
       if (test_data_ == nullptr || test_data_->enabledfirmwareVersion == false)
       {
@@ -114,7 +107,7 @@ namespace base_local_planner
       std::string val(env_var);
 
       std::transform(val.begin(), val.end(), val.begin(), ::tolower);
-      if (val == "false")
+      if (forceEnabled_ == false && val == "false")
       {
         return true;
       }
@@ -204,7 +197,7 @@ Chuck will cycle between speeding up and slowing down.
       right.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][0];
       right.y = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][1][1];
     }
-    else if (emulationMode_)
+    else if (forceEnabled_)
     {
       // Pretend that it is chuck 5 for emulation purposes
       left.x = LOOKUP_TABLE_CHUCK_FRONT_PLANE[linearIndex][angularIndex][0][0];

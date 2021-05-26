@@ -162,7 +162,7 @@ namespace base_local_planner
     StaticObjectSpeedLimiterConfig params_;
 
     bool enabledFirmwareVersion_ = false;
-    bool emulationMode_ = false;
+    bool forceEnabled_ = false;   //< used for testing purposes
     ros::Time last_time_ = ros::Time(0);
     double cachedMaxLinearVelocity_ = -1.0;
     double cachedMaxAngularVelocity_ = -1.0;
