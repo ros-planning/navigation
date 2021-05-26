@@ -90,9 +90,13 @@ namespace move_base {
     //for commanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
-
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
+
+    //for robot status
+    amr_status_pub_ = nh.advertise<std_msgs::String>("amr_status", 1);
+    carrying_status_sub_ = nh.subscribe<std_msgs::String>("actuator_status", 1, boost::bind(&MoveBase::carryingStatusCB, this, _1));
+    actuator_state = "unknown";
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
@@ -105,14 +109,13 @@ namespace move_base {
     private_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
     private_nh.param("clearing_radius", clearing_radius_, circumscribed_radius_);
     private_nh.param("conservative_reset_dist", conservative_reset_dist_, 3.0);
-    private_nh.param("max_sim_time", max_sim_time_, 4.0);
-    private_nh.param("min_occdist_scale", min_occdist_scale_, 0.1);
 
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
     private_nh.param("backward_recovery_allowed", backward_recovery_allowed_, false);
     private_nh.param("abort_after_recovery_allowed", abort_after_recovery_allowed_, false);
+    private_nh.param("rotate_small_angle", rotate_small_angle_, 0.0);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
@@ -276,6 +279,11 @@ namespace move_base {
     action_goal_pub_.publish(action_goal);
   }
 
+  void MoveBase::carryingStatusCB(const std_msgs::String::ConstPtr& msg)
+  {
+    actuator_state = msg->data;
+  }
+
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
     geometry_msgs::PoseStamped global_pose;
 
@@ -437,6 +445,7 @@ namespace move_base {
 
   MoveBase::~MoveBase(){
     recovery_behaviors_.clear();
+    recovery_behaviors_carrying_.clear();
 
     delete dsrv_;
 
@@ -642,6 +651,8 @@ namespace move_base {
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
+      amr_status_msg_.data = "ABORTED";
+      amr_status_pub_.publish(amr_status_msg_);
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
     }
@@ -688,6 +699,8 @@ namespace move_base {
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
 
           if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
+            amr_status_msg_.data = "ABORTED";
+            amr_status_pub_.publish(amr_status_msg_);
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
             return;
           }
@@ -718,6 +731,9 @@ namespace move_base {
         else {
           //if we've been preempted explicitly we need to shut things down
           resetState();
+
+          amr_status_msg_.data = "PREEMPTED";
+          amr_status_pub_.publish(amr_status_msg_);
 
           //notify the ActionServer that we've successfully preempted
           ROS_DEBUG_NAMED("move_base","Move base preempting the current goal");
@@ -782,6 +798,8 @@ namespace move_base {
     lock.unlock();
 
     //if the node is killed then we'll abort and return
+    amr_status_msg_.data = "ABORTED";
+    amr_status_pub_.publish(amr_status_msg_);
     as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on the goal because the node has been killed");
     return;
   }
@@ -850,6 +868,9 @@ namespace move_base {
         runPlanner_ = false;
         lock.unlock();
 
+        amr_status_msg_.data = "ABORTED";
+        amr_status_pub_.publish(amr_status_msg_);
+        
         as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to pass global plan to the controller.");
         return true;
       }
@@ -868,6 +889,8 @@ namespace move_base {
           runPlanner_ = true;
           planner_cond_.notify_one();
         }
+        amr_status_msg_.data = "PLANNING";
+        amr_status_pub_.publish(amr_status_msg_);
         ROS_DEBUG_NAMED("move_base","Waiting for plan, in the planning state.");
         break;
 
@@ -885,9 +908,15 @@ namespace move_base {
           runPlanner_ = false;
           lock.unlock();
 
+          amr_status_msg_.data = "SUCCEEDED";
+          amr_status_pub_.publish(amr_status_msg_);
+
           as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
           return true;
         }
+
+        amr_status_msg_.data = "CONTROLLING";
+        amr_status_pub_.publish(amr_status_msg_);
 
         //check for an oscillation condition
         if(oscillation_timeout_ > 0.0 &&
@@ -943,7 +972,10 @@ namespace move_base {
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
-        if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
+        if(recovery_behavior_enabled_ && actuator_state == "LOW" && recovery_index_ < recovery_behaviors_.size()){
+          amr_status_msg_.data = "RECOVERY";
+          amr_status_pub_.publish(amr_status_msg_);
+
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
 
@@ -959,7 +991,29 @@ namespace move_base {
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
         }
+        else if(recovery_behavior_enabled_ && actuator_state == "HIGH" && recovery_index_ < recovery_behaviors_carrying_.size()){
+          amr_status_msg_.data = "RECOVERY";
+          amr_status_pub_.publish(amr_status_msg_);
+
+          ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
+          recovery_behaviors_carrying_[recovery_index_]->runBehavior();
+
+          //we at least want to give the robot some time to stop oscillating after executing the behavior
+          last_oscillation_reset_ = ros::Time::now();
+
+          //we'll check if the recovery behavior actually worked
+          ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
+          last_valid_plan_ = ros::Time::now();
+          planning_retries_ = 0;
+          state_ = PLANNING;
+
+          //update the index of the next recovery behavior that we'll try
+          recovery_index_++;
+        }
         else{
+          amr_status_msg_.data = "RECOVERY_FAILED";
+          amr_status_pub_.publish(amr_status_msg_);
+
           ROS_DEBUG_NAMED("move_base_recovery","All recovery behaviors have failed, locking the planner and disabling it.");
           //disable the planner thread
           boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
@@ -968,27 +1022,7 @@ namespace move_base {
 
           ROS_DEBUG_NAMED("move_base_recovery","Something should abort after this.");
 
-          if(recovery_trigger_ == CONTROLLING_R){
-            if(abort_after_recovery_allowed_){
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
-              as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
-            }
-            else{
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
-            }
-          }
-          else if(recovery_trigger_ == PLANNING_R){
-            if(abort_after_recovery_allowed_){
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
-              as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
-            }
-            else{
-              ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors. Wait for next command.");
-              as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors. Wait for next command.");
-            }
-          }
-          else if(recovery_trigger_ == OSCILLATION_R){
+          if(recovery_trigger_ == CONTROLLING_R || recovery_trigger_ == PLANNING_R || recovery_trigger_ == OSCILLATION_R){
             if(abort_after_recovery_allowed_){
               ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
               as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
@@ -1003,6 +1037,8 @@ namespace move_base {
         }
         break;
       default:
+        amr_status_msg_.data = "ERROR";
+        amr_status_pub_.publish(amr_status_msg_);
         ROS_ERROR("This case should never be reached, something is wrong, aborting");
         resetState();
         //disable the planner thread
@@ -1104,30 +1140,19 @@ namespace move_base {
   //we'll load our default recovery behaviors here
   void MoveBase::loadDefaultRecoveryBehaviors(){
     recovery_behaviors_.clear();
+    recovery_behaviors_carrying_.clear();
     try{
       //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
 
-      //Newly added: load a recovery behavior to update sim_time and occdist_scale to improve performance in narrow pathways
-      boost::shared_ptr<nav_core::RecoveryBehavior> obs_deprecate(recovery_loader_.createInstance("obstacle_deprecate_recovery/ObstacleDeprecateRecovery"));
-      obs_deprecate->initialize("obstacle_deprecate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-      recovery_behaviors_.push_back(obs_deprecate);
-
+      ///RECOVERY BEHAVIOURS WHEN ROBOT IS NOT CARRYING ANYTHING
       //first, we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
-
-      //Newly added: load a recovery bhavior to move backwards
-      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
-      if(backward_recovery_allowed_){
-        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(go_back);
-      }
       
-
       //next, we'll load a recovery behavior to rotate in place
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
@@ -1143,11 +1168,32 @@ namespace move_base {
       //we'll rotate in-place one more time
       if(clearing_rotation_allowed_)
         recovery_behaviors_.push_back(rotate);
+      
 
-      //Newly added: load a recovery behavior to notify the surrounding (light up LED)
-      boost::shared_ptr<nav_core::RecoveryBehavior> notify_surrounding(recovery_loader_.createInstance("notify_surrounding_recovery/NotifySurroundingRecovery"));
-      notify_surrounding->initialize("notify_surrounding_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-      recovery_behaviors_.push_back(notify_surrounding);
+      ///RECOVERY BEHAVIOURS WHEN ROBOT IS CARRYING/TOWING
+      //first, we'll load a recovery behavior to clear the costmap
+      recovery_behaviors_carrying_.push_back(cons_clear);
+
+      //Newly added: load a recovery behavior to move backwards
+      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
+      if(backward_recovery_allowed_){
+        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_carrying_.push_back(go_back);
+      }
+
+      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
+      recovery_behaviors_carrying_.push_back(ags_clear);
+
+      //we'll move backwards one more time
+      if(backward_recovery_allowed_)
+        recovery_behaviors_carrying_.push_back(go_back);
+      
+      //Newly added: load a recovery behavior to rotate small angle
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
+      if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
+        rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_carrying_.push_back(rotate_small);
+      }
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());

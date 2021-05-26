@@ -158,6 +158,8 @@ namespace move_base {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
+      void carryingStatusCB(const std_msgs::String::ConstPtr& msg);
+
       void planThread();
 
       void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
@@ -185,20 +187,23 @@ namespace move_base {
       boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_;
       std::string robot_base_frame_, global_frame_;
 
-      std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
+      std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_, recovery_behaviors_carrying_;
       unsigned int recovery_index_;
 
       geometry_msgs::PoseStamped global_pose_;
+      std_msgs::String amr_status_msg_;
       double planner_frequency_, controller_frequency_, inscribed_radius_, circumscribed_radius_;
       double planner_patience_, controller_patience_;
       int32_t max_planning_retries_;
       uint32_t planning_retries_;
       double conservative_reset_dist_, clearing_radius_, max_sim_time_, min_occdist_scale_;
-      ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_;
-      ros::Subscriber goal_sub_;
+      ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_, amr_status_pub_;
+      ros::Subscriber goal_sub_, carrying_status_sub_;
       ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_, backward_recovery_allowed_, abort_after_recovery_allowed_;
       double oscillation_timeout_, oscillation_distance_;
+      double rotate_small_angle_;
+      std::string actuator_state;
 
       MoveBaseState state_;
       RecoveryTrigger recovery_trigger_;

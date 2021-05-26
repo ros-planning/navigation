@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rotate_small_recovery</name>
+  <version>0.0.0</version>
+  <description>
+
+      This package provides a recovery behavior for the navigation stack that attempts to clear space by performing an in-place rotation of the robot
+      by a designated amount (30 degrees if not specified).
+
+  </description>
+  <author>Hayato Terao</author>
+  <maintainer email="hayato.terao@lexxpluss.com">Hayato Terao</maintainer>
+  <license>TODO</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>angles</build_depend>
+  <build_depend>base_local_planner</build_depend>
+  <build_depend>cmake_modules</build_depend>
+  
+  <depend>costmap_2d</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_core</depend>
+  <depend>pluginlib</depend>
+  <depend>roscpp</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+
+  <export>
+    <nav_core plugin="${prefix}/rotate_small_plugin.xml" />
+  </export>
+</package>

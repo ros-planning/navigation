@@ -19,17 +19,20 @@ void GoBackRecovery::initialize(std::string name, tf2_ros::Buffer*,
         local_costmap_ = local_costmap;
 
         // get some parameters from the parameter server
-        ros::NodeHandle nh("~/" + name);
+        ros::NodeHandle private_nh("~/" + name);
         ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
 
-        nh.param("sim_granularity", sim_granularity_, 0.01);
-        frequency_ = nav_core::loadParameterWithDeprecation(blp_nh, "controller_frequency", "frequency", 20.0);
-        min_vel_x_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_vel_x", "min_trans_x", 0.05);
-        max_vel_x_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_x", "max_trans_x", 2.0);
-        inscribed_radius_ = nav_core::loadParameterWithDeprecation(blp_nh, "local_costmap/inscribed_radius", "inscribed_radius", 0.325);
-        circumscribed_radius_ = nav_core::loadParameterWithDeprecation(blp_nh, "local_costmap/circumscribed_radius", "circumscribed_radius", 0.46);
+        private_nh.param("sim_granularity", sim_granularity_, 0.01);
+        private_nh.param("frequency", frequency_, 20.0);
 
+        blp_nh.param("max_vel_x", max_vel_x_, 2.0); 
+        blp_nh.param("min_vel_x", min_vel_x_, 0.05);
+        blp_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
+        blp_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
+        blp_nh.param("x_goal_tolerance", tolerance_, 0.10);
+        
         world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
+        
         initialized_ = true;
     }
     else
@@ -70,9 +73,12 @@ void GoBackRecovery::runBehavior()
     geometry_msgs::PoseStamped initial_pose;
     local_costmap_->getRobotPose(initial_pose);
     double current_angle = tf2::getYaw(initial_pose.pose.orientation);
+    const double dist_to_move = 1.0;
     double dist_travelled = 0.0;
+    double dist_left = dist_to_move - dist_travelled;
 
-    while(n.ok() && dist_travelled < 1.0)
+    ///By default, make the robot move 1m backwards
+    while(n.ok() && dist_left > tolerance_)
     {
         // update current position of the robot
         local_costmap_->getRobotPose(global_pose);
@@ -81,12 +87,12 @@ void GoBackRecovery::runBehavior()
         dist_travelled = GoBackRecovery::calculateDist(initial_pose, global_pose);
 
         // conduct forward simulation
-        double dist_left = 0.1;
+        dist_left = dist_to_move - dist_travelled;
         double sim_distance = 0.0;
         while(sim_distance < dist_left)
         {
-            double sim_x = x + sim_distance * cos(current_angle);
-            double sim_y = y + sim_distance * sin(current_angle);
+            double sim_x = x - sim_distance * cos(current_angle);
+            double sim_y = y - sim_distance * sin(current_angle);
 
             // make sure that the point is legal. Else, abort
             double footprint_cost = world_model_->footprintCost(sim_x, sim_y, current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);

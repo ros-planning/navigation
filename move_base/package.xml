@@ -41,7 +41,8 @@
     <depend>clear_costmap_recovery</depend>
     <depend>navfn</depend>
     <depend>rotate_recovery</depend>
-    <depend>obstacle_deprecate_recovery></depend>
+    <depend>rotate_small_recovery</depend>
+    <depend>go_back_recovery></depend>
 
     <exec_depend>message_runtime</exec_depend>
 
