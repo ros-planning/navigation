@@ -26,7 +26,6 @@
     <depend>costmap_2d</depend>
     <depend>dynamic_reconfigure</depend>
     <depend>geometry_msgs</depend>
-    <depend>lexxauto_msgs</depend>
     <depend>move_base_msgs</depend>
     <depend>nav_core</depend>
     <depend>nav_msgs</depend>

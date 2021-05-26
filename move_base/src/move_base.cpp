@@ -95,8 +95,8 @@ namespace move_base {
 
     //for robot status
     amr_status_pub_ = nh.advertise<std_msgs::String>("amr_status", 1);
-    carrying_status_sub_ = nh.subscribe<lexxauto_msgs::CarryingStatus>("carrying_status", 1, boost::bind(&MoveBase::carryingStatusCB, this, _1));
-    carrying_object = "unknown";
+    carrying_status_sub_ = nh.subscribe<std_msgs::String>("actuator_status", 1, boost::bind(&MoveBase::carryingStatusCB, this, _1));
+    actuator_state = "unknown";
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
@@ -279,9 +279,9 @@ namespace move_base {
     action_goal_pub_.publish(action_goal);
   }
 
-  void MoveBase::carryingStatusCB(const lexxauto_msgs::CarryingStatus::ConstPtr& msg)
+  void MoveBase::carryingStatusCB(const std_msgs::String::ConstPtr& msg)
   {
-    carrying_object = msg->carrying_object;
+    actuator_state = msg->data;
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
@@ -972,7 +972,7 @@ namespace move_base {
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
-        if(recovery_behavior_enabled_ && carrying_object == "none" && recovery_index_ < recovery_behaviors_.size()){
+        if(recovery_behavior_enabled_ && actuator_state == "LOW" && recovery_index_ < recovery_behaviors_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
@@ -991,7 +991,7 @@ namespace move_base {
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
         }
-        else if(recovery_behavior_enabled_ && (carrying_object == "towing" || carrying_object == "under_cart") && recovery_index_ < recovery_behaviors_carrying_.size()){
+        else if(recovery_behavior_enabled_ && actuator_state == "HIGH" && recovery_index_ < recovery_behaviors_carrying_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 

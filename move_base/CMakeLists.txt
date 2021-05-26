@@ -10,7 +10,6 @@ find_package(catkin REQUIRED
         costmap_2d
         dynamic_reconfigure
         geometry_msgs
-        lexxauto_msgs
         message_generation
         move_base_msgs
         nav_core
@@ -36,7 +35,6 @@ catkin_package(
     CATKIN_DEPENDS
         dynamic_reconfigure
         geometry_msgs
-        lexxauto_msgs
         move_base_msgs
         nav_msgs
         roscpp

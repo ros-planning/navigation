@@ -51,8 +51,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
-#include <nav_msgs/GetPlan.h>
-#include <lexxauto_msgs/CarryingStatus.h>
+#include <nav_msgs/GetPlan.h>\
 
 #include <pluginlib/class_loader.hpp>
 #include <std_srvs/Empty.h>
@@ -159,7 +158,7 @@ namespace move_base {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
-      void carryingStatusCB(const lexxauto_msgs::CarryingStatus::ConstPtr& msg);
+      void carryingStatusCB(const std_msgs::String::ConstPtr& msg);
 
       void planThread();
 
@@ -204,7 +203,7 @@ namespace move_base {
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_, backward_recovery_allowed_, abort_after_recovery_allowed_;
       double oscillation_timeout_, oscillation_distance_;
       double rotate_small_angle_;
-      std::string carrying_object;
+      std::string actuator_state;
 
       MoveBaseState state_;
       RecoveryTrigger recovery_trigger_;
