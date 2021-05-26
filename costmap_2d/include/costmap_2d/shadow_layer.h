@@ -67,7 +67,7 @@ public:
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
   virtual void reset();
-
+  virtual void reinitialize() { reset(); }
   virtual std::shared_ptr<std::vector<geometry_msgs::Point>> getShadowedObjects() {
     return shadowed_objects_;
   }

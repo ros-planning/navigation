@@ -28,7 +28,7 @@
  */
 
 /**
- * @author Daniel Grieneisen
+ * @author Daniel Grieneisen, Sindhura Chayapathy
  * Test harness for StaticLayerWithInflation for Costmap2D
  */
 
@@ -71,9 +71,9 @@ using namespace costmap_2d;
  */
 
 const unsigned int BIGMAP_OBSTACLES = 47790;
-const unsigned int NUM_UPDATES = 100;
-const unsigned int NUM_OBSTACLES = 350;
-const float OBSTRUCTION_SPREAD = 32.0;
+const unsigned int NUM_UPDATES = 3;
+const unsigned int NUM_OBSTACLES = 10;
+const float OBSTRUCTION_SPREAD = 20.0;
 
 /**
  * Time map updates.
@@ -85,7 +85,6 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   addStaticLayer(layers, tf);
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
-  InflationLayer* ilayer = addInflationLayer(layers, tf);
 
   std::vector<geometry_msgs::Point> polygon = setRadii(layers, 1, 1.75, 3);
   layers.setFootprint(polygon);
@@ -105,16 +104,29 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   std::cerr << "Time for second update " << sw.elapsedMicroseconds() << std::endl;
   layers.updateMap(rx, ry, rth);
 
-  // Time 100 map updates
+  // obstacle count == static layer obstacle count
+  Costmap2D* costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES);
+
   std::default_random_engine generator;
   std::uniform_real_distribution<double> distribution(-OBSTRUCTION_SPREAD, OBSTRUCTION_SPREAD);
   sw.reset();
   for (unsigned int k = 0; k < NUM_UPDATES; ++k) {
-    // Add 5 obstacles
+   
     for (unsigned int jj = 0; jj < NUM_OBSTACLES; ++jj)
     {
-      addObservation(olayer, rx + distribution(generator), ry + distribution(generator),
-        0.1, rx, ry);
+      float obs_x;
+      float obs_y;
+      
+      unsigned char cost = costmap_2d::LETHAL_OBSTACLE;
+      while (cost == costmap_2d::LETHAL_OBSTACLE) {
+        obs_x = rx + distribution(generator);
+        obs_y = ry + distribution(generator);
+        unsigned int map_obs_x, map_obs_y;
+        layers.getCostmap()->worldToMap(obs_x, obs_y, map_obs_x, map_obs_y);
+        cost = layers.getCostmap()->getCost(map_obs_x, map_obs_y); 
+      }
+      addObservation(olayer, obs_x, obs_y, 0.1, rx, ry);
     }
     layers.updateMap(rx, ry, rth);
     olayer->clearStaticObservations(true, true);
@@ -122,8 +134,8 @@ TEST(costmap, testTimeMapUpdatesNominal) {
   std::cerr << "Time for next updates: " << (double)sw.elapsedMicroseconds() / NUM_UPDATES << " ms per update" << std::endl;
 
   // Print result and verify the correct number of obstacles
-  Costmap2D* costmap = layers.getCostmap();
-  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_OBSTACLES);
+  costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), NUM_OBSTACLES * NUM_UPDATES + BIGMAP_OBSTACLES);
 }
 
 /**
@@ -154,6 +166,9 @@ TEST(costmap, testTimeMapUpdatesNew) {
   layers.updateMap(rx, ry, rth);
   std::cerr << "Time for second update " << sw.elapsedMicroseconds() << std::endl;
   layers.updateMap(rx, ry, rth);
+  // obstacle count == static layer obstacle count
+  Costmap2D* costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES);
 
   std::default_random_engine generator;
   std::uniform_real_distribution<double> distribution(-OBSTRUCTION_SPREAD, OBSTRUCTION_SPREAD);
@@ -161,8 +176,18 @@ TEST(costmap, testTimeMapUpdatesNew) {
   for (unsigned int k = 0; k < NUM_UPDATES; ++k) {
     for (unsigned int jj = 0; jj < NUM_OBSTACLES; ++jj)
     {
-      addObservation(olayer, rx + distribution(generator), ry + distribution(generator),
-        0.1, rx, ry);
+      float obs_x;
+      float obs_y;
+      
+      unsigned char cost = costmap_2d::LETHAL_OBSTACLE;
+      while (cost == costmap_2d::LETHAL_OBSTACLE) {
+        obs_x = rx + distribution(generator);
+        obs_y = ry + distribution(generator);
+        unsigned int map_obs_x, map_obs_y;
+        layers.getCostmap()->worldToMap(obs_x, obs_y, map_obs_x, map_obs_y);
+        cost = layers.getCostmap()->getCost(map_obs_x, map_obs_y);
+      }
+      addObservation(olayer, obs_x, obs_y, 0.1, rx, ry);
     }
     layers.updateMap(rx, ry, rth);
     olayer->clearStaticObservations(true, true);
@@ -170,10 +195,89 @@ TEST(costmap, testTimeMapUpdatesNew) {
   std::cerr << "Time for next updates " << (double)sw.elapsedMicroseconds() / NUM_UPDATES << " ms per update" << std::endl;
 
   // Print result and verify the correct number of obstacles
-  Costmap2D* costmap = layers.getCostmap();
-  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_OBSTACLES);
+  costmap = layers.getCostmap();
+  ASSERT_EQ(countValues(*costmap, costmap_2d::LETHAL_OBSTACLE), BIGMAP_OBSTACLES + NUM_UPDATES * NUM_OBSTACLES);
 }
 
+/**
+ * Tests the onInitialize method
+ */
+TEST(costmap, StaticLayerWithInflationMapOnInitialize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticLayerWithInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the deactivate method
+ */
+TEST(costmap, StaticLayerWithInflationMapDeactivated){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticInflation map
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  // call deactivate function
+  (*(plugin->begin()))->deactivate();
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 0);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 0);
+}
+
+/**
+ * Tests the deactivate and activate method
+ */
+TEST(costmap, StaticLayerWithInflationMapDeactivateAndActivate){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+  (*(plugin->begin()))->deactivate();
+  (*(plugin->begin()))->activate();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reset method
+ */
+TEST(costmap, StaticLayerWithInflationMapReset){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticLayerWithInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+
+  (*(plugin->begin()))->reset();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reinitialize method
+ */
+TEST(costmap, StaticLayerWithInflationMapReinitialize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayerWithInflation(layers, tf);  // This adds the StaticLayerWithInflation map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* plugin = layers.getPlugins();
+
+  (*(plugin->begin()))->reinitialize();
+
+  ASSERT_EQ((*(plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "inflation_tests");

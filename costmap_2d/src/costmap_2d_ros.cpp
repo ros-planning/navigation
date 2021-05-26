@@ -539,6 +539,19 @@ void Costmap2DROS::resetLayers()
   }
 }
 
+void Costmap2DROS::reinitializeLayers()
+{
+  Costmap2D* top = layered_costmap_->getCostmap();
+  top->resetMap(0, 0, top->getSizeInCellsX(), top->getSizeInCellsY());
+  std::vector < boost::shared_ptr<CostmapLayer> > *plugins = layered_costmap_->getPlugins();
+  for (vector<boost::shared_ptr<CostmapLayer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+      ++plugin)
+  {
+    ROS_INFO("plugin name is %s",(*plugin)->getName().c_str());
+    (*plugin)->reinitialize();
+  }
+}
+
 bool Costmap2DROS::getRobotPose(tf::Stamped<tf::Pose>& global_pose) const
 {
   global_pose.setIdentity();

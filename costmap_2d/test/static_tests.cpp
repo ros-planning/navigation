@@ -39,12 +39,91 @@
 #include <costmap_2d/observation_buffer.h>
 #include <costmap_2d/testing_helper.h>
 #include <set>
+#include <vector>
 #include <gtest/gtest.h>
 #include <tf/transform_listener.h>
 
 using namespace costmap_2d;
 
+/**
+ * Tests On Initialize method
+ */
+TEST(costmap, StaticMapOnInitialize){
 
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayer(layers, tf);  // This adds the static map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* static_plugin = layers.getPlugins();
+  ASSERT_EQ((*(static_plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the deactivate method
+ */
+TEST(costmap, StaticMapDeactivated){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayer(layers, tf);  // This adds the static map
+  std::vector<boost::shared_ptr<CostmapLayer>>* static_plugin = layers.getPlugins();
+  // call deactivate function
+  (*(static_plugin->begin()))->deactivate();
+  ASSERT_EQ((*(static_plugin->begin()))->layerInitialized(), 0);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 0);
+}
+
+/**
+ * Tests the deactivate and activate method
+ */
+TEST(costmap, StaticMapDeactivateAndActivate){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayer(layers, tf);  // This adds the static map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* static_plugin = layers.getPlugins();
+  (*(static_plugin->begin()))->deactivate();
+  (*(static_plugin->begin()))->activate();
+
+  ASSERT_EQ((*(static_plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reset method
+ */
+TEST(costmap, StaticMapReset){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayer(layers, tf);  // This adds the static map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* static_plugin = layers.getPlugins();
+
+  (*(static_plugin->begin()))->reset();
+
+  ASSERT_EQ((*(static_plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
+
+/**
+ * Tests the reinitialize method
+ */
+TEST(costmap, StaticMapReinitialize){
+
+  tf::TransformListener tf;
+  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  addStaticLayer(layers, tf);  // This adds the static map
+
+  std::vector<boost::shared_ptr<CostmapLayer>>* static_plugin = layers.getPlugins();
+
+  (*(static_plugin->begin()))->reinitialize();
+
+  ASSERT_EQ((*(static_plugin->begin()))->layerInitialized(), 1);
+  ASSERT_EQ(layers.areAllLayersInitialized(), 1);
+}
 /**
  * Tests the reset method
  *
@@ -128,7 +207,6 @@ TEST(costmap, testResetForStaticMap){
 
   // Now if we reset the cost map, we should have our map go back to being completely occupied
   map.resetMapOutsideWindow(wx, wy, 0.0, 0.0);
-
   //We should now go back to everything being occupied
   hitCount = 0;
   for(unsigned int i=0; i < 10; ++i){
@@ -138,7 +216,6 @@ TEST(costmap, testResetForStaticMap){
     }
   }
   ASSERT_EQ(hitCount, 100);
-
 }
 
 /** Test for copying a window of a costmap *
@@ -184,7 +261,7 @@ TEST(costmap, testWindowCopy){
 
 }
 
-//test for updating costmaps with static data
+test for updating costmaps with static data
 TEST(costmap, testFullyContainedStaticMapUpdate){
   Costmap2D map(5, 5, RESOLUTION, 0.0, 0.0, ROBOT_RADIUS, ROBOT_RADIUS, ROBOT_RADIUS,
       10.0, MAX_Z, 10.0, 25, MAP_5_BY_5, THRESHOLD);
@@ -321,11 +398,12 @@ TEST(costmap, testStaticMap){
   ASSERT_EQ(wy, 9.5);
 }
 
-//*/
+*/
 
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "obstacle_tests");
+  
+  ros::init(argc, argv, "static_tests");
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
