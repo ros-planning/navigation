@@ -126,12 +126,12 @@ class MapServer
       if (loadMapFromYaml(request.map_url))
       {
         response.result = response.RESULT_SUCCESS;
+        ROS_INFO("Changed map to %s", request.map_url.c_str());
       }
       else
       {
         response.result = response.RESULT_UNDEFINED_FAILURE;
       }
-      ROS_INFO("Changed map to %s", request.map_url.c_str());
       return true;
     }
 
