@@ -93,12 +93,14 @@ if(CATKIN_ENABLE_TESTING)
     ${SDL_IMAGE_LIBRARIES}
   )
 
+  find_package(roslib REQUIRED)
   add_executable(rtest test/rtest.cpp test/test_constants.cpp)
   add_dependencies(rtest ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
   add_dependencies(tests rtest)
   target_link_libraries( rtest
       ${GTEST_LIBRARIES}
       ${catkin_LIBRARIES}
+      ${roslib_LIBRARIES}
   )
 
   # This has to be done after we've already built targets, or catkin variables get borked
