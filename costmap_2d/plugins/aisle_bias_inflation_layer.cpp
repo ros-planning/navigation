@@ -90,6 +90,7 @@ void AisleBiasInflationLayer::onInitialize()
 
   matchSize();
   need_reinflation_ = true;
+  layer_initialized_ = true;
 }
 
 void AisleBiasInflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)

@@ -242,6 +242,7 @@ void ObstructionLayer::onInitialize()
 
   dsrv_ = NULL;
   setupDynamicReconfigure(nh);
+  layer_initialized_ = true;
 }
 
 void ObstructionLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
@@ -864,6 +865,7 @@ void ObstructionLayer::activate()
     if (observation_buffers_[i])
       observation_buffers_[i]->resetLastUpdated();
   }
+  layer_initialized_ = true;
 }
 void ObstructionLayer::deactivate()
 {
@@ -872,6 +874,7 @@ void ObstructionLayer::deactivate()
     if (observation_subscribers_[i] != NULL)
       observation_subscribers_[i]->unsubscribe();
   }
+  layer_initialized_ = false;
 }
 
 void ObstructionLayer::updateRaytraceBounds(double ox, double oy, double wx, double wy, double range,

@@ -80,8 +80,8 @@ void StaticLayer::onInitialize()
   lethal_threshold_ = std::max(std::min(temp_lethal_threshold, 100), 0);
   unknown_cost_value_ = temp_unknown_cost_value;
 
-  // Only resubscribe if topic has changed
-  if (map_sub_.getTopic() != ros::names::resolve(map_topic))
+  // resubscribe if it is unsubscribed or the map topic has changed
+  if (!map_sub_ || map_sub_.getTopic() != ros::names::resolve(map_topic))
   {
     // we'll subscribe to the latched topic that the map server uses
     ROS_INFO("Requesting the map...");
@@ -119,6 +119,7 @@ void StaticLayer::onInitialize()
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
       &StaticLayer::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+  layer_initialized_ = true;
 }
 
 void StaticLayer::reconfigureCB(costmap_2d::GenericPluginConfig &config, uint32_t level)
@@ -212,7 +213,6 @@ void StaticLayer::incomingMap(const nav_msgs::OccupancyGridConstPtr& new_map)
   height_ = size_y_;
   map_received_ = true;
   has_updated_data_ = true;
-
   // shutdown the map subscrber if firt_map_only_ flag is on
   if (first_map_only_)
   {
@@ -247,6 +247,7 @@ void StaticLayer::activate()
 
 void StaticLayer::deactivate()
 {
+  layer_initialized_ = false;
   map_sub_.shutdown();
   if (subscribe_to_updates_)
     map_update_sub_.shutdown();
@@ -254,6 +255,7 @@ void StaticLayer::deactivate()
 
 void StaticLayer::reset()
 {
+  layer_initialized_ = false;
   if (first_map_only_)
   {
     has_updated_data_ = true;
@@ -261,6 +263,19 @@ void StaticLayer::reset()
   else
   {
     onInitialize();
+  }
+}
+
+void StaticLayer::reinitialize()
+{
+  if (first_map_only_)
+  {
+    has_updated_data_ = true;
+  }
+  else
+  {
+    deactivate();
+    activate();
   }
 }
 
