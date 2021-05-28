@@ -94,8 +94,8 @@ void InflationLayer::onInitialize()
       dsrv_->setCallback(cb);
     }
   }
-
   matchSize();
+  layer_initialized_ = true;
 }
 
 void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)

@@ -260,6 +260,17 @@ bool LayeredCostmap::isCurrent()
   return current_;
 }
 
+bool LayeredCostmap::areAllLayersInitialized() {
+  bool initialized = true;
+   for (vector<boost::shared_ptr<CostmapLayer> >::iterator plugin = plugins_.begin(); plugin != plugins_.end();
+      ++plugin)
+  {
+    initialized = initialized && (*plugin)->layerInitialized(); 
+  }
+
+  return initialized;
+}
+
 void LayeredCostmap::setFootprint(const std::vector<geometry_msgs::Point>& footprint_spec)
 {
   footprint_ = footprint_spec;
