@@ -70,7 +70,6 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     stop_updates_(false),
     initialized_(true),
     stopped_(false),
-    robot_stopped_(false),
     map_update_thread_(NULL),
     last_publish_(0),
     plugin_loader_("costmap_2d", "costmap_2d::Layer"),
@@ -78,8 +77,6 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     dsrv_(NULL),
     footprint_padding_(0.0)
 {
-  // Initialize old pose with something
-  tf2::toMsg(tf2::Transform::getIdentity(), old_pose_.pose);
 
   ros::NodeHandle private_nh("~/" + name);
   ros::NodeHandle g_nh;
@@ -167,10 +164,6 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   initialized_ = true;
   stopped_ = false;
 
-  // Create a time r to check if the robot is moving
-  robot_stopped_ = false;
-  timer_ = private_nh.createTimer(ros::Duration(.1), &Costmap2DROS::movementCB, this);
-
   dsrv_ = new dynamic_reconfigure::Server<Costmap2DConfig>(ros::NodeHandle("~/" + name));
   dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1,
                                                                               _2);
@@ -184,8 +177,6 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 
 Costmap2DROS::~Costmap2DROS()
 {
-  timer_.stop();
-
   map_update_thread_shutdown_ = true;
   if (map_update_thread_ != NULL)
   {
@@ -416,23 +407,6 @@ void Costmap2DROS::movementCB(const ros::TimerEvent &event)
   if (!getRobotPose(new_pose))
   {
     ROS_WARN_THROTTLE(1.0, "Could not get robot pose, cancelling reconfiguration");
-    robot_stopped_ = false;
-  }
-  // make sure that the robot is not moving
-  else
-  {
-    old_pose_ = new_pose;
-
-    robot_stopped_ = (tf2::Vector3(old_pose_.pose.position.x, old_pose_.pose.position.y,
-                                   old_pose_.pose.position.z).distance(tf2::Vector3(new_pose.pose.position.x,
-                                       new_pose.pose.position.y, new_pose.pose.position.z)) < 1e-3) &&
-                     (tf2::Quaternion(old_pose_.pose.orientation.x,
-                                      old_pose_.pose.orientation.y,
-                                      old_pose_.pose.orientation.z,
-                                      old_pose_.pose.orientation.w).angle(tf2::Quaternion(new_pose.pose.orientation.x,
-                                          new_pose.pose.orientation.y,
-                                          new_pose.pose.orientation.z,
-                                          new_pose.pose.orientation.w)) < 1e-3);
   }
 }
 
