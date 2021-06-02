@@ -40,6 +40,7 @@
 #include <base_local_planner/geometry_math_helpers.h>
 #include <base_local_planner/StaticObjects.h>
 #include <srslib_framework/chuck/ChuckChassisGenerations.hpp>
+#include <srslib_framework/chuck/ChuckTopics.hpp>
 #include <srslib_framework/math/AngleMath.hpp>
 #include <srslib_framework/ros/message/VelocityMessageFactory.hpp>
 #include <tf/transform_datatypes.h>
@@ -53,16 +54,15 @@ namespace base_local_planner
     configClient_ = std::make_shared<dynamic_reconfigure::Client<StaticObjectSpeedLimiterConfig>>(name + "/staticObject");
     configClient_->setConfigurationCallback(boost::bind(&StaticObjectSpeedLimiter::reconfigure, this, _1));
 
-    nh_ = new ros::NodeHandle();
+    nh_ = std::make_shared<ros::NodeHandle>();
 
-    std::string inTopic = "/sensors/odometry/velocity/cmd_unfiltered";
     subscriber_ =
-        nh_->subscribe<geometry_msgs::Twist>(inTopic, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
+        nh_->subscribe<geometry_msgs::Twist>(srs::ChuckTopics::driver::ODOMETRY_CMD_VELOCITY_UNFILTERED, 10, boost::bind(&StaticObjectSpeedLimiter::msgCallback, this, _1));
 
     chassis_generation_sub_ =
-        nh_->subscribe("/info/chassis_config", 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
+        nh_->subscribe(srs::ChuckTopics::driver::BRAINSTEM_CHASSIS_CONFIG, 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 
-    hardware_version_sub_ = nh_->subscribe("/drivers/brainstem/state/ce_realtime_data", 10,
+    hardware_version_sub_ = nh_->subscribe(srs::ChuckTopics::driver::BRAINSTEM_CE_REAL_TIME_DATA, 10,
                                            &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 
     ros::NodeHandle private_nh(name + "/staticObject");
@@ -96,13 +96,10 @@ namespace base_local_planner
     max_allowed_angular_vel = max_angular_velocity_;
     if (forceEnabled_ == false && (params_.enabled == false || enabledFirmwareVersion_ == false))
     {
-      if (test_data_ == nullptr || test_data_->enabledfirmwareVersion == false)
-      {
-        return true;
-      }
+      return true;
     }
 
-    if (const char *env_var = std::getenv("ROSEVN_STATICOBJECTLIMITERENABLED"))
+    if (const char *env_var = std::getenv("ROSEVN_STATIC_OBJECT_LIMITER_ENABLED"))
     {
       std::string val(env_var);
 
@@ -134,13 +131,6 @@ namespace base_local_planner
     float currAngularVel = fabs(velocity_.angular);
     bool flipAngular = velocity_.angular < 0.0;
 
-    if (test_data_ != nullptr)
-    {
-      currLinearVel = test_data_->velocity.linear;
-      currAngularVel = test_data_->velocity.angular;
-      flipAngular = test_data_->velocity.angular < 0.0;
-    }
-
     /*
 Get the CE stopping path edges to get the distance from the static object map. This would then test against the
 configured distances. Doing a non-linear mapping versus distance with more slowing the closer the static object is. This
@@ -150,7 +140,7 @@ Chuck will cycle between speeding up and slowing down.
 
     tf::Stamped<tf::Pose> current_pose;
 
-    if (test_data_ == nullptr && !getCurrentPose(current_pose))
+    if (!getCurrentPose(current_pose))
     {
       ROS_WARN_THROTTLE(1.0, "No pose in static object speed limiter");
       return false;
@@ -177,10 +167,6 @@ Chuck will cycle between speeding up and slowing down.
 
     geometry_msgs::Point left, right;
     srs::ChuckChassisGenerations::ChuckChassisType chassis = chassis_generation_;
-    if (test_data_ != nullptr)
-    {
-      chassis = test_data_->chassis_generation_;
-    }
 
     // The plane tables indicate left right pairs of x,y coords
     if (chassis == srs::ChuckChassisGenerations::ChuckChassisType::CHUCK5_PLUS)
@@ -221,42 +207,36 @@ Chuck will cycle between speeding up and slowing down.
 
     double distance_from_static_left = 0.0;
     double distance_from_static_right = 0.0;
-    if (test_data_ != nullptr)
-    {
-      distance_from_static_left = test_data_->distance_from_static_left;
-      distance_from_static_right = test_data_->distance_from_static_right;
-    }
-    else
-    {
-      const double resolution = costmap_->getCostmap()->getResolution();
-      // Transform the points based on the chucks position and orientation
-      geometry_msgs::PoseStamped pose;
-      tf::poseStampedTFToMsg(current_pose, pose);
-      double pose_yaw = tf::getYaw(pose.pose.orientation) + srs::AngleMath::deg2Rad<double>(-90.0);
-      double cos_yaw = cos(pose_yaw);
-      double sin_yaw = sin(pose_yaw);
 
-      double leftX = left.x;
-      double leftY = left.y;
-      double rightX = right.x;
-      double rightY = right.y;
+    const double resolution = costmap_->getCostmap()->getResolution();
+    // Transform the points based on the chucks position and orientation
+    geometry_msgs::PoseStamped pose;
+    tf::poseStampedTFToMsg(current_pose, pose);
+    double pose_yaw = tf::getYaw(pose.pose.orientation) + srs::AngleMath::deg2Rad<double>(-90.0);
+    double cos_yaw = cos(pose_yaw);
+    double sin_yaw = sin(pose_yaw);
 
-      left.x = pose.pose.position.x + ((cos_yaw * leftX) - (sin_yaw * leftY));
-      left.y = pose.pose.position.y + ((cos_yaw * leftY) + (sin_yaw * leftX));
-      right.x = pose.pose.position.x + ((cos_yaw * rightX) - (sin_yaw * rightY));
-      right.y = pose.pose.position.y + ((cos_yaw * rightY) + (sin_yaw * rightX));
+    double leftX = left.x;
+    double leftY = left.y;
+    double rightX = right.x;
+    double rightY = right.y;
 
-      double px = left.x;
-      double py = left.y;
-      distance_from_static_left = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
+    left.x = pose.pose.position.x + ((cos_yaw * leftX) - (sin_yaw * leftY));
+    left.y = pose.pose.position.y + ((cos_yaw * leftY) + (sin_yaw * leftX));
+    right.x = pose.pose.position.x + ((cos_yaw * rightX) - (sin_yaw * rightY));
+    right.y = pose.pose.position.y + ((cos_yaw * rightY) + (sin_yaw * rightX));
 
-      px = right.x;
-      py = right.y;
-      distance_from_static_right = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
+    double px = left.x;
+    double py = left.y;
+    distance_from_static_left = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
 
-      distance_from_static_left *= resolution;
-      distance_from_static_right *= resolution;
-    }
+    px = right.x;
+    py = right.y;
+    distance_from_static_right = costmap_->getLayeredCostmap()->getDistanceFromStaticMap(px, py);
+
+    distance_from_static_left *= resolution;
+    distance_from_static_right *= resolution;
+
 
     if (currLinearVel >= params_.min_linear_velocity_test_speed &&
         currLinearVel <= params_.max_linear_velocity_test_speed)
@@ -343,8 +323,6 @@ Chuck will cycle between speeding up and slowing down.
       return result;
     }
 
-    double result_speed = data.speed_;
-
     double size_delta = (data.speed_ - data.min_test_velocity_) / (data.max_test_velocity_ - data.min_test_velocity_);
     size_delta *= (data.max_test_distance_ - data.min_test_distance_);
 
@@ -362,31 +340,8 @@ Chuck will cycle between speeding up and slowing down.
       test_size = std::max(std::min(data.max_test_distance_, test_size), data.min_test_distance_);
     }
 
-    if (data.dist_left_ >= data.min_test_distance_ && data.dist_left_ <= data.max_test_distance_)
-    {
-      if (data.dist_left_ <= test_size)
-      {
-        double speed_delta = twoLevelInterpolation(test_size, data.min_test_distance_, data.max_test_distance_, data.min_reduction_,
-                                                   data.max_reduction_);
-        if ((data.speed_ - speed_delta >= data.min_velocity_) && (result_speed > data.speed_ - speed_delta))
-        {
-          result_speed = data.speed_ - speed_delta;
-        }
-      }
-    }
-
-    if (data.dist_right_ >= data.min_test_distance_ && data.dist_right_ <= data.max_test_distance_)
-    {
-      if (data.dist_right_ <= test_size)
-      {
-        double speed_delta = twoLevelInterpolation(test_size, data.min_test_distance_, data.max_test_distance_, data.min_reduction_,
-                                                   data.max_reduction_);
-        if ((data.speed_ - speed_delta >= data.min_velocity_) && (result_speed > data.speed_ - speed_delta))
-        {
-          result_speed = data.speed_ - speed_delta;
-        }
-      }
-    }
+    double result_speed = calculateResultSpeed(data, data.dist_left_, test_size);
+    result_speed = std::min(result_speed, calculateResultSpeed(data, data.dist_right_, test_size));
 
     if (result_speed > data.min_velocity_ && result_speed <= data.speed_)
     {
@@ -397,27 +352,22 @@ Chuck will cycle between speeding up and slowing down.
     return result;
   }
 
-  /////  TESTING
-  void StaticObjectSpeedLimiter_TEST::getLimits_Test(double &max_allowed_linear_vel, double &max_allowed_angular_vel)
-  {
-    assert(speed_limiter_ != nullptr);
-    max_allowed_linear_vel = speed_limiter_->max_linear_velocity_;
-    max_allowed_angular_vel = speed_limiter_->max_angular_velocity_;
-  }
+  double StaticObjectSpeedLimiter::calculateResultSpeed(const SpeedLimiterData &data, double test_dist, double test_size) const {
+    if (test_dist >= data.min_test_distance_ && test_dist <= data.max_test_distance_)
+    {
+      if (test_dist <= test_size)
+      {
+        double speed_delta = twoLevelInterpolation(test_size, data.min_test_distance_, data.max_test_distance_, data.min_reduction_,
+                                                   data.max_reduction_);
+        const double output_speed = data.speed_ - speed_delta;
+        if ((output_speed >= data.min_velocity_) && (data.speed_ > output_speed))
+        {
+          return output_speed;
+        }
+      }
+    }
 
-  bool StaticObjectSpeedLimiter_TEST::calculateLimits_Test(const SpeedLimiterTestData *data,
-                                                           double &max_allowed_linear_vel,
-                                                           double &max_allowed_angular_vel)
-  {
-    assert(speed_limiter_ != nullptr);
-    assert(speed_limiter_->test_data_ == nullptr);
-    assert(data != nullptr);
-
-    speed_limiter_->test_data_ = data;
-    const bool result = speed_limiter_->calculateLimits(max_allowed_linear_vel, max_allowed_angular_vel);
-    speed_limiter_->test_data_ = nullptr;
-
-    return result;
+    return data.speed_;
   }
 
 } /* namespace base_local_planner */
