@@ -269,12 +269,6 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
                 "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
         return false;
     }
-    if(old_navfn_behavior_){
-        goal_x = goal_x_i;
-        goal_y = goal_y_i;
-    }else{
-        worldToMap(wx, wy, goal_x, goal_y);
-    }
 
     //clear the starting cell within the costmap because we know it can't be an obstacle
     clearRobotCell(start, start_x_i, start_y_i);
@@ -290,8 +284,68 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     if(outline_map_)
         outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
 
-    bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
-                                                    nx * ny * 2, potential_array_);
+    if(old_navfn_behavior_){
+        goal_x = goal_x_i;
+        goal_y = goal_y_i;
+    }else{
+        worldToMap(wx, wy, goal_x, goal_y);
+    }
+
+    // if tolerance above resolution of the costmap, let's search in a square 2 * tolerance large
+    // for an alternative valid point, starting from the closest to the original goal
+    // TODO: efficiency improvement, use a spiral iterator https://github.com/ANYbotics/grid_map/blob/master/grid_map_demos/src/IteratorsDemo.cpp
+    bool found_legal = false;
+    geometry_msgs::PoseStamped updated_goal = goal;
+    if (tolerance > costmap_->getResolution()){
+      std::vector< std::pair<double, int> > cells_indices_within_tolerance;
+
+      unsigned int index_origin = costmap_->getIndex(goal_x_i, goal_y_i);
+      cells_indices_within_tolerance.push_back({0.0,index_origin});
+
+      //Iterate through tolerance square
+      int x_min = (int)goal_x_i - (int)costmap_->cellDistance(tolerance);
+      int x_max = (int)goal_x_i + (int)costmap_->cellDistance(tolerance);
+      int y_min = (int)goal_y_i - (int)costmap_->cellDistance(tolerance);
+      int y_max = (int)goal_y_i + (int)costmap_->cellDistance(tolerance);
+
+      for (int x_cell = x_min; x_cell <= x_max; x_cell++) {
+        for (int y_cell = y_min; y_cell <= y_max; y_cell++) {
+          //Protect against out of map cells and skip lethal cells
+          if (x_cell < 0 || y_cell < 0 || x_cell > costmap_->getSizeInCellsX() || y_cell > costmap_->getSizeInCellsY() ){
+            ROS_DEBUG_STREAM("invalid cell coordinate, skipping");
+          }else if (costmap_->getCost(x_cell, y_cell) != costmap_2d::LETHAL_OBSTACLE){
+            unsigned int index_cell = costmap_->getIndex(x_cell, y_cell);
+            double cell_distance_to_goal = sqrt(pow(double(goal_x_i) - x_cell,2)+pow(double(goal_y_i) - y_cell,2));
+            cells_indices_within_tolerance.push_back({cell_distance_to_goal,index_cell});
+          }
+        }
+      }
+
+      //Sort cell indices by distance
+      std::sort(cells_indices_within_tolerance.begin(), cells_indices_within_tolerance.end());
+
+      //find closest valid goal to original goal
+      for (int i=0 ; i < cells_indices_within_tolerance.size(); i++) {
+        unsigned int tol_cell_x, tol_cell_y;
+        costmap_->indexToCells(cells_indices_within_tolerance[i].second, tol_cell_x , tol_cell_y);
+        if (planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, tol_cell_x, tol_cell_y,
+                                            nx * ny * 2, potential_array_)){
+            goal_x = tol_cell_x;
+            goal_y = tol_cell_y;
+            goal_x_i = tol_cell_x;
+            goal_y_i = tol_cell_y;
+            double map_x, map_y;
+            costmap_->mapToWorld(goal_x, goal_y, map_x, map_y);
+            updated_goal.pose.position.x = map_x;
+            updated_goal.pose.position.y = map_y;
+            found_legal = true;
+            break;
+        }
+      }
+    }else {
+      found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
+                                                      nx * ny * 2, potential_array_);
+    }
 
     if(!old_navfn_behavior_)
         planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
@@ -300,10 +354,10 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     if (found_legal) {
         //extract the plan
-        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
+        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, updated_goal, plan)) {
             //make sure the goal we push on has the same timestamp as the rest of the plan
-            geometry_msgs::PoseStamped goal_copy = goal;
-            goal_copy.header.stamp = ros::Time::now();
+            geometry_msgs::PoseStamped goal_copy = updated_goal;
+            goal_copy.header.stamp = plan.end()->header.stamp;
             plan.push_back(goal_copy);
         } else {
             ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
