@@ -665,7 +665,7 @@ private:
   static thread_local unsigned int tls_last_layered_costmap_update_number_;
   static thread_local Costmap3DQuery* tls_last_instance_;
   /// Indexed by QueryRegion
-  static thread_local DistanceCacheEntry* tls_last_cache_entries_[MAX];
+  static thread_local DistanceCacheEntry* tls_last_cache_entries_[MAX][OBSTACLES_MAX];
   /**
    * The distance cache allows us to find a very good distance guess quickly.
    * The cache memorizes to a hash table for a pose rounded to the number of
