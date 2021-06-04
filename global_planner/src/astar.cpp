@@ -89,7 +89,9 @@ void AStarExpansion::add(unsigned char* costs, float* potential, float prev_pote
 
     potential[next_i] = p_calc_->calculatePotential(potential, costs[next_i] + neutral_cost_, next_i, prev_potential);
     int x = next_i % nx_, y = next_i / nx_;
-    float distance = abs(end_x - x) + abs(end_y - y);
+
+    //float distance = abs(end_x - x) + abs(end_y - y);
+    float distance = sqrt((end_x - x)*(end_x - x) + (end_y - y)*(end_y - y));	//Euclidean Distance
 
     queue_.push_back(Index(next_i, potential[next_i] + distance * neutral_cost_));
     std::push_heap(queue_.begin(), queue_.end(), greater1());

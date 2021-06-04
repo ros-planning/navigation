@@ -115,7 +115,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
             p_calc_ = new PotentialCalculator(cx, cy);
 
         bool use_dijkstra;
-        private_nh.param("use_dijkstra", use_dijkstra, true);
+        private_nh.param("use_dijkstra", use_dijkstra, false);
         if (use_dijkstra)
         {
             DijkstraExpansion* de = new DijkstraExpansion(p_calc_, cx, cy);
