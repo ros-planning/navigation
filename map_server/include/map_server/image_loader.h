@@ -35,6 +35,9 @@
 
 #include "nav_msgs/GetMap.h"
 
+namespace map_server
+{
+
 /** Map mode
  *  Default: TRINARY -
  *      value >= occ_th - Occupied (100)
@@ -49,15 +52,11 @@
  *  RAW -
  *      value = value
  */
-enum MapMode {TRINARY, SCALE, RAW};
-
-namespace map_server
-{
+enum class MapMode {TRINARY, SCALE, RAW};
 
 /** Read the image from file and fill out the resp object, for later
  * use when our services are requested.
  *
- * @param resp The map wil be written into here
  * @param fname The image file to read from
  * @param res The resolution of the map (gets stored in resp)
  * @param negate If true, then whiter pixels are occupied, and blacker
@@ -66,12 +65,17 @@ namespace map_server
  * @param free_th Threshold below which pixels are free
  * @param origin Triple specifying 2-D pose of lower-left corner of image
  * @param mode Map mode
+ * @param resp The map wil be written into here
  * @throws std::runtime_error If the image file can't be loaded
  * */
-void loadMapFromFile(nav_msgs::GetMap::Response* resp,
-                     const char* fname, double res, bool negate,
-                     double occ_th, double free_th, double* origin,
-                     MapMode mode=TRINARY);
+void loadMapFromFile(const std::string& fname, 
+                     const double res, 
+                     const bool negate,
+                     const double occ_th, 
+                     const double free_th, 
+                     const std::array<double, 3>& origin,
+                     const MapMode mode,
+                     nav_msgs::GetMap::Response& resp);
 }
 
 #endif
