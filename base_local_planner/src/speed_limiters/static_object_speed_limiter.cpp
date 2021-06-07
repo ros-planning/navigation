@@ -63,7 +63,7 @@ namespace base_local_planner
         nh_->subscribe(srs::ChuckTopics::driver::BRAINSTEM_CHASSIS_CONFIG, 10, &StaticObjectSpeedLimiter::chassisConfigCallback, this);
 
     hardware_version_sub_ = nh_->subscribe(srs::ChuckTopics::driver::BRAINSTEM_CE_REAL_TIME_DATA, 10,
-                                           &StaticObjectSpeedLimiter::chassisConfigCallback, this);
+                                           &StaticObjectSpeedLimiter::ceSensorArrayCallback, this);
 
     ros::NodeHandle private_nh(name + "/staticObject");
     staticObject_pub = private_nh.advertise<base_local_planner::StaticObjects>("staticObject_info", 5, true);
