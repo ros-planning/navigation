@@ -245,7 +245,7 @@ Chuck will cycle between speeding up and slowing down.
           calculateAllowedLinearSpeed(distance_from_static_left, distance_from_static_right, max_allowed_linear_vel);
       if (result.limiting)
       {
-        if (result.speed < currLinearVel)
+        if (result.speed < max_allowed_linear_vel)
         {
           cachedMaxLinearVelocity_ = result.speed;
           max_allowed_linear_vel = result.speed;
@@ -260,7 +260,7 @@ Chuck will cycle between speeding up and slowing down.
           calculateAllowedAngularSpeed(distance_from_static_left, distance_from_static_right, max_allowed_angular_vel);
       if (result.limiting)
       {
-        if (result.speed < currAngularVel)
+        if (result.speed < max_allowed_angular_vel)
         {
           cachedMaxAngularVelocity_ = result.speed;
           max_allowed_angular_vel = result.speed;
@@ -357,7 +357,7 @@ Chuck will cycle between speeding up and slowing down.
     {
       if (test_dist <= test_size)
       {
-        double speed_delta = twoLevelInterpolation(test_size, data.min_test_distance_, data.max_test_distance_, data.min_reduction_,
+        double speed_delta = twoLevelInterpolation(test_dist, data.min_test_distance_, data.max_test_distance_, data.min_reduction_,
                                                    data.max_reduction_);
         const double output_speed = data.speed_ - speed_delta;
         if ((output_speed >= data.min_velocity_) && (data.speed_ > output_speed))
