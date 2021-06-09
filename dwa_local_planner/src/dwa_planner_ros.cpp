@@ -221,6 +221,12 @@ namespace dwa_local_planner {
     cmd_vel.linear.x = drive_cmds.pose.position.x;
     cmd_vel.linear.y = drive_cmds.pose.position.y;
     cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
+    
+    base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+    double dwa_curve_slow_down_param = 0.5;
+    if (cmd_vel.angular.z > limits.max_vel_theta*0.8 && cmd_vel.linear.x > limits.max_vel_trans*0.8 ) {
+            cmd_vel.linear.x *= dwa_curve_slow_down_param/(cmd_vel.angular.z*5.0);
+    }
 
     //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
