@@ -80,7 +80,7 @@ namespace navfn {
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
       private_nh.param("default_tolerance", default_tolerance_, 0.0);
-      private_nh.param("plan_lenght_threshold", plan_lenght_threshold_, 50.0);
+      private_nh.param("plan_length_threshold", plan_length_threshold_, 0.0);
 
       make_plan_srv_ =  private_nh.advertiseService("make_plan", &NavfnROS::makePlanService, this);
 
@@ -417,7 +417,7 @@ namespace navfn {
       mapToWorld(x[i], y[i], world_x, world_y);
 
       if (i < len - 1){
-        path_len += sqrt(pow(world_x - prev_wx, 2.0) + pow(world_y - prev_wy, 2.0));
+        path_len += hypot(world_x-prev_wx, world_y-prev_wy);
       }
 
       prev_wx = world_x;
@@ -436,7 +436,7 @@ namespace navfn {
       plan.push_back(pose);
     }
         
-    if (path_len > plan_lenght_threshold_){
+    if (plan_length_threshold_ > 0.0 && path_len > plan_length_threshold_){
       plan.clear();
     }
 
