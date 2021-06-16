@@ -2,7 +2,7 @@
  *
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2016, 6 River Systems
+ *  Copyright (c) 2021, 6 River Systems
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,71 +32,44 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * Author: Daniel Grieneisen
+ * Author: Thomas Preisner
  *********************************************************************/
 
-#ifndef SPEED_LIMITER_H_
-#define SPEED_LIMITER_H_
 
-#include <costmap_2d/costmap_2d_ros.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <tf/tf.h>
-#include <dynamic_reconfigure/client.h>
+#ifndef STATIC_OBJECT_SPEED_LIMITER_TEST_H_
+#define STATIC_OBJECT_SPEED_LIMITER_TEST_H_
+#include <gtest/gtest.h>
+#include <base_local_planner/speed_limiters/static_object_speed_limiter.h>
 
-namespace base_local_planner {
-
-/**
- * This class limits the velocity of the robot
+namespace base_local_planner
+{
+  /**
+ * This class provides a test wrapper for the StaticObjectSpeedLimiter class
  */
-class SpeedLimiter {
-public:
-  /**
-   * Constructor
-   */
-  SpeedLimiter(costmap_2d::Costmap2DROS* costmap) : costmap_(costmap) {};
+  class StaticObjectSpeedLimiter_TEST : public StaticObjectSpeedLimiter
+  {
+  public:
+    struct SpeedLimiterTestData
+    {
+      bool enabledfirmwareVersion = true;
+      srs::Velocity<> velocity;
+      double distance_from_static_left = 0.0;
+      double distance_from_static_right = 0.0;
+      srs::ChuckChassisGenerations::ChuckChassisType chassis_generation_ =
+          srs::ChuckChassisGenerations::ChuckChassisType::INVALID;
+    };
 
-  /**
-   * Destructor
-   */
-  virtual ~SpeedLimiter() {
-    // NOTE: costmap_ is not deleted here.  Responsibility for deletion is in move_base
-  }
+    StaticObjectSpeedLimiter_TEST(costmap_2d::Costmap2DROS *costmap) : StaticObjectSpeedLimiter(costmap){};
 
-  virtual void initialize(std::string name) = 0;
+    void getLimits_Test(double &max_allowed_linear_vel, double &max_allowed_angular_vel);
 
-  /**
-   * Calculate limits
-   * @return true if preparations were successful
-   */
-  virtual bool calculateLimits(double& max_allowed_linear_vel, double& max_allowed_angular_vel) = 0;
+    bool calculateLimits_Test(const SpeedLimiterTestData *data, double &max_allowed_linear_vel, double &max_allowed_angular_vel);
 
-  virtual std::string getName() = 0;
-  
-  void setPlan(const std::vector<geometry_msgs::PoseStamped>& plan) {
-    plan_ = plan;
+    virtual bool calculateLimits(double &max_allowed_linear_vel, double &max_allowed_angular_vel) override;
+
+  private:
+    const SpeedLimiterTestData* test_data_ = nullptr;
   };
-
-  void setMaxLimits(double linear, double angular) {
-    max_linear_velocity_ = linear;
-    max_angular_velocity_ = angular;
-  };
-
-protected:
-  bool getCurrentPose(tf::Stamped<tf::Pose>& pose) {
-    if (!costmap_ || !costmap_->getRobotPose(pose)) {
-      ROS_WARN("Could not get robot pose to calculate speed limits");
-      return false;
-    }  
-    return true;  
-  }
-
-  costmap_2d::Costmap2DROS* costmap_;
-
-  std::vector<geometry_msgs::PoseStamped> plan_;
-
-  double max_linear_velocity_ = 1.0;
-  double max_angular_velocity_ = 1.0;
-};
 
 } /* namespace base_local_planner */
-#endif /* SPEED_LIMITER_H_ */
+#endif /* STATIC_OBJECT_SPEED_LIMITER_TEST_H_ */

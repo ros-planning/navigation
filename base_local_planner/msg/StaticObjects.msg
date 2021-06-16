@@ -1,0 +1,2 @@
+float64 distance_from_static_left
+float64 distance_from_static_right

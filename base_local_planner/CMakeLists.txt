@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
             costmap_2d
             pluginlib
             angles
+            srslib_framework
             srslib_timing
         )
 
@@ -48,6 +49,7 @@ add_message_files(
         Obstacles.msg
         SpeedLimiterMsg.msg
         SpeedLimitersMsg.msg
+        StaticObjects.msg
 )
 
 generate_messages(
@@ -63,6 +65,7 @@ generate_dynamic_reconfigure_options(
     cfg/ObstacleSpeedLimiter.cfg
     cfg/PathSpeedLimiter.cfg
     cfg/ShadowSpeedLimiter.cfg
+    cfg/StaticObjectSpeedLimiter.cfg
 )
 
 catkin_package(
@@ -79,6 +82,8 @@ catkin_package(
         costmap_2d
         nav_core
         angles
+        srslib_timing
+        srslib_framework
 )
 
 #uncomment for profiling
@@ -117,6 +122,7 @@ add_library(base_local_planner
     src/speed_limiters/path_speed_limiter.cpp
     src/speed_limiters/obstacle_speed_limiter.cpp
     src/speed_limiters/external_speed_limiter.cpp
+    src/speed_limiters/static_object_speed_limiter.cpp
     src/stationary_trajectory_generator.cpp
     src/turn_in_place_trajectory_generator.cpp
     src/trajectory.cpp
@@ -174,6 +180,7 @@ if(CATKIN_ENABLE_TESTING)
     test/critic_test_helpers.cpp
     test/odometry_helper_ros_test.cpp
     test/path_speed_limiter_test.cpp
+    test/static_object_speed_limiter_test.cpp
     )
 
   target_link_libraries(base_local_planner_utest

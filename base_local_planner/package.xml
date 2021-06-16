@@ -36,6 +36,7 @@
     <build_depend>dynamic_reconfigure</build_depend>
     <build_depend>message_generation</build_depend>
     <build_depend>srslib_timing</build_depend>
+    <build_depend>srslib_framework</build_depend>
 
     <exec_depend>std_msgs</exec_depend>
     <exec_depend>nav_msgs</exec_depend>
@@ -55,6 +56,7 @@
     <exec_depend>dynamic_reconfigure</exec_depend>
     <exec_depend>message_generation</exec_depend>
     <exec_depend>srslib_timing</exec_depend>
+    <exec_depend>srslib_framework</exec_depend>
 
     <export>
         <nav_core plugin="${prefix}/blp_plugin.xml" />
