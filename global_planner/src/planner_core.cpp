@@ -160,6 +160,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 }
 
 void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, uint32_t level) {
+    path_step_ = config.skip_poses + 1;  // 1 if we want all poses (default behavior)
     planner_->setLethalCost(config.lethal_cost);
     path_maker_->setLethalCost(config.lethal_cost);
     planner_->setNeutralCost(config.neutral_cost);
@@ -365,9 +366,10 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
     }
 
     ros::Time plan_time = ros::Time::now();
-    for (int i = path.size() -1; i>=0; i--) {
+    for (int i = path.size() -1; i>=0; i-=path_step_) {
         std::pair<float, float> point = path[i];
-        //convert the plan to world coordinates
+        //convert the plan to world coordinates; we can optionally skip a number of intermediate
+        //poses to make the resulting path less dense (and so lighter and faster to process)
         double world_x, world_y;
         mapToWorld(point.first, point.second, world_x, world_y);
 
@@ -382,9 +384,11 @@ bool GlobalPlanner::getPlanFromPotential(double start_x, double start_y, double 
         pose.pose.orientation.z = 0.0;
         pose.pose.orientation.w = 1.0;
         plan.push_back(pose);
+        if (i > 0 && i < path_step_)
+            i = path_step_;  // ensure we always add the last pose (index 0)
     }
     if(old_navfn_behavior_){
-            plan.push_back(goal);
+        plan.push_back(goal);
     }
     return !plan.empty();
 }

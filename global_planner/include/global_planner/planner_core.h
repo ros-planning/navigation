@@ -196,6 +196,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
+        unsigned int path_step_;
 
         bool old_navfn_behavior_;
         float convert_offset_;
