@@ -30,10 +30,10 @@ catkin_package(
         tf
         srslib_framework
   INCLUDE_DIRS include
-  LIBRARIES amcl_sensors amcl_map amcl_pf
+  LIBRARIES amcl_sensors amcl_map amcl_pf amcl_api amcl_ros
 )
 
-include_directories(include/amcl include/amcl/map include/amcl/sensors include/amcl/pf)
+include_directories(include/amcl include/amcl/map include/amcl/sensors include/amcl/pf include/amcl_ros)
 include_directories(${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${srslib_framework_INCLUDE_DIRS})
 
 add_library(amcl_pf
@@ -55,27 +55,31 @@ add_library(amcl_sensors
                     src/amcl/sensors/amcl_sensor.cpp
                     src/amcl/sensors/amcl_odom.cpp
                     src/amcl/sensors/amcl_laser.cpp)
-target_link_libraries(amcl_sensors amcl_map amcl_pf ${srslib_framework_LIBRARIES})
+
+add_library(amcl_ros
+                  src/amcl_ros/amcl_ros.cpp)
+add_library(amcl_api
+                  src/amcl/amcl.cpp)
+target_link_libraries(amcl_sensors amcl_map amcl_pf amcl_ros amcl_api ${srslib_framework_LIBRARIES})
 
 
-add_executable(amcl
-                       src/amcl_node.cpp)
+add_executable(amcl src/amcl_ros_node.cpp src/amcl/amcl.cpp src/amcl_ros/amcl_ros.cpp)
 add_dependencies(amcl ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(amcl
-    amcl_sensors amcl_map amcl_pf
+    amcl_sensors amcl_map amcl_pf amcl_ros amcl_api
     ${Boost_LIBRARIES}
     ${catkin_LIBRARIES}
 )
 
 install( TARGETS
-    amcl amcl_sensors amcl_map amcl_pf
+    amcl amcl_sensors amcl_map amcl_pf amcl_ros amcl_api
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(DIRECTORY include/amcl/
+install(DIRECTORY include/amcl/ include/amcl_ros
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
