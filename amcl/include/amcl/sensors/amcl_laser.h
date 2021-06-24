@@ -94,6 +94,9 @@ class AMCLLaser : public AMCLSensor
   public: void SetLaserPose(pf_vector_t& laser_pose) 
           {this->laser_pose = laser_pose;}
 
+  public: static double calculateBeamWeight(double z, AMCLLaser *laser, double range_max = 25.0);
+  public: static double calculateClosestObstacle(pf_vector_t& pose, AMCLLaser *laser);
+  
   // Determine the probability for the given pose
   private: static double BeamModel(AMCLLaserData *data, 
                                    pf_sample_set_t* set,

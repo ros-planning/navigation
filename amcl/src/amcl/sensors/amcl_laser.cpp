@@ -224,6 +224,40 @@ double AMCLLaser::BeamModel(AMCLLaserData *data, pf_sample_set_t* set, float *pe
   return(total_weight);
 }
 
+double AMCLLaser::calculateClosestObstacle(pf_vector_t& pose, AMCLLaser *laser) {
+  int mi, mj;
+  mi = MAP_GXWX(laser->map, pose.v[0]);
+  mj = MAP_GYWY(laser->map, pose.v[1]);
+  double z;
+  // Part 1: Get distance from the hit to closest obstacle.
+  // Off-map penalized as max distance
+  if(!MAP_VALID(laser->map, mi, mj))
+    z = laser->map->max_occ_dist;
+  else
+    z = laser->map->cells[MAP_INDEX(laser->map,mi,mj)].occ_dist;
+  return z;
+}
+
+double AMCLLaser::calculateBeamWeight(double z, AMCLLaser *laser, double range_max) {
+  // Pre-compute a couple of things
+  double z_hit_denom = 2 * laser->sigma_hit * laser->sigma_hit;
+  double z_rand_mult = 1.0 / range_max;
+
+  double pz = 0.0;
+
+  // Gaussian model
+  // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
+  pz += laser->z_hit * exp(-(z * z) / z_hit_denom);
+  // Part 2: random measurements
+  pz += laser->z_rand * z_rand_mult;
+
+  // TODO: outlier rejection for short readings
+
+  assert(pz <= 1.0);
+  assert(pz >= 0.0);
+  return pz;
+}
+
 double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set, float *percent_invalid_poses)
 {
   AMCLLaser *self;
@@ -259,11 +293,6 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
     pose = pf_vector_coord_add(self->laser_pose, pose);
 
     p = 1.0;
-
-    // Pre-compute a couple of things
-    double z_hit_denom = 2 * self->sigma_hit * self->sigma_hit;
-    double z_rand_mult = 1.0/data->range_max;
-
     step = (data->range_count - 1) / (self->max_beams - 1);
 
     // Step size must be at least 1
@@ -289,27 +318,9 @@ double AMCLLaser::LikelihoodFieldModel(AMCLLaserData *data, pf_sample_set_t* set
       hit.v[0] = pose.v[0] + obs_range * cos(pose.v[2] + obs_bearing);
       hit.v[1] = pose.v[1] + obs_range * sin(pose.v[2] + obs_bearing);
 
-      // Convert to map grid coords.
-      int mi, mj;
-      mi = MAP_GXWX(self->map, hit.v[0]);
-      mj = MAP_GYWY(self->map, hit.v[1]);
-      
-      // Part 1: Get distance from the hit to closest obstacle.
-      // Off-map penalized as max distance
-      if(!MAP_VALID(self->map, mi, mj))
-        z = self->map->max_occ_dist;
-      else
-        z = self->map->cells[MAP_INDEX(self->map,mi,mj)].occ_dist;
-      // Gaussian model
-      // NOTE: this should have a normalization of 1/(sqrt(2pi)*sigma)
-      pz += self->z_hit * exp(-(z * z) / z_hit_denom);
-      // Part 2: random measurements
-      pz += self->z_rand * z_rand_mult;
+      z = calculateClosestObstacle(hit, self);
+      pz = calculateBeamWeight(z, self, data->range_max);
 
-      // TODO: outlier rejection for short readings
-
-      assert(pz <= 1.0);
-      assert(pz >= 0.0);
       //      p *= pz;
       // here we have an ad-hoc weighting scheme for combining beam probs
       // works well, though...
