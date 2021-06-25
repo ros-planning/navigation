@@ -110,6 +110,9 @@ namespace base_local_planner {
 
         if (loop_traj_cost >= 0) {
           count_valid++;
+	  if (loop_traj.xv_ < 0) { loop_traj_cost += 0.1; }
+	  if (loop_traj.xv_ > 0) { loop_traj_cost -= 0.1; }
+
           if (best_traj_cost < 0 || loop_traj_cost < best_traj_cost) {
             best_traj_cost = loop_traj_cost;
             best_traj = loop_traj;
