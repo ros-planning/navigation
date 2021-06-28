@@ -82,25 +82,13 @@ void SimpleTrajectoryGenerator::initialise(
   double min_vel_y = limits->min_vel_y;
   double max_vel_y = limits->max_vel_y;
 
-  if (fabs(goal[2] - pos[2]) > M_PI_4)
-  {
-	  double gain_diff_ang_max = 2.0;
-	  double gain_diff_ang = gain_diff_ang_max * (fabs(goal[2] - pos[2])) / M_PI;
-	  max_vel_th +=  gain_diff_ang * limits->max_vel_theta;
-	  min_vel_th -=  gain_diff_ang * limits->max_vel_theta;
-  } else {
-	  max_vel_th =  limits->max_vel_theta;
-	  min_vel_th = -limits->max_vel_theta;
-  }
-
   double threshold_angular_vel = 0.25;
   if (fabs(vel[2]) > threshold_angular_vel)
   {
-	  double acc_lim_gain = 1.0/4.0;
-	  acc_lim[2] *= acc_lim_gain;
-	  double vel_lim_gain = 1.0/4.0;
-	  max_vel_x = limits->max_vel_x * vel_lim_gain;
-	  //max_vel_x = -limits->max_vel_x/(max_vel_th - threshold_angular_vel) * (fabs(vel[2]) - max_vel_th) + limits->max_vel_x/2.0;
+    double acc_lim_gain = 1.0/4.0;
+    acc_lim[2] *= acc_lim_gain;
+    double vel_lim_gain = 1.0/4.0;
+    max_vel_x = limits->max_vel_x * vel_lim_gain;
   }
 
   // if sampling number is zero in any dimension, we don't generate samples generically
