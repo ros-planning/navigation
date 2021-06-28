@@ -82,6 +82,15 @@ void SimpleTrajectoryGenerator::initialise(
   double min_vel_y = limits->min_vel_y;
   double max_vel_y = limits->max_vel_y;
 
+  double threshold_angular_vel = 0.25;
+  if (fabs(vel[2]) > threshold_angular_vel)
+  {
+    double acc_lim_gain = 1.0/4.0;
+    acc_lim[2] *= acc_lim_gain;
+    double vel_lim_gain = 1.0/4.0;
+    max_vel_x = limits->max_vel_x * vel_lim_gain;
+  }
+
   // if sampling number is zero in any dimension, we don't generate samples generically
   if (vsamples[0] * vsamples[1] * vsamples[2] > 0) {
     //compute the feasible velocity space based on the rate at which we run
@@ -92,6 +101,7 @@ void SimpleTrajectoryGenerator::initialise(
       // there is no point in overshooting the goal, and it also may break the
       // robot behavior, so we limit the velocities to those that do not overshoot in sim_time
       double dist = hypot(goal[0] - pos[0], goal[1] - pos[1]);
+
       max_vel_x = std::max(std::min(max_vel_x, dist / sim_time_), min_vel_x);
       max_vel_y = std::max(std::min(max_vel_y, dist / sim_time_), min_vel_y);
 
