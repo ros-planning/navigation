@@ -32,6 +32,8 @@
     <build_depend>rostest</build_depend>
     <build_depend>std_srvs</build_depend>
     <build_depend>tf</build_depend>
+    <build_depend>tf2_ros</build_depend>
+    <build_depend>tf2</build_depend>
     <build_depend>srslib_timing</build_depend>
     <build_depend>srslib_framework</build_depend>
 
@@ -39,6 +41,8 @@
     <exec_depend>roscpp</exec_depend>
     <exec_depend>dynamic_reconfigure</exec_depend>
     <exec_depend>tf</exec_depend>
+    <exec_depend>tf2</exec_depend>
+    <exec_depend>tf2_ros</exec_depend>
     <exec_depend>nav_msgs</exec_depend>
     <exec_depend>move_base_msgs</exec_depend>
     <exec_depend>srslib_timing</exec_depend>

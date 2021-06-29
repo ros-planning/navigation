@@ -4,19 +4,16 @@ using namespace amcl;
 static const std::string scan_topic_ = "scan";
 
 AmclRosNode::AmclRosNode():
-    sent_first_transform_(false),
-    latest_tf_valid_(false),
     private_nh_("~"),
     first_reconfigure_call_(true),
-    tdr_("AMCL"),
     first_map_received_(false),
-    set_inital_pose_action_(nh_, "initial_pose_server", boost::bind(&AmclRosNode::executeInitialPoseCB, this, _1), false)
+    tdr_("AMCL"),
+    set_inital_pose_action_(nh_, std::string("initial_pose_server"), boost::bind(&AmclRosNode::executeInitialPoseCB, this, _1), false)
 {
-    std::cout << "construtor amcl_ros" <<std::endl;
-    boost::recursive_mutex::scoped_lock l(configuration_mutex_);
+    std::cout << "construtor amcl_ros" << std::endl;
+    boost::recursive_mutex::scoped_lock l(config_mutex_);
     initializeParams();
     updatePoseFromServer();
-    cloud_pub_interval.fromSec(1.0);
     tfb_ = new tf::TransformBroadcaster();
     tf_  = new TransformListenerWrapper();
 
@@ -50,7 +47,7 @@ AmclRosNode::AmclRosNode():
     } else {
         requestMap();
     }
-    force_update_ = false;
+    setForceUpdateControl(false);
 
     dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
     dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclRosNode::reconfigureCB, this, _1, _2);
@@ -242,7 +239,7 @@ void AmclRosNode::savePoseToServer()
   // We need to apply the last transform to the latest odom pose to get
   // the latest map pose to store.  We'll take the covariance from
   // last_published_pose.
-  tf::Pose map_pose = latest_tf_.inverse() * latest_odom_pose_;
+  tf::Pose map_pose = getLatestTf().inverse() * getLatestOdomPose();
   double yaw,pitch,roll;
   map_pose.getBasis().getEulerYPR(yaw, pitch, roll);
 
@@ -251,13 +248,12 @@ void AmclRosNode::savePoseToServer()
   private_nh_.setParam("initial_pose_x", map_pose.getOrigin().x());
   private_nh_.setParam("initial_pose_y", map_pose.getOrigin().y());
   private_nh_.setParam("initial_pose_a", yaw);
-  // TODO: FIGURE OUT WHERE TO GET LAST_PUBLICHED_POSE FROM
-//   private_nh_.setParam("initial_cov_xx",
-//                                   last_published_pose.pose.covariance[6*0+0]);
-//   private_nh_.setParam("initial_cov_yy",
-//                                   last_published_pose.pose.covariance[6*1+1]);
-//   private_nh_.setParam("initial_cov_aa",
-//                                   last_published_pose.pose.covariance[6*5+5]);
+  private_nh_.setParam("initial_cov_xx",
+                                  getLastPublishedPose().pose.covariance[6*0+0]);
+  private_nh_.setParam("initial_cov_yy",
+                                  getLastPublishedPose().pose.covariance[6*1+1]);
+  private_nh_.setParam("initial_cov_aa",
+                                  getLastPublishedPose().pose.covariance[6*5+5]);
 }
 
 void AmclRosNode::deletePoseFromServer()
@@ -274,24 +270,14 @@ void AmclRosNode::deletePoseFromServer()
 bool AmclRosNode::globalLocalizationCallback(std_srvs::Empty::Request& req,
                                      std_srvs::Empty::Response& res)
 {
-    // TODO: Update getting variables
-//   if( map_ == NULL ) {
-//     return true;
-//   }
-//   boost::recursive_mutex::scoped_lock gl(configuration_mutex_);
-//   ROS_INFO("Initializing with uniform distribution");
-//   pf_init_model(pf_, (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
-//                 (void *)map_);
-//   ROS_INFO("Global initialisation done!");
-//   pf_init_ = false;
-//   return true;
+  globalInitialization();
 }
 
 // force nomotion updates (amcl updating without requiring motion)
 bool AmclRosNode::nomotionUpdateCallback(std_srvs::Empty::Request& req,
                                      std_srvs::Empty::Response& res)
 {
-    force_update_ = true;
+  setForceUpdateControl(true);
 	//ROS_INFO("Requesting no-motion update");
 	return true;
 }
@@ -315,7 +301,7 @@ void AmclRosNode::initialPosesReceived(const move_base_msgs::PoseWithCovarianceS
   handleInitialPosesMessage(*msg);
 
   // Force one no motion update
-  force_update_ = true;
+  setForceUpdateControl(true);
 }
 
 bool AmclRosNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStamped& msg)
@@ -352,7 +338,7 @@ bool AmclRosNode::checkPoseParamOnServer()
 
 void AmclRosNode::requestMap()
 {
-  boost::recursive_mutex::scoped_lock ml(configuration_mutex_);
+  boost::recursive_mutex::scoped_lock ml(config_mutex_);
 
   // get map via RPC
   nav_msgs::GetMap::Request  req;
@@ -387,30 +373,6 @@ void AmclRosNode::mapReceived(const nav_msgs::OccupancyGridConstPtr& msg)
   publishStatusOnNewWorkArea(true, initial_pose_found_from_server);
 }
 
-bool AmclRosNode::getOdomPose(tf::Stamped<tf::Pose>& odom_pose,
-                      double& x, double& y, double& yaw,
-                      const ros::Time& t, const std::string& f)
-{
-  // Get the robot's pose
-  tf::Stamped<tf::Pose> ident (tf::Transform(tf::createIdentityQuaternion(),
-                                           tf::Vector3(0,0,0)), t, f);
-  try
-  {
-    this->tf_->transformPose(amclParams_.odom_frame_id_, ident, odom_pose);
-  }
-  catch(tf::TransformException e)
-  {
-    ROS_WARN("Failed to compute odom pose, skipping scan (%s)", e.what());
-    return false;
-  }
-  x = odom_pose.getOrigin().x();
-  y = odom_pose.getOrigin().y();
-  double pitch,roll;
-  odom_pose.getBasis().getEulerYPR(yaw, pitch, roll);
-
-  return true;
-}
-
 void AmclRosNode::checkLaserReceived(const ros::TimerEvent& event)
 {
   ros::Duration d = ros::Time::now() - last_laser_received_ts_;
@@ -424,7 +386,7 @@ void AmclRosNode::checkLaserReceived(const ros::TimerEvent& event)
 
 void AmclRosNode::reconfigureCB(AMCLConfig &config, uint32_t level)
 {
-  boost::recursive_mutex::scoped_lock cfl(configuration_mutex_);
+  boost::recursive_mutex::scoped_lock cfl(config_mutex_);
 
   //we don't want to do anything on the first call
   //which corresponds to startup
@@ -501,55 +463,25 @@ void AmclRosNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   amclParams_.beam_skip_distance_ = config.beam_skip_distance;
   amclParams_.beam_skip_threshold_ = config.beam_skip_threshold;
 
-  pf_ = pf_alloc(amclParams_.min_particles_, amclParams_.max_particles_,
-                 amclParams_.alpha_slow_, amclParams_.alpha_fast_,
-                 (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
-                 (void *)map_);
   amclParams_.pf_err_ = config.kld_err;
   amclParams_.pf_z_ = config.kld_z;
-  pf_->pop_err = amclParams_.pf_err_;
-  pf_->pop_z = amclParams_.pf_z_;
 
   // Initialize the filter
   pf_vector_t pf_init_pose_mean = pf_vector_zero();
-  pf_init_pose_mean.v[0] = last_published_pose.pose.pose.position.x;
-  pf_init_pose_mean.v[1] = last_published_pose.pose.pose.position.y;
-  pf_init_pose_mean.v[2] = tf::getYaw(last_published_pose.pose.pose.orientation);
+  pf_init_pose_mean.v[0] = getLastPublishedPose().pose.pose.position.x;
+  pf_init_pose_mean.v[1] = getLastPublishedPose().pose.pose.position.y;
+  pf_init_pose_mean.v[2] = tf::getYaw(getLastPublishedPose().pose.pose.orientation);
   pf_matrix_t pf_init_pose_cov = pf_matrix_zero();
-  pf_init_pose_cov.m[0][0] = last_published_pose.pose.covariance[6*0+0];
-  pf_init_pose_cov.m[1][1] = last_published_pose.pose.covariance[6*1+1];
-  pf_init_pose_cov.m[2][2] = last_published_pose.pose.covariance[6*5+5];
-  pf_init(pf_, 1, &pf_init_pose_mean, &pf_init_pose_cov);
-  pf_init_ = false;
+  pf_init_pose_cov.m[0][0] = getLastPublishedPose().pose.covariance[6*0+0];
+  pf_init_pose_cov.m[1][1] = getLastPublishedPose().pose.covariance[6*1+1];
+  pf_init_pose_cov.m[2][2] = getLastPublishedPose().pose.covariance[6*5+5];
+  instantiateParticleFilter(pf_init_pose_mean, pf_init_pose_cov);
 
   // Instantiate the sensor objects
   // Odometry
-  delete odom_;
-  odom_ = new AMCLOdom();
-  ROS_ASSERT(odom_);
-  odom_->SetModel( amclParams_.odom_model_type_, amclParams_.alpha1_, 
-    amclParams_.alpha2_, amclParams_.alpha3_, amclParams_.alpha4_, amclParams_.alpha5_ );
+  instantiateOdom();
   // Laser
-  delete laser_;
-  laser_ = new AMCLLaser(amclParams_.max_beams_, map_);
-  ROS_ASSERT(laser_);
-  if(amclParams_.laser_model_type_ == LASER_MODEL_BEAM)
-    laser_->SetModelBeam(amclParams_.z_hit_, amclParams_.z_short_, amclParams_.z_max_, amclParams_.z_rand_,
-                         amclParams_.sigma_hit_, amclParams_.lambda_short_, 0.0);
-  else if(amclParams_.laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD_PROB){
-    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
-    laser_->SetModelLikelihoodFieldProb(amclParams_.z_hit_, amclParams_.z_rand_, amclParams_.sigma_hit_,
-					amclParams_.laser_likelihood_max_dist_,
-					amclParams_.do_beamskip_, amclParams_.beam_skip_distance_,
-					amclParams_.beam_skip_threshold_, amclParams_.beam_skip_error_threshold_);
-    ROS_INFO("Done initializing likelihood field model with probabilities.");
-  }
-  else if(amclParams_.laser_model_type_ == LASER_MODEL_LIKELIHOOD_FIELD){
-    ROS_INFO("Initializing likelihood field model; this can take some time on large maps...");
-    laser_->SetModelLikelihoodField(amclParams_.z_hit_, amclParams_.z_rand_, amclParams_.sigma_hit_,
-                                    amclParams_.laser_likelihood_max_dist_);
-    ROS_INFO("Done initializing likelihood field model.");
-  }
+  instantiateLaser();
 
   amclParams_.odom_frame_id_ = config.odom_frame_id;
   amclParams_.base_frame_id_ = config.base_frame_id;
@@ -567,6 +499,28 @@ void AmclRosNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclRosNode::initialPoseReceived, this);
 }
 
-void AmclRosNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
+void
+AmclRosNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 {
+  last_laser_received_ts_ = ros::Time::now();
+  setHasNewOdomToMapTf(false);
+  boost::recursive_mutex::scoped_lock cfl(config_mutex_);
+  handleLaserScanMessage(laser_scan);
+
+  if (amclAnalyticsData_.percent_invalid_poses_ > 0) {
+    std_msgs::Float32 float_msg;
+    float_msg.data = amclAnalyticsData_.percent_invalid_poses_;
+    invalid_pose_percent_pub_.publish(float_msg);
+  }
+
+  particlecloud_pub_.publish(amclAnalyticsData_.particle_cloud_msg_);
+
+  analytics_pub_.publish(amclAnalyticsData_.analytics_data_);
+  data_pub_.publish(amclAnalyticsData_.amcl_data_);
+  pose_pub_.publish(amclAnalyticsData_.pose_data_);
+
+  if (amclParams_.tf_broadcast_ == true && hasNewOdomToMapTf())
+  {
+    this->tfb_->sendTransform(getOdomToMapTf());
+  }
 }

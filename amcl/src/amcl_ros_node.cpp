@@ -29,13 +29,9 @@ main(int argc, char** argv)
     // run using ROS input
     ros::spin();
   }
-//   else if ((argc == 3) && (std::string(argv[1]) == "--run-from-bag"))
-//   {
-//     amcl_node_ptr->runFromBag(argv[2]);
-//   }
 
-//   // Without this, our boost locks are not shut down nicely
-//   amcl_node_ptr.reset();
+  // Without this, our boost locks are not shut down nicely
+  amcl_node_ptr.reset();
 
   // To quote Morgan, Hooray!
   return(0);

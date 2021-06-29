@@ -5,10 +5,6 @@ class AmclRosNode: public AmclNode
     public:
         AmclRosNode();
         ~AmclRosNode();
-        /**
-         * @brief Uses TF and LaserScan messages from bag file to drive AMCL instead
-         */
-        // void runFromBag(const std::string &in_bag_fn);
         void savePoseToServer();
         void deletePoseFromServer();
 
@@ -44,11 +40,6 @@ class AmclRosNode: public AmclNode
 
         void requestMap();
 
-        // Helper to get odometric pose from transform system
-         bool getOdomPose(tf::Stamped<tf::Pose>& pose,
-                     double& x, double& y, double& yaw,
-                     const ros::Time& t, const std::string& f);
-
         dynamic_reconfigure::Server<amcl::AMCLConfig> *dsrv_;
 
         ros::Timer check_laser_timer_;
@@ -56,14 +47,9 @@ class AmclRosNode: public AmclNode
         amcl::AMCLConfig default_config_;
         bool first_reconfigure_call_;
 
-        // TODO: check if we need below two variables?
-        ros::Duration cloud_pub_interval;
-        // ros::Time last_cloud_pub_time;
-
         srs::MasterTimingDataRecorder tdr_;
 
-        // Nomotion update control
-	    bool force_update_;  // used to temporarily let amcl update samples even when no motion occurs...
+        ros::NodeHandle nh_;
 
         // set inital pose using action
         actionlib::SimpleActionServer<move_base_msgs::SetInitialPoseAction> set_inital_pose_action_;
@@ -74,8 +60,6 @@ class AmclRosNode: public AmclNode
  
         ros::Time last_laser_received_ts_;
         ros::Duration laser_check_interval_;
-        
-        ros::NodeHandle nh_;
         ros::NodeHandle private_nh_;
         ros::Publisher pose_pub_; //regular pose pub
         ros::Publisher analytics_pub_; //pub to send amcl_analytics msg
@@ -104,12 +88,6 @@ class AmclRosNode: public AmclNode
 
         TransformListenerWrapper* tf_;
 
-        bool sent_first_transform_;
-
-        tf::Transform latest_tf_;
-        bool latest_tf_valid_;
-        //paramater to store latest odom pose
-        tf::Stamped<tf::Pose> latest_odom_pose_;
         bool first_map_received_;
-        boost::recursive_mutex configuration_mutex_;
+        boost::recursive_mutex config_mutex_;
 };

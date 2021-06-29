@@ -7,6 +7,8 @@ find_package(catkin REQUIRED
             rosbag
             roscpp
             tf
+            tf2
+            tf2_ros
             dynamic_reconfigure
             nav_msgs
             srslib_timing
@@ -28,6 +30,8 @@ catkin_package(
         roscpp
         dynamic_reconfigure
         tf
+        tf2
+        tf2_ros
         srslib_framework
   INCLUDE_DIRS include
   LIBRARIES amcl_sensors amcl_map amcl_pf amcl_api amcl_ros
