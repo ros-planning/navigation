@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(go_back_recovery)
 
 find_package(catkin REQUIRED COMPONENTS
+  base_local_planner
   costmap_2d
   geometry_msgs
   nav_core
@@ -16,6 +17,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES go_back_recovery
   CATKIN_DEPENDS
+    base_local_planner
     costmap_2d
     geometry_msgs
     nav_core

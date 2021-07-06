@@ -2,7 +2,6 @@
 #include <nav_core/parameter_magic.h>
 #include <pluginlib/class_list_macros.h>
 #include <tf2/utils.h>
-#include "move_base/move_base.h"
 
 PLUGINLIB_EXPORT_CLASS(go_back_recovery::GoBackRecovery, nav_core::RecoveryBehavior)
 
