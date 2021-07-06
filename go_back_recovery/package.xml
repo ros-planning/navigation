@@ -12,6 +12,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>base_local_planner</depend>
   <depend>costmap_2d</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_core</depend>
