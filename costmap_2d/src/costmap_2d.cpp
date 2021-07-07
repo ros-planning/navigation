@@ -36,7 +36,15 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <costmap_2d/costmap_2d.h>
+
+#include <ros/console.h>
+
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <cstdio>
+#include <cmath>
+#include <iostream>
 
 using namespace std;
 
@@ -148,6 +156,7 @@ Costmap2D& Costmap2D::operator=(const Costmap2D& map)
   resolution_ = map.resolution_;
   origin_x_ = map.origin_x_;
   origin_y_ = map.origin_y_;
+  default_value_ = map.default_value_;
 
   // initialize our various maps
   initMaps(size_x_, size_y_);
@@ -268,48 +277,77 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
   if (cell_ox == 0 && cell_oy == 0)
     return;
 
-  // compute the associated world coordinates for the origin cell
-  // because we want to keep things grid-aligned
-  double new_grid_ox, new_grid_oy;
-  new_grid_ox = origin_x_ + cell_ox * resolution_;
-  new_grid_oy = origin_y_ + cell_oy * resolution_;
-
-  // To save casting from unsigned int to int a bunch of times
-  int size_x = size_x_;
-  int size_y = size_y_;
-
-  // we need to compute the overlap of the new and existing windows
-  int lower_left_x, lower_left_y, upper_right_x, upper_right_y;
-  lower_left_x = min(max(cell_ox, 0), size_x);
-  lower_left_y = min(max(cell_oy, 0), size_y);
-  upper_right_x = min(max(cell_ox + size_x, 0), size_x);
-  upper_right_y = min(max(cell_oy + size_y, 0), size_y);
-
-  unsigned int cell_size_x = upper_right_x - lower_left_x;
-  unsigned int cell_size_y = upper_right_y - lower_left_y;
-
-  // we need a map to store the obstacles in the window temporarily
-  unsigned char* local_map = new unsigned char[cell_size_x * cell_size_y];
-
-  // copy the local window in the costmap to the local map
-  copyMapRegion(costmap_, lower_left_x, lower_left_y, size_x_, local_map, 0, 0, cell_size_x, cell_size_x, cell_size_y);
-
-  // now we'll set the costmap to be completely unknown if we track unknown space
-  resetMaps();
-
   // update the origin with the appropriate world coordinates
-  origin_x_ = new_grid_ox;
-  origin_y_ = new_grid_oy;
+  origin_x_ += cell_ox * resolution_;
+  origin_y_ += cell_oy * resolution_;
 
-  // compute the starting cell location for copying data back in
-  int start_x = lower_left_x - cell_ox;
-  int start_y = lower_left_y - cell_oy;
+  if (std::abs(cell_ox) >= size_x_ || std::abs(cell_oy) >= size_y_)
+  {
+    // If the new and old maps don't overlap, we can just reset the costmap.
+    ROS_INFO("Maps don't overlap. Dropping entire data");
+    resetMaps();
+    return;
+  }
 
-  // now we want to copy the overlapping information back into the map, but in its new location
-  copyMapRegion(local_map, 0, 0, cell_size_x, costmap_, start_x, start_y, size_x_, cell_size_x, cell_size_y);
+  // The size of the windows to copy.
+  const unsigned int window_width = size_x_ - std::abs(cell_ox);
+  const unsigned int window_height = size_y_ - std::abs(cell_oy);
 
-  // make sure to clean up
-  delete[] local_map;
+  assert(window_width <= size_x_ && "window_width out of bounds");
+  assert(window_height <= size_y_ && "window_height out of bounds");
+
+  // The stride has the sign of the cell_oy offset; if we move the costmap up,
+  // we have to copy from the bottom up; if we move it down, we copy from the
+  // top down.
+  const std::ptrdiff_t stride = std::copysign(size_x_, cell_oy);
+
+  // The rows will underflow in case of an error.
+  const unsigned int start_target_row = cell_oy < 0 ? size_y_ - 1 : 0;
+  const unsigned int start_source_row = cell_oy < 0 ? size_y_ - 1 + cell_oy : cell_oy;
+  const unsigned int start_target_col = std::max(0, -cell_ox);
+  const unsigned int start_source_col = std::max(0, cell_ox);
+
+  assert(start_target_row <= size_y_ && "start_target_row out of bounds");
+  assert(start_source_row <= size_y_ && "start_source_row out of bounds");
+  assert(start_target_col <= size_x_ && "start_target_col out of bounds");
+  assert(start_source_col <= size_x_ && "start_source_col out of bounds");
+
+  unsigned char *source_data = costmap_ + (start_source_row * size_x_ + start_source_col);
+  unsigned char *target_data = costmap_ + (start_target_row * size_x_ + start_target_col);
+
+  for (unsigned int row = 0; row != window_height; ++row)
+  {
+    std::copy_n(source_data, window_width, target_data);
+    source_data += stride;
+    target_data += stride;
+  }
+
+  // Now we have to clear the remaining two rectangles.
+  {
+    // Horizontal rectangle.
+    const unsigned int start_row = cell_oy < 0 ? 0 : size_y_ - cell_oy;
+    const unsigned int end_row = cell_oy < 0 ? -cell_oy : size_y_;
+
+    assert(start_row <= end_row && "start_row must be smaller than end_row");
+    assert(end_row <= size_y_ && "end_row out of bounds");
+
+    resetMap(0, start_row, size_x_, end_row);
+  }
+
+  {
+    // Vertical rectangle (smaller one since the map is row-major).
+    const unsigned int start_col = cell_ox < 0 ? 0 : size_x_ - cell_ox;
+    const unsigned int start_row = std::max(-cell_oy, 0);
+    const unsigned int end_col = cell_ox < 0 ? -cell_ox : size_x_;
+    const unsigned int end_row = start_row + window_height;
+
+    assert(start_col <= end_col && "start_col must be smaller than end_col");
+    assert(start_row <= end_row && "start_row must be smaller than end_row");
+    assert(end_col <= size_x_ && "end_col out of bounds");
+    assert(end_row <= size_y_ && "end_row out of bounds");
+
+    resetMap(start_col, start_row, end_col, end_row);
+  }
 }
 
 bool Costmap2D::setConvexPolygonCost(const std::vector<geometry_msgs::Point>& polygon, unsigned char cost_value)

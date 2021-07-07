@@ -185,6 +185,9 @@ if(CATKIN_ENABLE_TESTING)
 
   catkin_add_gtest(coordinates_test test/coordinates_test.cpp)
   target_link_libraries(coordinates_test costmap_2d)
+
+  catkin_add_gtest(update_origin_test test/update_origin_test.cpp)
+  target_link_libraries(update_origin_test costmap_2d)
 endif()
 
 install( TARGETS
