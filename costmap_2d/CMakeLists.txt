@@ -185,6 +185,9 @@ if(CATKIN_ENABLE_TESTING)
 
   catkin_add_gtest(coordinates_test test/coordinates_test.cpp)
   target_link_libraries(coordinates_test costmap_2d)
+
+  catkin_add_gtest(update_origin_test test/update_origin_test.cpp)
+  target_link_libraries(update_origin_test costmap_2d)
 endif()
 
 install( TARGETS
@@ -215,3 +218,21 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   PATTERN ".svn" EXCLUDE
 )
+
+###############
+## Benchmark ##
+###############
+
+set(${PROJECT_NAME}_BENCHMARK OFF)
+if(${PROJECT_NAME}_BENCHMARK)
+  # you may install the benchmark library via sudo apt install libbenchmark-dev
+  find_package(benchmark)
+  if(benchmark_FOUND)
+    message("building benchmark target")
+    add_executable(update_origin_perf perf/update_origin_perf.cpp)
+    target_link_libraries(update_origin_perf benchmark::benchmark ${PROJECT_NAME} ${catkin_LIBRARIES})
+    target_include_directories(update_origin_perf PRIVATE ${catkin_INCLUDE_DIRS})
+  else()
+    message("benchmark library not found")
+  endif()
+endif()
