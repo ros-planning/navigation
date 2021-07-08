@@ -96,10 +96,10 @@ struct ParamCostmap2DFixture : public Costmap2DFixture,
 {
 };
 
-INSTANTIATE_TEST_SUITE_P(/**/,
-                         ParamCostmap2DFixture,
-                         testing::Combine(testing::Range(-0.1, 2.1, 0.55),
-                                          testing::Range(-0.1, 4.1, 0.44)));
+INSTANTIATE_TEST_CASE_P(/**/,
+                        ParamCostmap2DFixture,
+                        testing::Combine(testing::Range(-0.1, 2.1, 0.55),
+                                         testing::Range(-0.1, 4.1, 0.44)));
 
 TEST_P(ParamCostmap2DFixture, regression)
 {
