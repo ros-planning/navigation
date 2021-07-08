@@ -1,15 +1,16 @@
 #include <benchmark/benchmark.h>
 #include <costmap_2d/costmap_2d.h>
 
+#include <cmath>
+
+/// @brief Legacy version of the updateOrigin function used for comparing it with
+/// newer implementations.
 struct Costmap2DLegacy : public costmap_2d::Costmap2D
 {
 
   Costmap2DLegacy(unsigned int cells_size_x, unsigned int cells_size_y, double resolution,
                   double origin_x, double origin_y) : costmap_2d::Costmap2D(cells_size_x, cells_size_y, resolution, origin_x, origin_y) {}
 
-  // This code is the legacy version of the updateOrigin method. It's well proven
-  // and requires a temporal buffer for updating the costmap. Our tests will use
-  // this method as ground-truth.
   void updateOrigin(double new_origin_x, double new_origin_y) override
   {
     int cell_ox, cell_oy;

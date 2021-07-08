@@ -223,7 +223,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
 ## Benchmark ##
 ###############
 
-set(${PROJECT_NAME}_BENCHMARK ON)
+set(${PROJECT_NAME}_BENCHMARK OFF)
 if(${PROJECT_NAME}_BENCHMARK)
   # you may install the benchmark library via sudo apt install libbenchmark-dev
   find_package(benchmark)

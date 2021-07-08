@@ -2,8 +2,8 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <array>
 #include <cmath>
+#include <tuple>
 
 /// @brief Helper class which contains the legacy implementation of updateOrigin.
 struct Costmap2DLegacy : public costmap_2d::Costmap2D
@@ -91,13 +91,15 @@ TEST_F(Costmap2DFixture, no_update)
 }
 
 using coordinate = std::tuple<double, double>;
-struct ParamCostmap2DFixture : public Costmap2DFixture, public testing::WithParamInterface<coordinate>
+struct ParamCostmap2DFixture : public Costmap2DFixture,
+                               public testing::WithParamInterface<coordinate>
 {
 };
 
 INSTANTIATE_TEST_SUITE_P(/**/,
                          ParamCostmap2DFixture,
-                         testing::Combine(testing::Range(-0.1, 2.1, 0.55), testing::Range(-0.1, 4.1, 0.44)));
+                         testing::Combine(testing::Range(-0.1, 2.1, 0.55),
+                                          testing::Range(-0.1, 4.1, 0.44)));
 
 TEST_P(ParamCostmap2DFixture, regression)
 {

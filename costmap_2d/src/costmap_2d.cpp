@@ -284,7 +284,7 @@ void Costmap2D::updateOrigin(double new_origin_x, double new_origin_y)
   if (std::abs(cell_ox) >= size_x_ || std::abs(cell_oy) >= size_y_)
   {
     // If the new and old maps don't overlap, we can just reset the costmap.
-    ROS_INFO("Maps don't overlap. Dropping entire data");
+    ROS_DEBUG("Maps don't overlap. Dropping entire data");
     resetMaps();
     return;
   }
