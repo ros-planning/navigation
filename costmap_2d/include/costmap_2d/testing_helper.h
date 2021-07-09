@@ -66,13 +66,13 @@ costmap_2d::ObstacleLayer* addObstacleLayer(costmap_2d::LayeredCostmap& layers, 
 
 void addObservation(costmap_2d::ObstacleLayer* olayer, double x, double y, double z = 0.0,
                     double ox = 0.0, double oy = 0.0, double oz = MAX_Z){
-  sensor_msgs::PointCloud2 cloud;
-  sensor_msgs::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::PointCloud2Ptr cloud(new sensor_msgs::PointCloud2{});
+  sensor_msgs::PointCloud2Modifier modifier(*cloud);
   modifier.setPointCloud2FieldsByString(1, "xyz");
   modifier.resize(1);
-  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+  sensor_msgs::PointCloud2Iterator<float> iter_x(*cloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(*cloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(*cloud, "z");
   *iter_x = x;
   *iter_y = y;
   *iter_z = z;
