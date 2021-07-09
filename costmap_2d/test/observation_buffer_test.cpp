@@ -92,9 +92,9 @@ TEST(heightFilterPointCloud, no_z)
 /**
  * @brief A copying version of the box-filter.
  * 
- * @param _cloud2 The point-cloud to copy.
- * @param _min_x The lower bound.
- * @param _max_x The upper bound.
+ * @param _cloud The point-cloud to filter.
+ * @param _min_z The lower bound.
+ * @param _max_z The upper bound.
  */
 void copyingHeightFilterPointCloud(sensor_msgs::PointCloud &_cloud,
                                    double _min_z, double _max_z)
@@ -117,7 +117,7 @@ void copyingHeightFilterPointCloud(sensor_msgs::PointCloud &_cloud,
 
 TEST(heightFilterPointCloud, no_change)
 {
-  // Create a simple point cloud
+  // Create a simple point cloud.
   sensor_msgs::PointCloud points, output;
   points.points.resize(100);
 
@@ -191,7 +191,7 @@ TEST_P(KeepSomeFixture, regression)
     p.z = x * 0.02;
   }
 
-  // Shuffle the points
+  // Shuffle the points.
   std::random_shuffle(points.points.begin(), points.points.end());
 
   // Apply the filter.
