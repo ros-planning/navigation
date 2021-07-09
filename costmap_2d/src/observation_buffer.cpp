@@ -36,15 +36,59 @@
  *********************************************************************/
 #include <costmap_2d/observation_buffer.h>
 
+#include <ros/console.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
+
+#include <algorithm>
 
 using namespace std;
 using namespace tf2;
 
 namespace costmap_2d
 {
+
+void heightFilterPointCloud(sensor_msgs::PointCloud2 &_cloud, double _min_z, double _max_z)
+{
+  // This would lead to a dead lock.
+  if(_cloud.point_step == 0)
+    return;
+
+  // Check if the field z exists: otherwise the iter_z constructor will throw.
+  if(sensor_msgs::getPointCloud2FieldIndex(_cloud, "z") == -1){
+    ROS_DEBUG("The point cloud has no z-field");
+    return;
+  }
+
+  sensor_msgs::PointCloud2Iterator<float> iter_z(_cloud, "z");
+  std::vector<unsigned char>::iterator begin = _cloud.data.begin();
+  std::vector<unsigned char>::iterator end = _cloud.data.end();
+  for (; begin != end;)
+  {
+    if ((*iter_z) <= _max_z && (*iter_z) >= _min_z)
+    {
+      // Advance to the next point.
+      ++iter_z;
+      begin += _cloud.point_step;
+    }
+    else
+    {
+      // Swap the current point with the end.
+      end -= _cloud.point_step;
+      std::copy_n(end, _cloud.point_step, begin);
+    }
+  }
+
+  // Get the point count
+  const size_t point_count = (end - _cloud.data.begin()) / _cloud.point_step;
+  // Resize the point-cloud.
+  sensor_msgs::PointCloud2Modifier modifier(_cloud);
+  modifier.resize(point_count);
+  _cloud.data.erase(end, _cloud.data.end());
+}
+
 ObservationBuffer::ObservationBuffer(string topic_name, double observation_keep_time, double expected_update_rate,
                                      double min_obstacle_height, double max_obstacle_height, double obstacle_range,
                                      double raytrace_range, tf2_ros::Buffer& tf2_buffer, string global_frame,
@@ -90,7 +134,9 @@ bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame)
       obs.origin_ = origin.point;
 
       // we also need to transform the cloud of the observation to the new global frame
-      tf2_buffer_.transform(*(obs.cloud_), *(obs.cloud_), new_global_frame);
+      sensor_msgs::PointCloud2Ptr transformed_cloud(new sensor_msgs::PointCloud2{});
+      tf2_buffer_.transform(*(obs.cloud_), *transformed_cloud, new_global_frame);
+      obs.cloud_ = transformed_cloud;
     }
     catch (TransformException& ex)
     {
@@ -107,79 +153,40 @@ bool ObservationBuffer::setGlobalFrame(const std::string new_global_frame)
 
 void ObservationBuffer::bufferCloud(const sensor_msgs::PointCloud2& cloud)
 {
-  geometry_msgs::PointStamped global_origin;
-
-  // create a new observation on the list to be populated
-  observation_list_.push_front(Observation());
-
   // check whether the origin frame has been set explicitly or whether we should get it from the cloud
   string origin_frame = sensor_frame_ == "" ? cloud.header.frame_id : sensor_frame_;
 
+  geometry_msgs::PointStamped global_origin;
+  geometry_msgs::PointStamped local_origin;
+  local_origin.header.stamp = cloud.header.stamp;
+  local_origin.header.frame_id = origin_frame;
+  local_origin.point.x = 0;
+  local_origin.point.y = 0;
+  local_origin.point.z = 0;
+
+  sensor_msgs::PointCloud2Ptr global_frame_cloud(new sensor_msgs::PointCloud2());
+
   try
   {
-    // given these observations come from sensors... we'll need to store the origin pt of the sensor
-    geometry_msgs::PointStamped local_origin;
-    local_origin.header.stamp = cloud.header.stamp;
-    local_origin.header.frame_id = origin_frame;
-    local_origin.point.x = 0;
-    local_origin.point.y = 0;
-    local_origin.point.z = 0;
+    // Transform the sensor origin.
     tf2_buffer_.transform(local_origin, global_origin, global_frame_);
-    tf2::convert(global_origin.point, observation_list_.front().origin_);
-
-    // make sure to pass on the raytrace/obstacle range of the observation buffer to the observations
-    observation_list_.front().raytrace_range_ = raytrace_range_;
-    observation_list_.front().obstacle_range_ = obstacle_range_;
-
-    sensor_msgs::PointCloud2 global_frame_cloud;
 
     // transform the point cloud
-    tf2_buffer_.transform(cloud, global_frame_cloud, global_frame_);
-    global_frame_cloud.header.stamp = cloud.header.stamp;
-
-    // now we need to remove observations from the cloud that are below or above our height thresholds
-    sensor_msgs::PointCloud2& observation_cloud = *(observation_list_.front().cloud_);
-    observation_cloud.height = global_frame_cloud.height;
-    observation_cloud.width = global_frame_cloud.width;
-    observation_cloud.fields = global_frame_cloud.fields;
-    observation_cloud.is_bigendian = global_frame_cloud.is_bigendian;
-    observation_cloud.point_step = global_frame_cloud.point_step;
-    observation_cloud.row_step = global_frame_cloud.row_step;
-    observation_cloud.is_dense = global_frame_cloud.is_dense;
-
-    unsigned int cloud_size = global_frame_cloud.height*global_frame_cloud.width;
-    sensor_msgs::PointCloud2Modifier modifier(observation_cloud);
-    modifier.resize(cloud_size);
-    unsigned int point_count = 0;
-
-    // copy over the points that are within our height bounds
-    sensor_msgs::PointCloud2Iterator<float> iter_z(global_frame_cloud, "z");
-    std::vector<unsigned char>::const_iterator iter_global = global_frame_cloud.data.begin(), iter_global_end = global_frame_cloud.data.end();
-    std::vector<unsigned char>::iterator iter_obs = observation_cloud.data.begin();
-    for (; iter_global != iter_global_end; ++iter_z, iter_global += global_frame_cloud.point_step)
-    {
-      if ((*iter_z) <= max_obstacle_height_
-          && (*iter_z) >= min_obstacle_height_)
-      {
-        std::copy(iter_global, iter_global + global_frame_cloud.point_step, iter_obs);
-        iter_obs += global_frame_cloud.point_step;
-        ++point_count;
-      }
-    }
-
-    // resize the cloud for the number of legal points
-    modifier.resize(point_count);
-    observation_cloud.header.stamp = cloud.header.stamp;
-    observation_cloud.header.frame_id = global_frame_cloud.header.frame_id;
+    tf2_buffer_.transform(cloud, *global_frame_cloud, global_frame_);
+    global_frame_cloud->header.stamp = cloud.header.stamp;
   }
   catch (TransformException& ex)
   {
-    // if an exception occurs, we need to remove the empty observation from the list
-    observation_list_.pop_front();
     ROS_ERROR("TF Exception that should never happen for sensor frame: %s, cloud frame: %s, %s", sensor_frame_.c_str(),
               cloud.header.frame_id.c_str(), ex.what());
     return;
   }
+
+  // Apply the filter and remove points outside of the height bounds.
+  heightFilterPointCloud(*global_frame_cloud, min_obstacle_height_, max_obstacle_height_);
+
+  // Add the new observation.
+  observation_list_.emplace_front(global_origin.point, global_frame_cloud, obstacle_range_, raytrace_range_);
 
   // if the update was successful, we want to update the last updated time
   last_updated_ = ros::Time::now();
