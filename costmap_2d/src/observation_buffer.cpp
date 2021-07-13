@@ -191,15 +191,14 @@ void ObservationBuffer::bufferCloud(const sensor_msgs::PointCloud2& cloud)
 // returns a copy of the observations
 void ObservationBuffer::getObservations(vector<Observation>& observations)
 {
-  // first... let's make sure that we don't have any stale observations
-  purgeStaleObservations();
-
   // now we'll just copy the observations for the caller
   list<Observation>::iterator obs_it;
   for (obs_it = observation_list_.begin(); obs_it != observation_list_.end(); ++obs_it)
   {
     observations.push_back(*obs_it);
   }
+
+  observation_list_.clear();
 }
 
 void ObservationBuffer::purgeStaleObservations()
