@@ -146,7 +146,7 @@ pf_t *pf_alloc(int min_samples, int max_samples,
 void pf_free(pf_t *pf);
 
 // Initialize the filter using a guassian
-void pf_init(pf_t *pf, int count, pf_vector_t* means, pf_matrix_t* covs);
+void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov);
 
 // Initialize the filter using some model
 void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data);
