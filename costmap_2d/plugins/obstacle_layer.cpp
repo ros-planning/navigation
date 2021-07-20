@@ -335,8 +335,6 @@ void ObstacleLayer::updateBounds(double robot_x, double robot_y, double robot_ya
 {
   if (rolling_window_)
     updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
-  if (!enabled_)
-    return;
   useExtraBounds(min_x, min_y, max_x, max_y);
 
   bool current = true;
@@ -423,9 +421,6 @@ void ObstacleLayer::updateFootprint(double robot_x, double robot_y, double robot
 
 void ObstacleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
-  if (!enabled_)
-    return;
-
   if (footprint_clearing_enabled_)
   {
     setConvexPolygonCost(transformed_footprint_, costmap_2d::FREE_SPACE);

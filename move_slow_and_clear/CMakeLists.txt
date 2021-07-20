@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(move_slow_and_clear)
 
 find_package(catkin REQUIRED
@@ -48,6 +48,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
 install(TARGETS move_slow_and_clear
        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
        )
 
 install(FILES recovery_plugin.xml

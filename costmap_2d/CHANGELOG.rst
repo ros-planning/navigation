@@ -2,6 +2,42 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.1 (2020-08-27)
+-------------------
+* add explicit call to ros::Timer::stop in the destructor (`#984 <https://github.com/ros-planning/navigation/issues/984>`_)
+  Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
+* Exposing stopped\_ variable in costmap2D_ros with the getter function isStopped (`#913 <https://github.com/ros-planning/navigation/issues/913>`_)
+* use const for getter methods (`#948 <https://github.com/ros-planning/navigation/issues/948>`_)
+* Contributors: Dima Dorezyuk, Marco Bassa, Yuki Furuta
+
+1.17.0 (2020-04-02)
+-------------------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* fix invalid memory access
+* attempt to get test to run
+* increase required cmake version
+* Contributors: Michael Ferguson
+
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* fix published footprint topic name (`#947 <https://github.com/cobalt-robotics/navigation/issues/947>`_)
+  The default name of the topic will be updated in noetic
+* fix usage of size_locked, fixes `#959 <https://github.com/cobalt-robotics/navigation/issues/959>`_ (`#966 <https://github.com/cobalt-robotics/navigation/issues/966>`_)
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Merge pull request `#957 <https://github.com/cobalt-robotics/navigation/issues/957>`_ from Blindnology/melodic-updateOrigin
+  Optimize costmap_2d::updateOrigin
+* Optimize costmap_2d::updateOrigin
+* Contributors: Michael Ferguson, Pavlo Kolomiiets, Sean Yen, Yuki Furuta
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge pull request `#877 <https://github.com/ros-planning/navigation/issues/877>`_ from SteveMacenski/layer_clear_area-melodic

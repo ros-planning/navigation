@@ -2,6 +2,39 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.1 (2020-08-27)
+-------------------
+* occdist_scale should not be scaled by the costmap resolution as it doesn't multiply a value that includes a distance. (`#1000 <https://github.com/ros-planning/navigation/issues/1000>`_)
+* Contributors: wjwagner
+
+1.17.0 (2020-04-02)
+-------------------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* increase required cmake version
+* Contributors: Michael Ferguson
+
+1.16.6 (2020-03-18)
+-------------------
+* Fix Unknown CMake command check_include_file (navfn & base_local_planner) (`#975 <https://github.com/ros-planning/navigation/issues/975>`_)
+* Contributors: Sam Pfeiffer
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* Fixes gdist- and pdist_scale node paramter names (`#936 <https://github.com/cobalt-robotics/navigation/issues/936>`_)
+  Renames goal and path distance dynamic reconfigure parameter
+  names in the cfg file in order to actually make the parameters
+  used by the trajectory planner changeable.
+  Fixes `#935 <https://github.com/cobalt-robotics/navigation/issues/935>`_
+* don't include a main() function in base_local_planner library (`#969 <https://github.com/cobalt-robotics/navigation/issues/969>`_)
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Contributors: David Leins, Sean Yen, ipa-fez
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic

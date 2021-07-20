@@ -67,11 +67,13 @@ void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned 
 }
 
 GlobalPlanner::GlobalPlanner() :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        costmap_(NULL), initialized_(false), allow_unknown_(true),
+        p_calc_(NULL), planner_(NULL), path_maker_(NULL), orientation_filter_(NULL),
+        potential_array_(NULL) {
 }
 
 GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
-        costmap_(NULL), initialized_(false), allow_unknown_(true) {
+        GlobalPlanner() {
     //initialize the planner
     initialize(name, costmap, frame_id);
 }
@@ -142,6 +144,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         private_nh.param("planner_window_y", planner_window_y_, 0.0);
         private_nh.param("default_tolerance", default_tolerance_, 0.0);
         private_nh.param("publish_scale", publish_scale_, 100);
+        private_nh.param("outline_map", outline_map_, true);
 
         make_plan_srv_ = private_nh.advertiseService("make_plan", &GlobalPlanner::makePlanService, this);
 
@@ -284,7 +287,8 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     path_maker_->setSize(nx, ny);
     potential_array_ = new float[nx * ny];
 
-    outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
+    if(outline_map_)
+        outlineMap(costmap_->getCharMap(), nx, ny, costmap_2d::LETHAL_OBSTACLE);
 
     bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
                                                     nx * ny * 2, potential_array_);
@@ -313,7 +317,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     //publish the plan for visualization purposes
     publishPlan(plan);
-    delete potential_array_;
+    delete[] potential_array_;
     return !plan.empty();
 }
 
@@ -420,8 +424,13 @@ void GlobalPlanner::publishPotential(float* potential)
     for (unsigned int i = 0; i < grid.data.size(); i++) {
         if (potential_array_[i] >= POT_HIGH) {
             grid.data[i] = -1;
-        } else
-            grid.data[i] = potential_array_[i] * publish_scale_ / max;
+        } else {
+            if (fabs(max) < DBL_EPSILON) {
+                grid.data[i] = -1;
+            } else {
+                grid.data[i] = potential_array_[i] * publish_scale_ / max;
+            }
+        }
     }
     potential_pub_.publish(grid);
 }

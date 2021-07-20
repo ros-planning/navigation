@@ -202,4 +202,6 @@ int main(int argc, char** argv)
       > ("voxel_grid", 1, boost::bind(voxelCallback, pub_marked, pub_unknown, _1));
 
   ros::spin();
+
+  return 0;
 }

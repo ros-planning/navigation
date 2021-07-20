@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(navfn)
+
+include(CheckIncludeFile)
 
 find_package(catkin REQUIRED
     COMPONENTS
@@ -55,6 +57,11 @@ catkin_package(
         visualization_msgs
 )
 
+check_include_file(sys/time.h HAVE_SYS_TIME_H)
+if (HAVE_SYS_TIME_H)
+  add_definitions(-DHAVE_SYS_TIME_H)
+endif (HAVE_SYS_TIME_H)
+
 add_library (navfn src/navfn.cpp src/navfn_ros.cpp)
 target_link_libraries(navfn
     ${catkin_LIBRARIES}
@@ -66,10 +73,14 @@ target_link_libraries(navfn_node
     navfn
     )
 
-install(TARGETS navfn navfn_node
+install(TARGETS navfn_node
+       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+       )
+
+install(TARGETS navfn
        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+       RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
        )
 
 install(DIRECTORY include/navfn/
@@ -90,7 +101,7 @@ message (STATUS "NAVFN_HAVE_FLTK: ${NAVFN_HAVE_FLTK}, NETPBM: ${NAVFN_HAVE_NETPB
 # Just linking -lfltk is not sufficient on OS X
 if (NAVFN_HAVE_FLTK AND NAVFN_HAVE_NETPBM AND NOT APPLE)
   message (STATUS "FLTK found: adding navtest to build")
-  add_executable (navtest src/navtest.cpp src/navwin.cpp)
+  add_executable (navtest src/navtest/navtest.cpp src/navtest/navwin.cpp)
   set (FLTK_SKIP_FLUID 1)
   set (FLTK_SKIP_FORMS 1)
   set (FLTK_SKIP_IMAGES 1)

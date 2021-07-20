@@ -52,7 +52,9 @@ namespace costmap_2d
 {
 
 InflationLayer::InflationLayer()
-  : inflation_radius_(0)
+  : resolution_(0)
+  , inflation_radius_(0)
+  , inscribed_radius_(0)
   , weight_(0)
   , inflate_unknown_(false)
   , cell_inflation_radius_(0)
@@ -174,7 +176,7 @@ void InflationLayer::onFootprintChanged()
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
-  if (!enabled_ || (cell_inflation_radius_ == 0))
+  if (cell_inflation_radius_ == 0)
     return;
 
   // make sure the inflation list is empty at the beginning of the cycle (should always be true)

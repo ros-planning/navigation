@@ -2,6 +2,44 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.1 (2020-08-27)
+-------------------
+* (AMCL) add resample limit cache [Noetic] (`#1014 <https://github.com/ros-planning/navigation/issues/1014>`_)
+* Contributors: Matthijs van der Burgh
+
+1.17.0 (2020-04-02)
+-------------------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* map is not subscriptable in python3
+* fix python3 errors in basic_localization.py
+* use upstream pykdl
+* Contributors: Michael Ferguson
+
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* Implement selective resampling (`#921 <https://github.com/cobalt-robotics/navigation/issues/921>`_) (`#971 <https://github.com/cobalt-robotics/navigation/issues/971>`_)
+  Co-authored-by: Adi Vardi <adidasv111@gmail.com>
+* Add CLI option to trigger global localization before processing a bagfile (`#816 <https://github.com/cobalt-robotics/navigation/issues/816>`_) (`#970 <https://github.com/cobalt-robotics/navigation/issues/970>`_)
+  Co-authored-by: alain-m <alain@savioke.com>
+* Fix some reconfigure parameters not being applied [amcl]. (`#952 <https://github.com/cobalt-robotics/navigation/issues/952>`_)
+* amcl: include missing CMake functions to fix build (`#946 <https://github.com/cobalt-robotics/navigation/issues/946>`_)
+* Set proper limits for the z-weights [amcl]. (`#953 <https://github.com/cobalt-robotics/navigation/issues/953>`_)
+* Merge pull request `#965 <https://github.com/cobalt-robotics/navigation/issues/965>`_ from nlimpert/nlimpert/fix_missing_cmake_include
+  Add missing CMake include(CheckSymbolExists) for CMake >= 3.15
+* amcl: add missing CMake include(CheckSymbolExists)
+  Starting with CMake 3.15 an explicit include(CheckSymbolExists)
+  is required to use the check_symbol_exists macro.
+* Contributors: Ben Wolsieffer, Michael Ferguson, Nicolas Limpert, Patrick Chin
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge branch 'melodic-devel' into layer_clear_area-melodic

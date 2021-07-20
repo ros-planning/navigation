@@ -2,6 +2,33 @@
 Changelog for package dwa_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.1 (2020-08-27)
+-------------------
+
+1.17.0 (2020-04-02)
+-------------------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* increase required cmake version
+* Contributors: Michael Ferguson
+
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* Fixes gdist- and pdist_scale node paramter names (`#936 <https://github.com/cobalt-robotics/navigation/issues/936>`_)
+  Renames goal and path distance dynamic reconfigure parameter
+  names in the cfg file in order to actually make the parameters
+  used by the trajectory planner changeable.
+  Fixes `#935 <https://github.com/cobalt-robotics/navigation/issues/935>`_
+* Contributors: David Leins
+
 1.16.3 (2019-11-15)
 -------------------
 * Set footprint before in place rotation continuation (`#829 <https://github.com/ros-planning/navigation/issues/829>`_) (`#861 <https://github.com/ros-planning/navigation/issues/861>`_)

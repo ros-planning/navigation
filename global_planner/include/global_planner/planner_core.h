@@ -193,12 +193,14 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         int publish_scale_;
 
         void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
-        unsigned char* cost_array_;
+
         float* potential_array_;
         unsigned int start_x_, start_y_, end_x_, end_y_;
 
         bool old_navfn_behavior_;
         float convert_offset_;
+
+        bool outline_map_;
 
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
         void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
