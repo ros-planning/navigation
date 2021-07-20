@@ -135,7 +135,6 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
   pf_sample_set_t *set;
   pf_sample_t *sample;
   pf_pdf_gaussian_t *pdf;
-  
   set = pf->sets + pf->current_set;
   
   // Create the kd tree for adaptive sampling
@@ -148,7 +147,7 @@ void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
   // Compute the new sample poses
   for (i = 0; i < set->sample_count; i++)
   {
-    sample = set->samples + i++;
+    sample = set->samples + i;
     sample->weight = 1.0 / pf->max_samples;
     sample->pose = pf_pdf_gaussian_sample(pdf);
 
