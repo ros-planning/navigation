@@ -28,6 +28,7 @@
     <depend>tf2_ros</depend>
 
     <test_depend>rostest</test_depend>
+    <test_depend>map_server</test_depend>
 
     <export>
         <nav_core plugin="${prefix}/ccr_plugin.xml" />
