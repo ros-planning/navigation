@@ -2,6 +2,37 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.1 (2020-08-27)
+-------------------
+
+1.17.0 (2020-04-02)
+-------------------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* increase required cmake version
+* Contributors: Michael Ferguson
+
+1.16.6 (2020-03-18)
+-------------------
+* Fix Unknown CMake command check_include_file (navfn & base_local_planner) (`#975 <https://github.com/ros-planning/navigation/issues/975>`_)
+* Contributors: Sam Pfeiffer
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Add frame ID to empty NavFn paths (`#964 <https://github.com/cobalt-robotics/navigation/issues/964>`_)
+  * Don't publish empty paths
+  RViz will complain about not being able to transform the path if it doesn't have a frame ID, so we'll just drop these
+  Closes `#963 <https://github.com/cobalt-robotics/navigation/issues/963>`_
+  * Publish empty paths with a valid frame
+  * Fix indexing into empty plan for timestamp
+* Contributors: Nick Walker, Sean Yen
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes

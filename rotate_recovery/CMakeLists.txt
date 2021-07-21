@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(rotate_recovery)
 
 set(PKG_DEPS
@@ -42,6 +42,7 @@ target_link_libraries(rotate_recovery ${catkin_LIBRARIES})
 install(TARGETS rotate_recovery
        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+       RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
        )
 
 install(DIRECTORY include/${PROJECT_NAME}/

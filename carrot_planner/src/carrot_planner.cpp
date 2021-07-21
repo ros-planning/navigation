@@ -34,6 +34,7 @@
 *
 * Authors: Eitan Marder-Eppstein, Sachin Chitta
 *********************************************************************/
+#include <angles/angles.h>
 #include <carrot_planner/carrot_planner.h>
 #include <pluginlib/class_list_macros.h>
 #include <tf2/convert.h>
@@ -46,11 +47,16 @@ PLUGINLIB_EXPORT_CLASS(carrot_planner::CarrotPlanner, nav_core::BaseGlobalPlanne
 namespace carrot_planner {
 
   CarrotPlanner::CarrotPlanner()
-  : costmap_ros_(NULL), initialized_(false){}
+  : costmap_ros_(NULL), costmap_(NULL), world_model_(NULL), initialized_(false){}
 
   CarrotPlanner::CarrotPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
-  : costmap_ros_(NULL), initialized_(false){
+  : costmap_ros_(NULL), costmap_(NULL), world_model_(NULL), initialized_(false){
     initialize(name, costmap_ros);
+  }
+
+  CarrotPlanner::~CarrotPlanner() {
+    // deleting a nullptr is a noop
+    delete world_model_;
   }
   
   void CarrotPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros){

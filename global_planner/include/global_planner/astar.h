@@ -63,6 +63,7 @@ struct greater1 {
 class AStarExpansion : public Expander {
     public:
         AStarExpansion(PotentialCalculator* p_calc, int nx, int ny);
+        virtual ~AStarExpansion() {}
         bool calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y, int cycles,
                                 float* potential);
     private:

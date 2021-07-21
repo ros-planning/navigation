@@ -2,6 +2,32 @@
 Changelog for package fake_localization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.1 (2020-08-27)
+-------------------
+* Fix `#796 <https://github.com/ros-planning/navigation/issues/796>`_ (`#1017 <https://github.com/ros-planning/navigation/issues/1017>`_)
+  Use ros::Time(0) instead of timestamp in message so as not to fail to lookupTransform.
+* fix isolated build, `#995 <https://github.com/ros-planning/navigation/issues/995>`_ (`#997 <https://github.com/ros-planning/navigation/issues/997>`_)
+* Contributors: Michael Ferguson, Ryo KOYAMA
+
+1.17.0 (2020-04-02)
+-------------------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* increase required cmake version
+* Contributors: Michael Ferguson
+
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+
+1.16.4 (2020-03-04)
+-------------------
+* remove signals dep (`#945 <https://github.com/cobalt-robotics/navigation/issues/945>`_)
+  Boost > 1.7 has signals by default
+* Contributors: acxz
+
 1.16.3 (2019-11-15)
 -------------------
 * Merge pull request `#831 <https://github.com/ros-planning/navigation/issues/831>`_ from ros-planning/feature/remove_slashes

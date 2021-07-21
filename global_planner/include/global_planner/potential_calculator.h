@@ -37,6 +37,9 @@
  *********************************************************************/
 #ifndef _POTENTIAL_CALCULATOR_H
 #define _POTENTIAL_CALCULATOR_H
+
+#include <algorithm>
+
 namespace global_planner {
 
 class PotentialCalculator {
@@ -44,7 +47,7 @@ class PotentialCalculator {
         PotentialCalculator(int nx, int ny) {
             setSize(nx, ny);
         }
-
+        virtual ~PotentialCalculator() {}
         virtual float calculatePotential(float* potential, unsigned char cost, int n, float prev_potential=-1){
             if(prev_potential < 0){
                 // get min of neighbors

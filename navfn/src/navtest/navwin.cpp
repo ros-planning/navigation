@@ -2,8 +2,8 @@
 // simple timing test of the nav fn planner
 // 
 
-#include <navfn/navwin.h>
 #include <string.h>
+#include "navwin.h"
 
 namespace navfn {
 NavWin::NavWin(int w, int h, const char *name)

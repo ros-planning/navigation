@@ -112,9 +112,17 @@ public:
   void resetLayers();
 
   /** @brief Same as getLayeredCostmap()->isCurrent(). */
-  bool isCurrent()
+  bool isCurrent() const
     {
       return layered_costmap_->isCurrent();
+    }
+
+  /**
+   * @brief Is the costmap stopped
+   */
+  bool isStopped() const
+    {
+      return stopped_;
     }
 
   /**
@@ -125,7 +133,7 @@ public:
   bool getRobotPose(geometry_msgs::PoseStamped& global_pose) const;
 
   /** @brief Returns costmap name */
-  std::string getName() const
+  inline const std::string& getName() const noexcept
     {
       return name_;
     }
@@ -139,7 +147,7 @@ public:
   /** @brief Return a pointer to the "master" costmap which receives updates from all the layers.
    *
    * Same as calling getLayeredCostmap()->getCostmap(). */
-  Costmap2D* getCostmap()
+  Costmap2D* getCostmap() const
     {
       return layered_costmap_->getCostmap();
     }
@@ -148,7 +156,7 @@ public:
    * @brief  Returns the global frame of the costmap
    * @return The global frame of the costmap
    */
-  std::string getGlobalFrameID()
+  inline const std::string& getGlobalFrameID() const noexcept
     {
       return global_frame_;
     }
@@ -157,17 +165,17 @@ public:
    * @brief  Returns the local frame of the costmap
    * @return The local frame of the costmap
    */
-  std::string getBaseFrameID()
+  inline const std::string& getBaseFrameID() const noexcept
     {
       return robot_base_frame_;
     }
-  LayeredCostmap* getLayeredCostmap()
+  LayeredCostmap* getLayeredCostmap() const
     {
       return layered_costmap_;
     }
 
   /** @brief Returns the current padded footprint as a geometry_msgs::Polygon. */
-  geometry_msgs::Polygon getRobotFootprintPolygon()
+  geometry_msgs::Polygon getRobotFootprintPolygon() const
   {
     return costmap_2d::toPolygon(padded_footprint_);
   }
@@ -180,7 +188,7 @@ public:
    * The footprint initially comes from the rosparam "footprint" but
    * can be overwritten by dynamic reconfigure or by messages received
    * on the "footprint" topic. */
-  std::vector<geometry_msgs::Point> getRobotFootprint()
+  inline const std::vector<geometry_msgs::Point>& getRobotFootprint() const noexcept
   {
     return padded_footprint_;
   }
@@ -192,7 +200,7 @@ public:
    * The footprint initially comes from the rosparam "footprint" but
    * can be overwritten by dynamic reconfigure or by messages received
    * on the "footprint" topic. */
-  std::vector<geometry_msgs::Point> getUnpaddedRobotFootprint()
+  inline const std::vector<geometry_msgs::Point>& getUnpaddedRobotFootprint() const noexcept
   {
     return unpadded_footprint_;
   }

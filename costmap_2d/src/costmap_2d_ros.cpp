@@ -154,8 +154,8 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
     topic_param = "published_footprint";
   }
 
-  private_nh.param(topic_param, topic, std::string("oriented_footprint"));
-  footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
+  private_nh.param(topic_param, topic, std::string("footprint"));  // TODO: revert to oriented_footprint in N-turtle
+  footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>(topic, 1);
 
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
 
@@ -184,6 +184,8 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 
 Costmap2DROS::~Costmap2DROS()
 {
+  timer_.stop();
+
   map_update_thread_shutdown_ = true;
   if (map_update_thread_ != NULL)
   {
@@ -324,6 +326,7 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
     map_update_thread_shutdown_ = true;
     map_update_thread_->join();
     delete map_update_thread_;
+    map_update_thread_ = NULL;
   }
   map_update_thread_shutdown_ = false;
   double map_update_frequency = config.update_frequency;
@@ -357,7 +360,9 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
 
   old_config_ = config;
 
-  map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+  // only construct the thread if the frequency is positive
+  if(map_update_frequency > 0.0)
+    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 }
 
 void Costmap2DROS::readFootprintFromConfig(const costmap_2d::Costmap2DConfig &new_config,
@@ -433,25 +438,26 @@ void Costmap2DROS::movementCB(const ros::TimerEvent &event)
 
 void Costmap2DROS::mapUpdateLoop(double frequency)
 {
-  // the user might not want to run the loop every cycle
-  if (frequency == 0.0)
-    return;
-
   ros::NodeHandle nh;
   ros::Rate r(frequency);
   while (nh.ok() && !map_update_thread_shutdown_)
   {
+    #ifdef HAVE_SYS_TIME_H
     struct timeval start, end;
     double start_t, end_t, t_diff;
     gettimeofday(&start, NULL);
-
+    #endif
+    
     updateMap();
 
+    #ifdef HAVE_SYS_TIME_H
     gettimeofday(&end, NULL);
     start_t = start.tv_sec + double(start.tv_usec) / 1e6;
     end_t = end.tv_sec + double(end.tv_usec) / 1e6;
     t_diff = end_t - start_t;
     ROS_DEBUG("Map update time: %.9f", t_diff);
+    #endif
+    
     if (publish_cycle.toSec() > 0 && layered_costmap_->isInitialized())
     {
       unsigned int x0, y0, xn, yn;
@@ -515,8 +521,9 @@ void Costmap2DROS::start()
   stop_updates_ = false;
 
   // block until the costmap is re-initialized.. meaning one update cycle has run
+  // note: this does not hold, if the user has disabled map-updates allgother
   ros::Rate r(100.0);
-  while (ros::ok() && !initialized_)
+  while (ros::ok() && !initialized_ && map_update_thread_)
     r.sleep();
 }
 
@@ -575,7 +582,17 @@ bool Costmap2DROS::getRobotPose(geometry_msgs::PoseStamped& global_pose) const
   // get the global pose of the robot
   try
   {
-    tf_.transform(robot_pose, global_pose, global_frame_);
+    // use current time if possible (makes sure it's not in the future)
+    if (tf_.canTransform(global_frame_, robot_base_frame_, current_time))
+    {
+      geometry_msgs::TransformStamped transform = tf_.lookupTransform(global_frame_, robot_base_frame_, current_time);
+      tf2::doTransform(robot_pose, global_pose, transform);
+    }
+    // use the latest otherwise
+    else
+    {
+      tf_.transform(robot_pose, global_pose, global_frame_);
+    }
   }
   catch (tf2::LookupException& ex)
   {

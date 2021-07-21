@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(voxel_grid)
+
+include(CheckIncludeFile)
 
 find_package(catkin REQUIRED
   COMPONENTS
@@ -17,6 +19,11 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
+check_include_file(sys/time.h HAVE_SYS_TIME_H)
+if (HAVE_SYS_TIME_H)
+  add_definitions(-DHAVE_SYS_TIME_H)
+endif (HAVE_SYS_TIME_H)
+
 add_library(voxel_grid src/voxel_grid.cpp)
 add_dependencies(voxel_grid ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(voxel_grid ${catkin_LIBRARIES})
@@ -24,6 +31,7 @@ target_link_libraries(voxel_grid ${catkin_LIBRARIES})
 install(TARGETS voxel_grid
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/

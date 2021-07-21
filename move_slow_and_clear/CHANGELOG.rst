@@ -2,6 +2,33 @@
 Changelog for package move_slow_and_clear
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.1 (2020-08-27)
+-------------------
+
+1.17.0 (2020-04-02)
+-------------------
+* Merge pull request `#982 <https://github.com/ros-planning/navigation/issues/982>`_ from ros-planning/noetic_prep
+  Noetic Migration
+* increase required cmake version
+* Contributors: Michael Ferguson
+
+1.16.6 (2020-03-18)
+-------------------
+
+1.16.5 (2020-03-15)
+-------------------
+* [melodic] updated install for better portability. (`#973 <https://github.com/ros-planning/navigation/issues/973>`_)
+* Contributors: Sean Yen
+
+1.16.4 (2020-03-04)
+-------------------
+* [Windows][melodic] Navigation (except for map_server and amcl) Windows build bring up (`#851 <https://github.com/cobalt-robotics/navigation/issues/851>`_)
+* Merge pull request `#955 <https://github.com/cobalt-robotics/navigation/issues/955>`_ from isjfk/melodic-devel
+  Fix move_slow_and_clear sending obsolete params to dwa_local_planner
+* Fix move_slow_and_clear sending obsolete params to dwa_local_planner
+  issue.
+* Contributors: Jimmy F. Klarke, Michael Ferguson, Sean Yen
+
 1.16.3 (2019-11-15)
 -------------------
 
