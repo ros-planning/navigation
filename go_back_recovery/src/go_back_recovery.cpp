@@ -72,7 +72,7 @@ void GoBackRecovery::runBehavior()
     geometry_msgs::PoseStamped initial_pose;
     local_costmap_->getRobotPose(initial_pose);
     double current_angle = tf2::getYaw(initial_pose.pose.orientation);
-    const double dist_to_move = 1.0;
+    const double dist_to_move = 0.5;
     double dist_travelled = 0.0;
     double dist_left = dist_to_move - dist_travelled;
 
