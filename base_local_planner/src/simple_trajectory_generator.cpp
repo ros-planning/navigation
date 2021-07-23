@@ -82,7 +82,7 @@ void SimpleTrajectoryGenerator::initialise(
   double min_vel_y = limits->min_vel_y;
   double max_vel_y = limits->max_vel_y;
 
-  double threshold_angular_vel = 0.25;
+  double threshold_angular_vel = 0.15;
   if (fabs(vel[2]) > threshold_angular_vel)
   {
     double acc_lim_gain = 1.0/4.0;
