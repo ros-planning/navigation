@@ -59,7 +59,7 @@ void ClearCostmapRecovery::initialize(std::string name, tf2_ros::Buffer* tf,
     ros::NodeHandle private_nh("~/" + name_);
 
     private_nh.param("reset_distance", reset_distance_, 3.0);
-    private_nh.param("force_updating", force_updating_, false);
+    private_nh.param("force_updating", force_updating_, true);
     private_nh.param("affected_maps", affected_maps_, std::string("both"));
     if (affected_maps_ != "local" && affected_maps_ != "global" && affected_maps_ != "both")
     {
