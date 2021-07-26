@@ -99,7 +99,7 @@ namespace base_local_planner
       return true;
     }
 
-    if (const char *env_var = std::getenv("ROSEVN_STATIC_OBJECT_LIMITER_ENABLED"))
+    if (const char *env_var = std::getenv("ROSENV_STATIC_OBJECT_LIMITER_ENABLED"))
     {
       std::string val(env_var);
 
