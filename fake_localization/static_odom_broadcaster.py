@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 #
 # Similar to static_transform_broadcaster, this node constantly publishes

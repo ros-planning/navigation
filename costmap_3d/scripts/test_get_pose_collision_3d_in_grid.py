@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Test the performance of 3D costmap by sending a veyr large get plan cost service requests.
 """

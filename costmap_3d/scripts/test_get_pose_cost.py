@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Test the performance of the 2D costmap_monitor layer by sending a very large
 get plan cost service request. This is a useful baseline for comparing its
