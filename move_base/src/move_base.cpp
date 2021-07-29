@@ -1144,8 +1144,8 @@ namespace move_base {
     try{
       //we need to set some parameters based on what's been passed in to us to maintain backwards compatibility
       ros::NodeHandle n("~");
-      n.setParam("conservative_reset/reset_distance", conservative_reset_dist_);
-      n.setParam("aggressive_reset/reset_distance", circumscribed_radius_ * 4);
+      n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
+      n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
 
       ///RECOVERY BEHAVIOURS WHEN ROBOT IS NOT CARRYING ANYTHING
       //first, we'll load a recovery behavior to clear the costmap

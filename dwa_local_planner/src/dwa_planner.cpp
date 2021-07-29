@@ -110,8 +110,7 @@ namespace dwa_local_planner {
  
     vsamples_[0] = vx_samp;
     vsamples_[1] = vy_samp;
-    vsamples_[2] = vth_samp;
- 
+    vsamples_[2] = vth_samp; 
 
   }
 
@@ -179,6 +178,10 @@ namespace dwa_local_planner {
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
 
     private_nh.param("cheat_factor", cheat_factor_, 1.0);
+
+    pre_cmd_[0] = 0.0;
+    pre_cmd_[1] = 0.0;
+    pre_cmd_[2] = 0.0;
   }
 
   // used for visualization only, total_costs are not really total costs
@@ -221,6 +224,7 @@ namespace dwa_local_planner {
     generator_.initialise(pos,
         vel,
         goal,
+        pre_cmd_,
         &limits,
         vsamples_);
     generator_.generateTrajectory(pos, vel, vel_samples, traj);
@@ -308,6 +312,7 @@ namespace dwa_local_planner {
     generator_.initialise(pos,
         vel,
         goal,
+        pre_cmd_,
         &limits,
         vsamples_);
 
@@ -384,6 +389,10 @@ namespace dwa_local_planner {
       q.setRPY(0, 0, result_traj_.thetav_);
       tf2::convert(q, drive_velocities.pose.orientation);
     }
+
+    pre_cmd_[0] = drive_velocities.pose.position.x;
+    pre_cmd_[1] = drive_velocities.pose.position.y;
+    pre_cmd_[2] = tf2::getYaw(drive_velocities.pose.orientation);
 
     return result_traj_;
   }

@@ -102,6 +102,24 @@ public:
       bool discretize_by_time = false);
 
   /**
+   * @param pos current robot position
+   * @param vel current robot velocity
+   * @param pre_cmd previous command
+   * @param limits Current velocity limits
+   * @param vsamples: in how many samples to divide the given dimension
+   * @param use_acceleration_limits: if true use physical model, else idealized robot model
+   * @param discretize_by_time if true, the trajectory is split according in chunks of the same duration, else of same length
+   */
+  void initialise(
+      const Eigen::Vector3f& pos,
+      const Eigen::Vector3f& vel,
+      const Eigen::Vector3f& goal,
+      const Eigen::Vector3f& pre_cmd,
+      base_local_planner::LocalPlannerLimits* limits,
+      const Eigen::Vector3f& vsamples,
+      bool discretize_by_time = false);
+
+  /**
    * This function is to be called only when parameters change
    *
    * @param sim_granularity granularity of collision detection

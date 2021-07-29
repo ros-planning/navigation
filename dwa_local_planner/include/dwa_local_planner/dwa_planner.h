@@ -145,6 +145,7 @@ namespace dwa_local_planner {
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
     private:
+      Eigen::Vector3f pre_cmd_;
 
       base_local_planner::LocalPlannerUtil *planner_util_;
 
