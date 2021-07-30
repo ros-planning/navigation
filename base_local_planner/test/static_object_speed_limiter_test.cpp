@@ -89,17 +89,6 @@ bool StaticObjectSpeedLimiter_TEST::calculateLimits(double &max_allowed_linear_v
   max_allowed_linear_vel = max_linear_velocity_;
   max_allowed_angular_vel = max_angular_velocity_;
 
-  if (const char *env_var = std::getenv("ROSENV_STATIC_OBJECT_LIMITER_ENABLED"))
-  {
-    std::string val(env_var);
-
-    std::transform(val.begin(), val.end(), val.begin(), ::tolower);
-    if (val == "false")
-    {
-      return true;
-    }
-  }
-
   // Cache off the current velocity so it can't be changed during processing
   float currLinearVel = test_data_->velocity.linear;
   float currAngularVel = test_data_->velocity.angular;
