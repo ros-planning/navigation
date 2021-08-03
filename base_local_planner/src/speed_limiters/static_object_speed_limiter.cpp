@@ -99,17 +99,6 @@ namespace base_local_planner
       return true;
     }
 
-    if (const char *env_var = std::getenv("ROSEVN_STATIC_OBJECT_LIMITER_ENABLED"))
-    {
-      std::string val(env_var);
-
-      std::transform(val.begin(), val.end(), val.begin(), ::tolower);
-      if (forceEnabled_ == false && val == "false")
-      {
-        return true;
-      }
-    }
-
     if (params_.timeout > 0 && (ros::Time::now() - last_time_ < ros::Duration(params_.timeout)))
     {
       if (cachedMaxLinearVelocity_ > 0.0)
