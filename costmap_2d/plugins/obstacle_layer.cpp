@@ -302,6 +302,11 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
              global_frame_.c_str(), ex.what());
     projector_.projectLaser(message, cloud);
   }
+  catch (std::runtime_error &ex)
+  {
+    ROS_WARN("transformLaserScanToPointCloud error, it seems the message from laser sensor is malformed. Ignore this message. what(): %s", ex.what());
+    return; //ignore this message
+  }
 
   // buffer the point cloud
   buffer->lock();
