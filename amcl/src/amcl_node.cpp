@@ -1292,6 +1292,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       range_min = std::max(laser_scan->range_min, (float)laser_min_range_);
     else
       range_min = laser_scan->range_min;
+
+    if(ldata.range_max <= 0.0 || range_min < 0.0) {
+      ROS_ERROR("range_max or range_min from laser is negetive! ignore this message.");
+      return; // ignore this.
+    }
+
     // The AMCLLaserData destructor will free this memory
     ldata.ranges = new double[ldata.range_count][2];
     ROS_ASSERT(ldata.ranges);
@@ -1301,6 +1307,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // readings to max range.
       if(laser_scan->ranges[i] <= range_min)
         ldata.ranges[i][0] = ldata.range_max;
+      else if(laser_scan->ranges[i] > ldata.range_max)
+        ldata.ranges[i][0] = std::numeric_limits<decltype(ldata.range_max)>::max();
       else
         ldata.ranges[i][0] = laser_scan->ranges[i];
       // Compute bearing
