@@ -48,10 +48,10 @@
 #include <costmap_3d/layered_costmap_3d.h>
 #include <costmap_3d/costmap_3d_publisher.h>
 #include <costmap_3d/costmap_3d_query.h>
-#include <costmap_3d/GetPlanCost3DAction.h>
-#include <costmap_3d/GetPlanCost3DService.h>
-#include <costmap_3d/RayQuery3DAction.h>
-#include <costmap_3d/RayQuery3DService.h>
+#include <costmap_3d_msgs/GetPlanCost3DAction.h>
+#include <costmap_3d_msgs/GetPlanCost3DService.h>
+#include <costmap_3d_msgs/RayQuery3DAction.h>
+#include <costmap_3d_msgs/RayQuery3DService.h>
 #include <costmap_3d/Costmap3DConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <pluginlib/class_loader.hpp>
@@ -234,9 +234,9 @@ private:
   bool visualize_ray_query_miss_ = true;
   ros::Publisher ray_query_3d_visualization_pub_;
   dynamic_reconfigure::Server<costmap_3d::Costmap3DConfig> dsrv_;
-  actionlib::SimpleActionServer<GetPlanCost3DAction> get_plan_cost_action_srv_;
+  actionlib::SimpleActionServer<costmap_3d_msgs::GetPlanCost3DAction> get_plan_cost_action_srv_;
   ros::ServiceServer get_plan_cost_srv_;
-  actionlib::SimpleActionServer<RayQuery3DAction> ray_query_action_srv_;
+  actionlib::SimpleActionServer<costmap_3d_msgs::RayQuery3DAction> ray_query_action_srv_;
   ros::ServiceServer ray_query_srv_;
 
   // Because there are two entry points to the services, and because the
@@ -246,8 +246,8 @@ private:
   // for a buffered query to a single copy of the costmap, serialize
   // the ROS service and action server.
   std::mutex service_mutex_;
-  void getPlanCost3DActionCallback(const actionlib::SimpleActionServer<GetPlanCost3DAction>::GoalConstPtr& goal);
-  bool getPlanCost3DServiceCallback(GetPlanCost3DService::Request& request, GetPlanCost3DService::Response& response);
+  void getPlanCost3DActionCallback(const actionlib::SimpleActionServer<costmap_3d_msgs::GetPlanCost3DAction>::GoalConstPtr& goal);
+  bool getPlanCost3DServiceCallback(costmap_3d_msgs::GetPlanCost3DService::Request& request, costmap_3d_msgs::GetPlanCost3DService::Response& response);
   template <typename RequestType, typename ResponseType>
   void processPlanCost3D(RequestType& request, ResponseType& response);
   // Should be holding the service mutex, but not the costmap mutex
@@ -255,8 +255,8 @@ private:
           const std::string& footprint_mesh_resource = "",
           double padding = NAN);
 
-  void rayQuery3DActionCallback(const actionlib::SimpleActionServer<RayQuery3DAction>::GoalConstPtr& goal);
-  bool rayQuery3DServiceCallback(RayQuery3DService::Request& request, RayQuery3DService::Response& response);
+  void rayQuery3DActionCallback(const actionlib::SimpleActionServer<costmap_3d_msgs::RayQuery3DAction>::GoalConstPtr& goal);
+  bool rayQuery3DServiceCallback(costmap_3d_msgs::RayQuery3DService::Request& request, costmap_3d_msgs::RayQuery3DService::Response& response);
   template <typename RequestType, typename ResponseType>
   bool processRayQuery3D(RequestType& request, ResponseType& response);
 

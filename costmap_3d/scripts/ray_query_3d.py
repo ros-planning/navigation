@@ -7,7 +7,7 @@ import sys
 import rospy
 import math
 import tf.transformations
-import costmap_3d.srv
+import costmap_3d_msgs.srv
 import geometry_msgs.msg
 import copy
 
@@ -35,8 +35,8 @@ if __name__ == "__main__":
     rospy.init_node("ray_query_3d", anonymous=True)
 
     ray_query_srv = rospy.ServiceProxy("/move_base/local_costmap/ray_query_3d",
-                                      costmap_3d.srv.RayQuery3DService)
-    req = costmap_3d.srv.RayQuery3DServiceRequest()
+                                      costmap_3d_msgs.srv.RayQuery3DService)
+    req = costmap_3d_msgs.srv.RayQuery3DServiceRequest()
     req.header.frame_id = "base_footprint"
     req.header.stamp = rospy.Time.now()
     req.width = .1

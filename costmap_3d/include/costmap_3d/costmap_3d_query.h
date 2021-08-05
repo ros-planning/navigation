@@ -56,7 +56,7 @@
 #include <tf2/utils.h>
 #include <costmap_3d/layered_costmap_3d.h>
 #include <costmap_3d/crop_hull.h>
-#include <costmap_3d/GetPlanCost3DService.h>
+#include <costmap_3d_msgs/GetPlanCost3DService.h>
 #include <costmap_3d/fcl_helper.h>
 #include <costmap_3d/interior_collision_lut.h>
 
@@ -111,16 +111,16 @@ public:
 
   /// Which region of the map to query at the query pose.
   using QueryRegion = uint8_t;
-  static constexpr QueryRegion ALL = GetPlanCost3DService::Request::COST_QUERY_REGION_ALL;
-  static constexpr QueryRegion LEFT = GetPlanCost3DService::Request::COST_QUERY_REGION_LEFT;
-  static constexpr QueryRegion RIGHT = GetPlanCost3DService::Request::COST_QUERY_REGION_RIGHT;
-  static constexpr QueryRegion RECTANGULAR_PRISM = GetPlanCost3DService::Request::COST_QUERY_REGION_RECTANGULAR_PRISM;
+  static constexpr QueryRegion ALL = costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_REGION_ALL;
+  static constexpr QueryRegion LEFT = costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_REGION_LEFT;
+  static constexpr QueryRegion RIGHT = costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_REGION_RIGHT;
+  static constexpr QueryRegion RECTANGULAR_PRISM = costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_REGION_RECTANGULAR_PRISM;
   static constexpr QueryRegion MAX = RECTANGULAR_PRISM+1;
 
   /// What kind of obstacles to consider for the query.
   using QueryObstacles = uint8_t;
-  static constexpr QueryObstacles LETHAL_ONLY = GetPlanCost3DService::Request::COST_QUERY_OBSTACLES_LETHAL_ONLY;
-  static constexpr QueryObstacles NONLETHAL_ONLY = GetPlanCost3DService::Request::COST_QUERY_OBSTACLES_NONLETHAL_ONLY;
+  static constexpr QueryObstacles LETHAL_ONLY = costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_OBSTACLES_LETHAL_ONLY;
+  static constexpr QueryObstacles NONLETHAL_ONLY = costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_OBSTACLES_NONLETHAL_ONLY;
   static constexpr QueryObstacles OBSTACLES_MAX = NONLETHAL_ONLY+1;
 
   /** @brief Get the cost to put the robot base at the given pose.

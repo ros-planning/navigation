@@ -1,0 +1,17 @@
+<package format="2">
+  <name>costmap_3d_msgs</name>
+  <version>0.1.0</version>
+  <description>
+    This package contains Action and Service definitions for querying the
+    3D Costmaps provided by `costmap_3d`.
+  </description>
+  <author>C. Andy Martin</author>
+  <maintainer email="cam@badger-technologies.com">C. Andy Martin</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>message_generation</build_depend>
+  <depend>actionlib_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+</package>

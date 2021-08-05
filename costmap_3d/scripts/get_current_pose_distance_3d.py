@@ -10,7 +10,7 @@ import rospy
 #import tf2_ros
 #import tf2_geometry_msgs
 #import tf.transformations
-import costmap_3d.srv
+import costmap_3d_msgs.srv
 import geometry_msgs.msg
 import copy
 
@@ -29,12 +29,12 @@ if __name__ == "__main__":
     rospy.init_node("test_costmap3d_get_plan_cost_performance", anonymous=True)
 
     get_cost_srv = rospy.ServiceProxy("/move_base/local_costmap/get_plan_cost_3d",
-                                      costmap_3d.srv.GetPlanCost3DService)
-    req = costmap_3d.srv.GetPlanCost3DServiceRequest()
+                                      costmap_3d_msgs.srv.GetPlanCost3DService)
+    req = costmap_3d_msgs.srv.GetPlanCost3DServiceRequest()
     req.lazy = False
     req.buffered = False
     req.header.stamp = rospy.Time.now()
-    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_SIGNED_DISTANCE
+    req.cost_query_mode = costmap_3d_msgs.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_SIGNED_DISTANCE
     # req.footprint_mesh_resource = "package://ant_description/meshes/robot-get-close-to-obstacle-backward.stl"
     # req.padding = float('NaN')
     # req.footprint_mesh_resource = ""
@@ -59,9 +59,9 @@ if __name__ == "__main__":
     pose.pose.orientation.z += 1e-5
     pose.pose.orientation.w -= 1e-5
     req.poses.append(copy.deepcopy(pose))
-#    req.cost_query_regions = [costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_REGION_ALL,
-#                              costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_REGION_LEFT,
-#                              costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_REGION_RIGHT]
+#    req.cost_query_regions = [costmap_3d_msgs.srv.GetPlanCost3DServiceRequest.COST_QUERY_REGION_ALL,
+#                              costmap_3d_msgs.srv.GetPlanCost3DServiceRequest.COST_QUERY_REGION_LEFT,
+#                              costmap_3d_msgs.srv.GetPlanCost3DServiceRequest.COST_QUERY_REGION_RIGHT]
     rospy.loginfo("Request: " + str(req))
     res = get_cost_srv(req)
     rospy.loginfo("Result: " + str(res))

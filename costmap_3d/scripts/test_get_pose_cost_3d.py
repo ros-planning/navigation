@@ -10,7 +10,7 @@ import rospy
 import tf2_ros
 import tf2_geometry_msgs
 import tf.transformations
-import costmap_3d.srv
+import costmap_3d_msgs.srv
 import geometry_msgs.msg
 import copy
 
@@ -33,18 +33,18 @@ if __name__ == "__main__":
     pose_array_pub = rospy.Publisher("/test_costmap_3d/pose_array", geometry_msgs.msg.PoseArray, queue_size=1)
     test_ns = "/move_base/local_costmap/"
     get_cost_srv = rospy.ServiceProxy(test_ns + "get_plan_cost_3d",
-            costmap_3d.srv.GetPlanCost3DService)
+            costmap_3d_msgs.srv.GetPlanCost3DService)
     pose_array = geometry_msgs.msg.PoseArray()
     pose_array.header.frame_id = "odom"
     pose_array.header.stamp = rospy.Time.now()
-    req = costmap_3d.srv.GetPlanCost3DServiceRequest()
+    req = costmap_3d_msgs.srv.GetPlanCost3DServiceRequest()
     req.lazy = False
     req.buffered = False
     req.header.frame_id = "odom"
     req.header.stamp = pose_array.header.stamp
-#    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_SIGNED_DISTANCE
-    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_DISTANCE
-#    req.cost_query_mode = costmap_3d.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_COLLISION_ONLY
+#    req.cost_query_mode = costmap_3d_msgs.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_SIGNED_DISTANCE
+    req.cost_query_mode = costmap_3d_msgs.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_DISTANCE
+#    req.cost_query_mode = costmap_3d_msgs.srv.GetPlanCost3DServiceRequest.COST_QUERY_MODE_COLLISION_ONLY
     req.footprint_mesh_resource = ""
 #    req.footprint_mesh_resource = "package://ant_description/meshes/robot-get-close-to-obstacle-backward.stl"
     req.padding = 0.0

@@ -442,16 +442,16 @@ double Costmap3DROS::footprintSignedDistance(geometry_msgs::Pose pose,
 }
 
 void Costmap3DROS::getPlanCost3DActionCallback(
-    const actionlib::SimpleActionServer<GetPlanCost3DAction>::GoalConstPtr& goal)
+    const actionlib::SimpleActionServer<costmap_3d_msgs::GetPlanCost3DAction>::GoalConstPtr& goal)
 {
-  GetPlanCost3DResult result;
+  costmap_3d_msgs::GetPlanCost3DResult result;
   processPlanCost3D(*goal, result);
   get_plan_cost_action_srv_.setSucceeded(result);
 }
 
 bool Costmap3DROS::getPlanCost3DServiceCallback(
-    GetPlanCost3DService::Request& request,
-    GetPlanCost3DService::Response& response)
+    costmap_3d_msgs::GetPlanCost3DService::Request& request,
+    costmap_3d_msgs::GetPlanCost3DService::Response& response)
 {
   processPlanCost3D(request, response);
   return true;
@@ -487,8 +487,8 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
     query = getQuery(request.footprint_mesh_resource, request.padding);
   }
 
-  if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE ||
-      request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
+  if (request.cost_query_mode == costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE ||
+      request.cost_query_mode == costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
   {
     response.cost = std::numeric_limits<double>::max();
   }
@@ -525,11 +525,11 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
     {
       geometry_msgs::PoseStamped pose = tf_.transform(request.poses[i], layered_costmap_3d_.getGlobalFrameID());
 
-      if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_COLLISION_ONLY)
+      if (request.cost_query_mode == costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_MODE_COLLISION_ONLY)
       {
         pose_cost = query->footprintCollision(pose.pose, query_region) ? -1.0 : 0.0;
       }
-      else if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_COST)
+      else if (request.cost_query_mode == costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_MODE_COST)
       {
         pose_cost = query->footprintCost(pose.pose, query_region);
       }
@@ -538,7 +538,7 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
         Costmap3DQuery::DistanceOptions dopts;
         dopts.query_region = query_region;
         dopts.query_obstacles = query_obstacles;
-        if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
+        if (request.cost_query_mode == costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
         {
           dopts.signed_distance = true;
         }
@@ -558,8 +558,8 @@ void Costmap3DROS::processPlanCost3D(RequestType& request, ResponseType& respons
     {
       collision = true;
     }
-    if (request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE ||
-        request.cost_query_mode == GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
+    if (request.cost_query_mode == costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_MODE_DISTANCE ||
+        request.cost_query_mode == costmap_3d_msgs::GetPlanCost3DService::Request::COST_QUERY_MODE_SIGNED_DISTANCE)
     {
       // in distance mode, the cost is the minimum distance across all poses
       response.cost = std::min(response.cost, pose_cost);
@@ -635,9 +635,9 @@ std::shared_ptr<Costmap3DQuery> Costmap3DROS::getBufferedQueryForService(
 }
 
 void Costmap3DROS::rayQuery3DActionCallback(
-    const actionlib::SimpleActionServer<RayQuery3DAction>::GoalConstPtr& goal)
+    const actionlib::SimpleActionServer<costmap_3d_msgs::RayQuery3DAction>::GoalConstPtr& goal)
 {
-  RayQuery3DResult result;
+  costmap_3d_msgs::RayQuery3DResult result;
   if (processRayQuery3D(*goal, result))
   {
     ray_query_action_srv_.setSucceeded(result);
@@ -649,8 +649,8 @@ void Costmap3DROS::rayQuery3DActionCallback(
 }
 
 bool Costmap3DROS::rayQuery3DServiceCallback(
-    RayQuery3DService::Request& request,
-    RayQuery3DService::Response& response)
+    costmap_3d_msgs::RayQuery3DService::Request& request,
+    costmap_3d_msgs::RayQuery3DService::Response& response)
 {
   return processRayQuery3D(request, response);
 }

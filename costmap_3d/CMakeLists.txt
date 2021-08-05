@@ -9,8 +9,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   geometry_msgs
   octomap_msgs
+  pcl_ros
+  pcl_msgs
+  pcl_conversions
   tf_conversions
-  message_generation
   tf2
   tf2_geometry_msgs
   tf2_ros
@@ -45,24 +47,6 @@ generate_dynamic_reconfigure_options(
   cfg/Costmap3D.cfg
   cfg/CylinderClearingPlugin.cfg
   cfg/GenericPlugin.cfg
-)
-
-add_action_files(
-  FILES
-  GetPlanCost3D.action
-  RayQuery3D.action
-)
-
-add_service_files(
-  FILES
-  GetPlanCost3DService.srv
-  RayQuery3DService.srv
-)
-
-generate_messages(
-  DEPENDENCIES
-  actionlib_msgs
-  geometry_msgs
 )
 
 catkin_package(

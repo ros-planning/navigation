@@ -20,10 +20,8 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>message_generation</build_depend>
   <build_depend>tf2_sensor_msgs</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
-  <exec_depend>message_runtime</exec_depend>
   <depend>costmap_2d</depend>
   <depend>dynamic_reconfigure</depend>
   <depend>actionlib_msgs</depend>
@@ -32,6 +30,7 @@
   <depend>geometry_msgs</depend>
   <depend>octomap</depend>
   <depend>octomap_msgs</depend>
+  <depend>costmap_3d_msgs</depend>
   <depend>pcl_ros</depend>
   <depend>pcl_msgs</depend>
   <depend>pcl_conversions</depend>
