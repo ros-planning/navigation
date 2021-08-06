@@ -222,6 +222,14 @@ namespace dwa_local_planner {
     cmd_vel.linear.y = drive_cmds.pose.position.y;
     cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
+    // Low pass filter
+    double k_gain = 0.25;
+    cmd_vel.angular.z = k_gain * cmd_vel.angular.z + (1 - k_gain) * pre_cmd_vel_angular_z;
+    cmd_vel.linear.x  = k_gain * cmd_vel.linear.x + (1 - k_gain) * pre_cmd_vel_linear_x;
+
+    pre_cmd_vel_angular_z = cmd_vel.angular.z;
+    pre_cmd_vel_linear_x = cmd_vel.linear.x;
+
     //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
     if(path.cost_ < 0) {
