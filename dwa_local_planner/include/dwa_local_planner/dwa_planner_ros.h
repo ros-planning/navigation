@@ -151,6 +151,10 @@ namespace dwa_local_planner {
 
       bool initialized_;
 
+      // Low pass filter
+      double pre_cmd_vel_angular_z = 0;
+      double pre_cmd_vel_linear_x  = 0;
+
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
