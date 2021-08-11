@@ -153,6 +153,7 @@ namespace move_base {
 
     //advertise a service for clearing the costmaps
     clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
+    clear_costmaps_clt_ = private_nh.serviceClient<std_srvs::Empty>("clear_costmaps");
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
     if(shutdown_costmaps_){
@@ -1146,6 +1147,22 @@ namespace move_base {
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
+
+      boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
+      controller_costmap_ros_->resetLayers();
+      boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
+      planner_costmap_ros_->resetLayers();
+      /*
+      if (clear_costmaps_clt_.call(clear_costmaps_srv_))
+      {
+        ROS_INFO("Called clear_costmaps");
+      }
+      else
+      {
+        ROS_ERROR("Failed to call service clear_costmaps");
+        return;
+      }
+      */
 
       ///RECOVERY BEHAVIOURS WHEN ROBOT IS NOT CARRYING ANYTHING
       //first, we'll load a recovery behavior to clear the costmap
