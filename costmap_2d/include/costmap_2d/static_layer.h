@@ -55,17 +55,17 @@ class StaticLayer : public CostmapLayer
 public:
   StaticLayer();
   virtual ~StaticLayer();
-  virtual void onInitialize();
+  virtual void onInitialize() override;
   virtual void activate() override;
   virtual void deactivate() override;
   virtual void reset() override;
   virtual void reinitialize() override;
 
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
-                            double* max_x, double* max_y);
-  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
+                            double* max_x, double* max_y) override;
+  virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j) override;
 
-  virtual void matchSize();
+  virtual void matchSize() override;
 
 private:
   /**
