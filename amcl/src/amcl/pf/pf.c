@@ -662,7 +662,7 @@ void pf_cluster_stats(pf_t *pf, pf_sample_set_t *set)
     // Covariance in angular components; I think this is the correct
     // formula for circular statistics.
     cluster->cov.m[2][2] = -2 * log(sqrt(cluster->m[2] * cluster->m[2] +
-                                         cluster->m[3] * cluster->m[3]));
+                                         cluster->m[3] * cluster->m[3]) / cluster->weight);
 
     //printf("cluster %d %d %f (%f %f %f)\n", i, cluster->count, cluster->weight,
            //cluster->mean.v[0], cluster->mean.v[1], cluster->mean.v[2]);
