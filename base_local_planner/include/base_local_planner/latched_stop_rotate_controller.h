@@ -49,6 +49,10 @@ public:
     use_overshoot_tolerance_ = use_overshoot_tolerance;
   }
 
+  void setStoppingScalingPercent(double stopping_scaling_percent) {
+    stopping_scaling_percent_ = stopping_scaling_percent;
+  }
+
   /**
    * @brief Stop the robot taking into account acceleration limits
    * @param  global_pose The pose of the robot in the global frame
@@ -108,6 +112,8 @@ private:
   bool latch_yaw_goal_tolerance_, yaw_tolerance_latch_;
 
   bool rotating_to_goal_;
+
+  double stopping_scaling_percent_;
 };
 
 } /* namespace base_local_planner */

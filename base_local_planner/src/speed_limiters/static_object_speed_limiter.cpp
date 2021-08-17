@@ -231,7 +231,7 @@ Chuck will cycle between speeding up and slowing down.
         currLinearVel <= params_.max_linear_velocity_test_speed)
     {
       SpeedLimiterResult result =
-          calculateAllowedLinearSpeed(distance_from_static_left, distance_from_static_right, max_allowed_linear_vel);
+          calculateAllowedLinearSpeed(distance_from_static_left, distance_from_static_right, velocity_.linear);
       if (result.limiting)
       {
         if (result.speed < max_allowed_linear_vel)
@@ -246,7 +246,7 @@ Chuck will cycle between speeding up and slowing down.
         currAngularVel <= params_.max_angular_velocity_test_speed)
     {
       SpeedLimiterResult result =
-          calculateAllowedAngularSpeed(distance_from_static_left, distance_from_static_right, max_allowed_angular_vel);
+          calculateAllowedAngularSpeed(distance_from_static_left, distance_from_static_right, velocity_.angular);
       if (result.limiting)
       {
         if (result.speed < max_allowed_angular_vel)

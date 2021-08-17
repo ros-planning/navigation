@@ -109,6 +109,8 @@ namespace dwa_local_planner {
       ROS_INFO("Updating yaw latching to  %d", config.latch_yaw_goal_tolerance);
       latchedStopRotateController_.setYawLatch(config.latch_yaw_goal_tolerance);
 
+      latchedStopRotateController_.setStoppingScalingPercent(config.stopping_scaling_percent);
+
       // update dwa specific configuration
       dp_->reconfigure(config);
       canceled_ = false;

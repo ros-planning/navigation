@@ -24,6 +24,7 @@ LatchedStopRotateController::LatchedStopRotateController(const std::string& name
   latch_yaw_goal_tolerance_ = false;
 
   rotating_to_goal_ = false;
+  stopping_scaling_percent_ = 1.0;
 }
 
 LatchedStopRotateController::~LatchedStopRotateController() {}
@@ -135,6 +136,13 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
     boost::function<bool (Eigen::Vector3f pos,
                           Eigen::Vector3f vel,
                           Eigen::Vector3f vel_samples)> obstacle_check) {
+  if (stopping_scaling_percent_ <= 0.0) {
+    ROS_DEBUG_NAMED("latched_stop_rotate", "Slowing down...immediately");
+    cmd_vel.linear.x = 0.0;
+    cmd_vel.linear.y = 0.0;
+    cmd_vel.angular.z = 0.0;
+    return true;    
+  }
 
   //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible
   //but we'll use a tenth of a second to be consistent with the implementation of the local planner.
@@ -143,6 +151,10 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
 
   double vel_yaw = tf::getYaw(robot_vel.getRotation());
   double vth = sign(vel_yaw) * std::max(0.0, (fabs(vel_yaw) - acc_lim[2] * sim_period));
+
+  vx *= stopping_scaling_percent_;
+  vy *= stopping_scaling_percent_;
+  vth *= stopping_scaling_percent_;
 
   //we do want to check whether or not the command is valid
   double yaw = tf::getYaw(global_pose.getRotation());
