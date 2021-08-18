@@ -91,6 +91,7 @@ namespace dwa_local_planner {
       limits.prune_plan = config.prune_plan;
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.rot_stopped_vel = config.rot_stopped_vel;
+      limits.stopping_scaling_percent = config.stopping_scaling_percent;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);

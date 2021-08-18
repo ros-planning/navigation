@@ -137,12 +137,15 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
                           Eigen::Vector3f vel,
                           Eigen::Vector3f vel_samples)> obstacle_check) {
   if (stopping_scaling_percent_ <= 0.0) {
+    ROS_INFO_NAMED("latched_stop_rotate", "Slowing down...immediately");
     ROS_DEBUG_NAMED("latched_stop_rotate", "Slowing down...immediately");
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
     return true;    
   }
+
+  ROS_INFO_NAMED("latched_stop_rotate", "Slowing down using scale: %.2f", stopping_scaling_percent_);
 
   //slow down with the maximum possible acceleration... we should really use the frequency that we're running at to determine what is feasible
   //but we'll use a tenth of a second to be consistent with the implementation of the local planner.
