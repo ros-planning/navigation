@@ -47,6 +47,7 @@ catkin_package(
 
 include_directories(
     include
+    SYSTEM
     ${catkin_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
 )
