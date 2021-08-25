@@ -103,6 +103,12 @@ namespace move_base {
       bool executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
     private:
+      int detect_motion_stuck_count_ = 0;
+      double pre_body_x_ = 0;
+      double pre_body_y_ = 0;
+      double pre_body_yaw_ = 0;
+      bool detectMotionStuck();
+
       /**
        * @brief  A service call that clears the costmaps of obstacles
        * @param req The service request 

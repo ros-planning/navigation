@@ -44,6 +44,7 @@
 #include <geometry_msgs/Twist.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2/utils.h>
 
 namespace move_base {
 
@@ -923,9 +924,18 @@ namespace move_base {
         amr_status_pub_.publish(amr_status_msg_);
 
         //check for an oscillation condition
+        if(detectMotionStuck())
+        {
+          ROS_INFO("Detected stuck motion.");
+          publishZeroVelocity();
+          state_ = CLEARING;
+        }
+
+        //check for an oscillation condition
         if(oscillation_timeout_ > 0.0 &&
             last_oscillation_reset_ + ros::Duration(oscillation_timeout_) < ros::Time::now())
         {
+          ROS_INFO("Clear movement triggered by oscillation.");
           publishZeroVelocity();
           state_ = CLEARING;
           recovery_trigger_ = OSCILLATION_R;
@@ -1272,5 +1282,44 @@ namespace move_base {
     }
 
     return true;
+  }
+
+  bool MoveBase::detectMotionStuck()
+  {
+    geometry_msgs::PoseStamped global_pose;
+    getRobotPose(global_pose, planner_costmap_ros_);
+
+    double x = global_pose.pose.position.x;
+    double y = global_pose.pose.position.y;
+    double yaw = tf2::getYaw(global_pose.pose.orientation);
+
+    double diff_x = x - pre_body_x_;
+    double diff_y = y - pre_body_y_;
+    double diff_yaw = yaw - pre_body_yaw_;
+
+    double detect_motion_distance = 0.5;
+    double detect_motion_angle = 0.5; // about 30 degree
+    if (sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_distance &&
+        abs(diff_yaw) < detect_motion_angle)
+    {
+      detect_motion_stuck_count_++;
+    }
+    else
+    {
+      detect_motion_stuck_count_ = 0;
+    }
+
+    if (detect_motion_stuck_count_ >= 10)
+    {
+      ROS_INFO("The robot is getting stuck.");
+      detect_motion_stuck_count_ = 0;
+      return true;
+    }
+
+    pre_body_x_ = x;
+    pre_body_y_ = y;
+    pre_body_yaw_ = yaw;
+
+    return false;
   }
 };
