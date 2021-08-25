@@ -340,15 +340,19 @@ namespace move_base {
   }
 
   bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
+    return clearCostmaps();
+  }
+
+  bool MoveBase::clearCostmaps(void){
     //clear the costmaps
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
     controller_costmap_ros_->resetLayers();
 
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
     planner_costmap_ros_->resetLayers();
+
     return true;
   }
-
 
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
     if(as_->isActive()){
@@ -976,6 +980,9 @@ namespace move_base {
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
+          MoveBase::clearCostmaps();
+          ROS_INFO("Clear costmaps: line: %d", __LINE__);
+
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
 
@@ -994,6 +1001,9 @@ namespace move_base {
         else if(recovery_behavior_enabled_ && actuator_state == "HIGH" && recovery_index_ < recovery_behaviors_carrying_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
+
+          MoveBase::clearCostmaps();
+          ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
           recovery_behaviors_carrying_[recovery_index_]->runBehavior();
