@@ -153,7 +153,6 @@ namespace move_base {
 
     //advertise a service for clearing the costmaps
     clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
-    clear_costmaps_clt_ = private_nh.serviceClient<std_srvs::Empty>("clear_costmaps");
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
     if(shutdown_costmaps_){
@@ -341,15 +340,19 @@ namespace move_base {
   }
 
   bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp){
+    return clearCostmaps();
+  }
+
+  bool MoveBase::clearCostmaps(void){
     //clear the costmaps
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
     controller_costmap_ros_->resetLayers();
 
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
     planner_costmap_ros_->resetLayers();
+
     return true;
   }
-
 
   bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp){
     if(as_->isActive()){
@@ -977,10 +980,7 @@ namespace move_base {
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
-          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
-          controller_costmap_ros_->resetLayers();
-          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
-          planner_costmap_ros_->resetLayers();
+          MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
@@ -1002,10 +1002,7 @@ namespace move_base {
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
-          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
-          controller_costmap_ros_->resetLayers();
-          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
-          planner_costmap_ros_->resetLayers();
+          MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
           ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
@@ -1159,22 +1156,6 @@ namespace move_base {
       ros::NodeHandle n("~");
       n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
-
-      boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
-      controller_costmap_ros_->resetLayers();
-      boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
-      planner_costmap_ros_->resetLayers();
-      /*
-      if (clear_costmaps_clt_.call(clear_costmaps_srv_))
-      {
-        ROS_INFO("Called clear_costmaps");
-      }
-      else
-      {
-        ROS_ERROR("Failed to call service clear_costmaps");
-        return;
-      }
-      */
 
       ///RECOVERY BEHAVIOURS WHEN ROBOT IS NOT CARRYING ANYTHING
       //first, we'll load a recovery behavior to clear the costmap
