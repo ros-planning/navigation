@@ -95,6 +95,8 @@ void ClearCostmapRecovery::runBehavior(){
     return;
   }
 
+  ROS_INFO("DEBUG:: recovery mode runBehavior");
+
   ROS_WARN("Clearing %s costmap%s to unstuck robot (%.2fm).", affected_maps_.c_str(),
            affected_maps_ == "both" ? "s" : "", reset_distance_);
 
