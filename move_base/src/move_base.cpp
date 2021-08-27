@@ -1003,7 +1003,7 @@ namespace move_base {
           ROS_DEBUG_NAMED("move_base_recovery","Going back to planning state");
           last_valid_plan_ = ros::Time::now();
           planning_retries_ = 0;
-          state_ = PLANNING;
+          // state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
           recovery_index_++;
