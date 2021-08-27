@@ -92,6 +92,7 @@ RotateRecovery::~RotateRecovery()
 
 void RotateRecovery::runBehavior()
 {
+  ROS_INFO("Rotate recovery behavior started.");
   if (!initialized_)
   {
     ROS_ERROR("This object must be initialized before runBehavior is called");
