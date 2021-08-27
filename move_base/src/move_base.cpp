@@ -478,9 +478,9 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
-    for (int i=0; i<50; i++)
+    for (int i=0; i<planner_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
     {
-      for (int j=0; j<50; j++)
+      for (int j=0; j<planner_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
       {
         ROS_INFO("costmap val: (i, j) = (%d, %d) : %d", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
       }
@@ -1320,14 +1320,14 @@ namespace move_base {
     double goal_diff_x = planner_goal_.pose.position.x - x;
     double goal_diff_y = planner_goal_.pose.position.y - y;
 
-    double detect_motion_stuck_goal_diff_distance = 2.0;
+    double detect_motion_stuck_goal_diff_distance = 1.0;
     double detect_motion_stuck_distance = 0.5;
     double detect_motion_stuck_angle = 0.5; // about 30 degree
 
     if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
         sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
         abs(diff_yaw) < detect_motion_stuck_angle &&
-        abs(cmd_vel_.linear.x) < 0.3 &&
+        abs(cmd_vel_.linear.x) < 0.5 &&
         abs(cmd_vel_.angular.z) < 0.5)
     {
       detect_motion_stuck_count_++;
