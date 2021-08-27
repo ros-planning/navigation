@@ -478,6 +478,13 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
+    for (int i=0; i<50; i++)
+    {
+      for (int j=0; j<50; j++)
+      {
+        ROS_INFO("costmap val: (i, j) = (%d, %d) : %d", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
+      }
+    }
 
     //make sure to set the plan to be empty initially
     plan.clear();
@@ -511,6 +518,7 @@ namespace move_base {
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
+    cmd_vel_ = cmd_vel;
     vel_pub_.publish(cmd_vel);
   }
 
@@ -950,6 +958,7 @@ namespace move_base {
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
+          cmd_vel_ = cmd_vel;
           if(recovery_trigger_ == CONTROLLING_R)
             recovery_index_ = 0;
         }
@@ -1308,10 +1317,18 @@ namespace move_base {
     double diff_y = y - pre_body_y_;
     double diff_yaw = yaw - pre_body_yaw_;
 
+    double goal_diff_x = planner_goal_.pose.position.x - x;
+    double goal_diff_y = planner_goal_.pose.position.y - y;
+
+    double detect_motion_stuck_goal_diff_distance = 2.0;
     double detect_motion_stuck_distance = 0.5;
     double detect_motion_stuck_angle = 0.5; // about 30 degree
-    if (sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
-        abs(diff_yaw) < detect_motion_stuck_angle)
+
+    if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
+        sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
+        abs(diff_yaw) < detect_motion_stuck_angle &&
+        abs(cmd_vel_.linear.x) < 0.3 &&
+        abs(cmd_vel_.angular.z) < 0.5)
     {
       detect_motion_stuck_count_++;
     }
@@ -1320,7 +1337,7 @@ namespace move_base {
       detect_motion_stuck_count_ = 0;
     }
 
-    if (detect_motion_stuck_count_ >= 50)
+    if (detect_motion_stuck_count_ >= 100)
     {
       ROS_INFO("The robot is getting stuck.");
       detect_motion_stuck_count_ = 0;

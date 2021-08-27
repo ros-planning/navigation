@@ -109,6 +109,8 @@ namespace move_base {
       double pre_body_yaw_ = 0;
       bool detectMotionStuck();
 
+      geometry_msgs::Twist cmd_vel_;
+
       /**
        * @brief  A service call that clears the costmaps of obstacles
        * @param req The service request 
