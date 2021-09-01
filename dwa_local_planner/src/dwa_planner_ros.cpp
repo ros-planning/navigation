@@ -91,7 +91,7 @@ namespace dwa_local_planner {
       limits.prune_plan = config.prune_plan;
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.rot_stopped_vel = config.rot_stopped_vel;
-      limits.stopping_scaling_percent = config.stopping_scaling_percent;
+      limits.stopping_scaling_multiplier = config.stopping_scaling_multiplier;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
 
       odom_helper_.setAccelerationRates(config.acc_lim_x, config.acc_lim_theta);
@@ -110,7 +110,7 @@ namespace dwa_local_planner {
       ROS_INFO("Updating yaw latching to  %d", config.latch_yaw_goal_tolerance);
       latchedStopRotateController_.setYawLatch(config.latch_yaw_goal_tolerance);
 
-      latchedStopRotateController_.setStoppingScalingPercent(config.stopping_scaling_percent);
+      latchedStopRotateController_.setStoppingScalingPercent(config.stopping_scaling_multiplier);
 
       // update dwa specific configuration
       dp_->reconfigure(config);

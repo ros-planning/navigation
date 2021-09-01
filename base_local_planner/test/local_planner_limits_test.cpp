@@ -31,7 +31,7 @@ std::shared_ptr<base_local_planner::LocalPlannerLimits> makeLimits(float max_x, 
     0.15, // xy_gal_tolerance
     0.30, // xy_overshoot_tolerance
     0.1,  // yaw_goal_tolerance
-    1.0  // stopping_scaling_percent
+    1.0  // stopping_scaling_multiplier
     );
 }
 

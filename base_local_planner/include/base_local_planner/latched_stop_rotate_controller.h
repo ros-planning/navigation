@@ -49,8 +49,8 @@ public:
     use_overshoot_tolerance_ = use_overshoot_tolerance;
   }
 
-  void setStoppingScalingPercent(double stopping_scaling_percent) {
-    stopping_scaling_percent_ = stopping_scaling_percent;
+  void setStoppingScalingPercent(double stopping_scaling_multiplier) {
+    stopping_scaling_multiplier_ = stopping_scaling_multiplier;
   }
 
   /**
@@ -113,7 +113,7 @@ private:
 
   bool rotating_to_goal_;
 
-  double stopping_scaling_percent_;
+  double stopping_scaling_multiplier_;
 };
 
 } /* namespace base_local_planner */

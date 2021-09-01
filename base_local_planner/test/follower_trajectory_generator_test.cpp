@@ -30,7 +30,7 @@ std::shared_ptr<base_local_planner::LocalPlannerLimits> getLimits()
     0.15, // xy_gal_tolerance,
     0.3, // overshoot_tolerance
     0.1,  // yaw_goal_tolerance
-    1.0  // stopping_scaling_percent
+    1.0  // stopping_scaling_multiplier
     );
 }
 

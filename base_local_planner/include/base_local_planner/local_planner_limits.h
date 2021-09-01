@@ -71,7 +71,7 @@ public:
   double trans_stopped_vel;
   double rot_stopped_vel;
   bool   restore_defaults;
-  double stopping_scaling_percent;
+  double stopping_scaling_multiplier;
 
   LocalPlannerLimits() {}
 
@@ -91,7 +91,7 @@ public:
       double nxy_goal_tolerance,
       double nxy_goal_overshoot_tolerance,
       double nyaw_goal_tolerance,
-      double nstopping_scaling_percent,
+      double nstopping_scaling_multiplier,
 //      double njerk_lim_trans = -1,
 //      double njerk_lim_rot = -1,
       bool   nprune_plan = true,
@@ -123,7 +123,7 @@ public:
         yaw_goal_tolerance(nyaw_goal_tolerance),
         trans_stopped_vel(ntrans_stopped_vel),
         rot_stopped_vel(nrot_stopped_vel),
-        stopping_scaling_percent(nstopping_scaling_percent) {}
+        stopping_scaling_multiplier(nstopping_scaling_multiplier) {}
 
   ~LocalPlannerLimits() {}
 
