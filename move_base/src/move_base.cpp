@@ -478,11 +478,11 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
-    for (int i=0; i<planner_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
+    for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
     {
-      for (int j=0; j<planner_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
+      for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
       {
-        ROS_INFO("costmap val: (i, j) = (%d, %d) : %d", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
+        ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
       }
     }
 
@@ -937,6 +937,13 @@ namespace move_base {
           ROS_INFO("Detected stuck motion.");
           publishZeroVelocity();
           state_ = CLEARING;
+	  for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
+	  {
+	    for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
+	    {
+	      ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
+	    }
+	  }
         }
 
         //check for an oscillation condition
@@ -1181,6 +1188,7 @@ namespace move_base {
       if(backward_recovery_allowed_){
         go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(go_back);
+        recovery_behaviors_carrying_.push_back(go_back);
       }
 
       //Newly added: load a recovery behavior to rotate small angle
@@ -1200,6 +1208,7 @@ namespace move_base {
       if(backward_recovery_allowed_){
         go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(go_back);
+        recovery_behaviors_carrying_.push_back(go_back);
       }
 
       //next, we'll load a recovery behavior to rotate in place
@@ -1209,31 +1218,22 @@ namespace move_base {
         recovery_behaviors_.push_back(rotate);
       }
 
-      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
+/*
+      // we'll load a recovery behavior that will do an aggressive reset of the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
-
-      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
       recovery_behaviors_carrying_.push_back(ags_clear);
 
-      //we'll move backwards one more time
-      if(backward_recovery_allowed_)
-        recovery_behaviors_carrying_.push_back(go_back);
-
-      ///RECOVERY BEHAVIOURS WHEN ROBOT IS NOT CARRYING ANYTHING
-      //first, we'll load a recovery behavior to clear the costmap
+      // we'll load a recovery behavior to clear the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(cons_clear);
-      
-      //we'll rotate in-place one more time
-      if(clearing_rotation_allowed_)
-        recovery_behaviors_.push_back(rotate);
-
-      ///RECOVERY BEHAVIOURS WHEN ROBOT IS CARRYING/TOWING
-      //first, we'll load a recovery behavior to clear the costmap
       recovery_behaviors_carrying_.push_back(cons_clear);
+
+      // we'll rotate in-place one more time
+      if(clearing_rotation_allowed_) recovery_behaviors_.push_back(rotate);
+*/
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
