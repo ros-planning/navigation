@@ -937,13 +937,13 @@ namespace move_base {
           ROS_INFO("Detected stuck motion.");
           publishZeroVelocity();
           state_ = CLEARING;
-	  for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
-	  {
-	    for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
-	    {
-	      ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
-	    }
-	  }
+          for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
+          {
+            for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
+            {
+              ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
+            }
+          }
         }
 
         //check for an oscillation condition
