@@ -52,6 +52,8 @@ double GoBackRecovery::calculateDist(geometry_msgs::PoseStamped initial, geometr
 
 void GoBackRecovery::runBehavior()
 {
+    ROS_INFO("Go back recovery mode is called.");
+
     if(!initialized_)
     {
         ROS_ERROR("This object must be initialized before runBehavior is called");
@@ -72,7 +74,7 @@ void GoBackRecovery::runBehavior()
     geometry_msgs::PoseStamped initial_pose;
     local_costmap_->getRobotPose(initial_pose);
     double current_angle = tf2::getYaw(initial_pose.pose.orientation);
-    const double dist_to_move = 0.5;
+    const double dist_to_move = 0.25;
     double dist_travelled = 0.0;
     double dist_left = dist_to_move - dist_travelled;
 

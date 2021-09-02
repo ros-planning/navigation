@@ -44,6 +44,7 @@
 #include <geometry_msgs/Twist.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2/utils.h>
 
 namespace move_base {
 
@@ -477,6 +478,13 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
+    for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
+    {
+      for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
+      {
+        ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
+      }
+    }
 
     //make sure to set the plan to be empty initially
     plan.clear();
@@ -510,6 +518,7 @@ namespace move_base {
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;
     cmd_vel.angular.z = 0.0;
+    cmd_vel_ = cmd_vel;
     vel_pub_.publish(cmd_vel);
   }
 
@@ -923,9 +932,25 @@ namespace move_base {
         amr_status_pub_.publish(amr_status_msg_);
 
         //check for an oscillation condition
+        if(detectMotionStuck())
+        {
+          ROS_INFO("Detected stuck motion.");
+          publishZeroVelocity();
+          state_ = CLEARING;
+          for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
+          {
+            for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
+            {
+              ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
+            }
+          }
+        }
+
+        //check for an oscillation condition
         if(oscillation_timeout_ > 0.0 &&
             last_oscillation_reset_ + ros::Duration(oscillation_timeout_) < ros::Time::now())
         {
+          ROS_INFO("Clear movement triggered by oscillation.");
           publishZeroVelocity();
           state_ = CLEARING;
           recovery_trigger_ = OSCILLATION_R;
@@ -940,6 +965,7 @@ namespace move_base {
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
+          cmd_vel_ = cmd_vel;
           if(recovery_trigger_ == CONTROLLING_R)
             recovery_index_ = 0;
         }
@@ -983,7 +1009,7 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
+          ROS_INFO("Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
           recovery_behaviors_[recovery_index_]->runBehavior();
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
@@ -1157,12 +1183,34 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
 
-      ///RECOVERY BEHAVIOURS WHEN ROBOT IS NOT CARRYING ANYTHING
-      //first, we'll load a recovery behavior to clear the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
-      cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-      recovery_behaviors_.push_back(cons_clear);
-      
+      //Newly added: load a recovery behavior to move backwards
+      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
+      if(backward_recovery_allowed_){
+        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(go_back);
+        recovery_behaviors_carrying_.push_back(go_back);
+      }
+
+      //Newly added: load a recovery behavior to rotate small angle
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
+      if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
+        rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(rotate_small);
+      }
+
+      //Newly added: load a recovery behavior to rotate small angle
+      if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
+        rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(rotate_small);
+      }
+
+      //Newly added: load a recovery behavior to move backwards
+      if(backward_recovery_allowed_){
+        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(go_back);
+        recovery_behaviors_carrying_.push_back(go_back);
+      }
+
       //next, we'll load a recovery behavior to rotate in place
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
@@ -1170,40 +1218,22 @@ namespace move_base {
         recovery_behaviors_.push_back(rotate);
       }
 
-      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
+/*
+      // we'll load a recovery behavior that will do an aggressive reset of the costmap
       boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
       ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
       recovery_behaviors_.push_back(ags_clear);
-
-      //we'll rotate in-place one more time
-      if(clearing_rotation_allowed_)
-        recovery_behaviors_.push_back(rotate);
-      
-
-      ///RECOVERY BEHAVIOURS WHEN ROBOT IS CARRYING/TOWING
-      //first, we'll load a recovery behavior to clear the costmap
-      recovery_behaviors_carrying_.push_back(cons_clear);
-
-      //Newly added: load a recovery behavior to move backwards
-      boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
-      if(backward_recovery_allowed_){
-        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_carrying_.push_back(go_back);
-      }
-
-      //next, we'll load a recovery behavior that will do an aggressive reset of the costmap
       recovery_behaviors_carrying_.push_back(ags_clear);
 
-      //we'll move backwards one more time
-      if(backward_recovery_allowed_)
-        recovery_behaviors_carrying_.push_back(go_back);
-      
-      //Newly added: load a recovery behavior to rotate small angle
-      boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
-      if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
-        rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_carrying_.push_back(rotate_small);
-      }
+      // we'll load a recovery behavior to clear the costmap
+      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+      recovery_behaviors_.push_back(cons_clear);
+      recovery_behaviors_carrying_.push_back(cons_clear);
+
+      // we'll rotate in-place one more time
+      if(clearing_rotation_allowed_) recovery_behaviors_.push_back(rotate);
+*/
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
@@ -1272,5 +1302,52 @@ namespace move_base {
     }
 
     return true;
+  }
+
+  bool MoveBase::detectMotionStuck()
+  {
+    geometry_msgs::PoseStamped global_pose;
+    getRobotPose(global_pose, planner_costmap_ros_);
+
+    double x = global_pose.pose.position.x;
+    double y = global_pose.pose.position.y;
+    double yaw = tf2::getYaw(global_pose.pose.orientation);
+
+    double diff_x = x - pre_body_x_;
+    double diff_y = y - pre_body_y_;
+    double diff_yaw = yaw - pre_body_yaw_;
+
+    double goal_diff_x = planner_goal_.pose.position.x - x;
+    double goal_diff_y = planner_goal_.pose.position.y - y;
+
+    double detect_motion_stuck_goal_diff_distance = 1.0;
+    double detect_motion_stuck_distance = 0.5;
+    double detect_motion_stuck_angle = 0.5; // about 30 degree
+
+    if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
+        sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
+        abs(diff_yaw) < detect_motion_stuck_angle &&
+        abs(cmd_vel_.linear.x) < 0.5 &&
+        abs(cmd_vel_.angular.z) < 0.5)
+    {
+      detect_motion_stuck_count_++;
+    }
+    else
+    {
+      detect_motion_stuck_count_ = 0;
+    }
+
+    if (detect_motion_stuck_count_ >= 100)
+    {
+      ROS_INFO("The robot is getting stuck.");
+      detect_motion_stuck_count_ = 0;
+      return true;
+    }
+
+    pre_body_x_ = x;
+    pre_body_y_ = y;
+    pre_body_yaw_ = yaw;
+
+    return false;
   }
 };
