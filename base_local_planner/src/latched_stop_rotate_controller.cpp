@@ -137,7 +137,6 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
                           Eigen::Vector3f vel,
                           Eigen::Vector3f vel_samples)> obstacle_check) {
   if (stopping_scaling_multiplier_ <= 0.0) {
-    ROS_INFO_NAMED("latched_stop_rotate", "LSRC Slowing down...immediately");
     ROS_DEBUG_NAMED("latched_stop_rotate", "Slowing down...immediately");
     cmd_vel.linear.x = 0.0;
     cmd_vel.linear.y = 0.0;
@@ -153,16 +152,9 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
   double vel_yaw = tf::getYaw(robot_vel.getRotation());
   double vth = sign(vel_yaw) * std::max(0.0, (fabs(vel_yaw) - acc_lim[2] * sim_period));
 
-  ROS_INFO_NAMED("latched_stop_rotate", "LSRC Slowing down using scale: %.2f", stopping_scaling_multiplier_);
-  ROS_INFO_NAMED("latched_stop_rotate", "LSRC Robot velocity x: %.2f, y: %.2f, theta: %.2f", robot_vel.getOrigin().x(), robot_vel.getOrigin().y(), vel_yaw);
-  ROS_INFO_NAMED("latched_stop_rotate", "LSRC acc_lim 0: %.2f, 1: %.2f, 2: %.2f", acc_lim[0], acc_lim[1], acc_lim[2]);
-  ROS_INFO_NAMED("latched_stop_rotate", "LSRC new velocity vx: %.2f, vy: %.2f, vth: %.2f", vx, vy, vth);
-
   vx *= stopping_scaling_multiplier_;
   vy *= stopping_scaling_multiplier_;
   vth *= stopping_scaling_multiplier_;
-
-  ROS_INFO_NAMED("latched_stop_rotate", "LSRC new SCALED velocity vx: %.2f, vy: %.2f, vth: %.2f", vx, vy, vth);
 
   //we do want to check whether or not the command is valid
   double yaw = tf::getYaw(global_pose.getRotation());
@@ -178,7 +170,6 @@ bool LatchedStopRotateController::stopWithAccLimits(const tf::Stamped<tf::Pose>&
     cmd_vel.angular.z = vth;
     return true;
   }
-  ROS_INFO_NAMED("latched_stop_rotate", "LSRC Stopping cmd in collision");
   ROS_WARN("Stopping cmd in collision");
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
