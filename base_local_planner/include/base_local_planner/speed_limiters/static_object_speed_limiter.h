@@ -92,6 +92,7 @@ namespace base_local_planner
       double dist_left_ = 0.0;
       double dist_right_ = 0.0;
       double speed_ = 0.0;
+      double max_speed_ = 0.0;
       double min_velocity_ = 0.0;
       double min_test_distance_ = 0.0;
       double max_test_distance_ = 0.0;
