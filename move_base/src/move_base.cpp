@@ -1335,8 +1335,8 @@ namespace move_base {
     if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
         sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
         abs(diff_yaw) < detect_motion_stuck_angle &&
-        abs(cmd_vel_.linear.x) < 0.5 &&
-        abs(cmd_vel_.angular.z) < 0.5)
+        abs(cmd_vel_.linear.x) < 0.3 &&
+        abs(cmd_vel_.angular.z) < 0.3)
     {
       detect_motion_stuck_count_++;
     }
@@ -1345,7 +1345,7 @@ namespace move_base {
       detect_motion_stuck_count_ = 0;
     }
 
-    if (detect_motion_stuck_count_ >= 100)
+    if (detect_motion_stuck_count_ >= 50)
     {
       ROS_INFO("The robot is getting stuck.");
       detect_motion_stuck_count_ = 0;
