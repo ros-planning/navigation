@@ -1,0 +1,7 @@
+<library path="lib/libsafety_direction_recovery">
+    <class name="safety_direction_recovery/SafetyDirectionRecovery" type="safety_direction_recovery::SafetyDirectionRecovery" base_class_type="nav_core::RecoveryBehavior">
+        <description>
+            A recovery behavior that the robot moves away from obstacles. Obstacle positional information come from safety manager.
+        </description>
+    </class>
+</library>

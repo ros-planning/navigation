@@ -1183,6 +1183,14 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
 
+      //Newly added: load a recovery behavior to move safety places
+      boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
+      for (int i=0; i<5; i++) {
+        safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(safety_direction);
+        recovery_behaviors_carrying_.push_back(safety_direction);
+      }
+
       //Newly added: load a recovery behavior to move backwards
       boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
       if(backward_recovery_allowed_){
