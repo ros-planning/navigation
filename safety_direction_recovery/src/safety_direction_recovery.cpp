@@ -92,19 +92,21 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       double angle_rotated  = 0.0;
       double dist_travelled = 0.0;
 
-      if (safety_status_.back != "stop")
+      int recovery_cnt_ = rand();
+
+      if (safety_status_.back != "stop" && recovery_cnt_ % 4 == 0)
       {
         ROS_INFO("Robot will start moving backward.");
         const double backward_direction = -1;
         dist_travelled = go_straight(backward_direction);
       }
-      else if (safety_status_.front != "stop")
+      else if (safety_status_.front != "stop" && recovery_cnt_ % 4 == 1)
       {
         ROS_INFO("Robot will start moving forward.");
         const double forward_direction = 1;
         dist_travelled = go_straight(forward_direction);
       }
-      else if (safety_status_.side_left != "stop")
+      else if (safety_status_.side_left != "stop" && recovery_cnt_ % 4 == 2)
       {
         ROS_INFO("Robot will start rotating to left.");
         const double counter_clockwise_direction = 1;
@@ -114,7 +116,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         const double forward_direction = 1;
         dist_travelled = go_straight(forward_direction);
       }
-      else if (safety_status_.side_right != "stop")
+      else if (safety_status_.side_right != "stop" && recovery_cnt_ % 4 == 3)
       {
         ROS_INFO("Robot will start rotating to right.");
         const double clockwise_direction = 1;
@@ -163,6 +165,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
         // conduct simulation
         dist_left = dist_to_move - dist_travelled;
+/*
         double sim_distance = 0.0;
         while(sim_distance < dist_left)
         {
@@ -186,6 +189,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
           sim_distance += sim_granularity_;
         }
+*/
 
         double vel = direction * 0.1;
         vel = std::min(std::max(vel, min_vel_x_), max_vel_x_);
@@ -229,6 +233,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
 
         // check if that velocity is legal by forward simulating
+/*
         double sim_angle = 0.0;
         while (sim_angle < angle_left)
         {
@@ -245,6 +250,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
           sim_angle += sim_granularity_;
         }
+*/
 
         // compute the velocity that will let us stop by the time we reach the goal
         double vel = direction * sqrt(2 * acc_lim_th_ * angle_left);
