@@ -37,6 +37,7 @@
 #include <costmap_3d/point_cloud_layer_3d.h>
 #include <pluginlib/class_list_macros.h>
 #include <tf_conversions/tf_eigen.h>
+#include <tf2_eigen/tf2_eigen.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_3d::PointCloudLayer3D, costmap_3d::Layer3D)
 
@@ -184,8 +185,8 @@ void PointCloudLayer3D::pointCloudCallback(const typename CloudType::ConstPtr& c
     ROS_INFO_STREAM_THROTTLE(1.0, "unable to transform: " << ex.what());
     return;
   }
-  Eigen::Affine3d global_frame_transform_eigen;
-  tf2::fromMsg(global_frame_transform, global_frame_transform_eigen);
+  Eigen::Affine3d global_frame_transform_eigen = tf2::transformToEigen(global_frame_transform);
+
   typename CloudType::Ptr cloud_ptr(new CloudType());
   pcl::transformPointCloud(*cloud_msg, *cloud_ptr, global_frame_transform_eigen);
 
