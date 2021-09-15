@@ -20,9 +20,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_sensor_msgs
 )
 
+find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OCTOMAP REQUIRED)
-find_package(PCL 1.7 REQUIRED)
 find_package(fcl REQUIRED)
 
 # These need to be set in this way for catkin_package so that they can be
