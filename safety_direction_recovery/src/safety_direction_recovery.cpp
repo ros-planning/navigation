@@ -3,6 +3,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <tf2/utils.h>
 #include <angles/angles.h>
+#include <vector>
 
 lexxauto_msgs::safety_status safety_status_;
 static void safetyStatusCallback(const lexxauto_msgs::safety_status::ConstPtr& msg)
@@ -92,7 +93,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       double angle_rotated  = 0.0;
       double dist_travelled = 0.0;
 
-      int recovery_cnt_ = rand();
 /*
       ROS_INFO("safety_status_.back: %s", (char*)safety_status_.back.c_str());
       ROS_INFO("safety_status_.front: %s", (char*)safety_status_.front.c_str());
@@ -100,6 +100,28 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       ROS_INFO("safety_status_.side_right: %s", (char*)safety_status_.side_right.c_str());
 */
 
+      int simulate_direction_num = 8;
+      std::vector<double> total_cost_array(simulate_direction_num);
+      for (int i=0; i<simulate_direction_num; i++)
+      {
+        double sim_angle = 2 * M_PI * (double)i/(double)simulate_direction_num;
+        double sim_distance = 0.5;
+        total_cost_array[i] = simulate_cost_around_robot(sim_angle, sim_distance);
+      }
+      std::vector<double>::iterator min_it = min_element(total_cost_array.begin(), total_cost_array.end()); 
+      size_t min_index = distance(total_cost_array.begin(), min_it);
+
+      ROS_INFO("Robot will start rotating.");
+      double recovery_rotate_angle = 2 * M_PI * (double)min_index/(double)simulate_direction_num;
+      const double counter_clockwise_direction = 1;
+      angle_rotated = rotate(counter_clockwise_direction, recovery_rotate_angle);
+
+      ROS_INFO("Robot will start moving forward.");
+      const double dist_to_move = 0.25;
+      const double forward_direction = 1;
+      dist_travelled = go_straight(forward_direction, dist_to_move);
+
+        /*
       if (safety_status_.back != "stop" && recovery_cnt_ % 4 == 0)
       {
         ROS_INFO("Robot will start moving backward.");
@@ -137,6 +159,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         ROS_INFO("Safety recovery is not conducted because the robot is surrounded by obstacles.\n");
         return;
       }
+      */
 
       ROS_INFO("Safety direction recovery ended because the robot rotated %f and travelled %f.\n", angle_rotated, dist_travelled);
       cmd_vel.linear.x = 0.0;
@@ -147,7 +170,30 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       return;
     }
 
-    double SafetyDirectionRecovery::go_straight(const double direction)
+    double SafetyDirectionRecovery::simulate_cost_around_robot(const double sim_angle, const double sim_distance)
+    {
+      geometry_msgs::PoseStamped robot_pose;
+      local_costmap_->getRobotPose(robot_pose);
+      double robot_angle = tf2::getYaw(robot_pose.pose.orientation);
+      double robot_x = robot_pose.pose.position.x, robot_y = robot_pose.pose.position.y;
+
+      double total_cost = 0;
+      double tmp_distance = 0.0;
+
+      while(tmp_distance < sim_distance)
+      {
+        double sim_x = robot_x + tmp_distance * cos(robot_angle + sim_angle);
+        double sim_y = robot_y + tmp_distance * sin(robot_angle + sim_angle);
+        double tmp_cost = local_costmap_->getCostmap()->getCost(sim_x, sim_y);
+
+        tmp_distance += sim_granularity_;
+        total_cost += tmp_cost;
+      }
+
+      return total_cost;
+    }
+
+    double SafetyDirectionRecovery::go_straight(const double direction, const double dist_to_move)
     {
       ros::Rate r(frequency_);
       ros::NodeHandle n;
@@ -157,7 +203,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       geometry_msgs::PoseStamped initial_pose;
       local_costmap_->getRobotPose(initial_pose);
       double current_angle = tf2::getYaw(initial_pose.pose.orientation);
-      const double dist_to_move = 0.25;
       double dist_travelled = 0.0;
       double dist_left = dist_to_move - dist_travelled;
 
@@ -213,7 +258,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       return dist_travelled;
     }
 
-    double SafetyDirectionRecovery::rotate(const double direction)
+    double SafetyDirectionRecovery::rotate(const double direction, const double rotate_angle)
     {
       ros::Rate r(frequency_);
       ros::NodeHandle n;
@@ -233,7 +278,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         current_angle = tf2::getYaw(global_pose.pose.orientation);
 
         // TODO: using this function might induce a bug when you want the robot to rotate more than 180 deg
-        angle_left = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + angle_to_rot_ * direction));
+        angle_left = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + rotate_angle * direction));
         if (angle_left < yaw_goal_tolerance_) is_goal_reached = true;
 
         double x = global_pose.pose.position.x, y = global_pose.pose.position.y;

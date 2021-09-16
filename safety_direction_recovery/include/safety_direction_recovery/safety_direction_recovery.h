@@ -34,8 +34,9 @@ namespace safety_direction_recovery
       geometry_msgs::Twist cmd_vel;
 
       double calculateDist(geometry_msgs::PoseStamped initial, geometry_msgs::PoseStamped current);
-      double go_straight(const double direction);
-      double rotate(const double direction);
+      double go_straight(const double direction, const double dist_to_move);
+      double rotate(const double direction, const double rotate_angle);
+      double simulate_cost_around_robot(const double sim_angle, const double sim_distance);
       //void safetyStatusCallback(const lexxauto_msgs::safety_status::ConstPtr& msg);
   };
 };  // namespace safety_direction_recovery
