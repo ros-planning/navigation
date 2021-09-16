@@ -478,6 +478,7 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
+/*
     for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
     {
       for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
@@ -485,6 +486,7 @@ namespace move_base {
         ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
       }
     }
+*/
 
     //make sure to set the plan to be empty initially
     plan.clear();
@@ -937,13 +939,6 @@ namespace move_base {
           ROS_INFO("Detected stuck motion.");
           publishZeroVelocity();
           state_ = CLEARING;
-          for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
-          {
-            for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
-            {
-              ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
-            }
-          }
         }
 
         //check for an oscillation condition
@@ -1183,20 +1178,20 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
 
-      //Newly added: load a recovery behavior to move safety places
-      boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
-      for (int i=0; i<5; i++) {
-        safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(safety_direction);
-        recovery_behaviors_carrying_.push_back(safety_direction);
-      }
-
       //Newly added: load a recovery behavior to move backwards
       boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
       if(backward_recovery_allowed_){
         go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(go_back);
         recovery_behaviors_carrying_.push_back(go_back);
+      }
+
+      //Newly added: load a recovery behavior to move safety places
+      boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
+      for (int i=0; i<5; i++) {
+        safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(safety_direction);
+        recovery_behaviors_carrying_.push_back(safety_direction);
       }
 
       //Newly added: load a recovery behavior to rotate small angle
@@ -1329,14 +1324,14 @@ namespace move_base {
     double goal_diff_y = planner_goal_.pose.position.y - y;
 
     double detect_motion_stuck_goal_diff_distance = 1.0;
-    double detect_motion_stuck_distance = 0.5;
-    double detect_motion_stuck_angle = 0.5; // about 30 degree
+    double detect_motion_stuck_distance = 0.05;
+    double detect_motion_stuck_angle = 0.15; // about 10 degree
 
     if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
         sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
         abs(diff_yaw) < detect_motion_stuck_angle &&
-        abs(cmd_vel_.linear.x) < 0.3 &&
-        abs(cmd_vel_.angular.z) < 0.3)
+        abs(cmd_vel_.linear.x) < 0.05 &&
+        abs(cmd_vel_.angular.z) < 0.05)
     {
       detect_motion_stuck_count_++;
     }
@@ -1345,7 +1340,7 @@ namespace move_base {
       detect_motion_stuck_count_ = 0;
     }
 
-    if (detect_motion_stuck_count_ >= 50)
+    if (detect_motion_stuck_count_ >= 20)
     {
       ROS_INFO("The robot is getting stuck.");
       detect_motion_stuck_count_ = 0;
