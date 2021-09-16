@@ -93,6 +93,12 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       double dist_travelled = 0.0;
 
       int recovery_cnt_ = rand();
+/*
+      ROS_INFO("safety_status_.back: %s", (char*)safety_status_.back.c_str());
+      ROS_INFO("safety_status_.front: %s", (char*)safety_status_.front.c_str());
+      ROS_INFO("safety_status_.side_left: %s", (char*)safety_status_.side_left.c_str());
+      ROS_INFO("safety_status_.side_right: %s", (char*)safety_status_.side_right.c_str());
+*/
 
       if (safety_status_.back != "stop" && recovery_cnt_ % 4 == 0)
       {
