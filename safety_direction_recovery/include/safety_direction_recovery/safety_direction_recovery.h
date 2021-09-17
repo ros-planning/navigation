@@ -8,6 +8,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <lexxauto_msgs/safety_status.h>
+#include <std_msgs/Float32.h>
 
 namespace safety_direction_recovery
 {
@@ -37,7 +38,8 @@ namespace safety_direction_recovery
       double go_straight(const double direction, const double dist_to_move);
       double rotate(const double direction, const double rotate_angle);
       double simulate_cost_around_robot(const double sim_angle, const double sim_distance);
-      //void safetyStatusCallback(const lexxauto_msgs::safety_status::ConstPtr& msg);
+
+      void find_safest_place_via_simulation(double &recovery_rotate_angle, double &rotate_sign, double &straight_direction, const double dist_to_move);
   };
 };  // namespace safety_direction_recovery
 

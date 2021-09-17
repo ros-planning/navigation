@@ -6,9 +6,50 @@
 #include <vector>
 
 lexxauto_msgs::safety_status safety_status_;
-static void safetyStatusCallback(const lexxauto_msgs::safety_status::ConstPtr& msg)
+float front_lidar_distance_;
+float front_left_lidar_distance_;
+float left_lidar_distance_;
+float back_left_lidar_distance_;
+float back_lidar_distance_;
+float back_right_lidar_distance_;
+float right_lidar_distance_;
+float front_right_lidar_distance_;
+
+void safetyStatusCallback(const lexxauto_msgs::safety_status::ConstPtr& msg)
 {
   safety_status_ = *msg;
+}
+void frontLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  front_lidar_distance_ = msg->data;
+}
+void frontLeftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  front_left_lidar_distance_ = msg->data;
+}
+void leftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  left_lidar_distance_ = msg->data;
+}
+void backLeftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  back_left_lidar_distance_ = msg->data;
+}
+void backLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  back_lidar_distance_ = msg->data;
+}
+void backRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  back_right_lidar_distance_ = msg->data;
+}
+void rightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  right_lidar_distance_ = msg->data;
+}
+void frontRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+{
+  front_right_lidar_distance_ = msg->data;
 }
 
 PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_core::RecoveryBehavior)
@@ -58,6 +99,22 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         ros::NodeHandle nh;
         ros::Subscriber safety_status_sub =
           nh.subscribe<lexxauto_msgs::safety_status>("safety_status_", 1, safetyStatusCallback);
+        ros::Subscriber front_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("front_lidar_distance_", 1, frontLidarDistanceCallback);
+        ros::Subscriber front_left_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("front_left_lidar_distance_", 1, frontLeftLidarDistanceCallback);
+        ros::Subscriber left_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("left_lidar_distance_", 1, leftLidarDistanceCallback);
+        ros::Subscriber back_left_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("back_left_lidar_distance_", 1, backLeftLidarDistanceCallback);
+        ros::Subscriber back_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("back_lidar_distance_", 1, backLidarDistanceCallback);
+        ros::Subscriber back_right_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("back_right_lidar_distance_", 1, backRightLidarDistanceCallback);
+        ros::Subscriber right_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("right_lidar_distance_", 1, rightLidarDistanceCallback);
+        ros::Subscriber front_right_lidar_distance_sub =
+          nh.subscribe<std_msgs::Float32>("front_right_lidar_distance_", 1, frontRightLidarDistanceCallback);
       }
       else
       {
@@ -94,9 +151,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         return;
       }
 
-      double angle_rotated  = 0.0;
-      double dist_travelled = 0.0;
-
 /*
       ROS_INFO("safety_status_.back: %s", (char*)safety_status_.back.c_str());
       ROS_INFO("safety_status_.front: %s", (char*)safety_status_.front.c_str());
@@ -104,10 +158,32 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       ROS_INFO("safety_status_.side_right: %s", (char*)safety_status_.side_right.c_str());
 */
 
-      int simulate_direction_num = 32;
-      std::vector<double> total_cost_array(simulate_direction_num);
       sleep(1);
+      ROS_INFO("[DEBUG] front_lidar_distance_: %f", front_lidar_distance_);
 
+      double recovery_rotate_angle = 0;
+      double rotate_sign = 1;
+      const double dist_to_move = 0.25;
+      double straight_direction = 1;
+
+      find_safest_place_via_simulation(recovery_rotate_angle, rotate_sign, straight_direction, dist_to_move);
+
+      double angle_rotated = rotate((double)rotate_sign, recovery_rotate_angle);
+      double dist_travelled = go_straight(straight_direction, dist_to_move);
+
+      ROS_INFO("Safety direction recovery ended because the robot rotated %f and travelled %f.\n", angle_rotated, dist_travelled);
+      cmd_vel.linear.x = 0.0;
+      cmd_vel.linear.y = 0.0;
+      cmd_vel.angular.z = 0.0;
+      vel_pub.publish(cmd_vel);
+
+      return;
+    }
+
+    void SafetyDirectionRecovery::find_safest_place_via_simulation(double &recovery_rotate_angle, double &rotate_sign, double &straight_direction, const double dist_to_move)
+    {
+      int simulate_direction_num = 8;
+      std::vector<double> total_cost_array(simulate_direction_num);
       for (int i=0; i<simulate_direction_num; i++)
       {
         double sim_angle = 2 * M_PI * (double)i/(double)simulate_direction_num;
@@ -119,11 +195,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       size_t max_index = distance(total_cost_array.begin(), max_it);
 
       double simulated_best_rotate_angle = 2 * M_PI * (double)max_index/(double)simulate_direction_num;
-      double recovery_rotate_angle = 0;
-      double rotate_sign = 1;
-      const double dist_to_move = 0.25;
-      double straight_direction = 1;
-
       if (0 <= simulated_best_rotate_angle && simulated_best_rotate_angle <= M_PI/2.0f)
       {
         recovery_rotate_angle = simulated_best_rotate_angle;
@@ -155,59 +226,11 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       else
       {
         ROS_ERROR("Input angle error: simulated_best_rotate_angle: %f [rad].", simulated_best_rotate_angle);
+        return;
       }
 
       ROS_INFO("Robot will start rotating 2pi * %d/%d [rad].", (int)max_index, simulate_direction_num);
-      angle_rotated = rotate((double)rotate_sign, recovery_rotate_angle);
-      ROS_INFO("Robot will start moving forward %f [m].", dist_to_move);
-      dist_travelled = go_straight(straight_direction, dist_to_move);
-
-        /*
-      if (safety_status_.back != "stop" && recovery_cnt_ % 4 == 0)
-      {
-        ROS_INFO("Robot will start moving backward.");
-        const double backward_direction = -1;
-        dist_travelled = go_straight(backward_direction);
-      }
-      else if (safety_status_.front != "stop" && recovery_cnt_ % 4 == 1)
-      {
-        ROS_INFO("Robot will start moving forward.");
-        const double forward_direction = 1;
-        dist_travelled = go_straight(forward_direction);
-      }
-      else if (safety_status_.side_left != "stop" && recovery_cnt_ % 4 == 2)
-      {
-        ROS_INFO("Robot will start rotating to left.");
-        const double counter_clockwise_direction = 1;
-        angle_rotated = rotate(counter_clockwise_direction);
-
-        ROS_INFO("Robot will start moving forward.");
-        const double forward_direction = 1;
-        dist_travelled = go_straight(forward_direction);
-      }
-      else if (safety_status_.side_right != "stop" && recovery_cnt_ % 4 == 3)
-      {
-        ROS_INFO("Robot will start rotating to right.");
-        const double clockwise_direction = 1;
-        angle_rotated = rotate(clockwise_direction);
-
-        ROS_INFO("Robot will start moving forward.");
-        const double forward_direction = 1;
-        dist_travelled = go_straight(forward_direction);
-      }
-      else
-      {
-        ROS_INFO("Safety recovery is not conducted because the robot is surrounded by obstacles.\n");
-        return;
-      }
-      */
-
-      ROS_INFO("Safety direction recovery ended because the robot rotated %f and travelled %f.\n", angle_rotated, dist_travelled);
-      cmd_vel.linear.x = 0.0;
-      cmd_vel.linear.y = 0.0;
-      cmd_vel.angular.z = 0.0;
-      vel_pub.publish(cmd_vel);
-
+      ROS_INFO("Robot will start moving %s %f [m].", (straight_direction==1)?"forward":"backwward", dist_to_move);
       return;
     }
 
