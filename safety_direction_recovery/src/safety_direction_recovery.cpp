@@ -158,18 +158,18 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       ROS_INFO("safety_status_.side_right: %s", (char*)safety_status_.side_right.c_str());
 */
 
-      sleep(1);
-      ROS_INFO("[DEBUG] front_lidar_distance_: %f", front_lidar_distance_);
+      double best_attitude = 0;
+      double best_dist_to_move = 0.25;
+      //calc_angle_distance_to_safest_place_via_simulation(best_attitude, best_dist_to_move);
+      calc_angle_distance_to_safest_place_via_lidar(best_attitude, best_dist_to_move);
 
+      double rotate_direction = 1;
       double recovery_rotate_angle = 0;
-      double rotate_sign = 1;
-      const double dist_to_move = 0.25;
       double straight_direction = 1;
+      calc_recovery_move(best_attitude, rotate_direction, recovery_rotate_angle, straight_direction);
 
-      find_safest_place_via_simulation(recovery_rotate_angle, rotate_sign, straight_direction, dist_to_move);
-
-      double angle_rotated = rotate((double)rotate_sign, recovery_rotate_angle);
-      double dist_travelled = go_straight(straight_direction, dist_to_move);
+      double angle_rotated = rotate((double)rotate_direction, recovery_rotate_angle);
+      double dist_travelled = go_straight(straight_direction, best_dist_to_move);
 
       ROS_INFO("Safety direction recovery ended because the robot rotated %f and travelled %f.\n", angle_rotated, dist_travelled);
       cmd_vel.linear.x = 0.0;
@@ -180,8 +180,51 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       return;
     }
 
-    void SafetyDirectionRecovery::find_safest_place_via_simulation(double &recovery_rotate_angle, double &rotate_sign, double &straight_direction, const double dist_to_move)
+    double limit_distance (double lidar_distance)
     {
+      double measurable_distance = 40;
+      return (lidar_distance > measurable_distance) ? 0 : lidar_distance;
+    }
+
+    void SafetyDirectionRecovery::calc_angle_distance_to_safest_place_via_lidar(double& best_attitude, double& best_dist_to_move)
+    {
+      int lidar_direction_num = 8;
+      std::vector<double> distance_array(lidar_direction_num);
+      distance_array[0] = limit_distance(front_lidar_distance_);
+      distance_array[1] = limit_distance(front_left_lidar_distance_);
+      distance_array[2] = limit_distance(left_lidar_distance_);
+      distance_array[3] = limit_distance(back_left_lidar_distance_);
+      distance_array[4] = limit_distance(back_lidar_distance_);
+      distance_array[5] = limit_distance(back_right_lidar_distance_);
+      distance_array[6] = limit_distance(right_lidar_distance_);
+      distance_array[7] = limit_distance(front_right_lidar_distance_);
+
+      double max_distance = 0;
+      double max_dir_num  = 0;
+      for (int i=0; i<lidar_direction_num; i++)
+      {
+        if (max_distance < distance_array[i])
+        {
+          max_distance = distance_array[i];
+          max_dir_num  = i;
+        }
+        ROS_INFO("distance measured by lidar [i=%d]: %f", i, distance_array[i]);
+      }
+      //std::vector<double>::iterator max_it = max_element(distance_array.begin(), distance_array.end());
+      //size_t max_index = distance(distance_array.begin(), max_it);
+ 
+      best_attitude = 2 * M_PI * (double)max_dir_num/(double)lidar_direction_num;
+      best_dist_to_move = std::min(max_distance, 0.25);
+
+      ROS_INFO("Robot will rotate 2pi * %d/%d [rad].", (int)max_dir_num, lidar_direction_num);
+      ROS_INFO("Robot will move %f [m].", best_dist_to_move);
+      return;
+    }
+
+    void SafetyDirectionRecovery::calc_angle_distance_to_safest_place_via_simulation(double& best_attitude, double& best_dist_to_move)
+    {
+      sleep(1); // wait for costmap update
+
       int simulate_direction_num = 8;
       std::vector<double> total_cost_array(simulate_direction_num);
       for (int i=0; i<simulate_direction_num; i++)
@@ -194,43 +237,50 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       std::vector<double>::iterator max_it = max_element(total_cost_array.begin(), total_cost_array.end());
       size_t max_index = distance(total_cost_array.begin(), max_it);
 
-      double simulated_best_rotate_angle = 2 * M_PI * (double)max_index/(double)simulate_direction_num;
-      if (0 <= simulated_best_rotate_angle && simulated_best_rotate_angle <= M_PI/2.0f)
+      best_attitude = 2 * M_PI * (double)max_index/(double)simulate_direction_num;
+      ROS_INFO("Robot will rotate 2pi * %d/%d [rad].", (int)max_index, simulate_direction_num);
+      ROS_INFO("Robot will move 0.25 [m].");
+
+      return;
+    }
+
+    void SafetyDirectionRecovery::calc_recovery_move(const double best_attitude, double& rotate_direction, double& recovery_rotate_angle, double& straight_direction)
+    {
+      if (0 <= best_attitude && best_attitude <= M_PI/2.0f)
       {
-        recovery_rotate_angle = simulated_best_rotate_angle;
-        rotate_sign = 1;
+        recovery_rotate_angle = best_attitude;
+        rotate_direction = 1;
         straight_direction = 1;
-        ROS_INFO("Range in [0, pi/2]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+        ROS_INFO("Range in [0, pi/2]: best_attitude: %f", best_attitude);
       }
-      else if (M_PI/2.0f < simulated_best_rotate_angle && simulated_best_rotate_angle <= M_PI)
+      else if (M_PI/2.0f < best_attitude && best_attitude <= M_PI)
       {
-        recovery_rotate_angle = M_PI - simulated_best_rotate_angle;
-        rotate_sign = -1;
+        recovery_rotate_angle = M_PI - best_attitude;
+        rotate_direction = -1;
         straight_direction = -1;
-        ROS_INFO("Range in [pi/2, pi]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+        ROS_INFO("Range in [pi/2, pi]: best_attitude: %f", best_attitude);
       }
-      else if (M_PI < simulated_best_rotate_angle && simulated_best_rotate_angle <= 3.0f*M_PI/2.0f)
+      else if (M_PI < best_attitude && best_attitude <= 3.0f*M_PI/2.0f)
       {
-        recovery_rotate_angle = simulated_best_rotate_angle - M_PI;
-        rotate_sign = 1;
+        recovery_rotate_angle = best_attitude - M_PI;
+        rotate_direction = 1;
         straight_direction = -1;
-        ROS_INFO("Range in [pi, 3*pi/2]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+        ROS_INFO("Range in [pi, 3*pi/2]: best_attitude: %f", best_attitude);
       }
-      else if (3.0f*M_PI/2.0f < simulated_best_rotate_angle && simulated_best_rotate_angle <= 2.0f*M_PI)
+      else if (3.0f*M_PI/2.0f < best_attitude && best_attitude <= 2.0f*M_PI)
       {
-        recovery_rotate_angle = 2*M_PI - simulated_best_rotate_angle;
-        rotate_sign = -1;
+        recovery_rotate_angle = 2*M_PI - best_attitude;
+        rotate_direction = -1;
         straight_direction = 1;
-        ROS_INFO("Range in [3*pi/2, 2*pi]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+        ROS_INFO("Range in [3*pi/2, 2*pi]: best_attitude: %f", best_attitude);
       }
       else
       {
-        ROS_ERROR("Input angle error: simulated_best_rotate_angle: %f [rad].", simulated_best_rotate_angle);
+        ROS_ERROR("Input angle error: best_attitude: %f [rad].", best_attitude);
         return;
       }
 
-      ROS_INFO("Robot will start rotating 2pi * %d/%d [rad].", (int)max_index, simulate_direction_num);
-      ROS_INFO("Robot will start moving %s %f [m].", (straight_direction==1)?"forward":"backwward", dist_to_move);
+      ROS_INFO("Robot will move %s.", (straight_direction==1)?"forward":"backwward");
       return;
     }
 

@@ -39,7 +39,9 @@ namespace safety_direction_recovery
       double rotate(const double direction, const double rotate_angle);
       double simulate_cost_around_robot(const double sim_angle, const double sim_distance);
 
-      void find_safest_place_via_simulation(double &recovery_rotate_angle, double &rotate_sign, double &straight_direction, const double dist_to_move);
+      void calc_angle_distance_to_safest_place_via_simulation(double& best_attitude, double& best_dist_to_move);
+      void calc_angle_distance_to_safest_place_via_lidar(double& best_attitude, double& best_dist_to_move);
+      void calc_recovery_move(const double best_attitude, double& rotate_direction, double& recovery_rotate_angle, double& straight_direction);
   };
 };  // namespace safety_direction_recovery
 
