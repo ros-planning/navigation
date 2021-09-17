@@ -45,6 +45,10 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         acc_lim_th_ = nav_core::loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
         max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
         min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
+        max_rotational_vel_ = 1.0f;
+        min_rotational_vel_ = -1.0f;
+        max_vel_x_ = 1.0f;
+        min_vel_x_ = -1.0f;
         angle_to_rot_ = M_PI/2.0f;
 
         world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
@@ -100,26 +104,63 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       ROS_INFO("safety_status_.side_right: %s", (char*)safety_status_.side_right.c_str());
 */
 
-      int simulate_direction_num = 8;
+      int simulate_direction_num = 32;
       std::vector<double> total_cost_array(simulate_direction_num);
+      sleep(1);
+
       for (int i=0; i<simulate_direction_num; i++)
       {
         double sim_angle = 2 * M_PI * (double)i/(double)simulate_direction_num;
-        double sim_distance = 0.5;
+        double sim_distance = 1.5;
         total_cost_array[i] = simulate_cost_around_robot(sim_angle, sim_distance);
+        ROS_INFO("total_cost_array[i=%d]: %f", i, total_cost_array[i]);
       }
-      std::vector<double>::iterator min_it = min_element(total_cost_array.begin(), total_cost_array.end()); 
-      size_t min_index = distance(total_cost_array.begin(), min_it);
+      std::vector<double>::iterator max_it = max_element(total_cost_array.begin(), total_cost_array.end());
+      size_t max_index = distance(total_cost_array.begin(), max_it);
 
-      ROS_INFO("Robot will start rotating.");
-      double recovery_rotate_angle = 2 * M_PI * (double)min_index/(double)simulate_direction_num;
-      const double counter_clockwise_direction = 1;
-      angle_rotated = rotate(counter_clockwise_direction, recovery_rotate_angle);
-
-      ROS_INFO("Robot will start moving forward.");
+      double simulated_best_rotate_angle = 2 * M_PI * (double)max_index/(double)simulate_direction_num;
+      double recovery_rotate_angle = 0;
+      double rotate_sign = 1;
       const double dist_to_move = 0.25;
-      const double forward_direction = 1;
-      dist_travelled = go_straight(forward_direction, dist_to_move);
+      double straight_direction = 1;
+
+      if (0 <= simulated_best_rotate_angle && simulated_best_rotate_angle <= M_PI/2.0f)
+      {
+        recovery_rotate_angle = simulated_best_rotate_angle;
+        rotate_sign = 1;
+        straight_direction = 1;
+        ROS_INFO("Range in [0, pi/2]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+      }
+      else if (M_PI/2.0f < simulated_best_rotate_angle && simulated_best_rotate_angle <= M_PI)
+      {
+        recovery_rotate_angle = M_PI - simulated_best_rotate_angle;
+        rotate_sign = -1;
+        straight_direction = -1;
+        ROS_INFO("Range in [pi/2, pi]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+      }
+      else if (M_PI < simulated_best_rotate_angle && simulated_best_rotate_angle <= 3.0f*M_PI/2.0f)
+      {
+        recovery_rotate_angle = simulated_best_rotate_angle - M_PI;
+        rotate_sign = 1;
+        straight_direction = -1;
+        ROS_INFO("Range in [pi, 3*pi/2]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+      }
+      else if (3.0f*M_PI/2.0f < simulated_best_rotate_angle && simulated_best_rotate_angle <= 2.0f*M_PI)
+      {
+        recovery_rotate_angle = 2*M_PI - simulated_best_rotate_angle;
+        rotate_sign = -1;
+        straight_direction = 1;
+        ROS_INFO("Range in [3*pi/2, 2*pi]: simulated_best_rotate_angle: %f", simulated_best_rotate_angle);
+      }
+      else
+      {
+        ROS_ERROR("Input angle error: simulated_best_rotate_angle: %f [rad].", simulated_best_rotate_angle);
+      }
+
+      ROS_INFO("Robot will start rotating 2pi * %d/%d [rad].", (int)max_index, simulate_direction_num);
+      angle_rotated = rotate((double)rotate_sign, recovery_rotate_angle);
+      ROS_INFO("Robot will start moving forward %f [m].", dist_to_move);
+      dist_travelled = go_straight(straight_direction, dist_to_move);
 
         /*
       if (safety_status_.back != "stop" && recovery_cnt_ % 4 == 0)
@@ -175,16 +216,17 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       geometry_msgs::PoseStamped robot_pose;
       local_costmap_->getRobotPose(robot_pose);
       double robot_angle = tf2::getYaw(robot_pose.pose.orientation);
-      double robot_x = robot_pose.pose.position.x, robot_y = robot_pose.pose.position.y;
+      double robot_x = robot_pose.pose.position.x;
+      double robot_y = robot_pose.pose.position.y;
 
       double total_cost = 0;
-      double tmp_distance = 0.0;
+      double tmp_distance = 0.5;
 
       while(tmp_distance < sim_distance)
       {
         double sim_x = robot_x + tmp_distance * cos(robot_angle + sim_angle);
         double sim_y = robot_y + tmp_distance * sin(robot_angle + sim_angle);
-        double tmp_cost = local_costmap_->getCostmap()->getCost(sim_x, sim_y);
+        double tmp_cost = world_model_->footprintCost(sim_x, sim_y, robot_angle + sim_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
 
         tmp_distance += sim_granularity_;
         total_cost += tmp_cost;
