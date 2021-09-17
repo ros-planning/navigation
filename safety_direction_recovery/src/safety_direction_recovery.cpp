@@ -22,38 +22,45 @@ void safetyStatusCallback(const lexxauto_msgs::safety_status::ConstPtr& msg)
 void frontLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   front_lidar_distance_ = msg->data;
+//  ROS_INFO("test front_lidar_distance: %f", front_lidar_distance_);
 }
 void frontLeftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   front_left_lidar_distance_ = msg->data;
+//  ROS_INFO("test front_left_lidar_distance: %f", front_left_lidar_distance_);
 }
 void leftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   left_lidar_distance_ = msg->data;
+//  ROS_INFO("test left_lidar_distance: %f", left_lidar_distance_);
 }
 void backLeftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   back_left_lidar_distance_ = msg->data;
+//  ROS_INFO("test back_left_lidar_distance: %f", back_left_lidar_distance_);
 }
 void backLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   back_lidar_distance_ = msg->data;
+//  ROS_INFO("test back_lidar_distance: %f", back_lidar_distance_);
 }
 void backRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   back_right_lidar_distance_ = msg->data;
+//  ROS_INFO("test back_right_lidar_distance: %f", back_right_lidar_distance_);
 }
 void rightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   right_lidar_distance_ = msg->data;
+//  ROS_INFO("test right_lidar_distance: %f", right_lidar_distance_);
 }
 void frontRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   front_right_lidar_distance_ = msg->data;
+//  ROS_INFO("test front_right_lidar_distance: %f", front_right_lidar_distance_);
 }
 
 PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_core::RecoveryBehavior)
-
   namespace safety_direction_recovery{
     SafetyDirectionRecovery::SafetyDirectionRecovery(): local_costmap_(NULL), initialized_(false), world_model_(NULL)
     {
@@ -97,24 +104,24 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         initialized_ = true;
 
         ros::NodeHandle nh;
-        ros::Subscriber safety_status_sub =
-          nh.subscribe<lexxauto_msgs::safety_status>("safety_status_", 1, safetyStatusCallback);
-        ros::Subscriber front_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("front_lidar_distance_", 1, frontLidarDistanceCallback);
-        ros::Subscriber front_left_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("front_left_lidar_distance_", 1, frontLeftLidarDistanceCallback);
-        ros::Subscriber left_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("left_lidar_distance_", 1, leftLidarDistanceCallback);
-        ros::Subscriber back_left_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("back_left_lidar_distance_", 1, backLeftLidarDistanceCallback);
-        ros::Subscriber back_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("back_lidar_distance_", 1, backLidarDistanceCallback);
-        ros::Subscriber back_right_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("back_right_lidar_distance_", 1, backRightLidarDistanceCallback);
-        ros::Subscriber right_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("right_lidar_distance_", 1, rightLidarDistanceCallback);
-        ros::Subscriber front_right_lidar_distance_sub =
-          nh.subscribe<std_msgs::Float32>("front_right_lidar_distance_", 1, frontRightLidarDistanceCallback);
+        //ros::Subscriber safety_status_sub =
+        //  nh.subscribe<lexxauto_msgs::safety_status>("safety_status", 1, safetyStatusCallback);
+        front_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("front_lidar_distance", 1, frontLidarDistanceCallback);
+        front_left_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("front_left_lidar_distance", 1, frontLeftLidarDistanceCallback);
+        left_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("left_lidar_distance", 1, leftLidarDistanceCallback);
+        back_left_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("back_left_lidar_distance", 1, backLeftLidarDistanceCallback);
+        back_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("back_lidar_distance", 1, backLidarDistanceCallback);
+        back_right_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("back_right_lidar_distance", 1, backRightLidarDistanceCallback);
+        right_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("right_lidar_distance", 1, rightLidarDistanceCallback);
+        front_right_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("front_right_lidar_distance", 1, frontRightLidarDistanceCallback);
       }
       else
       {
@@ -160,8 +167,8 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
       double best_attitude = 0;
       double best_dist_to_move = 0.25;
-      //calc_angle_distance_to_safest_place_via_simulation(best_attitude, best_dist_to_move);
-      calc_angle_distance_to_safest_place_via_lidar(best_attitude, best_dist_to_move);
+      calc_angle_distance_to_safest_place_via_simulation(best_attitude, best_dist_to_move);
+      //calc_angle_distance_to_safest_place_via_lidar(best_attitude, best_dist_to_move);
 
       double rotate_direction = 1;
       double recovery_rotate_angle = 0;
@@ -237,6 +244,19 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       std::vector<double>::iterator max_it = max_element(total_cost_array.begin(), total_cost_array.end());
       size_t max_index = distance(total_cost_array.begin(), max_it);
 
+/*
+      std::vector<double> total_cost_sum_array(simulate_direction_num);
+      for (int i=0; i<simulate_direction_num; i++)
+      {
+        int ip = (i==0) ? simulate_direction_num-1 : i-1;
+        int in = (i==simulate_direction_num-1) ? 0 : i+1;
+        total_cost_sum_array[i] = total_cost_array[ip] + total_cost_array[i] + total_cost_array[in];
+        ROS_INFO("total_cost_sum_array[i=%d]: %f", i, total_cost_sum_array[i]);
+      }
+      std::vector<double>::iterator max_it = max_element(total_cost_sum_array.begin(), total_cost_sum_array.end());
+      size_t max_index = distance(total_cost_sum_array.begin(), max_it);
+*/
+
       best_attitude = 2 * M_PI * (double)max_index/(double)simulate_direction_num;
       ROS_INFO("Robot will rotate 2pi * %d/%d [rad].", (int)max_index, simulate_direction_num);
       ROS_INFO("Robot will move 0.25 [m].");
@@ -280,7 +300,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         return;
       }
 
-      ROS_INFO("Robot will move %s.", (straight_direction==1)?"forward":"backwward");
+      ROS_INFO("Robot will move %s.", (straight_direction==1)?"forward":"backward");
       return;
     }
 
@@ -293,7 +313,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       double robot_y = robot_pose.pose.position.y;
 
       double total_cost = 0;
-      double tmp_distance = 0.5;
+      double tmp_distance = 0;
 
       while(tmp_distance < sim_distance)
       {
@@ -302,7 +322,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double tmp_cost = world_model_->footprintCost(sim_x, sim_y, robot_angle + sim_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
 
         tmp_distance += sim_granularity_;
-        total_cost += tmp_cost;
+        if (tmp_cost < 0) total_cost += tmp_cost;
       }
 
       return total_cost;

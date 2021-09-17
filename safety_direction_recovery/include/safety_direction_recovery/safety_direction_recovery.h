@@ -27,10 +27,18 @@ namespace safety_direction_recovery
       costmap_2d::Costmap2DROS* local_costmap_;
       base_local_planner::CostmapModel* world_model_;
 
-      bool initialized_;
+      bool initialized_ = false;
       double frequency_, sim_granularity_, min_vel_x_, max_vel_x_, inscribed_radius_, circumscribed_radius_;
       double x_goal_tolerance_, yaw_goal_tolerance_;
       double min_rotational_vel_, max_rotational_vel_, acc_lim_th_, angle_to_rot_;
+      ros::Subscriber front_lidar_distance_sub_;
+      ros::Subscriber front_left_lidar_distance_sub_;
+      ros::Subscriber left_lidar_distance_sub_;
+      ros::Subscriber back_left_lidar_distance_sub_;
+      ros::Subscriber back_lidar_distance_sub_;
+      ros::Subscriber back_right_lidar_distance_sub_;
+      ros::Subscriber right_lidar_distance_sub_;
+      ros::Subscriber front_right_lidar_distance_sub_;
 
       geometry_msgs::Twist cmd_vel;
 
