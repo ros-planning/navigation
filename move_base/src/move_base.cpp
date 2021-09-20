@@ -1313,14 +1313,14 @@ namespace move_base {
     double goal_diff_y = planner_goal_.pose.position.y - y;
 
     double detect_motion_stuck_goal_diff_distance = 1.0;
-    double detect_motion_stuck_distance = 0.05;
+    double detect_motion_stuck_distance = 0.15;
     double detect_motion_stuck_angle = 0.15; // about 10 degree
 
     if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
         sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
         abs(diff_yaw) < detect_motion_stuck_angle &&
-        abs(cmd_vel_.linear.x) < 0.05 &&
-        abs(cmd_vel_.angular.z) < 0.05)
+        abs(cmd_vel_.linear.x) < 0.2 &&
+        abs(cmd_vel_.angular.z) < 0.2)
     {
       detect_motion_stuck_count_++;
     }
