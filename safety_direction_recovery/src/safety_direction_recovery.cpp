@@ -232,19 +232,20 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
     {
       sleep(1); // wait for costmap update
 
-      int simulate_direction_num = 8;
+      int simulate_direction_num =16;
       std::vector<double> total_cost_array(simulate_direction_num);
       for (int i=0; i<simulate_direction_num; i++)
       {
         double sim_angle = 2 * M_PI * (double)i/(double)simulate_direction_num;
-        double sim_distance = 1.5;
+        double sim_distance = 0.5;
         total_cost_array[i] = simulate_cost_around_robot(sim_angle, sim_distance);
         ROS_INFO("total_cost_array[i=%d]: %f", i, total_cost_array[i]);
       }
+/*
       std::vector<double>::iterator max_it = max_element(total_cost_array.begin(), total_cost_array.end());
       size_t max_index = distance(total_cost_array.begin(), max_it);
+*/
 
-/*
       std::vector<double> total_cost_sum_array(simulate_direction_num);
       for (int i=0; i<simulate_direction_num; i++)
       {
@@ -255,7 +256,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       }
       std::vector<double>::iterator max_it = max_element(total_cost_sum_array.begin(), total_cost_sum_array.end());
       size_t max_index = distance(total_cost_sum_array.begin(), max_it);
-*/
 
       best_attitude = 2 * M_PI * (double)max_index/(double)simulate_direction_num;
       ROS_INFO("Robot will rotate 2pi * %d/%d [rad].", (int)max_index, simulate_direction_num);
