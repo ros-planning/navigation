@@ -228,7 +228,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
     void SafetyDirectionRecovery::calc_angle_distance_to_safest_place_via_simulation(double& best_attitude, double& best_dist_to_move)
     {
-      sleep(1); // wait for costmap update
+//      sleep(1); // wait for costmap update
 
       int simulate_direction_num = 16;
       std::vector<double> total_cost_array(simulate_direction_num);
