@@ -172,6 +172,7 @@ namespace move_base {
 
     //we'll start executing recovery behaviors at the beginning of our list
     recovery_index_ = 0;
+    recovery_flag_ = false;
 
     //we're all set up now so we can start the action server
     as_->start();
@@ -726,6 +727,7 @@ namespace move_base {
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
+          recovery_flag_ = false;
           state_ = PLANNING;
 
           //we have a new goal so make sure the planner is awake
@@ -767,6 +769,7 @@ namespace move_base {
 
         //we want to go back to the planning state for the next execution cycle
         recovery_index_ = 0;
+        recovery_flag_ = false;
         state_ = PLANNING;
 
         //we have a new goal so make sure the planner is awake
@@ -849,7 +852,10 @@ namespace move_base {
 
       //if our last recovery was caused by oscillation, we want to reset the recovery index 
       if(recovery_trigger_ == OSCILLATION_R)
+      {
         recovery_index_ = 0;
+        recovery_flag_ = false;
+      }
     }
 
     //check that the observation buffers for the costmap are current, we don't want to drive blind
@@ -894,7 +900,10 @@ namespace move_base {
 
       //make sure to reset recovery_index_ since we were able to find a valid plan
       if(recovery_trigger_ == PLANNING_R)
+      {
         recovery_index_ = 0;
+        recovery_flag_ = false;
+      }
     }
 
     //the move_base state machine, handles the control logic for navigation
@@ -964,7 +973,10 @@ namespace move_base {
           vel_pub_.publish(cmd_vel);
           cmd_vel_ = cmd_vel;
           if(recovery_trigger_ == CONTROLLING_R)
+          {
             recovery_index_ = 0;
+            recovery_flag_ = false;
+          }
         }
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
@@ -1006,8 +1018,16 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          ROS_INFO("Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
-          recovery_behaviors_[recovery_index_]->runBehavior();
+          if (recovery_flag_ == true)
+          {
+            ROS_INFO("Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
+            recovery_behaviors_[recovery_index_]->runBehavior();
+            recovery_index_++;
+          }
+          else
+          {
+            ROS_INFO("Map has been cleared and updated.");
+          }
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
@@ -1019,7 +1039,7 @@ namespace move_base {
           state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
-          recovery_index_++;
+          recovery_flag_ = true;
         }
         else if(recovery_behavior_enabled_ && actuator_state == "HIGH" && recovery_index_ < recovery_behaviors_carrying_.size()){
           amr_status_msg_.data = "RECOVERY";
@@ -1028,8 +1048,16 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
-          recovery_behaviors_carrying_[recovery_index_]->runBehavior();
+          if (recovery_flag_ == true)
+          {
+            ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
+            recovery_behaviors_carrying_[recovery_index_]->runBehavior();
+            recovery_index_++;
+          }
+          else
+          {
+            ROS_INFO("Map has been cleared and updated.");
+          }
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
@@ -1041,7 +1069,7 @@ namespace move_base {
           state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
-          recovery_index_++;
+          recovery_flag_ = true;
         }
         else{
           amr_status_msg_.data = "RECOVERY_FAILED";
@@ -1245,6 +1273,7 @@ namespace move_base {
     // Reset statemachine
     state_ = PLANNING;
     recovery_index_ = 0;
+    recovery_flag_ = false;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
 
