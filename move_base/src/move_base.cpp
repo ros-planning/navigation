@@ -348,9 +348,11 @@ namespace move_base {
     //clear the costmaps
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
     controller_costmap_ros_->resetLayers();
+    controller_costmap_ros_->updateMap();
 
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
     planner_costmap_ros_->resetLayers();
+    planner_costmap_ros_->updateMap();
 
     return true;
   }
@@ -1301,26 +1303,28 @@ namespace move_base {
     geometry_msgs::PoseStamped global_pose;
     getRobotPose(global_pose, planner_costmap_ros_);
 
-    double x = global_pose.pose.position.x;
-    double y = global_pose.pose.position.y;
-    double yaw = tf2::getYaw(global_pose.pose.orientation);
+    double cur_x = global_pose.pose.position.x;
+    double cur_y = global_pose.pose.position.y;
+    double cur_yaw = tf2::getYaw(global_pose.pose.orientation);
 
-    double diff_x = x - pre_body_x_;
-    double diff_y = y - pre_body_y_;
-    double diff_yaw = yaw - pre_body_yaw_;
+    double diff_x = cur_x - pre_body_x_;
+    double diff_y = cur_y - pre_body_y_;
+    double diff_yaw = cur_yaw - pre_body_yaw_;
 
-    double goal_diff_x = planner_goal_.pose.position.x - x;
-    double goal_diff_y = planner_goal_.pose.position.y - y;
+    double goal_diff_x = planner_goal_.pose.position.x - cur_x;
+    double goal_diff_y = planner_goal_.pose.position.y - cur_y;
 
     double detect_motion_stuck_goal_diff_distance = 1.0;
     double detect_motion_stuck_distance = 0.15;
-    double detect_motion_stuck_angle = 0.15; // about 10 degree
+    double detect_motion_stuck_angle = 0.15; // about 8.5 degree
+    double detect_motion_abs_vx = 0.2;
+    double detect_motion_abs_wz = 0.2;
 
     if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
         sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
         abs(diff_yaw) < detect_motion_stuck_angle &&
-        abs(cmd_vel_.linear.x) < 0.2 &&
-        abs(cmd_vel_.angular.z) < 0.2)
+        abs(cmd_vel_.linear.x)  < detect_motion_abs_vx &&
+        abs(cmd_vel_.angular.z) < detect_motion_abs_wz)
     {
       detect_motion_stuck_count_++;
     }
@@ -1336,9 +1340,9 @@ namespace move_base {
       return true;
     }
 
-    pre_body_x_ = x;
-    pre_body_y_ = y;
-    pre_body_yaw_ = yaw;
+    pre_body_x_ = cur_x;
+    pre_body_y_ = cur_y;
+    pre_body_yaw_ = cur_yaw;
 
     return false;
   }
