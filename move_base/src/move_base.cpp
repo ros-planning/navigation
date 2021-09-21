@@ -1213,18 +1213,16 @@ namespace move_base {
       for (int i=0; i<5; i++) {
         safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(safety_direction);
-        recovery_behaviors_carrying_.push_back(safety_direction);
+//        recovery_behaviors_carrying_.push_back(safety_direction);
       }
 
       //Newly added: load a recovery behavior to move backwards
-/*
       boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
       if(backward_recovery_allowed_){
         go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(go_back);
+//        recovery_behaviors_.push_back(go_back);
         recovery_behaviors_carrying_.push_back(go_back);
       }
-*/
 
       //Newly added: load a recovery behavior to rotate small angle
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
