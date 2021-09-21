@@ -224,7 +224,6 @@ namespace dwa_local_planner {
     generator_.initialise(pos,
         vel,
         goal,
-        pre_cmd_,
         &limits,
         vsamples_);
     generator_.generateTrajectory(pos, vel, vel_samples, traj);
@@ -312,7 +311,6 @@ namespace dwa_local_planner {
     generator_.initialise(pos,
         vel,
         goal,
-        pre_cmd_,
         &limits,
         vsamples_);
 

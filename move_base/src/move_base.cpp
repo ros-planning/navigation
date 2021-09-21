@@ -172,6 +172,7 @@ namespace move_base {
 
     //we'll start executing recovery behaviors at the beginning of our list
     recovery_index_ = 0;
+    recovery_flag_ = false;
 
     //we're all set up now so we can start the action server
     as_->start();
@@ -348,9 +349,11 @@ namespace move_base {
     //clear the costmaps
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_controller(*(controller_costmap_ros_->getCostmap()->getMutex()));
     controller_costmap_ros_->resetLayers();
+    controller_costmap_ros_->updateMap();
 
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(planner_costmap_ros_->getCostmap()->getMutex()));
     planner_costmap_ros_->resetLayers();
+    planner_costmap_ros_->updateMap();
 
     return true;
   }
@@ -478,6 +481,7 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
+/*
     for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
     {
       for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
@@ -485,6 +489,7 @@ namespace move_base {
         ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
       }
     }
+*/
 
     //make sure to set the plan to be empty initially
     plan.clear();
@@ -722,6 +727,7 @@ namespace move_base {
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
+          recovery_flag_ = false;
           state_ = PLANNING;
 
           //we have a new goal so make sure the planner is awake
@@ -763,6 +769,7 @@ namespace move_base {
 
         //we want to go back to the planning state for the next execution cycle
         recovery_index_ = 0;
+        recovery_flag_ = false;
         state_ = PLANNING;
 
         //we have a new goal so make sure the planner is awake
@@ -845,7 +852,10 @@ namespace move_base {
 
       //if our last recovery was caused by oscillation, we want to reset the recovery index 
       if(recovery_trigger_ == OSCILLATION_R)
+      {
         recovery_index_ = 0;
+        recovery_flag_ = false;
+      }
     }
 
     //check that the observation buffers for the costmap are current, we don't want to drive blind
@@ -890,7 +900,10 @@ namespace move_base {
 
       //make sure to reset recovery_index_ since we were able to find a valid plan
       if(recovery_trigger_ == PLANNING_R)
+      {
         recovery_index_ = 0;
+        recovery_flag_ = false;
+      }
     }
 
     //the move_base state machine, handles the control logic for navigation
@@ -937,13 +950,6 @@ namespace move_base {
           ROS_INFO("Detected stuck motion.");
           publishZeroVelocity();
           state_ = CLEARING;
-          for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
-          {
-            for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
-            {
-              ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
-            }
-          }
         }
 
         //check for an oscillation condition
@@ -967,7 +973,10 @@ namespace move_base {
           vel_pub_.publish(cmd_vel);
           cmd_vel_ = cmd_vel;
           if(recovery_trigger_ == CONTROLLING_R)
+          {
             recovery_index_ = 0;
+            recovery_flag_ = false;
+          }
         }
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
@@ -1009,8 +1018,16 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          ROS_INFO("Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
-          recovery_behaviors_[recovery_index_]->runBehavior();
+          if (recovery_flag_ == true)
+          {
+            ROS_INFO("Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
+            recovery_behaviors_[recovery_index_]->runBehavior();
+            recovery_index_++;
+          }
+          else
+          {
+            ROS_INFO("Map has been cleared and updated.");
+          }
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
@@ -1022,7 +1039,7 @@ namespace move_base {
           state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
-          recovery_index_++;
+          recovery_flag_ = true;
         }
         else if(recovery_behavior_enabled_ && actuator_state == "HIGH" && recovery_index_ < recovery_behaviors_carrying_.size()){
           amr_status_msg_.data = "RECOVERY";
@@ -1031,8 +1048,16 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
-          recovery_behaviors_carrying_[recovery_index_]->runBehavior();
+          if (recovery_flag_ == true)
+          {
+            ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
+            recovery_behaviors_carrying_[recovery_index_]->runBehavior();
+            recovery_index_++;
+          }
+          else
+          {
+            ROS_INFO("Map has been cleared and updated.");
+          }
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
@@ -1044,7 +1069,7 @@ namespace move_base {
           state_ = PLANNING;
 
           //update the index of the next recovery behavior that we'll try
-          recovery_index_++;
+          recovery_flag_ = true;
         }
         else{
           amr_status_msg_.data = "RECOVERY_FAILED";
@@ -1183,11 +1208,19 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
 
+      //Newly added: load a recovery behavior to move safety places
+      boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
+      for (int i=0; i<5; i++) {
+        safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+        recovery_behaviors_.push_back(safety_direction);
+//        recovery_behaviors_carrying_.push_back(safety_direction);
+      }
+
       //Newly added: load a recovery behavior to move backwards
       boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
       if(backward_recovery_allowed_){
         go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(go_back);
+//        recovery_behaviors_.push_back(go_back);
         recovery_behaviors_carrying_.push_back(go_back);
       }
 
@@ -1195,20 +1228,7 @@ namespace move_base {
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
       if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
         rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(rotate_small);
-      }
-
-      //Newly added: load a recovery behavior to rotate small angle
-      if(clearing_rotation_allowed_ && rotate_small_angle_ != 0.0){
-        rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(rotate_small);
-      }
-
-      //Newly added: load a recovery behavior to move backwards
-      if(backward_recovery_allowed_){
-        go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(go_back);
-        recovery_behaviors_carrying_.push_back(go_back);
+        recovery_behaviors_carrying_.push_back(rotate_small);
       }
 
       //next, we'll load a recovery behavior to rotate in place
@@ -1251,6 +1271,7 @@ namespace move_base {
     // Reset statemachine
     state_ = PLANNING;
     recovery_index_ = 0;
+    recovery_flag_ = false;
     recovery_trigger_ = PLANNING_R;
     publishZeroVelocity();
 
@@ -1309,26 +1330,28 @@ namespace move_base {
     geometry_msgs::PoseStamped global_pose;
     getRobotPose(global_pose, planner_costmap_ros_);
 
-    double x = global_pose.pose.position.x;
-    double y = global_pose.pose.position.y;
-    double yaw = tf2::getYaw(global_pose.pose.orientation);
+    double cur_x = global_pose.pose.position.x;
+    double cur_y = global_pose.pose.position.y;
+    double cur_yaw = tf2::getYaw(global_pose.pose.orientation);
 
-    double diff_x = x - pre_body_x_;
-    double diff_y = y - pre_body_y_;
-    double diff_yaw = yaw - pre_body_yaw_;
+    double diff_x = cur_x - pre_body_x_;
+    double diff_y = cur_y - pre_body_y_;
+    double diff_yaw = cur_yaw - pre_body_yaw_;
 
-    double goal_diff_x = planner_goal_.pose.position.x - x;
-    double goal_diff_y = planner_goal_.pose.position.y - y;
+    double goal_diff_x = planner_goal_.pose.position.x - cur_x;
+    double goal_diff_y = planner_goal_.pose.position.y - cur_y;
 
     double detect_motion_stuck_goal_diff_distance = 1.0;
-    double detect_motion_stuck_distance = 0.5;
-    double detect_motion_stuck_angle = 0.5; // about 30 degree
+    double detect_motion_stuck_distance = 0.15;
+    double detect_motion_stuck_angle = 0.15; // about 8.5 degree
+    double detect_motion_abs_vx = 0.2;
+    double detect_motion_abs_wz = 0.2;
 
     if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
         sqrt(diff_x*diff_x + diff_y*diff_y) < detect_motion_stuck_distance &&
         abs(diff_yaw) < detect_motion_stuck_angle &&
-        abs(cmd_vel_.linear.x) < 0.5 &&
-        abs(cmd_vel_.angular.z) < 0.5)
+        abs(cmd_vel_.linear.x)  < detect_motion_abs_vx &&
+        abs(cmd_vel_.angular.z) < detect_motion_abs_wz)
     {
       detect_motion_stuck_count_++;
     }
@@ -1337,16 +1360,16 @@ namespace move_base {
       detect_motion_stuck_count_ = 0;
     }
 
-    if (detect_motion_stuck_count_ >= 100)
+    if (detect_motion_stuck_count_ >= 20)
     {
       ROS_INFO("The robot is getting stuck.");
       detect_motion_stuck_count_ = 0;
       return true;
     }
 
-    pre_body_x_ = x;
-    pre_body_y_ = y;
-    pre_body_yaw_ = yaw;
+    pre_body_x_ = cur_x;
+    pre_body_y_ = cur_y;
+    pre_body_yaw_ = cur_yaw;
 
     return false;
   }
