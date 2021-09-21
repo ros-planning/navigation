@@ -75,29 +75,34 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
         // get some parameters from the parameter server
         ros::NodeHandle private_nh("~/" + name);
-        ros::NodeHandle blp_nh("~/TrajectoryPlannerROS");
+        ros::NodeHandle blp_nh("~/DWAPlannerROS");
 
         private_nh.param("sim_granularity", sim_granularity_, 0.01);
-        private_nh.param("frequency", frequency_, 20.0);
+        private_nh.param("frequency", frequency_, 10.0);
+        ROS_INFO("sim_granularity_: %f, frequency_: %f", sim_granularity_, frequency_);
 
-        blp_nh.param("max_vel_x", max_vel_x_, 2.0); 
-        blp_nh.param("min_vel_x", min_vel_x_, 0.05);
+        blp_nh.param("max_vel_x", max_vel_x_, 1.0);
+        blp_nh.param("min_vel_x", min_vel_x_, -1.0);
+        ROS_INFO("max_vel_x_: %f, min_vel_x__: %f", max_vel_x_, min_vel_x_);
+
         blp_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
         blp_nh.param("local_costmap/circumscribed_radius", circumscribed_radius_, 0.46);
+        ROS_INFO("inscribed_radius_: %f, circumscribed_radius_: %f", inscribed_radius_, circumscribed_radius_);
+
         blp_nh.param("x_goal_tolerance", x_goal_tolerance_, 0.10);
         blp_nh.param("yaw_goal_tolerance", yaw_goal_tolerance_, 0.10);
-
-        ROS_INFO("x_goal_tolerance_: %f, y_goal_tolerance_: %f", x_goal_tolerance_, yaw_goal_tolerance_);
-        ROS_INFO("sim_granularity__: %f, frequency_: %f", sim_granularity_, frequency_);
+        ROS_INFO("x_goal_tolerance_: %f, yaw_goal_tolerance_: %f", x_goal_tolerance_, yaw_goal_tolerance_);
 
         acc_lim_th_ = nav_core::loadParameterWithDeprecation(blp_nh, "acc_lim_theta", "acc_lim_th", 3.2);
-        max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
-        min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
-        max_rotational_vel_ = 1.0f;
-        min_rotational_vel_ = -1.0f;
-        max_vel_x_ = 1.0f;
-        min_vel_x_ = -1.0f;
-        angle_to_rot_ = M_PI/2.0f;
+        blp_nh.param("max_rotational_vel_", max_rotational_vel_, 1.0);
+        blp_nh.param("min_rotational_vel_", min_rotational_vel_, -1.0);
+        ROS_INFO("acc_lim_th_: %f, max_rotational_vel__: %f, min_rotational_vel__: %f", acc_lim_th_, max_rotational_vel_, min_rotational_vel_);
+//        max_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "max_vel_theta", "max_rotational_vel", 1.0);
+//        min_rotational_vel_ = nav_core::loadParameterWithDeprecation(blp_nh, "min_in_place_vel_theta", "min_in_place_rotational_vel", 0.4);
+//        max_rotational_vel_ = 1.0f;
+//        min_rotational_vel_ = -1.0f;
+//        max_vel_x_ = 1.0f;
+//        min_vel_x_ = -1.0f;
 
         world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
 
@@ -157,13 +162,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         ROS_ERROR("The costmap passed to the SafetyDirectionRecovery object cannnot be NULL. Doing nothing.");
         return;
       }
-
-/*
-      ROS_INFO("safety_status_.back: %s", (char*)safety_status_.back.c_str());
-      ROS_INFO("safety_status_.front: %s", (char*)safety_status_.front.c_str());
-      ROS_INFO("safety_status_.side_left: %s", (char*)safety_status_.side_left.c_str());
-      ROS_INFO("safety_status_.side_right: %s", (char*)safety_status_.side_right.c_str());
-*/
 
       double best_attitude = 0;
       double best_dist_to_move = 0.25;
@@ -232,7 +230,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
     {
       sleep(1); // wait for costmap update
 
-      int simulate_direction_num =16;
+      int simulate_direction_num = 16;
       std::vector<double> total_cost_array(simulate_direction_num);
       for (int i=0; i<simulate_direction_num; i++)
       {
@@ -267,28 +265,28 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
     void SafetyDirectionRecovery::calc_recovery_move(const double best_attitude, double& rotate_direction, double& recovery_rotate_angle, double& straight_direction)
     {
       if (0 <= best_attitude && best_attitude <= M_PI/2.0f)
-      {
+      { // counter-clockwise, forward
         recovery_rotate_angle = best_attitude;
         rotate_direction = 1;
         straight_direction = 1;
         ROS_INFO("Range in [0, pi/2]: best_attitude: %f", best_attitude);
       }
       else if (M_PI/2.0f < best_attitude && best_attitude <= M_PI)
-      {
+      { // clockwise, backward
         recovery_rotate_angle = M_PI - best_attitude;
         rotate_direction = -1;
         straight_direction = -1;
         ROS_INFO("Range in [pi/2, pi]: best_attitude: %f", best_attitude);
       }
       else if (M_PI < best_attitude && best_attitude <= 3.0f*M_PI/2.0f)
-      {
+      { // counter-clockwise, backward
         recovery_rotate_angle = best_attitude - M_PI;
         rotate_direction = 1;
         straight_direction = -1;
         ROS_INFO("Range in [pi, 3*pi/2]: best_attitude: %f", best_attitude);
       }
       else if (3.0f*M_PI/2.0f < best_attitude && best_attitude <= 2.0f*M_PI)
-      {
+      { // clockwise, forward
         recovery_rotate_angle = 2*M_PI - best_attitude;
         rotate_direction = -1;
         straight_direction = 1;
@@ -337,21 +335,22 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       geometry_msgs::PoseStamped global_pose;
       geometry_msgs::PoseStamped initial_pose;
       local_costmap_->getRobotPose(initial_pose);
-      double current_angle = tf2::getYaw(initial_pose.pose.orientation);
       double dist_travelled = 0.0;
       double dist_left = dist_to_move - dist_travelled;
 
-      while(n.ok() && dist_left > x_goal_tolerance_)
+      //while(n.ok() && dist_left > x_goal_tolerance_)
+      while(n.ok() && dist_left > 0)
       {
         // update current position of the robot
         local_costmap_->getRobotPose(global_pose);
-        double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
-        current_angle = tf2::getYaw(global_pose.pose.orientation);
         dist_travelled = SafetyDirectionRecovery::calculateDist(initial_pose, global_pose);
-
-        // conduct simulation
         dist_left = dist_to_move - dist_travelled;
+
 /*
+        // conduct simulation
+        double current_angle = tf2::getYaw(global_pose.pose.orientation);
+        double x = global_pose.pose.position.x;
+        double y = global_pose.pose.position.y;
         double sim_distance = 0.0;
         while(sim_distance < dist_left)
         {
@@ -416,10 +415,9 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         angle_left = std::fabs(angles::shortest_angular_distance(current_angle, start_angle + rotate_angle * direction));
         if (angle_left < yaw_goal_tolerance_) is_goal_reached = true;
 
-        double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
-
         // check if that velocity is legal by forward simulating
 /*
+        double x = global_pose.pose.position.x, y = global_pose.pose.position.y;
         double sim_angle = 0.0;
         while (sim_angle < angle_left)
         {
@@ -454,7 +452,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         r.sleep();
       }
 
-      return M_PI/2.0f - angle_left;
+      return current_angle - start_angle;
     }
 
   };  // namespace safety_direction_recovery
