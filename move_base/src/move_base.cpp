@@ -1344,7 +1344,7 @@ namespace move_base {
     double detect_motion_stuck_goal_diff_distance = 1.0;
     double detect_motion_stuck_distance = 0.15;
     double detect_motion_stuck_angle = 0.15; // about 8.5 degree
-    double detect_motion_abs_vx = 0.2;
+    double detect_motion_abs_vx = 0.1;
     double detect_motion_abs_wz = 0.2;
 
     if (sqrt(goal_diff_x*goal_diff_x + goal_diff_y*goal_diff_y) > detect_motion_stuck_goal_diff_distance &&
