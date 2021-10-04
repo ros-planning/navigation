@@ -107,20 +107,20 @@ TEST( Costmap2DROS, footprint_from_xmlrpc_param )
   std::vector<geometry_msgs::Point> footprint = cm.getRobotFootprint();
   EXPECT_EQ( 4, footprint.size() );
 
-  EXPECT_EQ( 0.1, footprint[ 0 ].x );
-  EXPECT_EQ( 0.1, footprint[ 0 ].y );
+  EXPECT_NEAR( 0.1f, footprint[ 0 ].x, 0.0001 );
+  EXPECT_NEAR( 0.1f, footprint[ 0 ].y, 0.0001 );
   EXPECT_EQ( 0.0f, footprint[ 0 ].z );
 
-  EXPECT_EQ( -0.1, footprint[ 1 ].x );
-  EXPECT_EQ( 0.1, footprint[ 1 ].y );
+  EXPECT_NEAR( -0.1f, footprint[ 1 ].x, 0.0001 );
+  EXPECT_NEAR( 0.1f, footprint[ 1 ].y, 0.0001 );
   EXPECT_EQ( 0.0f, footprint[ 1 ].z );
 
-  EXPECT_EQ( -0.1, footprint[ 2 ].x );
-  EXPECT_EQ( -0.1, footprint[ 2 ].y );
+  EXPECT_NEAR( -0.1f, footprint[ 2 ].x, 0.0001 );
+  EXPECT_NEAR( -0.1f, footprint[ 2 ].y, 0.0001 );
   EXPECT_EQ( 0.0f, footprint[ 2 ].z );
 
-  EXPECT_EQ( 0.1, footprint[ 3 ].x );
-  EXPECT_EQ( -0.1, footprint[ 3 ].y );
+  EXPECT_NEAR( 0.1f, footprint[ 3 ].x, 0.0001 );
+  EXPECT_NEAR( -0.1f, footprint[ 3 ].y, 0.0001 );
   EXPECT_EQ( 0.0f, footprint[ 3 ].z );
 }
 
