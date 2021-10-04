@@ -280,7 +280,6 @@ private:
   costmap_2d::Costmap2DConfig old_config_;
 };
 
-std::vector<geometry_msgs::Point> return_footprint(XmlRpc::XmlRpcValue footprint_xmlrpc);
 // class Costmap2DROS
 }  // namespace costmap_2d
 

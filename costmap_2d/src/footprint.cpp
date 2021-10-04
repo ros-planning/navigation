@@ -209,13 +209,13 @@ bool makeFootprintFromString(const std::string& footprint_string, std::vector<ge
 
 
 
-std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh)
+std::vector<geometry_msgs::Point> makeFootprintFromParams(ros::NodeHandle& nh, std::string param_name)
 {
   std::string full_param_name;
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
 
-  if (nh.searchParam("footprint", full_param_name))
+  if (nh.searchParam(param_name.c_str(), full_param_name))
   {
     XmlRpc::XmlRpcValue footprint_xmlrpc;
     nh.getParam(full_param_name, footprint_xmlrpc);

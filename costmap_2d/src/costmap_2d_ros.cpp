@@ -162,17 +162,14 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   private_nh.param(topic_param, topic, std::string("oriented_footprint"));
   footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
+  actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, &Costmap2DROS::actuator_state_callback, this);
 
-  Costmap2DROS::load_footprints(private_nh, extended_footprint, original_footprint);
-  if(extended_footprint.empty()) {
+  original_footprint = makeFootprintFromParams(private_nh, "footprint");
+  extended_footprint = makeFootprintFromParams(private_nh, "extended_footprint");
+  if(original_footprint.empty() || extended_footprint.empty()) {
     ROS_ERROR("empty vector loaded");
   }
-  else{
-    ROS_INFO("x: %f", extended_footprint[0].x);
-  }
-  actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, &Costmap2DROS::actuator_state_callback, this);
-  setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
-
+  setUnpaddedRobotFootprint(original_footprint);
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap",
                                       always_send_full_costmap);
@@ -190,41 +187,6 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   dynamic_reconfigure::Server<Costmap2DConfig>::CallbackType cb = boost::bind(&Costmap2DROS::reconfigureCB, this, _1,
                                                                               _2);
   dsrv_->setCallback(cb);
-}
-
-void Costmap2DROS::load_footprints(ros::NodeHandle& nh, std::vector<geometry_msgs::Point>& extended_footprint, std::vector<geometry_msgs::Point>& original_footprint)
-{
-  XmlRpc::XmlRpcValue footprint_xmlrpc1, footprint_xmlrpc2;
-  nh.getParam("extended_footprint", footprint_xmlrpc1);
-  nh.getParam("footprint", footprint_xmlrpc2);
-
-  extended_footprint = return_footprint(footprint_xmlrpc1);
-  original_footprint = return_footprint(footprint_xmlrpc2);
-}
-
-std::vector<geometry_msgs::Point> return_footprint(XmlRpc::XmlRpcValue footprint_xmlrpc)
-{
-  std::string full_param_name;
-  std::vector<geometry_msgs::Point> points;
-
-  if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeString &&
-      footprint_xmlrpc != "" && footprint_xmlrpc != "[]")
-  {
-    if (makeFootprintFromString(std::string(footprint_xmlrpc), points))
-    {
-      return points;
-    }
-  }
-  else if (footprint_xmlrpc.getType() == XmlRpc::XmlRpcValue::TypeArray)
-  {
-    points = makeFootprintFromXMLRPC(footprint_xmlrpc, full_param_name);
-    return points;
-  }
-  else
-  {
-    return points;
-  }
-
 }
 
 void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint)
@@ -255,7 +217,6 @@ void Costmap2DROS::dynamicFootprintFromParams()
     writeFootprintToParam(local_map_nh, original_footprint);
     setUnpaddedRobotFootprint(original_footprint);
     return;
-  
   }
   else if(actuator_state == "HIGH")
   { //actuator is high
@@ -479,7 +440,9 @@ void Costmap2DROS::readFootprintFromConfig(const costmap_2d::Costmap2DConfig &ne
   else
   {
     // robot_radius may be 0, but that must be intended at this point.
-    setUnpaddedRobotFootprint(makeFootprintFromRadius(new_config.robot_radius));
+    original_footprint = makeFootprintFromRadius(new_config.robot_radius);
+    extended_footprint = makeFootprintFromRadius(new_config.robot_radius);
+    setUnpaddedRobotFootprint(original_footprint);
   }
 }
 
