@@ -96,14 +96,14 @@ void validatePointInflation(unsigned int mx, unsigned int my, Costmap2D* costmap
         {
           continue;
         }
-
         if (cell.x_ > 0)
         {
           CellData data(costmap->getIndex(cell.x_-1, cell.y_),
                         cell.x_-1, cell.y_, cell.src_x_, cell.src_y_);
           m[dist].push_back(data);
         }
-        if (cell.y_ > 0)
+        if (cell.y_ > 0 && cell.y_ < costmap->getSizeInCellsY())
+        // if (cell.y_ > 0)
         {
           CellData data(costmap->getIndex(cell.x_, cell.y_-1),
                         cell.x_, cell.y_-1, cell.src_x_, cell.src_y_);
@@ -266,7 +266,6 @@ TEST(costmap, testInflationOrderCorrectness){
   addObservation(olayer, 5, 5, MAX_Z);
 
   layers.updateMap(0, 0, 0);
-
   validatePointInflation(4, 4, layers.getCostmap(), ilayer, inflation_radius);
   validatePointInflation(5, 5, layers.getCostmap(), ilayer, inflation_radius);
 }
@@ -401,7 +400,6 @@ TEST(costmap, testInflation3){
   ASSERT_EQ(countValues(*costmap, LETHAL_OBSTACLE), (unsigned int)1);
   ASSERT_EQ(countValues(*costmap, INSCRIBED_INFLATED_OBSTACLE), (unsigned int)4);
 }
-
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "inflation_tests");
