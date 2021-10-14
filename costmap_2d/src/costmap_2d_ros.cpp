@@ -472,10 +472,6 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
         last_publish_ = now;
       }
     }
-
-    // update is complete.
-    update_complete_condition_.notify_all();
-
     r.sleep();
     // make sure to sleep for the remainder of our cycle time
     if (r.cycleTime() > ros::Duration(1 / frequency))
@@ -658,8 +654,7 @@ void Costmap2DROS::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Poi
 
 void Costmap2DROS::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Point max, const std::set<std::string>& layers)
 {
-  ROS_INFO_STREAM("Costmap " << name_ << " reset bounding box from " << min << " to " << max);
-  boost::unique_lock<Costmap2DROS> lock(*this);
+  boost::lock_guard<Costmap2DROS> lock(*this);
 
   std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
   for (vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end(); ++plugin)
@@ -687,20 +682,6 @@ void Costmap2DROS::resetBoundingBox(geometry_msgs::Point min, geometry_msgs::Poi
         ROS_WARN_STREAM_THROTTLE(5.0, "Unable to clear layer " << (*plugin)->getName() << ": not a CostmapLayer");
       }
     }
-  }
-
-  // Wait until the costmap has updated and is current.
-  // This will keep us from attempting to use a costmap with large regions
-  // blanked out, which is important to prevent from creeping into an
-  // obstacle, or for not getting wacky global plans.
-  for (;;)
-  {
-    update_complete_condition_.wait(lock);
-    if (isCurrent())
-    {
-      break;
-    }
-    ROS_WARN_STREAM_DELAYED_THROTTLE(5.0, "Costmap " << name_ << " waiting for update after reset");
   }
 }
 
