@@ -1294,7 +1294,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       range_min = laser_scan->range_min;
 
     if(ldata.range_max <= 0.0 || range_min < 0.0) {
-      ROS_ERROR("range_max or range_min from laser is negetive! ignore this message.");
+      ROS_ERROR("range_max or range_min from laser is negative! ignore this message.");
       return; // ignore this.
     }
 
