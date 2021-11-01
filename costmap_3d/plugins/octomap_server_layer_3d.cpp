@@ -302,21 +302,23 @@ void OctomapServerLayer3D::mapUpdateCallback(const octomap_msgs::OctomapUpdateCo
     // from the octomap_update seq.
     // Ignore the first normal published update until the first full map
     // is received.
-    if (num_map_updates_ == 1 &&
-        map_update_msg->octomap_bounds.header.seq == map_update_msg->octomap_update.header.seq)
+    if (map_update_msg->octomap_bounds.header.seq == map_update_msg->octomap_update.header.seq)
     {
-      // Ignore the first normal update until the first full map is received.
-      // There is a race where this may happen, and we must simply ignore the
-      // first.
-      return;
-    }
-    else if(num_map_updates_ > 1)
-    {
-      // Huh. We never got the first full map, this means we lost that
-      // message. We have no choice but to re-subscribe.
-      ROS_WARN("Lost first full map update message, resubscribing.");
-      scheduleResubscribeUpdates();
-      return;
+      if (num_map_updates_ <= 1)
+      {
+        // Ignore the first normal update until the first full map is received.
+        // There is a race where this may happen, and we must simply ignore the
+        // first.
+        return;
+      }
+      else
+      {
+        // Huh. We never got the first full map, this means we lost that
+        // message. We have no choice but to re-subscribe.
+        ROS_WARN("Lost first full map update message, resubscribing.");
+        scheduleResubscribeUpdates();
+        return;
+      }
     }
     first_full_map_update_received_ = true;
   }
