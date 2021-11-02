@@ -106,6 +106,7 @@ protected:
   bool using_updates_;
   bool active_;
   bool first_full_map_update_received_;
+  bool resub_pending_;
   size_t num_map_updates_;
   uint32_t last_seq_;
   ros::Duration data_valid_duration_;

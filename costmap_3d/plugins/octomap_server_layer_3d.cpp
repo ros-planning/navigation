@@ -179,6 +179,7 @@ void OctomapServerLayer3D::subscribe()
 void OctomapServerLayer3D::subscribeUpdatesUnlocked()
 {
   first_full_map_update_received_ = false;
+  resub_pending_ = false;
   num_map_updates_ = 0;
   map_update_sub_ = pnh_.subscribe<octomap_msgs::OctomapUpdate>(map_update_topic_, 10,
                                                                 std::bind(&OctomapServerLayer3D::mapUpdateCallback,
@@ -203,10 +204,14 @@ void OctomapServerLayer3D::scheduleResubscribeUpdates()
   // We can't resubscribe a topic from its own callback due to internal
   // locking issues. So schedule resubscribing on a one-shot timer that fires
   // immediately.
-  resub_timer_ = pnh_.createTimer(
-      ros::Duration(0.0),
-      boost::bind(&OctomapServerLayer3D::resubscribeUpdatesCallback, this),
-      true);
+  if (!resub_pending_)
+  {
+    resub_pending_ = true;
+    resub_timer_ = pnh_.createTimer(
+        ros::Duration(0.0),
+        boost::bind(&OctomapServerLayer3D::resubscribeUpdatesCallback, this),
+        true);
+  }
 }
 
 void OctomapServerLayer3D::resubscribeUpdatesCallback()
@@ -214,6 +219,7 @@ void OctomapServerLayer3D::resubscribeUpdatesCallback()
   std::lock_guard<Layer3D> lock(*this);
   unsubscribeUpdatesUnlocked();
   subscribeUpdatesUnlocked();
+  ROS_INFO_STREAM("OctomapServerLayer3D " << name_ << ": resubscribe updates complete");
 }
 
 void OctomapServerLayer3D::reset()
@@ -288,10 +294,10 @@ void OctomapServerLayer3D::mapCallback(const octomap_msgs::OctomapConstPtr& map_
 void OctomapServerLayer3D::mapUpdateCallback(const octomap_msgs::OctomapUpdateConstPtr& map_update_msg)
 {
   std::lock_guard<Layer3D> lock(*this);
-  if (!active_)
+  if (!active_ || resub_pending_)
   {
-    // We have been deactivated, but there was still an outstanding message
-    // callback. Throw this message away.
+    // We have been deactivated or a resubscribe is pending, but there was
+    // still an outstanding message callback. Throw this message away.
     return;
   }
   num_map_updates_++;
@@ -315,7 +321,7 @@ void OctomapServerLayer3D::mapUpdateCallback(const octomap_msgs::OctomapUpdateCo
       {
         // Huh. We never got the first full map, this means we lost that
         // message. We have no choice but to re-subscribe.
-        ROS_WARN("Lost first full map update message, resubscribing.");
+        ROS_WARN_STREAM("OctomapServerLayer3D " << name_ << ": Lost first full map update message, resubscribing.");
         scheduleResubscribeUpdates();
         return;
       }
@@ -326,7 +332,7 @@ void OctomapServerLayer3D::mapUpdateCallback(const octomap_msgs::OctomapUpdateCo
   {
     if (last_seq_ + 1 < map_update_msg->octomap_bounds.header.seq)
     {
-      ROS_WARN("Lost an update message, resubscribing to get entire map.");
+      ROS_WARN_STREAM("OctomapServerLayer3D " << name_ << ": Lost an update message, resubscribing to get entire map.");
       ROS_INFO_STREAM("Expected sequence number " << last_seq_ + 1 << " but received "
                       << map_update_msg->octomap_bounds.header.seq);
       scheduleResubscribeUpdates();
