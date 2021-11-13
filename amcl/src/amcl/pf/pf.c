@@ -132,7 +132,7 @@ void pf_free(pf_t *pf)
   return;
 }
 
-// Initialize the filter using a guassian
+// Initialize the filter using a gaussian
 void pf_init(pf_t *pf, pf_vector_t mean, pf_matrix_t cov)
 {
   int i;
