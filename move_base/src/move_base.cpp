@@ -706,6 +706,7 @@ namespace move_base {
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
           state_ = PLANNING;
+          publishZeroVelocity();
 
           //we have a new goal so make sure the planner is awake
           lock.lock();
@@ -744,6 +745,7 @@ namespace move_base {
         //we want to go back to the planning state for the next execution cycle
         recovery_index_ = 0;
         state_ = PLANNING;
+        publishZeroVelocity();
 
         //we have a new goal so make sure the planner is awake
         lock.lock();
