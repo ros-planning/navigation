@@ -181,13 +181,13 @@ class AmclNode
     void updatePoseFromServer();
     void applyInitialPose();
 
-    //parameter for what odom to use
+    //parameter for which odom to use
     std::string odom_frame_id_;
 
     //paramater to store latest odom pose
     geometry_msgs::PoseStamped latest_odom_pose_;
 
-    //parameter for what base to use
+    //parameter for which base to use
     std::string base_frame_id_;
     std::string global_frame_id_;
 
@@ -696,7 +696,7 @@ void AmclNode::runFromBag(const std::string &in_bag_fn, bool trigger_global_loca
         break;
       }
     }
-    ROS_INFO("Waiting for map...");
+    ROS_INFO("Waiting for the map...");
     ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0));
   }
 
@@ -976,7 +976,7 @@ AmclNode::freeMapDependentMemory()
 
 /**
  * Convert an OccupancyGrid map message into the internal
- * representation.  This allocates a map_t and returns it.
+ * representation. This allocates a map_t and returns it.
  */
 map_t*
 AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
@@ -1292,6 +1292,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       range_min = std::max(laser_scan->range_min, (float)laser_min_range_);
     else
       range_min = laser_scan->range_min;
+
+    if(ldata.range_max <= 0.0 || range_min < 0.0) {
+      ROS_ERROR("range_max or range_min from laser is negative! ignore this message.");
+      return; // ignore this.
+    }
+
     // The AMCLLaserData destructor will free this memory
     ldata.ranges = new double[ldata.range_count][2];
     ROS_ASSERT(ldata.ranges);
@@ -1301,6 +1307,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // readings to max range.
       if(laser_scan->ranges[i] <= range_min)
         ldata.ranges[i][0] = ldata.range_max;
+      else if(laser_scan->ranges[i] > ldata.range_max)
+        ldata.ranges[i][0] = std::numeric_limits<decltype(ldata.range_max)>::max();
       else
         ldata.ranges[i][0] = laser_scan->ranges[i];
       // Compute bearing

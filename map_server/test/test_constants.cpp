@@ -61,3 +61,24 @@ const char* g_spectrum_png_file = "test/spectrum.png";
 
 const float g_valid_image_res = 0.1;
 
+// Constants for testmap2
+namespace tmap2
+{
+  const char g_valid_image_content[] = {
+  100,100,100,100,100,100,100,100,100,100,100,100,
+  100,0,0,0,0,0,0,0,0,0,0,100,
+  100,0,100,100,100,100,100,100,100,100,0,100,
+  100,0,100,0,0,0,0,0,0,100,0,100,
+  100,0,0,0,0,0,0,0,0,0,0,100,
+  100,0,0,0,0,0,0,0,0,0,0,100,
+  100,0,0,0,0,0,0,0,0,0,0,100,
+  100,0,0,0,0,0,0,0,0,0,0,100,
+  100,0,0,0,0,0,0,0,0,0,0,100,
+  100,0,100,0,0,0,0,0,0,100,0,100,
+  100,0,0,0,0,0,0,0,0,0,0,100,
+  100,100,100,100,100,100,100,100,100,100,100,100,
+  };
+  const float g_valid_image_res = 0.1;
+  const unsigned int g_valid_image_width = 12;
+  const unsigned int g_valid_image_height = 12;
+}

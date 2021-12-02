@@ -26,6 +26,7 @@
     <depend>tf2</depend>
     <depend>yaml-cpp</depend>
 
+    <test_depend>roslib</test_depend>
     <test_depend>rospy</test_depend>
     <test_depend>rostest</test_depend>
     <test_depend>rosunit</test_depend>
