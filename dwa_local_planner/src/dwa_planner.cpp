@@ -73,6 +73,11 @@ namespace dwa_local_planner {
                     << "    - Goal distance : " << config.switch_goal_distance << " [m]\n"
                     << "    - Plan distance : " << config.switch_plan_distance << " [m]\n");
 
+    // Set not moving thresholds
+    not_moving_distance_ = config.not_moving_distance;
+    not_moving_time_window_ = config.not_moving_time_window;
+    not_moving_minimal_duration_ = config.not_moving_minimal_duration;
+
     // Set scales
     align_align_scale_ = config.align_align_scale;
     align_plan_scale_ = config.align_plan_scale;
@@ -363,25 +368,25 @@ namespace dwa_local_planner {
     bool is_moving = false;
 
     // Check whether we're actually moving
-    if (dist_sq > 0.01) {
+    if (dist_sq > not_moving_distance_) {
       resetMotionStamp();
       x_saved = x;
       y_saved = y;
       is_moving = true;
     }
 
-    if (!prev_is_moving && time_since_stop < 5.0) {
-      // Make sure we are always 'notMoving' for at least 5 seconds to avoid switching behavior
+    if (!prev_is_moving && time_since_stop < not_moving_minimal_duration_) {
+      // Configure the minimal 'notMoving' duration to avoid switching behavior
       return false;
     }
     else if (is_moving) {
       prev_is_moving = true;
       return true;
     }
-    else if ( time_since_move > 10.0) {
+    else if ( time_since_move > not_moving_time_window_) {
       if (prev_is_moving)
       {
-        ROS_WARN("Robot has not moved significantly for more than 10 seconds");
+        ROS_WARN("Robot has not moved significantly for more than %f seconds", not_moving_time_window_);
         stamp_not_moving = ros::Time::now();
         prev_is_moving = false;
       }

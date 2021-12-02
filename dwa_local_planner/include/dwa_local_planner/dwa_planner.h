@@ -168,6 +168,10 @@ namespace dwa_local_planner {
       double switch_plan_distance_;
       double switch_goal_distance_;
 
+      double not_moving_distance_;
+      double not_moving_time_window_;
+      double not_moving_minimal_duration_;
+
       base_local_planner::LocalPlannerUtil *planner_util_;
 
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
