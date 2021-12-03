@@ -96,8 +96,8 @@ namespace move_base {
 
     //for robot status
     amr_status_pub_ = nh.advertise<std_msgs::String>("amr_status", 1);
-    carrying_status_sub_ = nh.subscribe<std_msgs::String>("actuator_status", 1, boost::bind(&MoveBase::carryingStatusCB, this, _1));
-    actuator_state = "unknown";
+    carrying_status_sub_ = nh.subscribe<std_msgs::String>("actuator_position", 1, boost::bind(&MoveBase::carryingStatusCB, this, _1));
+    actuator_position = "unknown";
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
@@ -283,7 +283,7 @@ namespace move_base {
 
   void MoveBase::carryingStatusCB(const std_msgs::String::ConstPtr& msg)
   {
-    actuator_state = msg->data;
+    actuator_position = msg->data;
   }
 
   void MoveBase::clearCostmapWindows(double size_x, double size_y){
@@ -1011,7 +1011,7 @@ namespace move_base {
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
-        if(recovery_behavior_enabled_ && actuator_state == "LOW" && recovery_index_ < recovery_behaviors_.size()){
+        if(recovery_behavior_enabled_ && actuator_position != "high" && recovery_index_ < recovery_behaviors_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
@@ -1041,7 +1041,7 @@ namespace move_base {
           //update the index of the next recovery behavior that we'll try
           recovery_flag_ = true;
         }
-        else if(recovery_behavior_enabled_ && actuator_state == "HIGH" && recovery_index_ < recovery_behaviors_carrying_.size()){
+        else if(recovery_behavior_enabled_ && actuator_position == "high" && recovery_index_ < recovery_behaviors_carrying_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 

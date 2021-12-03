@@ -62,7 +62,7 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
   if (should_delete) old_h.deleteParam(name);
 }
 
-static std::string actuator_state;
+static std::string actuator_position;
 static std::vector<geometry_msgs::Point> extended_footprint;
 static std::vector<geometry_msgs::Point> original_footprint;
 
@@ -162,7 +162,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   private_nh.param(topic_param, topic, std::string("oriented_footprint"));
   footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
-  actuator_state_sub_ = private_nh.subscribe("actuator_status", 10, &Costmap2DROS::actuator_state_callback, this);
+  actuator_position_sub_ = private_nh.subscribe("actuator_position", 10, &Costmap2DROS::actuator_position_callback, this);
 
   original_footprint = makeFootprintFromParams(private_nh, "footprint");
   extended_footprint = makeFootprintFromParams(private_nh, "extended_footprint");
@@ -194,31 +194,29 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
   setUnpaddedRobotFootprint(toPointVector(footprint));
 }
 
-void Costmap2DROS::actuator_state_callback(const std_msgs::String& msg)
+void Costmap2DROS::actuator_position_callback(const std_msgs::String& msg)
 {
-  actuator_state = msg.data; //currently receive only either std_msgs::String.data "HIGH" or "LOW" 
+  actuator_position = msg.data; //currently receive only either std_msgs::String.data "HIGH" or "LOW" 
 }
 
 
 //std::vector<geometry_msgs::Point> Costmap2DROS::dynamicFootprintFromParams(ros::NodeHandle& nh)
 void Costmap2DROS::dynamicFootprintFromParams()
 {
-  //ros::Subscriber actuator_state_sub_ = nh.subscribe("/actuator_status", 10, actuator_state_callback);
-
   std::string full_param_name;
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
   ros::NodeHandle global_map_nh("/move_base/global_costmap");
   ros::NodeHandle local_map_nh("/move_base/local_costmap");
 
-  if (actuator_state != "HIGH") 
+  if (actuator_position != "high") 
   {
     writeFootprintToParam(global_map_nh, original_footprint);
     writeFootprintToParam(local_map_nh, original_footprint);
     setUnpaddedRobotFootprint(original_footprint);
     return;
   }
-  else if(actuator_state == "HIGH")
+  else if(actuator_position == "high")
   { //actuator is high
     //actuator is not pulling sth and size is big
     writeFootprintToParam(global_map_nh, extended_footprint);

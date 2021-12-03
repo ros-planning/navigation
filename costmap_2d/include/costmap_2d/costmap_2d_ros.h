@@ -229,7 +229,7 @@ public:
    * getUnpaddedRobotFootprint(). */
   void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
 
-  void actuator_state_callback(const std_msgs::String& msg);
+  void actuator_position_callback(const std_msgs::String& msg);
 
   //std::vector<geometry_msgs::Point>
   void dynamicFootprintFromParams();
@@ -273,7 +273,7 @@ private:
 
   ros::Subscriber footprint_sub_;
   ros::Publisher footprint_pub_;
-  ros::Subscriber actuator_state_sub_;////
+  ros::Subscriber actuator_position_sub_;////
   std::vector<geometry_msgs::Point> unpadded_footprint_;
   std::vector<geometry_msgs::Point> padded_footprint_;
   float footprint_padding_;
