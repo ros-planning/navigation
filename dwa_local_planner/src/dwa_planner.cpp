@@ -78,6 +78,11 @@ namespace dwa_local_planner {
     not_moving_time_window_ = config.not_moving_time_window;
     not_moving_minimal_duration_ = config.not_moving_minimal_duration;
 
+    ROS_INFO_STREAM("notMoving configured:\n"
+                    << "    - Not moving reset distance : " << config.not_moving_distance << " [m]\n"
+                    << "    - Not moving evaluation time window : " << config.not_moving_time_window << " [s]\n"
+                    << "    - Not moving minimal duration : " << config.not_moving_minimal_duration << " [s]\n");
+
     // Set scales
     align_align_scale_ = config.align_align_scale;
     align_plan_scale_ = config.align_plan_scale;
