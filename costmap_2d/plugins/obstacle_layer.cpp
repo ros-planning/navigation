@@ -262,6 +262,11 @@ void ObstacleLayer::laserScanCallback(const sensor_msgs::LaserScanConstPtr& mess
              ex.what());
     projector_.projectLaser(*message, cloud);
   }
+  catch (std::runtime_error &ex)
+  {
+    ROS_WARN("transformLaserScanToPointCloud error, it seems the message from laser sensor is malformed. Ignore this laser scan. what(): %s", ex.what());
+    return; //ignore this message
+  }
 
   // buffer the point cloud
   buffer->lock();
@@ -298,6 +303,11 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
     ROS_WARN("High fidelity enabled, but TF returned a transform exception to frame %s: %s",
              global_frame_.c_str(), ex.what());
     projector_.projectLaser(message, cloud);
+  }
+  catch (std::runtime_error &ex)
+  {
+    ROS_WARN("transformLaserScanToPointCloud error, it seems the message from laser sensor is malformed. Ignore this laser scan. what(): %s", ex.what());
+    return; //ignore this message
   }
 
   // buffer the point cloud
