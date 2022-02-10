@@ -144,8 +144,14 @@ namespace dwa_local_planner {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-    //when we get a new plan, we also want to clear any latch we may have on goal tolerances
-    latchedStopRotateController_.resetLatching();
+
+    if (!orig_global_plan.empty()) {
+      if (orig_global_plan.back().pose != previous_goal.pose  || orig_global_plan.back().header.frame_id != previous_goal.header.frame_id) {
+        // reset latching only if the goal changed
+        latchedStopRotateController_.resetLatching();
+      }
+      previous_goal = orig_global_plan.back();
+    }
 
     ROS_INFO("Got new plan");
     return dp_->setPlan(orig_global_plan);
@@ -163,6 +169,8 @@ namespace dwa_local_planner {
 
     if(latchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_)) {
       ROS_INFO("Goal reached");
+      // reset latching such that the latching doesn't apply even if the same goal is targeted again
+      latchedStopRotateController_.resetLatching();
       return true;
     } else {
       return false;
