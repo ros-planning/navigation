@@ -145,11 +145,13 @@ namespace dwa_local_planner {
       return false;
     }
 
+    if (orig_global_plan.empty() || orig_global_plan.back().pose != previous_goal.pose
+            || orig_global_plan.back().header.frame_id != previous_goal.header.frame_id) {
+      // reset latching only if the goal changed
+      latchedStopRotateController_.resetLatching();
+    }
+
     if (!orig_global_plan.empty()) {
-      if (orig_global_plan.back().pose != previous_goal.pose  || orig_global_plan.back().header.frame_id != previous_goal.header.frame_id) {
-        // reset latching only if the goal changed
-        latchedStopRotateController_.resetLatching();
-      }
       previous_goal = orig_global_plan.back();
     }
 
