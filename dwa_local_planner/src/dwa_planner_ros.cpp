@@ -145,13 +145,13 @@ namespace dwa_local_planner {
       return false;
     }
 
-    if (orig_global_plan.empty() || orig_global_plan.back().pose != previous_goal_.pose
-            || orig_global_plan.back().header.frame_id != previous_goal_.header.frame_id) {
+    if (orig_global_plan.empty() || orig_global_plan.back().pose != current_goal_.pose
+            || orig_global_plan.back().header.frame_id != current_goal_.header.frame_id) {
       // reset latching only if the goal changed
       latchedStopRotateController_.resetLatching();
     }
 
-    previous_goal_ = !orig_global_plan.empty() ? orig_global_plan.back() : geometry_msgs::PoseStamped();
+    current_goal_ = !orig_global_plan.empty() ? orig_global_plan.back() : geometry_msgs::PoseStamped();
 
     ROS_INFO("Got new plan");
     return dp_->setPlan(orig_global_plan);
