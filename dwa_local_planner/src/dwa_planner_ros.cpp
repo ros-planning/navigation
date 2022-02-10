@@ -151,9 +151,7 @@ namespace dwa_local_planner {
       latchedStopRotateController_.resetLatching();
     }
 
-    if (!orig_global_plan.empty()) {
-      previous_goal_ = orig_global_plan.back();
-    }
+    previous_goal_ = !orig_global_plan.empty() ? orig_global_plan.back() : geometry_msgs::PoseStamped();
 
     ROS_INFO("Got new plan");
     return dp_->setPlan(orig_global_plan);
