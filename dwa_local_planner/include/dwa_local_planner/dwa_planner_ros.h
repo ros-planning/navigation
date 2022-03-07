@@ -48,6 +48,7 @@
 #include <angles/angles.h>
 
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/String.h>
 
 #include <costmap_2d/costmap_2d_ros.h>
 #include <nav_core/base_local_planner.h>
@@ -114,7 +115,7 @@ namespace dwa_local_planner {
        */
       bool isGoalReached();
 
-
+      void actuator_position_callback(const std_msgs::String::ConstPtr& msg);
 
       bool isInitialized() {
         return initialized_;
@@ -134,6 +135,7 @@ namespace dwa_local_planner {
 
       // for visualisation, publishers of global and local plan
       ros::Publisher g_plan_pub_, l_plan_pub_;
+      ros::Subscriber actuator_position_sub_;
 
       base_local_planner::LocalPlannerUtil planner_util_;
 
@@ -158,6 +160,14 @@ namespace dwa_local_planner {
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
+
+      double rotate_target_distance_;
+      double rotate_start_threshold_vel_;
+      double rotate_start_threshold_angular_vel_;
+      bool is_actuator_high_;
+      bool rotate_to_goal_;
+      bool use_rotate_first_actuator_high_;
+      bool use_rotate_first_actuator_low_;
   };
 };
 #endif
