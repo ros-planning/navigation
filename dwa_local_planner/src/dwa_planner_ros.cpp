@@ -139,10 +139,10 @@ namespace dwa_local_planner {
       private_nh.param("rotate_start_threshold_vel", this->rotate_start_threshold_vel_, 0.1);
       private_nh.param("rotate_start_threshold_angular_vel", this->rotate_start_threshold_angular_vel_, 0.05);
       
-      private_nh.param("use_rotate_first_actuator_high", this->use_rotate_first_actuator_high_, false);
-      private_nh.param("use_rotate_first_actuator_low", this->use_rotate_first_actuator_low_, true);
+      private_nh.param("use_rotate_first_actuator_connect", this->use_rotate_first_actuator_connect_, false);
+      private_nh.param("use_rotate_first_actuator_disconnect", this->use_rotate_first_actuator_disconnect_, true);
 
-      this->is_actuator_high_ = false;
+      this->is_actuator_connect_ = false;
       this->rotate_to_goal_ = false;
     }
     else{
@@ -158,8 +158,8 @@ namespace dwa_local_planner {
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
     latchedStopRotateController_.resetLatching();
 
-    if ((this->is_actuator_high_ && this->use_rotate_first_actuator_high_) ||
-        (!this->is_actuator_high_ && this->use_rotate_first_actuator_low_))
+    if ((this->is_actuator_connect_ && this->use_rotate_first_actuator_connect_) ||
+        (!this->is_actuator_connect_ && this->use_rotate_first_actuator_disconnect_))
     {
       geometry_msgs::PoseStamped robot_vel;
       odom_helper_.getRobotVel(robot_vel);
@@ -336,16 +336,16 @@ namespace dwa_local_planner {
         }
       }
       
-      double tarn_turget_x = turn_target_pose.pose.position.x;
-      double tarn_turget_y = turn_target_pose.pose.position.y;
+      double turn_turget_x = turn_target_pose.pose.position.x;
+      double turn_turget_y = turn_target_pose.pose.position.y;
 
-      double tarn_turget_th = std::atan2(tarn_turget_y - current_y, tarn_turget_x - current_x);
+      double turn_turget_th = std::atan2(turn_turget_y - current_y, turn_turget_x - current_x);
       base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
 
       bool was_rotate = latchedStopRotateController_.rotateToGoal(
         current_pose_,
         robot_vel,
-        tarn_turget_th,
+        turn_turget_th,
         cmd_vel,
         limits.getAccLimits(),
         dp_->getSimPeriod(),
@@ -353,7 +353,7 @@ namespace dwa_local_planner {
         boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
 
       double current_th = tf2::getYaw(this->current_pose_.pose.orientation);
-      if (!was_rotate || std::abs(current_th - tarn_turget_th) < (5.0 * M_PI / 180.0))
+      if (!was_rotate || std::abs(current_th - turn_turget_th) < (5.0 * M_PI / 180.0))
       {
         this->rotate_to_goal_ = false;
       }
@@ -391,7 +391,7 @@ namespace dwa_local_planner {
 
   void DWAPlannerROS::actuator_position_callback(const std_msgs::String::ConstPtr& msg)
   {
-    this->is_actuator_high_ = msg->data == "high";
+    this->is_actuator_connect_ = msg->data == "high";
   }
 
 

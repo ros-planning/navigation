@@ -164,10 +164,10 @@ namespace dwa_local_planner {
       double rotate_target_distance_;
       double rotate_start_threshold_vel_;
       double rotate_start_threshold_angular_vel_;
-      bool is_actuator_high_;
+      bool is_actuator_connect_;
       bool rotate_to_goal_;
-      bool use_rotate_first_actuator_high_;
-      bool use_rotate_first_actuator_low_;
+      bool use_rotate_first_actuator_connect_;
+      bool use_rotate_first_actuator_disconnect_;
   };
 };
 #endif
