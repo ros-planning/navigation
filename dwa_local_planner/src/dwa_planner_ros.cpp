@@ -100,6 +100,7 @@ namespace dwa_local_planner {
       costmap_2d::Costmap2DROS* costmap_ros) {
     if (! isInitialized()) {
 
+      ros::NodeHandle nh();
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
@@ -133,6 +134,16 @@ namespace dwa_local_planner {
       dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
       dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = boost::bind(&DWAPlannerROS::reconfigureCB, this, _1, _2);
       dsrv_->setCallback(cb);
+
+      private_nh.param("rotate_target_distance", this->rotate_target_distance_, 1.0);
+      private_nh.param("rotate_start_threshold_vel", this->rotate_start_threshold_vel_, 0.1);
+      private_nh.param("rotate_start_threshold_angular_vel", this->rotate_start_threshold_angular_vel_, 0.05);
+      
+      private_nh.param("use_rotate_first_actuator_connect", this->use_rotate_first_actuator_connect_, false);
+      private_nh.param("use_rotate_first_actuator_disconnect", this->use_rotate_first_actuator_disconnect_, true);
+
+      this->is_actuator_connect_ = false;
+      this->rotate_to_goal_ = false;
     }
     else{
       ROS_WARN("This planner has already been initialized, doing nothing.");
@@ -146,6 +157,18 @@ namespace dwa_local_planner {
     }
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
     latchedStopRotateController_.resetLatching();
+
+    if ((this->is_actuator_connect_ && this->use_rotate_first_actuator_connect_) ||
+        (!this->is_actuator_connect_ && this->use_rotate_first_actuator_disconnect_))
+    {
+      geometry_msgs::PoseStamped robot_vel;
+      odom_helper_.getRobotVel(robot_vel);
+      if (std::abs(robot_vel.pose.position.x) < this->rotate_start_threshold_vel_ &&
+          std::abs(tf2::getYaw(robot_vel.pose.orientation)) < this->rotate_start_threshold_angular_vel_)
+      {
+        this->rotate_to_goal_ = true;
+      }
+    }
 
     ROS_INFO("Got new plan");
     return dp_->setPlan(orig_global_plan);
@@ -291,7 +314,54 @@ namespace dwa_local_planner {
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
     dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan, costmap_ros_->getRobotFootprint());
 
-    if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_)) {
+    if (this->rotate_to_goal_)
+    {
+      geometry_msgs::PoseStamped robot_vel;
+      odom_helper_.getRobotVel(robot_vel);
+      geometry_msgs::PoseStamped turn_target_pose;
+
+      double current_x = current_pose_.pose.position.x;
+      double current_y = current_pose_.pose.position.y;
+
+      // transformed_plan is not empty
+      for (geometry_msgs::PoseStamped tmp_pose : transformed_plan)
+      {
+        turn_target_pose = tmp_pose;
+        double tmp_x = tmp_pose.pose.position.x;
+        double tmp_y = tmp_pose.pose.position.y;
+        double distance = std::sqrt(std::pow(current_x - tmp_x, 2) + std::pow(current_y - tmp_y, 2));
+        if (this->rotate_target_distance_ < distance)
+        {
+          break;
+        }
+      }
+      
+      double turn_turget_x = turn_target_pose.pose.position.x;
+      double turn_turget_y = turn_target_pose.pose.position.y;
+
+      double turn_turget_th = std::atan2(turn_turget_y - current_y, turn_turget_x - current_x);
+      base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+
+      bool was_rotate = latchedStopRotateController_.rotateToGoal(
+        current_pose_,
+        robot_vel,
+        turn_turget_th,
+        cmd_vel,
+        limits.getAccLimits(),
+        dp_->getSimPeriod(),
+        limits,
+        boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
+
+      double current_th = tf2::getYaw(this->current_pose_.pose.orientation);
+      if (!was_rotate || std::abs(current_th - turn_turget_th) < (5.0 * M_PI / 180.0))
+      {
+        this->rotate_to_goal_ = false;
+      }
+
+      return was_rotate;
+    }
+    else if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
+    {
       //publish an empty plan because we've reached our goal position
       std::vector<geometry_msgs::PoseStamped> local_plan;
       std::vector<geometry_msgs::PoseStamped> transformed_plan;
@@ -317,6 +387,11 @@ namespace dwa_local_planner {
       }
       return isOk;
     }
+  }
+
+  void DWAPlannerROS::actuator_position_callback(const std_msgs::String::ConstPtr& msg)
+  {
+    this->is_actuator_connect_ = msg->data == "high";
   }
 
 
