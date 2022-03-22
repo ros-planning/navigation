@@ -88,6 +88,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   // Initialize old pose with something
   tf2::toMsg(tf2::Transform::getIdentity(), old_pose_.pose);
 
+  ros::NodeHandle nh;
   ros::NodeHandle private_nh("~/" + name);
 
   // get global and robot base frame names
@@ -154,6 +155,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   private_nh.param(topic_param, topic, std::string("footprint"));
   footprint_sub_ = private_nh.subscribe(topic, 1, &Costmap2DROS::setUnpaddedRobotFootprintPolygon, this);
+  track_footprint_sub_ = nh.subscribe<geometry_msgs::Polygon>("raw_footprint", 1, &Costmap2DROS::footprint_callback, this);
 
   if (!private_nh.searchParam("published_footprint_topic", topic_param))
   {
@@ -192,6 +194,23 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint)
 {
   setUnpaddedRobotFootprint(toPointVector(footprint));
+}
+
+void Costmap2DROS::footprint_callback(const geometry_msgs::Polygon::ConstPtr& msg)
+{
+  /*
+  msg->points();
+  footprint_points = Polygon();
+  for (auto point : msg->points)
+  {
+    PointXY p {point.x, point.y};
+    footprint_points.push_back(p);
+  }
+  */
+  if (actuator_position == "high")
+  {
+    extended_footprint = toPointVector(*msg);
+  }
 }
 
 void Costmap2DROS::actuator_position_callback(const std_msgs::String& msg)
