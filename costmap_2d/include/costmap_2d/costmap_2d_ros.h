@@ -273,7 +273,7 @@ private:
   boost::recursive_mutex configuration_mutex_;
 
   ros::Subscriber footprint_sub_;
-  ros::Subscriber track_footprint_sub_;
+  ros::Subscriber truck_footprint_sub_;
   ros::Publisher footprint_pub_;
   ros::Subscriber actuator_position_sub_;////
   std::vector<geometry_msgs::Point> unpadded_footprint_;
