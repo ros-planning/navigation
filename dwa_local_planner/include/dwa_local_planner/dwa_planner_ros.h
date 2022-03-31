@@ -150,6 +150,8 @@ namespace dwa_local_planner {
 
       base_local_planner::LatchedStopRotateController latchedStopRotateController_;
 
+      double lowPassFilter(double kpre, double& pre_val, double cur_val);
+      double kpre_ = 0.0;
 
       bool initialized_;
 
