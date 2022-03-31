@@ -44,7 +44,8 @@
 #include <tf2/convert.h>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <std_msgs/String.h>
+#include <std_msgs/String.h> 
+#include <lexxauto_msgs/ActuatorStatus.h>
 
 using namespace std;
 
@@ -62,7 +63,7 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
   if (should_delete) old_h.deleteParam(name);
 }
 
-static std::string actuator_position;
+static lexxauto_msgs::ActuatorStatus actuator_position;
 static std::vector<geometry_msgs::Point> extended_footprint;
 static std::vector<geometry_msgs::Point> original_footprint;
 
@@ -198,15 +199,15 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 
 void Costmap2DROS::footprint_callback(const geometry_msgs::Polygon::ConstPtr& msg)
 {
-  if (actuator_position == "high")
+  if (actuator_position.connect)
   {
     extended_footprint = toPointVector(*msg);
   }
 }
 
-void Costmap2DROS::actuator_position_callback(const std_msgs::String& msg)
+void Costmap2DROS::actuator_position_callback(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg)
 {
-  actuator_position = msg.data; //currently receive only either std_msgs::String.data "HIGH" or "LOW" 
+  actuator_position = *msg;
 }
 
 
@@ -219,14 +220,14 @@ void Costmap2DROS::dynamicFootprintFromParams()
   ros::NodeHandle global_map_nh("/move_base/global_costmap");
   ros::NodeHandle local_map_nh("/move_base/local_costmap");
 
-  if (actuator_position != "high") 
+  if (!actuator_position.connect) 
   {
     writeFootprintToParam(global_map_nh, original_footprint);
     writeFootprintToParam(local_map_nh, original_footprint);
     setUnpaddedRobotFootprint(original_footprint);
     return;
   }
-  else if(actuator_position == "high")
+  else if(actuator_position.connect)
   { //actuator is high
     //actuator is not pulling sth and size is big
     writeFootprintToParam(global_map_nh, extended_footprint);

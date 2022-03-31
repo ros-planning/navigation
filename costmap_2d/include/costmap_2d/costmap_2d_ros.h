@@ -51,6 +51,7 @@
 #include <tf2/LinearMath/Transform.h>
 #include <std_msgs/String.h>
 #include <geometry_msgs/Point32.h>
+#include <lexxauto_msgs/ActuatorStatus.h>
 
 class SuperValue : public XmlRpc::XmlRpcValue
 {
@@ -229,7 +230,7 @@ public:
    * getUnpaddedRobotFootprint(). */
   void setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon& footprint);
 
-  void actuator_position_callback(const std_msgs::String& msg);
+  void actuator_position_callback(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg);
   void footprint_callback(const geometry_msgs::Polygon::ConstPtr& msg);
 
   //std::vector<geometry_msgs::Point>
