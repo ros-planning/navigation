@@ -210,6 +210,9 @@ namespace dwa_local_planner {
   }
 
   double DWAPlannerROS::lowPassFilter(double kpre, double& pre_val, double cur_val) {
+    if (kpre < 0.0 || kpre > 1.0) {
+      kpre = kpre_default_;
+    }
     double filtered_val = (1.0 - kpre) * cur_val + kpre * pre_val;
     pre_val = filtered_val;
 
