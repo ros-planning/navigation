@@ -143,6 +143,7 @@ namespace dwa_local_planner {
       
       private_nh.param("use_rotate_first_actuator_connect", this->use_rotate_first_actuator_connect_, false);
       private_nh.param("use_rotate_first_actuator_disconnect", this->use_rotate_first_actuator_disconnect_, true);
+      private_nh.param("kpre", this->kpre_, 0.65);
 
       this->is_actuator_connect_ = false;
       this->rotate_to_goal_ = false;
@@ -208,7 +209,15 @@ namespace dwa_local_planner {
     delete dsrv_;
   }
 
+  double DWAPlannerROS::lowPassFilter(double kpre, double& pre_val, double cur_val) {
+    if (kpre < 0.0 || kpre > 1.0) {
+      kpre = kpre_default_;
+    }
+    double filtered_val = (1.0 - kpre) * cur_val + kpre * pre_val;
+    pre_val = filtered_val;
 
+    return filtered_val;
+  }
 
   bool DWAPlannerROS::dwaComputeVelocityCommands(geometry_msgs::PoseStamped &global_pose, geometry_msgs::Twist& cmd_vel) {
     // dynamic window sampling approach to get useful velocity commands
@@ -248,12 +257,8 @@ namespace dwa_local_planner {
     cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
     // Low pass filter
-    double kpre = 0.65;
-    cmd_vel.angular.z = (1 - kpre) * cmd_vel.angular.z + kpre * pre_cmd_vel_angular_z;
-    cmd_vel.linear.x  = (1 - kpre) * cmd_vel.linear.x + kpre * pre_cmd_vel_linear_x;
-
-    pre_cmd_vel_angular_z = cmd_vel.angular.z;
-    pre_cmd_vel_linear_x = cmd_vel.linear.x;
+    cmd_vel.angular.z = lowPassFilter(kpre_, pre_cmd_vel_angular_z, cmd_vel.angular.z);
+    cmd_vel.linear.x  = lowPassFilter(kpre_, pre_cmd_vel_linear_x,  cmd_vel.linear.x);
 
     //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
