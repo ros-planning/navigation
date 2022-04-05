@@ -115,7 +115,7 @@ namespace dwa_local_planner {
        */
       bool isGoalReached();
 
-      void actuator_position_callback(const std_msgs::String::ConstPtr& msg);
+      void actuator_position_callback(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg);
 
       bool isInitialized() {
         return initialized_;

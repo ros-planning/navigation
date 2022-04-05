@@ -172,7 +172,7 @@ namespace move_base {
 
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
 
-      void carryingStatusCB(const std_msgs::String::ConstPtr& msg);
+      void carryingStatusCB(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg);
 
       void planThread();
 
@@ -218,7 +218,7 @@ namespace move_base {
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_, backward_recovery_allowed_, abort_after_recovery_allowed_;
       double oscillation_timeout_, oscillation_distance_;
       double rotate_small_angle_;
-      std::string actuator_position;
+      lexxauto_msgs::ActuatorStatus actuator_position;
 
       MoveBaseState state_;
       RecoveryTrigger recovery_trigger_;

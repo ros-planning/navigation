@@ -396,9 +396,9 @@ namespace dwa_local_planner {
     }
   }
 
-  void DWAPlannerROS::actuator_position_callback(const std_msgs::String::ConstPtr& msg)
+  void DWAPlannerROS::actuator_position_callback(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg)
   {
-    this->is_actuator_connect_ = msg->data == "high";
+    this->is_actuator_connect_ = msg->connect;
   }
 
 
