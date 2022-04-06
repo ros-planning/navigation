@@ -80,6 +80,8 @@ namespace dwa_local_planner {
       limits.acc_lim_trans = config.acc_lim_trans;
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
+      limits.yaw_slowdown_tolerance = config.yaw_slowdown_tolerance;
+      limits.slowdown_vel_theta = config.slowdown_vel_theta;
       limits.prune_plan = config.prune_plan;
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.theta_stopped_vel = config.theta_stopped_vel;
@@ -109,6 +111,8 @@ namespace dwa_local_planner {
       costmap_ros_->getRobotPose(current_pose_);
 
       actuator_position_sub_ = nh.subscribe("actuator_position", 10, &DWAPlannerROS::actuator_position_callback, this);
+      nomotion_update_client_ = nh.serviceClient<std_srvs::Empty>("request_nomotion_update");
+      nomotion_update_timer_ = nh.createTimer(ros::Duration(1.0 / 10.0), &DWAPlannerROS::call_nomotion_update_callback, this);
 
       // make sure to update the costmap we'll use for this cycle
       costmap_2d::Costmap2D* costmap = costmap_ros_->getCostmap();
@@ -189,6 +193,8 @@ namespace dwa_local_planner {
 
     if(latchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_)) {
       ROS_INFO("Goal reached");
+      std_srvs::Empty empty_srvs;
+      this->nomotion_update_client_.call(empty_srvs);
       return true;
     } else {
       return false;
@@ -369,6 +375,7 @@ namespace dwa_local_planner {
     }
     else if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
     {
+      this->is_force_update_ = true;
       //publish an empty plan because we've reached our goal position
       std::vector<geometry_msgs::PoseStamped> local_plan;
       std::vector<geometry_msgs::PoseStamped> transformed_plan;
@@ -401,5 +408,14 @@ namespace dwa_local_planner {
     this->is_actuator_connect_ = msg->connect;
   }
 
+  void DWAPlannerROS::call_nomotion_update_callback(const ros::TimerEvent& event)
+  {
+    if (this->is_force_update_)
+    {
+      std_srvs::Empty empty_srvs;
+      this->nomotion_update_client_.call(empty_srvs);
+      this->is_force_update_ = false;
+    }
+  }
 
 };

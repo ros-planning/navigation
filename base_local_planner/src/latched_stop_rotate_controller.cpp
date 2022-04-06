@@ -254,6 +254,10 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
     else {
       //set this so that we know its OK to be moving
       rotating_to_goal_ = true;
+      if (fabs(angle) <= limits.yaw_slowdown_tolerance)
+      {
+        limits.max_vel_theta = limits.slowdown_vel_theta;
+      }
       if ( ! rotateToGoal(
           global_pose,
           robot_vel,

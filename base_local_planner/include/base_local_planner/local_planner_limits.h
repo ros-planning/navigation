@@ -61,6 +61,8 @@ public:
   double yaw_goal_tolerance;
   double trans_stopped_vel;
   double theta_stopped_vel;
+  double yaw_slowdown_tolerance;
+  double slowdown_vel_theta;
   bool   restore_defaults;
 
   LocalPlannerLimits() {}
@@ -80,6 +82,8 @@ public:
       double nacc_lim_trans,
       double nxy_goal_tolerance,
       double nyaw_goal_tolerance,
+      double nyaw_slowdown_tolerance,
+      double nslowdown_vel_theta,
       bool   nprune_plan = true,
       double ntrans_stopped_vel = 0.1,
       double ntheta_stopped_vel = 0.1):
@@ -98,6 +102,8 @@ public:
         prune_plan(nprune_plan),
         xy_goal_tolerance(nxy_goal_tolerance),
         yaw_goal_tolerance(nyaw_goal_tolerance),
+        yaw_slowdown_tolerance(nyaw_slowdown_tolerance),
+        slowdown_vel_theta(nslowdown_vel_theta),
         trans_stopped_vel(ntrans_stopped_vel),
         theta_stopped_vel(ntheta_stopped_vel) {}
 
