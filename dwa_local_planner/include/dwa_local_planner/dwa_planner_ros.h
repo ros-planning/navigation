@@ -49,6 +49,7 @@
 
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/String.h>
+#include <std_srvs/Empty.h>
 
 #include <costmap_2d/costmap_2d_ros.h>
 #include <nav_core/base_local_planner.h>
@@ -117,6 +118,7 @@ namespace dwa_local_planner {
 
       void actuator_position_callback(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg);
 
+      void call_nomotion_update_callback(const ros::TimerEvent& event);
       bool isInitialized() {
         return initialized_;
       }
@@ -136,6 +138,8 @@ namespace dwa_local_planner {
       // for visualisation, publishers of global and local plan
       ros::Publisher g_plan_pub_, l_plan_pub_;
       ros::Subscriber actuator_position_sub_;
+      ros::ServiceClient nomotion_update_client_;
+      ros::Timer nomotion_update_timer_;
 
       base_local_planner::LocalPlannerUtil planner_util_;
 
@@ -171,6 +175,7 @@ namespace dwa_local_planner {
       bool rotate_to_goal_;
       bool use_rotate_first_actuator_connect_;
       bool use_rotate_first_actuator_disconnect_;
+      bool is_force_update_;
   };
 };
 #endif
