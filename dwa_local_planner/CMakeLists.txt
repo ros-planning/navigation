@@ -47,7 +47,7 @@ catkin_package(
 )
 
 add_library(dwa_local_planner src/dwa_planner.cpp src/dwa_planner_ros.cpp)
-add_dependencies(dwa_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(dwa_local_planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 target_link_libraries(dwa_local_planner ${catkin_LIBRARIES})
 
 install(TARGETS dwa_local_planner
