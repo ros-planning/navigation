@@ -1040,7 +1040,7 @@ namespace move_base {
           //update the index of the next recovery behavior that we'll try
           recovery_flag_ = true;
         }
-        else if(recovery_behavior_enabled_ && !actuator_position.connect && recovery_index_ < recovery_behaviors_carrying_.size()){
+        else if(recovery_behavior_enabled_ && actuator_position.connect && recovery_index_ < recovery_behaviors_carrying_.size()){
           amr_status_msg_.data = "RECOVERY";
           amr_status_pub_.publish(amr_status_msg_);
 
