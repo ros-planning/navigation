@@ -371,7 +371,7 @@ namespace dwa_local_planner {
         this->rotate_to_goal_ = false;
       }
 
-      return was_rotate;
+      return true;
     }
     else if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
     {
