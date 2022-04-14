@@ -302,8 +302,26 @@ namespace dwa_local_planner {
     return true;
   }
 
+  void DWAPlannerROS::updateRotateToGoal()
+  {
+    geometry_msgs::PoseStamped robot_vel;
+    odom_helper_.getRobotVel(robot_vel);
 
+    if (robot_vel.pose.position.x < 0.0)
+    {
+      double yaw = tf2::getYaw(current_pose_.pose.orientation);
+      double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
 
+      bool is_rotate = dp_->checkTrajectory(Eigen::Vector3f(current_pose_.pose.position.x, current_pose_.pose.position.y, yaw),
+        Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
+        Eigen::Vector3f(0.0, 0.0, M_PI));
+
+      if (is_rotate)
+      {
+        this->rotate_to_goal_ = true;
+      }
+    }
+  }
 
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
@@ -327,6 +345,8 @@ namespace dwa_local_planner {
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
     dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan, costmap_ros_->getRobotFootprint());
 
+    this->updateRotateToGoal();
+
     if (this->rotate_to_goal_)
     {
       geometry_msgs::PoseStamped robot_vel;
@@ -336,12 +356,28 @@ namespace dwa_local_planner {
       double current_x = current_pose_.pose.position.x;
       double current_y = current_pose_.pose.position.y;
 
-      // transformed_plan is not empty
-      for (geometry_msgs::PoseStamped tmp_pose : transformed_plan)
+      // calc closest waypoint
+      auto closest_waypoint_iter = transformed_plan.begin();
+      double min_distance = std::numeric_limits<double>::max();
+      for (auto iter = transformed_plan.begin(); iter != transformed_plan.end(); iter++)
       {
-        turn_target_pose = tmp_pose;
-        double tmp_x = tmp_pose.pose.position.x;
-        double tmp_y = tmp_pose.pose.position.y;
+        double tmp_x = iter->pose.position.x;
+        double tmp_y = iter->pose.position.y;
+        double distance = std::sqrt(std::pow(current_x - tmp_x, 2) + std::pow(current_y - tmp_y, 2));
+
+        if (distance < min_distance)
+        {
+          min_distance = distance;
+          closest_waypoint_iter = iter;
+        }
+      }
+
+      // transformed_plan is not empty
+      for (auto iter = closest_waypoint_iter; iter != transformed_plan.end(); iter++)
+      {
+        turn_target_pose = *iter;
+        double tmp_x = iter->pose.position.x;
+        double tmp_y = iter->pose.position.y;
         double distance = std::sqrt(std::pow(current_x - tmp_x, 2) + std::pow(current_y - tmp_y, 2));
         if (this->rotate_target_distance_ < distance)
         {
