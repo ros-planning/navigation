@@ -307,7 +307,7 @@ namespace dwa_local_planner {
     geometry_msgs::PoseStamped robot_vel;
     odom_helper_.getRobotVel(robot_vel);
 
-    if (robot_vel.pose.position.x < 0.0)
+    if (robot_vel.pose.position.x < -1.0)
     {
       double yaw = tf2::getYaw(current_pose_.pose.orientation);
       double vel_yaw = tf2::getYaw(robot_vel.pose.orientation);
