@@ -52,6 +52,7 @@
 #include <std_msgs/String.h>
 #include <geometry_msgs/Point32.h>
 #include <lexxauto_msgs/ActuatorStatus.h>
+#include <mutex>  // NOLINT [build/c++11]
 
 class SuperValue : public XmlRpc::XmlRpcValue
 {
@@ -281,6 +282,11 @@ private:
   std::vector<geometry_msgs::Point> padded_footprint_;
   float footprint_padding_;
   costmap_2d::Costmap2DConfig old_config_;
+  std::mutex footprint_mutex_;
+
+  lexxauto_msgs::ActuatorStatus actuator_position;
+  std::vector<geometry_msgs::Point> extended_footprint;
+  std::vector<geometry_msgs::Point> original_footprint;
 };
 
 // class Costmap2DROS

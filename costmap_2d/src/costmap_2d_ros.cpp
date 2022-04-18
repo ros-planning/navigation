@@ -63,10 +63,6 @@ void move_parameter(ros::NodeHandle& old_h, ros::NodeHandle& new_h, std::string 
   if (should_delete) old_h.deleteParam(name);
 }
 
-static lexxauto_msgs::ActuatorStatus actuator_position;
-static std::vector<geometry_msgs::Point> extended_footprint;
-static std::vector<geometry_msgs::Point> original_footprint;
-
 
 
 Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
@@ -167,12 +163,16 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   footprint_pub_ = private_nh.advertise<geometry_msgs::PolygonStamped>("footprint", 1);
   actuator_position_sub_ = private_nh.subscribe("actuator_position", 10, &Costmap2DROS::actuator_position_callback, this);
 
-  original_footprint = makeFootprintFromParams(private_nh, "footprint");
-  extended_footprint = makeFootprintFromParams(private_nh, "extended_footprint");
-  if(original_footprint.empty() || extended_footprint.empty()) {
-    ROS_ERROR("empty vector loaded");
+  {
+    std::lock_guard<std::mutex> lock(footprint_mutex_);
+    original_footprint = makeFootprintFromParams(private_nh, "footprint");
+    extended_footprint = makeFootprintFromParams(private_nh, "extended_footprint");
+
+    if(original_footprint.empty() || extended_footprint.empty()) {
+      ROS_ERROR("empty vector loaded");
+    }
+    setUnpaddedRobotFootprint(original_footprint);
   }
-  setUnpaddedRobotFootprint(original_footprint);
 
   publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap",
                                       always_send_full_costmap);
@@ -199,6 +199,7 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 
 void Costmap2DROS::footprint_callback(const geometry_msgs::Polygon::ConstPtr& msg)
 {
+  std::lock_guard<std::mutex> lock(footprint_mutex_);
   if (actuator_position.connect)
   {
     extended_footprint = toPointVector(*msg);
@@ -214,6 +215,7 @@ void Costmap2DROS::actuator_position_callback(const lexxauto_msgs::ActuatorStatu
 //std::vector<geometry_msgs::Point> Costmap2DROS::dynamicFootprintFromParams(ros::NodeHandle& nh)
 void Costmap2DROS::dynamicFootprintFromParams()
 {
+  std::lock_guard<std::mutex> lock(footprint_mutex_);
   std::string full_param_name;
   std::string full_radius_param_name;
   std::vector<geometry_msgs::Point> points;
@@ -448,6 +450,7 @@ void Costmap2DROS::readFootprintFromConfig(const costmap_2d::Costmap2DConfig &ne
   }
   else
   {
+    std::lock_guard<std::mutex> lock(footprint_mutex_);
     // robot_radius may be 0, but that must be intended at this point.
     original_footprint = makeFootprintFromRadius(new_config.robot_radius);
     extended_footprint = makeFootprintFromRadius(new_config.robot_radius);
