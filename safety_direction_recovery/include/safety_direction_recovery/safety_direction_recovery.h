@@ -34,9 +34,9 @@ namespace safety_direction_recovery
       ros::Subscriber front_lidar_distance_sub_;
       ros::Subscriber front_left_lidar_distance_sub_;
       ros::Subscriber left_lidar_distance_sub_;
-      ros::Subscriber back_left_lidar_distance_sub_;
-      ros::Subscriber back_lidar_distance_sub_;
-      ros::Subscriber back_right_lidar_distance_sub_;
+      ros::Subscriber rear_left_lidar_distance_sub_;
+      ros::Subscriber rear_lidar_distance_sub_;
+      ros::Subscriber rear_right_lidar_distance_sub_;
       ros::Subscriber right_lidar_distance_sub_;
       ros::Subscriber front_right_lidar_distance_sub_;
 
