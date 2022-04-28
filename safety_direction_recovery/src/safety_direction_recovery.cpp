@@ -9,9 +9,9 @@ lexxauto_msgs::safety_status safety_status_;
 float front_lidar_distance_;
 float front_left_lidar_distance_;
 float left_lidar_distance_;
-float back_left_lidar_distance_;
-float back_lidar_distance_;
-float back_right_lidar_distance_;
+float rear_left_lidar_distance_;
+float rear_lidar_distance_;
+float rear_right_lidar_distance_;
 float right_lidar_distance_;
 float front_right_lidar_distance_;
 
@@ -36,18 +36,18 @@ void leftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 }
 void backLeftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
-  back_left_lidar_distance_ = msg->data;
-//  ROS_INFO("test back_left_lidar_distance: %f", back_left_lidar_distance_);
+  rear_left_lidar_distance_ = msg->data;
+//  ROS_INFO("test rear_left_lidar_distance: %f", rear_left_lidar_distance_);
 }
 void backLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
-  back_lidar_distance_ = msg->data;
-//  ROS_INFO("test back_lidar_distance: %f", back_lidar_distance_);
+  rear_lidar_distance_ = msg->data;
+//  ROS_INFO("test rear_lidar_distance: %f", rear_lidar_distance_);
 }
 void backRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
-  back_right_lidar_distance_ = msg->data;
-//  ROS_INFO("test back_right_lidar_distance: %f", back_right_lidar_distance_);
+  rear_right_lidar_distance_ = msg->data;
+//  ROS_INFO("test rear_right_lidar_distance: %f", rear_right_lidar_distance_);
 }
 void rightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
@@ -117,12 +117,12 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
           nh.subscribe<std_msgs::Float32>("front_left_lidar_distance", 1, frontLeftLidarDistanceCallback);
         left_lidar_distance_sub_ =
           nh.subscribe<std_msgs::Float32>("left_lidar_distance", 1, leftLidarDistanceCallback);
-        back_left_lidar_distance_sub_ =
-          nh.subscribe<std_msgs::Float32>("back_left_lidar_distance", 1, backLeftLidarDistanceCallback);
-        back_lidar_distance_sub_ =
-          nh.subscribe<std_msgs::Float32>("back_lidar_distance", 1, backLidarDistanceCallback);
-        back_right_lidar_distance_sub_ =
-          nh.subscribe<std_msgs::Float32>("back_right_lidar_distance", 1, backRightLidarDistanceCallback);
+        rear_left_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("rear_left_lidar_distance", 1, backLeftLidarDistanceCallback);
+        rear_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("rear_lidar_distance", 1, backLidarDistanceCallback);
+        rear_right_lidar_distance_sub_ =
+          nh.subscribe<std_msgs::Float32>("rear_right_lidar_distance", 1, backRightLidarDistanceCallback);
         right_lidar_distance_sub_ =
           nh.subscribe<std_msgs::Float32>("right_lidar_distance", 1, rightLidarDistanceCallback);
         front_right_lidar_distance_sub_ =
@@ -198,9 +198,9 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       distance_array[0] = limit_distance(front_lidar_distance_);
       distance_array[1] = limit_distance(front_left_lidar_distance_);
       distance_array[2] = limit_distance(left_lidar_distance_);
-      distance_array[3] = limit_distance(back_left_lidar_distance_);
-      distance_array[4] = limit_distance(back_lidar_distance_);
-      distance_array[5] = limit_distance(back_right_lidar_distance_);
+      distance_array[3] = limit_distance(rear_left_lidar_distance_);
+      distance_array[4] = limit_distance(rear_lidar_distance_);
+      distance_array[5] = limit_distance(rear_right_lidar_distance_);
       distance_array[6] = limit_distance(right_lidar_distance_);
       distance_array[7] = limit_distance(front_right_lidar_distance_);
 
