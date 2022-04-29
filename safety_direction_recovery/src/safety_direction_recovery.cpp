@@ -148,6 +148,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
     void SafetyDirectionRecovery::runBehavior()
     {
       ROS_INFO("Safety direction recovery mode is called.");
+      ROS_WARN("Safety direction recovery mode is called.");
       ros::NodeHandle n;
       ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
@@ -164,7 +165,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       }
 
       double best_attitude = 0;
-      double best_dist_to_move = 0.25;
+      double best_dist_to_move = 0.75;
       calc_angle_distance_to_safest_place_via_simulation(best_attitude, best_dist_to_move);
       //calc_angle_distance_to_safest_place_via_lidar(best_attitude, best_dist_to_move);
 
@@ -235,7 +236,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       for (int i=0; i<simulate_direction_num; i++)
       {
         double sim_angle = 2 * M_PI * (double)i/(double)simulate_direction_num;
-        double sim_distance = 0.5;
+        double sim_distance = best_dist_to_move * 1.2;
         total_cost_array[i] = simulate_cost_around_robot(sim_angle, sim_distance);
         ROS_INFO("total_cost_array[i=%d]: %f", i, total_cost_array[i]);
       }
@@ -250,6 +251,12 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         int ip = (i==0) ? simulate_direction_num-1 : i-1;
         int in = (i==simulate_direction_num-1) ? 0 : i+1;
         total_cost_sum_array[i] = total_cost_array[ip] + total_cost_array[i] + total_cost_array[in];
+	/*
+	if (i < simulate_direction_num/4 || (simulate_direction_num - i) < simulate_direction_num/4)
+	{
+		total_cost_sum_array[i] /= 4.0;
+	}
+	*/
         ROS_INFO("total_cost_sum_array[i=%d]: %f", i, total_cost_sum_array[i]);
       }
       std::vector<double>::iterator max_it = max_element(total_cost_sum_array.begin(), total_cost_sum_array.end());
@@ -338,9 +345,21 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       double dist_travelled = 0.0;
       double dist_left = dist_to_move - dist_travelled;
 
+      double time_period = 0.0;
+      double vel = direction * 0.25;
+      double time_timeout = 3.0 * dist_to_move / abs(vel);
+
       //while(n.ok() && dist_left > x_goal_tolerance_)
       while(n.ok() && dist_left > 0)
       {
+	// break the loop if time is sufficienty passed. ex): blocked by obstacle
+	time_period += 1.0 / frequency_;
+	if (time_period > time_timeout)
+	{
+		ROS_WARN("safety_direction_recovery: timeout");
+		break;
+	}
+
         // update current position of the robot
         local_costmap_->getRobotPose(global_pose);
         dist_travelled = SafetyDirectionRecovery::calculateDist(initial_pose, global_pose);
@@ -376,7 +395,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         }
 */
 
-        double vel = direction * 0.1;
         vel = std::min(std::max(vel, min_vel_x_), max_vel_x_);
 
         cmd_vel.linear.x = vel;
