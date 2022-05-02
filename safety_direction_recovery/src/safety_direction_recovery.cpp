@@ -34,17 +34,17 @@ void leftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
   left_lidar_distance_ = msg->data;
 //  ROS_INFO("test left_lidar_distance: %f", left_lidar_distance_);
 }
-void backLeftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+void rearLeftLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   rear_left_lidar_distance_ = msg->data;
 //  ROS_INFO("test rear_left_lidar_distance: %f", rear_left_lidar_distance_);
 }
-void backLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+void rearLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   rear_lidar_distance_ = msg->data;
 //  ROS_INFO("test rear_lidar_distance: %f", rear_lidar_distance_);
 }
-void backRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
+void rearRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 {
   rear_right_lidar_distance_ = msg->data;
 //  ROS_INFO("test rear_right_lidar_distance: %f", rear_right_lidar_distance_);
@@ -118,11 +118,11 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         left_lidar_distance_sub_ =
           nh.subscribe<std_msgs::Float32>("left_lidar_distance", 1, leftLidarDistanceCallback);
         rear_left_lidar_distance_sub_ =
-          nh.subscribe<std_msgs::Float32>("rear_left_lidar_distance", 1, backLeftLidarDistanceCallback);
+          nh.subscribe<std_msgs::Float32>("rear_left_lidar_distance", 1, rearLeftLidarDistanceCallback);
         rear_lidar_distance_sub_ =
-          nh.subscribe<std_msgs::Float32>("rear_lidar_distance", 1, backLidarDistanceCallback);
+          nh.subscribe<std_msgs::Float32>("rear_lidar_distance", 1, rearLidarDistanceCallback);
         rear_right_lidar_distance_sub_ =
-          nh.subscribe<std_msgs::Float32>("rear_right_lidar_distance", 1, backRightLidarDistanceCallback);
+          nh.subscribe<std_msgs::Float32>("rear_right_lidar_distance", 1, rearRightLidarDistanceCallback);
         right_lidar_distance_sub_ =
           nh.subscribe<std_msgs::Float32>("right_lidar_distance", 1, rightLidarDistanceCallback);
         front_right_lidar_distance_sub_ =
