@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(costmap_3d)
 
+# for Yocto-based builds, it is difficult to provide VTK, which pcl::io depends
+# on, so allow for a smaller implementation:
+option(USE_STL_LOADER "Use stl_loader instead of vtk_pcl_io to get
+loadPolygonFileSTL" OFF)
+if(USE_STL_LOADER)
+  set(STL_LOADER_PKG "stl_loader")
+  add_compile_options("-DUSE_STL_LOADER=1")
+else()
+  set(STL_LOADER_PKG "")
+endif()
+
 find_package(catkin REQUIRED COMPONENTS
   costmap_2d
   dynamic_reconfigure
@@ -18,7 +29,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_eigen
   tf2_ros
   tf2_sensor_msgs
+  ${STL_LOADER_PKG}
 )
+
+# Silence warnings about deprecated boost::bind placeholders (_1, _2, etc):
+add_compile_options("-DBOOST_BIND_GLOBAL_PLACEHOLDERS=1")
 
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)

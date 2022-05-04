@@ -40,11 +40,18 @@
 #include <fcl/narrowphase/collision.h>
 #include <fcl/narrowphase/distance_result.h>
 #include <fcl/geometry/shape/sphere.h>
-#include <pcl/io/vtk_lib_io.h>
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <tf/transform_datatypes.h>
 #include <costmap_3d/octree_solver.h>
+
+// In some environments, pcl::io isn't available because it depends on VTK,
+// with its enormous dependencies, so allow for an alternative implementation:
+#if(USE_STL_LOADER)
+  #include <stl_loader/stl_loader.h>
+#else
+  #include <pcl/io/vtk_lib_io.h>
+#endif
 
 namespace costmap_3d
 {
