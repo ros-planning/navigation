@@ -83,6 +83,7 @@ catkin_package(
     pcl_conversions
     tf2_ros
     visualization_msgs
+    ${STL_LOADER_PKG}
   DEPENDS
     OCTOMAP
     PCL

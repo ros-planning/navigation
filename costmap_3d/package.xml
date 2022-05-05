@@ -35,6 +35,7 @@
   <depend>pcl_ros</depend>
   <depend>pcl_msgs</depend>
   <depend>pcl_conversions</depend>
+  <depend>stl_loader</depend>
   <depend>fcl</depend>
   <depend>tf2</depend>
   <depend>tf2_eigen</depend>
