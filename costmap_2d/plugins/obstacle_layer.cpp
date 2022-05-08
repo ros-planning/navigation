@@ -158,12 +158,12 @@ void ObstacleLayer::onInitialize()
 
       if (inf_is_valid)
       {
-        filter->registerCallback(boost::bind(&ObstacleLayer::laserScanValidInfCallback, this, _1,
+        filter->registerCallback(boost::bind(&ObstacleLayer::laserScanValidInfCallback, this, boost::placeholders::_1,
                                             observation_buffers_.back()));
       }
       else
       {
-        filter->registerCallback(boost::bind(&ObstacleLayer::laserScanCallback, this, _1, observation_buffers_.back()));
+        filter->registerCallback(boost::bind(&ObstacleLayer::laserScanCallback, this, boost::placeholders::_1, observation_buffers_.back()));
       }
 
       observation_subscribers_.push_back(sub);
@@ -184,7 +184,7 @@ void ObstacleLayer::onInitialize()
         boost::shared_ptr < tf2_ros::MessageFilter<sensor_msgs::PointCloud>
         > filter(new tf2_ros::MessageFilter<sensor_msgs::PointCloud>(*sub, *tf_, global_frame_, 50, g_nh));
         filter->registerCallback(
-          boost::bind(&ObstacleLayer::pointCloudCallback, this, _1, observation_buffers_.back()));
+          boost::bind(&ObstacleLayer::pointCloudCallback, this, boost::placeholders::_1, observation_buffers_.back()));
 
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
@@ -202,7 +202,7 @@ void ObstacleLayer::onInitialize()
       boost::shared_ptr < tf2_ros::MessageFilter<sensor_msgs::PointCloud2>
       > filter(new tf2_ros::MessageFilter<sensor_msgs::PointCloud2>(*sub, *tf_, global_frame_, 50, g_nh));
       filter->registerCallback(
-          boost::bind(&ObstacleLayer::pointCloud2Callback, this, _1, observation_buffers_.back()));
+          boost::bind(&ObstacleLayer::pointCloud2Callback, this, boost::placeholders::_1, observation_buffers_.back()));
 
       observation_subscribers_.push_back(sub);
       observation_notifiers_.push_back(filter);
@@ -225,7 +225,7 @@ void ObstacleLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
 {
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>(nh);
   dynamic_reconfigure::Server<costmap_2d::ObstaclePluginConfig>::CallbackType cb = boost::bind(
-      &ObstacleLayer::reconfigureCB, this, _1, _2);
+      &ObstacleLayer::reconfigureCB, this, boost::placeholders::_1, boost::placeholders::_2);
   dsrv_->setCallback(cb);
 }
 

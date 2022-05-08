@@ -154,7 +154,9 @@ namespace dwa_local_planner {
 
 
     private_nh.param("publish_cost_grid_pc", publish_cost_grid_pc_, false);
-    map_viz_.initialize(name, planner_util->getGlobalFrame(), boost::bind(&DWAPlanner::getCellCosts, this, _1, _2, _3, _4, _5, _6));
+    map_viz_.initialize(name, planner_util->getGlobalFrame(), boost::bind(&DWAPlanner::getCellCosts, this,
+        boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3,
+        boost::placeholders::_4, boost::placeholders::_5, boost::placeholders::_6));
 
     private_nh.param("global_frame_id", frame_id_, std::string("odom"));
 

@@ -94,7 +94,7 @@ void OdometryHelperRos::setOdomTopic(std::string odom_topic)
     if( odom_topic_ != "" )
     {
       ros::NodeHandle gn;
-      odom_sub_ = gn.subscribe<nav_msgs::Odometry>( odom_topic_, 1, boost::bind( &OdometryHelperRos::odomCallback, this, _1 ));
+      odom_sub_ = gn.subscribe<nav_msgs::Odometry>( odom_topic_, 1, boost::bind( &OdometryHelperRos::odomCallback, this, boost::placeholders::_1 ));
     }
     else
     {

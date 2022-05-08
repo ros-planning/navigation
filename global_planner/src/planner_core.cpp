@@ -150,7 +150,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         dsrv_ = new dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>(ros::NodeHandle("~/" + name));
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>::CallbackType cb = boost::bind(
-                &GlobalPlanner::reconfigureCB, this, _1, _2);
+                &GlobalPlanner::reconfigureCB, this, boost::placeholders::_1, boost::placeholders::_2);
         dsrv_->setCallback(cb);
 
         initialized_ = true;

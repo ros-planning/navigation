@@ -35,7 +35,7 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <costmap_2d/costmap_2d_publisher.h>
 #include <costmap_2d/cost_values.h>
 
@@ -50,7 +50,7 @@ Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* co
     always_send_full_costmap_(always_send_full_costmap)
 {
   costmap_pub_ = ros_node->advertise<nav_msgs::OccupancyGrid>(topic_name, 1,
-                                                    boost::bind(&Costmap2DPublisher::onNewSubscription, this, _1));
+                                                    boost::bind(&Costmap2DPublisher::onNewSubscription, this, boost::placeholders::_1));
   costmap_update_pub_ = ros_node->advertise<map_msgs::OccupancyGridUpdate>(topic_name + "_updates", 1);
 
   if (cost_translation_table_ == NULL)

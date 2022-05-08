@@ -97,7 +97,7 @@ TEST_F(MapClientTest, call_service)
 /* Try to retrieve the map via topic, and compare to ground truth */
 TEST_F(MapClientTest, subscribe_topic)
 {
-  ros::Subscriber sub = n_->subscribe<nav_msgs::OccupancyGrid>("map", 1, boost::bind(&MapClientTest::mapCallback, this, _1));
+  ros::Subscriber sub = n_->subscribe<nav_msgs::OccupancyGrid>("map", 1, boost::bind(&MapClientTest::mapCallback, this, boost::placeholders::_1));
 
   // Try a few times, because the server may not be up yet.
   int i=20;
@@ -120,7 +120,7 @@ TEST_F(MapClientTest, subscribe_topic)
 /* Try to retrieve the metadata via topic, and compare to ground truth */
 TEST_F(MapClientTest, subscribe_topic_metadata)
 {
-  ros::Subscriber sub = n_->subscribe<nav_msgs::MapMetaData>("map_metadata", 1, boost::bind(&MapClientTest::mapMetaDataCallback, this, _1));
+  ros::Subscriber sub = n_->subscribe<nav_msgs::MapMetaData>("map_metadata", 1, boost::bind(&MapClientTest::mapMetaDataCallback, this, boost::placeholders::_1));
 
   // Try a few times, because the server may not be up yet.
   int i=20;
@@ -140,7 +140,7 @@ TEST_F(MapClientTest, subscribe_topic_metadata)
 /* Change the map, retrieve the map via topic, and compare to ground truth */
 TEST_F(MapClientTest, change_map)
 {
-  ros::Subscriber sub = n_->subscribe<nav_msgs::OccupancyGrid>("map", 1, boost::bind(&MapClientTest::mapCallback, this, _1));
+  ros::Subscriber sub = n_->subscribe<nav_msgs::OccupancyGrid>("map", 1, boost::bind(&MapClientTest::mapCallback, this, boost::placeholders::_1));
 
   // Try a few times, because the server may not be up yet.
   for (int i = 20; i > 0 && !got_map_; i--)
