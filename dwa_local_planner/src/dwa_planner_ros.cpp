@@ -349,7 +349,6 @@ namespace dwa_local_planner {
 
     if (this->rotate_to_goal_)
     {
-      ROS_WARN_STREAM("rotate_to_goal activated.");
       geometry_msgs::PoseStamped robot_vel;
       odom_helper_.getRobotVel(robot_vel);
       geometry_msgs::PoseStamped turn_target_pose;
@@ -412,7 +411,6 @@ namespace dwa_local_planner {
     }
     else if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
     {
-      ROS_WARN_STREAM("heading for goal when reaching the position.");
       this->is_force_update_ = true;
       //publish an empty plan because we've reached our goal position
       std::vector<geometry_msgs::PoseStamped> local_plan;
@@ -429,7 +427,6 @@ namespace dwa_local_planner {
           current_pose_,
           boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
     } else {
-      ROS_WARN_STREAM("running dwa.");
       bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
       if (isOk) {
         publishGlobalPlan(transformed_plan);

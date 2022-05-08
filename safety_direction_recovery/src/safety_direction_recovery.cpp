@@ -148,7 +148,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
     void SafetyDirectionRecovery::runBehavior()
     {
       ROS_INFO("Safety direction recovery mode is called.");
-      ROS_WARN("Safety direction recovery mode is called.");
       ros::NodeHandle n;
       ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
@@ -251,12 +250,12 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         int ip = (i==0) ? simulate_direction_num-1 : i-1;
         int in = (i==simulate_direction_num-1) ? 0 : i+1;
         total_cost_sum_array[i] = total_cost_array[ip] + total_cost_array[i] + total_cost_array[in];
-	/*
-	if (i < simulate_direction_num/4 || (simulate_direction_num - i) < simulate_direction_num/4)
-	{
-		total_cost_sum_array[i] /= 4.0;
-	}
-	*/
+        /*
+        if (i < simulate_direction_num/4 || (simulate_direction_num - i) < simulate_direction_num/4)
+        {
+          total_cost_sum_array[i] /= 4.0;
+        }
+        */
         ROS_INFO("total_cost_sum_array[i=%d]: %f", i, total_cost_sum_array[i]);
       }
       std::vector<double>::iterator max_it = max_element(total_cost_sum_array.begin(), total_cost_sum_array.end());
@@ -345,20 +344,20 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       double dist_travelled = 0.0;
       double dist_left = dist_to_move - dist_travelled;
 
-      double time_period = 0.0;
+      double time_passed = 0.0;
       double vel = direction * 0.25;
       double time_timeout = 3.0 * dist_to_move / abs(vel);
 
       //while(n.ok() && dist_left > x_goal_tolerance_)
       while(n.ok() && dist_left > 0)
       {
-	// break the loop if time is sufficienty passed. ex): blocked by obstacle
-	time_period += 1.0 / frequency_;
-	if (time_period > time_timeout)
-	{
-		ROS_WARN("safety_direction_recovery: timeout");
-		break;
-	}
+        // break the loop if time is sufficienty passed. ex): blocked by obstacle
+        time_passed += 1.0 / frequency_;
+        if (time_passed > time_timeout)
+        {
+          ROS_WARN("safety_direction_recovery: timeout");
+          break;
+        }
 
         // update current position of the robot
         local_costmap_->getRobotPose(global_pose);

@@ -74,7 +74,7 @@ bool ObstacleCostFunction::prepare() {
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0;
   double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
-  double px, py, pth, tmp;
+  double px, py, pth;
   if (footprint_spec_.size() == 0) {
     // Bug, should never happen
     ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
@@ -84,13 +84,7 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double yaw = tf2::getYaw(global_pose_.pose.orientation);
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     traj.getPoint(i, px, py, pth);
-    if (i == 0)
-    {
-	    tmp = pth;
-    }
-    // if (i < traj.getPointsSize() && i < 5) { ROS_WARN_STREAM( "[" << i << "] traj yaw : " << pth << ", current yaw: " << yaw); }
-    //double f_cost = footprintCost(px, py, pth,
-    //double f_cost = footprintCost(px, py, pth - (pth - tmp) / 2,
+    // double f_cost = footprintCost(px, py, pth,
     double f_cost = footprintCost(px, py, yaw,
         scale, footprint_spec_,
         costmap_, world_model_);
