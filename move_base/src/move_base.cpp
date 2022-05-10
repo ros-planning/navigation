@@ -58,8 +58,6 @@ namespace move_base {
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
-    as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
-
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
 
@@ -170,6 +168,8 @@ namespace move_base {
 
     //we'll start executing recovery behaviors at the beginning of our list
     recovery_index_ = 0;
+
+    as_ = new MoveBaseActionServer(private_nh, "move", boost::bind(&MoveBase::executeCb, this, _1), false);
 
     //we're all set up now so we can start the action server
     as_->start();
