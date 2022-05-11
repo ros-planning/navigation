@@ -79,7 +79,6 @@ public:
       costmap_2d::Costmap2D* costmap,
       base_local_planner::WorldModel* world_model);
 
-  void setGlobalPose(const geometry_msgs::PoseStamped& global_pose) { global_pose_ = global_pose; };
   void carryingStatusCB(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg);
 
 private:
@@ -94,8 +93,6 @@ private:
   bool is_variable_footprint_ = false;
   lexxauto_msgs::ActuatorStatus actuator_position_;
   ros::Subscriber carrying_status_sub_;
-
-  geometry_msgs::PoseStamped global_pose_;
 };
 
 } /* namespace base_local_planner */
