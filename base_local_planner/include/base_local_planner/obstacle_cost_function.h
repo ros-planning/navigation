@@ -43,10 +43,6 @@
 #include <base_local_planner/costmap_model.h>
 #include <costmap_2d/costmap_2d.h>
 
-#include <tf2/utils.h>
-
-#include <lexxauto_msgs/ActuatorStatus.h>
-
 namespace base_local_planner {
 
 /**
@@ -79,8 +75,6 @@ public:
       costmap_2d::Costmap2D* costmap,
       base_local_planner::WorldModel* world_model);
 
-  void carryingStatusCB(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg);
-
 private:
   costmap_2d::Costmap2D* costmap_;
   std::vector<geometry_msgs::Point> footprint_spec_;
@@ -89,10 +83,6 @@ private:
   bool sum_scores_;
   //footprint scaling with velocity;
   double max_scaling_factor_, scaling_speed_;
-
-  bool is_variable_footprint_ = false;
-  lexxauto_msgs::ActuatorStatus actuator_position_;
-  ros::Subscriber carrying_status_sub_;
 };
 
 } /* namespace base_local_planner */
