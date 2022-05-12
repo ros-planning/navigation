@@ -80,6 +80,8 @@ namespace move_base {
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
 
+    private_nh.param("use_safety_direction_recovery_in_towing", use_safety_direction_recovery_in_towing_, true);
+
     //set up plan triple buffer
     planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();
     latest_plan_ = new std::vector<geometry_msgs::PoseStamped>();
@@ -1047,16 +1049,9 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          if (recovery_flag_ == true)
-          {
-            ROS_DEBUG_NAMED("move_base_recovery","Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
-            recovery_behaviors_carrying_[recovery_index_]->runBehavior();
-            recovery_index_++;
-          }
-          else
-          {
-            ROS_INFO("Map has been cleared and updated.");
-          }
+          ROS_INFO("Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
+          recovery_behaviors_carrying_[recovery_index_]->runBehavior();
+          recovery_index_++;
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
@@ -1212,7 +1207,9 @@ namespace move_base {
       for (int i=0; i<5; i++) {
         safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(safety_direction);
-//        recovery_behaviors_carrying_.push_back(safety_direction);
+        if (use_safety_direction_recovery_in_towing_) {
+          recovery_behaviors_carrying_.push_back(safety_direction);
+        }
       }
 
       //Newly added: load a recovery behavior to move backwards
