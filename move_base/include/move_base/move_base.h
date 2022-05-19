@@ -109,6 +109,7 @@ namespace move_base {
       double pre_body_yaw_ = 0;
       bool detectMotionStuck();
       bool use_safety_direction_recovery_in_towing_;
+      bool use_rotate_recovery_in_towing_;
 
       geometry_msgs::Twist cmd_vel_;
 
