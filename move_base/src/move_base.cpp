@@ -483,15 +483,6 @@ namespace move_base {
 
   bool MoveBase::makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(planner_costmap_ros_->getCostmap()->getMutex()));
-/*
-    for (int i=0; i<controller_costmap_ros_->getCostmap()->getSizeInCellsX(); i++)
-    {
-      for (int j=0; j<controller_costmap_ros_->getCostmap()->getSizeInCellsY(); j++)
-      {
-        ROS_INFO("costmap val: (i, j, val) = (, %d, %d, %d, )", i, j, controller_costmap_ros_->getCostmap()->getCost(i,j));
-      }
-    }
-*/
 
     //make sure to set the plan to be empty initially
     plan.clear();
@@ -1246,22 +1237,6 @@ namespace move_base {
         }
       }
 
-/*
-      // we'll load a recovery behavior that will do an aggressive reset of the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
-      ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-      recovery_behaviors_.push_back(ags_clear);
-      recovery_behaviors_carrying_.push_back(ags_clear);
-
-      // we'll load a recovery behavior to clear the costmap
-      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
-      cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-      recovery_behaviors_.push_back(cons_clear);
-      recovery_behaviors_carrying_.push_back(cons_clear);
-
-      // we'll rotate in-place one more time
-      if(clearing_rotation_allowed_) recovery_behaviors_.push_back(rotate);
-*/
     }
     catch(pluginlib::PluginlibException& ex){
       ROS_FATAL("Failed to load a plugin. This should not happen on default recovery behaviors. Error: %s", ex.what());
