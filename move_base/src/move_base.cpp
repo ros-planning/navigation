@@ -1204,11 +1204,19 @@ namespace move_base {
 
       //Newly added: load a recovery behavior to move safety places
       boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
-      for (int i=0; i<5; i++) {
-        safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
-        recovery_behaviors_.push_back(safety_direction);
-        if (use_safety_direction_recovery_in_towing_) {
-          recovery_behaviors_carrying_.push_back(safety_direction);
+      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
+      for (int i=0; i<3; i++) {
+        for (int j=0; j<2; j++) {
+          safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+          recovery_behaviors_.push_back(safety_direction);
+          if (use_safety_direction_recovery_in_towing_) {
+            recovery_behaviors_carrying_.push_back(safety_direction);
+          }
+        }
+        if(clearing_rotation_allowed_){
+          rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+          recovery_behaviors_.push_back(rotate);
+          recovery_behaviors_carrying_.push_back(rotate);
         }
       }
 
@@ -1228,7 +1236,6 @@ namespace move_base {
       }
 
       //next, we'll load a recovery behavior to rotate in place
-      boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
       if(clearing_rotation_allowed_){
         rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
         recovery_behaviors_.push_back(rotate);
