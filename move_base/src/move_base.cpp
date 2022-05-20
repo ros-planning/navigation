@@ -1195,9 +1195,16 @@ namespace move_base {
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
 
       boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
+      safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate(recovery_loader_.createInstance("rotate_recovery/RotateRecovery"));
+      rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+
       boost::shared_ptr<nav_core::RecoveryBehavior> go_back(recovery_loader_.createInstance("go_back_recovery/GoBackRecovery"));
+      go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+
       boost::shared_ptr<nav_core::RecoveryBehavior> rotate_small(recovery_loader_.createInstance("rotate_small_recovery/RotateSmallRecovery"));
+      rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
 
       int outer_loop_recovery_count = 3;
       int inner_loop_recovery_count = 2;
@@ -1205,7 +1212,6 @@ namespace move_base {
       {
         for (int j=0; j<inner_loop_recovery_count; j++)
         {
-          safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
           recovery_behaviors_.push_back(safety_direction);
           if (use_safety_direction_recovery_in_towing_)
           {
@@ -1215,20 +1221,17 @@ namespace move_base {
           {
             if (backward_recovery_allowed_)
             {
-              go_back->initialize("go_back_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
               recovery_behaviors_carrying_.push_back(go_back);
             }
 
             if (clearing_rotation_allowed_ && rotate_small_angle_ != 0.0)
             {
-              rotate_small->initialize("rotate_small_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
               recovery_behaviors_carrying_.push_back(rotate_small);
             }
           }
         }
         if (clearing_rotation_allowed_)
         {
-          rotate->initialize("rotate_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
           recovery_behaviors_.push_back(rotate);
           if (use_rotate_recovery_in_towing_)
           {
