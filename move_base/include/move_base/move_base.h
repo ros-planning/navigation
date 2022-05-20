@@ -218,6 +218,7 @@ namespace move_base {
       ros::Subscriber goal_sub_, carrying_status_sub_;
       ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_, backward_recovery_allowed_, abort_after_recovery_allowed_;
+      bool conservative_clearing_map_allowed_, aggressive_clearing_map_allowed_;
       double oscillation_timeout_, oscillation_distance_;
       double rotate_small_angle_;
       lexxauto_msgs::ActuatorStatus actuator_position;

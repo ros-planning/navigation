@@ -118,6 +118,8 @@ namespace move_base {
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
     private_nh.param("backward_recovery_allowed", backward_recovery_allowed_, false);
     private_nh.param("abort_after_recovery_allowed", abort_after_recovery_allowed_, false);
+    private_nh.param("conservative_clearing_map_allowed", conservative_clearing_map_allowed_, false);
+    private_nh.param("aggressive_clearing_map_allowed", aggressive_clearing_map_allowed_, false);
     private_nh.param("rotate_small_angle", rotate_small_angle_, 0.0);
 
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
@@ -1194,6 +1196,12 @@ namespace move_base {
       n.setParam("conservative_reset/reset_distance", 0.0); //conservative_reset_dist_);
       n.setParam("aggressive_reset/reset_distance", 0.0); //circumscribed_radius_ * 4);
 
+      boost::shared_ptr<nav_core::RecoveryBehavior> cons_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      cons_clear->initialize("conservative_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+
+      boost::shared_ptr<nav_core::RecoveryBehavior> ags_clear(recovery_loader_.createInstance("clear_costmap_recovery/ClearCostmapRecovery"));
+      ags_clear->initialize("aggressive_reset", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+
       boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
       safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
 
@@ -1210,6 +1218,17 @@ namespace move_base {
       int inner_loop_recovery_count = 2;
       for (int i=0; i<outer_loop_recovery_count; i++)
       {
+        if (aggressive_clearing_map_allowed_)
+        {
+          recovery_behaviors_.push_back(cons_clear);
+          recovery_behaviors_carrying_.push_back(cons_clear);
+        }
+        if (conservative_clearing_map_allowed_)
+        {
+          recovery_behaviors_.push_back(ags_clear);
+          recovery_behaviors_carrying_.push_back(ags_clear);
+        }
+
         for (int j=0; j<inner_loop_recovery_count; j++)
         {
           recovery_behaviors_.push_back(safety_direction);
