@@ -1194,7 +1194,8 @@ namespace move_base {
     }
 
     // check if global_pose time stamp is within costmap transform tolerance
-    if (current_time.toSec() - global_pose.header.stamp.toSec() > costmap->getTransformTolerance())
+    if (!global_pose.header.stamp.isZero() &&
+        current_time.toSec() - global_pose.header.stamp.toSec() > costmap->getTransformTolerance())
     {
       ROS_WARN_THROTTLE(1.0, "Transform timeout for %s. " \
                         "Current time: %.4f, pose stamp: %.4f, tolerance: %.4f", costmap->getName().c_str(),

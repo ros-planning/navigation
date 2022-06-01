@@ -610,7 +610,7 @@ bool Costmap2DROS::getRobotPose(geometry_msgs::PoseStamped& global_pose) const
     return false;
   }
   // check global_pose timeout
-  if (current_time.toSec() - global_pose.header.stamp.toSec() > transform_tolerance_)
+  if (!global_pose.header.stamp.isZero() && current_time.toSec() - global_pose.header.stamp.toSec() > transform_tolerance_)
   {
     ROS_WARN_THROTTLE(1.0,
                       "Costmap2DROS transform timeout. Current time: %.4f, global_pose stamp: %.4f, tolerance: %.4f",
