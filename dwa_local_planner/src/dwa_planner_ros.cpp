@@ -106,6 +106,9 @@ namespace dwa_local_planner {
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
+      vel_cmd_mode_pub_ = private_nh.advertise<std_msgs::UInt8>("vel_cmd_mode", 1);
+      vel_cmd_marker_pub_ = private_nh.advertise<visualization_msgs::Marker>("vel_cmd_marker", 1);
+
       tf_ = tf;
       costmap_ros_ = costmap_ros;
       costmap_ros_->getRobotPose(current_pose_);
@@ -347,8 +350,33 @@ namespace dwa_local_planner {
 
     this->updateRotateToGoal();
 
+    vel_cmd_mode_marker_msg_.header.frame_id = "base_link";
+    vel_cmd_mode_marker_msg_.header.stamp = ros::Time();
+    vel_cmd_mode_marker_msg_.ns = "vel_cmd_mode";
+    vel_cmd_mode_marker_msg_.id = 0;
+    vel_cmd_mode_marker_msg_.type = visualization_msgs::Marker::SPHERE;
+    vel_cmd_mode_marker_msg_.action = visualization_msgs::Marker::ADD;
+    vel_cmd_mode_marker_msg_.pose.position.x = 0.0;
+    vel_cmd_mode_marker_msg_.pose.position.y = 0.0;
+    vel_cmd_mode_marker_msg_.pose.position.z = 0.0;
+    vel_cmd_mode_marker_msg_.pose.orientation.x = 0.0;
+    vel_cmd_mode_marker_msg_.pose.orientation.y = 0.0;
+    vel_cmd_mode_marker_msg_.pose.orientation.z = 0.0;
+    vel_cmd_mode_marker_msg_.pose.orientation.w = 1.0;
+    vel_cmd_mode_marker_msg_.scale.x = 0.3;
+    vel_cmd_mode_marker_msg_.scale.y = 0.3;
+    vel_cmd_mode_marker_msg_.scale.z = 0.3;
+    vel_cmd_mode_marker_msg_.color.a = 1.0;
+
     if (this->rotate_to_goal_)
     {
+      vel_cmd_mode_msg_.data = 0;
+      vel_cmd_mode_marker_msg_.color.r = 0.0;
+      vel_cmd_mode_marker_msg_.color.g = 1.0;
+      vel_cmd_mode_marker_msg_.color.b = 0.0;
+      vel_cmd_mode_pub_.publish(vel_cmd_mode_msg_);
+      vel_cmd_marker_pub_.publish(vel_cmd_mode_marker_msg_);
+
       geometry_msgs::PoseStamped robot_vel;
       odom_helper_.getRobotVel(robot_vel);
       geometry_msgs::PoseStamped turn_target_pose;
@@ -411,6 +439,13 @@ namespace dwa_local_planner {
     }
     else if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
     {
+      vel_cmd_mode_msg_.data = 1;
+      vel_cmd_mode_marker_msg_.color.r = 1.0;
+      vel_cmd_mode_marker_msg_.color.g = 0.0;
+      vel_cmd_mode_marker_msg_.color.b = 0.0;
+      vel_cmd_mode_pub_.publish(vel_cmd_mode_msg_);
+      vel_cmd_marker_pub_.publish(vel_cmd_mode_marker_msg_);
+      
       this->is_force_update_ = true;
       //publish an empty plan because we've reached our goal position
       std::vector<geometry_msgs::PoseStamped> local_plan;
@@ -427,6 +462,12 @@ namespace dwa_local_planner {
           current_pose_,
           boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
     } else {
+      vel_cmd_mode_msg_.data = 2;
+      vel_cmd_mode_marker_msg_.color.r = 0.0;
+      vel_cmd_mode_marker_msg_.color.g = 0.0;
+      vel_cmd_mode_marker_msg_.color.b = 1.0;
+      vel_cmd_mode_pub_.publish(vel_cmd_mode_msg_);
+      vel_cmd_marker_pub_.publish(vel_cmd_mode_marker_msg_);
       bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
       if (isOk) {
         publishGlobalPlan(transformed_plan);
@@ -453,5 +494,4 @@ namespace dwa_local_planner {
       this->is_force_update_ = false;
     }
   }
-
 };

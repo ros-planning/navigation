@@ -49,7 +49,9 @@
 
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/String.h>
+#include <std_msgs/UInt8.h>
 #include <std_srvs/Empty.h>
+#include <visualization_msgs/Marker.h>
 
 #include <costmap_2d/costmap_2d_ros.h>
 #include <nav_core/base_local_planner.h>
@@ -138,10 +140,14 @@ namespace dwa_local_planner {
       tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
 
       // for visualisation, publishers of global and local plan
-      ros::Publisher g_plan_pub_, l_plan_pub_;
+      ros::Publisher g_plan_pub_, l_plan_pub_, vel_cmd_mode_pub_, vel_cmd_marker_pub_;
       ros::Subscriber actuator_position_sub_;
       ros::ServiceClient nomotion_update_client_;
       ros::Timer nomotion_update_timer_;
+
+      std_msgs::UInt8 vel_cmd_mode_msg_;
+      visualization_msgs::Marker vel_cmd_mode_marker_msg_;
+
 
       base_local_planner::LocalPlannerUtil planner_util_;
 
