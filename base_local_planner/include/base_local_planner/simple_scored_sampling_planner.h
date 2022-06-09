@@ -65,13 +65,19 @@ public:
   /**
    * Takes a list of generators and critics. Critics return costs > 0, or negative costs for invalid trajectories.
    * Generators other than the first are fallback generators,  meaning they only get to generate if the previous
-   * generator did not find a valid trajectory.
+   * generator did not find a valid trajectory. The user may force usage of fallback generators by setting
+   * force_usage_all_generators argument to true (false by default).
    * Will use every generator until it stops returning trajectories or count reaches max_samples.
    * Then resets count and tries for the next in the list.
    * passing max_samples = -1 (default): Each Sampling planner will continue to call
    * generator until generator runs out of samples (or forever if that never happens)
    */
-  SimpleScoredSamplingPlanner(std::vector<TrajectorySampleGenerator*> gen_list, std::vector<TrajectoryCostFunction*>& critics, int max_samples = -1);
+  SimpleScoredSamplingPlanner(
+    std::vector<TrajectorySampleGenerator*> gen_list,
+    std::vector<TrajectoryCostFunction*>& critics,
+    int max_samples = -1,
+    bool force_usage_all_generators = false
+  );
 
   /**
    * runs all scoring functions over the trajectory creating a weigthed sum
@@ -99,6 +105,7 @@ private:
   std::vector<TrajectoryCostFunction*> critics_;
 
   int max_samples_;
+  bool force_usage_all_generators_;
 };
 
 

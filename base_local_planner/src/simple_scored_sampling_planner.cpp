@@ -41,8 +41,13 @@
 
 namespace base_local_planner {
   
-  SimpleScoredSamplingPlanner::SimpleScoredSamplingPlanner(std::vector<TrajectorySampleGenerator*> gen_list, std::vector<TrajectoryCostFunction*>& critics, int max_samples) {
+  SimpleScoredSamplingPlanner::SimpleScoredSamplingPlanner(
+    std::vector<TrajectorySampleGenerator*> gen_list,
+    std::vector<TrajectoryCostFunction*>& critics,
+    int max_samples,
+    bool force_usage_all_generators) {
     max_samples_ = max_samples;
+    force_usage_all_generators_ = force_usage_all_generators;
     gen_list_ = gen_list;
     critics_ = critics;
   }
@@ -133,7 +138,7 @@ namespace base_local_planner {
         }
       }
       ROS_DEBUG("Evaluated %d trajectories, found %d valid", count, count_valid);
-      if (best_traj_cost >= 0) {
+      if (best_traj_cost >= 0 && !force_usage_all_generators_) {
         // do not try fallback generators
         break;
       }
