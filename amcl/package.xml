@@ -42,6 +42,7 @@
 
     <test_depend>map_server</test_depend>
     <test_depend>rostest</test_depend>
-    <test_depend>python3-pykdl</test_depend>
-    <test_depend>tf2_py</test_depend>
+    <test_depend condition="$PYVER == 2">python_orocos_kdl</test_depend>
+    <test_depend condition="$PYVER == 3">python3-pykdl</test_depend>
+    <test_depend condition="$PYVER == 3">tf2_py</test_depend>
 </package>
