@@ -33,7 +33,7 @@ class PoseSetter(rospy.SubscribeListener):
 
 
 if __name__ == '__main__':
-    pose = map(float, rospy.myargv()[1:4])
+    pose = list(map(float, rospy.myargv()[1:4]))
     t_stamp = rospy.Time()
     t_publish = rospy.Time()
     if len(rospy.myargv()) > 4:
