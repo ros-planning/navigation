@@ -25,6 +25,7 @@
 #include <map>
 #include <cmath>
 #include <memory>
+#include <utility>
 
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
@@ -137,8 +138,11 @@ class AmclNode
 
     /**
      * @brief Uses TF and LaserScan messages from bag file to drive AMCL instead
+     * @param in_bag_fn input bagfile
+     * @param trigger_global_localization whether to trigger global localization
+     * before starting to process the bagfile
      */
-    void runFromBag(const std::string &in_bag_fn);
+    void runFromBag(const std::string &in_bag_fn, bool trigger_global_localization = false);
 
     int process();
     void savePoseToServer();
@@ -178,13 +182,13 @@ class AmclNode
     void updatePoseFromServer();
     void applyInitialPose();
 
-    //parameter for what odom to use
+    //parameter for which odom to use
     std::string odom_frame_id_;
 
     //paramater to store latest odom pose
     geometry_msgs::PoseStamped latest_odom_pose_;
 
-    //parameter for what base to use
+    //parameter for which base to use
     std::string base_frame_id_;
     std::string global_frame_id_;
 
@@ -281,6 +285,7 @@ class AmclNode
     double init_cov_[3];
     laser_model_t laser_model_type_;
     bool tf_broadcast_;
+    bool selective_resampling_;
 
     void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
 
@@ -289,7 +294,9 @@ class AmclNode
     void checkLaserReceived(const ros::TimerEvent& event);
 };
 
+#if NEW_UNIFORM_SAMPLING
 std::vector<std::pair<int,int> > AmclNode::free_space_indices;
+#endif
 
 #define USAGE "USAGE: amcl"
 
@@ -319,9 +326,16 @@ main(int argc, char** argv)
     // run using ROS input
     ros::spin();
   }
-  else if ((argc == 3) && (std::string(argv[1]) == "--run-from-bag"))
+  else if ((argc >= 3) && (std::string(argv[1]) == "--run-from-bag"))
   {
-    amcl_node_ptr->runFromBag(argv[2]);
+    if (argc == 3)
+    {
+      amcl_node_ptr->runFromBag(argv[2]);
+    }
+    else if ((argc == 4) && (std::string(argv[3]) == "--global-localization"))
+    {
+      amcl_node_ptr->runFromBag(argv[2], true);
+    }
   }
 
   // Without this, our boost locks are not shut down nicely
@@ -426,6 +440,7 @@ AmclNode::AmclNode() :
   private_nh_.param("base_frame_id", base_frame_id_, std::string("base_link"));
   private_nh_.param("global_frame_id", global_frame_id_, std::string("map"));
   private_nh_.param("resample_interval", resample_interval_, 2);
+  private_nh_.param("selective_resampling", selective_resampling_, false);
   double tmp_tol;
   private_nh_.param("transform_tolerance", tmp_tol, 0.1);
   private_nh_.param("recovery_alpha_slow", alpha_slow_, 0.001);
@@ -575,6 +590,11 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   beam_skip_distance_ = config.beam_skip_distance; 
   beam_skip_threshold_ = config.beam_skip_threshold; 
   
+  // Clear queued laser objects so that their parameters get updated
+  lasers_.clear();
+  lasers_update_.clear();
+  frame_to_laser_.clear();
+
   if( pf_ != NULL )
   {
     pf_free( pf_ );
@@ -584,6 +604,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
+  pf_set_selective_resampling(pf_, selective_resampling_);
   pf_err_ = config.kld_err; 
   pf_z_ = config.kld_z; 
   pf_->pop_err = pf_err_;
@@ -647,7 +668,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
 }
 
 
-void AmclNode::runFromBag(const std::string &in_bag_fn)
+void AmclNode::runFromBag(const std::string &in_bag_fn, bool trigger_global_localization)
 {
   rosbag::Bag bag;
   bag.open(in_bag_fn, rosbag::bagmode::Read);
@@ -676,8 +697,14 @@ void AmclNode::runFromBag(const std::string &in_bag_fn)
         break;
       }
     }
-    ROS_INFO("Waiting for map...");
+    ROS_INFO("Waiting for the map...");
     ros::getGlobalCallbackQueue()->callAvailable(ros::WallDuration(1.0));
+  }
+
+  if (trigger_global_localization)
+  {
+    std_srvs::Empty empty_srv;
+    globalLocalizationCallback(empty_srv.request, empty_srv.response);
   }
 
   BOOST_FOREACH(rosbag::MessageInstance const msg, view)
@@ -879,6 +906,7 @@ AmclNode::handleMapMessage(const nav_msgs::OccupancyGrid& msg)
                  alpha_slow_, alpha_fast_,
                  (pf_init_model_fn_t)AmclNode::uniformPoseGenerator,
                  (void *)map_);
+  pf_set_selective_resampling(pf_, selective_resampling_);
   pf_->pop_err = pf_err_;
   pf_->pop_z = pf_z_;
 
@@ -949,7 +977,7 @@ AmclNode::freeMapDependentMemory()
 
 /**
  * Convert an OccupancyGrid map message into the internal
- * representation.  This allocates a map_t and returns it.
+ * representation. This allocates a map_t and returns it.
  */
 map_t*
 AmclNode::convertMap( const nav_msgs::OccupancyGrid& map_msg )
@@ -1265,6 +1293,12 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       range_min = std::max(laser_scan->range_min, (float)laser_min_range_);
     else
       range_min = laser_scan->range_min;
+
+    if(ldata.range_max <= 0.0 || range_min < 0.0) {
+      ROS_ERROR("range_max or range_min from laser is negative! ignore this message.");
+      return; // ignore this.
+    }
+
     // The AMCLLaserData destructor will free this memory
     ldata.ranges = new double[ldata.range_count][2];
     ROS_ASSERT(ldata.ranges);
@@ -1274,6 +1308,8 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       // readings to max range.
       if(laser_scan->ranges[i] <= range_min)
         ldata.ranges[i][0] = ldata.range_max;
+      else if(laser_scan->ranges[i] > ldata.range_max)
+        ldata.ranges[i][0] = std::numeric_limits<decltype(ldata.range_max)>::max();
       else
         ldata.ranges[i][0] = laser_scan->ranges[i];
       // Compute bearing
