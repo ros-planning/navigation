@@ -82,17 +82,6 @@ void SimpleTrajectoryGenerator::initialise(
   double min_vel_y = limits->min_vel_y;
   double max_vel_y = limits->max_vel_y;
 
-/*
-  double threshold_angular_vel = 0.15;
-  if (fabs(vel[2]) > threshold_angular_vel)
-  {
-    double acc_lim_gain = 1.0/4.0;
-    acc_lim[2] *= acc_lim_gain;
-    double vel_lim_gain = 1.0/4.0;
-    max_vel_x = limits->max_vel_x * vel_lim_gain;
-  }
-*/
-
   // if sampling number is zero in any dimension, we don't generate samples generically
   if (vsamples[0] * vsamples[1] * vsamples[2] > 0) {
     //compute the feasible velocity space based on the rate at which we run
