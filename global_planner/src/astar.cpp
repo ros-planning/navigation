@@ -86,8 +86,11 @@ void AStarExpansion::add(unsigned char* costs, float* potential, float prev_pote
 
     if(costs[next_i]>=lethal_cost_ && !(unknown_ && costs[next_i]==costmap_2d::NO_INFORMATION))
         return;
-
-    potential[next_i] = p_calc_->calculatePotential(potential, costs[next_i] + neutral_cost_, next_i, prev_potential);
+    if((costs[next_i] + neutral_cost_) > 255)
+        combined_cost_ = 255;
+    else
+        combined_cost_ = costs[next_i] + neutral_cost_;
+    potential[next_i] = p_calc_->calculatePotential(potential, combined_cost_, next_i, prev_potential);
     int x = next_i % nx_, y = next_i / nx_;
     float distance = abs(end_x - x) + abs(end_y - y);
 
