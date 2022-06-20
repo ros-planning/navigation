@@ -2,8 +2,8 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.2 (2022-06-20)
+-------------------
 * Change_map service to map_server [Rebase/Noetic] (`#1029 <https://github.com/ros-planning/navigation/issues/1029>`_)
   * Refactored map loading from constructor to three methods
   * Added change_map service using LoadMap.srv

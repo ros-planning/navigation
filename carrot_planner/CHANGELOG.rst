@@ -2,8 +2,8 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.2 (2022-06-20)
+-------------------
 * Fix carrot planner (`#1056 <https://github.com/ros-planning/navigation/issues/1056>`_)
   * fix memory leak of world_model\_
   * fix uninitialized raw pointers

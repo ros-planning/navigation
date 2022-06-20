@@ -2,8 +2,8 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.2 (2022-06-20)
+-------------------
 * Check if stamp of transformed pose is non-zero (`#1200 <https://github.com/ros-planning/navigation/issues/1200>`_)
 * Create move_base catkin library (`#1116 <https://github.com/ros-planning/navigation/issues/1116>`_)
   Co-authored-by: vkotaru <prasant.kotaru@gmail.com>

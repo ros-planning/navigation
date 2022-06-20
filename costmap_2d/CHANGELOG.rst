@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.2 (2022-06-20)
+-------------------
 * Removed unused variables in costmap_2d_ros (`#1126 <https://github.com/ros-planning/navigation/issues/1126>`_)
   remove unused `robot_stopped\_`, `old_pose\_` and `timer\_`
 * Check if stamp of transformed pose is non-zero (`#1200 <https://github.com/ros-planning/navigation/issues/1200>`_)

@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.2 (2022-06-20)
+-------------------
 * Update pf.c (`#1161 <https://github.com/ros-planning/navigation/issues/1161>`_)
   `#1160 <https://github.com/ros-planning/navigation/issues/1160>`_ AMCL miscalculates orientation covariance for clusters
 * Improved Overall readablity (`#1177 <https://github.com/ros-planning/navigation/issues/1177>`_)

@@ -2,8 +2,8 @@
 Changelog for package base_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.2 (2022-06-20)
+-------------------
 * Commit 89a8593 removed footprint scaling. This brings it back. (`#886 <https://github.com/ros-planning/navigation/issues/886>`_) (`#1204 <https://github.com/ros-planning/navigation/issues/1204>`_)
   Co-authored-by: Frank Höller <frank.hoeller@fkie.fraunhofer.de>
 * Contributors: Michael Ferguson
