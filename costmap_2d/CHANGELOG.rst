@@ -2,6 +2,32 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Removed unused variables in costmap_2d_ros (`#1126 <https://github.com/ros-planning/navigation/issues/1126>`_)
+  remove unused `robot_stopped\_`, `old_pose\_` and `timer\_`
+* Check if stamp of transformed pose is non-zero (`#1200 <https://github.com/ros-planning/navigation/issues/1200>`_)
+* fix crashes in AMCL (`#1152 <https://github.com/ros-planning/navigation/issues/1152>`_)
+  * fix: catch runtime_error from roscore
+  * ignore malformed message from laser, otherwise it will crash
+* The main function has to return an int value. (`#1101 <https://github.com/ros-planning/navigation/issues/1101>`_)
+* fix boundary point exclusion in convexFillCells (`#1095 <https://github.com/ros-planning/navigation/issues/1095>`_)
+* Fix deadlock when starting map with map-update-frequency set to zero (`#1072 <https://github.com/ros-planning/navigation/issues/1072>`_)
+  Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
+* Increase scope of costmap mutex in publishCostmap to cover costmap calls (`#992 <https://github.com/ros-planning/navigation/issues/992>`_)
+* costmap_2d: remove useless and buggy testing helper function (`#1069 <https://github.com/ros-planning/navigation/issues/1069>`_) (`#1070 <https://github.com/ros-planning/navigation/issues/1070>`_)
+  Co-authored-by: JF Dalbosco <jean-francois.dalbosco@safrangroup.com>
+* Fix future robot pose by Costmap2D (`#1066 <https://github.com/ros-planning/navigation/issues/1066>`_)
+  Co-authored-by: Pavlo Kolomiiets <pavlo@blindnology.com>
+* use const-ref-getter for strings and vectors (`#1035 <https://github.com/ros-planning/navigation/issues/1035>`_)
+  Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
+* move enabled-logic to the LayeredCostmap (`#1036 <https://github.com/ros-planning/navigation/issues/1036>`_)
+  Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
+* cosmetic change (`#1055 <https://github.com/ros-planning/navigation/issues/1055>`_)
+* costmap_2d: Add missing package dependency to Eigen (`#1033 <https://github.com/ros-planning/navigation/issues/1033>`_)
+* Add invert_area_to_clear to clear costmap recovery behavior (`#1030 <https://github.com/ros-planning/navigation/issues/1030>`_)
+* Contributors: Atsushi Watanabe, ChristofDubs, Dhruv Maroo, Dima Dorezyuk, G.Doisy, Griswald Brooks, Noriaki Ando, Pavlo Kolomiiets, Yuki Furuta, Yukihiro Saito, easylyou, jdalbosc
+
 1.17.1 (2020-08-27)
 -------------------
 * add explicit call to ros::Timer::stop in the destructor (`#984 <https://github.com/ros-planning/navigation/issues/984>`_)

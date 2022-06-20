@@ -2,6 +2,21 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update pf.c (`#1161 <https://github.com/ros-planning/navigation/issues/1161>`_)
+  `#1160 <https://github.com/ros-planning/navigation/issues/1160>`_ AMCL miscalculates orientation covariance for clusters
+* Improved Overall readablity (`#1177 <https://github.com/ros-planning/navigation/issues/1177>`_)
+* fix crashes in AMCL (`#1152 <https://github.com/ros-planning/navigation/issues/1152>`_)
+  * fix: catch runtime_error from roscore
+  * ignore malformed message from laser, otherwise it will crash
+* Fixes `#1117 <https://github.com/ros-planning/navigation/issues/1117>`_ (`#1118 <https://github.com/ros-planning/navigation/issues/1118>`_)
+* Fixed the risk of divide by zero. (`#1099 <https://github.com/ros-planning/navigation/issues/1099>`_)
+* (AMCL) add missing test dep on tf2_py (`#1091 <https://github.com/ros-planning/navigation/issues/1091>`_)
+* (AMCL)(Noetic) use robot pose in tests (`#1087 <https://github.com/ros-planning/navigation/issues/1087>`_)
+* (amcl) fix missing '#if NEW_UNIFORM_SAMPLING' (`#1079 <https://github.com/ros-planning/navigation/issues/1079>`_)
+* Contributors: David V. Lu!!, Matthijs van der Burgh, Noriaki Ando, Supernovae, christofschroeter, easylyou
+
 1.17.1 (2020-08-27)
 -------------------
 * (AMCL) add resample limit cache [Noetic] (`#1014 <https://github.com/ros-planning/navigation/issues/1014>`_)

@@ -2,6 +2,15 @@
 Changelog for package navfn
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* navfn: stop installing test headers (`#1085 <https://github.com/ros-planning/navigation/issues/1085>`_)
+  The navtest executable is only built if FLTK is installed. However, the
+  header it uses is installed regardless, and requires FLTK. Nothing else
+  uses this header, and navfn doesn't depend upon FLTK, so stop installing
+  the header. Also fix navtest to actually build when FLTK is installed.
+* Contributors: Kyle Fazzari
+
 1.17.1 (2020-08-27)
 -------------------
 
