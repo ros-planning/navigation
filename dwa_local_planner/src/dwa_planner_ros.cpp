@@ -152,6 +152,8 @@ namespace dwa_local_planner {
       private_nh.param("use_rotate_first_actuator_disconnect", this->use_rotate_first_actuator_disconnect_, true);
       private_nh.param("kpre", this->kpre_, 0.65);
 
+      private_nh.param("latch_unlock_distance", this->latch_unlock_distance_, 1.0);
+
       this->is_actuator_connect_ = false;
       this->rotate_to_goal_ = false;
     }
@@ -165,9 +167,15 @@ namespace dwa_local_planner {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
     }
-    //when we get a new plan, we also want to clear any latch we may have on goal tolerances
-    latchedStopRotateController_.resetLatching();
-
+    geometry_msgs::PoseStamped new_goal = orig_global_plan.back();
+    double x = new_goal.pose.position.x - current_pose_.pose.position.x;
+    double y = new_goal.pose.position.y - current_pose_.pose.position.y;
+    double d = std::sqrt(x * x + y * y);
+    if (this->latch_unlock_distance_ < d)
+    {
+      //when we get a new plan, we also want to clear any latch we may have on goal tolerances
+      latchedStopRotateController_.resetLatching();
+    }
     if ((this->is_actuator_connect_ && this->use_rotate_first_actuator_connect_) ||
         (!this->is_actuator_connect_ && this->use_rotate_first_actuator_disconnect_))
     {
@@ -368,7 +376,32 @@ namespace dwa_local_planner {
     vel_cmd_mode_marker_msg_.scale.z = 0.3;
     vel_cmd_mode_marker_msg_.color.a = 1.0;
 
-    if (this->rotate_to_goal_)
+    if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
+    {
+      vel_cmd_mode_msg_.data = 1;
+      vel_cmd_mode_marker_msg_.color.r = 1.0;
+      vel_cmd_mode_marker_msg_.color.g = 0.0;
+      vel_cmd_mode_marker_msg_.color.b = 0.0;
+      vel_cmd_mode_pub_.publish(vel_cmd_mode_msg_);
+      vel_cmd_marker_pub_.publish(vel_cmd_mode_marker_msg_);
+      
+      this->is_force_update_ = true;
+      //publish an empty plan because we've reached our goal position
+      std::vector<geometry_msgs::PoseStamped> local_plan;
+      std::vector<geometry_msgs::PoseStamped> transformed_plan;
+      publishGlobalPlan(transformed_plan);
+      publishLocalPlan(local_plan);
+      base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
+      return latchedStopRotateController_.computeVelocityCommandsStopRotate(
+          cmd_vel,
+          limits.getAccLimits(),
+          dp_->getSimPeriod(),
+          &planner_util_,
+          odom_helper_,
+          current_pose_,
+          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
+    }
+    else if (this->rotate_to_goal_)
     {
       vel_cmd_mode_msg_.data = 0;
       vel_cmd_mode_marker_msg_.color.r = 0.0;
@@ -437,31 +470,8 @@ namespace dwa_local_planner {
 
       return true;
     }
-    else if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
+    else
     {
-      vel_cmd_mode_msg_.data = 1;
-      vel_cmd_mode_marker_msg_.color.r = 1.0;
-      vel_cmd_mode_marker_msg_.color.g = 0.0;
-      vel_cmd_mode_marker_msg_.color.b = 0.0;
-      vel_cmd_mode_pub_.publish(vel_cmd_mode_msg_);
-      vel_cmd_marker_pub_.publish(vel_cmd_mode_marker_msg_);
-      
-      this->is_force_update_ = true;
-      //publish an empty plan because we've reached our goal position
-      std::vector<geometry_msgs::PoseStamped> local_plan;
-      std::vector<geometry_msgs::PoseStamped> transformed_plan;
-      publishGlobalPlan(transformed_plan);
-      publishLocalPlan(local_plan);
-      base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
-      return latchedStopRotateController_.computeVelocityCommandsStopRotate(
-          cmd_vel,
-          limits.getAccLimits(),
-          dp_->getSimPeriod(),
-          &planner_util_,
-          odom_helper_,
-          current_pose_,
-          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
-    } else {
       vel_cmd_mode_msg_.data = 2;
       vel_cmd_mode_marker_msg_.color.r = 0.0;
       vel_cmd_mode_marker_msg_.color.g = 0.0;
@@ -471,6 +481,7 @@ namespace dwa_local_planner {
       bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
       if (isOk) {
         publishGlobalPlan(transformed_plan);
+        this->latchedStopRotateController_.resetLatching();
       } else {
         ROS_WARN_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
         std::vector<geometry_msgs::PoseStamped> empty_plan;
