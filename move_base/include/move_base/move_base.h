@@ -200,6 +200,7 @@ namespace move_base {
       ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
       bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
       bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;
+      bool stop_before_planning_;
       double oscillation_timeout_, oscillation_distance_;
 
       MoveBaseState state_;
