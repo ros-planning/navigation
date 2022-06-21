@@ -23,6 +23,8 @@ class TestBasicLocalization(unittest.TestCase):
         self.target_y = None
         self.target_a = None
         self.tfBuffer = None
+        self.maxConnectivityExceptions = 5
+        self.connectivityExceptions = 0
 
     def print_pose_diff(self):
         a_curr = self.compute_angle()
@@ -39,6 +41,13 @@ class TestBasicLocalization(unittest.TestCase):
             self.print_pose_diff()
         except (tf2.LookupException, tf2.ExtrapolationException):
             pass
+        except (tf2.ConnectivityException) as e:
+            self.connectivityExceptions = self.connectivityExceptions + 1
+            if (self.maxConnectivityExceptions >  self.maxConnectivityExceptions):
+                raise tf2.ConnectivityException(e)
+            time.sleep(0.5)
+            pass
+
 
     @staticmethod
     def wrap_angle(angle):
