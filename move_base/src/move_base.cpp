@@ -80,6 +80,8 @@ namespace move_base {
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
 
+    private_nh.param("stop_before_planning", stop_before_planning_, false);
+
     // parameters of make_plan service
     private_nh.param("make_plan_clear_costmap", make_plan_clear_costmap_, true);
     private_nh.param("make_plan_add_unreachable_goal", make_plan_add_unreachable_goal_, true);
@@ -268,6 +270,8 @@ namespace move_base {
 
     make_plan_clear_costmap_ = config.make_plan_clear_costmap;
     make_plan_add_unreachable_goal_ = config.make_plan_add_unreachable_goal;
+
+    stop_before_planning_ = config.stop_before_planning;
 
     last_config_ = config;
   }
@@ -706,7 +710,9 @@ namespace move_base {
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
           state_ = PLANNING;
-          publishZeroVelocity();
+          if(stop_before_planning_){
+            publishZeroVelocity();
+          }
 
           //we have a new goal so make sure the planner is awake
           lock.lock();
@@ -745,7 +751,9 @@ namespace move_base {
         //we want to go back to the planning state for the next execution cycle
         recovery_index_ = 0;
         state_ = PLANNING;
-        publishZeroVelocity();
+        if(stop_before_planning_){
+          publishZeroVelocity();
+        }
 
         //we have a new goal so make sure the planner is awake
         lock.lock();
