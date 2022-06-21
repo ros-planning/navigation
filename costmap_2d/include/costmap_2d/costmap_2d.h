@@ -255,8 +255,10 @@ public:
    * @brief  Get the map cells that make up the outline of a polygon
    * @param polygon The polygon in map coordinates to rasterize
    * @param polygon_cells Will be set to the cells contained in the outline of the polygon
+   * @param close_polygon Close the polygon by going from the last point to the first (default behavior)
    */
-  void polygonOutlineCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells);
+  void polygonOutlineCells(const std::vector<MapLocation>& polygon, std::vector<MapLocation>& polygon_cells,
+                           bool close_polygon = true);
 
   /**
    * @brief  Get the map cells that fill a convex polygon
