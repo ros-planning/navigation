@@ -64,6 +64,9 @@ private:
   costmap_2d::Costmap2D* costmap_;
   tf2_ros::Buffer* tf_;
 
+  ros::Time time_; // The time used for TF transformations
+  bool time_set_; // Whether time was set
+
 
   std::vector<geometry_msgs::PoseStamped> global_plan_;
 
@@ -74,6 +77,8 @@ private:
   LocalPlannerLimits limits_;
   bool initialized_;
 
+  ros::Time getTime();
+
 public:
 
   /**
@@ -81,7 +86,7 @@ public:
    */
   void reconfigureCB(LocalPlannerLimits &config, bool restore_defaults);
 
-  LocalPlannerUtil() : initialized_(false) {}
+  LocalPlannerUtil() : initialized_(false), time_set_(false) {}
 
   ~LocalPlannerUtil() {
   }
@@ -89,6 +94,8 @@ public:
   void initialize(tf2_ros::Buffer* tf,
       costmap_2d::Costmap2D* costmap,
       std::string global_frame);
+
+  bool setTime(ros::Time time) { time_ = time; time_set_ = true; }
 
   bool getGoal(geometry_msgs::PoseStamped& goal_pose);
 
