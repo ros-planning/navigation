@@ -43,7 +43,7 @@ class TestBasicLocalization(unittest.TestCase):
             pass
         except (tf2.ConnectivityException) as e:
             self.connectivityExceptions = self.connectivityExceptions + 1
-            if (self.connectivityExceptions >  self.maxConnectivityExceptions):
+            if (self.connectivityExceptions >= self.maxConnectivityExceptions):
                 raise tf2.ConnectivityException(e)
             time.sleep(0.5)
             pass
