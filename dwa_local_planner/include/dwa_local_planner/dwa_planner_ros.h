@@ -184,6 +184,7 @@ namespace dwa_local_planner {
       bool use_rotate_first_actuator_connect_;
       bool use_rotate_first_actuator_disconnect_;
       bool is_force_update_;
+      double latch_unlock_distance_;
   };
 };
 #endif
