@@ -254,9 +254,9 @@ bool LatchedStopRotateController::computeVelocityCommandsStopRotate(geometry_msg
     else {
       //set this so that we know its OK to be moving
       rotating_to_goal_ = true;
-      if (fabs(angle) <= limits.yaw_slowdown_tolerance)
+      if (fabs(angle) <= limits.spin_turn_tolerance)
       {
-        limits.max_vel_theta = limits.slowdown_vel_theta;
+        limits.max_vel_theta = limits.spin_turn_vel_theta;
       }
       if ( ! rotateToGoal(
           global_pose,
