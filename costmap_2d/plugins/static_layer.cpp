@@ -278,15 +278,64 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 
   useExtraBounds(min_x, min_y, max_x, max_y);
 
+  // static layer mapToWorld() uses map-server map's origin/frame, not layered map's origin/frame
+  // if rolling window potentially global_frame_ and map_frame_ will not match -> transform accordingly
   double wx, wy;
+  tf2::Transform tf2_transform_map_global;
+  std::vector<tf2::Vector3> map_corners;
 
-  mapToWorld(x_, y_, wx, wy);
-  *min_x = std::min(wx, *min_x);
-  *min_y = std::min(wy, *min_y);
+  if( map_frame_ != global_frame_ )
+  {
+    geometry_msgs::TransformStamped transform_map_global;
+    try
+    {
+      transform_map_global = tf_->lookupTransform(global_frame_, map_frame_, ros::Time(0));
+    }
+    catch (tf2::TransformException ex)
+    {
+      ROS_ERROR("%s", ex.what());
+      return;
+    }
+    
+    tf2::convert(transform_map_global.transform, tf2_transform_map_global);
+  }
+  else
+    tf2_transform_map_global = tf2::Transform::getIdentity();
 
-  mapToWorld(x_ + width_, y_ + height_, wx, wy);
-  *max_x = std::max(wx, *max_x);
-  *max_y = std::max(wy, *max_y);
+  // "returned" min and max values shall describe the extension of the static map layer
+  // as an axis oriented rect in the costmaps global_frame_. min and max x- and y-values
+  // may be dertermined by each corner of the map, not only origin and <origin> + <extension>!
+  // calculate bounds from all corners of the map:
+  mapToWorld(x_, y_, wx, wy); //origin
+  map_corners.push_back(tf2::Vector3(wx, wy, 0));
+  mapToWorld(x_ + width_, y_, wx, wy); //extension along x
+  map_corners.push_back(tf2::Vector3(wx, wy, 0));
+  mapToWorld(x_, y_ + height_, wx, wy); //extension along y
+  map_corners.push_back(tf2::Vector3(wx, wy, 0));
+  mapToWorld(x_ + width_, y_ + height_, wx, wy); //max extension
+  map_corners.push_back(tf2::Vector3(wx, wy, 0));
+
+  std::for_each(map_corners.begin(), map_corners.end(),
+    [&](tf2::Vector3& vec) { vec = tf2_transform_map_global * vec; }
+  );
+
+  std::vector<tf2::Vector3>::iterator min_x_it_, max_x_it_, min_y_it_, max_y_it_;
+  // get x values
+  std::tie(min_x_it_, max_x_it_) = std::minmax_element(map_corners.begin(), map_corners.end(),
+    [](const tf2::Vector3& elem0, const tf2::Vector3& elem1) { return elem0.x() < elem1.x(); }
+  );
+  // get y values
+  std:tie(min_y_it_, max_y_it_) = std::minmax_element(map_corners.begin(), map_corners.end(),
+    [](const tf2::Vector3& elem0, const tf2::Vector3& elem1) { return elem0.y() < elem1.y(); }
+  );
+
+  ROS_DEBUG("costmap-layer %s (frame %s) setting bounds for update from map (frame %s) to: (%.4f, %.4f) to (%.4f, %4f)", getName().c_str(), global_frame_.c_str(), map_frame_.c_str(), min_x_it_->x(), min_y_it_->y(), max_x_it_->x(), max_y_it_->y());
+
+  // assign values and check against previous layers
+  *min_x = std::min(min_x_it_->x(), *min_x);
+  *min_y = std::min(min_y_it_->y(), *min_y);
+  *max_x = std::max(max_x_it_->x(), *max_x);
+  *max_y = std::max(max_y_it_->y(), *max_y);
 
   has_updated_data_ = false;
 }
