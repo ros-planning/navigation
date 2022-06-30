@@ -68,7 +68,7 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
   unsigned int i,j;
   int k;
   double occ;
-  int alpha;
+  double alpha;
   int color_sum;
   double color_avg;
 
@@ -122,10 +122,13 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
         color_sum += *(p + (k));
       color_avg = color_sum / (double)avg_channels;
 
-      if (n_channels == 1)
-          alpha = 1;
+      if (n_channels < 4)
+          alpha = 1.0;
       else
-          alpha = *(p+n_channels-1);
+      {
+          alpha = *(p+n_channels-1) / 255.0;
+      }
+
 
       if(negate)
         color_avg = 255 - color_avg;
@@ -144,15 +147,21 @@ loadMapFromFile(nav_msgs::GetMap::Response* resp,
       // Apply thresholds to RGB means to determine occupancy values for
       // map.  Note that we invert the graphics-ordering of the pixels to
       // produce a map with cell (0,0) in the lower-left corner.
-      if(occ > occ_th)
-        value = +100;
-      else if(occ < free_th)
-        value = 0;
-      else if(mode==TRINARY || alpha < 1.0)
-        value = -1;
+      if (alpha < 1.0)
+          value = -1;
       else {
-        double ratio = (occ - free_th) / (occ_th - free_th);
-        value = 99 * ratio;
+          if (occ > occ_th)
+              value = +100;
+          else if (occ < free_th)
+              value = 0;
+          else {
+              if (mode == TRINARY)
+                value = -1;
+              else if (mode == SCALE){
+                double ratio = (occ - free_th) / (occ_th - free_th);
+                value = 99 * ratio;
+              }
+          }
       }
 
       resp->map.data[MAP_IDX(resp->map.info.width,i,resp->map.info.height - j - 1)] = value;

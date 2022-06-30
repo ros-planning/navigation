@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
 find_package(Bullet REQUIRED)
 find_package(SDL REQUIRED)
 find_package(SDL_image REQUIRED)
+find_package(PNG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
 find_package(PkgConfig REQUIRED)
@@ -38,6 +39,7 @@ include_directories(
     ${SDL_INCLUDE_DIR}
     ${SDL_IMAGE_INCLUDE_DIRS}
     ${YAMLCPP_INCLUDE_DIRS}
+    ${PNG_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
 
@@ -63,6 +65,7 @@ add_dependencies(map_server-map_saver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 set_target_properties(map_server-map_saver PROPERTIES OUTPUT_NAME map_saver)
 target_link_libraries(map_server-map_saver
     ${catkin_LIBRARIES}
+    ${PNG_LIBRARIES}
 )
 
 # copy test data to same place as tests are run
@@ -75,6 +78,7 @@ endfunction()
 
 ## Tests
 if(CATKIN_ENABLE_TESTING)
+    find_package(rostest REQUIRED)
   copy_test_data( FILES
       test/testmap.bmp
       test/testmap.png )
@@ -96,6 +100,15 @@ if(CATKIN_ENABLE_TESTING)
   # This has to be done after we've already built targets, or catkin variables get borked
   find_package(rostest REQUIRED)
   add_rostest(test/rtest.xml)
+
+  add_rostest_gtest(map_saver_test test/map_saver_test.test
+    test/map_saver_test.cpp include/map_server/map_generator.h)
+  add_dependencies(map_saver_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+  target_link_libraries(map_saver_test
+          gtest
+          map_server_image_loader
+          ${catkin_LIBRARIES}
+          ${PNG_LIBRARIES})
 endif()
 
 ## Install executables and/or libraries
