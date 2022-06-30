@@ -40,7 +40,7 @@
 namespace global_planner {
 
 DijkstraExpansion::DijkstraExpansion(PotentialCalculator* p_calc, int nx, int ny) :
-        Expander(p_calc, nx, ny), pending_(NULL), precise_(false) {
+        Expander(p_calc, nx, ny), pending_(NULL), precise_(false), tick_count_(0) {
     // priority buffers
     buffer1_ = new int[PRIORITYBUFSIZE];
     buffer2_ = new int[PRIORITYBUFSIZE];
@@ -198,6 +198,7 @@ inline void DijkstraExpansion::updateCell(unsigned char* costs, float* potential
         return;
 
     float pot = p_calc_->calculatePotential(potential, c, n);
+    tick_count_ ^= 1; // Toggle tick_count bit
 
     // now add affected neighbors to priority blocks
     if (pot < potential[n]) {
@@ -207,26 +208,51 @@ inline void DijkstraExpansion::updateCell(unsigned char* costs, float* potential
         float de = INVSQRT2 * (float)getCost(costs, n + nx_);
         potential[n] = pot;
         //ROS_INFO("UPDATE %d %d %d %f", n, n%nx, n/nx, potential[n]);
-        if (pot < threshold_)    // low-cost buffer block
-                {
-            if (potential[n - 1] > pot + le)
-                push_next(n-1);
-            if (potential[n + 1] > pot + re)
-                push_next(n+1);
-            if (potential[n - nx_] > pot + ue)
-                push_next(n-nx_);
-            if (potential[n + nx_] > pot + de)
-                push_next(n+nx_);
-        } else            // overflow block
-        {
-            if (potential[n - 1] > pot + le)
-                push_over(n-1);
-            if (potential[n + 1] > pot + re)
-                push_over(n+1);
-            if (potential[n - nx_] > pot + ue)
-                push_over(n-nx_);
-            if (potential[n + nx_] > pot + de)
-                push_over(n+nx_);
+        if (tick_count_==0) { // Push back horizontals first
+            if (pot < threshold_)    // low-cost buffer block
+                    {
+                if (potential[n - 1] > pot + le)
+                    push_next(n-1);
+                if (potential[n + 1] > pot + re)
+                    push_next(n+1);
+                if (potential[n - nx_] > pot + ue)
+                    push_next(n-nx_);
+                if (potential[n + nx_] > pot + de)
+                    push_next(n+nx_);
+            } else            // overflow block
+            {
+                if (potential[n - 1] > pot + le)
+                    push_over(n-1);
+                if (potential[n + 1] > pot + re)
+                    push_over(n+1);
+                if (potential[n - nx_] > pot + ue)
+                    push_over(n-nx_);
+                if (potential[n + nx_] > pot + de)
+                    push_over(n+nx_);
+            }            
+        }
+        else { // Push back verticals first
+            if (pot < threshold_)    // low-cost buffer block
+                    {
+                if (potential[n - nx_] > pot + ue)
+                    push_next(n-nx_);
+                if (potential[n + nx_] > pot + de)
+                    push_next(n+nx_);
+                if (potential[n - 1] > pot + le)
+                    push_next(n-1);
+                if (potential[n + 1] > pot + re)
+                    push_next(n+1);
+            } else            // overflow block
+            {
+                if (potential[n - nx_] > pot + ue)
+                    push_over(n-nx_);
+                if (potential[n + nx_] > pot + de)
+                    push_over(n+nx_);
+                if (potential[n - 1] > pot + le)
+                    push_over(n-1);
+                if (potential[n + 1] > pot + re)
+                    push_over(n+1);
+            }                        
         }
     }
 }

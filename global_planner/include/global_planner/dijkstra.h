@@ -100,6 +100,7 @@ class DijkstraExpansion : public Expander {
         int currentEnd_, nextEnd_, overEnd_; /**< end points of arrays */
         bool *pending_; /**< pending_ cells during propagation */
         bool precise_;
+        int tick_count_; // counter for selecting cell push_back ordering
 
         /** block priority thresholds */
         float threshold_; /**< current threshold */
