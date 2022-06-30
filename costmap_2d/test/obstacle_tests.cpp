@@ -73,7 +73,7 @@ using namespace costmap_2d;
 TEST(costmap, testRaytracing){
   tf2_ros::Buffer tf;
 
-  LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
+  LayeredCostmap layers("frame", "base", false, false);  // Not rolling window, not tracking unknown
   addStaticLayer(layers, tf);  // This adds the static map
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
   
@@ -95,7 +95,7 @@ TEST(costmap, testRaytracing){
  */
 TEST(costmap, testRaytracing2){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   addStaticLayer(layers, tf);
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
@@ -153,7 +153,7 @@ TEST(costmap, testWaveInterference){
   tf2_ros::Buffer tf;
 
   // Start with an empty map, no rolling window, tracking unknown
-  LayeredCostmap layers("frame", false, true);
+  LayeredCostmap layers("frame", "base", false, true);
   layers.resizeMap(10, 10, 1, 0, 0);
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
 
@@ -181,7 +181,7 @@ TEST(costmap, testWaveInterference){
 TEST(costmap, testZThreshold){
   tf2_ros::Buffer tf;
   // Start with an empty map
-  LayeredCostmap layers("frame", false, true);
+  LayeredCostmap layers("frame", "base", false, true);
   layers.resizeMap(10, 10, 1, 0, 0);
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
@@ -202,7 +202,7 @@ TEST(costmap, testZThreshold){
  */
 TEST(costmap, testDynamicObstacles){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   addStaticLayer(layers, tf);
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
@@ -228,7 +228,7 @@ TEST(costmap, testDynamicObstacles){
  */
 TEST(costmap, testMultipleAdditions){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   addStaticLayer(layers, tf);
 
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
