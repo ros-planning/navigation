@@ -264,7 +264,7 @@ bool GradientPath::getPath(float* potential, double start_x, double start_y, dou
 // calculate gradient at a cell
 // positive value are to the right and down
 float GradientPath::gradCell(float* potential, int n) {
-    if (gradx_[n] + grady_[n] > 0.0)    // check this cell
+    if (fabs(gradx_[n]) + fabs(grady_[n]) > 0.0)    // check this cell
         return 1.0;
 
     if (n < xs_ || n > xs_ * ys_ - xs_)    // would be out of bounds
