@@ -80,8 +80,8 @@ namespace dwa_local_planner {
       limits.acc_lim_trans = config.acc_lim_trans;
       limits.xy_goal_tolerance = config.xy_goal_tolerance;
       limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
-      limits.yaw_slowdown_tolerance = config.yaw_slowdown_tolerance;
-      limits.slowdown_vel_theta = config.slowdown_vel_theta;
+      limits.spin_turn_tolerance = config.spin_turn_tolerance;
+      limits.spin_turn_vel_theta = config.spin_turn_vel_theta;
       limits.prune_plan = config.prune_plan;
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.theta_stopped_vel = config.theta_stopped_vel;
