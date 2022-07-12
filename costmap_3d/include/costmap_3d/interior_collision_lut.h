@@ -44,7 +44,6 @@
 #include <fcl/geometry/octree/octree.h>
 #include <fcl/narrowphase/distance.h>
 #include <pcl/point_types.h>
-#include <pcl/io/vtk_lib_io.h>
 #include <costmap_3d/fcl_helper.h>
 #include <costmap_3d/crop_hull.h>
 #include <costmap_3d/octree_solver.h>

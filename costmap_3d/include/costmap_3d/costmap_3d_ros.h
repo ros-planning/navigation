@@ -264,7 +264,7 @@ private:
   // std::less does not work on Eigen3 vectors, so use this comparator.
   struct QueryMapKeyCompare
   {
-    bool operator()(const QueryMapKey& lhs, const QueryMapKey& rhs)
+    bool operator()(const QueryMapKey& lhs, const QueryMapKey& rhs) const
     {
       const auto& lhs0 = std::get<0>(lhs);
       const auto& lhs1 = std::get<1>(lhs);
