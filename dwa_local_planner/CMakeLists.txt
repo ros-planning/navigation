@@ -8,6 +8,8 @@ find_package(catkin REQUIRED
             cmake_modules
             costmap_2d
             dynamic_reconfigure
+            mbf_costmap_core
+            mbf_msgs
             nav_core
             nav_msgs
             pluginlib
@@ -38,6 +40,9 @@ catkin_package(
     CATKIN_DEPENDS
         base_local_planner
         dynamic_reconfigure
+        mbf_costmap_core
+        mbf_msgs
+        nav_core
         nav_msgs
         pluginlib
         sensor_msgs

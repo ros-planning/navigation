@@ -49,8 +49,10 @@
 
 #include <nav_core/parameter_magic.h>
 
-//register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
+#include <mbf_msgs/ExePathAction.h>
+
+// register this planner as a MBF's CostmapController plugin
+PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, mbf_costmap_core::CostmapController)
 
 namespace dwa_local_planner {
 
@@ -157,7 +159,7 @@ namespace dwa_local_planner {
     return dp_->setPlan(orig_global_plan);
   }
 
-  bool DWAPlannerROS::isGoalReached() {
+  bool DWAPlannerROS::isGoalReached(double, double) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
@@ -193,11 +195,13 @@ namespace dwa_local_planner {
 
 
 
-  bool DWAPlannerROS::dwaComputeVelocityCommands(geometry_msgs::PoseStamped &global_pose, geometry_msgs::Twist& cmd_vel) {
+  uint32_t DWAPlannerROS::dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose,
+                                                     geometry_msgs::TwistStamped& cmd_vel, std::string& message) {
     // dynamic window sampling approach to get useful velocity commands
     if(! isInitialized()){
-      ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
-      return false;
+      message = "This planner has not been initialized, please call initialize() before using this planner";
+      ROS_ERROR_STREAM_NAMED("dwa_local_planner", message);
+      return mbf_msgs::ExePathResult::NOT_INITIALIZED;
     }
 
     geometry_msgs::PoseStamped robot_vel;
@@ -226,22 +230,23 @@ namespace dwa_local_planner {
     */
 
     //pass along drive commands
-    cmd_vel.linear.x = drive_cmds.pose.position.x;
-    cmd_vel.linear.y = drive_cmds.pose.position.y;
-    cmd_vel.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
+    cmd_vel.twist.linear.x = drive_cmds.pose.position.x;
+    cmd_vel.twist.linear.y = drive_cmds.pose.position.y;
+    cmd_vel.twist.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
     //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
     if(path.cost_ < 0) {
-      ROS_DEBUG_NAMED("dwa_local_planner",
-          "The dwa local planner failed to find a valid plan, cost functions discarded all candidates. This can mean there is an obstacle too close to the robot.");
+      message = "The dwa local planner failed to find a valid plan, cost functions discarded all candidates. This can mean there is an obstacle too close to the robot";
+      ROS_DEBUG_STREAM_NAMED("dwa_local_planner", message);  //// TODO why is this DEBUG?
       local_plan.clear();
       publishLocalPlan(local_plan);
-      return false;
+      return mbf_msgs::ExePathResult::NO_VALID_CMD;
     }
 
     ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.", 
-                    cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z);
+                    cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z);
+    cmd_vel.header.stamp = ros::Time::now();
 
     // Fill out the local plan
     for(unsigned int i = 0; i < path.getPointsSize(); ++i) {
@@ -263,28 +268,30 @@ namespace dwa_local_planner {
     //publish information to the visualizer
 
     publishLocalPlan(local_plan);
-    return true;
+    return mbf_msgs::ExePathResult::SUCCESS;
   }
 
-
-
-
-  bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
+  uint32_t DWAPlannerROS::computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+                                                  const geometry_msgs::TwistStamped& velocity,
+                                                  geometry_msgs::TwistStamped& cmd_vel, std::string& message) {
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
     if ( ! costmap_ros_->getRobotPose(current_pose_)) {
-      ROS_ERROR("Could not get robot pose");
-      return false;
+      message = "Could not get robot pose";
+      ROS_ERROR_STREAM_NAMED("dwa_local_planner", message);
+      return mbf_msgs::ExePathResult::TF_ERROR;
     }
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
     if ( ! planner_util_.getLocalPlan(current_pose_, transformed_plan)) {
-      ROS_ERROR("Could not get local plan");
-      return false;
+      message = "Could not get local plan";
+      ROS_ERROR_STREAM_NAMED("dwa_local_planner", message);
+      return mbf_msgs::ExePathResult::TF_ERROR;
     }
 
     //if the global plan passed in is empty... we won't do anything
     if(transformed_plan.empty()) {
-      ROS_WARN_NAMED("dwa_local_planner", "Received an empty transformed plan.");
-      return false;
+      message = "Received an empty transformed plan";
+      ROS_ERROR_STREAM_NAMED("dwa_local_planner", message);
+      return mbf_msgs::ExePathResult::INVALID_PATH;
     }
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
 
@@ -299,31 +306,32 @@ namespace dwa_local_planner {
       publishLocalPlan(local_plan);
       base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
       if (latchedStopRotateController_.computeVelocityCommandsStopRotate(
-              cmd_vel,
+              cmd_vel.twist,
               limits.getAccLimits(),
               dp_->getSimPeriod(),
               &planner_util_,
               odom_helper_,
               current_pose_,
               boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3))) {
-          return true;
+        cmd_vel.header.stamp = ros::Time::now();
+        return mbf_msgs::ExePathResult::SUCCESS;
       }
       else {
           // reset latching since DWA planner can move forward / backwards
           latchedStopRotateController_.resetLatching();
-          ROS_INFO("can't rotate in place; fall back to DWA planner");
+          ROS_INFO_NAMED("dwa_local_planner", "can't rotate in place; fall back to DWA planner");
       }
     }
 
-    bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
-    if (isOk) {
+    uint32_t result = dwaComputeVelocityCommands(current_pose_, cmd_vel, message);
+    if (result == mbf_msgs::ExePathResult::SUCCESS) {
       publishGlobalPlan(transformed_plan);
     } else {
       ROS_WARN_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
       std::vector<geometry_msgs::PoseStamped> empty_plan;
       publishGlobalPlan(empty_plan);
     }
-   return isOk;
+   return result;
 
   }
 

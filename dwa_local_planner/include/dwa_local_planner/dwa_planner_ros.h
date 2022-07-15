@@ -50,10 +50,11 @@
 #include <nav_msgs/Odometry.h>
 
 #include <costmap_2d/costmap_2d_ros.h>
-#include <nav_core/base_local_planner.h>
 #include <base_local_planner/latched_stop_rotate_controller.h>
 
 #include <base_local_planner/odometry_helper_ros.h>
+
+#include <mbf_costmap_core/costmap_controller.h>
 
 #include <dwa_local_planner/dwa_planner.h>
 
@@ -63,7 +64,7 @@ namespace dwa_local_planner {
    * @brief ROS Wrapper for the DWAPlanner that adheres to the
    * BaseLocalPlanner interface and can be used as a plugin for move_base.
    */
-  class DWAPlannerROS : public nav_core::BaseLocalPlanner {
+  class DWAPlannerROS : public mbf_costmap_core::CostmapController {
     public:
       /**
        * @brief  Constructor for DWAPlannerROS wrapper
@@ -87,19 +88,44 @@ namespace dwa_local_planner {
       /**
        * @brief  Given the current position, orientation, and velocity of the robot,
        * compute velocity commands to send to the base
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
+       * @param pose the current pose of the robot.
+       * @param velocity the current velocity of the robot.
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base.
+       * @param message Optional more detailed outcome as a string.
+       * @return Result code as described on ExePath action result:
+       *         SUCCESS         = 0
+       *         1..9 are reserved as plugin specific non-error results
+       *         FAILURE         = 100   Unspecified failure, only used for old, non-mfb_core based plugins
+       *         CANCELED        = 101
+       *         NO_VALID_CMD    = 102
+       *         PAT_EXCEEDED    = 103
+       *         COLLISION       = 104
+       *         OSCILLATION     = 105
+       *         ROBOT_STUCK     = 106
+       *         MISSED_GOAL     = 107
+       *         MISSED_PATH     = 108
+       *         BLOCKED_PATH    = 109
+       *         INVALID_PATH    = 110
+       *         TF_ERROR        = 111
+       *         NOT_INITIALIZED = 112
+       *         INVALID_PLUGIN  = 113
+       *         INTERNAL_ERROR  = 114
+       *         121..149 are reserved as plugin specific errors
        */
-      bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
-
+      uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+                                       const geometry_msgs::TwistStamped& velocity,
+                                       geometry_msgs::TwistStamped& cmd_vel, std::string& message);
 
       /**
        * @brief  Given the current position, orientation, and velocity of the robot,
        * compute velocity commands to send to the base, using dynamic window approach
-       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
-       * @return True if a valid trajectory was found, false otherwise
+       * @param global_pose the current pose of the robot.
+       * @param cmd_vel Will be filled with the velocity command to be passed to the robot base.
+       * @param message Optional more detailed outcome as a string.
+       * @return Result code as described on ExePath action result (see computeVelocityCommands for details)
        */
-      bool dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose, geometry_msgs::Twist& cmd_vel);
+      uint32_t dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose,
+                                          geometry_msgs::TwistStamped& cmd_vel, std::string& message);
 
       /**
        * @brief  Set the plan that the controller is following
@@ -109,12 +135,17 @@ namespace dwa_local_planner {
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
       /**
-       * @brief  Check if the goal pose has been achieved
+       * @brief  Check if the goal pose has been achieved.
+       * The arguments are required by MBF controller API, but are ignored.
        * @return True if achieved, false otherwise
        */
-      bool isGoalReached();
+      bool isGoalReached(double, double);
 
-
+      /**
+       * @brief Requests the planner to cancel; not implemented for this planner
+       * @return True if a cancel has been successfully requested, false if not implemented.
+       */
+      bool cancel() { return false; };
 
       bool isInitialized() {
         return initialized_;
