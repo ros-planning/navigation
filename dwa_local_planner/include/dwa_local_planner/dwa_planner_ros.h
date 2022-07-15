@@ -160,7 +160,8 @@ namespace dwa_local_planner {
       bool setup_;
       geometry_msgs::PoseStamped current_pose_;
 
-      base_local_planner::LatchedStopRotateController latchedStopRotateController_;
+      base_local_planner::LatchedStopRotateController goalLatchedStopRotateController_;
+      base_local_planner::LatchedStopRotateController startLatchedStopRotateController_;
 
       double lowPassFilter(double kpre, double& pre_val, double cur_val);
       double kpre_default_ = 0.65;
