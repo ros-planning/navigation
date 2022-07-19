@@ -7,7 +7,8 @@ find_package(catkin REQUIRED
     costmap_2d
     dynamic_reconfigure
     geometry_msgs
-    nav_core
+    mbf_costmap_core
+    mbf_msgs
     navfn
     nav_msgs
     pluginlib
@@ -27,7 +28,8 @@ catkin_package(
     costmap_2d
     dynamic_reconfigure
     geometry_msgs
-    nav_core
+    mbf_costmap_core
+    mbf_msgs
     navfn
     nav_msgs
     pluginlib

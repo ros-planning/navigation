@@ -41,6 +41,8 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_ros/transform_listener.h>
 
+#include <mbf_msgs/GetPathAction.h>
+
 namespace cm = costmap_2d;
 namespace rm = geometry_msgs;
 
@@ -69,9 +71,11 @@ bool PlannerWithCostmap::makePlanService(navfn::MakeNavPlan::Request& req, navfn
 
     req.start.header.frame_id = "map";
     req.goal.header.frame_id = "map";
-    bool success = makePlan(req.start, req.goal, path);
-    resp.plan_found = success;
-    if (success) {
+    double cost;
+    std::string message;
+    uint32_t result = makePlan(req.start, req.goal, 0.0, path, cost, message);
+    resp.plan_found = result == mbf_msgs::GetPathResult::SUCCESS;
+    if (resp.plan_found) {
         resp.path = path;
     }
 
@@ -82,7 +86,9 @@ void PlannerWithCostmap::poseCallback(const rm::PoseStamped::ConstPtr& goal) {
     geometry_msgs::PoseStamped global_pose;
     cmap_->getRobotPose(global_pose);
     vector<PoseStamped> path;
-    makePlan(global_pose, *goal, path);
+    double cost;
+    std::string message;
+    makePlan(global_pose, *goal, 0.0, path, cost, message);
 }
 
 PlannerWithCostmap::PlannerWithCostmap(string name, Costmap2DROS* cmap) :

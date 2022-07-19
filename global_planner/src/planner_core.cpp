@@ -46,8 +46,10 @@
 #include <global_planner/gradient_path.h>
 #include <global_planner/quadratic_calculator.h>
 
-//register this planner as a BaseGlobalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
+#include <mbf_msgs/GetPathAction.h>
+
+//register this planner as a MBF's CostmapPlanner plugin
+PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, mbf_costmap_core::CostmapPlanner)
 
 namespace global_planner {
 
@@ -181,7 +183,9 @@ void GlobalPlanner::clearRobotCell(const geometry_msgs::PoseStamped& global_pose
 }
 
 bool GlobalPlanner::makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp) {
-    makePlan(req.start, req.goal, resp.plan.poses);
+    double cost;
+    std::string message;
+    makePlan(req.start, req.goal, 0.0, resp.plan.poses, cost, message);
 
     resp.plan.header.stamp = ros::Time::now();
     resp.plan.header.frame_id = frame_id_;
@@ -210,18 +214,14 @@ bool GlobalPlanner::worldToMap(double wx, double wy, double& mx, double& my) {
     return false;
 }
 
-bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
-                           std::vector<geometry_msgs::PoseStamped>& plan) {
-    return makePlan(start, goal, default_tolerance_, plan);
-}
-
-bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
-                           double tolerance, std::vector<geometry_msgs::PoseStamped>& plan) {
+uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
+                                 double tolerance, std::vector<geometry_msgs::PoseStamped>& plan, double& cost,
+                                 std::string& message) {
     boost::mutex::scoped_lock lock(mutex_);
     if (!initialized_) {
-        ROS_ERROR(
-                "This planner has not been initialized yet, but it is being used, please call initialize() before use");
-        return false;
+        message = "This planner has not been initialized yet, but it is being used, please call initialize() before use";
+        ROS_ERROR_STREAM(message);
+        return mbf_msgs::GetPathResult::NOT_INITIALIZED;
     }
 
     //clear the plan, just in case
@@ -232,15 +232,15 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
 
     //until tf can handle transforming things that are way in the past... we'll require the goal to be in our global frame
     if (goal.header.frame_id != global_frame) {
-        ROS_ERROR(
-                "The goal pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", global_frame.c_str(), goal.header.frame_id.c_str());
-        return false;
+      message = "The goal pose passed to this planner must be in the " + global_frame + " frame. It is instead in the " + goal.header.frame_id + " frame";
+      ROS_ERROR_STREAM(message);
+      return mbf_msgs::GetPathResult::INVALID_GOAL;
     }
 
     if (start.header.frame_id != global_frame) {
-        ROS_ERROR(
-                "The start pose passed to this planner must be in the %s frame.  It is instead in the %s frame.", global_frame.c_str(), start.header.frame_id.c_str());
-        return false;
+        message = "The start pose passed to this planner must be in the " + global_frame + " frame. It is instead in the " + start.header.frame_id + " frame";
+        ROS_ERROR_STREAM(message);
+        return mbf_msgs::GetPathResult::INVALID_START;
     }
 
     double wx = start.pose.position.x;
@@ -250,9 +250,9 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     double start_x, start_y, goal_x, goal_y;
 
     if (!costmap_->worldToMap(wx, wy, start_x_i, start_y_i)) {
-        ROS_WARN(
-                "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
-        return false;
+        message = "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?";
+        ROS_ERROR_STREAM(message);
+        return mbf_msgs::GetPathResult::OUT_OF_MAP;
     }
     if(old_navfn_behavior_){
         start_x = start_x_i;
@@ -265,9 +265,9 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     wy = goal.pose.position.y;
 
     if (!costmap_->worldToMap(wx, wy, goal_x_i, goal_y_i)) {
-        ROS_WARN_THROTTLE(1.0,
-                "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal.");
-        return false;
+        message = "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal";
+        ROS_ERROR_STREAM(message);
+        return mbf_msgs::GetPathResult::INVALID_GOAL;
     }
     if(old_navfn_behavior_){
         goal_x = goal_x_i;
@@ -306,10 +306,12 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
             goal_copy.header.stamp = ros::Time::now();
             plan.push_back(goal_copy);
         } else {
-            ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
+            message = "Failed to get a plan from potential when a legal potential was found. This shouldn't happen";
+            ROS_ERROR_STREAM(message);
         }
     }else{
-        ROS_ERROR("Failed to get a plan.");
+        message = "Failed to get a plan";
+        ROS_ERROR_STREAM(message);
     }
 
     // add orientations if needed
@@ -318,7 +320,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     //publish the plan for visualization purposes
     publishPlan(plan);
     delete[] potential_array_;
-    return !plan.empty();
+    return plan.empty() ? mbf_msgs::GetPathResult::NO_PATH_FOUND : mbf_msgs::GetPathResult::SUCCESS;
 }
 
 void GlobalPlanner::publishPlan(const std::vector<geometry_msgs::PoseStamped>& path) {

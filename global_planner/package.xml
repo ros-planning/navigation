@@ -22,7 +22,8 @@
   <depend>costmap_2d</depend>
   <depend>dynamic_reconfigure</depend>
   <depend>geometry_msgs</depend>
-  <depend>nav_core</depend>
+  <depend>mbf_costmap_core</depend>
+  <depend>mbf_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>navfn</depend>
   <depend>pluginlib</depend>
@@ -30,7 +31,7 @@
   <depend>tf2_ros</depend>
 
   <export>
-      <nav_core plugin="${prefix}/bgp_plugin.xml" />
+    <mbf_costmap_core plugin="${prefix}/bgp_plugin.xml" />
   </export>
 
 </package>

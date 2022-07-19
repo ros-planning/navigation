@@ -44,7 +44,7 @@
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/Path.h>
 #include <vector>
-#include <nav_core/base_global_planner.h>
+#include <mbf_costmap_core/costmap_planner.h>
 #include <nav_msgs/GetPlan.h>
 #include <dynamic_reconfigure/server.h>
 #include <global_planner/potential_calculator.h>
@@ -63,7 +63,7 @@ class GridPath;
  * @brief Provides a ROS wrapper for the global_planner planner which runs a fast, interpolated navigation function on a costmap.
  */
 
-class GlobalPlanner : public nav_core::BaseGlobalPlanner {
+class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
     public:
         /**
          * @brief  Default constructor for the PlannerCore object
@@ -96,22 +96,29 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
          * @brief Given a goal pose in the world, compute a plan
          * @param start The start pose
          * @param goal The goal pose
+         * @param tolerance If the goal is obstructed, how many meters the planner can relax the constraint
+         *        in x and y before failing
          * @param plan The plan... filled by the planner
-         * @return True if a valid plan was found, false otherwise
+         * @param cost The cost for the the plan
+         * @param message Optional more detailed outcome as a string
+         * @return Result code as described on GetPath action result:
+         *         SUCCESS         = 0
+         *         1..9 are reserved as plugin specific non-error results
+         *         FAILURE         = 50  # Unspecified failure, only used for old, non-mfb_core based plugins
+         *         CANCELED        = 51
+         *         INVALID_START   = 52
+         *         INVALID_GOAL    = 53
+         *         NO_PATH_FOUND   = 54
+         *         PAT_EXCEEDED    = 55
+         *         EMPTY_PATH      = 56
+         *         TF_ERROR        = 57
+         *         NOT_INITIALIZED = 58
+         *         INVALID_PLUGIN  = 59
+         *         INTERNAL_ERROR  = 60
+         *         71..99 are reserved as plugin specific errors
          */
-        bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
-                      std::vector<geometry_msgs::PoseStamped>& plan);
-
-        /**
-         * @brief Given a goal pose in the world, compute a plan
-         * @param start The start pose
-         * @param goal The goal pose
-         * @param tolerance The tolerance on the goal point for the planner
-         * @param plan The plan... filled by the planner
-         * @return True if a valid plan was found, false otherwise
-         */
-        bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double tolerance,
-                      std::vector<geometry_msgs::PoseStamped>& plan);
+        uint32_t makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double tolerance,
+                          std::vector<geometry_msgs::PoseStamped>& plan, double& cost, std::string& message);
 
         /**
          * @brief  Computes the full navigation function for the map given a point in the world to start from
@@ -162,6 +169,12 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
         void publishPlan(const std::vector<geometry_msgs::PoseStamped>& path);
 
         bool makePlanService(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& resp);
+
+        bool cancel()
+        {
+          // not implemented
+          return false;
+        }
 
     protected:
 
