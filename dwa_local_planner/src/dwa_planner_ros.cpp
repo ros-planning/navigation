@@ -204,6 +204,23 @@ namespace dwa_local_planner {
     }
 
     if(goalLatchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_)) {
+      geometry_msgs::PoseStamped goal_pose;
+      if (!planner_util_.getGoal(goal_pose))
+      {
+        ROS_ERROR("Could not get goal pose");
+        return false;
+      }
+      double x = goal_pose.pose.position.x - current_pose_.pose.position.x;
+      double y = goal_pose.pose.position.y - current_pose_.pose.position.y;
+      double d = std::sqrt(x * x + y * y);
+      double xy_goal_tolerance = planner_util_.getCurrentLimits().xy_goal_tolerance;
+      if (xy_goal_tolerance < d)
+      {
+        ROS_WARN("Not reaching goal.");
+        goalLatchedStopRotateController_.resetLatching();
+        return false;
+      }
+
       ROS_INFO("Goal reached");
       std_srvs::Empty empty_srvs;
       this->nomotion_update_client_.call(empty_srvs);
@@ -488,6 +505,7 @@ namespace dwa_local_planner {
         publishGlobalPlan(empty_plan);
       }
       this->startLatchedStopRotateController_.resetLatching();
+      this->goalLatchedStopRotateController_.resetLatching();
       return isOk;
     }
   }
