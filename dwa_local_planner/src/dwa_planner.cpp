@@ -79,7 +79,7 @@ namespace dwa_local_planner {
     forward_point_distance_ = config.forward_point_distance;
     goal_front_costs_.setXShift(forward_point_distance_);
     alignment_costs_.setXShift(forward_point_distance_);
- 
+
     // obstacle costs can vary due to scaling footprint feature
     obstacle_costs_.setParams(config.max_vel_trans, config.max_forward_inflation, config.max_sideward_inflation, config.scaling_speed);
 
@@ -92,29 +92,29 @@ namespace dwa_local_planner {
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
     vth_samp = config.vth_samples;
- 
+
     if (vx_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the x dimension. We'll at least assume that you want to sample one value... so we're going to set vx_samples to 1 instead");
       vx_samp = 1;
       config.vx_samples = vx_samp;
     }
- 
+
     if (vy_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the y dimension. We'll at least assume that you want to sample one value... so we're going to set vy_samples to 1 instead");
       vy_samp = 1;
       config.vy_samples = vy_samp;
     }
- 
+
     if (vth_samp <= 0) {
       ROS_WARN("You've specified that you don't want any samples in the th dimension. We'll at least assume that you want to sample one value... so we're going to set vth_samples to 1 instead");
       vth_samp = 1;
       config.vth_samples = vth_samp;
     }
- 
+
     vsamples_[0] = vx_samp;
     vsamples_[1] = vy_samp;
     vsamples_[2] = vth_samp;
- 
+
 
   }
 
@@ -217,6 +217,10 @@ namespace dwa_local_planner {
       oscillation_costs_.resetOscillationFlags();
     }
     return planner_util_->setPlan(orig_global_plan);
+  }
+
+  std::vector<geometry_msgs::Point> DWAPlanner::getScaledFootprint(const base_local_planner::Trajectory &traj) const {
+    return obstacle_costs_.getScaledFootprint(traj);
   }
 
   /**

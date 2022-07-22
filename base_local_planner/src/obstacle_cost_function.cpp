@@ -42,7 +42,7 @@
 
 namespace base_local_planner {
 
-ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap) 
+ObstacleCostFunction::ObstacleCostFunction(costmap_2d::Costmap2D* costmap)
     : costmap_(costmap), sum_scores_(false) {
   if (costmap != NULL) {
     world_model_ = new base_local_planner::CostmapModel(*costmap_);
@@ -68,21 +68,9 @@ void ObstacleCostFunction::setFootprint(std::vector<geometry_msgs::Point> footpr
   footprint_spec_ = footprint_spec;
 }
 
-bool ObstacleCostFunction::prepare() {
-  return true;
-}
-
-double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
-  double cost = 0;
-  double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_);
-  double px, py, pth;
-  if (footprint_spec_.size() == 0) {
-    // Bug, should never happen
-    ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
-    return -9;
-  }
-
+std::vector<geometry_msgs::Point> ObstacleCostFunction::getScaledFootprint(const Trajectory& traj) const {
   std::vector<geometry_msgs::Point> scaled_footprint = footprint_spec_;
+  const double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_);
   if (scale != 0.0) {
     const bool fwd = traj.xv_ > 0;
     const double forward_inflation = scale * max_forward_inflation_;
@@ -96,6 +84,23 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
       }
     }
   }
+  return scaled_footprint;
+}
+
+bool ObstacleCostFunction::prepare() {
+  return true;
+}
+
+double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
+  double cost = 0;
+  double px, py, pth;
+  if (footprint_spec_.size() == 0) {
+    // Bug, should never happen
+    ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
+    return -9;
+  }
+
+  std::vector<geometry_msgs::Point> scaled_footprint = getScaledFootprint(traj);
 
    const unsigned int point_size = traj.getPointsSize();
   // ignore first trajectory point since it is the same for all trajectories,
@@ -118,7 +123,7 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   return cost;
 }
 
-double ObstacleCostFunction::getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel) {
+double ObstacleCostFunction::getScalingFactor(const Trajectory &traj, double scaling_speed, double max_trans_vel) {
   double vmag = hypot(traj.xv_, traj.yv_);
 
   //if we're over a certain speed threshold, we'll scale the robot's

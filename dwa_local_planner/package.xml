@@ -43,11 +43,10 @@
     <depend>tf2</depend>
     <depend>tf2_geometry_msgs</depend>
     <depend>tf2_ros</depend>
+    <depend>visualization_msgs</depend>
 
     <export>
         <mbf_costmap_core plugin="${prefix}/blp_plugin.xml" />
     </export>
 
 </package>
-
-

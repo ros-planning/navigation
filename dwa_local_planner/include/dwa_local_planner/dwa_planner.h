@@ -73,7 +73,7 @@ namespace dwa_local_planner {
     public:
       /**
        * @brief  Constructor for the planner
-       * @param name The name of the planner 
+       * @param name The name of the planner
        * @param costmap_ros A pointer to the costmap instance the planner should use
        * @param global_frame the frame id of the tf frame to use
        */
@@ -98,8 +98,8 @@ namespace dwa_local_planner {
 
       /**
        * @brief Given the current position and velocity of the robot, find the best trajectory to exectue
-       * @param global_pose The current position of the robot 
-       * @param global_vel The current velocity of the robot 
+       * @param global_pose The current position of the robot
+       * @param global_vel The current velocity of the robot
        * @param drive_velocities The velocities to send to the robot base
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
@@ -117,7 +117,7 @@ namespace dwa_local_planner {
        * The obstacle cost function gets the footprint.
        * The path and goal cost functions get the global_plan
        * The alignment cost functions get a version of the global plan
-       *   that is modified based on the global_pose 
+       *   that is modified based on the global_pose
        */
       void updatePlanAndLocalCosts(const geometry_msgs::PoseStamped& global_pose,
           const std::vector<geometry_msgs::PoseStamped>& new_plan,
@@ -145,6 +145,13 @@ namespace dwa_local_planner {
        * sets new plan and resets state
        */
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+
+      /**
+       * @brief Gets the footprint of the robot scaled by the given trajectory
+       * @param traj Trajectory to evaluate
+       * @return Scaled footprint
+       */
+      std::vector<geometry_msgs::Point> getScaledFootprint(const base_local_planner::Trajectory &traj) const;
 
     private:
 

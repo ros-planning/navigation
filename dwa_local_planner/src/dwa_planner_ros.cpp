@@ -45,6 +45,7 @@
 
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
+#include <visualization_msgs/Marker.h>
 #include <tf2/utils.h>
 
 #include <nav_core/parameter_magic.h>
@@ -105,6 +106,7 @@ namespace dwa_local_planner {
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
       l_plan_pub_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
+      scaled_fp_pub_ = private_nh.advertise<visualization_msgs::Marker>("scaled_footprint", 1);
       tf_ = tf;
       costmap_ros_ = costmap_ros;
       costmap_ros_->getRobotPose(current_pose_);
@@ -121,7 +123,7 @@ namespace dwa_local_planner {
       {
         odom_helper_.setOdomTopic( odom_topic_ );
       }
-      
+
       initialized_ = true;
 
       // Warn about deprecated parameters -- remove this block in N-turtle
@@ -140,7 +142,7 @@ namespace dwa_local_planner {
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
   }
-  
+
   bool DWAPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
@@ -188,6 +190,20 @@ namespace dwa_local_planner {
     base_local_planner::publishPlan(path, g_plan_pub_);
   }
 
+  void DWAPlannerROS::publishScaledFootprint(const geometry_msgs::PoseStamped& pose, const base_local_planner::Trajectory &traj) const {
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = pose.header.frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.lifetime = ros::Duration(2 * dp_->getSimPeriod()); // double the sim period to avoid flickering
+    marker.type = visualization_msgs::Marker::LINE_STRIP;
+    marker.pose = pose.pose;
+    marker.scale.x = 0.01;
+    marker.color.g = marker.color.a = 1.0; // green
+    marker.points = dp_->getScaledFootprint(traj);
+    marker.points.push_back(marker.points.front()); // close the polygon
+    scaled_fp_pub_.publish(marker);
+  }
+
   DWAPlannerROS::~DWAPlannerROS(){
     //make sure to clean things up
     delete dsrv_;
@@ -216,7 +232,7 @@ namespace dwa_local_planner {
     //compute what trajectory to drive along
     geometry_msgs::PoseStamped drive_cmds;
     drive_cmds.header.frame_id = costmap_ros_->getBaseFrameID();
-    
+
     // call with updated footprint
     base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
@@ -244,7 +260,7 @@ namespace dwa_local_planner {
       return mbf_msgs::ExePathResult::NO_VALID_CMD;
     }
 
-    ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.", 
+    ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.",
                     cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z);
     cmd_vel.header.stamp = ros::Time::now();
 
@@ -266,7 +282,7 @@ namespace dwa_local_planner {
     }
 
     //publish information to the visualizer
-
+    publishScaledFootprint(global_pose, path);
     publishLocalPlan(local_plan);
     return mbf_msgs::ExePathResult::SUCCESS;
   }

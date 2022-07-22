@@ -161,10 +161,12 @@ namespace dwa_local_planner {
 
       void publishGlobalPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
+      void publishScaledFootprint(const geometry_msgs::PoseStamped& pose, const base_local_planner::Trajectory &traj) const;
+
       tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
 
       // for visualisation, publishers of global and local plan
-      ros::Publisher g_plan_pub_, l_plan_pub_;
+      ros::Publisher g_plan_pub_, l_plan_pub_, scaled_fp_pub_;
 
       base_local_planner::LocalPlannerUtil planner_util_;
 
