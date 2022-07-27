@@ -174,8 +174,9 @@ namespace dwa_local_planner {
     if (this->latch_unlock_distance_ < d)
     {
       //when we get a new plan, we also want to clear any latch we may have on goal tolerances
-      latchedStopRotateController_.resetLatching();
+      startLatchedStopRotateController_.resetLatching();
     }
+    goalLatchedStopRotateController_.resetLatching();
     if ((this->is_actuator_connect_ && this->use_rotate_first_actuator_connect_) ||
         (!this->is_actuator_connect_ && this->use_rotate_first_actuator_disconnect_))
     {
@@ -202,7 +203,24 @@ namespace dwa_local_planner {
       return false;
     }
 
-    if(latchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_)) {
+    if(goalLatchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_)) {
+      geometry_msgs::PoseStamped goal_pose;
+      if (!planner_util_.getGoal(goal_pose))
+      {
+        ROS_ERROR("Could not get goal pose");
+        return false;
+      }
+      double x = goal_pose.pose.position.x - current_pose_.pose.position.x;
+      double y = goal_pose.pose.position.y - current_pose_.pose.position.y;
+      double d = std::sqrt(x * x + y * y);
+      double xy_goal_tolerance = planner_util_.getCurrentLimits().xy_goal_tolerance;
+      if (xy_goal_tolerance < d)
+      {
+        ROS_WARN("Not reaching goal.");
+        goalLatchedStopRotateController_.resetLatching();
+        return false;
+      }
+
       ROS_INFO("Goal reached");
       std_srvs::Empty empty_srvs;
       this->nomotion_update_client_.call(empty_srvs);
@@ -376,7 +394,7 @@ namespace dwa_local_planner {
     vel_cmd_mode_marker_msg_.scale.z = 0.3;
     vel_cmd_mode_marker_msg_.color.a = 1.0;
 
-    if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
+    if (goalLatchedStopRotateController_.isPositionReached(&planner_util_, current_pose_))
     {
       vel_cmd_mode_msg_.data = 1;
       vel_cmd_mode_marker_msg_.color.r = 1.0;
@@ -392,7 +410,7 @@ namespace dwa_local_planner {
       publishGlobalPlan(transformed_plan);
       publishLocalPlan(local_plan);
       base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
-      return latchedStopRotateController_.computeVelocityCommandsStopRotate(
+      return goalLatchedStopRotateController_.computeVelocityCommandsStopRotate(
           cmd_vel,
           limits.getAccLimits(),
           dp_->getSimPeriod(),
@@ -452,7 +470,7 @@ namespace dwa_local_planner {
       double turn_turget_th = std::atan2(turn_turget_y - current_y, turn_turget_x - current_x);
       base_local_planner::LocalPlannerLimits limits = planner_util_.getCurrentLimits();
 
-      bool was_rotate = latchedStopRotateController_.rotateToGoal(
+      bool was_rotate = startLatchedStopRotateController_.rotateToGoal(
         current_pose_,
         robot_vel,
         turn_turget_th,
@@ -481,12 +499,13 @@ namespace dwa_local_planner {
       bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
       if (isOk) {
         publishGlobalPlan(transformed_plan);
-        this->latchedStopRotateController_.resetLatching();
       } else {
         ROS_WARN_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
         std::vector<geometry_msgs::PoseStamped> empty_plan;
         publishGlobalPlan(empty_plan);
       }
+      this->startLatchedStopRotateController_.resetLatching();
+      this->goalLatchedStopRotateController_.resetLatching();
       return isOk;
     }
   }
