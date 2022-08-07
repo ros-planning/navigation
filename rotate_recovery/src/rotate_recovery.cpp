@@ -187,5 +187,6 @@ bool RotateRecovery::runBehavior(const double rotation_angle)
 
     r.sleep();
   }
+  return false;
 }
 };  // namespace rotate_recovery
