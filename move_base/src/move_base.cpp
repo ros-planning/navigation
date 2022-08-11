@@ -1019,10 +1019,6 @@ namespace move_base {
             recovery_behaviors_[recovery_index_]->runBehavior();
             recovery_index_++;
           }
-          else
-          {
-            ROS_INFO("Map has been cleared and updated.");
-          }
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
