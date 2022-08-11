@@ -1043,9 +1043,12 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          ROS_INFO("Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
-          recovery_behaviors_carrying_[recovery_index_]->runBehavior();
-          recovery_index_++;
+          if (recovery_flag_ == true)
+          {
+            ROS_INFO("Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
+            recovery_behaviors_carrying_[recovery_index_]->runBehavior();
+            recovery_index_++;
+          }
 
           //we at least want to give the robot some time to stop oscillating after executing the behavior
           last_oscillation_reset_ = ros::Time::now();
