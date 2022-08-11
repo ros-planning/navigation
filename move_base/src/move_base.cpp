@@ -958,46 +958,46 @@ namespace move_base {
         }
         
         {
-         boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
         
-        if(tc_->computeVelocityCommands(cmd_vel)){
-          ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
-                           cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
-          last_valid_control_ = ros::Time::now();
-          //make sure that we send the velocity command to the base
-          vel_pub_.publish(cmd_vel);
-          cmd_vel_ = cmd_vel;
-          if(recovery_trigger_ == CONTROLLING_R)
-          {
-            recovery_index_ = 0;
-            recovery_flag_ = false;
+          if(tc_->computeVelocityCommands(cmd_vel)){
+            ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
+                              cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
+            last_valid_control_ = ros::Time::now();
+            //make sure that we send the velocity command to the base
+            vel_pub_.publish(cmd_vel);
+            cmd_vel_ = cmd_vel;
+            if(recovery_trigger_ == CONTROLLING_R)
+            {
+              recovery_index_ = 0;
+              recovery_flag_ = false;
+            }
           }
-        }
-        else {
-          ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
-          ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
+          else {
+            ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
+            ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
 
-          //check if we've tried to find a valid control for longer than our time limit
-          if(ros::Time::now() > attempt_end){
-            //we'll move into our obstacle clearing mode
-            publishZeroVelocity();
-            state_ = CLEARING;
-            recovery_trigger_ = CONTROLLING_R;
-          }
-          else{
-            //otherwise, if we can't find a valid control, we'll go back to planning
-            last_valid_plan_ = ros::Time::now();
-            planning_retries_ = 0;
-            state_ = PLANNING;
-            publishZeroVelocity();
+            //check if we've tried to find a valid control for longer than our time limit
+            if(ros::Time::now() > attempt_end){
+              //we'll move into our obstacle clearing mode
+              publishZeroVelocity();
+              state_ = CLEARING;
+              recovery_trigger_ = CONTROLLING_R;
+            }
+            else{
+              //otherwise, if we can't find a valid control, we'll go back to planning
+              last_valid_plan_ = ros::Time::now();
+              planning_retries_ = 0;
+              state_ = PLANNING;
+              publishZeroVelocity();
 
-            //enable the planner thread in case it isn't running on a clock
-            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
-            runPlanner_ = true;
-            planner_cond_.notify_one();
-            lock.unlock();
+              //enable the planner thread in case it isn't running on a clock
+              boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
+              runPlanner_ = true;
+              planner_cond_.notify_one();
+              lock.unlock();
+            }
           }
-        }
         }
 
         break;
