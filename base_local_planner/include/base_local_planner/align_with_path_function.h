@@ -6,6 +6,7 @@
 namespace base_local_planner {
 
 constexpr double MAX_ANGLE_ERROR = 0.8;
+constexpr double PREDICTION_TIME = 1.5;
 
 class AlignWithPathFunction : public base_local_planner::TrajectoryCostFunction {
 public:

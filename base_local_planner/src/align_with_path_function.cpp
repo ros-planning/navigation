@@ -32,14 +32,7 @@ double AlignWithPathFunction::scoreTrajectory(Trajectory &traj) {
     return 0;
   }
 
-  // if angle off by more than MAX_ANGLE_ERROR, force to rotate towards path with more than MIN_ROT_SPEED
-  if (current_yaw_diff_ > 0 && traj.thetav_ < MIN_ROT_SPEED) {
-    return PENALTY_COST;
-  }
-  if (current_yaw_diff_ < 0 && traj.thetav_ > -MIN_ROT_SPEED) {
-    return PENALTY_COST;
-  }
-  return 0;
+  return std::abs(angles::normalize_angle(current_yaw_diff_ - traj.thetav_ * PREDICTION_TIME));
 }
 
 } /* namespace base_local_planner */
