@@ -222,8 +222,6 @@ namespace dwa_local_planner {
       }
 
       ROS_INFO("Goal reached");
-      std_srvs::Empty empty_srvs;
-      this->nomotion_update_client_.call(empty_srvs);
       return true;
     } else {
       return false;
