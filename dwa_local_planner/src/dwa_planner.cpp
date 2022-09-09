@@ -291,12 +291,13 @@ namespace dwa_local_planner {
     double angle_to_goal = atan2(goal_pose.pose.position.y - pos[1], goal_pose.pose.position.x - pos[0]);
 
     constexpr double MIN_GOAL_DIST_SQ = 0.7;
-    // reduce crop forward_point_distance such that the robot can reach the goal pose
-    // without its nose entering space considered as occupied by obstacles
+
     double forward_point_distance = forward_point_distance_;
     const auto cos_angle_to_goal = cos(angle_to_goal);
     const auto sin_angle_to_goal = sin(angle_to_goal);
     if (sq_dist < MIN_GOAL_DIST_SQ) {
+      // when close to the goal, reduce forward_point_distance such that the robot can reach the goal pose
+      // without its nose entering space considered as occupied by obstacles
       forward_point_distance = 0;
       const int res = 10;
       for (int i = 1; i <= res; ++i) {
