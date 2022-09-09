@@ -290,31 +290,35 @@ namespace dwa_local_planner {
     std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
     double angle_to_goal = atan2(goal_pose.pose.position.y - pos[1], goal_pose.pose.position.x - pos[0]);
 
+    constexpr double MIN_GOAL_DIST_SQ = 0.7;
     // reduce crop forward_point_distance such that the robot can reach the goal pose
     // without its nose entering space considered as occupied by obstacles
-    double forward_point_distance = 0;
+    double forward_point_distance = forward_point_distance_;
     const auto cos_angle_to_goal = cos(angle_to_goal);
     const auto sin_angle_to_goal = sin(angle_to_goal);
-    const int res = 10;
-    for (int i = 1; i <= res; ++i) {
-        const double new_forward_point_distance = i * 1.0/res * forward_point_distance_;
-        const double x = front_global_plan.back().pose.position.x +
-            std::abs(new_forward_point_distance) * cos_angle_to_goal;
-        const double y = front_global_plan.back().pose.position.y +
-            std::abs(new_forward_point_distance) * sin_angle_to_goal;
+    if (sq_dist < MIN_GOAL_DIST_SQ) {
+      forward_point_distance = 0;
+      const int res = 10;
+      for (int i = 1; i <= res; ++i) {
+          const double new_forward_point_distance = i * 1.0/res * forward_point_distance_;
+          const double x = front_global_plan.back().pose.position.x +
+              std::abs(new_forward_point_distance) * cos_angle_to_goal;
+          const double y = front_global_plan.back().pose.position.y +
+              std::abs(new_forward_point_distance) * sin_angle_to_goal;
 
-        unsigned cx, cy;
-        if (!planner_util_->getCostmap()->worldToMap(x, y, cx, cy)) {
-            break;
-        }
-        const auto cost = planner_util_->getCostmap()->getCost(cx, cy);
-        // same cost check as in MapGrid::updatePathCell()
-        if (cost == costmap_2d::LETHAL_OBSTACLE ||
-              cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
-              cost == costmap_2d::NO_INFORMATION) {
-            break;
-        }
-        forward_point_distance = new_forward_point_distance;
+          unsigned cx, cy;
+          if (!planner_util_->getCostmap()->worldToMap(x, y, cx, cy)) {
+              break;
+          }
+          const auto cost = planner_util_->getCostmap()->getCost(cx, cy);
+          // same cost check as in MapGrid::updatePathCell()
+          if (cost == costmap_2d::LETHAL_OBSTACLE ||
+                cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
+                cost == costmap_2d::NO_INFORMATION) {
+              break;
+          }
+          forward_point_distance = new_forward_point_distance;
+      }
     }
 
     front_global_plan.back().pose.position.x = front_global_plan.back().pose.position.x +
@@ -324,7 +328,6 @@ namespace dwa_local_planner {
 
     goal_front_costs_.setTargetPoses(front_global_plan);
 
-    constexpr double MIN_GOAL_DIST_SQ = 0.7;
     if (sq_dist > MIN_GOAL_DIST_SQ && path_align_costs_.isTurningRequired()) {
       // enable turning penalty
       path_align_costs_.setScale(1.0);
