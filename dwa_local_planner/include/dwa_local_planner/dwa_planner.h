@@ -154,6 +154,8 @@ namespace dwa_local_planner {
       std::vector<geometry_msgs::Point> getScaledFootprint(const base_local_planner::Trajectory &traj) const;
 
     private:
+      /// @todo: consider exposing this as a parameter
+      static constexpr double MIN_GOAL_DIST_SQ = 0.7; ///< @brief Squared distance from the goal outside which the robot is encouraged to turn towards the path orientation, and within which the forward_point_distance is reduced to prevent the robot's nose from having to enter cells with cost >= INSCRIBED in order to reach the goal.
 
       base_local_planner::LocalPlannerUtil *planner_util_;
 
