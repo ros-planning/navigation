@@ -299,9 +299,9 @@ namespace dwa_local_planner {
       // when close to the goal, reduce forward_point_distance such that the robot can reach the goal pose
       // without its nose entering space considered as occupied by obstacles
       forward_point_distance = 0;
-      const int res = 10;
-      for (int i = 1; i <= res; ++i) {
-          const double new_forward_point_distance = i * 1.0/res * forward_point_distance_;
+      const float num_steps = std::ceil(forward_point_distance_ / planner_util_->getCostmap()->getResolution());
+      for (int i = 1; i <= num_steps; ++i) {
+          const double new_forward_point_distance = (i / num_steps) * forward_point_distance_;
           const double x = front_global_plan.back().pose.position.x +
               std::abs(new_forward_point_distance) * cos_angle_to_goal;
           const double y = front_global_plan.back().pose.position.y +
