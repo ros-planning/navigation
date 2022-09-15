@@ -83,6 +83,9 @@ private:
   bool sum_scores_;
   //footprint scaling with velocity;
   double max_forward_inflation_, max_sideward_inflation_, scaling_speed_;
+
+  ros::Subscriber sideward_inflation_scale_sub_;
+  std::atomic<double> sideward_inflation_scale_;
 };
 
 } /* namespace base_local_planner */
