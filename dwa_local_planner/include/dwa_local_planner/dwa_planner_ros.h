@@ -163,6 +163,10 @@ namespace dwa_local_planner {
 
       void publishScaledFootprint(const geometry_msgs::PoseStamped& pose, const base_local_planner::Trajectory &traj) const;
 
+      bool finishedBestEffort();
+
+      void resetBestEffort();
+
       tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
 
       // for visualisation, publishers of global and local plan
@@ -188,6 +192,12 @@ namespace dwa_local_planner {
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
+
+      int prev_vel_dir_;
+      bool oscillating_;
+      bool latched_inner_goal_;
+      std::vector<geometry_msgs::PoseStamped> transformed_plan_;
+      boost::optional<geometry_msgs::PoseStamped> outer_goal_entry_;
   };
 };
 #endif

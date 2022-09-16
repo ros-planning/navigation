@@ -35,6 +35,7 @@ def add_generic_localplanner_params(gen):
     gen.add("prune_plan", bool_t, 0, "Start following closest point of global plan, not first point (if different).", False)
 
     gen.add("xy_goal_tolerance", double_t, 0, "Within what maximum distance we consider the robot to be in goal", 0.1)
+    gen.add("inner_xy_goal_tolerance", double_t, 0, "Best effort distance for the robot to reach the goal", 0.1)
     gen.add("yaw_goal_tolerance", double_t, 0, "Within what maximum angle difference we consider the robot to face goal direction", 0.1)
 
     gen.add("trans_stopped_vel", double_t, 0, "Below what maximum velocity we consider the robot to be stopped in translation", 0.1)
