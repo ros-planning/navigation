@@ -2,6 +2,21 @@
 Changelog for package move_base
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.2 (2022-06-20)
+-------------------
+* Check if stamp of transformed pose is non-zero (`#1200 <https://github.com/ros-planning/navigation/issues/1200>`_)
+* Create move_base catkin library (`#1116 <https://github.com/ros-planning/navigation/issues/1116>`_)
+  Co-authored-by: vkotaru <prasant.kotaru@gmail.com>
+* move_base crash when using default recovery behaviors (`#1071 <https://github.com/ros-planning/navigation/issues/1071>`_)
+* Publish recovery behavior melodic (`#1051 <https://github.com/ros-planning/navigation/issues/1051>`_) (`#1052 <https://github.com/ros-planning/navigation/issues/1052>`_)
+  * First prototype of publishing recovery status
+  custom message tells you where the behavior occured, the name, index,
+  and total number of behaviors.
+  * fix message field typos
+  Co-authored-by: Peter Mitrano <mitranopeter@gmail.com>
+  Co-authored-by: Peter Mitrano <mitranopeter@gmail.com>
+* Contributors: David V. Lu!!, Prasanth Kotaru, Yuki Furuta, mattp256
+
 1.17.1 (2020-08-27)
 -------------------
 * Fix `#933 <https://github.com/ros-planning/navigation/issues/933>`_ (`#988 <https://github.com/ros-planning/navigation/issues/988>`_)

@@ -2,6 +2,11 @@
 Changelog for package move_slow_and_clear
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.2 (2022-06-20)
+-------------------
+* [move_slow_and_clear] Add rosparam representing max vel rosparam name (`#1039 <https://github.com/ros-planning/navigation/issues/1039>`_)
+* Contributors: Naoya Yamaguchi
+
 1.17.1 (2020-08-27)
 -------------------
 

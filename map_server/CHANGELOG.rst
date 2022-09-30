@@ -2,6 +2,20 @@
 Changelog for package map_server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.2 (2022-06-20)
+-------------------
+* Change_map service to map_server [Rebase/Noetic] (`#1029 <https://github.com/ros-planning/navigation/issues/1029>`_)
+  * Refactored map loading from constructor to three methods
+  * Added change_map service using LoadMap.srv
+* map_server: Initialise a NodeHandle in main. (`#1122 <https://github.com/ros-planning/navigation/issues/1122>`_)
+* Add debug output regarding waiting for time (`#1078 <https://github.com/ros-planning/navigation/issues/1078>`_)
+  Added debug messages suggested in https://github.com/ros-planning/navigation/issues/1074#issuecomment-751557177. Makes it easier to discover if use_sim_time is true but no clock server is running
+* crop_map: Fix extra pixel origin shift up every cropping (`#1064 <https://github.com/ros-planning/navigation/issues/1064>`_) (`#1067 <https://github.com/ros-planning/navigation/issues/1067>`_)
+  Co-authored-by: Pavlo Kolomiiets <pavlo@blindnology.com>
+* (map_server) add rtest dependency to tests (`#1061 <https://github.com/ros-planning/navigation/issues/1061>`_)
+* [noetic] MapServer variable cleanup: Precursor for `#1029 <https://github.com/ros-planning/navigation/issues/1029>`_ (`#1043 <https://github.com/ros-planning/navigation/issues/1043>`_)
+* Contributors: Christian Fritz, David V. Lu!!, Matthijs van der Burgh, Nikos Koukis, Pavlo Kolomiiets
+
 1.17.1 (2020-08-27)
 -------------------
 * Initial map_server map_mode tests (`#1006 <https://github.com/ros-planning/navigation/issues/1006>`_)

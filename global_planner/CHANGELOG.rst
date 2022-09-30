@@ -2,6 +2,16 @@
 Changelog for package global_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.2 (2022-06-20)
+-------------------
+* Throttled failed to get plan error to 5 seconds (`#1102 <https://github.com/ros-planning/navigation/issues/1102>`_)
+* Fixed the risk of divide by zero. (`#1099 <https://github.com/ros-planning/navigation/issues/1099>`_)
+* No virtual destructor polyformic classes fixed.  (`#1100 <https://github.com/ros-planning/navigation/issues/1100>`_)
+* Fixes `#1026 <https://github.com/ros-planning/navigation/issues/1026>`_ (`#1028 <https://github.com/ros-planning/navigation/issues/1028>`_)
+* correctly delete previously allocated array (`#1025 <https://github.com/ros-planning/navigation/issues/1025>`_)
+  Co-authored-by: Fedor Vlasov <fedor.vlasov@de.kaercher.com>
+* Contributors: David V. Lu!!, Noriaki Ando, Orhan G. Hafif, mechatheo
+
 1.17.1 (2020-08-27)
 -------------------
 

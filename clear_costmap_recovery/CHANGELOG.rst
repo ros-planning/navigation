@@ -2,6 +2,13 @@
 Changelog for package clear_costmap_recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.2 (2022-06-20)
+-------------------
+* check if the layer is derived from costmap_2d::CostmapLayer (`#1054 <https://github.com/ros-planning/navigation/issues/1054>`_)
+  Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
+* Add invert_area_to_clear to clear costmap recovery behavior (`#1030 <https://github.com/ros-planning/navigation/issues/1030>`_)
+* Contributors: Dima Dorezyuk, G.Doisy
+
 1.17.1 (2020-08-27)
 -------------------
 

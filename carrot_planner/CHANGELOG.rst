@@ -2,6 +2,16 @@
 Changelog for package carrot_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.2 (2022-06-20)
+-------------------
+* Fix carrot planner (`#1056 <https://github.com/ros-planning/navigation/issues/1056>`_)
+  * fix memory leak of world_model\_
+  * fix uninitialized raw pointers
+  * move the angles header into cpp
+  * add missing angles dependency
+  Co-authored-by: Dima Dorezyuk <dorezyuk@magazino.eu>
+* Contributors: Dima Dorezyuk
+
 1.17.1 (2020-08-27)
 -------------------
 
