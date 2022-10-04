@@ -4,10 +4,6 @@ project(amcl)
 include(CheckIncludeFile)
 include(CheckSymbolExists)
 
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 11)
-endif()
-
 find_package(catkin REQUIRED
   COMPONENTS
     diagnostic_updater
