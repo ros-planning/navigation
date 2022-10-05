@@ -170,6 +170,7 @@ namespace dwa_local_planner {
     critics.push_back(&path_costs_); // prefers trajectories on global path
     critics.push_back(&goal_costs_); // prefers trajectories that go towards (local) goal, based on wave propagation
     critics.push_back(&twirling_costs_); // optionally prefer trajectories that don't spin
+    critics.push_back(&curvature_costs_);
 
     // trajectory generators
     std::vector<base_local_planner::TrajectorySampleGenerator*> generator_list;
@@ -206,6 +207,11 @@ namespace dwa_local_planner {
   bool DWAPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) {
     oscillation_costs_.resetOscillationFlags();
     return planner_util_->setPlan(orig_global_plan);
+  }
+
+  void DWAPlanner::setCargoAngle(double cargo_angle)
+  {
+    this->curvature_costs_.setCargoAngle(cargo_angle);
   }
 
   /**

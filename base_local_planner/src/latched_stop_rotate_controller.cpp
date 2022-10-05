@@ -189,6 +189,16 @@ bool LatchedStopRotateController::rotateToGoal(
     ROS_DEBUG_NAMED("dwa_local_planner", "Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
     cmd_vel.angular.z = v_theta_samp;
     return true;
+  } else {
+    v_theta_samp = - v_theta_samp;
+    valid_cmd = obstacle_check(Eigen::Vector3f(global_pose.pose.position.x, global_pose.pose.position.y, yaw),
+          Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
+          Eigen::Vector3f( 0.0, 0.0, v_theta_samp));
+    if (valid_cmd) {
+      ROS_DEBUG_NAMED("dwa_local_planner", "Moving to desired goal orientation, th cmd: %.2f, valid_cmd: %d", v_theta_samp, valid_cmd);
+      cmd_vel.angular.z = v_theta_samp;
+      return true;
+    }
   }
   ROS_WARN("Rotation cmd in collision");
   cmd_vel.angular.z = 0.0;
