@@ -77,6 +77,7 @@ public:
       boost::function<bool (Eigen::Vector3f pos,
                             Eigen::Vector3f vel,
                             Eigen::Vector3f vel_samples)> obstacle_check);
+  void setCargoAngle(double cargo_angle);
 
 private:
   inline double sign(double x){
@@ -87,6 +88,7 @@ private:
   // whether to latch at all, and whether in this turn we have already been in goal area
   bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
   bool rotating_to_goal_;
+  double cargo_angle_ = 0.0;
 };
 
 } /* namespace base_local_planner */

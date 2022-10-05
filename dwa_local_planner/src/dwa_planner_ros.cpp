@@ -518,6 +518,8 @@ namespace dwa_local_planner {
   void DWAPlannerROS::cargo_angle_callback(const std_msgs::Float64::ConstPtr& msg)
   {
     this->dp_->setCargoAngle(msg->data);
+    this->goalLatchedStopRotateController_.setCargoAngle(msg->data);
+    this->startLatchedStopRotateController_.setCargoAngle(msg->data);
   }
 
   void DWAPlannerROS::call_nomotion_update_callback(const ros::TimerEvent& event)
