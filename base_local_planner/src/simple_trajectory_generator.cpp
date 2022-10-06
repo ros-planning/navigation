@@ -69,6 +69,8 @@ void SimpleTrajectoryGenerator::initialise(
    */
   double max_vel_th = limits->max_vel_theta;
   double min_vel_th = -1.0 * max_vel_th;
+  double max_vel_th_spin = std::max(limits->max_vel_theta_spin, max_vel_th);
+  double min_vel_th_spin = -1.0 * max_vel_th_spin;
   discretize_by_time_ = discretize_by_time;
   Eigen::Vector3f acc_lim = limits->getAccLimits();
   pos_ = pos;
@@ -85,8 +87,8 @@ void SimpleTrajectoryGenerator::initialise(
   // if sampling number is zero in any dimension, we don't generate samples generically
   if (vsamples[0] * vsamples[1] * vsamples[2] > 0) {
     //compute the feasible velocity space based on the rate at which we run
-    Eigen::Vector3f max_vel = Eigen::Vector3f::Zero();
-    Eigen::Vector3f min_vel = Eigen::Vector3f::Zero();
+    Eigen::Vector4f max_vel = Eigen::Vector4f::Zero();
+    Eigen::Vector4f min_vel = Eigen::Vector4f::Zero();
 
     if ( ! use_dwa_) {
       // there is no point in overshooting the goal, and it also may break the
@@ -99,10 +101,12 @@ void SimpleTrajectoryGenerator::initialise(
       max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_time_);
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_time_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_time_);
+      max_vel[3] = std::min(max_vel_th_spin, vel[2] + acc_lim[2] * sim_time_);
 
       min_vel[0] = std::max(min_vel_x, vel[0] - acc_lim[0] * sim_time_);
       min_vel[1] = std::max(min_vel_y, vel[1] - acc_lim[1] * sim_time_);
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_time_);
+      min_vel[3] = std::max(min_vel_th_spin, vel[2] - acc_lim[2] * sim_time_);
     } else {
       // with dwa do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
       max_vel_x = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
@@ -115,26 +119,33 @@ void SimpleTrajectoryGenerator::initialise(
       }
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_period_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
+      max_vel[3] = std::min(max_vel_th_spin, vel[2] + acc_lim[2] * sim_period_);
 
       min_vel[0] = std::max(min_vel_x, vel[0] - acc_lim[0] * sim_period_);
       min_vel[1] = std::max(min_vel_y, vel[1] - acc_lim[1] * sim_period_);
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
+      min_vel[3] = std::max(min_vel_th_spin, vel[2] - acc_lim[2] * sim_period_);
     }
 
     Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
     VelocityIterator x_it(min_vel[0], max_vel[0], vsamples[0]);
     VelocityIterator y_it(min_vel[1], max_vel[1], vsamples[1]);
-    VelocityIterator th_it(min_vel[2], max_vel[2], vsamples[2]);
     for(; !x_it.isFinished(); x_it++) {
       vel_samp[0] = x_it.getVelocity();
       for(; !y_it.isFinished(); y_it++) {
         vel_samp[1] = y_it.getVelocity();
+
+        // allow higher ang vels if lin vel is low
+        // (2 * min_vel_trans is some arbitrarily defined threshold)
+        VelocityIterator th_it = hypot(vel_samp[0], vel_samp[1]) > 2 * limits->min_vel_trans ?
+                                   VelocityIterator(min_vel[2], max_vel[2], vsamples[2])
+                                   : VelocityIterator(min_vel[3], max_vel[3], vsamples[2]);
+
         for(; !th_it.isFinished(); th_it++) {
           vel_samp[2] = th_it.getVelocity();
           //ROS_DEBUG("Sample %f, %f, %f", vel_samp[0], vel_samp[1], vel_samp[2]);
           sample_params_.push_back(vel_samp);
         }
-        th_it.reset();
       }
       y_it.reset();
     }

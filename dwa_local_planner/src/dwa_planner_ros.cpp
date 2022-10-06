@@ -77,6 +77,7 @@ namespace dwa_local_planner {
       limits.max_vel_y = config.max_vel_y;
       limits.min_vel_y = config.min_vel_y;
       limits.max_vel_theta = config.max_vel_theta;
+      limits.max_vel_theta_spin = config.max_vel_theta_spin;
       limits.min_vel_theta = config.min_vel_theta;
       limits.acc_lim_x = config.acc_lim_x;
       limits.acc_lim_y = config.acc_lim_y;
