@@ -165,6 +165,9 @@ bool LatchedStopRotateController::rotateToGoal(
   cmd_vel.linear.x = 0;
   cmd_vel.linear.y = 0;
   double ang_diff = angles::shortest_angular_distance(yaw, goal_th);
+  double cargo_global = std::fmod(yaw + this->cargo_angle_ + M_PI, 2 * M_PI) - M_PI;
+  double ang_diff_yc = angles::shortest_angular_distance(yaw, cargo_global);
+  double ang_diff_cg = angles::shortest_angular_distance(cargo_global, goal_th);
 
   double v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_vel_theta, fabs(ang_diff)));
 
@@ -180,21 +183,31 @@ bool LatchedStopRotateController::rotateToGoal(
 
   v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_vel_theta, v_theta_samp));
 
-  double cargo_global = std::fmod(yaw + this->cargo_angle_, 2 * M_PI);
-
   ROS_WARN_STREAM("[latched_stop_rotate_controller] cargo_angle:" << this->cargo_angle_ << " goal_th:" << goal_th << " yaw:" << yaw << " ang_diff:" << ang_diff << " cargo_global:" << cargo_global);
 
-  // v_theta_samp = - v_theta_samp;
-  if (ang_diff < 0) {
-    v_theta_samp = - v_theta_samp;
+  if (0 <= ang_diff)
+  {
+    if (0 <= ang_diff_yc && 0 <= ang_diff_cg)
+    {
+      v_theta_samp = - v_theta_samp;
+    }
+    else
+    {
+      v_theta_samp = v_theta_samp;
+    }
+  }
+  else if (ang_diff < 0)
+  {
+    if (ang_diff_yc < 0 && ang_diff_cg < 0)
+    {
+      v_theta_samp = v_theta_samp;
+    }
+    else
+    {
+      v_theta_samp = - v_theta_samp;
+    }
   }
 
-  double min_th = std::fmin(yaw, goal_th);
-  double max_th = std::fmin(yaw, goal_th);
-  if (min_th < cargo_global && cargo_global < max_th)
-  {
-    v_theta_samp = - v_theta_samp;
-  }
   ROS_WARN_STREAM("[latched_stop_rotate_controller] v_theta_samp:" << v_theta_samp);
 
   //we still want to lay down the footprint of the robot and check if the action is legal
