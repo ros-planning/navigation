@@ -201,8 +201,8 @@ bool GlobalPlanner::worldToMap(double wx, double wy, double& mx, double& my) {
     if (wx < origin_x || wy < origin_y)
         return false;
 
-    mx = (wx - origin_x) / resolution - convert_offset_;
-    my = (wy - origin_y) / resolution - convert_offset_;
+    mx = (wx - origin_x) / resolution;
+    my = (wy - origin_y) / resolution;
 
     if (mx < costmap_->getSizeInCellsX() && my < costmap_->getSizeInCellsY())
         return true;
