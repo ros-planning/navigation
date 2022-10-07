@@ -3,7 +3,6 @@
  */
 
 #include <base_local_planner/curvature_cost_function.h>
-#include <ros/ros.h>
 #include <math.h>
 
 namespace base_local_planner {
@@ -13,10 +12,19 @@ void CurvatureCostFunction::setCargoAngle(double cargo_angle)
   this->cargo_angle_ = cargo_angle;
 }
 
-double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
-  double norm_cargo_angle = std::fmod(cargo_angle_ + 2 * M_PI, 2 * M_PI) - M_PI;
+void CurvatureCostFunction::setCargoEnabled(bool is_cargo_enabled)
+{
+  this->is_cargo_enabled_ = is_cargo_enabled;
+}
 
-  // ROS_WARN_STREAM("xv:" << traj.xv_ << " yv:" << traj.yv_ << " thetav:" << traj.thetav_ << " cargo_angle_:" << cargo_angle_ << " norm_cargo_angle:" << norm_cargo_angle);
+double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
+
+  if (!this->is_cargo_enabled_)
+  {
+    return 0.0;
+  }
+
+  double norm_cargo_angle = std::fmod(cargo_angle_ + 2 * M_PI, 2 * M_PI) - M_PI;
 
   if (traj.thetav_ == 0.0)
   {
@@ -24,8 +32,6 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
   }
   else if (std::fabs(traj.xv_ / traj.thetav_) < 0.9)
   {
-    
-
     if (std::fabs(norm_cargo_angle) < 90 * M_PI / 180)
     {
       return 0.0;

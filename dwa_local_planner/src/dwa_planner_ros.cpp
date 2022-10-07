@@ -155,9 +155,11 @@ namespace dwa_local_planner {
       private_nh.param("kpre", this->kpre_, 0.65);
 
       private_nh.param("latch_unlock_distance", this->latch_unlock_distance_, 1.0);
+      private_nh.param("cargo_timeout_sec_", this->cargo_timeout_sec_, 1.0);
 
       this->is_actuator_connect_ = false;
       this->rotate_to_goal_ = false;
+      this->is_cargo_enabled_ = false;
     }
     else{
       ROS_WARN("This planner has already been initialized, doing nothing.");
@@ -353,6 +355,7 @@ namespace dwa_local_planner {
   }
 
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
+    this->check_cargo_angle();
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
     if ( ! costmap_ros_->getRobotPose(current_pose_)) {
       ROS_ERROR("Could not get robot pose");
@@ -520,6 +523,24 @@ namespace dwa_local_planner {
     this->dp_->setCargoAngle(msg->data);
     this->goalLatchedStopRotateController_.setCargoAngle(msg->data);
     this->startLatchedStopRotateController_.setCargoAngle(msg->data);
+    this->is_cargo_enabled_ = true;
+    this->cargo_angle_recv_time_ = ros::Time::now();
+  }
+
+  void DWAPlannerROS::check_cargo_angle()
+  {
+    if (!this->is_cargo_enabled_)
+    {
+      ros::Duration d = ros::Time::now() - this->cargo_angle_recv_time_;
+      if (this->cargo_timeout_sec_ < d.toSec())
+      {
+        this->is_cargo_enabled_ = false;
+      }
+    }
+
+    this->dp_->setCargoEnabled(this->is_cargo_enabled_);
+    this->goalLatchedStopRotateController_.setCargoEnabled(this->is_cargo_enabled_);
+    this->startLatchedStopRotateController_.setCargoEnabled(this->is_cargo_enabled_);
   }
 
   void DWAPlannerROS::call_nomotion_update_callback(const ros::TimerEvent& event)

@@ -140,6 +140,8 @@ namespace dwa_local_planner {
 
       void updateRotateToGoal();
 
+      void check_cargo_angle();
+
       tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
 
       // for visualisation, publishers of global and local plan
@@ -190,6 +192,10 @@ namespace dwa_local_planner {
       bool use_rotate_first_actuator_disconnect_;
       bool is_force_update_;
       double latch_unlock_distance_;
+      double cargo_timeout_sec_;
+
+      bool is_cargo_enabled_;
+      ros::Time cargo_angle_recv_time_;
   };
 };
 #endif

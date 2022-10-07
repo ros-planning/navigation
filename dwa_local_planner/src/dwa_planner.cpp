@@ -209,6 +209,11 @@ namespace dwa_local_planner {
     return planner_util_->setPlan(orig_global_plan);
   }
 
+  void DWAPlanner::setCargoEnabled(bool is_cargo_enabled)
+  {
+    this->curvature_costs_.setCargoEnabled(is_cargo_enabled);
+  }
+
   void DWAPlanner::setCargoAngle(double cargo_angle)
   {
     this->curvature_costs_.setCargoAngle(cargo_angle);

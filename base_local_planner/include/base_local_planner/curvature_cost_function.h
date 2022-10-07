@@ -2,7 +2,7 @@
 #define CURVATURE_COST_FUNCTION_H
 
 #include <base_local_planner/trajectory_cost_function.h>
-
+#include <ros/ros.h>
 namespace base_local_planner {
 
 /**
@@ -20,11 +20,13 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
   void setCargoAngle(double cargo_angle);
+  void setCargoEnabled(bool is_cargo_enabled_);
 
   bool prepare() {return true;};
 
 private:
   double cargo_angle_ = 0.0;
+  bool is_cargo_enabled_;
 };
 
 } /* namespace base_local_planner */

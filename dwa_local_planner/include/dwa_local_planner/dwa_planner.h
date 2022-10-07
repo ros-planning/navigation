@@ -146,6 +146,7 @@ namespace dwa_local_planner {
       bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
       void setCargoAngle(double cargo_angle);
+      void setCargoEnabled(bool is_cargo_enabled);
 
     private:
       Eigen::Vector3f pre_cmd_;
