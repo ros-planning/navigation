@@ -81,7 +81,7 @@ namespace dwa_local_planner {
     alignment_costs_.setXShift(forward_point_distance_);
 
     // obstacle costs can vary due to scaling footprint feature
-    obstacle_costs_.setParams(config.max_vel_trans, config.max_forward_inflation, config.max_sideward_inflation, config.scaling_speed);
+    obstacle_costs_.setParams(config.max_vel_trans, config.max_forward_inflation, config.max_sideward_inflation, config.scaling_speed, config.occdist_use_footprint);
 
     twirling_costs_.setScale(config.twirling_scale);
 

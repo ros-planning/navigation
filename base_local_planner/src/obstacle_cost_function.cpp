@@ -62,12 +62,13 @@ ObstacleCostFunction::~ObstacleCostFunction() {
 }
 
 
-void ObstacleCostFunction::setParams(double max_trans_vel, double max_forward_inflation, double max_sideward_inflation, double scaling_speed) {
+void ObstacleCostFunction::setParams(double max_trans_vel, double max_forward_inflation, double max_sideward_inflation, double scaling_speed, bool occdist_use_footprint) {
   // TODO: move this to prepare if possible
   max_trans_vel_ = max_trans_vel;
   max_forward_inflation_ = max_forward_inflation;
   max_sideward_inflation_ = max_sideward_inflation;
   scaling_speed_ = scaling_speed;
+  occdist_use_footprint_ = occdist_use_footprint;
 }
 
 void ObstacleCostFunction::setFootprint(std::vector<geometry_msgs::Point> footprint_spec) {
@@ -160,7 +161,11 @@ double ObstacleCostFunction::footprintCost (
     return -7.0;
   }
 
-  double occ_cost = std::max(std::max(0.0, footprint_cost), double(costmap->getCost(cell_x, cell_y)));
+  double occ_cost = double(costmap->getCost(cell_x, cell_y));
+  if (occdist_use_footprint_)
+  {
+    occ_cost = std::max(std::max(0.0, footprint_cost), occ_cost);
+  }
 
   return occ_cost;
 }
