@@ -103,16 +103,17 @@ public:
    * @return A cost value for the distance */
   virtual inline unsigned char computeCost(double distance) const
   {
+    double inscribed_radius = inflate_inscribed_ ? inscribed_radius_ : 0.0;
     unsigned char cost = 0;
     if (distance == 0)
       cost = LETHAL_OBSTACLE;
-    else if (distance * resolution_ <= inscribed_radius_)
+    else if (distance * resolution_ <= inscribed_radius)
       cost = INSCRIBED_INFLATED_OBSTACLE;
     else
     {
       // make sure cost falls off by Euclidean distance
       double euclidean_distance = distance * resolution_;
-      double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius_));
+      double factor = exp(-1.0 * weight_ * (euclidean_distance - inscribed_radius));
       cost = (unsigned char)((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
     }
     return cost;
@@ -133,6 +134,7 @@ protected:
   double inflation_radius_;
   double inscribed_radius_;
   double weight_;
+  bool inflate_inscribed_;
   bool inflate_unknown_;
 
 private:

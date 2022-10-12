@@ -56,6 +56,7 @@ InflationLayer::InflationLayer()
   , inflation_radius_(0)
   , inscribed_radius_(0)
   , weight_(0)
+  , inflate_inscribed_(true)
   , inflate_unknown_(false)
   , cell_inflation_radius_(0)
   , cached_cell_inflation_radius_(0)
@@ -104,8 +105,11 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
 {
   setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
 
-  if (enabled_ != config.enabled || inflate_unknown_ != config.inflate_unknown) {
+  if (enabled_ != config.enabled ||
+      inflate_inscribed_ != config.inflate_inscribed ||
+      inflate_unknown_ != config.inflate_unknown) {
     enabled_ = config.enabled;
+    inflate_inscribed_ = config.inflate_inscribed;
     inflate_unknown_ = config.inflate_unknown;
     need_reinflation_ = true;
   }
