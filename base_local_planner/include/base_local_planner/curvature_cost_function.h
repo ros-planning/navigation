@@ -15,17 +15,23 @@ namespace base_local_planner {
 class CurvatureCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
 
-  CurvatureCostFunction() {}
+  CurvatureCostFunction() :
+    cargo_limit_angle_deg_(90.0), curvature_radius_(0.9), cargo_angle_(0.0), is_cargo_enabled_(false) {}
   ~CurvatureCostFunction() {}
 
   double scoreTrajectory(Trajectory &traj);
+
+  void setCargoLimitAngleDeg(double cargo_limit_angle_deg);
+  void setCurvatureRadius(double curvature_radius);
   void setCargoAngle(double cargo_angle);
   void setCargoEnabled(bool is_cargo_enabled_);
 
   bool prepare() {return true;};
 
 private:
-  double cargo_angle_ = 0.0;
+  double cargo_limit_angle_deg_;
+  double curvature_radius_;
+  double cargo_angle_;
   bool is_cargo_enabled_;
 };
 

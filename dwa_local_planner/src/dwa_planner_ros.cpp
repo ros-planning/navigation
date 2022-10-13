@@ -155,7 +155,9 @@ namespace dwa_local_planner {
       private_nh.param("kpre", this->kpre_, 0.65);
 
       private_nh.param("latch_unlock_distance", this->latch_unlock_distance_, 1.0);
-      private_nh.param("cargo_timeout_sec_", this->cargo_timeout_sec_, 1.0);
+      private_nh.param("cargo_timeout_sec", this->cargo_timeout_sec_, 1.0);
+      private_nh.param("cargo_limit_angle_deg", this->cargo_limit_angle_deg_, 90.0);
+      private_nh.param("curvature_radius", this->curvature_radius_, 0.9);
 
       this->is_actuator_connect_ = false;
       this->rotate_to_goal_ = false;
