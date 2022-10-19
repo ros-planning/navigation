@@ -105,7 +105,7 @@ add_library(base_local_planner
 	src/trajectory.cpp
 	src/twirling_cost_function.cpp
 	src/voxel_grid_model.cpp
-    src/curvature_cost_function.cpp)
+	src/curvature_cost_function.cpp)
 add_dependencies(base_local_planner base_local_planner_gencfg)
 add_dependencies(base_local_planner base_local_planner_generate_messages_cpp)
 add_dependencies(base_local_planner nav_msgs_generate_messages_cpp)
