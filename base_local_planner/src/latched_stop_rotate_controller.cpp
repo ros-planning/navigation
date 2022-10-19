@@ -191,7 +191,7 @@ bool LatchedStopRotateController::rotateToGoal(
     {
       cargo_global += 2 * M_PI;
     }
-    cargo_global = std::fmod(cargo_global, 2 * M_PI) - M_PI;
+    cargo_global = std::fmod(cargo_global + M_PI, 2 * M_PI) - M_PI;
 
     double ang_diff_yc = angles::shortest_angular_distance(yaw, cargo_global);
     double ang_diff_cg = angles::shortest_angular_distance(cargo_global, goal_th);
