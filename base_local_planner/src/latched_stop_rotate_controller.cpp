@@ -186,7 +186,13 @@ bool LatchedStopRotateController::rotateToGoal(
 
   if (this->is_cargo_enabled_)
   {
-    double cargo_global = std::fmod(yaw + this->cargo_angle_ + M_PI, 2 * M_PI) - M_PI;
+    double cargo_global = yaw + this->cargo_angle_;
+    while (cargo_global < 0)
+    {
+      cargo_global += 2 * M_PI;
+    }
+    cargo_global = std::fmod(cargo_global, 2 * M_PI) - M_PI;
+
     double ang_diff_yc = angles::shortest_angular_distance(yaw, cargo_global);
     double ang_diff_cg = angles::shortest_angular_distance(cargo_global, goal_th);
     if (0 <= ang_diff)
