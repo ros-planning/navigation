@@ -50,6 +50,7 @@
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/String.h>
 #include <std_msgs/UInt8.h>
+#include <std_msgs/Float64.h>
 #include <std_srvs/Empty.h>
 #include <visualization_msgs/Marker.h>
 
@@ -120,6 +121,8 @@ namespace dwa_local_planner {
 
       void actuator_position_callback(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg);
 
+      void cargo_angle_callback(const std_msgs::Float64::ConstPtr& msg);
+
       void call_nomotion_update_callback(const ros::TimerEvent& event);
       bool isInitialized() {
         return initialized_;
@@ -137,6 +140,8 @@ namespace dwa_local_planner {
 
       void updateRotateToGoal();
 
+      void check_cargo_angle();
+
       tf2_ros::Buffer* tf_; ///< @brief Used for transforming point clouds
 
       // for visualisation, publishers of global and local plan
@@ -144,6 +149,7 @@ namespace dwa_local_planner {
       ros::Subscriber actuator_position_sub_;
       ros::ServiceClient nomotion_update_client_;
       ros::Timer nomotion_update_timer_;
+      ros::Subscriber cargo_angle_sub_;
 
       std_msgs::UInt8 vel_cmd_mode_msg_;
       visualization_msgs::Marker vel_cmd_mode_marker_msg_;
@@ -186,6 +192,12 @@ namespace dwa_local_planner {
       bool use_rotate_first_actuator_disconnect_;
       bool is_force_update_;
       double latch_unlock_distance_;
+      double cargo_timeout_sec_;
+      double cargo_limit_angle_deg_;
+      double curvature_radius_;
+
+      bool is_cargo_enabled_;
+      ros::Time cargo_angle_recv_time_;
   };
 };
 #endif

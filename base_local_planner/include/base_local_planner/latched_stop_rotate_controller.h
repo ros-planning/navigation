@@ -78,6 +78,10 @@ public:
                             Eigen::Vector3f vel,
                             Eigen::Vector3f vel_samples)> obstacle_check);
 
+  void setCargoEnabled(bool is_cargo_enabled);
+
+  void setCargoAngle(double cargo_angle);
+
 private:
   inline double sign(double x){
     return x < 0.0 ? -1.0 : 1.0;
@@ -87,6 +91,8 @@ private:
   // whether to latch at all, and whether in this turn we have already been in goal area
   bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
   bool rotating_to_goal_;
+  double is_cargo_enabled_ = false;
+  double cargo_angle_ = 0.0;
 };
 
 } /* namespace base_local_planner */

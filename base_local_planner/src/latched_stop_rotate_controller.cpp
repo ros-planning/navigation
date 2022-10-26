@@ -30,6 +30,14 @@ LatchedStopRotateController::LatchedStopRotateController(const std::string& name
 
 LatchedStopRotateController::~LatchedStopRotateController() {}
 
+void LatchedStopRotateController::setCargoEnabled(bool is_cargo_enabled)
+{
+  this->is_cargo_enabled_ = is_cargo_enabled;
+}
+void LatchedStopRotateController::setCargoAngle(double cargo_angle)
+{
+  this->cargo_angle_ = cargo_angle;
+}
 
 /**
  * returns true if we have passed the goal position.
@@ -176,8 +184,46 @@ bool LatchedStopRotateController::rotateToGoal(
 
   v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_vel_theta, v_theta_samp));
 
-  if (ang_diff < 0) {
-    v_theta_samp = - v_theta_samp;
+  if (this->is_cargo_enabled_)
+  {
+    double cargo_global = yaw + this->cargo_angle_;
+    while (cargo_global < 0)
+    {
+      cargo_global += 2 * M_PI;
+    }
+    cargo_global = std::fmod(cargo_global + M_PI, 2 * M_PI) - M_PI;
+
+    double ang_diff_yc = angles::shortest_angular_distance(yaw, cargo_global);
+    double ang_diff_cg = angles::shortest_angular_distance(cargo_global, goal_th);
+    if (0 <= ang_diff)
+    {
+      if (0 <= ang_diff_yc && 0 <= ang_diff_cg)
+      {
+        v_theta_samp = - v_theta_samp;
+      }
+      else
+      {
+        v_theta_samp = v_theta_samp;
+      }
+    }
+    else if (ang_diff < 0)
+    {
+      if (ang_diff_yc < 0 && ang_diff_cg < 0)
+      {
+        v_theta_samp = v_theta_samp;
+      }
+      else
+      {
+        v_theta_samp = - v_theta_samp;
+      }
+    }
+  }
+  else
+  {
+    if (ang_diff < 0)
+    {
+      v_theta_samp = - v_theta_samp;
+    }
   }
 
   //we still want to lay down the footprint of the robot and check if the action is legal
