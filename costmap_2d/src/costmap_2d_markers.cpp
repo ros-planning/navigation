@@ -146,7 +146,7 @@ int main(int argc, char** argv)
   ROS_DEBUG("Startup");
 
   ros::Publisher pub = n.advertise < visualization_msgs::Marker > ("visualization_marker", 1);
-  ros::Subscriber sub = n.subscribe < costmap_2d::VoxelGrid > ("voxel_grid", 1, boost::bind(voxelCallback, pub, _1));
+  ros::Subscriber sub = n.subscribe < costmap_2d::VoxelGrid > ("voxel_grid", 1, [&pub](auto& msg){ voxelCallback(pub, msg); });
   g_marker_ns = n.resolveName("voxel_grid");
 
   ros::spin();
