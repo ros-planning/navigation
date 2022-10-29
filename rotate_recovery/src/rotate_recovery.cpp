@@ -35,7 +35,7 @@
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
 #include <rotate_recovery/rotate_recovery.h>
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <nav_core/parameter_magic.h>
 #include <tf2/utils.h>
 #include <ros/ros.h>

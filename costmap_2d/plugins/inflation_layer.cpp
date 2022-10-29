@@ -40,7 +40,7 @@
 #include <costmap_2d/costmap_math.h>
 #include <costmap_2d/footprint.h>
 #include <boost/thread.hpp>
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
 

@@ -39,7 +39,7 @@
 #include <costmap_2d/costmap_math.h>
 #include <tf2_ros/message_filter.h>
 
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
 PLUGINLIB_EXPORT_CLASS(costmap_2d::ObstacleLayer, costmap_2d::Layer)
