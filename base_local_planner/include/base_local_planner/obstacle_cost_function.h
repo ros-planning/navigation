@@ -64,6 +64,9 @@ public:
   void setParams(double max_trans_vel, double max_scaling_factor, double scaling_speed);
   void setFootprint(std::vector<geometry_msgs::Point> footprint_spec);
 
+  void setCargoAngle(double cargo_angle);
+  void setCargoEnabled(bool is_cargo_enabled_);
+
   // helper functions, made static for easy unit testing
   static double getScalingFactor(Trajectory &traj, double scaling_speed, double max_trans_vel, double max_scaling_factor);
   static double footprintCost(
@@ -83,6 +86,11 @@ private:
   bool sum_scores_;
   //footprint scaling with velocity;
   double max_scaling_factor_, scaling_speed_;
+  double cargo_angle_;
+  bool is_cargo_enabled_;
+
+  double calc_distance(double x0, double y0, double th0, double x1, double y1);
+
 };
 
 } /* namespace base_local_planner */

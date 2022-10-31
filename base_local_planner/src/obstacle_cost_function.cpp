@@ -67,8 +67,29 @@ void ObstacleCostFunction::setFootprint(std::vector<geometry_msgs::Point> footpr
   footprint_spec_ = footprint_spec;
 }
 
+void ObstacleCostFunction::setCargoAngle(double cargo_angle)
+{
+  this->cargo_angle_ = cargo_angle;
+}
+
+void ObstacleCostFunction::setCargoEnabled(bool is_cargo_enabled)
+{
+  this->is_cargo_enabled_ = is_cargo_enabled;
+}
+
 bool ObstacleCostFunction::prepare() {
   return true;
+}
+
+double ObstacleCostFunction::calc_distance(double x0, double y0, double x1, double y1, double th1)
+{
+  double x2 = x1 + std::cos(th1);
+  double y2 = y1 + std::sin(th1);
+
+  // distance from point to line
+  double f1 = (x2 - x1) * (y1 - y0) - (y2 - y1) * (x1 - x0);
+  double r2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+  return std::sqrt((f1 * f1) / r2);
 }
 
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
@@ -80,9 +101,29 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
     return -9;
   }
+  double robot_x, robot_y, robot_th;
+  if (0 < traj.getPointsSize())
+  {
+    traj.getPoint(0, robot_x, robot_y, robot_th);
+  }
+  double cargo_global = robot_th + this->cargo_angle_;
 
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     traj.getPoint(i, px, py, pth);
+    if (this->is_cargo_enabled_)
+    {
+      if(abs(traj.xv_) < 1e-2)
+      {
+        pth = 0.0;
+      }
+      else
+      {
+        double d = calc_distance(px, py, robot_x, robot_y, cargo_global);
+        double delta_th = std::atan2(d, px);
+        cargo_global += delta_th;
+        pth = delta_th;
+      }
+    }
     double f_cost = footprintCost(px, py, pth,
         scale, footprint_spec_,
         costmap_, world_model_);
