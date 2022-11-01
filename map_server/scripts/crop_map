@@ -64,7 +64,7 @@ def computed_cropped_origin(map_image, bounds, resolution, origin):
     # First figure out the delta we have to translate from the lower left corner (which is the origin)
     # in the image system
     dx = bounds[0] * resolution
-    dy = (map_image.size[1] - bounds[3]) * resolution
+    dy = (map_image.size[1] - bounds[3] - 1) * resolution
 
     # Next rotate this by the theta and add to the old origin
 
