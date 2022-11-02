@@ -218,12 +218,34 @@ namespace base_local_planner{
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
     adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
 
-    // skip global path points until we reach the border of the local map
+    auto dist_squared_to_front = [&adjusted_global_plan](const double x, const double y) {
+      const double dx = x - adjusted_global_plan.front().pose.position.x;
+      const double dy = y - adjusted_global_plan.front().pose.position.y;
+      return dx * dx + dy * dy;
+    };
+    bool reached_point_away_from_start = false;
+
+    // In the following loop, we select a point on the global path as the local goal based on which
+    // we compute the "distance to the goal". The following criteria are chosen:
+    // - local goal needs to be on the map (otherwise, goal does not correspond to a cell)
+    // - local goal needs to be on a cell where the cost is not NO_INFORMATION
+    //   (as NO_INFORMATION is treated as obstacle in updatePathCell())
+    // - Additionally, INSCRIBED_INFLATED_OBSTACLE is also treated as an obstacle in updatePathCell()
+    //   (This is such that narrow pathways are discarded as potential paths to the goal)
+    //   So if the local goal is in a cell with INSCRIBED_INFLATED_OBSTACLE, it is considered unreachable.
+    //   In this case, it is however unreasonable for the local planner to give up already when still far away
+    //   from the local goal, as the obstacle on it might disappear or the global plan might get updated.
+    //   Hence, we only consider a path point with INSCRIBED_INFLATED_OBSTACLE cost as a candidate for
+    //   the local goal if we're still close to the beginning of the path;
+    //   Once we reached a path point significantly far away from the beginning of the path,
+    //   we stop considering path points with INSCRIBED_INFLATED_OBSTACLE as candidates for the local goal
     for (unsigned int i = 0; i < adjusted_global_plan.size(); ++i) {
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+      reached_point_away_from_start = reached_point_away_from_start || dist_squared_to_front(g_x, g_y) > 1;
+      if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION &&
+         (!reached_point_away_from_start || costmap.getCost(map_x, map_y) != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)) {
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
