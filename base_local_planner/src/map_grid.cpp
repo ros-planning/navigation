@@ -218,7 +218,7 @@ namespace base_local_planner{
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
     adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
 
-    auto dist_squared_to_front = [&adjusted_global_plan](const double x, const double y) {
+    auto dist_squared_to_start = [&adjusted_global_plan](const double x, const double y) {
       const double dx = x - adjusted_global_plan.front().pose.position.x;
       const double dy = y - adjusted_global_plan.front().pose.position.y;
       return dx * dx + dy * dy;
@@ -246,10 +246,9 @@ namespace base_local_planner{
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
-      reached_point_away_from_start = reached_point_away_from_start || dist_squared_to_front(g_x, g_y) > 1;
+      reached_point_away_from_start = reached_point_away_from_start || dist_squared_to_start(g_x, g_y) > 1;
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
-		const bool in_obstacle = costmap.getCost(map_x, map_y) == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
-		    costmap.getCost(map_x, map_y) == costmap_2d::LETHAL_OBSTACLE;
+        const bool in_obstacle = costmap.getCost(map_x, map_y) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
         if (reached_point_away_from_start && in_obstacle && !local_goal_in_obstacle) {
           break;
         }
