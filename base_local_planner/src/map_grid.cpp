@@ -259,6 +259,7 @@ namespace base_local_planner{
         local_goal_in_obstacle = in_obstacle;
       } else {
         if (started_path) {
+          ROS_WARN_COND(local_goal_in_obstacle, "local goal in obstacle");
           break;
         }// else we might have a non pruned path, so we just continue
       }
