@@ -107,21 +107,41 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     traj.getPoint(0, robot_x, robot_y, robot_th);
   }
   double cargo_global = robot_th + this->cargo_angle_;
+  double cargo_rear_x = robot_x + std::sin(cargo_global) * 0.95;
+  double cargo_rear_y = robot_y + std::cos(cargo_global) * 0.95;
 
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     traj.getPoint(i, px, py, pth);
     if (this->is_cargo_enabled_)
     {
-      if(abs(traj.xv_) < 1e-2)
+      if (px == robot_x && py == robot_y)
       {
+        // vector A is 0
         pth = 0.0;
       }
       else
       {
-        double d = calc_distance(px, py, robot_x, robot_y, cargo_global);
-        double delta_th = std::atan2(d, px);
-        cargo_global += delta_th;
-        pth = delta_th;
+        // Calculate angle formed by vector A and B.
+        double a1 = robot_x - px;
+        double a2 = robot_y - py;
+        double b1 = cargo_rear_x - px;
+        double b2 = cargo_rear_y - py;
+
+        double cos_th = a1 * b1 + a2 * b2 /
+            (std::sqrt(a1 * a1 + a2 * a2) * std::sqrt(b1 * b1 + b2 * b2));
+        
+        // angle formed by A and B become new_cargo_angle
+        double new_cargo_angle = std::acos(cos_th);
+        double new_cargo_global = pth + new_cargo_angle;
+
+        // difference of cargo_angle in global coordinates
+        // is rotation amount of the footprint.
+        pth = new_cargo_global - cargo_global;
+
+        robot_x = px;
+        robot_y = py;
+        cargo_rear_x = robot_x + std::sin(new_cargo_global) * 0.95;
+        cargo_rear_y = robot_y + std::cos(new_cargo_global) * 0.95;
       }
     }
     double f_cost = footprintCost(px, py, pth,
