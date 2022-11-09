@@ -39,7 +39,7 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
   {
     norm_cargo_angle += 2 * M_PI;
   }
-  norm_cargo_angle = std::fmod(norm_cargo_angle + M_PI, 2 * M_PI) - M_PI;
+  norm_cargo_angle = std::fmod(norm_cargo_angle, 2 * M_PI) - M_PI;
 
   if (traj.thetav_ == 0.0)
   {
