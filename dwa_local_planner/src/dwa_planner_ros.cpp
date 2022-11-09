@@ -41,7 +41,7 @@
 
 #include <ros/console.h>
 
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
@@ -131,7 +131,7 @@ namespace dwa_local_planner {
       nav_core::warnRenamedParameter(private_nh, "theta_stopped_vel", "rot_stopped_vel");
 
       dsrv_ = new dynamic_reconfigure::Server<DWAPlannerConfig>(private_nh);
-      dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = boost::bind(&DWAPlannerROS::reconfigureCB, this, _1, _2);
+      dynamic_reconfigure::Server<DWAPlannerConfig>::CallbackType cb = [this](auto& config, auto level){ reconfigureCB(config, level); };
       dsrv_->setCallback(cb);
     }
     else{
@@ -297,7 +297,7 @@ namespace dwa_local_planner {
           &planner_util_,
           odom_helper_,
           current_pose_,
-          boost::bind(&DWAPlanner::checkTrajectory, dp_, _1, _2, _3));
+          [this](auto pos, auto vel, auto vel_samples){ return dp_->checkTrajectory(pos, vel, vel_samples); });
     } else {
       bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
       if (isOk) {

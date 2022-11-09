@@ -36,7 +36,7 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <costmap_2d/voxel_layer.h>
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
 #define VOXEL_BITS 16
@@ -67,8 +67,8 @@ void VoxelLayer::onInitialize()
 void VoxelLayer::setupDynamicReconfigure(ros::NodeHandle& nh)
 {
   voxel_dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>(nh);
-  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>::CallbackType cb = boost::bind(
-      &VoxelLayer::reconfigureCB, this, _1, _2);
+  dynamic_reconfigure::Server<costmap_2d::VoxelPluginConfig>::CallbackType cb =
+      [this](auto& config, auto level){ reconfigureCB(config, level); };
   voxel_dsrv_->setCallback(cb);
 }
 

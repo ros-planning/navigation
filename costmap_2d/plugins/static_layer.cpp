@@ -38,7 +38,7 @@
  *********************************************************************/
 #include <costmap_2d/static_layer.h>
 #include <costmap_2d/costmap_math.h>
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <tf2/convert.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -118,8 +118,8 @@ void StaticLayer::onInitialize()
   }
 
   dsrv_ = new dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>(nh);
-  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb = boost::bind(
-      &StaticLayer::reconfigureCB, this, _1, _2);
+  dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig>::CallbackType cb =
+      [this](auto& config, auto level){ reconfigureCB(config, level); };
   dsrv_->setCallback(cb);
 }
 

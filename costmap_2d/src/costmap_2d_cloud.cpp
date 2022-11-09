@@ -199,7 +199,7 @@ int main(int argc, char** argv)
   ros::Publisher pub_marked = n.advertise < sensor_msgs::PointCloud > ("voxel_marked_cloud", 2);
   ros::Publisher pub_unknown = n.advertise < sensor_msgs::PointCloud > ("voxel_unknown_cloud", 2);
   ros::Subscriber sub = n.subscribe < costmap_2d::VoxelGrid
-      > ("voxel_grid", 1, boost::bind(voxelCallback, pub_marked, pub_unknown, _1));
+      > ("voxel_grid", 1, [&pub_marked,&pub_unknown](auto& msg){ voxelCallback(pub_marked, pub_unknown, msg); });
 
   ros::spin();
 
