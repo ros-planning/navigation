@@ -40,6 +40,8 @@
 #include <cmath>
 #include <Eigen/Core>
 #include <ros/console.h>
+#include <iostream>
+#include <fstream>
 
 namespace base_local_planner {
 
@@ -110,14 +112,17 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cargo_global = base_local_planner::normalize(robot_th + this->cargo_angle_);
   double cargo_rear_x = robot_x + std::cos(cargo_global) * 0.95;
   double cargo_rear_y = robot_y + std::sin(cargo_global) * 0.95;
+  const char *fileName = "/home/lexxauto/LexxAuto/log.txt";
+  std::ofstream ofs(fileName, std::ios::app);
 
   // ROS_WARN_STREAM("######## ------------------------------------------");
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     traj.getPoint(i, px, py, pth);
+    ofs << i << "," << 0 << "," << px << "," << py << "," << pth << "," << this->cargo_angle_ << std::endl;
     if (this->is_cargo_enabled_)
     {
 
-        double angle_a = M_PI - cargo_global;
+        double angle_a = cargo_global;
 
         // Calculate angle formed by vector A and B.
         double a1 = px - cargo_rear_x;
@@ -131,8 +136,8 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
         // angle formed by A and B become new_cargo_angle
         double angle_b = std::acos(cos_th);
         double angle_c = base_local_planner::normalize(angle_a + angle_b);
-        double new_cargo_global = base_local_planner::normalize(angle_c - M_PI);
-        double cargo_delta = base_local_planner::normalize(new_cargo_global - cargo_global);
+        double new_cargo_global = base_local_planner::normalize(angle_c);
+        double cargo_delta = base_local_planner::normalize(cargo_global - new_cargo_global);
 
         // ROS_WARN_STREAM(i << "," << px << "," << py << "," << pth << "," << robot_x << "," << robot_y << "," << cargo_rear_x << "," << cargo_rear_y << "," << this->cargo_angle_ << "," << cargo_global << "," << cargo_delta << "," << new_cargo_global);
 
@@ -147,6 +152,24 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
         cargo_rear_x = robot_x + std::cos(cargo_global) * 0.95;
         cargo_rear_y = robot_y + std::sin(cargo_global) * 0.95;
     }
+
+    double cos_th = cos(pth);
+    double sin_th = sin(pth);
+
+    std::vector<geometry_msgs::Point> oriented_footprint;
+    for(unsigned int j = 0; j < footprint_spec_.size(); ++j){
+      geometry_msgs::Point new_pt;
+      new_pt.x = px + (footprint_spec_[j].x * cos_th - footprint_spec_[j].y * sin_th);
+      new_pt.y = py + (footprint_spec_[j].x * sin_th + footprint_spec_[j].y * cos_th);
+      oriented_footprint.push_back(new_pt);
+    }
+
+    for (size_t j = 0; j < oriented_footprint.size(); j++)
+    {
+      auto pt = oriented_footprint[j];
+      ofs << i << "," << (j + 1) << "," << pt.x << "," << pt.y << std::endl;
+    }
+
     double f_cost = footprintCost(px, py, pth,
         scale, footprint_spec_,
         costmap_, world_model_);
