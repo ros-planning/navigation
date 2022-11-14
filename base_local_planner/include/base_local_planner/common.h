@@ -5,18 +5,17 @@
 
 namespace base_local_planner {
 
-inline double normalize(double value, double min=-M_PI, double max=M_PI)
+inline double normalize_angle(double value, double min=-M_PI, double max=M_PI)
 {
-    double range = std::fabs(max - min);
-    if (value < min)
+    double cycle = max - min;
+    double angle = std::fmod(value - min, cycle) + min;
+
+    while (angle < min)
     {
-        return value + range * std::ceil(std::abs(value - min) / range);
+        angle += cycle;
     }
-    else if (max <= value)
-    {
-        return value - range * (std::floor(std::abs(value - max) / range) + 1);
-    }
-    return value;
+
+    return angle;
 }
 }
 #endif

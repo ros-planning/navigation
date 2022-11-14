@@ -104,53 +104,36 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
     return -9;
   }
-  double robot_x, robot_y, robot_th;
-  if (0 < traj.getPointsSize())
-  {
-    traj.getPoint(0, robot_x, robot_y, robot_th);
-  }
-  double cargo_global = base_local_planner::normalize(robot_th + this->cargo_angle_);
-  double cargo_rear_x = robot_x + std::cos(cargo_global) * 0.95;
-  double cargo_rear_y = robot_y + std::sin(cargo_global) * 0.95;
+  double pre_x, pre_y, pre_th;
+  traj.getPoint(0, px, py, pth);
+  pre_x = px;
+  pre_y = py;
+  pre_th = pth;
+  double cargo_global = base_local_planner::normalize_angle(pre_th + this->cargo_angle_);
+  double cargo_rear_x = pre_x + std::cos(cargo_global) * 0.95;
+  double cargo_rear_y = pre_y + std::sin(cargo_global) * 0.95;
   const char *fileName = "/home/lexxauto/LexxAuto/log.txt";
   std::ofstream ofs(fileName, std::ios::app);
 
   // ROS_WARN_STREAM("######## ------------------------------------------");
+  double dummpy_th;
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
-    traj.getPoint(i, px, py, pth);
     ofs << i << "," << 0 << "," << px << "," << py << "," << pth << "," << this->cargo_angle_ << std::endl;
     if (this->is_cargo_enabled_)
     {
+      traj.getPoint(i, px, py, dummpy_th);
+      double pre_cargo_th = std::atan2(pre_y - cargo_rear_y, pre_x - cargo_rear_x);
+      double cur_cargo_th = std::atan2(py - cargo_rear_y, pre_x - cargo_rear_x);
+      double delta_cargo_th = cur_cargo_th - pre_cargo_th;
 
-        double angle_a = cargo_global;
-
-        // Calculate angle formed by vector A and B.
-        double a1 = px - cargo_rear_x;
-        double a2 = py - cargo_rear_y;
-        double b1 = robot_x - cargo_rear_x;
-        double b2 = robot_y - cargo_rear_y;
-
-        double cos_th = a1 * b1 + a2 * b2 /
-            (std::sqrt(a1 * a1 + a2 * a2) * std::sqrt(b1 * b1 + b2 * b2));
-        
-        // angle formed by A and B become new_cargo_angle
-        double angle_b = std::acos(cos_th);
-        double angle_c = base_local_planner::normalize(angle_a + angle_b);
-        double new_cargo_global = base_local_planner::normalize(angle_c);
-        double cargo_delta = base_local_planner::normalize(cargo_global - new_cargo_global);
-
-        // ROS_WARN_STREAM(i << "," << px << "," << py << "," << pth << "," << robot_x << "," << robot_y << "," << cargo_rear_x << "," << cargo_rear_y << "," << this->cargo_angle_ << "," << cargo_global << "," << cargo_delta << "," << new_cargo_global);
-
-        // difference of cargo_angle in global coordinates
-        // is rotation amount of the footprint.
-        pth = base_local_planner::normalize(robot_th + cargo_delta);
-
-        robot_x = px;
-        robot_y = py;
-        robot_th = pth;
-        cargo_global = new_cargo_global;
-        cargo_rear_x = robot_x + std::cos(cargo_global) * 0.95;
-        cargo_rear_y = robot_y + std::sin(cargo_global) * 0.95;
+      pth = base_local_planner::normalize_angle(pth + delta_cargo_th);
+      cargo_global = base_local_planner::normalize_angle(cargo_global + delta_cargo_th);
+      cargo_rear_x = px + std::cos(cargo_global) * 0.95;
+      cargo_rear_y = py + std::sin(cargo_global) * 0.95;
+    }
+    else
+    {
+      traj.getPoint(i, px, py, pth);
     }
 
     double cos_th = cos(pth);
