@@ -51,9 +51,6 @@
 namespace dwa_local_planner {
   void DWAPlanner::reconfigure(DWAPlannerConfig &config)
   {
-
-    boost::mutex::scoped_lock l(configuration_mutex_);
-
     generator_.setParameters(
         config.sim_time,
         config.sim_granularity,
@@ -374,9 +371,6 @@ namespace dwa_local_planner {
       const geometry_msgs::PoseStamped& global_pose,
       const geometry_msgs::PoseStamped& global_vel,
       geometry_msgs::PoseStamped& drive_velocities) {
-
-    //make sure that our configuration doesn't change mid-run
-    boost::mutex::scoped_lock l(configuration_mutex_);
 
     Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation));
     Eigen::Vector3f vel(global_vel.pose.position.x, global_vel.pose.position.y, tf2::getYaw(global_vel.pose.orientation));

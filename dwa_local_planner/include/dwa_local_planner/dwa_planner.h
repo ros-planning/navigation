@@ -170,7 +170,6 @@ namespace dwa_local_planner {
 
       std::vector<geometry_msgs::PoseStamped> global_plan_;
 
-      boost::mutex configuration_mutex_;
       std::string frame_id_;
       ros::Publisher traj_cloud_pub_;
       bool publish_cost_grid_pc_; ///< @brief Whether or not to build and publish a PointCloud

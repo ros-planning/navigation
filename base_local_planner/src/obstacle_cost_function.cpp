@@ -136,7 +136,8 @@ double ObstacleCostFunction::getScalingFactor(const Trajectory &traj, double sca
   //if we're over a certain speed threshold, we'll scale the robot's
   //footprint to make it either slow down or stay further from walls
   //scale up to 1 linearly... this could be changed later
-  return vmag <= scaling_speed ? 0.0 : (vmag - scaling_speed) / (max_trans_vel - scaling_speed);
+  const double scale = vmag <= scaling_speed ? 0.0 : (vmag - scaling_speed) / (max_trans_vel - scaling_speed);
+  return std::max(0.0, std::min(1.0, scale));
 }
 
 double ObstacleCostFunction::footprintCost (
