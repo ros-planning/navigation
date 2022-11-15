@@ -2,6 +2,7 @@
 #define CURVATURE_COST_FUNCTION_H
 
 #include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/common.h>
 #include <ros/ros.h>
 namespace base_local_planner {
 

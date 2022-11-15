@@ -12,6 +12,7 @@
 
 #include <Eigen/Core>
 
+#include <base_local_planner/common.h>
 #include <base_local_planner/local_planner_util.h>
 #include <base_local_planner/odometry_helper_ros.h>
 

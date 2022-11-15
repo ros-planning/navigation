@@ -123,7 +123,7 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     {
       traj.getPoint(i, px, py, dummpy_th);
       double pre_cargo_th = std::atan2(pre_y - cargo_rear_y, pre_x - cargo_rear_x);
-      double cur_cargo_th = std::atan2(py - cargo_rear_y, pre_x - cargo_rear_x);
+      double cur_cargo_th = std::atan2(py - cargo_rear_y, px - cargo_rear_x);
       double delta_cargo_th = cur_cargo_th - pre_cargo_th;
 
       pth = base_local_planner::normalize_angle(pth + delta_cargo_th);

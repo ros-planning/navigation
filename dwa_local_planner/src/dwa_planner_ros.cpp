@@ -349,7 +349,7 @@ namespace dwa_local_planner {
         Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
         Eigen::Vector3f(0.0, 0.0, M_PI));
 
-      if (is_rotate)
+      if (is_rotate && ros::Duration(3.0) < (ros::Time::now() - this->rotate_goal_time_))
       {
         this->rotate_to_goal_ = true;
       }
@@ -426,6 +426,7 @@ namespace dwa_local_planner {
     }
     else if (this->rotate_to_goal_)
     {
+      this->rotate_goal_time_ = ros::Time::now();
       vel_cmd_mode_msg_.data = 0;
       vel_cmd_mode_marker_msg_.color.r = 0.0;
       vel_cmd_mode_marker_msg_.color.g = 1.0;
