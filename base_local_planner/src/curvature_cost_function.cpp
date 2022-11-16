@@ -34,11 +34,12 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
     return 0.0;
   }
 
-  double norm_cargo_angle = base_local_planner::normalize_angle(cargo_angle_);
-  double delta_angle;
+  
+  double delta_angle, next_cargo_angle;
   if (traj.getPointsSize() <= 1)
   {
     delta_angle = traj.thetav_;
+    next_cargo_angle = base_local_planner::normalize_angle(cargo_angle_ + traj.thetav_);
   }
   else
   {
@@ -55,9 +56,10 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
       double cargo_global = base_local_planner::normalize_angle(pth0 + this->cargo_angle_);
       double cargo_rear_x = px0 + std::cos(cargo_global) * 0.95;
       double cargo_rear_y = py0 + std::sin(cargo_global) * 0.95;
-      double pre_cargo_th = std::atan2(py0 - cargo_rear_y, px0 - cargo_rear_x);
-      double cur_cargo_th = std::atan2(py1 - cargo_rear_y, px1 - cargo_rear_x);
-      delta_angle = cur_cargo_th - pre_cargo_th;
+      double cur_cargo_th = std::atan2(py0 - cargo_rear_y, px0 - cargo_rear_x);
+      double next_cargo_th = std::atan2(py1 - cargo_rear_y, px1 - cargo_rear_x);
+      delta_angle = base_local_planner::normalize_angle(next_cargo_th - cur_cargo_th);
+      next_cargo_angle = base_local_planner::normalize_angle(cargo_global + delta_angle - pth1);
     }
   }
 
@@ -67,22 +69,10 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
   }
   else if (std::fabs(traj.xv_ / delta_angle) < this->curvature_radius_)
   {
-    if (std::fabs(norm_cargo_angle + delta_angle) < this->cargo_limit_angle_deg_ * M_PI / 180)
+    if (std::fabs(next_cargo_angle) < this->cargo_limit_angle_deg_ * M_PI / 180)
     {
       return 0.0;
     }
-
-    // ROS_WARN_STREAM(norm_cargo_angle << " / " << delta_angle);
-
-    // if (norm_cargo_angle < 0 && delta_angle < 0)
-    // {
-    //   return 0.0;
-    // }
-    // else if (0 < norm_cargo_angle && 0 < delta_angle)
-    // {
-    //   return 0.0;
-    // }
-    // return 0.0;
     return -11;
   }
   return 0.0;
