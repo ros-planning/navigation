@@ -90,9 +90,6 @@ private:
   double cargo_length_;
   double cargo_angle_;
   bool is_cargo_enabled_;
-
-  double calc_distance(double x0, double y0, double th0, double x1, double y1);
-
 };
 
 } /* namespace base_local_planner */

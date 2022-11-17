@@ -89,17 +89,6 @@ bool ObstacleCostFunction::prepare() {
   return true;
 }
 
-double ObstacleCostFunction::calc_distance(double x0, double y0, double x1, double y1, double th1)
-{
-  double x2 = x1 + std::cos(th1);
-  double y2 = y1 + std::sin(th1);
-
-  // distance from point to line
-  double f1 = (x2 - x1) * (y1 - y0) - (y2 - y1) * (x1 - x0);
-  double r2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
-  return std::sqrt((f1 * f1) / r2);
-}
-
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   double cost = 0;
   double scale = getScalingFactor(traj, scaling_speed_, max_trans_vel_, max_scaling_factor_);
