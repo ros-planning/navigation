@@ -187,6 +187,7 @@ namespace dwa_local_planner {
       double rotate_start_threshold_vel_;
       double rotate_start_threshold_angular_vel_;
       bool is_actuator_connect_;
+      double backward_rotate_time_;
       ros::Time rotate_goal_time_;
       bool rotate_to_goal_;
       bool use_rotate_first_actuator_connect_;
