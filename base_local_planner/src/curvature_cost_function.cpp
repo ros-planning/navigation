@@ -49,7 +49,7 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
 
     if (px0 == px1 && py0 == py1)
     {
-      delta_angle = traj.thetav_;
+      delta_angle = 0.0;
     }
     else
     {
@@ -63,16 +63,21 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
     }
   }
 
+  if (std::fabs(next_cargo_angle) < this->cargo_limit_angle_deg_ * M_PI / 180)
+  {
+    if (std::fabs(cargo_angle_) < std::fabs(next_cargo_angle))
+    {
+      return 0.0;
+    }
+    return -12;
+  }
+
   if (delta_angle == 0.0)
   {
     return 0.0;
   }
   else if (std::fabs(traj.xv_ / delta_angle) < this->curvature_radius_)
   {
-    if (std::fabs(next_cargo_angle) < this->cargo_limit_angle_deg_ * M_PI / 180)
-    {
-      return 0.0;
-    }
     return -11;
   }
   return 0.0;
