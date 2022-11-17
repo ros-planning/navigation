@@ -152,7 +152,7 @@ namespace dwa_local_planner {
       
       private_nh.param("use_rotate_first_actuator_connect", this->use_rotate_first_actuator_connect_, false);
       private_nh.param("use_rotate_first_actuator_disconnect", this->use_rotate_first_actuator_disconnect_, true);
-      private_nh.param("kpre", this->kpre_, 0.65);
+      private_nh.param("kpre", this->kpre_, 0.0);
 
       private_nh.param("latch_unlock_distance", this->latch_unlock_distance_, 1.0);
       private_nh.param("cargo_timeout_sec", this->cargo_timeout_sec_, 1.0);
