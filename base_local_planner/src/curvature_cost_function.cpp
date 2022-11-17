@@ -39,7 +39,6 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
     return 0.0;
   }
 
-  
   double delta_angle, next_cargo_angle;
   if (traj.getPointsSize() <= 1)
   {
