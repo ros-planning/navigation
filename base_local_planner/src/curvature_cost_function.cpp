@@ -27,6 +27,11 @@ void CurvatureCostFunction::setCargoEnabled(bool is_cargo_enabled)
   this->is_cargo_enabled_ = is_cargo_enabled;
 }
 
+void CurvatureCostFunction::setCargoLength(double cargo_length)
+{
+  this->cargo_length_ = cargo_length;
+}
+
 double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
 
   if (!this->is_cargo_enabled_ || this->curvature_radius_ <= 0.0)
@@ -54,11 +59,9 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
     else
     {
       double cargo_global = base_local_planner::normalize_angle(pth0 + this->cargo_angle_);
-      double cargo_rear_x = px0 + std::cos(cargo_global) * 0.95;
-      double cargo_rear_y = py0 + std::sin(cargo_global) * 0.95;
-      double cur_cargo_th = std::atan2(py0 - cargo_rear_y, px0 - cargo_rear_x);
-      double next_cargo_th = std::atan2(py1 - cargo_rear_y, px1 - cargo_rear_x);
-      delta_angle = base_local_planner::normalize_angle(next_cargo_th - cur_cargo_th);
+      double rear_x, rear_y, delta_angle;
+      base_local_planner::calc_cargo_rear_position(px0, py0, cargo_global, 0.95, rear_x, rear_y);
+      base_local_planner::calc_cargo_delta_angle(px0, py0, px1, py1, rear_x, rear_y, delta_angle);
       next_cargo_angle = base_local_planner::normalize_angle(cargo_global + delta_angle - pth1);
     }
   }

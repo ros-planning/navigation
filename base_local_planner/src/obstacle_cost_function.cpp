@@ -80,6 +80,11 @@ void ObstacleCostFunction::setCargoEnabled(bool is_cargo_enabled)
   this->is_cargo_enabled_ = is_cargo_enabled;
 }
 
+void ObstacleCostFunction::setCargoLength(double cargo_length)
+{
+  this->cargo_length_ = cargo_length;
+}
+
 bool ObstacleCostFunction::prepare() {
   return true;
 }
@@ -110,26 +115,20 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
   pre_y = py;
   pre_th = pth;
   double cargo_global = base_local_planner::normalize_angle(pre_th + this->cargo_angle_);
-  double cargo_rear_x = pre_x + std::cos(cargo_global) * 0.95;
-  double cargo_rear_y = pre_y + std::sin(cargo_global) * 0.95;
-  const char *fileName = "/home/lexxauto/LexxAuto/log.txt";
-  std::ofstream ofs(fileName, std::ios::app);
+  double cargo_rear_x, cargo_rear_y;
+  base_local_planner::calc_cargo_rear_position(pre_x, pre_y, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
 
-  // ROS_WARN_STREAM("######## ------------------------------------------");
   double dummpy_th;
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
-    ofs << i << "," << 0 << "," << px << "," << py << "," << pth << "," << this->cargo_angle_ << std::endl;
     if (this->is_cargo_enabled_)
     {
       traj.getPoint(i, px, py, dummpy_th);
-      double pre_cargo_th = std::atan2(pre_y - cargo_rear_y, pre_x - cargo_rear_x);
-      double cur_cargo_th = std::atan2(py - cargo_rear_y, px - cargo_rear_x);
-      double delta_cargo_th = cur_cargo_th - pre_cargo_th;
+      double delta_cargo_th;
+      base_local_planner::calc_cargo_delta_angle(pre_x, pre_y, px, py, cargo_rear_x, cargo_rear_y, delta_cargo_th);
 
       pth = base_local_planner::normalize_angle(pth + delta_cargo_th);
       cargo_global = base_local_planner::normalize_angle(cargo_global + delta_cargo_th);
-      cargo_rear_x = px + std::cos(cargo_global) * 0.95;
-      cargo_rear_y = py + std::sin(cargo_global) * 0.95;
+      base_local_planner::calc_cargo_rear_position(px, py, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
     }
     else
     {
@@ -145,12 +144,6 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
       new_pt.x = px + (footprint_spec_[j].x * cos_th - footprint_spec_[j].y * sin_th);
       new_pt.y = py + (footprint_spec_[j].x * sin_th + footprint_spec_[j].y * cos_th);
       oriented_footprint.push_back(new_pt);
-    }
-
-    for (size_t j = 0; j < oriented_footprint.size(); j++)
-    {
-      auto pt = oriented_footprint[j];
-      ofs << i << "," << (j + 1) << "," << pt.x << "," << pt.y << std::endl;
     }
 
     double f_cost = footprintCost(px, py, pth,

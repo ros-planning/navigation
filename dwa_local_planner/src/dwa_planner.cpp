@@ -160,6 +160,11 @@ namespace dwa_local_planner {
     traj_cloud_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("trajectory_cloud", 1);
     private_nh.param("publish_traj_pc", publish_traj_pc_, false);
 
+    double cargo_length;
+    private_nh.param("cargo_length", cargo_length, 0.95);
+    obstacle_costs_.setCargoLength(cargo_length);
+    curvature_costs_.setCargoLength(cargo_length);
+
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;
