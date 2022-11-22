@@ -59,7 +59,7 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
     {
       double cargo_global = base_local_planner::normalize_angle(pth0 + this->cargo_angle_);
       double rear_x, rear_y, delta_angle;
-      base_local_planner::calc_cargo_rear_position(px0, py0, cargo_global, 0.95, rear_x, rear_y);
+      base_local_planner::calc_cargo_rear_position(px0, py0, cargo_global, this->cargo_length_, rear_x, rear_y);
       base_local_planner::calc_cargo_delta_angle(px0, py0, px1, py1, rear_x, rear_y, delta_angle);
       next_cargo_angle = base_local_planner::normalize_angle(cargo_global + delta_angle - pth1);
     }
