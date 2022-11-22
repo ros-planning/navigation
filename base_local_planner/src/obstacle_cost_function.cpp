@@ -116,11 +116,11 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     base_local_planner::calc_cargo_rear_position(pre_x, pre_y, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
   }
 
-  double dummpy_th;
+  double dummy_th;
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
     if (this->is_cargo_enabled_)
     {
-      traj.getPoint(i, px, py, dummpy_th);
+      traj.getPoint(i, px, py, dummy_th);
       double delta_cargo_th;
       base_local_planner::calc_cargo_delta_angle(pre_x, pre_y, px, py, cargo_rear_x, cargo_rear_y, delta_cargo_th);
 
