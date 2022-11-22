@@ -98,14 +98,23 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     ROS_ERROR("Footprint spec is empty, maybe missing call to setFootprint?");
     return -9;
   }
-  double pre_x, pre_y, pre_th;
-  traj.getPoint(0, px, py, pth);
-  pre_x = px;
-  pre_y = py;
-  pre_th = pth;
-  double cargo_global = base_local_planner::normalize_angle(pre_th + this->cargo_angle_);
-  double cargo_rear_x, cargo_rear_y;
-  base_local_planner::calc_cargo_rear_position(pre_x, pre_y, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
+
+  if (traj.getPointsSize() == 0)
+  {
+    return cost;
+  }
+  
+  double pre_x, pre_y, pre_th, cargo_global, cargo_rear_x, cargo_rear_y;
+  if (this->is_cargo_enabled_)
+  {
+    traj.getPoint(0, px, py, pth);
+    pre_x = px;
+    pre_y = py;
+    pre_th = pth;
+    cargo_global = base_local_planner::normalize_angle(pre_th + this->cargo_angle_);
+    cargo_rear_x, cargo_rear_y;
+    base_local_planner::calc_cargo_rear_position(pre_x, pre_y, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
+  }
 
   double dummpy_th;
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
@@ -122,17 +131,6 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     else
     {
       traj.getPoint(i, px, py, pth);
-    }
-
-    double cos_th = cos(pth);
-    double sin_th = sin(pth);
-
-    std::vector<geometry_msgs::Point> oriented_footprint;
-    for(unsigned int j = 0; j < footprint_spec_.size(); ++j){
-      geometry_msgs::Point new_pt;
-      new_pt.x = px + (footprint_spec_[j].x * cos_th - footprint_spec_[j].y * sin_th);
-      new_pt.y = py + (footprint_spec_[j].x * sin_th + footprint_spec_[j].y * cos_th);
-      oriented_footprint.push_back(new_pt);
     }
 
     double f_cost = footprintCost(px, py, pth,
