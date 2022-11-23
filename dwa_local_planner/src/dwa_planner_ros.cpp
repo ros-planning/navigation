@@ -158,6 +158,7 @@ namespace dwa_local_planner {
       private_nh.param("cargo_timeout_sec", this->cargo_timeout_sec_, 1.0);
       private_nh.param("cargo_limit_angle_deg", this->cargo_limit_angle_deg_, 90.0);
       private_nh.param("curvature_radius", this->curvature_radius_, 0.9);
+      private_nh.param("backward_rotate_time", this->backward_rotate_time_, 3.0);
 
       this->is_actuator_connect_ = false;
       this->rotate_to_goal_ = false;
@@ -349,7 +350,7 @@ namespace dwa_local_planner {
         Eigen::Vector3f(robot_vel.pose.position.x, robot_vel.pose.position.y, vel_yaw),
         Eigen::Vector3f(0.0, 0.0, M_PI));
 
-      if (is_rotate)
+      if (is_rotate && ros::Duration(this->backward_rotate_time_) < (ros::Time::now() - this->rotate_goal_time_))
       {
         this->rotate_to_goal_ = true;
       }
@@ -426,6 +427,7 @@ namespace dwa_local_planner {
     }
     else if (this->rotate_to_goal_)
     {
+      this->rotate_goal_time_ = ros::Time::now();
       vel_cmd_mode_msg_.data = 0;
       vel_cmd_mode_marker_msg_.color.r = 0.0;
       vel_cmd_mode_marker_msg_.color.g = 1.0;

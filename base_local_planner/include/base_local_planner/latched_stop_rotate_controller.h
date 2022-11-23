@@ -12,6 +12,7 @@
 
 #include <Eigen/Core>
 
+#include <base_local_planner/common.h>
 #include <base_local_planner/local_planner_util.h>
 #include <base_local_planner/odometry_helper_ros.h>
 
@@ -91,6 +92,7 @@ private:
   // whether to latch at all, and whether in this turn we have already been in goal area
   bool latch_xy_goal_tolerance_, xy_tolerance_latch_;
   bool rotating_to_goal_;
+  bool rotate_avoid_passing_behind_;
   double is_cargo_enabled_ = false;
   double cargo_angle_ = 0.0;
 };

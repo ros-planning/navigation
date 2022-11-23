@@ -36,9 +36,12 @@
  *********************************************************************/
 
 #include <base_local_planner/obstacle_cost_function.h>
+#include <base_local_planner/common.h>
 #include <cmath>
 #include <Eigen/Core>
 #include <ros/console.h>
+#include <iostream>
+#include <fstream>
 
 namespace base_local_planner {
 
@@ -67,6 +70,21 @@ void ObstacleCostFunction::setFootprint(std::vector<geometry_msgs::Point> footpr
   footprint_spec_ = footprint_spec;
 }
 
+void ObstacleCostFunction::setCargoAngle(double cargo_angle)
+{
+  this->cargo_angle_ = cargo_angle;
+}
+
+void ObstacleCostFunction::setCargoEnabled(bool is_cargo_enabled)
+{
+  this->is_cargo_enabled_ = is_cargo_enabled;
+}
+
+void ObstacleCostFunction::setCargoLength(double cargo_length)
+{
+  this->cargo_length_ = cargo_length;
+}
+
 bool ObstacleCostFunction::prepare() {
   return true;
 }
@@ -81,8 +99,42 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
     return -9;
   }
 
+  if (traj.getPointsSize() == 0)
+  {
+    return cost;
+  }
+  
+  double pre_x, pre_y, pre_th, cargo_global, cargo_rear_x, cargo_rear_y;
+  if (this->is_cargo_enabled_)
+  {
+    traj.getPoint(0, px, py, pth);
+    pre_x = px;
+    pre_y = py;
+    pre_th = pth;
+    cargo_global = base_local_planner::normalize_angle(pre_th + this->cargo_angle_);
+    cargo_rear_x, cargo_rear_y;
+    base_local_planner::calc_cargo_rear_position(pre_x, pre_y, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
+  }
+
+  double dummy_th;
   for (unsigned int i = 0; i < traj.getPointsSize(); ++i) {
-    traj.getPoint(i, px, py, pth);
+    if (this->is_cargo_enabled_)
+    {
+      traj.getPoint(i, px, py, dummy_th);
+      double delta_cargo_th;
+      base_local_planner::calc_cargo_delta_angle(pre_x, pre_y, px, py, cargo_rear_x, cargo_rear_y, delta_cargo_th);
+
+      pth = base_local_planner::normalize_angle(pth + delta_cargo_th);
+      cargo_global = base_local_planner::normalize_angle(cargo_global + delta_cargo_th);
+      base_local_planner::calc_cargo_rear_position(px, py, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
+      pre_x = px;
+      pre_y = py;
+    }
+    else
+    {
+      traj.getPoint(i, px, py, pth);
+    }
+
     double f_cost = footprintCost(px, py, pth,
         scale, footprint_spec_,
         costmap_, world_model_);

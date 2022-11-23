@@ -24,6 +24,7 @@ namespace base_local_planner {
 LatchedStopRotateController::LatchedStopRotateController(const std::string& name) {
   ros::NodeHandle private_nh("~/" + name);
   private_nh.param("latch_xy_goal_tolerance", latch_xy_goal_tolerance_, false);
+  private_nh.param("rotate_avoid_passing_behind", rotate_avoid_passing_behind_, false);
 
   rotating_to_goal_ = false;
 }
@@ -184,14 +185,9 @@ bool LatchedStopRotateController::rotateToGoal(
 
   v_theta_samp = std::min(limits.max_vel_theta, std::max(limits.min_vel_theta, v_theta_samp));
 
-  if (this->is_cargo_enabled_)
+  if (this->is_cargo_enabled_ && this->rotate_avoid_passing_behind_)
   {
-    double cargo_global = yaw + this->cargo_angle_;
-    while (cargo_global < 0)
-    {
-      cargo_global += 2 * M_PI;
-    }
-    cargo_global = std::fmod(cargo_global, 2 * M_PI) - M_PI;
+    double cargo_global = base_local_planner::normalize_angle(yaw + this->cargo_angle_);
 
     double ang_diff_yc = angles::shortest_angular_distance(yaw, cargo_global);
     double ang_diff_cg = angles::shortest_angular_distance(cargo_global, goal_th);

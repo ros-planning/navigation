@@ -2,6 +2,7 @@
 #define CURVATURE_COST_FUNCTION_H
 
 #include <base_local_planner/trajectory_cost_function.h>
+#include <base_local_planner/common.h>
 #include <ros/ros.h>
 namespace base_local_planner {
 
@@ -23,6 +24,7 @@ public:
 
   void setCargoLimitAngleDeg(double cargo_limit_angle_deg);
   void setCurvatureRadius(double curvature_radius);
+  void setCargoLength(double cargo_length);
   void setCargoAngle(double cargo_angle);
   void setCargoEnabled(bool is_cargo_enabled_);
 
@@ -31,6 +33,7 @@ public:
 private:
   double cargo_limit_angle_deg_;
   double curvature_radius_;
+  double cargo_length_;
   double cargo_angle_;
   bool is_cargo_enabled_;
 };
