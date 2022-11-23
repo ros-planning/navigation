@@ -127,6 +127,8 @@ double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
       pth = base_local_planner::normalize_angle(pth + delta_cargo_th);
       cargo_global = base_local_planner::normalize_angle(cargo_global + delta_cargo_th);
       base_local_planner::calc_cargo_rear_position(px, py, cargo_global, cargo_length_, cargo_rear_x, cargo_rear_y);
+      pre_x = px;
+      pre_y = py;
     }
     else
     {
