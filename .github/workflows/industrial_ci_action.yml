@@ -1,0 +1,27 @@
+
+# This config uses industrial_ci (https://github.com/ros-industrial/industrial_ci.git).
+# For troubleshooting, see README (https://github.com/ros-industrial/industrial_ci/blob/master/README.rst)
+
+name: CI
+
+on: # this determines when this workflow is run
+  push:
+    branches:
+      - devel
+  pull_request:
+    branches:
+      - devel
+  workflow_dispatch: # allow manually starting this workflow
+
+jobs:
+  industrial_ci:
+    name: ros-navigation-industrial-ci
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env:
+          - {ROS_DISTRO: noetic, ROS_REPO: main}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: 'ros-industrial/industrial_ci@master'
+        env: ${{matrix.env}}
