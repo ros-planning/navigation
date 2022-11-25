@@ -218,17 +218,47 @@ namespace base_local_planner{
     std::vector<geometry_msgs::PoseStamped> adjusted_global_plan;
     adjustPlanResolution(global_plan, adjusted_global_plan, costmap.getResolution());
 
-    // skip global path points until we reach the border of the local map
+    auto dist_squared_to_start = [&adjusted_global_plan](const double x, const double y) {
+      const double dx = x - adjusted_global_plan.front().pose.position.x;
+      const double dy = y - adjusted_global_plan.front().pose.position.y;
+      return dx * dx + dy * dy;
+    };
+    bool reached_point_away_from_start = false;
+    bool local_goal_in_obstacle = true;
+
+    // In the following loop, we select a point on the global path as the local goal based on which
+    // we compute the "distance to the goal". The following criteria are chosen:
+    // - local goal needs to be on the map (otherwise, goal does not correspond to a cell)
+    // - local goal needs to be on a cell where the cost is not NO_INFORMATION
+    //   (as NO_INFORMATION is treated as obstacle in updatePathCell())
+    //
+    // Additionally, cells with INSCRIBED_INFLATED_OBSTACLE and LETHAL_OBSTACLE cost are also treated as
+    // an obstacle in updatePathCell()
+    // (This is such that narrow pathways are discarded as potential paths to the goal)
+    // So if the neighboring cells of the local goal cell all have cost of INSCRIBED_INFLATED_OBSTACLE
+    // or LETHAL_OBSTACLE, the goal will be considered unreachable (the local planner will reject all trajectories).
+    // In this case, it is however unreasonable for the local planner to give up already when still far away
+    // from the local goal, as the obstacle on it might disappear or the global plan might get updated.
+    // Hence, once we reached a path point significantly far away from the beginning of the path and we
+    // encounter a cell with INSCRIBED_INFLATED_OBSTACLE / LETHAL_OBSTACLE cost, we can stop searching if
+    // a local goal significantly far away from the beginning of the path was already found that is not in an obstacle.
     for (unsigned int i = 0; i < adjusted_global_plan.size(); ++i) {
       double g_x = adjusted_global_plan[i].pose.position.x;
       double g_y = adjusted_global_plan[i].pose.position.y;
       unsigned int map_x, map_y;
+      reached_point_away_from_start = reached_point_away_from_start || dist_squared_to_start(g_x, g_y) > 1;
       if (costmap.worldToMap(g_x, g_y, map_x, map_y) && costmap.getCost(map_x, map_y) != costmap_2d::NO_INFORMATION) {
+        const bool in_obstacle = costmap.getCost(map_x, map_y) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
+        if (reached_point_away_from_start && in_obstacle && !local_goal_in_obstacle) {
+          break;
+        }
         local_goal_x = map_x;
         local_goal_y = map_y;
         started_path = true;
+        local_goal_in_obstacle = in_obstacle;
       } else {
         if (started_path) {
+          ROS_WARN_COND(local_goal_in_obstacle, "local goal in obstacle");
           break;
         }// else we might have a non pruned path, so we just continue
       }
