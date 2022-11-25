@@ -107,6 +107,12 @@ namespace dwa_local_planner {
       tf2_ros::Buffer* tf,
       costmap_2d::Costmap2DROS* costmap_ros) {
     if (! isInitialized()) {
+      ros::NodeHandle node_nh("~");
+      if (! node_nh.getParam("controller_frequency", controller_frequency_)) {
+        controller_frequency_ = 20.0;
+        ROS_WARN("Parameter controller_frequency not found on %s ns; defaulting to %g Hz",
+                 node_nh.getNamespace().c_str(), controller_frequency_);
+      }
 
       ros::NodeHandle private_nh("~/" + name);
       g_plan_pub_ = private_nh.advertise<nav_msgs::Path>("global_plan", 1);
@@ -290,9 +296,23 @@ namespace dwa_local_planner {
     cmd_vel.twist.linear.y = drive_cmds.pose.position.y;
     cmd_vel.twist.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
-    //if we cannot move... tell someone
     std::vector<geometry_msgs::PoseStamped> local_plan;
     if(path.cost_ < 0) {
+      // no valid path found; slow down respecting acceleration limits and report NO_VALID_CMD
+      const base_local_planner::LocalPlannerLimits& limits = planner_util_.getCurrentLimits();
+      const double vx = robot_vel.pose.position.x;
+      const double vy = robot_vel.pose.position.y;
+      const double vt = tf2::getYaw(robot_vel.pose.orientation);
+      const double ax_dt = limits.acc_lim_x / controller_frequency_;
+      const double ay_dt = limits.acc_lim_y / controller_frequency_;
+      const double at_dt = limits.acc_lim_theta / controller_frequency_;
+      // clip reduced velocities to zero, so we don't start moving in the opposite direction
+      cmd_vel.twist.linear.x = vx >= 0 ? std::max(0.0, vx - ax_dt) : std::min(0.0, vx + ax_dt);
+      cmd_vel.twist.linear.y = vy >= 0 ? std::max(0.0, vy - ay_dt) : std::min(0.0, vy + ay_dt);
+      cmd_vel.twist.angular.z = vt >= 0 ? std::max(0.0, vt - at_dt) : std::min(0.0, vt + at_dt);
+      ROS_DEBUG_NAMED("dwa_local_planner", "Slowing down from (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f)",
+                      vx, vy, vt, cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z);
+
       message = "The dwa local planner failed to find a valid plan, cost functions discarded all candidates. This can mean there is an obstacle too close to the robot";
       ROS_DEBUG_STREAM_NAMED("dwa_local_planner", message);  //// TODO why is this DEBUG?
       local_plan.clear();

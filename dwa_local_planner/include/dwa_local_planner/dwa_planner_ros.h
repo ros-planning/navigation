@@ -189,6 +189,7 @@ namespace dwa_local_planner {
 
       bool initialized_;
 
+      double controller_frequency_; ///< Calling frequency to this plugin
 
       base_local_planner::OdometryHelperRos odom_helper_;
       std::string odom_topic_;
