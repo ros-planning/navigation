@@ -62,15 +62,17 @@ void frontRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 
 PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_core::RecoveryBehavior)
   namespace safety_direction_recovery{
-    SafetyDirectionRecovery::SafetyDirectionRecovery(): local_costmap_(NULL), initialized_(false), world_model_(NULL)
+    SafetyDirectionRecovery::SafetyDirectionRecovery(): local_costmap_(NULL), global_costmap_(NULL), initialized_(false),
+                                                        local_world_model_(NULL), global_world_model_(NULL)
     {
     }
 
     void SafetyDirectionRecovery::initialize(std::string name, tf2_ros::Buffer*,
-        costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS* local_costmap)
+        costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap)
     {
       if(!initialized_)
       {
+        global_costmap_ = global_costmap;
         local_costmap_ = local_costmap;
 
         // get some parameters from the parameter server
@@ -104,7 +106,8 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 //        max_vel_x_ = 1.0f;
 //        min_vel_x_ = -1.0f;
 
-        world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
+        local_world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
+        global_world_model_ = new base_local_planner::CostmapModel(*global_costmap_->getCostmap());
 
         initialized_ = true;
 
@@ -136,7 +139,8 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
     SafetyDirectionRecovery::~SafetyDirectionRecovery()
     {
-      delete world_model_;
+      delete local_world_model_;
+      delete global_world_model_;
     }
  
     double SafetyDirectionRecovery::calculateDist(geometry_msgs::PoseStamped initial, geometry_msgs::PoseStamped current)
@@ -323,10 +327,18 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       {
         double sim_x = robot_x + tmp_distance * cos(robot_angle + sim_angle);
         double sim_y = robot_y + tmp_distance * sin(robot_angle + sim_angle);
-        double tmp_cost = world_model_->footprintCost(sim_x, sim_y, robot_angle + sim_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+        double local_tmp_cost = local_world_model_->footprintCost(sim_x, sim_y, robot_angle + sim_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+        double global_tmp_cost = global_world_model_->footprintCost(sim_x, sim_y, robot_angle + sim_angle, global_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
 
         tmp_distance += sim_granularity_;
-        if (tmp_cost < 0) total_cost += tmp_cost;
+
+        if (local_tmp_cost == -1) total_cost -= 1000; // LETHAL_OBSTACLE case
+        else if (local_tmp_cost < 0) total_cost += local_tmp_cost;
+        else total_cost -= local_tmp_cost;
+
+        if (global_tmp_cost == -1) total_cost -= 1000; // LETHAL_OBSTACLE case
+        else if (global_tmp_cost < 0) total_cost += global_tmp_cost;
+        else total_cost -= global_tmp_cost;
       }
 
       return total_cost;
@@ -351,6 +363,27 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       //while(n.ok() && dist_left > x_goal_tolerance_)
       while(n.ok() && dist_left > 0)
       {
+        // the robot is inside unmovable area
+        double current_angle = tf2::getYaw(global_pose.pose.orientation);
+        double x = global_pose.pose.position.x;
+        double y = global_pose.pose.position.y;
+        int local_footprint_cost = local_world_model_->footprintCost(x, y, current_angle, local_costmap_->getRobotFootprint(),
+                                                                        inscribed_radius_, circumscribed_radius_);
+        int global_footprint_cost = global_world_model_->footprintCost(x, y, current_angle, global_costmap_->getRobotFootprint(),
+                                                                          inscribed_radius_, circumscribed_radius_);
+        std::cerr << "local_footprint_cost value is " << local_footprint_cost << std::endl;
+        std::cerr << "global_footprint_cost value is " << global_footprint_cost << std::endl;
+        if (is_near_unmovable_area_or_obstacle(local_footprint_cost, global_footprint_cost))
+        {
+          cmd_vel.linear.x = 0.0;
+          cmd_vel.linear.y = 0.0;
+          cmd_vel.angular.z = 0.0;
+          vel_pub.publish(cmd_vel);
+
+          ROS_WARN("robot is inside unmovable area or near obstacles.");
+          break;
+        }
+
         // break the loop if time is sufficienty passed. ex): blocked by obstacle
         time_passed += 1.0 / frequency_;
         if (time_passed > time_timeout)
@@ -364,11 +397,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         dist_travelled = SafetyDirectionRecovery::calculateDist(initial_pose, global_pose);
         dist_left = dist_to_move - dist_travelled;
 
-/*
         // conduct simulation
-        double current_angle = tf2::getYaw(global_pose.pose.orientation);
-        double x = global_pose.pose.position.x;
-        double y = global_pose.pose.position.y;
         double sim_distance = 0.0;
         while(sim_distance < dist_left)
         {
@@ -376,10 +405,11 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
           double sim_y = y + direction * sim_distance * sin(current_angle);
 
           // make sure that the point is legal. Else, abort
-          double footprint_cost = world_model_->footprintCost(sim_x, sim_y, current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-          if(footprint_cost < 0.0)
+          int local_footprint_cost = local_world_model_->footprintCost(sim_x, sim_y, current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+          int global_footprint_cost = global_world_model_->footprintCost(sim_x, sim_y, current_angle, global_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+          if (is_near_unmovable_area_or_obstacle(local_footprint_cost, global_footprint_cost))
           {
-            ROS_ERROR("Safety direction recovery can't be conducted because there is a potential collision. Cost: %.2f", footprint_cost);
+            ROS_ERROR("[safety_direction_recovery] the robot is going to unmovable area or obstacles.");
             cmd_vel.linear.x = 0.0;
             cmd_vel.linear.y = 0.0;
             cmd_vel.angular.z = 0.0;
@@ -392,7 +422,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
           sim_distance += sim_granularity_;
         }
-*/
 
         vel = std::min(std::max(vel, min_vel_x_), max_vel_x_);
 
@@ -407,6 +436,19 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
       ROS_INFO("The robot travelled  %f.\n", dist_travelled);
       return dist_travelled;
+    }
+
+    bool SafetyDirectionRecovery::is_near_unmovable_area_or_obstacle(int local_footprint_cost, int global_footprint_cost)
+    {
+      if(local_footprint_cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE || local_footprint_cost == -1 ||
+         global_footprint_cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE || global_footprint_cost == -1)
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
     }
 
     double SafetyDirectionRecovery::rotate(const double direction, const double rotate_angle)
@@ -424,6 +466,25 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
       while (n.ok() && !is_goal_reached)
       {
+        // the robot is inside unmovable area
+        double current_angle = tf2::getYaw(global_pose.pose.orientation);
+        double x = global_pose.pose.position.x;
+        double y = global_pose.pose.position.y;
+        int local_footprint_cost = local_world_model_->footprintCost(x, y, current_angle, local_costmap_->getRobotFootprint(),
+                                                                        inscribed_radius_, circumscribed_radius_);
+        int global_footprint_cost = global_world_model_->footprintCost(x, y, current_angle, global_costmap_->getRobotFootprint(),
+                                                                          inscribed_radius_, circumscribed_radius_);
+        if (is_near_unmovable_area_or_obstacle(local_footprint_cost, global_footprint_cost))
+        {
+          cmd_vel.linear.x = 0.0;
+          cmd_vel.linear.y = 0.0;
+          cmd_vel.angular.z = 0.0;
+          vel_pub.publish(cmd_vel);
+
+          ROS_WARN("robot is inside unmovable area or near obstacles.");
+          break;
+        }
+
         // Update Current Angle
         local_costmap_->getRobotPose(global_pose);
         current_angle = tf2::getYaw(global_pose.pose.orientation);
@@ -441,7 +502,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
           double theta = current_angle + sim_angle * direction;
 
           // make sure that the point is legal, if it isn't... we'll abort
-          double footprint_cost = world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
+          double footprint_cost = local_world_model_->footprintCost(x, y, theta, local_costmap_->getRobotFootprint(), 0.0, 0.0);
           if (footprint_cost < 0.0)
           {
             ROS_ERROR("Rotate recovery can't rotate in place because there is a potential collision. Cost: %.2f",
