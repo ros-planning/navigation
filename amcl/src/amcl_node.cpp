@@ -284,6 +284,7 @@ class AmclNode
     double init_cov_[3];
     laser_model_t laser_model_type_;
     bool tf_broadcast_;
+    bool force_nomotion_update_after_initialpose_;
     bool selective_resampling_;
 
     void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
@@ -445,6 +446,7 @@ AmclNode::AmclNode() :
   private_nh_.param("recovery_alpha_slow", alpha_slow_, 0.001);
   private_nh_.param("recovery_alpha_fast", alpha_fast_, 0.1);
   private_nh_.param("tf_broadcast", tf_broadcast_, true);
+  private_nh_.param("force_nomotion_update_after_initialpose", force_nomotion_update_after_initialpose_, false);
 
   // For diagnostics
   private_nh_.param("std_warn_level_x", std_warn_level_x_, 0.2);
@@ -584,6 +586,7 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   alpha_slow_ = config.recovery_alpha_slow;
   alpha_fast_ = config.recovery_alpha_fast;
   tf_broadcast_ = config.tf_broadcast;
+  force_nomotion_update_after_initialpose_ = config.force_nomotion_update_after_initialpose;
 
   do_beamskip_= config.do_beamskip; 
   beam_skip_distance_ = config.beam_skip_distance; 
@@ -1522,6 +1525,10 @@ void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
   handleInitialPoseMessage(*msg);
+  if (force_nomotion_update_after_initialpose_)
+  {
+    m_force_update = true;
+  }
 }
 
 void
