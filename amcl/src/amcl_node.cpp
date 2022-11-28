@@ -1031,7 +1031,7 @@ AmclNode::getOdomPose(geometry_msgs::PoseStamped& odom_pose,
   {
     this->tf_->transform(ident, odom_pose, odom_frame_id_);
   }
-  catch(tf2::TransformException e)
+  catch(const tf2::TransformException& e)
   {
     ROS_WARN("Failed to compute odom pose, skipping scan (%s)", e.what());
     return false;
@@ -1147,7 +1147,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     {
       this->tf_->transform(ident, laser_pose, base_frame_id_);
     }
-    catch(tf2::TransformException& e)
+    catch(const tf2::TransformException& e)
     {
       ROS_ERROR("Couldn't transform from %s to %s, "
                 "even though the message notifier is in use",
@@ -1270,7 +1270,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       tf_->transform(min_q, min_q, base_frame_id_);
       tf_->transform(inc_q, inc_q, base_frame_id_);
     }
-    catch(tf2::TransformException& e)
+    catch(const tf2::TransformException& e)
     {
       ROS_WARN("Unable to transform min/max laser angles into base frame: %s",
                e.what());
@@ -1462,7 +1462,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
         this->tf_->transform(tmp_tf_stamped, odom_to_map, odom_frame_id_);
       }
-      catch(tf2::TransformException)
+      catch(const tf2::TransformException&)
       {
         ROS_DEBUG("Failed to subtract base to odom transform");
         return;
@@ -1554,13 +1554,12 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
   geometry_msgs::TransformStamped tx_odom;
   try
   {
-    ros::Time now = ros::Time::now();
     // wait a little for the latest tf to become available
     tx_odom = tf_->lookupTransform(base_frame_id_, msg.header.stamp,
                                    base_frame_id_, ros::Time::now(),
                                    odom_frame_id_, ros::Duration(0.5));
   }
-  catch(tf2::TransformException e)
+  catch(const tf2::TransformException& e)
   {
     // If we've never sent a transform, then this is normal, because the
     // global_frame_id_ frame doesn't exist.  We only care about in-time
