@@ -284,6 +284,8 @@ class AmclNode
     double init_cov_[3];
     laser_model_t laser_model_type_;
     bool tf_broadcast_;
+    bool force_update_after_initialpose_;
+    bool force_update_after_set_map_;
     bool selective_resampling_;
 
     void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
@@ -445,6 +447,8 @@ AmclNode::AmclNode() :
   private_nh_.param("recovery_alpha_slow", alpha_slow_, 0.001);
   private_nh_.param("recovery_alpha_fast", alpha_fast_, 0.1);
   private_nh_.param("tf_broadcast", tf_broadcast_, true);
+  private_nh_.param("force_update_after_initialpose", force_update_after_initialpose_, false);
+  private_nh_.param("force_update_after_set_map", force_update_after_set_map_, false);
 
   // For diagnostics
   private_nh_.param("std_warn_level_x", std_warn_level_x_, 0.2);
@@ -584,6 +588,8 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
   alpha_slow_ = config.recovery_alpha_slow;
   alpha_fast_ = config.recovery_alpha_fast;
   tf_broadcast_ = config.tf_broadcast;
+  force_update_after_initialpose_ = config.force_update_after_initialpose;
+  force_update_after_set_map_ = config.force_update_after_set_map;
 
   do_beamskip_= config.do_beamskip; 
   beam_skip_distance_ = config.beam_skip_distance; 
@@ -1028,7 +1034,7 @@ AmclNode::getOdomPose(geometry_msgs::PoseStamped& odom_pose,
   {
     this->tf_->transform(ident, odom_pose, odom_frame_id_);
   }
-  catch(tf2::TransformException e)
+  catch(const tf2::TransformException& e)
   {
     ROS_WARN("Failed to compute odom pose, skipping scan (%s)", e.what());
     return false;
@@ -1111,6 +1117,10 @@ AmclNode::setMapCallback(nav_msgs::SetMap::Request& req,
 {
   handleMapMessage(req.map);
   handleInitialPoseMessage(req.initial_pose);
+  if (force_update_after_set_map_)
+  {
+    m_force_update = true;
+  }
   res.success = true;
   return true;
 }
@@ -1144,7 +1154,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
     {
       this->tf_->transform(ident, laser_pose, base_frame_id_);
     }
-    catch(tf2::TransformException& e)
+    catch(const tf2::TransformException& e)
     {
       ROS_ERROR("Couldn't transform from %s to %s, "
                 "even though the message notifier is in use",
@@ -1267,7 +1277,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
       tf_->transform(min_q, min_q, base_frame_id_);
       tf_->transform(inc_q, inc_q, base_frame_id_);
     }
-    catch(tf2::TransformException& e)
+    catch(const tf2::TransformException& e)
     {
       ROS_WARN("Unable to transform min/max laser angles into base frame: %s",
                e.what());
@@ -1459,7 +1469,7 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
 
         this->tf_->transform(tmp_tf_stamped, odom_to_map, odom_frame_id_);
       }
-      catch(tf2::TransformException)
+      catch(const tf2::TransformException&)
       {
         ROS_DEBUG("Failed to subtract base to odom transform");
         return;
@@ -1522,6 +1532,10 @@ void
 AmclNode::initialPoseReceived(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
 {
   handleInitialPoseMessage(*msg);
+  if (force_update_after_initialpose_)
+  {
+    m_force_update = true;
+  }
 }
 
 void
@@ -1547,13 +1561,12 @@ AmclNode::handleInitialPoseMessage(const geometry_msgs::PoseWithCovarianceStampe
   geometry_msgs::TransformStamped tx_odom;
   try
   {
-    ros::Time now = ros::Time::now();
     // wait a little for the latest tf to become available
     tx_odom = tf_->lookupTransform(base_frame_id_, msg.header.stamp,
                                    base_frame_id_, ros::Time::now(),
                                    odom_frame_id_, ros::Duration(0.5));
   }
-  catch(tf2::TransformException e)
+  catch(const tf2::TransformException& e)
   {
     // If we've never sent a transform, then this is normal, because the
     // global_frame_id_ frame doesn't exist.  We only care about in-time
