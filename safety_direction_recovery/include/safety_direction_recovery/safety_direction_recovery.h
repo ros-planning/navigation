@@ -23,12 +23,7 @@ namespace safety_direction_recovery
       void runBehavior();
 
       ~SafetyDirectionRecovery();
-      void set_global_pose(geometry_msgs::PoseStamped global_pose) { global_pose_ = global_pose; }
-      void set_local_pose(geometry_msgs::PoseStamped local_pose) { local_pose_ = local_pose; }
     private:
-      geometry_msgs::PoseStamped global_pose_;
-      geometry_msgs::PoseStamped local_pose_;
-
       costmap_2d::Costmap2DROS* global_costmap_;
       costmap_2d::Costmap2DROS* local_costmap_;
       base_local_planner::CostmapModel* global_world_model_;
@@ -53,7 +48,7 @@ namespace safety_direction_recovery
       double go_straight(const double direction, const double dist_to_move);
       double rotate(const double direction, const double rotate_angle);
       double simulate_cost_around_robot(const double sim_angle, const double sim_distance);
-      bool is_near_unmovable_area_or_obstacle(int local_footprint_cost, int global_footprint_cost);
+      bool is_near_unmovable_area_or_obstacle(double local_footprint_cost, double global_footprint_cost);
 
       void calc_angle_distance_to_safest_place_via_simulation(double& best_attitude, double& best_dist_to_move);
       void calc_angle_distance_to_safest_place_via_lidar(double& best_attitude, double& best_dist_to_move);

@@ -65,9 +65,6 @@ namespace nav_core {
        */
       virtual ~RecoveryBehavior(){}
 
-      virtual void set_global_pose(geometry_msgs::PoseStamped global_pose) {}
-      virtual void set_local_pose(geometry_msgs::PoseStamped local_pose) {}
-
     protected:
       RecoveryBehavior(){}
   };
