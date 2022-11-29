@@ -827,6 +827,12 @@ namespace move_base {
   bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan){
     boost::shared_ptr<nav_core::RecoveryBehavior> safety_direction(recovery_loader_.createInstance("safety_direction_recovery/SafetyDirectionRecovery"));
     safety_direction->initialize("safety_direction_recovery", &tf_, planner_costmap_ros_, controller_costmap_ros_);
+    geometry_msgs::PoseStamped global_pose;
+    getRobotPose(global_pose, planner_costmap_ros_);
+    safety_direction->set_global_pose(global_pose);
+    geometry_msgs::PoseStamped local_pose;
+    getRobotPose(global_pose, controller_costmap_ros_);
+    safety_direction->set_local_pose(local_pose);
     safety_direction->runBehavior();
     return false;
 
@@ -835,8 +841,10 @@ namespace move_base {
     geometry_msgs::Twist cmd_vel;
 
     //update feedback to correspond to our curent position
+    /*
     geometry_msgs::PoseStamped global_pose;
     getRobotPose(global_pose, planner_costmap_ros_);
+    */
     const geometry_msgs::PoseStamped& current_position = global_pose;
 
     //push the feedback out

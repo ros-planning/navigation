@@ -364,12 +364,15 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       while(n.ok() && dist_left > 0)
       {
         // the robot is inside unmovable area
-        double current_angle = tf2::getYaw(global_pose.pose.orientation);
-        double x = global_pose.pose.position.x;
-        double y = global_pose.pose.position.y;
-        int local_footprint_cost = local_world_model_->footprintCost(x, y, current_angle, local_costmap_->getRobotFootprint(),
+        double lcurrent_angle = tf2::getYaw(local_pose_.pose.orientation);
+        double lx = local_pose_.pose.position.x;
+        double ly = local_pose_.pose.position.y;
+        double gcurrent_angle = tf2::getYaw(global_pose_.pose.orientation);
+        double gx = global_pose_.pose.position.x;
+        double gy = global_pose_.pose.position.y;
+        int local_footprint_cost = local_world_model_->footprintCost(lx, ly, lcurrent_angle, local_costmap_->getRobotFootprint(),
                                                                         inscribed_radius_, circumscribed_radius_);
-        int global_footprint_cost = global_world_model_->footprintCost(x, y, current_angle, global_costmap_->getRobotFootprint(),
+        int global_footprint_cost = global_world_model_->footprintCost(gx, gy, gcurrent_angle, global_costmap_->getRobotFootprint(),
                                                                           inscribed_radius_, circumscribed_radius_);
         std::cerr << "local_footprint_cost value is " << local_footprint_cost << std::endl;
         std::cerr << "global_footprint_cost value is " << global_footprint_cost << std::endl;
@@ -398,6 +401,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         dist_left = dist_to_move - dist_travelled;
 
         // conduct simulation
+        /*
         double sim_distance = 0.0;
         while(sim_distance < dist_left)
         {
@@ -422,6 +426,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
           sim_distance += sim_granularity_;
         }
+        */
 
         vel = std::min(std::max(vel, min_vel_x_), max_vel_x_);
 

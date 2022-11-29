@@ -23,7 +23,12 @@ namespace safety_direction_recovery
       void runBehavior();
 
       ~SafetyDirectionRecovery();
+      void set_global_pose(geometry_msgs::PoseStamped global_pose) { global_pose_ = global_pose; }
+      void set_local_pose(geometry_msgs::PoseStamped local_pose) { local_pose_ = local_pose; }
     private:
+      geometry_msgs::PoseStamped global_pose_;
+      geometry_msgs::PoseStamped local_pose_;
+
       costmap_2d::Costmap2DROS* global_costmap_;
       costmap_2d::Costmap2DROS* local_costmap_;
       base_local_planner::CostmapModel* global_world_model_;
