@@ -511,24 +511,21 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         dist_left = dist_to_move - dist_travelled;
 
         // conduct simulation
-        /*
-        double sim_distance = 0.0;
+        double sim_distance = 0.25;
         while(sim_distance < dist_left)
         {
-          double sim_x = x + direction * sim_distance * cos(current_angle);
-          double sim_y = y + direction * sim_distance * sin(current_angle);
+          double local_sim_x = local_x + direction * sim_distance * cos(local_current_angle);
+          double local_sim_y = local_y + direction * sim_distance * sin(local_current_angle);
+          double global_sim_x = global_x + direction * sim_distance * cos(global_current_angle);
+          double global_sim_y = global_y + direction * sim_distance * sin(global_current_angle);
 
           // make sure that the point is legal. Else, abort
-          int local_footprint_cost = local_world_model_->footprintCost(sim_x, sim_y, current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-          int global_footprint_cost = global_world_model_->footprintCost(sim_x, sim_y, current_angle, global_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-          if (is_near_unmovable_area_or_obstacle(local_footprint_cost, global_footprint_cost))
+          int local_footprint_cost = local_world_model_->footprintCost(local_sim_x, local_sim_y, local_current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+          int global_footprint_cost = global_world_model_->footprintCost(global_sim_x, global_sim_y, global_current_angle, global_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+          if (local_footprint_cost == -1.0 || global_footprint_cost == -1.0)
           {
             ROS_ERROR("[safety_direction_recovery] the robot is going to unmovable area or obstacles.");
-            cmd_vel.linear.x = 0.0;
-            cmd_vel.linear.y = 0.0;
-            cmd_vel.angular.z = 0.0;
-
-            vel_pub.publish(cmd_vel);
+            stop();
 
             ROS_INFO("The robot travelled  %f.\n", dist_travelled);
             return dist_travelled;
@@ -536,7 +533,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
           sim_distance += sim_granularity_;
         }
-        */
 
         vel = std::min(std::max(vel, min_vel_x_), max_vel_x_);
 
