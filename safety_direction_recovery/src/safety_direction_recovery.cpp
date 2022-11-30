@@ -244,7 +244,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       for (int i=0; i<simulate_direction_num; i++)
       {
         double sim_angle = 2 * M_PI * (double)i/(double)simulate_direction_num;
-        double sim_distance = best_dist_to_move * 1.2;
+        double sim_distance = best_dist_to_move * 2.0;
         total_cost_array[i] = simulate_cost_around_robot(sim_angle, sim_distance);
         ROS_INFO("total_cost_array[i=%d]: %f", i, total_cost_array[i]);
       }
