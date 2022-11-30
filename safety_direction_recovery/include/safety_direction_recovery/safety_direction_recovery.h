@@ -48,6 +48,11 @@ namespace safety_direction_recovery
       double go_straight(const double direction, const double dist_to_move);
       double rotate(const double direction, const double rotate_angle);
       double simulate_cost_around_robot(const double sim_angle, const double sim_distance);
+      void stop();
+      bool is_inside_unmovable_area();
+      bool is_near_unmovable_area();
+      bool is_attaching_obstacle();
+      bool is_near_obstacle();
       bool is_near_unmovable_area_or_obstacle(double local_footprint_cost, double global_footprint_cost);
 
       void calc_angle_distance_to_safest_place_via_simulation(double& best_attitude, double& best_dist_to_move);
