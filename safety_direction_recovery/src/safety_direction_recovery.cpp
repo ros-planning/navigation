@@ -80,7 +80,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         ros::NodeHandle blp_nh("~/DWAPlannerROS");
 
         private_nh.param("sim_granularity", sim_granularity_, 0.01);
-        private_nh.param("frequency", frequency_, 10.0);
+        private_nh.param("frequency", frequency_, 5.0);
         ROS_INFO("sim_granularity_: %f, frequency_: %f", sim_granularity_, frequency_);
 
         blp_nh.param("max_vel_x", max_vel_x_, 1.0);
