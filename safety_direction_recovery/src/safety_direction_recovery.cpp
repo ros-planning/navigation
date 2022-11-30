@@ -403,54 +403,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       else return false;
     }
 
-    bool SafetyDirectionRecovery::is_near_unmovable_area()
-    {
-      geometry_msgs::PoseStamped global_pose;
-      global_costmap_->getRobotPose(global_pose);
-
-      double global_current_angle = tf2::getYaw(global_pose.pose.orientation);
-      double global_x = global_pose.pose.position.x;
-      double global_y = global_pose.pose.position.y;
-      double global_footprint_cost = global_world_model_->footprintCost(global_x, global_y, global_current_angle,
-                                                                        global_costmap_->getRobotFootprint(),
-                                                                        inscribed_radius_, circumscribed_radius_);
-
-      if (global_footprint_cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) return true;
-      else return false;
-    }
-
-    bool SafetyDirectionRecovery::is_attaching_obstacle()
-    {
-      geometry_msgs::PoseStamped local_pose;
-      local_costmap_->getRobotPose(local_pose);
-
-      double local_current_angle = tf2::getYaw(local_pose.pose.orientation);
-      double local_x = local_pose.pose.position.x;
-      double local_y = local_pose.pose.position.y;
-      double local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
-                                                                      local_costmap_->getRobotFootprint(),
-                                                                      inscribed_radius_, circumscribed_radius_);
-
-      if (local_footprint_cost == -1.0) return true;
-      else return false;
-    }
-
-    bool SafetyDirectionRecovery::is_near_obstacle()
-    {
-      geometry_msgs::PoseStamped local_pose;
-      global_costmap_->getRobotPose(local_pose);
-
-      double local_current_angle = tf2::getYaw(local_pose.pose.orientation);
-      double local_x = local_pose.pose.position.x;
-      double local_y = local_pose.pose.position.y;
-      double local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
-                                                                      local_costmap_->getRobotFootprint(),
-                                                                      inscribed_radius_, circumscribed_radius_);
-
-      if (local_footprint_cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) return true;
-      else return false;
-    }
-
     double SafetyDirectionRecovery::go_straight(const double direction, const double dist_to_move)
     {
       ros::Rate r(frequency_);
