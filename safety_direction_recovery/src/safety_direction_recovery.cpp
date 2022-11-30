@@ -488,7 +488,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
                                                                           inscribed_radius_, circumscribed_radius_);
         std::cerr << "local_footprint_cost value is " << local_footprint_cost << std::endl;
         std::cerr << "global_footprint_cost value is " << global_footprint_cost << std::endl;
-        if (is_inside_unmovable_area())
+        if (global_footprint_cost == -1.0)
         {
           stop();
 
@@ -596,7 +596,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double global_footprint_cost = global_world_model_->footprintCost(global_x, global_y, global_current_angle,
                                                                           global_costmap_->getRobotFootprint(),
                                                                           inscribed_radius_, circumscribed_radius_);
-        if (is_inside_unmovable_area() || is_attaching_obstacle())
+        if (global_footprint_cost == -1.0)
         {
           stop();
 
