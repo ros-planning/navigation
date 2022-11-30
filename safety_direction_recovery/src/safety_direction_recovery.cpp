@@ -151,6 +151,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
     void SafetyDirectionRecovery::runBehavior()
     {
+      usleep(500000); // wait for costmap update
       ROS_INFO("Safety direction recovery mode is called.");
       ros::NodeHandle n;
       ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
@@ -161,7 +162,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         return;
       }
 
-      if(local_costmap_ == NULL)
+      if(local_costmap_ == NULL || global_costmap_ == NULL)
       {
         ROS_ERROR("The costmap passed to the SafetyDirectionRecovery object cannnot be NULL. Doing nothing.");
         return;
@@ -487,12 +488,11 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
                                                                           inscribed_radius_, circumscribed_radius_);
         std::cerr << "local_footprint_cost value is " << local_footprint_cost << std::endl;
         std::cerr << "global_footprint_cost value is " << global_footprint_cost << std::endl;
-        if (is_inside_unmovable_area() || is_near_unmovable_area() ||
-            is_attaching_obstacle() || is_near_obstacle())
+        if (is_inside_unmovable_area())
         {
           stop();
 
-          ROS_WARN("robot is inside unmovable area or near obstacles.");
+          ROS_WARN("robot is inside unmovable area.");
           break;
         }
 
