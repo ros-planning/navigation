@@ -26,7 +26,6 @@ namespace safety_direction_recovery
     private:
       costmap_2d::Costmap2DROS* global_costmap_;
       costmap_2d::Costmap2DROS* local_costmap_;
-      base_local_planner::CostmapModel* global_world_model_;
       base_local_planner::CostmapModel* local_world_model_;
 
       bool initialized_ = false;
@@ -55,6 +54,8 @@ namespace safety_direction_recovery
       void calc_angle_distance_to_safest_place_via_simulation(double& best_attitude, double& best_dist_to_move);
       void calc_angle_distance_to_safest_place_via_lidar(double& best_attitude, double& best_dist_to_move);
       void calc_recovery_move(const double best_attitude, double& rotate_direction, double& recovery_rotate_angle, double& straight_direction);
+
+      unsigned char getGlobalCost(double x, double y);
   };
 };  // namespace safety_direction_recovery
 

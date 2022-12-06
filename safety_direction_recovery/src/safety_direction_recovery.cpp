@@ -63,7 +63,7 @@ void frontRightLidarDistanceCallback(const std_msgs::Float32::ConstPtr& msg)
 PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_core::RecoveryBehavior)
   namespace safety_direction_recovery{
     SafetyDirectionRecovery::SafetyDirectionRecovery(): local_costmap_(NULL), global_costmap_(NULL), initialized_(false),
-                                                        local_world_model_(NULL), global_world_model_(NULL)
+                                                        local_world_model_(NULL)
     {
     }
 
@@ -80,7 +80,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         ros::NodeHandle blp_nh("~/DWAPlannerROS");
 
         private_nh.param("sim_granularity", sim_granularity_, 0.01);
-        private_nh.param("frequency", frequency_, 5.0);
+        private_nh.param("frequency", frequency_, 10.0);
         ROS_INFO("sim_granularity_: %f, frequency_: %f", sim_granularity_, frequency_);
 
         blp_nh.param("max_vel_x", max_vel_x_, 1.0);
@@ -107,7 +107,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 //        min_vel_x_ = -1.0f;
 
         local_world_model_ = new base_local_planner::CostmapModel(*local_costmap_->getCostmap());
-        global_world_model_ = new base_local_planner::CostmapModel(*global_costmap_->getCostmap());
 
         initialized_ = true;
 
@@ -140,7 +139,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
     SafetyDirectionRecovery::~SafetyDirectionRecovery()
     {
       delete local_world_model_;
-      delete global_world_model_;
     }
  
     double SafetyDirectionRecovery::calculateDist(geometry_msgs::PoseStamped initial, geometry_msgs::PoseStamped current)
@@ -149,9 +147,20 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
                   pow((initial.pose.position.y - current.pose.position.y), 2.0));
     }
 
+    unsigned char SafetyDirectionRecovery::getGlobalCost(double x, double y)
+    {
+      unsigned int mx, my;
+      if(!global_costmap_->getCostmap()->worldToMap(x, y, mx, my))
+      {
+        return costmap_2d::NO_INFORMATION;
+      }
+      unsigned char cost = global_costmap_->getCostmap()->getCost(mx, my);
+
+      return cost;
+    }
+
     void SafetyDirectionRecovery::runBehavior()
     {
-      usleep(500000); // wait for costmap update
       ROS_INFO("Safety direction recovery mode is called.");
       ros::NodeHandle n;
       ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
@@ -341,7 +350,7 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double sim_global_x = global_x + tmp_distance * cos(global_angle + sim_angle);
         double sim_global_y = global_y + tmp_distance * sin(global_angle + sim_angle);
         double local_tmp_cost = local_world_model_->footprintCost(sim_local_x, sim_local_y, local_angle + sim_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-        double global_tmp_cost = global_world_model_->footprintCost(sim_global_x, sim_global_y, global_angle + sim_angle, global_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+        unsigned char global_tmp_cost = getGlobalCost(sim_global_x, sim_global_y);
 
         tmp_distance += sim_granularity_;
 
@@ -358,17 +367,14 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
           total_cost += local_tmp_cost;
         }
 
-        if (global_tmp_cost == -1)
+        if (global_tmp_cost == costmap_2d::LETHAL_OBSTACLE ||
+            global_tmp_cost == costmap_2d::NO_INFORMATION)
         {
-          total_cost -= 10; // LETHAL_OBSTACLE case
+          total_cost -= 10;
         }
         else if (global_tmp_cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
         {
           total_cost -= 5;
-        }
-        else if (global_tmp_cost < 0)
-        {
-          total_cost += global_tmp_cost;
         }
       }
 
@@ -392,14 +398,18 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       geometry_msgs::PoseStamped global_pose;
       global_costmap_->getRobotPose(global_pose);
 
-      double global_current_angle = tf2::getYaw(global_pose.pose.orientation);
       double global_x = global_pose.pose.position.x;
       double global_y = global_pose.pose.position.y;
-      double global_footprint_cost = global_world_model_->footprintCost(global_x, global_y, global_current_angle,
-                                                                        global_costmap_->getRobotFootprint(),
-                                                                        inscribed_radius_, circumscribed_radius_);
+      unsigned char global_footprint_cost = getGlobalCost(global_x, global_y);
 
-      if (global_footprint_cost == -1.0) return true;
+      if (global_footprint_cost != costmap_2d::LETHAL_OBSTACLE) {
+        std::cerr << "global_x: " << global_x << std::endl;
+        std::cerr << "global_y: " << global_y << std::endl;
+        std::cerr << "cost: " << global_footprint_cost << std::endl;
+      }
+
+      if (global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
+          global_footprint_cost == costmap_2d::NO_INFORMATION) return true;
       else return false;
     }
 
@@ -429,18 +439,15 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double local_current_angle = tf2::getYaw(local_pose.pose.orientation);
         double local_x = local_pose.pose.position.x;
         double local_y = local_pose.pose.position.y;
-        double global_current_angle = tf2::getYaw(global_pose.pose.orientation);
-        double global_x = global_pose.pose.position.x;
-        double global_y = global_pose.pose.position.y;
         double local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
                                                                         local_costmap_->getRobotFootprint(),
                                                                         inscribed_radius_, circumscribed_radius_);
-        double global_footprint_cost = global_world_model_->footprintCost(global_x, global_y, global_current_angle,
-                                                                          global_costmap_->getRobotFootprint(),
-                                                                          inscribed_radius_, circumscribed_radius_);
-        std::cerr << "local_footprint_cost value is " << local_footprint_cost << std::endl;
-        std::cerr << "global_footprint_cost value is " << global_footprint_cost << std::endl;
-        if (global_footprint_cost == -1.0)
+        double global_current_angle = tf2::getYaw(global_pose.pose.orientation);
+        double global_x = global_pose.pose.position.x;
+        double global_y = global_pose.pose.position.y;
+        double global_footprint_cost = getGlobalCost(global_x, global_y);
+        if (global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
+            global_footprint_cost == costmap_2d::NO_INFORMATION)
         {
           stop();
 
@@ -473,8 +480,10 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
           // make sure that the point is legal. Else, abort
           int local_footprint_cost = local_world_model_->footprintCost(local_sim_x, local_sim_y, local_current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-          int global_footprint_cost = global_world_model_->footprintCost(global_sim_x, global_sim_y, global_current_angle, global_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-          if (local_footprint_cost == -1.0 || global_footprint_cost == -1.0)
+          unsigned char global_footprint_cost = getGlobalCost(global_sim_x, global_sim_y);
+          if (local_footprint_cost == -1.0 ||
+              global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
+              global_footprint_cost == costmap_2d::NO_INFORMATION)
           {
             ROS_ERROR("[safety_direction_recovery] the robot is going to unmovable area or obstacles.");
             stop();
@@ -535,16 +544,14 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         local_current_angle = tf2::getYaw(local_pose.pose.orientation);
         double local_x = local_pose.pose.position.x;
         double local_y = local_pose.pose.position.y;
-        double global_current_angle = tf2::getYaw(global_pose.pose.orientation);
         double global_x = global_pose.pose.position.x;
         double global_y = global_pose.pose.position.y;
         double local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
                                                                         local_costmap_->getRobotFootprint(),
                                                                         inscribed_radius_, circumscribed_radius_);
-        double global_footprint_cost = global_world_model_->footprintCost(global_x, global_y, global_current_angle,
-                                                                          global_costmap_->getRobotFootprint(),
-                                                                          inscribed_radius_, circumscribed_radius_);
-        if (global_footprint_cost == -1.0)
+        unsigned char global_footprint_cost = getGlobalCost(global_x, global_y);
+        if (global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
+            global_footprint_cost == costmap_2d::NO_INFORMATION)
         {
           stop();
 
