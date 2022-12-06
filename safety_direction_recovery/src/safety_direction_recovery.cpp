@@ -402,12 +402,6 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
       double global_y = global_pose.pose.position.y;
       unsigned char global_footprint_cost = getGlobalCost(global_x, global_y);
 
-      if (global_footprint_cost != costmap_2d::LETHAL_OBSTACLE) {
-        std::cerr << "global_x: " << global_x << std::endl;
-        std::cerr << "global_y: " << global_y << std::endl;
-        std::cerr << "cost: " << global_footprint_cost << std::endl;
-      }
-
       if (global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
           global_footprint_cost == costmap_2d::NO_INFORMATION) return true;
       else return false;
