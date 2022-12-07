@@ -36,6 +36,7 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <global_planner/planner_core.h>
+#include <visualization_msgs/Marker.h>
 #include <pluginlib/class_list_macros.h>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
@@ -69,15 +70,15 @@ void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned 
 }
 
 GlobalPlanner::GlobalPlanner() :
-        costmap_(NULL), initialized_(false), allow_unknown_(true),
+        costmap_ros_(NULL), costmap_(NULL), initialized_(false), allow_unknown_(true),
         p_calc_(NULL), planner_(NULL), path_maker_(NULL), orientation_filter_(NULL),
         potential_array_(NULL) {
 }
 
-GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
+GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
         GlobalPlanner() {
     //initialize the planner
-    initialize(name, costmap, frame_id);
+    initialize(name, costmap_ros);
 }
 
 GlobalPlanner::~GlobalPlanner() {
@@ -92,16 +93,13 @@ GlobalPlanner::~GlobalPlanner() {
 }
 
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
-    initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
-}
-
-void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) {
     if (!initialized_) {
         ros::NodeHandle private_nh("~/" + name);
-        costmap_ = costmap;
-        frame_id_ = frame_id;
+        costmap_ros_ = costmap_ros;
+        costmap_ = costmap_ros->getCostmap();
+        frame_id_ = costmap_ros->getGlobalFrameID();
 
-        unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
+        unsigned int cx = costmap_->getSizeInCellsX(), cy = costmap_->getSizeInCellsY();
 
         private_nh.param("old_navfn_behavior", old_navfn_behavior_, false);
         if(!old_navfn_behavior_)
@@ -139,6 +137,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
+        inscribed_pub_ = private_nh.advertise<visualization_msgs::Marker>("inscribed_radius", 1);
 
         private_nh.param("allow_unknown", allow_unknown_, true);
         planner_->setHasUnknown(allow_unknown_);
@@ -298,6 +297,8 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
     if(publish_potential_)
         publishPotential(potential_array_);
 
+    publishInscribedRadius();
+
     if (found_legal) {
         //extract the plan
         if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
@@ -436,5 +437,26 @@ void GlobalPlanner::publishPotential(float* potential)
     }
     potential_pub_.publish(grid);
 }
+
+void GlobalPlanner::publishInscribedRadius() const
+{
+    double inscribed_radius, circumscribed_radius;
+    costmap_2d::calculateMinAndMaxDistances(costmap_ros_->getRobotFootprint(), inscribed_radius, circumscribed_radius);
+
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = costmap_ros_->getBaseFrameID();
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "inscribed_radius";
+    marker.type = visualization_msgs::Marker::CYLINDER;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = 2.0 * inscribed_radius;
+    marker.scale.y = 2.0 * inscribed_radius;
+    marker.scale.z = 0.000001;
+    marker.color.g = 1.0;
+    marker.color.a = 0.2;
+    inscribed_pub_.publish(marker);
+}
+
 
 } //end namespace global_planner

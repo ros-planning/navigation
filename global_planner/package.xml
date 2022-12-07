@@ -29,6 +29,7 @@
   <depend>pluginlib</depend>
   <depend>roscpp</depend>
   <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
 
   <export>
     <mbf_costmap_core plugin="${prefix}/bgp_plugin.xml" />

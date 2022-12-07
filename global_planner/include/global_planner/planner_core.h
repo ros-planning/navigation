@@ -39,7 +39,7 @@
  *********************************************************************/
 #define POT_HIGH 1.0e10        // unassigned cell potential
 #include <ros/ros.h>
-#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/Path.h>
@@ -73,10 +73,9 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
         /**
          * @brief  Constructor for the PlannerCore object
          * @param  name The name of this planner
-         * @param  costmap A pointer to the costmap to use
-         * @param  frame_id Frame of the costmap
+         * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
          */
-        GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
+        GlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
 
         /**
          * @brief  Default deconstructor for the PlannerCore object
@@ -89,8 +88,6 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
          * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
          */
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
-
-        void initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
          * @brief Given a goal pose in the world, compute a plan
@@ -181,6 +178,7 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
         /**
          * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
          */
+        costmap_2d::Costmap2DROS* costmap_ros_;
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
         ros::Publisher plan_pub_;
@@ -204,6 +202,9 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
         bool publish_potential_;
         ros::Publisher potential_pub_;
         int publish_scale_;
+
+        ros::Publisher inscribed_pub_;
+        void publishInscribedRadius() const;
 
         void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
 

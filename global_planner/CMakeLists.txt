@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
     roscpp
     tf2_geometry_msgs
     tf2_ros
+    visualization_msgs
 )
 
 generate_dynamic_reconfigure_options(
@@ -35,6 +36,7 @@ catkin_package(
     pluginlib
     roscpp
     tf2_ros
+    visualization_msgs
 )
 
 include_directories(
