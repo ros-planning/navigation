@@ -78,7 +78,7 @@ namespace base_local_planner {
     return traj_cost;
   }
 
-  bool SimpleScoredSamplingPlanner::findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) {
+  mbf_msgs::ExePathResult::_outcome_type SimpleScoredSamplingPlanner::findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) {
     Trajectory loop_traj;
     Trajectory best_traj;
     double loop_traj_cost, best_traj_cost = -1;
@@ -86,9 +86,10 @@ namespace base_local_planner {
     int count, count_valid;
     for (std::vector<TrajectoryCostFunction*>::iterator loop_critic = critics_.begin(); loop_critic != critics_.end(); ++loop_critic) {
       TrajectoryCostFunction* loop_critic_p = *loop_critic;
-      if (loop_critic_p->prepare() == false) {
-        ROS_WARN("A scoring function failed to prepare");
-        return false;
+      const auto outcome = loop_critic_p->prepare();
+      if (outcome != mbf_msgs::ExePathResult::SUCCESS) {
+        ROS_WARN_STREAM("A scoring function failed to prepare; outcome: " << outcome);
+        return outcome;
       }
     }
 
@@ -138,7 +139,7 @@ namespace base_local_planner {
         break;
       }
     }
-    return best_traj_cost >= 0;
+    return best_traj_cost >= 0 ? mbf_msgs::ExePathResult::SUCCESS : mbf_msgs::ExePathResult::NO_VALID_CMD;
   }
 
   

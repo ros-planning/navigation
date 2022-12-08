@@ -63,6 +63,7 @@
 #include <base_local_planner/simple_scored_sampling_planner.h>
 
 #include <nav_msgs/Path.h>
+#include <mbf_msgs/ExePathResult.h>
 
 namespace dwa_local_planner {
   /**
@@ -103,7 +104,7 @@ namespace dwa_local_planner {
        * @param drive_velocities The velocities to send to the robot base
        * @return The highest scoring trajectory. A cost >= 0 means the trajectory is legal to execute.
        */
-      base_local_planner::Trajectory findBestPath(
+      std::pair<base_local_planner::Trajectory, mbf_msgs::ExePathResult::_outcome_type> findBestPath(
           const geometry_msgs::PoseStamped& global_pose,
           const geometry_msgs::PoseStamped& global_vel,
           geometry_msgs::PoseStamped& drive_velocities);

@@ -39,6 +39,7 @@
 #define TRAJECTORY_SEARCH_H_
 
 #include <base_local_planner/trajectory.h>
+#include <mbf_msgs/ExePathResult.h>
 
 namespace base_local_planner {
 
@@ -56,7 +57,7 @@ public:
    * @param traj The container to write the result to
    * @param all_explored pass NULL or a container to collect all trajectories for debugging (has a penalty)
    */
-  virtual bool findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) = 0;
+  virtual mbf_msgs::ExePathResult::_outcome_type findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) = 0;
 
   virtual ~TrajectorySearch() {}
 

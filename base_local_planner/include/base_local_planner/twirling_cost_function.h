@@ -39,6 +39,7 @@
 #define TWIRLING_COST_FUNCTION_H
 
 #include <base_local_planner/trajectory_cost_function.h>
+#include <mbf_msgs/ExePathResult.h>
 
 namespace base_local_planner {
 
@@ -57,7 +58,7 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
 
-  bool prepare() {return true;};
+  mbf_msgs::ExePathResult::_outcome_type prepare() {return mbf_msgs::ExePathResult::SUCCESS;};
 };
 
 } /* namespace base_local_planner */

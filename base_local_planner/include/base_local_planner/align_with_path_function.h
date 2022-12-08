@@ -1,8 +1,8 @@
 #pragma once
 
 #include <geometry_msgs/PoseStamped.h>
+#include <mbf_msgs/ExePathResult.h>
 #include <base_local_planner/trajectory_cost_function.h>
-
 namespace base_local_planner {
 
 constexpr double MAX_ANGLE_ERROR = 0.8;
@@ -14,7 +14,7 @@ public:
 
   void setTargetPoses(std::vector<geometry_msgs::PoseStamped>& target_poses, const geometry_msgs::PoseStamped& global_pose);
 
-  bool prepare();
+  mbf_msgs::ExePathResult::_outcome_type prepare();
 
   double scoreTrajectory(Trajectory &traj);
 

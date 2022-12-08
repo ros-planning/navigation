@@ -28,6 +28,7 @@
     <depend>dynamic_reconfigure</depend>
     <depend>eigen</depend>
     <depend>geometry_msgs</depend>
+    <depend>mbf_msgs</depend>
     <depend>nav_core</depend>
     <depend>nav_msgs</depend>
     <depend>pluginlib</depend>

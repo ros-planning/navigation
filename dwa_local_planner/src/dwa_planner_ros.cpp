@@ -51,7 +51,7 @@
 
 #include <nav_core/parameter_magic.h>
 
-#include <mbf_msgs/ExePathAction.h>
+#include <mbf_msgs/ExePathResult.h>
 
 // register this planner as a MBF's CostmapController plugin
 PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, mbf_costmap_core::CostmapController)
@@ -280,7 +280,9 @@ namespace dwa_local_planner {
 
     // call with updated footprint
     std::lock_guard<std::mutex> lock(config_mtx_);
-    base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
+    auto res = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
+    base_local_planner::Trajectory& path = res.first;
+    auto outcome = res.second;
     //ROS_ERROR("Best: %.2f, %.2f, %.2f, %.2f", path.xv_, path.yv_, path.thetav_, path.cost_);
 
     /* For timing uncomment
@@ -297,7 +299,7 @@ namespace dwa_local_planner {
     cmd_vel.twist.angular.z = tf2::getYaw(drive_cmds.pose.orientation);
 
     std::vector<geometry_msgs::PoseStamped> local_plan;
-    if(path.cost_ < 0) {
+    if (outcome != mbf_msgs::ExePathResult::SUCCESS) {
       // no valid path found; slow down respecting acceleration limits and report NO_VALID_CMD
       const base_local_planner::LocalPlannerLimits& limits = planner_util_.getCurrentLimits();
       const double vx = robot_vel.pose.position.x;
@@ -313,12 +315,14 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner", "Slowing down from (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f)",
                       vx, vy, vt, cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z);
 
-      message = "The dwa local planner failed to find a valid plan, cost functions discarded all candidates. This can mean there is an obstacle too close to the robot";
+      message = "The dwa local planner failed with an error: " + std::to_string(outcome);
       ROS_DEBUG_STREAM_NAMED("dwa_local_planner", message);  //// TODO why is this DEBUG?
       local_plan.clear();
       publishLocalPlan(local_plan);
-      return mbf_msgs::ExePathResult::NO_VALID_CMD;
+      return outcome;
     }
+
+    assert(path.cost_ >= 0);
 
     ROS_DEBUG_NAMED("dwa_local_planner", "A valid velocity command of (%.2f, %.2f, %.2f) was found for this cycle.",
                     cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z);

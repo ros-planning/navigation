@@ -43,6 +43,7 @@
 #include <base_local_planner/map_cell.h>
 #include <costmap_2d/costmap_2d.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <mbf_msgs/ExePathResult.h>
 
 namespace base_local_planner{
   /**
@@ -178,12 +179,12 @@ namespace base_local_planner{
       /**
        * @brief Update what cells are considered path based on the global plan 
        */
-      void setTargetCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan);
+      mbf_msgs::ExePathResult::_outcome_type setTargetCells(const costmap_2d::Costmap2D& costmap, const std::vector<geometry_msgs::PoseStamped>& global_plan);
 
       /**
        * @brief Update what cell is considered the next local goal
        */
-      void setLocalGoal(const costmap_2d::Costmap2D& costmap,
+      mbf_msgs::ExePathResult::_outcome_type setLocalGoal(const costmap_2d::Costmap2D& costmap,
             const std::vector<geometry_msgs::PoseStamped>& global_plan);
 
       double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
