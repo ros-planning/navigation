@@ -349,8 +349,16 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double sim_local_y = local_y + tmp_distance * sin(local_angle + sim_angle);
         double sim_global_x = global_x + tmp_distance * cos(global_angle + sim_angle);
         double sim_global_y = global_y + tmp_distance * sin(global_angle + sim_angle);
-        double local_tmp_cost = local_world_model_->footprintCost(sim_local_x, sim_local_y, local_angle + sim_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-        unsigned char global_tmp_cost = getGlobalCost(sim_global_x, sim_global_y);
+        double local_tmp_cost;
+        {
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(local_costmap_->getCostmap()->getMutex()));
+          local_tmp_cost = local_world_model_->footprintCost(sim_local_x, sim_local_y, local_angle + sim_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+        }
+        unsigned char global_tmp_cost;
+        {
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(global_costmap_->getCostmap()->getMutex()));
+          global_tmp_cost = getGlobalCost(sim_global_x, sim_global_y);
+        }
 
         tmp_distance += sim_granularity_;
 
@@ -400,7 +408,11 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
 
       double global_x = global_pose.pose.position.x;
       double global_y = global_pose.pose.position.y;
-      unsigned char global_footprint_cost = getGlobalCost(global_x, global_y);
+      unsigned char global_footprint_cost;
+      {
+        boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(global_costmap_->getCostmap()->getMutex()));
+        global_footprint_cost = getGlobalCost(global_x, global_y);
+      }
 
       if (global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
           global_footprint_cost == costmap_2d::NO_INFORMATION) return true;
@@ -433,13 +445,21 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double local_current_angle = tf2::getYaw(local_pose.pose.orientation);
         double local_x = local_pose.pose.position.x;
         double local_y = local_pose.pose.position.y;
-        double local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
-                                                                        local_costmap_->getRobotFootprint(),
-                                                                        inscribed_radius_, circumscribed_radius_);
+        double local_footprint_cost;
+        {
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(local_costmap_->getCostmap()->getMutex()));
+          local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
+                                                                   local_costmap_->getRobotFootprint(),
+                                                                   inscribed_radius_, circumscribed_radius_);
+        }
         double global_current_angle = tf2::getYaw(global_pose.pose.orientation);
         double global_x = global_pose.pose.position.x;
         double global_y = global_pose.pose.position.y;
-        double global_footprint_cost = getGlobalCost(global_x, global_y);
+        double global_footprint_cost;
+        {
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(global_costmap_->getCostmap()->getMutex()));
+          global_footprint_cost = getGlobalCost(global_x, global_y);
+        }
         if (global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
             global_footprint_cost == costmap_2d::NO_INFORMATION)
         {
@@ -472,9 +492,17 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
           double global_sim_x = global_x + direction * sim_distance * cos(global_current_angle);
           double global_sim_y = global_y + direction * sim_distance * sin(global_current_angle);
 
+          int local_footprint_cost;
           // make sure that the point is legal. Else, abort
-          int local_footprint_cost = local_world_model_->footprintCost(local_sim_x, local_sim_y, local_current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
-          unsigned char global_footprint_cost = getGlobalCost(global_sim_x, global_sim_y);
+          {
+            boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(local_costmap_->getCostmap()->getMutex()));
+            local_footprint_cost = local_world_model_->footprintCost(local_sim_x, local_sim_y, local_current_angle, local_costmap_->getRobotFootprint(), inscribed_radius_, circumscribed_radius_);
+          }
+          unsigned char global_footprint_cost;
+          {
+            boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(global_costmap_->getCostmap()->getMutex()));
+            global_footprint_cost = getGlobalCost(global_sim_x, global_sim_y);
+          }
           if (local_footprint_cost == -1.0 ||
               global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
               global_footprint_cost == costmap_2d::NO_INFORMATION)
@@ -540,10 +568,18 @@ PLUGINLIB_EXPORT_CLASS(safety_direction_recovery::SafetyDirectionRecovery, nav_c
         double local_y = local_pose.pose.position.y;
         double global_x = global_pose.pose.position.x;
         double global_y = global_pose.pose.position.y;
-        double local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
-                                                                        local_costmap_->getRobotFootprint(),
-                                                                        inscribed_radius_, circumscribed_radius_);
-        unsigned char global_footprint_cost = getGlobalCost(global_x, global_y);
+        double local_footprint_cost;
+        {
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(local_costmap_->getCostmap()->getMutex()));
+          local_footprint_cost = local_world_model_->footprintCost(local_x, local_y, local_current_angle,
+                                                                          local_costmap_->getRobotFootprint(),
+                                                                          inscribed_radius_, circumscribed_radius_);
+        }
+        unsigned char global_footprint_cost;
+        {
+          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(global_costmap_->getCostmap()->getMutex()));
+          global_footprint_cost = getGlobalCost(global_x, global_y);
+        }
         if (global_footprint_cost == costmap_2d::LETHAL_OBSTACLE ||
             global_footprint_cost == costmap_2d::NO_INFORMATION)
         {
