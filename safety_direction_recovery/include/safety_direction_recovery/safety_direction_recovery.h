@@ -18,14 +18,15 @@ namespace safety_direction_recovery
       SafetyDirectionRecovery();
 
       void initialize(std::string name, tf2_ros::Buffer*,
-          costmap_2d::Costmap2DROS*, costmap_2d::Costmap2DROS* local_costmap);
+          costmap_2d::Costmap2DROS* global_costmap, costmap_2d::Costmap2DROS* local_costmap);
 
       void runBehavior();
 
       ~SafetyDirectionRecovery();
     private:
+      costmap_2d::Costmap2DROS* global_costmap_;
       costmap_2d::Costmap2DROS* local_costmap_;
-      base_local_planner::CostmapModel* world_model_;
+      base_local_planner::CostmapModel* local_world_model_;
 
       bool initialized_ = false;
       double frequency_, sim_granularity_, min_vel_x_, max_vel_x_, inscribed_radius_, circumscribed_radius_;
@@ -46,10 +47,15 @@ namespace safety_direction_recovery
       double go_straight(const double direction, const double dist_to_move);
       double rotate(const double direction, const double rotate_angle);
       double simulate_cost_around_robot(const double sim_angle, const double sim_distance);
+      void stop();
+      bool is_inside_unmovable_area();
+      bool is_near_unmovable_area_or_obstacle(double local_footprint_cost, double global_footprint_cost);
 
       void calc_angle_distance_to_safest_place_via_simulation(double& best_attitude, double& best_dist_to_move);
       void calc_angle_distance_to_safest_place_via_lidar(double& best_attitude, double& best_dist_to_move);
       void calc_recovery_move(const double best_attitude, double& rotate_direction, double& recovery_rotate_angle, double& straight_direction);
+
+      unsigned char getGlobalCost(double x, double y);
   };
 };  // namespace safety_direction_recovery
 
