@@ -137,7 +137,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costm
 
         plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
         potential_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("potential", 1);
-        inscribed_pub_ = private_nh.advertise<visualization_msgs::Marker>("inscribed_radius", 1);
+        fp_radii_pub_ = private_nh.advertise<visualization_msgs::Marker>("footprint_radii", 2);
 
         private_nh.param("allow_unknown", allow_unknown_, true);
         planner_->setHasUnknown(allow_unknown_);
@@ -166,6 +166,9 @@ void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, u
     planner_->setNeutralCost(config.neutral_cost);
     planner_->setFactor(config.cost_factor);
     publish_potential_ = config.publish_potential;
+    show_footprint_radii_ = config.show_footprint_radii;
+    if (!show_footprint_radii_)
+      clearFootprintRadii();
     orientation_filter_->setMode(config.orientation_mode);
     orientation_filter_->setWindowSize(config.orientation_window_size);
 }
@@ -296,8 +299,8 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
         planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
     if(publish_potential_)
         publishPotential(potential_array_);
-
-    publishInscribedRadius();
+    if(show_footprint_radii_)
+      showFootprintRadii();
 
     if (found_legal) {
         //extract the plan
@@ -438,25 +441,40 @@ void GlobalPlanner::publishPotential(float* potential)
     potential_pub_.publish(grid);
 }
 
-void GlobalPlanner::publishInscribedRadius() const
+void GlobalPlanner::showFootprintRadii() const
 {
     double inscribed_radius, circumscribed_radius;
     costmap_2d::calculateMinAndMaxDistances(costmap_ros_->getRobotFootprint(), inscribed_radius, circumscribed_radius);
 
+    // show the inscribed radius (in blue)
     visualization_msgs::Marker marker;
     marker.header.frame_id = costmap_ros_->getBaseFrameID();
     marker.header.stamp = ros::Time::now();
     marker.ns = "inscribed_radius";
-    marker.type = visualization_msgs::Marker::CYLINDER;
+    marker.type = visualization_msgs::Marker::LINE_STRIP;
     marker.action = visualization_msgs::Marker::ADD;
     marker.pose.orientation.w = 1.0;
-    marker.scale.x = 2.0 * inscribed_radius;
-    marker.scale.y = 2.0 * inscribed_radius;
-    marker.scale.z = 0.000001;
-    marker.color.g = 1.0;
-    marker.color.a = 0.2;
-    inscribed_pub_.publish(marker);
+    marker.points = costmap_2d::makeFootprintFromRadius(inscribed_radius);
+    marker.points.push_back(marker.points.front());  // close the polygon
+    marker.scale.x = 0.01;
+    marker.color.b = 1.0;
+    marker.color.a = 0.5;
+    fp_radii_pub_.publish(marker);
+
+    // repeat for the circumscribed radius (in red)
+    marker.ns = "circumscribed_radius";
+    marker.points = costmap_2d::makeFootprintFromRadius(circumscribed_radius);
+    marker.points.push_back(marker.points.front());  // close the polygon
+    marker.color.r = 1.0;
+    marker.color.b = 0.0;
+    fp_radii_pub_.publish(marker);
 }
 
+void GlobalPlanner::clearFootprintRadii() const
+{
+  visualization_msgs::Marker marker;
+  marker.action = visualization_msgs::Marker::DELETEALL;
+  fp_radii_pub_.publish(marker);
+}
 
 } //end namespace global_planner

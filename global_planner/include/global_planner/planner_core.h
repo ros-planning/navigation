@@ -203,8 +203,10 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
         ros::Publisher potential_pub_;
         int publish_scale_;
 
-        ros::Publisher inscribed_pub_;
-        void publishInscribedRadius() const;
+        bool show_footprint_radii_;
+        ros::Publisher fp_radii_pub_;
+        void showFootprintRadii() const;
+        void clearFootprintRadii() const;
 
         void outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value);
 
