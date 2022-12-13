@@ -273,7 +273,7 @@ namespace base_local_planner{
 
     if (local_goal_in_obstacle) {
       ROS_WARN("None of the points of the global plan sufficiently far away from the start were in free space");
-      return mbf_msgs::ExePathResult::BLOCKED_PATH;
+      return mbf_msgs::ExePathResult::BLOCKED_GOAL;
     }
 
     queue<MapCell*> path_dist_queue;
