@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
             geometry_msgs
             message_generation
             mbf_msgs
+            mbf_utility
             nav_core
             nav_msgs
             pluginlib

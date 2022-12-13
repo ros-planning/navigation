@@ -38,6 +38,7 @@
 #include <base_local_planner/simple_scored_sampling_planner.h>
 
 #include <ros/console.h>
+#include <mbf_utility/navigation_utility.h>
 
 namespace base_local_planner {
   
@@ -88,7 +89,7 @@ namespace base_local_planner {
       TrajectoryCostFunction* loop_critic_p = *loop_critic;
       const auto outcome = loop_critic_p->prepare();
       if (outcome != mbf_msgs::ExePathResult::SUCCESS) {
-        ROS_WARN_STREAM("A scoring function failed to prepare; outcome: " << outcome);
+        ROS_WARN_STREAM("A scoring function failed to prepare; outcome: " << mbf_utility::outcome2str(outcome));
         return outcome;
       }
     }

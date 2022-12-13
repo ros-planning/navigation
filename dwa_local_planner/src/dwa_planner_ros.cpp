@@ -52,6 +52,7 @@
 #include <nav_core/parameter_magic.h>
 
 #include <mbf_msgs/ExePathResult.h>
+#include <mbf_utility/navigation_utility.h>
 
 // register this planner as a MBF's CostmapController plugin
 PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, mbf_costmap_core::CostmapController)
@@ -315,7 +316,7 @@ namespace dwa_local_planner {
       ROS_DEBUG_NAMED("dwa_local_planner", "Slowing down from (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f)",
                       vx, vy, vt, cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z);
 
-      message = "The dwa local planner failed with an error: " + std::to_string(outcome);
+      message = "The dwa local planner failed with an error: " + mbf_utility::outcome2str(outcome);
       ROS_DEBUG_STREAM_NAMED("dwa_local_planner", message);  //// TODO why is this DEBUG?
       local_plan.clear();
       publishLocalPlan(local_plan);

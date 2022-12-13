@@ -29,6 +29,7 @@
     <depend>eigen</depend>
     <depend>geometry_msgs</depend>
     <depend>mbf_msgs</depend>
+    <depend>mbf_utility</depend>
     <depend>nav_core</depend>
     <depend>nav_msgs</depend>
     <depend>pluginlib</depend>
