@@ -33,7 +33,6 @@
  *********************************************************************/
 #include <base_local_planner/map_grid.h>
 #include <costmap_2d/cost_values.h>
-#include <mbf_msgs/ExePathAction.h>
 
 using namespace std;
 
@@ -170,7 +169,7 @@ namespace base_local_planner{
   }
 
   //update what map cells are considered path based on the global_plan
-  mbf_msgs::ExePathResult::_outcome_type MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
+  ExePathOutcome MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
       const std::vector<geometry_msgs::PoseStamped>& global_plan) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 
@@ -210,7 +209,7 @@ namespace base_local_planner{
   }
 
   //mark the point of the costmap as local goal where global_plan first leaves the area (or its last point)
-  mbf_msgs::ExePathResult::_outcome_type MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
+  ExePathOutcome MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
       const std::vector<geometry_msgs::PoseStamped>& global_plan) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 

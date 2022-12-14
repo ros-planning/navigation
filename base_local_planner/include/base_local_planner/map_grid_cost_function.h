@@ -40,7 +40,6 @@
 
 #include <base_local_planner/trajectory_cost_function.h>
 
-#include <mbf_msgs/ExePathResult.h>
 #include <costmap_2d/costmap_2d.h>
 #include <base_local_planner/map_grid.h>
 namespace base_local_planner {
@@ -96,7 +95,7 @@ public:
   /**
    * propagate distances
    */
-  mbf_msgs::ExePathResult::_outcome_type prepare();
+  ExePathOutcome prepare();
 
   double scoreTrajectory(Trajectory &traj);
 

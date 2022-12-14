@@ -56,7 +56,7 @@ void MapGridCostFunction::setTargetPoses(std::vector<geometry_msgs::PoseStamped>
   target_poses_ = target_poses;
 }
 
-mbf_msgs::ExePathResult::_outcome_type MapGridCostFunction::prepare() {
+ExePathOutcome MapGridCostFunction::prepare() {
   map_.resetPathDist();
 
   return is_local_goal_function_ ? map_.setLocalGoal(*costmap_, target_poses_): map_.setTargetCells(*costmap_, target_poses_);

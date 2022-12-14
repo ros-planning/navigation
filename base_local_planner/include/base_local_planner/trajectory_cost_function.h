@@ -39,7 +39,7 @@
 #define TRAJECTORYCOSTFUNCTION_H_
 
 #include <base_local_planner/trajectory.h>
-#include <mbf_msgs/ExePathResult.h>
+#include <base_local_planner/types.h>
 
 namespace base_local_planner {
 
@@ -58,7 +58,7 @@ public:
    * General updating of context values if required.
    * Subclasses may overwrite. Return a non-zero error code in case there is any error.
    */
-  virtual mbf_msgs::ExePathResult::_outcome_type prepare() = 0;
+  virtual ExePathOutcome prepare() = 0;
 
   /**
    * return a score for trajectory traj

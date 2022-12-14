@@ -112,7 +112,7 @@ namespace dwa_local_planner {
        *         INTERNAL_ERROR  = 114
        *         121..149 are reserved as plugin specific errors
        */
-      uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+      ExePathOutcome computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
                                        const geometry_msgs::TwistStamped& velocity,
                                        geometry_msgs::TwistStamped& cmd_vel, std::string& message);
 
@@ -124,7 +124,7 @@ namespace dwa_local_planner {
        * @param message Optional more detailed outcome as a string.
        * @return Result code as described on ExePath action result (see computeVelocityCommands for details)
        */
-      uint32_t dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose,
+      ExePathOutcome dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose,
                                           geometry_msgs::TwistStamped& cmd_vel, std::string& message);
 
       /**

@@ -257,7 +257,7 @@ namespace dwa_local_planner {
     return latched_inner_goal_ ||  bypassed_goal || oscillating_;
   }
 
-  uint32_t DWAPlannerROS::dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose,
+  ExePathOutcome DWAPlannerROS::dwaComputeVelocityCommands(geometry_msgs::PoseStamped& global_pose,
                                                      geometry_msgs::TwistStamped& cmd_vel, std::string& message) {
     // dynamic window sampling approach to get useful velocity commands
     if(! isInitialized()){
@@ -352,7 +352,7 @@ namespace dwa_local_planner {
     return mbf_msgs::ExePathResult::SUCCESS;
   }
 
-  uint32_t DWAPlannerROS::computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+  ExePathOutcome DWAPlannerROS::computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
                                                   const geometry_msgs::TwistStamped& velocity,
                                                   geometry_msgs::TwistStamped& cmd_vel, std::string& message) {
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal

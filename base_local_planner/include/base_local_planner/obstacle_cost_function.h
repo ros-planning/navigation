@@ -40,8 +40,6 @@
 
 #include <base_local_planner/trajectory_cost_function.h>
 
-#include <mbf_msgs/ExePathResult.h>
-
 #include <base_local_planner/costmap_model.h>
 #include <costmap_2d/costmap_2d.h>
 
@@ -58,7 +56,7 @@ public:
   ObstacleCostFunction(costmap_2d::Costmap2D* costmap);
   ~ObstacleCostFunction();
 
-  mbf_msgs::ExePathResult::_outcome_type prepare();
+  ExePathOutcome prepare();
   double scoreTrajectory(Trajectory &traj);
 
   void setSumScores(bool score_sums){ sum_scores_=score_sums; }

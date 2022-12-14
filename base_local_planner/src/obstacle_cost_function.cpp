@@ -94,7 +94,7 @@ std::vector<geometry_msgs::Point> ObstacleCostFunction::getScaledFootprint(const
   return scaled_footprint;
 }
 
-mbf_msgs::ExePathResult::_outcome_type ObstacleCostFunction::prepare() {
+ExePathOutcome ObstacleCostFunction::prepare() {
   return mbf_msgs::ExePathResult::SUCCESS;
 }
 

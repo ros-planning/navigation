@@ -40,7 +40,6 @@
 
 #include <base_local_planner/trajectory_cost_function.h>
 #include <Eigen/Core>
-#include <mbf_msgs/ExePathResult.h>
 
 namespace base_local_planner {
 
@@ -51,7 +50,7 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
 
-  mbf_msgs::ExePathResult::_outcome_type prepare() {return mbf_msgs::ExePathResult::SUCCESS;};
+  ExePathOutcome prepare() {return mbf_msgs::ExePathResult::SUCCESS;};
 
   /**
    * @brief  Reset the oscillation flags for the local planner

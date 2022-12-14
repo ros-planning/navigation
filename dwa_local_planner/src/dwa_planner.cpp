@@ -367,7 +367,7 @@ namespace dwa_local_planner {
   /*
    * given the current state of the robot, find a good trajectory
    */
-  std::pair<base_local_planner::Trajectory, mbf_msgs::ExePathResult::_outcome_type> DWAPlanner::findBestPath(
+  std::pair<base_local_planner::Trajectory, ExePathOutcome> DWAPlanner::findBestPath(
       const geometry_msgs::PoseStamped& global_pose,
       const geometry_msgs::PoseStamped& global_vel,
       geometry_msgs::PoseStamped& drive_velocities) {

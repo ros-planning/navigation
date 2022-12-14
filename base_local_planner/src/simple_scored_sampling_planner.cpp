@@ -79,7 +79,7 @@ namespace base_local_planner {
     return traj_cost;
   }
 
-  mbf_msgs::ExePathResult::_outcome_type SimpleScoredSamplingPlanner::findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) {
+  ExePathOutcome SimpleScoredSamplingPlanner::findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) {
     Trajectory loop_traj;
     Trajectory best_traj;
     double loop_traj_cost, best_traj_cost = -1;
