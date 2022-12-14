@@ -1,4 +1,0 @@
-- git:
-    local-name: move_base_flex
-    uri: git@github.com:magazino/move_base_flex.git
-    version: master
