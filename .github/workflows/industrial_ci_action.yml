@@ -20,4 +20,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: 'ros-industrial/industrial_ci@master'
-        env: {ROS_DISTRO: noetic, ROS_REPO: main, ROSINSTALL_FILENAME: ros_navigation.rosinstall}
+        env: {ROS_DISTRO: noetic, ROS_REPO: main, UPSTREAM_WORKSPACE: ros_navigation.rosinstall}
