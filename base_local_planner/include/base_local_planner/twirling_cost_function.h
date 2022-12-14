@@ -57,7 +57,7 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
 
-  bool prepare() {return true;};
+  ExePathOutcome prepare() {return mbf_msgs::ExePathResult::SUCCESS;};
 };
 
 } /* namespace base_local_planner */

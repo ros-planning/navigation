@@ -33,6 +33,7 @@
  *********************************************************************/
 #include <base_local_planner/map_grid.h>
 #include <costmap_2d/cost_values.h>
+
 using namespace std;
 
 namespace base_local_planner{
@@ -168,7 +169,7 @@ namespace base_local_planner{
   }
 
   //update what map cells are considered path based on the global_plan
-  void MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
+  ExePathOutcome MapGrid::setTargetCells(const costmap_2d::Costmap2D& costmap,
       const std::vector<geometry_msgs::PoseStamped>& global_plan) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 
@@ -200,14 +201,15 @@ namespace base_local_planner{
     if (!started_path) {
       ROS_ERROR("None of the %d first of %zu (%zu) points of the global plan were in the local costmap and free",
           i, adjusted_global_plan.size(), global_plan.size());
-      return;
+      return mbf_msgs::ExePathResult::OUT_OF_MAP;
     }
 
     computeTargetDistance(path_dist_queue, costmap);
+    return mbf_msgs::ExePathResult::SUCCESS;
   }
 
   //mark the point of the costmap as local goal where global_plan first leaves the area (or its last point)
-  void MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
+  ExePathOutcome MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
       const std::vector<geometry_msgs::PoseStamped>& global_plan) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 
@@ -265,7 +267,12 @@ namespace base_local_planner{
     }
     if (!started_path) {
       ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");
-      return;
+      return mbf_msgs::ExePathResult::OUT_OF_MAP;
+    }
+
+    if (local_goal_in_obstacle) {
+      ROS_WARN("None of the points of the global plan sufficiently far away from the start were in free space");
+      return mbf_msgs::ExePathResult::BLOCKED_GOAL;
     }
 
     queue<MapCell*> path_dist_queue;
@@ -278,6 +285,7 @@ namespace base_local_planner{
     }
 
     computeTargetDistance(path_dist_queue, costmap);
+    return mbf_msgs::ExePathResult::SUCCESS;
   }
 
 

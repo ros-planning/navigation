@@ -23,8 +23,8 @@ void AlignWithPathFunction::setTargetPoses(std::vector<geometry_msgs::PoseStampe
   current_yaw_diff_ = angles::normalize_angle(path_yaw - current_yaw);
 }
 
-bool AlignWithPathFunction::prepare() {
-  return true;
+ExePathOutcome AlignWithPathFunction::prepare() {
+  return mbf_msgs::ExePathResult::SUCCESS;;
 }
 
 double AlignWithPathFunction::scoreTrajectory(Trajectory &traj) {

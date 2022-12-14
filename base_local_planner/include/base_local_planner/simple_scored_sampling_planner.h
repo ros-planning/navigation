@@ -39,6 +39,7 @@
 #define SIMPLE_SCORED_SAMPLING_PLANNER_H_
 
 #include <vector>
+#include <mbf_msgs/ExePathResult.h>
 #include <base_local_planner/trajectory.h>
 #include <base_local_planner/trajectory_cost_function.h>
 #include <base_local_planner/trajectory_sample_generator.h>
@@ -91,7 +92,7 @@ public:
    * @param traj The container to write the result to
    * @param all_explored pass NULL or a container to collect all trajectories for debugging (has a penalty)
    */
-  bool findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored = 0);
+   ExePathOutcome findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored = 0);
 
 
 private:

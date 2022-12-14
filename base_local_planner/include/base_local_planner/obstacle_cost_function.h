@@ -56,7 +56,7 @@ public:
   ObstacleCostFunction(costmap_2d::Costmap2D* costmap);
   ~ObstacleCostFunction();
 
-  bool prepare();
+  ExePathOutcome prepare();
   double scoreTrajectory(Trajectory &traj);
 
   void setSumScores(bool score_sums){ sum_scores_=score_sums; }

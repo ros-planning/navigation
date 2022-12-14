@@ -50,7 +50,7 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
 
-  bool prepare() {return true;};
+  ExePathOutcome prepare() {return mbf_msgs::ExePathResult::SUCCESS;};
 
   /**
    * @brief  Reset the oscillation flags for the local planner

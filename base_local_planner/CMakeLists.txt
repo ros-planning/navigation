@@ -11,6 +11,8 @@ find_package(catkin REQUIRED
             dynamic_reconfigure
             geometry_msgs
             message_generation
+            mbf_msgs
+            mbf_utility
             nav_core
             nav_msgs
             pluginlib
