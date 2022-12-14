@@ -17,11 +17,7 @@ jobs:
   industrial_ci:
     name: ros-navigation-industrial-ci
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        env:
-          - {ROS_DISTRO: noetic, ROS_REPO: main}
     steps:
       - uses: actions/checkout@v3
       - uses: 'ros-industrial/industrial_ci@master'
-        env: ${{matrix.env}}
+        env: {ROS_DISTRO: noetic, ROS_REPO: main, ROSINSTALL_FILENAME: ros_navigation.rosinstall}
