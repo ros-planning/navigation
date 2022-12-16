@@ -185,7 +185,8 @@ namespace base_local_planner{
        * @brief Update what cell is considered the next local goal
        */
       ExePathOutcome setLocalGoal(const costmap_2d::Costmap2D& costmap,
-            const std::vector<geometry_msgs::PoseStamped>& global_plan);
+            const std::vector<geometry_msgs::PoseStamped>& global_plan,
+            const geometry_msgs::PoseStamped* const current_pose = nullptr);
 
       double goal_x_, goal_y_; /**< @brief The goal distance was last computed from */
 
