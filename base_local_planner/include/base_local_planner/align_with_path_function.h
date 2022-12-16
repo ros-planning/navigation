@@ -14,7 +14,7 @@ public:
 
   void setTargetPoses(std::vector<geometry_msgs::PoseStamped>& target_poses, const geometry_msgs::PoseStamped& global_pose);
 
-  ExePathOutcome prepare();
+  ExePathOutcome prepare(const geometry_msgs::PoseStamped& current_pose);
 
   double scoreTrajectory(Trajectory &traj);
 

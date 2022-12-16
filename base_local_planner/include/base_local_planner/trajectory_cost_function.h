@@ -58,7 +58,7 @@ public:
    * General updating of context values if required.
    * Subclasses may overwrite. Return a non-zero error code in case there is any error.
    */
-  virtual ExePathOutcome prepare() = 0;
+  virtual ExePathOutcome prepare(const geometry_msgs::PoseStamped& current_pose) = 0;
 
   /**
    * return a score for trajectory traj

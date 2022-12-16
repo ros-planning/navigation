@@ -92,7 +92,7 @@ public:
    * @param traj The container to write the result to
    * @param all_explored pass NULL or a container to collect all trajectories for debugging (has a penalty)
    */
-   ExePathOutcome findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored = 0);
+   ExePathOutcome findBestTrajectory(const geometry_msgs::PoseStamped& current_pose, Trajectory& traj, std::vector<Trajectory>* all_explored = 0);
 
 
 private:
