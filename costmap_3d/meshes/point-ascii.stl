@@ -1,0 +1,9 @@
+solid point
+    facet normal 1.00000E+000 0.00000E+000 0.00000E+000
+        outer loop
+            vertex 0.00000E+000 0.00000E+000 0.00000E+000
+            vertex 0.00000E+000 1.00000E-012 0.00000E+000
+            vertex 0.00000E+000 0.00000E+000 1.00000E-012
+        endloop
+    endfacet
+endsolid point
