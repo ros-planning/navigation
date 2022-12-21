@@ -273,7 +273,7 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
     if (!costmap_->worldToMap(wx, wy, goal_x_i, goal_y_i)) {
         message = "The goal sent to the global planner is off the global costmap. Planning will always fail to this goal";
         ROS_ERROR_STREAM(message);
-        return mbf_msgs::GetPathResult::INVALID_GOAL;
+        return mbf_msgs::GetPathResult::OUT_OF_MAP;
     }
     if(old_navfn_behavior_){
         goal_x = goal_x_i;
@@ -282,8 +282,17 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
         worldToMap(wx, wy, goal_x, goal_y);
     }
 
-    //clear the starting cell within the costmap because we know it can't be an obstacle
-    clearRobotCell(start, start_x_i, start_y_i);
+    // check if either start or goal poses are in collision
+    if (costmap_->getCost(start_x_i, start_y_i) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+      message = "The start pose is in collision. Planning from this pose will always fail";
+      ROS_ERROR_STREAM(message);
+      return mbf_msgs::GetPathResult::BLOCKED_START;
+    }
+    if (costmap_->getCost(goal_x_i, goal_y_i) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+      message = "The goal pose is in collision. Planning to this pose will always fail";
+      ROS_ERROR_STREAM(message);
+      return mbf_msgs::GetPathResult::BLOCKED_GOAL;
+    }
 
     int nx = costmap_->getSizeInCellsX(), ny = costmap_->getSizeInCellsY();
 
