@@ -50,7 +50,7 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
 
-  ExePathOutcome prepare() {return mbf_msgs::ExePathResult::SUCCESS;};
+  ExePathOutcome prepare(const geometry_msgs::PoseStamped&) {return mbf_msgs::ExePathResult::SUCCESS;};
 
   /**
    * @brief  Reset the oscillation flags for the local planner

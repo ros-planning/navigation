@@ -388,7 +388,7 @@ namespace dwa_local_planner {
     result_traj_.cost_ = -7;
     // find best trajectory by sampling and scoring the samples
     std::vector<base_local_planner::Trajectory> all_explored;
-    const auto outcome = scored_sampling_planner_.findBestTrajectory(result_traj_, &all_explored);
+    const auto outcome = scored_sampling_planner_.findBestTrajectory(global_pose, result_traj_, &all_explored);
 
     if(publish_traj_pc_)
     {

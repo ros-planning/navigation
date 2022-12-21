@@ -55,10 +55,11 @@ public:
 
   /**
    *
-   * General updating of context values if required.
+   * @brief General updating of context values if required.
    * Subclasses may overwrite. Return a non-zero error code in case there is any error.
+   * @param current_pose The current pose of the robot in the costmap's global frame
    */
-  virtual ExePathOutcome prepare() = 0;
+  virtual ExePathOutcome prepare(const geometry_msgs::PoseStamped& current_pose) = 0;
 
   /**
    * return a score for trajectory traj

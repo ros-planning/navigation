@@ -23,7 +23,7 @@ void AlignWithPathFunction::setTargetPoses(std::vector<geometry_msgs::PoseStampe
   current_yaw_diff_ = angles::normalize_angle(path_yaw - current_yaw);
 }
 
-ExePathOutcome AlignWithPathFunction::prepare() {
+ExePathOutcome AlignWithPathFunction::prepare(const geometry_msgs::PoseStamped& ) {
   return mbf_msgs::ExePathResult::SUCCESS;;
 }
 

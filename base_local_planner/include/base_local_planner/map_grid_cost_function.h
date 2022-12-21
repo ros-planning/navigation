@@ -95,7 +95,7 @@ public:
   /**
    * propagate distances
    */
-  ExePathOutcome prepare();
+  ExePathOutcome prepare(const geometry_msgs::PoseStamped& current_pose);
 
   double scoreTrajectory(Trajectory &traj);
 

@@ -57,7 +57,7 @@ public:
 
   double scoreTrajectory(Trajectory &traj);
 
-  ExePathOutcome prepare() {return mbf_msgs::ExePathResult::SUCCESS;};
+  ExePathOutcome prepare(const geometry_msgs::PoseStamped&) {return mbf_msgs::ExePathResult::SUCCESS;};
 };
 
 } /* namespace base_local_planner */
