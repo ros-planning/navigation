@@ -210,7 +210,8 @@ namespace base_local_planner{
 
   //mark the point of the costmap as local goal where global_plan first leaves the area (or its last point)
   ExePathOutcome MapGrid::setLocalGoal(const costmap_2d::Costmap2D& costmap,
-      const std::vector<geometry_msgs::PoseStamped>& global_plan) {
+      const std::vector<geometry_msgs::PoseStamped>& global_plan,
+      const geometry_msgs::PoseStamped* const current_pose) {
     sizeCheck(costmap.getSizeInCellsX(), costmap.getSizeInCellsY());
 
     int local_goal_x = -1;
@@ -285,12 +286,24 @@ namespace base_local_planner{
     }
 
     computeTargetDistance(path_dist_queue, costmap);
+
+    // check if the goal is reachable from the start position
+    if (current_pose) {
+      unsigned int cell_x, cell_y;
+      if ( ! costmap.worldToMap(current_pose->pose.position.x, current_pose->pose.position.y, cell_x, cell_y)) {
+        ROS_ERROR("setLocalGoal: start position out of map");
+        return mbf_msgs::ExePathResult::OUT_OF_MAP;
+      }
+
+      if (this->operator()(cell_x, cell_y).target_dist == unreachableCellCosts()) {
+        return mbf_msgs::ExePathResult::BLOCKED_PATH;
+      }
+    }
+
     return mbf_msgs::ExePathResult::SUCCESS;
   }
 
-
-
-  void MapGrid::computeTargetDistance(queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap){
+void MapGrid::computeTargetDistance(queue<MapCell*>& dist_queue, const costmap_2d::Costmap2D& costmap){
     MapCell* current_cell;
     MapCell* check_cell;
     unsigned int last_col = size_x_ - 1;
