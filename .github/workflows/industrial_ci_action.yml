@@ -20,4 +20,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: 'ros-industrial/industrial_ci@master'
-        env: {ROS_DISTRO: noetic, ROS_REPO: main, UPSTREAM_WORKSPACE: 'github:magazino/move_base_flex#master -move_base_flex/mbf_abstract_core -move_base_flex/mbf_abstract_nav -move_base_flex/mbf_costmap_core -move_base_flex/mbf_costmap_nav -move_base_flex/mbf_simple_nav'}
+        env: {ROS_DISTRO: noetic, ROS_REPO: main, UPSTREAM_WORKSPACE: 'github:magazino/move_base_flex#js/add_error_codes -move_base_flex/mbf_abstract_core -move_base_flex/mbf_abstract_nav -move_base_flex/mbf_costmap_core -move_base_flex/mbf_costmap_nav -move_base_flex/mbf_simple_nav'}
