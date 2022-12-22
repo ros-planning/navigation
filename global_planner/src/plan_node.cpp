@@ -92,7 +92,7 @@ void PlannerWithCostmap::poseCallback(const rm::PoseStamped::ConstPtr& goal) {
 }
 
 PlannerWithCostmap::PlannerWithCostmap(string name, Costmap2DROS* cmap) :
-        GlobalPlanner(name, cmap) {
+        GlobalPlanner(name, cmap->getCostmap(), cmap->getGlobalFrameID()) {
     ros::NodeHandle private_nh("~");
     cmap_ = cmap;
     make_plan_service_ = private_nh.advertiseService("make_plan", &PlannerWithCostmap::makePlanService, this);

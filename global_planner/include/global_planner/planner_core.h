@@ -71,11 +71,13 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
         GlobalPlanner();
 
         /**
-         * @brief  Constructor for the PlannerCore object
+         * @brief  Alternative constructor to use the planner outside MBF
+         * @warning Show footprint radii will not work
          * @param  name The name of this planner
-         * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+         * @param  costmap A pointer to the costmap to use
+         * @param  frame_id Frame of the costmap
          */
-        GlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+        GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
          * @brief  Default deconstructor for the PlannerCore object
@@ -88,6 +90,8 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
          * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
          */
         void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+
+        void initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id);
 
         /**
          * @brief Given a goal pose in the world, compute a plan
@@ -178,8 +182,8 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
         /**
          * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
          */
-        costmap_2d::Costmap2DROS* costmap_ros_;
-        costmap_2d::Costmap2D* costmap_;
+        costmap_2d::Costmap2DROS* costmap_ros_ = nullptr;
+        costmap_2d::Costmap2D* costmap_ = nullptr;
         std::string frame_id_;
         ros::Publisher plan_pub_;
         bool initialized_, allow_unknown_;

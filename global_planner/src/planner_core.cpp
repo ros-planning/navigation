@@ -75,10 +75,10 @@ GlobalPlanner::GlobalPlanner() :
         potential_array_(NULL) {
 }
 
-GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
+GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
         GlobalPlanner() {
     //initialize the planner
-    initialize(name, costmap_ros);
+    initialize(name, costmap, frame_id);
 }
 
 GlobalPlanner::~GlobalPlanner() {
@@ -93,13 +93,17 @@ GlobalPlanner::~GlobalPlanner() {
 }
 
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
+    costmap_ros_ = costmap_ros;
+    initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
+}
+
+void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) {
     if (!initialized_) {
         ros::NodeHandle private_nh("~/" + name);
-        costmap_ros_ = costmap_ros;
-        costmap_ = costmap_ros->getCostmap();
-        frame_id_ = costmap_ros->getGlobalFrameID();
+        costmap_ = costmap;
+        frame_id_ = frame_id;
 
-        unsigned int cx = costmap_->getSizeInCellsX(), cy = costmap_->getSizeInCellsY();
+        unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
 
         private_nh.param("old_navfn_behavior", old_navfn_behavior_, false);
         if(!old_navfn_behavior_)
@@ -443,6 +447,8 @@ void GlobalPlanner::publishPotential(float* potential)
 
 void GlobalPlanner::showFootprintRadii() const
 {
+    if (!costmap_ros_)
+        return;
     double inscribed_radius, circumscribed_radius;
     costmap_2d::calculateMinAndMaxDistances(costmap_ros_->getRobotFootprint(), inscribed_radius, circumscribed_radius);
 
