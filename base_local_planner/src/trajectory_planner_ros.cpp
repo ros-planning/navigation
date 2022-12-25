@@ -48,7 +48,7 @@
 
 #include <ros/console.h>
 
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 
 #include <base_local_planner/goal_functions.h>
 #include <nav_msgs/Path.h>
