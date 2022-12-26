@@ -288,8 +288,8 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
       ROS_ERROR_STREAM(message);
       return mbf_msgs::GetPathResult::BLOCKED_START;
     }
-    if (costmap_->getCost(goal_x_i, goal_y_i) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-      message = "The goal pose is in collision. Planning to this pose will always fail";
+    if (tolerance == 0 && costmap_->getCost(goal_x_i, goal_y_i) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+      message = "The goal pose is in collision, and the tolerance is set to zero";
       ROS_ERROR_STREAM(message);
       return mbf_msgs::GetPathResult::BLOCKED_GOAL;
     }
