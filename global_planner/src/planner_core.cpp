@@ -316,11 +316,11 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
 
       double best_sdist = DBL_MAX;
 
-      p.pose.position.y = goal.pose.position.y - tolerance;
-      while(p.pose.position.y <= goal.pose.position.y + tolerance){
-        p.pose.position.x = goal.pose.position.x - tolerance;
-        while(p.pose.position.x <= goal.pose.position.x + tolerance){
-            unsigned int mx, my;
+      unsigned int mx, my;
+      for(double dy = -tolerance; dy <= tolerance; dy += resolution){
+        p.pose.position.y = goal.pose.position.y + dy;
+        const double dx = std::sqrt(tolerance*tolerance - dy*dy);
+        for(p.pose.position.x = goal.pose.position.x - dx; p.pose.position.x <= goal.pose.position.x + dx; p.pose.position.x += resolution){
             if(costmap_->worldToMap(p.pose.position.x, p.pose.position.y, mx, my)) {
               unsigned int index = my * nx + mx;
               double potential = potential_array_[index];
@@ -331,9 +331,7 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
                 found_legal = true;
               }
             }
-            p.pose.position.x += resolution;
         }
-        p.pose.position.y += resolution;
       }
 
       if (found_legal) {
