@@ -308,6 +308,49 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
     bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
                                                     nx * ny * 2, potential_array_);
 
+
+    geometry_msgs::PoseStamped best_pose = goal;
+    if (!found_legal) {
+      double resolution = costmap_->getResolution();
+      geometry_msgs::PoseStamped p = goal;
+
+      double best_sdist = DBL_MAX;
+
+      p.pose.position.y = goal.pose.position.y - tolerance;
+      while(p.pose.position.y <= goal.pose.position.y + tolerance){
+        p.pose.position.x = goal.pose.position.x - tolerance;
+        while(p.pose.position.x <= goal.pose.position.x + tolerance){
+            unsigned int mx, my;
+            if(costmap_->worldToMap(p.pose.position.x, p.pose.position.y, mx, my)) {
+              unsigned int index = my * nx + mx;
+              double potential = potential_array_[index];
+              double sdist = sq_distance(p, goal);
+              if(potential < POT_HIGH && sdist < best_sdist){
+                best_sdist = sdist;
+                best_pose = p;
+                found_legal = true;
+              }
+            }
+            p.pose.position.x += resolution;
+        }
+        p.pose.position.y += resolution;
+      }
+
+      if (found_legal) {
+        if (!costmap_->worldToMap(best_pose.pose.position.x, best_pose.pose.position.y, goal_x_i, goal_y_i)) {
+          message = "best_pose of the global planner is off the global costmap. Planning will always fail to this goal";
+          ROS_ERROR_STREAM(message);
+          return mbf_msgs::GetPathResult::INVALID_GOAL;
+        }
+        if(old_navfn_behavior_){
+          goal_x = goal_x_i;
+          goal_y = goal_y_i;
+        }else{
+          worldToMap(best_pose.pose.position.x, best_pose.pose.position.y, goal_x, goal_y);
+        }
+      }
+    }
+
     if(!old_navfn_behavior_)
         planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
     if(publish_potential_)
@@ -317,11 +360,10 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
 
     if (found_legal) {
         //extract the plan
-        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
+        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, best_pose, plan)) {
             //make sure the goal we push on has the same timestamp as the rest of the plan
-            geometry_msgs::PoseStamped goal_copy = goal;
-            goal_copy.header.stamp = ros::Time::now();
-            plan.push_back(goal_copy);
+            best_pose.header.stamp = ros::Time::now();
+            plan.push_back(best_pose);
         } else {
             message = "Failed to get a plan from potential when a legal potential was found. This shouldn't happen";
             ROS_ERROR_STREAM(message);
