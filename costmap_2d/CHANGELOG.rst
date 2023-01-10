@@ -2,8 +2,8 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.3 (2023-01-10)
+-------------------
 * [ROS-O] various patches (`#1225 <https://github.com/ros-planning/navigation/issues/1225>`_)
   * do not specify obsolete c++11 standard
   this breaks with current versions of log4cxx.

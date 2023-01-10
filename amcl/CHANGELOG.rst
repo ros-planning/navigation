@@ -2,8 +2,8 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.17.3 (2023-01-10)
+-------------------
 * [AMCL] Add option to force nomotion update after initialpose (`#1226 <https://github.com/ros-planning/navigation/issues/1226>`_)
   * Adds a new boolean parameter force_update_after_initialpose. When set to true, an update is forced on the next laser scan callback, such as when the /request_nomotion_update service is called. This often results in an improved robot pose after a manual (not very precise) re-localization - without a need for the robot to move.
   * Fixes a bunch of compiler warnings (unused variable now, catching exceptions by value), normalizes how tf exceptions are caught

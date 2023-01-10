@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
     <name>fake_localization</name>
-    <version>1.17.2</version>
+    <version>1.17.3</version>
     <description>A ROS node that simply forwards odometry information.</description>
     <author>Ioan A. Sucan</author>
     <author>contradict@gmail.com</author>

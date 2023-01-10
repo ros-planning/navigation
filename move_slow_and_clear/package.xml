@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
     <name>move_slow_and_clear</name>
-    <version>1.17.2</version>
+    <version>1.17.3</version>
     <description>
 
         move_slow_and_clear
