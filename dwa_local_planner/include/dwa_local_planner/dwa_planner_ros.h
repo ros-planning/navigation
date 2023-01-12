@@ -136,10 +136,11 @@ namespace dwa_local_planner {
 
       /**
        * @brief  Check if the goal pose has been achieved.
-       * The arguments are required by MBF controller API, but are ignored.
+       * @param dist_tolerance The distance tolerance in which the current pose will be partly accepted as reached goal
+       * @param angle_tolerance The angle tolerance in which the current pose will be partly accepted as reached goal
        * @return True if achieved, false otherwise
        */
-      bool isGoalReached(double, double);
+      bool isGoalReached(double dist_tolerance, double angle_tolerance);
 
       /**
        * @brief Requests the planner to cancel; not implemented for this planner

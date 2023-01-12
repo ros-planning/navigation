@@ -175,7 +175,7 @@ namespace dwa_local_planner {
     return dp_->setPlan(orig_global_plan);
   }
 
-  bool DWAPlannerROS::isGoalReached(double, double) {
+  bool DWAPlannerROS::isGoalReached(double dist_tolerance, double angle_tolerance) {
     if (! isInitialized()) {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
@@ -183,6 +183,20 @@ namespace dwa_local_planner {
     if ( ! costmap_ros_->getRobotPose(current_pose_)) {
       ROS_ERROR("Could not get robot pose");
       return false;
+    }
+
+    // change limits if dist_tolerance or angle_tolerance are set, and different from the current values
+    if ((dist_tolerance > 0 && dist_tolerance != planner_util_.getCurrentLimits().xy_goal_tolerance) ||
+        (angle_tolerance > 0 && angle_tolerance != planner_util_.getCurrentLimits().yaw_goal_tolerance)) {
+      std::lock_guard<std::mutex> lock(config_mtx_);
+      auto limits = planner_util_.getCurrentLimits();
+      if (dist_tolerance > 0) {
+        limits.xy_goal_tolerance = dist_tolerance;
+      }
+      if (angle_tolerance > 0) {
+        limits.yaw_goal_tolerance = angle_tolerance;
+      }
+      planner_util_.reconfigureCB(limits, false);
     }
 
     const bool reached_outer_goal = latchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_);
