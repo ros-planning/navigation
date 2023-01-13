@@ -191,9 +191,13 @@ namespace dwa_local_planner {
       std::lock_guard<std::mutex> lock(config_mtx_);
       auto limits = planner_util_.getCurrentLimits();
       if (dist_tolerance > 0) {
+        ROS_INFO_STREAM_COND(dist_tolerance != limits.xy_goal_tolerance,
+            "updating xy_goal_tolerance to tolerance from action: " << dist_tolerance);
         limits.xy_goal_tolerance = dist_tolerance;
       }
       if (angle_tolerance > 0) {
+        ROS_INFO_STREAM_COND(angle_tolerance != limits.yaw_goal_tolerance,
+            "updating yaw_goal_tolerance to tolerance from action: " << angle_tolerance);
         limits.yaw_goal_tolerance = angle_tolerance;
       }
       planner_util_.reconfigureCB(limits, false);
