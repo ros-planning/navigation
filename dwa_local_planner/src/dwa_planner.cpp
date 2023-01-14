@@ -85,6 +85,8 @@ namespace dwa_local_planner {
     backwardvel_scale_ = 1.2 * config.sim_time * (config.path_distance_bias + config.goal_distance_bias);
     prefer_forward_costs_.setScale(backwardvel_scale_);
 
+    max_backward_sq_dist_ = config.max_backward_dist * config.max_backward_dist;
+
     int vx_samp, vy_samp, vth_samp;
     vx_samp = config.vx_samples;
     vy_samp = config.vy_samples;
@@ -324,7 +326,7 @@ namespace dwa_local_planner {
 
     goal_front_costs_.setTargetPoses(front_global_plan);
 
-    if (sq_dist > MIN_GOAL_DIST_SQ && path_align_costs_.isTurningRequired()) {
+    if (sq_dist > max_backward_sq_dist_ && path_align_costs_.isTurningRequired()) {
       // enable turning penalty
       path_align_costs_.setScale(1.0);
       // disable goal cost during turning because turning won't move the robot closer to the goal
@@ -356,7 +358,7 @@ namespace dwa_local_planner {
     }
 
     // disable cost for backwards motion close to the goal
-    if (sq_dist > MIN_GOAL_DIST_SQ) {
+    if (sq_dist > max_backward_sq_dist_) {
         prefer_forward_costs_.setScale(backwardvel_scale_);
     } else {
         prefer_forward_costs_.setScale(0.0);

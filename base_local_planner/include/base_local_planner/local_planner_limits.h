@@ -63,6 +63,7 @@ public:
   double yaw_goal_tolerance;
   double trans_stopped_vel;
   double theta_stopped_vel;
+  double max_backward_dist;
   bool   restore_defaults;
 
   LocalPlannerLimits() {}
@@ -86,7 +87,8 @@ public:
       double nyaw_goal_tolerance,
       bool   nprune_plan = true,
       double ntrans_stopped_vel = 0.1,
-      double ntheta_stopped_vel = 0.1):
+      double ntheta_stopped_vel = 0.1,
+      double nmax_backward_dist = 0.0):
         max_vel_trans(nmax_vel_trans),
         min_vel_trans(nmin_vel_trans),
         max_vel_x(nmax_vel_x),
@@ -105,7 +107,8 @@ public:
         inner_xy_goal_tolerance(ninner_xy_goal_tolerance),
         yaw_goal_tolerance(nyaw_goal_tolerance),
         trans_stopped_vel(ntrans_stopped_vel),
-        theta_stopped_vel(ntheta_stopped_vel) {}
+        theta_stopped_vel(ntheta_stopped_vel),
+        max_backward_dist(nmax_backward_dist){}
 
   ~LocalPlannerLimits() {}
 

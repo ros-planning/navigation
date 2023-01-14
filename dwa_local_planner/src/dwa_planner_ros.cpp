@@ -92,6 +92,7 @@ namespace dwa_local_planner {
       limits.prune_plan = config.prune_plan;
       limits.trans_stopped_vel = config.trans_stopped_vel;
       limits.theta_stopped_vel = config.theta_stopped_vel;
+      limits.max_backward_dist = config.max_backward_dist;
       planner_util_.reconfigureCB(limits, config.restore_defaults);
 
       // update dwa specific configuration

@@ -159,6 +159,8 @@ namespace dwa_local_planner {
       /// @todo: consider exposing this as a parameter
       static constexpr double MIN_GOAL_DIST_SQ = 0.7; ///< @brief Squared distance from the goal outside which the robot is encouraged to turn towards the path orientation, and within which the forward_point_distance is reduced to prevent the robot's nose from having to enter cells with cost >= INSCRIBED in order to reach the goal.
 
+      double max_backward_sq_dist_; ///< @brief Maximum distance that the robot can travel backward to reach the goal (squared to speedup computation)
+
       base_local_planner::LocalPlannerUtil *planner_util_;
 
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop

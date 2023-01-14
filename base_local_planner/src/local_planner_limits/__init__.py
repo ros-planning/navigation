@@ -41,3 +41,5 @@ def add_generic_localplanner_params(gen):
 
     gen.add("trans_stopped_vel", double_t, 0, "Below what maximum velocity we consider the robot to be stopped in translation", 0.1)
     gen.add("theta_stopped_vel", double_t, 0, "Below what maximum rotation velocity we consider the robot to be stopped in rotation", 0.1)
+
+    gen.add("max_backward_dist", double_t, 0, "Maximum distance that the robot can travel backward to reach the goal", 0.0, 0)
