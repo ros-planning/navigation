@@ -2,6 +2,19 @@
 Changelog for package costmap_2d
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.3 (2023-01-10)
+-------------------
+* [ROS-O] various patches (`#1225 <https://github.com/ros-planning/navigation/issues/1225>`_)
+  * do not specify obsolete c++11 standard
+  this breaks with current versions of log4cxx.
+  * update pluginlib include paths
+  the non-hpp headers have been deprecated since kinetic
+  * use lambdas in favor of boost::bind
+  Using boost's _1 as a global system is deprecated since C++11.
+  The ROS packages in Debian removed the implicit support for the global symbols,
+  so this code fails to compile there without the patch.
+* Contributors: Michael Görner
+
 1.17.2 (2022-06-20)
 -------------------
 * Removed unused variables in costmap_2d_ros (`#1126 <https://github.com/ros-planning/navigation/issues/1126>`_)

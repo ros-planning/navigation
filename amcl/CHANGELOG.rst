@@ -2,6 +2,22 @@
 Changelog for package amcl
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.17.3 (2023-01-10)
+-------------------
+* [AMCL] Add option to force nomotion update after initialpose (`#1226 <https://github.com/ros-planning/navigation/issues/1226>`_)
+  * Adds a new boolean parameter force_update_after_initialpose. When set to true, an update is forced on the next laser scan callback, such as when the /request_nomotion_update service is called. This often results in an improved robot pose after a manual (not very precise) re-localization - without a need for the robot to move.
+  * Fixes a bunch of compiler warnings (unused variable now, catching exceptions by value), normalizes how tf exceptions are caught
+* [ROS-O] various patches (`#1225 <https://github.com/ros-planning/navigation/issues/1225>`_)
+  * do not specify obsolete c++11 standard
+  this breaks with current versions of log4cxx.
+  * update pluginlib include paths
+  the non-hpp headers have been deprecated since kinetic
+  * use lambdas in favor of boost::bind
+  Using boost's _1 as a global system is deprecated since C++11.
+  The ROS packages in Debian removed the implicit support for the global symbols,
+  so this code fails to compile there without the patch.
+* Contributors: Michael Görner, Stephan
+
 1.17.2 (2022-06-20)
 -------------------
 * Update pf.c (`#1161 <https://github.com/ros-planning/navigation/issues/1161>`_)
