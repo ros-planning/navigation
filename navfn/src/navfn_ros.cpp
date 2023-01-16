@@ -226,7 +226,7 @@ namespace navfn {
 
     unsigned int mx, my;
     if(!costmap_->worldToMap(wx, wy, mx, my)){
-      ROS_WARN("The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
+      ROS_WARN_THROTTLE(1.0, "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
       return false;
     }
 

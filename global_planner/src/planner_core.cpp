@@ -250,7 +250,7 @@ bool GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geom
     double start_x, start_y, goal_x, goal_y;
 
     if (!costmap_->worldToMap(wx, wy, start_x_i, start_y_i)) {
-        ROS_WARN(
+        ROS_WARN_THROTTLE(1.0,
                 "The robot's start position is off the global costmap. Planning will always fail, are you sure the robot has been properly localized?");
         return false;
     }
