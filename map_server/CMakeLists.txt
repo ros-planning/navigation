@@ -94,6 +94,7 @@ if(CATKIN_ENABLE_TESTING)
   )
 
   find_package(roslib REQUIRED)
+  include_directories(${roslib_INCLUDE_DIRS})
   add_executable(rtest test/rtest.cpp test/test_constants.cpp)
   add_dependencies(rtest ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
   add_dependencies(tests rtest)
