@@ -185,40 +185,40 @@ namespace dwa_local_planner {
       return false;
     }
 
+    bool reconfigure_needed = false;
+    auto limits = planner_util_.getCurrentLimits();
+
     if (dist_tolerance > 0) {
-      if (dist_tolerance != planner_util_.getCurrentLimits().xy_goal_tolerance) {
+      if (dist_tolerance != limits.xy_goal_tolerance) {
         // change limits if dist_tolerance is set, and different from the current values
-        std::lock_guard<std::mutex> lock(config_mtx_);
-        auto limits = planner_util_.getCurrentLimits();
         ROS_INFO_STREAM("updating xy_goal_tolerance to tolerance from action: " << dist_tolerance);
         limits.xy_goal_tolerance = dist_tolerance;
-        planner_util_.reconfigureCB(limits, false);
+        reconfigure_needed = true;
       }
-    } else if (planner_util_.getCurrentLimits().xy_goal_tolerance != _latest_limits.xy_goal_tolerance) {
+    } else if (_latest_limits.xy_goal_tolerance != limits.xy_goal_tolerance) {
       // change limits if dist_tolerance is not set, and different from latest values set by dynamic reconfigure
-      std::lock_guard<std::mutex> lock(config_mtx_);
-      auto limits = planner_util_.getCurrentLimits();
       ROS_INFO_STREAM("updating xy_goal_tolerance to tolerance from previous dyn reconfig: " << _latest_limits.xy_goal_tolerance);
       limits.xy_goal_tolerance = _latest_limits.xy_goal_tolerance;
-      planner_util_.reconfigureCB(limits, false);
+      reconfigure_needed = true;
     }
 
     if (angle_tolerance > 0) {
-      if (angle_tolerance != planner_util_.getCurrentLimits().yaw_goal_tolerance) {
-        // change limits if angle_tolerance is set, and different from the current values
-        std::lock_guard<std::mutex> lock(config_mtx_);
-        auto limits = planner_util_.getCurrentLimits();
+      if (angle_tolerance != limits.yaw_goal_tolerance) {
+        // change limits if angle_tolerance is set, and different from the current values;
         ROS_INFO_STREAM("updating yaw_goal_tolerance to tolerance from action: " << angle_tolerance);
         limits.yaw_goal_tolerance = angle_tolerance;
-        planner_util_.reconfigureCB(limits, false);
+        reconfigure_needed = true;
       }
-    } else if (planner_util_.getCurrentLimits().yaw_goal_tolerance != _latest_limits.yaw_goal_tolerance) {
+    } else if (_latest_limits.yaw_goal_tolerance != limits.yaw_goal_tolerance) {
       // change limits if angle_tolerance is not set, and different from latest values set by dynamic reconfigure
-      std::lock_guard<std::mutex> lock(config_mtx_);
-      auto limits = planner_util_.getCurrentLimits();
       ROS_INFO_STREAM("updating yaw_goal_tolerance to tolerance from previous dyn reconfig: " << _latest_limits.yaw_goal_tolerance);
       limits.yaw_goal_tolerance = _latest_limits.yaw_goal_tolerance;
-      planner_util_.reconfigureCB(limits, false);
+      reconfigure_needed = true;
+    }
+
+    if (reconfigure_needed) {
+        std::lock_guard<std::mutex> lock(config_mtx_);
+        planner_util_.reconfigureCB(limits, false);
     }
 
     const bool reached_outer_goal = latchedStopRotateController_.isGoalReached(&planner_util_, odom_helper_, current_pose_);
