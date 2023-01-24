@@ -72,28 +72,28 @@ namespace dwa_local_planner {
       }
 
       // update generic local planner params
-      base_local_planner::LocalPlannerLimits limits;
-      limits.max_vel_trans = config.max_vel_trans;
-      limits.min_vel_trans = config.min_vel_trans;
-      limits.max_vel_x = config.max_vel_x;
-      limits.min_vel_x = config.min_vel_x;
-      limits.max_vel_y = config.max_vel_y;
-      limits.min_vel_y = config.min_vel_y;
-      limits.max_vel_theta = config.max_vel_theta;
-      limits.max_vel_theta_spin = config.max_vel_theta_spin;
-      limits.min_vel_theta = config.min_vel_theta;
-      limits.acc_lim_x = config.acc_lim_x;
-      limits.acc_lim_y = config.acc_lim_y;
-      limits.acc_lim_theta = config.acc_lim_theta;
-      limits.acc_lim_trans = config.acc_lim_trans;
-      limits.xy_goal_tolerance = config.xy_goal_tolerance;
-      limits.inner_xy_goal_tolerance = config.inner_xy_goal_tolerance;
-      limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
-      limits.prune_plan = config.prune_plan;
-      limits.trans_stopped_vel = config.trans_stopped_vel;
-      limits.theta_stopped_vel = config.theta_stopped_vel;
-      limits.max_backward_dist = config.max_backward_dist;
-      planner_util_.reconfigureCB(limits, config.restore_defaults);
+      _latest_limits = base_local_planner::LocalPlannerLimits();
+      _latest_limits.max_vel_trans = config.max_vel_trans;
+      _latest_limits.min_vel_trans = config.min_vel_trans;
+      _latest_limits.max_vel_x = config.max_vel_x;
+      _latest_limits.min_vel_x = config.min_vel_x;
+      _latest_limits.max_vel_y = config.max_vel_y;
+      _latest_limits.min_vel_y = config.min_vel_y;
+      _latest_limits.max_vel_theta = config.max_vel_theta;
+      _latest_limits.max_vel_theta_spin = config.max_vel_theta_spin;
+      _latest_limits.min_vel_theta = config.min_vel_theta;
+      _latest_limits.acc_lim_x = config.acc_lim_x;
+      _latest_limits.acc_lim_y = config.acc_lim_y;
+      _latest_limits.acc_lim_theta = config.acc_lim_theta;
+      _latest_limits.acc_lim_trans = config.acc_lim_trans;
+      _latest_limits.xy_goal_tolerance = config.xy_goal_tolerance;
+      _latest_limits.inner_xy_goal_tolerance = config.inner_xy_goal_tolerance;
+      _latest_limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
+      _latest_limits.prune_plan = config.prune_plan;
+      _latest_limits.trans_stopped_vel = config.trans_stopped_vel;
+      _latest_limits.theta_stopped_vel = config.theta_stopped_vel;
+      _latest_limits.max_backward_dist = config.max_backward_dist;
+      planner_util_.reconfigureCB(_latest_limits, config.restore_defaults);
 
       // update dwa specific configuration
       dp_->reconfigure(config);
@@ -185,21 +185,39 @@ namespace dwa_local_planner {
       return false;
     }
 
-    // change limits if dist_tolerance or angle_tolerance are set, and different from the current values
-    if ((dist_tolerance > 0 && dist_tolerance != planner_util_.getCurrentLimits().xy_goal_tolerance) ||
-        (angle_tolerance > 0 && angle_tolerance != planner_util_.getCurrentLimits().yaw_goal_tolerance)) {
+    if (dist_tolerance > 0) {
+      if (dist_tolerance != planner_util_.getCurrentLimits().xy_goal_tolerance) {
+        // change limits if dist_tolerance is set, and different from the current values
+        std::lock_guard<std::mutex> lock(config_mtx_);
+        auto limits = planner_util_.getCurrentLimits();
+        ROS_INFO_STREAM("updating xy_goal_tolerance to tolerance from action: " << dist_tolerance);
+        limits.xy_goal_tolerance = dist_tolerance;
+        planner_util_.reconfigureCB(limits, false);
+      }
+    } else if (planner_util_.getCurrentLimits().xy_goal_tolerance != _latest_limits.xy_goal_tolerance) {
+      // change limits if dist_tolerance is not set, and different from latest values set by dynamic reconfigure
       std::lock_guard<std::mutex> lock(config_mtx_);
       auto limits = planner_util_.getCurrentLimits();
-      if (dist_tolerance > 0) {
-        ROS_INFO_STREAM_COND(dist_tolerance != limits.xy_goal_tolerance,
-            "updating xy_goal_tolerance to tolerance from action: " << dist_tolerance);
-        limits.xy_goal_tolerance = dist_tolerance;
-      }
-      if (angle_tolerance > 0) {
-        ROS_INFO_STREAM_COND(angle_tolerance != limits.yaw_goal_tolerance,
-            "updating yaw_goal_tolerance to tolerance from action: " << angle_tolerance);
+      ROS_INFO_STREAM("updating xy_goal_tolerance to tolerance from previous dyn reconfig: " << _latest_limits.xy_goal_tolerance);
+      limits.xy_goal_tolerance = _latest_limits.xy_goal_tolerance;
+      planner_util_.reconfigureCB(limits, false);
+    }
+
+    if (angle_tolerance > 0) {
+      if (angle_tolerance != planner_util_.getCurrentLimits().yaw_goal_tolerance) {
+        // change limits if angle_tolerance is set, and different from the current values
+        std::lock_guard<std::mutex> lock(config_mtx_);
+        auto limits = planner_util_.getCurrentLimits();
+        ROS_INFO_STREAM("updating yaw_goal_tolerance to tolerance from action: " << angle_tolerance);
         limits.yaw_goal_tolerance = angle_tolerance;
+        planner_util_.reconfigureCB(limits, false);
       }
+    } else if (planner_util_.getCurrentLimits().yaw_goal_tolerance != _latest_limits.yaw_goal_tolerance) {
+      // change limits if angle_tolerance is not set, and different from latest values set by dynamic reconfigure
+      std::lock_guard<std::mutex> lock(config_mtx_);
+      auto limits = planner_util_.getCurrentLimits();
+      ROS_INFO_STREAM("updating yaw_goal_tolerance to tolerance from previous dyn reconfig: " << _latest_limits.yaw_goal_tolerance);
+      limits.yaw_goal_tolerance = _latest_limits.yaw_goal_tolerance;
       planner_util_.reconfigureCB(limits, false);
     }
 

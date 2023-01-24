@@ -181,6 +181,7 @@ namespace dwa_local_planner {
 
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;
+      base_local_planner::LocalPlannerLimits _latest_limits; ///< @brief latest limits set by dynamic reconfigure
       bool setup_;
       geometry_msgs::PoseStamped current_pose_;
 
