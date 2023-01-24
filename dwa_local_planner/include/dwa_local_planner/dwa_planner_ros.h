@@ -78,7 +78,7 @@ namespace dwa_local_planner {
        * @param costmap The cost map to use for assigning costs to trajectories
        */
       void initialize(std::string name, tf2_ros::Buffer* tf,
-          costmap_2d::Costmap2DROS* costmap_ros);
+          costmap_2d::Costmap2DROS* costmap_ros) override;
 
       /**
        * @brief  Destructor for the wrapper
@@ -114,7 +114,7 @@ namespace dwa_local_planner {
        */
       uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
                                        const geometry_msgs::TwistStamped& velocity,
-                                       geometry_msgs::TwistStamped& cmd_vel, std::string& message);
+                                       geometry_msgs::TwistStamped& cmd_vel, std::string& message) override;
 
       /**
        * @brief  Given the current position, orientation, and velocity of the robot,
@@ -132,7 +132,7 @@ namespace dwa_local_planner {
        * @param orig_global_plan The plan to pass to the controller
        * @return True if the plan was updated successfully, false otherwise
        */
-      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) override;
 
       /**
        * @brief  Check if the goal pose has been achieved.
@@ -140,13 +140,13 @@ namespace dwa_local_planner {
        * @param angle_tolerance The angle tolerance in which the current pose will be partly accepted as reached goal
        * @return True if achieved, false otherwise
        */
-      bool isGoalReached(double dist_tolerance, double angle_tolerance);
+      bool isGoalReached(double dist_tolerance, double angle_tolerance) override;
 
       /**
        * @brief Requests the planner to cancel; not implemented for this planner
        * @return True if a cancel has been successfully requested, false if not implemented.
        */
-      bool cancel() { return false; };
+      bool cancel() override { return false; };
 
       bool isInitialized() {
         return initialized_;
