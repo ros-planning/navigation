@@ -54,6 +54,7 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
     if (px0 == px1 && py0 == py1)
     {
       delta_angle = 0.0;
+      next_cargo_angle = base_local_planner::normalize_angle(cargo_angle_ - traj.thetav_ * traj.time_delta_);
     }
     else
     {
