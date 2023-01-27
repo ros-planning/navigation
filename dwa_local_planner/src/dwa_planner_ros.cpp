@@ -533,7 +533,7 @@ namespace dwa_local_planner {
 
   void DWAPlannerROS::check_cargo_angle()
   {
-    if (!this->is_cargo_enabled_)
+    if (this->is_cargo_enabled_)
     {
       ros::Duration d = ros::Time::now() - this->cargo_angle_recv_time_;
       if (this->cargo_timeout_sec_ < d.toSec())
