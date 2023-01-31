@@ -192,7 +192,7 @@ class GlobalPlanner : public mbf_costmap_core::CostmapPlanner {
         inline double sq_distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2){
           double dx = p1.pose.position.x - p2.pose.position.x;
           double dy = p1.pose.position.y - p2.pose.position.y;
-          return dx*dx + dy*dy;
+          return std::hypot(dx, dy);
         }
         void mapToWorld(double mx, double my, double& wx, double& wy);
         bool worldToMap(double wx, double wy, double& mx, double& my);
