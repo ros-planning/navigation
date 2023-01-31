@@ -335,11 +335,6 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
       }
 
       if (found_legal) {
-        if (!costmap_->worldToMap(best_pose.pose.position.x, best_pose.pose.position.y, goal_x_i, goal_y_i)) {
-          message = "best_pose of the global planner is off the global costmap. Planning will always fail to this goal";
-          ROS_ERROR_STREAM(message);
-          return mbf_msgs::GetPathResult::INVALID_GOAL;
-        }
         if(old_navfn_behavior_){
           goal_x = goal_x_i;
           goal_y = goal_y_i;
