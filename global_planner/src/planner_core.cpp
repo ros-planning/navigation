@@ -317,6 +317,7 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
       double best_sdist = DBL_MAX;
 
       unsigned int mx, my;
+      bool goal_blocked = true;
       for(double dy = -tolerance; dy <= tolerance; dy += resolution){
         p.pose.position.y = goal.pose.position.y + dy;
         const double dx = std::sqrt(tolerance*tolerance - dy*dy);
@@ -329,9 +330,18 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
                 best_sdist = sdist;
                 best_pose = p;
                 found_legal = true;
+                goal_blocked = false;
+              } else if (costmap_->getCost(goal_x_i, goal_y_i) < costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+                goal_blocked = false;
               }
             }
         }
+      }
+
+      if (goal_blocked) {
+        message = "All cells around the goal within the tolerance are in collision";
+        ROS_ERROR_STREAM(message);
+        return mbf_msgs::GetPathResult::BLOCKED_GOAL;
       }
 
       if (found_legal) {
