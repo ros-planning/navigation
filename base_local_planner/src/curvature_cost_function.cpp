@@ -32,6 +32,11 @@ void CurvatureCostFunction::setCargoLength(double cargo_length)
   this->cargo_length_ = cargo_length;
 }
 
+void CurvatureCostFunction::setNotMoveThreshold(double not_move_threshold)
+{
+  this->not_move_threshold_ = not_move_threshold;
+}
+
 double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
 
   if (!this->is_cargo_enabled_ || this->curvature_radius_ <= 0.0)
@@ -51,9 +56,10 @@ double CurvatureCostFunction::scoreTrajectory(Trajectory &traj) {
     traj.getPoint(0, px0, py0, pth0);
     traj.getPoint(1, px1, py1, pth1);
 
-    if (px0 == px1 && py0 == py1)
+    if (std::sqrt(std::pow(px0 - px1, 2) + std::pow(py0 - py1, 2)) <= this->not_move_threshold_)
     {
       delta_angle = 0.0;
+      next_cargo_angle = base_local_planner::normalize_angle(cargo_angle_ - traj.thetav_ * traj.time_delta_);
     }
     else
     {

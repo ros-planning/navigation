@@ -165,6 +165,14 @@ namespace dwa_local_planner {
     obstacle_costs_.setCargoLength(cargo_length);
     curvature_costs_.setCargoLength(cargo_length);
 
+    double cargo_limit_angle_deg, curvature_radius, not_move_threshold;
+    private_nh.param("cargo_limit_angle_deg", cargo_limit_angle_deg, 90.0);
+    private_nh.param("curvature_radius", curvature_radius, 0.9);
+    private_nh.param("not_move_threshold", not_move_threshold, 0.0);
+    curvature_costs_.setCargoLimitAngleDeg(cargo_limit_angle_deg);
+    curvature_costs_.setCurvatureRadius(curvature_radius);
+    curvature_costs_.setNotMoveThreshold(not_move_threshold);
+
     // set up all the cost functions that will be applied in order
     // (any function returning negative values will abort scoring, so the order can improve performance)
     std::vector<base_local_planner::TrajectoryCostFunction*> critics;

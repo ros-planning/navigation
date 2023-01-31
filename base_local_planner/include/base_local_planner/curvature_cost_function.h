@@ -25,6 +25,7 @@ public:
   void setCargoLimitAngleDeg(double cargo_limit_angle_deg);
   void setCurvatureRadius(double curvature_radius);
   void setCargoLength(double cargo_length);
+  void setNotMoveThreshold(double not_move_threshold);
   void setCargoAngle(double cargo_angle);
   void setCargoEnabled(bool is_cargo_enabled_);
 
@@ -34,6 +35,7 @@ private:
   double cargo_limit_angle_deg_;
   double curvature_radius_;
   double cargo_length_;
+  double not_move_threshold_;
   double cargo_angle_;
   bool is_cargo_enabled_;
 };
