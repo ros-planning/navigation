@@ -288,8 +288,8 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
       ROS_ERROR_STREAM(message);
       return mbf_msgs::GetPathResult::BLOCKED_START;
     }
-    if (costmap_->getCost(goal_x_i, goal_y_i) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-      message = "The goal pose is in collision. Planning to this pose will always fail";
+    if (tolerance == 0 && costmap_->getCost(goal_x_i, goal_y_i) >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+      message = "The goal pose is in collision, and the tolerance is set to zero";
       ROS_ERROR_STREAM(message);
       return mbf_msgs::GetPathResult::BLOCKED_GOAL;
     }
@@ -308,6 +308,52 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
     bool found_legal = planner_->calculatePotentials(costmap_->getCharMap(), start_x, start_y, goal_x, goal_y,
                                                     nx * ny * 2, potential_array_);
 
+
+    geometry_msgs::PoseStamped best_pose = goal;
+    if (!found_legal) {
+      double resolution = costmap_->getResolution();
+      geometry_msgs::PoseStamped p = goal;
+
+      double best_sdist = DBL_MAX;
+
+      unsigned int mx, my;
+      bool goal_blocked = true;
+      for(double dy = -tolerance; dy <= tolerance; dy += resolution){
+        p.pose.position.y = goal.pose.position.y + dy;
+        const double dx = std::sqrt(tolerance*tolerance - dy*dy);
+        for(p.pose.position.x = goal.pose.position.x - dx; p.pose.position.x <= goal.pose.position.x + dx; p.pose.position.x += resolution){
+            if(costmap_->worldToMap(p.pose.position.x, p.pose.position.y, mx, my)) {
+              unsigned int index = my * nx + mx;
+              double potential = potential_array_[index];
+              double sdist = sq_distance(p, goal);
+              if(potential < POT_HIGH && sdist < best_sdist){
+                best_sdist = sdist;
+                best_pose = p;
+                found_legal = true;
+                goal_blocked = false;
+              } else if (costmap_->getCost(goal_x_i, goal_y_i) < costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+                goal_blocked = false;
+              }
+            }
+        }
+      }
+
+      if (goal_blocked) {
+        message = "All cells around the goal within the tolerance are in collision";
+        ROS_ERROR_STREAM(message);
+        return mbf_msgs::GetPathResult::BLOCKED_GOAL;
+      }
+
+      if (found_legal) {
+        if(old_navfn_behavior_){
+          goal_x = goal_x_i;
+          goal_y = goal_y_i;
+        }else{
+          worldToMap(best_pose.pose.position.x, best_pose.pose.position.y, goal_x, goal_y);
+        }
+      }
+    }
+
     if(!old_navfn_behavior_)
         planner_->clearEndpoint(costmap_->getCharMap(), potential_array_, goal_x_i, goal_y_i, 2);
     if(publish_potential_)
@@ -317,11 +363,10 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
 
     if (found_legal) {
         //extract the plan
-        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, goal, plan)) {
+        if (getPlanFromPotential(start_x, start_y, goal_x, goal_y, best_pose, plan)) {
             //make sure the goal we push on has the same timestamp as the rest of the plan
-            geometry_msgs::PoseStamped goal_copy = goal;
-            goal_copy.header.stamp = ros::Time::now();
-            plan.push_back(goal_copy);
+            best_pose.header.stamp = ros::Time::now();
+            plan.push_back(best_pose);
         } else {
             message = "Failed to get a plan from potential when a legal potential was found. This shouldn't happen";
             ROS_ERROR_STREAM(message);
