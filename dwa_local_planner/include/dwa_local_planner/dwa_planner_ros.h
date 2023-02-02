@@ -78,7 +78,7 @@ namespace dwa_local_planner {
        * @param costmap The cost map to use for assigning costs to trajectories
        */
       void initialize(std::string name, tf2_ros::Buffer* tf,
-          costmap_2d::Costmap2DROS* costmap_ros);
+          costmap_2d::Costmap2DROS* costmap_ros) override;
 
       /**
        * @brief  Destructor for the wrapper
@@ -114,7 +114,7 @@ namespace dwa_local_planner {
        */
       uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
                                        const geometry_msgs::TwistStamped& velocity,
-                                       geometry_msgs::TwistStamped& cmd_vel, std::string& message);
+                                       geometry_msgs::TwistStamped& cmd_vel, std::string& message) override;
 
       /**
        * @brief  Given the current position, orientation, and velocity of the robot,
@@ -132,20 +132,38 @@ namespace dwa_local_planner {
        * @param orig_global_plan The plan to pass to the controller
        * @return True if the plan was updated successfully, false otherwise
        */
-      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan) override;
 
       /**
        * @brief  Check if the goal pose has been achieved.
-       * The arguments are required by MBF controller API, but are ignored.
+       * Notes about which tolerances are used for checking whether the robot reached the goal, depending on the ExePathActionGoal:
+       * - the DWA planner's internal xy_goal_tolerance are used if in the ExePathActionGoal:
+       *   - tolerance_from_action: true
+       *   - dist_tolerance: <=0
+       * - the DWA planner's internal yaw_goal_tolerance are used if in the ExePathActionGoal:
+       *   - tolerance_from_action: true
+       *   - angle_tolerance: <=0
+       * - the dist_tolerance of ExePathActionGoal is used if in the ExePathActionGoal:
+       *   - tolerance_from_action: true
+       *   - dist_tolerance: >0
+       * - the angle_tolerance of ExePathActionGoal is used if in the ExePathActionGoal:
+       *   - tolerance_from_action: true
+       *   - angle_tolerance: >0
+       * - the dist_tolerance and angle_tolerance ROS parameters of move_base_flex are used if in the ExePathActionGoal:
+       *   - tolerance_from_action: false
+       * @param dist_tolerance The distance tolerance in which the current pose will be partly accepted as reached goal.
+       *                       If dist_tolerance is set to <=0, the xy_goal_tolerance parameter is used instead.
+       * @param angle_tolerance The angle tolerance in which the current pose will be partly accepted as reached goal.
+       *                        If angle_tolerance is set to <=0, the yaw_goal_tolerance parameter is used instead.
        * @return True if achieved, false otherwise
        */
-      bool isGoalReached(double, double);
+      bool isGoalReached(double dist_tolerance, double angle_tolerance) override;
 
       /**
        * @brief Requests the planner to cancel; not implemented for this planner
        * @return True if a cancel has been successfully requested, false if not implemented.
        */
-      bool cancel() { return false; };
+      bool cancel() override { return false; };
 
       bool isInitialized() {
         return initialized_;
@@ -180,6 +198,7 @@ namespace dwa_local_planner {
 
       dynamic_reconfigure::Server<DWAPlannerConfig> *dsrv_;
       dwa_local_planner::DWAPlannerConfig default_config_;
+      base_local_planner::LocalPlannerLimits _latest_limits; ///< @brief latest limits set by dynamic reconfigure
       bool setup_;
       geometry_msgs::PoseStamped current_pose_;
 
