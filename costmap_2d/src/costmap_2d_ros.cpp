@@ -200,10 +200,7 @@ void Costmap2DROS::setUnpaddedRobotFootprintPolygon(const geometry_msgs::Polygon
 void Costmap2DROS::footprint_callback(const geometry_msgs::Polygon::ConstPtr& msg)
 {
   std::lock_guard<std::mutex> lock(footprint_mutex_);
-  if (actuator_position.connect)
-  {
-    extended_footprint = toPointVector(*msg);
-  }
+  extended_footprint = toPointVector(*msg);
 }
 
 void Costmap2DROS::actuator_position_callback(const lexxauto_msgs::ActuatorStatus::ConstPtr& msg)
@@ -222,26 +219,9 @@ void Costmap2DROS::dynamicFootprintFromParams()
   ros::NodeHandle global_map_nh("/move_base/global_costmap");
   ros::NodeHandle local_map_nh("/move_base/local_costmap");
 
-  if (!actuator_position.connect) 
-  {
-    writeFootprintToParam(global_map_nh, original_footprint);
-    writeFootprintToParam(local_map_nh, original_footprint);
-    setUnpaddedRobotFootprint(original_footprint);
-    return;
-  }
-  else if(actuator_position.connect)
-  { //actuator is high
-    //actuator is not pulling sth and size is big
-    writeFootprintToParam(global_map_nh, extended_footprint);
-    writeFootprintToParam(local_map_nh, extended_footprint);
-    setUnpaddedRobotFootprint(extended_footprint);
-    return;
-  }
-  else
-  {
-    setUnpaddedRobotFootprint(points); //insert empty footprint
-    return;
-  }
+  writeFootprintToParam(global_map_nh, extended_footprint);
+  writeFootprintToParam(local_map_nh, extended_footprint);
+  setUnpaddedRobotFootprint(extended_footprint);
 }
 
 Costmap2DROS::~Costmap2DROS()
