@@ -1,4 +1,5 @@
 <launch>
+  <node name="static_tf" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 map frame"/>
   <node name="ms" pkg="map_server" type="map_server" args="$(find costmap_2d)/test/TenByTen.yaml"/>
   <test time-limit="300" test-name="obstacle_tests" pkg="costmap_2d" type="obstacle_tests" />
 

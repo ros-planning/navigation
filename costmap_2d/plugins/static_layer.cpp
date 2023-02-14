@@ -278,15 +278,30 @@ void StaticLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 
   useExtraBounds(min_x, min_y, max_x, max_y);
 
-  double wx, wy;
+  geometry_msgs::TransformStamped transform;
+  try
+  {
+    transform = tf_->lookupTransform(global_frame_, map_frame_, ros::Time(0));
+  }
+  catch (tf2::TransformException ex)
+  {
+    ROS_ERROR("%s", ex.what());
+    return;
+  }
 
-  mapToWorld(x_, y_, wx, wy);
-  *min_x = std::min(wx, *min_x);
-  *min_y = std::min(wy, *min_y);
+  // corners of the static map in map frame
+  const std::vector<std::pair<double, double>> corners = {
+    { x_, y_ }, { x_, y_ + height_ }, { x_ + width_, y_ + height_ }, { x_ + width_, y_ }
+  };
 
-  mapToWorld(x_ + width_, y_ + height_, wx, wy);
-  *max_x = std::max(wx, *max_x);
-  *max_y = std::max(wy, *max_y);
+  // touch the corners in global frame
+  for (const auto& corner : corners)
+  {
+    geometry_msgs::Point p;
+    mapToWorld(corner.first, corner.second, p.x, p.y);
+    tf2::doTransform(p, p, transform);
+    touch(p.x, p.y, min_x, min_y, max_x, max_y);
+  }
 
   has_updated_data_ = false;
 }

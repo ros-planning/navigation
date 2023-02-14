@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2013, Willow Garage, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -13,7 +13,7 @@
  *     * Neither the name of the Willow Garage, Inc. nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -36,6 +36,7 @@
 #include <costmap_2d/layered_costmap.h>
 #include <costmap_2d/observation_buffer.h>
 #include <costmap_2d/testing_helper.h>
+#include <tf2_ros/transform_listener.h>
 #include <set>
 #include <gtest/gtest.h>
 
@@ -72,18 +73,19 @@ using namespace costmap_2d;
  */
 TEST(costmap, testRaytracing){
   tf2_ros::Buffer tf;
+  tf2_ros::TransformListener tfl(tf);
 
   LayeredCostmap layers("frame", false, false);  // Not rolling window, not tracking unknown
   addStaticLayer(layers, tf);  // This adds the static map
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
-  
+
   // Add a point at 0, 0, 0
   addObservation(olayer, 0.0, 0.0, MAX_Z/2, 0, 0, MAX_Z/2);
 
   // This actually puts the LETHAL (254) point in the costmap at (0,0)
   layers.updateMap(0,0,0);  // 0, 0, 0 is robot pose
   //printMap(*(layers.getCostmap()));
-  
+
   int lethal_count = countValues(*(layers.getCostmap()), LETHAL_OBSTACLE);
 
   // We expect just one obstacle to be added (20 in static map)
@@ -95,6 +97,7 @@ TEST(costmap, testRaytracing){
  */
 TEST(costmap, testRaytracing2){
   tf2_ros::Buffer tf;
+  tf2_ros::TransformListener tfl(tf);
   LayeredCostmap layers("frame", false, false);
   addStaticLayer(layers, tf);
   ObstacleLayer* olayer = addObstacleLayer(layers, tf);
@@ -124,7 +127,7 @@ TEST(costmap, testRaytracing2){
 
   // Change from previous test:
   // No obstacles from the static map will be cleared, so the
-  // net change is +1. 
+  // net change is +1.
   ASSERT_EQ(obs_after, obs_before + 1);
 
   // Fill in the diagonal, <7,7> and <9,9> already filled in, <0,0> is robot
@@ -202,6 +205,7 @@ TEST(costmap, testZThreshold){
  */
 TEST(costmap, testDynamicObstacles){
   tf2_ros::Buffer tf;
+  tf2_ros::TransformListener tfl(tf);
   LayeredCostmap layers("frame", false, false);
   addStaticLayer(layers, tf);
 
@@ -228,6 +232,7 @@ TEST(costmap, testDynamicObstacles){
  */
 TEST(costmap, testMultipleAdditions){
   tf2_ros::Buffer tf;
+  tf2_ros::TransformListener tfl(tf);
   LayeredCostmap layers("frame", false, false);
   addStaticLayer(layers, tf);
 
