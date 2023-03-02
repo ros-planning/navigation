@@ -82,6 +82,15 @@ namespace dwa_local_planner {
       DWAPlanner(std::string name, base_local_planner::LocalPlannerUtil *planner_util);
 
       /**
+       * @brief  Destructor for the planner
+       */
+      ~DWAPlanner() {
+        if (world_model_ != NULL) {
+          delete world_model_;
+        }
+      }
+
+      /**
        * @brief Reconfigures the trajectory planner
        */
       void reconfigure(DWAPlannerConfig &cfg);
@@ -115,13 +124,14 @@ namespace dwa_local_planner {
        * @param  global_pose The robot's current pose
        * @param  new_plan The new global plan
        * @param  footprint_spec The robot's footprint
+       * @return ExePath action result code
        *
        * The obstacle cost function gets the footprint.
        * The path and goal cost functions get the global_plan
        * The alignment cost functions get a version of the global plan
        *   that is modified based on the global_pose
        */
-      void updatePlanAndLocalCosts(const geometry_msgs::PoseStamped& global_pose,
+      uint32_t updatePlanAndLocalCosts(const geometry_msgs::PoseStamped& global_pose,
           const std::vector<geometry_msgs::PoseStamped>& new_plan,
           const std::vector<geometry_msgs::Point>& footprint_spec);
 
@@ -156,12 +166,25 @@ namespace dwa_local_planner {
       std::vector<geometry_msgs::Point> getScaledFootprint(const base_local_planner::Trajectory &traj) const;
 
     private:
+      /**
+       * @brief crop a plan such that the last pose is reachable (i.e. footprint not in collision)
+       * @param global_pose The robot's current pose
+       * @param footprint_spec The robot's footprint
+       * @param plan global plan that is being modified
+       * @return ExePath action result code
+       */
+      uint32_t cropPlanToReachableGoal(
+        const geometry_msgs::PoseStamped& global_pose,
+        const std::vector<geometry_msgs::Point>& footprint_spec,
+        std::vector<geometry_msgs::PoseStamped>& plan);
+
       /// @todo: consider exposing this as a parameter
       static constexpr double MIN_GOAL_DIST_SQ = 0.7; ///< @brief Squared distance from the goal outside which the robot is encouraged to turn towards the path orientation, and within which the forward_point_distance is reduced to prevent the robot's nose from having to enter cells with cost >= INSCRIBED in order to reach the goal.
 
       double max_backward_sq_dist_; ///< @brief Maximum distance that the robot can travel backward to reach the goal (squared to speedup computation)
 
       base_local_planner::LocalPlannerUtil *planner_util_;
+      base_local_planner::WorldModel* world_model_;
 
       double stop_time_buffer_; ///< @brief How long before hitting something we're going to enforce that the robot stop
       double path_distance_bias_, goal_distance_bias_, occdist_scale_, backwardvel_scale_;

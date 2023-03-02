@@ -60,7 +60,9 @@ public:
   bool   prune_plan;
   double xy_goal_tolerance;
   double inner_xy_goal_tolerance;
+  double xy_min_goal_tolerance;
   double yaw_goal_tolerance;
+  double goal_obstacle_approach_distance;
   double trans_stopped_vel;
   double theta_stopped_vel;
   double max_backward_dist;
@@ -84,7 +86,9 @@ public:
       double nacc_lim_trans,
       double nxy_goal_tolerance,
       double ninner_xy_goal_tolerance,
+      double nxy_min_goal_tolerance,
       double nyaw_goal_tolerance,
+      double ngoal_obstacle_approach_distance,
       bool   nprune_plan = true,
       double ntrans_stopped_vel = 0.1,
       double ntheta_stopped_vel = 0.1,
@@ -105,7 +109,9 @@ public:
         prune_plan(nprune_plan),
         xy_goal_tolerance(nxy_goal_tolerance),
         inner_xy_goal_tolerance(ninner_xy_goal_tolerance),
+        xy_min_goal_tolerance(nxy_min_goal_tolerance),
         yaw_goal_tolerance(nyaw_goal_tolerance),
+        goal_obstacle_approach_distance(ngoal_obstacle_approach_distance),
         trans_stopped_vel(ntrans_stopped_vel),
         theta_stopped_vel(ntheta_stopped_vel),
         max_backward_dist(nmax_backward_dist){}

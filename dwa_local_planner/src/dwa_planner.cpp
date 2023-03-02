@@ -48,6 +48,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
+#include <mbf_msgs/ExePathResult.h>
+#include <mbf_utility/navigation_utility.h>
+
 namespace dwa_local_planner {
   void DWAPlanner::reconfigure(DWAPlannerConfig &config)
   {
@@ -183,6 +186,10 @@ namespace dwa_local_planner {
     scored_sampling_planner_ = base_local_planner::SimpleScoredSamplingPlanner(generator_list, critics);
 
     private_nh.param("cheat_factor", cheat_factor_, 1.0);
+
+    if (planner_util->getCostmap() != NULL) {
+      world_model_ = new base_local_planner::CostmapModel(*planner_util->getCostmap());
+    }
   }
 
   // used for visualization only, total_costs are not really total costs
@@ -252,8 +259,92 @@ namespace dwa_local_planner {
     return false;
   }
 
+  uint32_t DWAPlanner::cropPlanToReachableGoal(
+    const geometry_msgs::PoseStamped& global_pose,
+    const std::vector<geometry_msgs::Point>& footprint_spec,
+    std::vector<geometry_msgs::PoseStamped>& plan) {
+    // search the path for a reachable goal
+    const double dist_to_goal = mbf_utility::distance(global_pose, plan.back());
 
-  void DWAPlanner::updatePlanAndLocalCosts(
+    // find furthest point along the path of which the corresponding cell is in free space
+    const costmap_2d::Costmap2D* const costmap = planner_util_->getCostmap();
+    int last_point_on_the_map = -1;
+    int last_point_in_free_space = -1;
+    for (unsigned int i = 0; i < plan.size(); ++i) {
+      double g_x = plan[i].pose.position.x;
+      double g_y = plan[i].pose.position.y;
+      unsigned int map_x, map_y;
+      if (!costmap->worldToMap(g_x, g_y, map_x, map_y)) {
+        // give up once a point within the map had been found
+        if (last_point_on_the_map >= 0) {
+          break;
+        }
+        continue;
+      }
+
+      last_point_on_the_map = i;
+      if (costmap->getCost(map_x, map_y) < costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+        last_point_in_free_space = i;
+      }
+    }
+
+    // handle general errors
+    if (last_point_on_the_map == -1) {
+      ROS_ERROR("None of the points of the global plan were in the local costmap, global plan points too far from robot");
+      return mbf_msgs::ExePathResult::OUT_OF_MAP;
+    }
+
+    if (last_point_in_free_space == -1) {
+      ROS_ERROR("None of the points of the global plan were in free space");
+      return mbf_msgs::ExePathResult::BLOCKED_PATH;
+    }
+
+    const auto dist_to_last_free_point = mbf_utility::distance(global_pose, plan[last_point_in_free_space]);
+    const auto limits = planner_util_->getCurrentLimits();
+    if (dist_to_last_free_point > limits.goal_obstacle_approach_distance) {
+      // If the obstacle blocking the goal is further than goal_obstacle_approach_distance,
+      // just target the last free point instead, by cropping the path to that point.
+
+      // The reasoning for going towards the goal even though it is blocked by an obstacle according to the costmap
+      // is to ensure that the goal is actually still blocked (i.e. not because of some left-over obstacle from some earlier time)
+      plan.resize(last_point_in_free_space+1);
+      return mbf_msgs::ExePathResult::SUCCESS;
+    }
+
+    // goal / obstacle blocking the goal is within goal_obstacle_approach_distance
+    // -> check if any path point close to the goal is reachable (i.e. can fit robot footprint without colliding)
+    const double goal_yaw = tf2::getYaw(plan.back().pose.orientation);
+    const double max_goal_deviation = std::max(0.0, limits.xy_goal_tolerance - limits.xy_min_goal_tolerance);
+    bool reachable_goal_found = false;
+    auto i = last_point_in_free_space;
+    for (; i >= 0; --i) {
+      const auto dist_to_goal = mbf_utility::distance(plan[i], plan.back());
+      if (dist_to_goal > max_goal_deviation) {
+        break;
+      }
+      const auto footprint_cost = world_model_->footprintCost(plan[i].pose.position.x, plan[i].pose.position.y, goal_yaw, footprint_spec);
+      reachable_goal_found = footprint_cost >= 0;
+      if (reachable_goal_found) {
+        break;
+      }
+    }
+
+    if (!reachable_goal_found) {
+      ROS_WARN_STREAM("The footprint is in collision for all path points within " << max_goal_deviation << "[m] of the goal");
+      return mbf_msgs::ExePathResult::BLOCKED_GOAL;
+    }
+
+    if (i < 0) {
+      // this seems unlikely, but needs to be handled
+      ROS_WARN("The footprint is in collision for all path points");
+      return mbf_msgs::ExePathResult::BLOCKED_PATH;
+    }
+
+    plan.resize(i+1);
+    return mbf_msgs::ExePathResult::SUCCESS;
+  }
+
+  uint32_t DWAPlanner::updatePlanAndLocalCosts(
       const geometry_msgs::PoseStamped& global_pose,
       const std::vector<geometry_msgs::PoseStamped>& new_plan,
       const std::vector<geometry_msgs::Point>& footprint_spec) {
@@ -262,36 +353,39 @@ namespace dwa_local_planner {
       global_plan_[i] = new_plan[i];
     }
 
+    std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
+    const auto result = cropPlanToReachableGoal(global_pose, footprint_spec, front_global_plan);
+    if (result != mbf_msgs::ExePathResult::SUCCESS) {
+      return result;
+    }
+
+    const geometry_msgs::PoseStamped goal_pose = front_global_plan.back();
+    const double dist_to_goal = mbf_utility::distance(global_pose, goal_pose);
+
     obstacle_costs_.setFootprint(footprint_spec);
 
     path_align_costs_.setTargetPoses(global_plan_, global_pose);
 
     // costs for going away from path
-    path_costs_.setTargetPoses(global_plan_);
-    alignment_costs_.setTargetPoses(global_plan_);
+    path_costs_.setTargetPoses(front_global_plan);
+    alignment_costs_.setTargetPoses(front_global_plan);
 
     // costs for not going towards the local goal as much as possible
-    goal_costs_.setTargetPoses(global_plan_);
+    goal_costs_.setTargetPoses(front_global_plan);
 
     // alignment costs
-    geometry_msgs::PoseStamped goal_pose = global_plan_.back();
-
-    Eigen::Vector3f pos(global_pose.pose.position.x, global_pose.pose.position.y, tf2::getYaw(global_pose.pose.orientation));
-    double sq_dist =
-        (pos[0] - goal_pose.pose.position.x) * (pos[0] - goal_pose.pose.position.x) +
-        (pos[1] - goal_pose.pose.position.y) * (pos[1] - goal_pose.pose.position.y);
 
     // we want the robot nose to be drawn to its final position
     // (before robot turns towards goal orientation), not the end of the
     // path for the robot center. Choosing the final position after
     // turning towards goal orientation causes instability when the
     // robot needs to make a 180 degree turn at the end
-    std::vector<geometry_msgs::PoseStamped> front_global_plan = global_plan_;
-    double angle_to_goal = atan2(goal_pose.pose.position.y - pos[1], goal_pose.pose.position.x - pos[0]);
+    double angle_to_goal = atan2(goal_pose.pose.position.y - global_pose.pose.position.y, goal_pose.pose.position.x - global_pose.pose.position.x);
 
     double forward_point_distance = forward_point_distance_;
     const auto cos_angle_to_goal = cos(angle_to_goal);
     const auto sin_angle_to_goal = sin(angle_to_goal);
+    const auto sq_dist = dist_to_goal * dist_to_goal;
     if (sq_dist < MIN_GOAL_DIST_SQ) {
       // when close to the goal, reduce forward_point_distance such that the robot can reach the goal pose
       // without its nose entering space considered as occupied by obstacles
@@ -363,8 +457,8 @@ namespace dwa_local_planner {
     } else {
         prefer_forward_costs_.setScale(0.0);
     }
+    return mbf_msgs::ExePathResult::SUCCESS;
   }
-
 
   /*
    * given the current state of the robot, find a good trajectory

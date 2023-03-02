@@ -88,7 +88,9 @@ namespace dwa_local_planner {
       _latest_limits.acc_lim_trans = config.acc_lim_trans;
       _latest_limits.xy_goal_tolerance = config.xy_goal_tolerance;
       _latest_limits.inner_xy_goal_tolerance = config.inner_xy_goal_tolerance;
+      _latest_limits.xy_min_goal_tolerance = config.xy_min_goal_tolerance;
       _latest_limits.yaw_goal_tolerance = config.yaw_goal_tolerance;
+      _latest_limits.goal_obstacle_approach_distance = config.goal_obstacle_approach_distance;
       _latest_limits.prune_plan = config.prune_plan;
       _latest_limits.trans_stopped_vel = config.trans_stopped_vel;
       _latest_limits.theta_stopped_vel = config.theta_stopped_vel;
@@ -414,7 +416,12 @@ namespace dwa_local_planner {
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan_.size());
 
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
-    dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan_, costmap_ros_->getRobotFootprint());
+    const auto goal_found = dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan_, costmap_ros_->getRobotFootprint());
+    if (goal_found != mbf_msgs::ExePathResult::SUCCESS) {
+      message = "No reachable goal could be found";
+      ROS_ERROR_STREAM_NAMED("dwa_local_planner", message);
+      return goal_found;
+    }
 
     // check if we reached outer tolerance
     const bool reached_outer_goal = latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_);
