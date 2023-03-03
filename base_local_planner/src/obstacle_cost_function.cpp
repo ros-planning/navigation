@@ -40,6 +40,7 @@
 #include <Eigen/Core>
 #include <ros/console.h>
 #include <std_msgs/Float32.h>
+#include <tf2/utils.h>
 
 namespace base_local_planner {
 
@@ -95,7 +96,9 @@ std::vector<geometry_msgs::Point> ObstacleCostFunction::getScaledFootprint(const
 }
 
 ExePathOutcome ObstacleCostFunction::prepare(const geometry_msgs::PoseStamped& current_pose) {
-  return mbf_msgs::ExePathResult::SUCCESS;
+  Trajectory traj;
+  traj.addPoint(current_pose.pose.position.x, current_pose.pose.position.y, tf2::getYaw(current_pose.pose.orientation));
+  return scoreTrajectory(traj) < 0 ? mbf_msgs::ExePathResult::COLLISION : mbf_msgs::ExePathResult::SUCCESS;
 }
 
 double ObstacleCostFunction::scoreTrajectory(Trajectory &traj) {
