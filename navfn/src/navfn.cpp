@@ -954,7 +954,7 @@ namespace navfn {
   float				
     NavFn::gradCell(int n)
     {
-      if (gradx[n]+grady[n] > 0.0)	// check this cell
+      if (fabs(gradx[n])+fabs(grady[n]) > 0.0)	// check this cell
         return 1.0;			
 
       if (n < nx || n > ns-nx)	// would be out of bounds
