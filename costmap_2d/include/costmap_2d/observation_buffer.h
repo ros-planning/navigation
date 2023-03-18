@@ -51,6 +51,18 @@
 
 namespace costmap_2d
 {
+
+/**
+ * @brief Applies a box filter to the given cloud.
+ * 
+ * Filter will remove points which are higher than _max_z or lower than _min_z.
+ * 
+ * @param _cloud The point cloud to filter.
+ * @param _min_z The lower threshold.
+ * @param _max_z The upper threshold.
+ */
+void heightFilterPointCloud(sensor_msgs::PointCloud2& _cloud, double _min_z, double _max_z);
+
 /**
  * @class ObservationBuffer
  * @brief Takes in point clouds from sensors, transforms them to the desired frame, and stores them
