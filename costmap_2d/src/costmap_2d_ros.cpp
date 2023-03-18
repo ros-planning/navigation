@@ -109,7 +109,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
   private_nh.param("track_unknown_space", track_unknown_space, false);
   private_nh.param("always_send_full_costmap", always_send_full_costmap, false);
 
-  layered_costmap_ = new LayeredCostmap(global_frame_, rolling_window, track_unknown_space);
+  layered_costmap_ = new LayeredCostmap(global_frame_, robot_base_frame_, rolling_window, track_unknown_space);
 
   if (!private_nh.hasParam("plugins"))
   {

@@ -47,9 +47,10 @@ using std::vector;
 namespace costmap_2d
 {
 
-LayeredCostmap::LayeredCostmap(std::string global_frame, bool rolling_window, bool track_unknown) :
+LayeredCostmap::LayeredCostmap(std::string global_frame, std::string robot_base_frame, bool rolling_window, bool track_unknown) :
     costmap_(),
     global_frame_(global_frame),
+    robot_base_frame_(robot_base_frame),
     rolling_window_(rolling_window),
     current_(false),
     minx_(0.0),

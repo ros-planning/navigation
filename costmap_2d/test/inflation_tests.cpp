@@ -136,7 +136,7 @@ void validatePointInflation(unsigned int mx, unsigned int my, Costmap2D* costmap
 
 TEST(costmap, testAdjacentToObstacleCanStillMove){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   layers.resizeMap(10, 10, 1, 0, 0);
 
   // Footprint with inscribed radius = 2.1
@@ -162,7 +162,7 @@ TEST(costmap, testAdjacentToObstacleCanStillMove){
 
 TEST(costmap, testInflationShouldNotCreateUnknowns){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   layers.resizeMap(10, 10, 1, 0, 0);
 
   // Footprint with inscribed radius = 2.1
@@ -187,7 +187,7 @@ TEST(costmap, testInflationShouldNotCreateUnknowns){
  */
 TEST(costmap, testCostFunctionCorrectness){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   layers.resizeMap(100, 100, 1, 0, 0);
 
   // Footprint with inscribed radius = 5.0
@@ -255,7 +255,7 @@ TEST(costmap, testCostFunctionCorrectness){
  */
 TEST(costmap, testInflationOrderCorrectness){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   layers.resizeMap(10, 10, 1, 0, 0);
 
   // Footprint with inscribed radius = 2.1
@@ -284,7 +284,7 @@ TEST(costmap, testInflationOrderCorrectness){
 TEST(costmap, testInflation){
 
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
 
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
@@ -348,7 +348,7 @@ TEST(costmap, testInflation){
 TEST(costmap, testInflation2){
 
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
 
   // Footprint with inscribed radius = 2.1
   //               circumscribed radius = 3.1
@@ -376,7 +376,7 @@ TEST(costmap, testInflation2){
  */
 TEST(costmap, testInflation3){
   tf2_ros::Buffer tf;
-  LayeredCostmap layers("frame", false, false);
+  LayeredCostmap layers("frame", "base", false, false);
   layers.resizeMap(10, 10, 1, 0, 0);
 
   // 1 2 3
