@@ -80,6 +80,7 @@ namespace navfn {
       private_nh.param("planner_window_x", planner_window_x_, 0.0);
       private_nh.param("planner_window_y", planner_window_y_, 0.0);
       private_nh.param("default_tolerance", default_tolerance_, 0.0);
+      private_nh.param("plan_length_threshold", plan_length_threshold_, 0.0);
 
       make_plan_srv_ =  private_nh.advertiseService("make_plan", &NavfnROS::makePlanService, this);
 
@@ -296,7 +297,7 @@ namespace navfn {
         plan.push_back(goal_copy);
       }
       else{
-        ROS_ERROR("Failed to get a plan from potential when a legal potential was found. This shouldn't happen.");
+        ROS_WARN("Failed to get a plan from potential when a legal potential was found. This is probably due to the plan lenght threshold.");
       }
     }
 
@@ -407,10 +408,20 @@ namespace navfn {
     int len = planner_->getPathLen();
     ros::Time plan_time = ros::Time::now();
 
+    double prev_wx, prev_wy;
+    double path_len = 0;
+
     for(int i = len - 1; i >= 0; --i){
       //convert the plan to world coordinates
       double world_x, world_y;
       mapToWorld(x[i], y[i], world_x, world_y);
+
+      if (i < len - 1){
+        path_len += hypot(world_x-prev_wx, world_y-prev_wy);
+      }
+
+      prev_wx = world_x;
+      prev_wy = world_y;
 
       geometry_msgs::PoseStamped pose;
       pose.header.stamp = plan_time;
@@ -423,6 +434,10 @@ namespace navfn {
       pose.pose.orientation.z = 0.0;
       pose.pose.orientation.w = 1.0;
       plan.push_back(pose);
+    }
+        
+    if (plan_length_threshold_ > 0.0 && path_len > plan_length_threshold_){
+      plan.clear();
     }
 
     //publish the plan for visualization purposes
