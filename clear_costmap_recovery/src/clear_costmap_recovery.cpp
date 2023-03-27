@@ -38,6 +38,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <boost/pointer_cast.hpp>
 #include <vector>
+#include <unordered_set>
 
 //register this planner as a RecoveryBehavior plugin
 PLUGINLIB_EXPORT_CLASS(clear_costmap_recovery::ClearCostmapRecovery, nav_core::RecoveryBehavior)
@@ -141,6 +142,8 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
   double x = pose.pose.position.x;
   double y = pose.pose.position.y;
 
+  std::unordered_set<std::string> found_layers;
+
   for (std::vector<boost::shared_ptr<costmap_2d::Layer> >::iterator pluginp = plugins->begin(); pluginp != plugins->end(); ++pluginp) {
     boost::shared_ptr<costmap_2d::Layer> plugin = *pluginp;
     std::string name = plugin->getName();
@@ -150,6 +153,8 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
     }
 
     if(clearable_layers_.count(name)!=0){
+
+      found_layers.insert(name);
 
       // check if the value is convertable
       if(!dynamic_cast<costmap_2d::CostmapLayer*>(plugin.get())){
@@ -161,6 +166,10 @@ void ClearCostmapRecovery::clear(costmap_2d::Costmap2DROS* costmap){
       costmap = boost::static_pointer_cast<costmap_2d::CostmapLayer>(plugin);
       clearMap(costmap, x, y);
     }
+  }
+
+  for (const auto& layer : clearable_layers_) {
+    ROS_WARN_STREAM_COND(!found_layers.count(layer), "Cannot clear layer " << layer << " because it does not exist");
   }
 }
 
