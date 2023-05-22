@@ -310,14 +310,19 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
 
 
     geometry_msgs::PoseStamped best_pose = goal;
+    bool goal_blocked = !found_legal;
     if (!found_legal) {
+      // calculatePotentials did not result in a valid potential at the goal cell:
+      // Check if any cells within tolerance around the goal have a valid potential:
+      // - if so, set found_legal to true and displace the goal,
+      //   such the getPlanFromPotential will generate a path to the displaced goal
+      // - if not, check whether any of the cells are even in free space (if not, report goal blocked)
       double resolution = costmap_->getResolution();
       geometry_msgs::PoseStamped p = goal;
 
       double best_sdist = DBL_MAX;
 
       unsigned int mx, my;
-      bool goal_blocked = true;
       for(double dy = -tolerance; dy <= tolerance; dy += resolution){
         p.pose.position.y = goal.pose.position.y + dy;
         const double dx = std::sqrt(tolerance*tolerance - dy*dy);
@@ -338,12 +343,6 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
         }
       }
 
-      if (goal_blocked) {
-        message = "All cells around the goal within the tolerance are in collision";
-        ROS_ERROR_STREAM(message);
-        return mbf_msgs::GetPathResult::BLOCKED_GOAL;
-      }
-
       if (found_legal) {
         if(old_navfn_behavior_){
           goal_x = goal_x_i;
@@ -360,6 +359,13 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
         publishPotential(potential_array_);
     if(show_footprint_radii_)
       showFootprintRadii();
+
+    if (goal_blocked) {
+      message = "All cells around the goal within the tolerance are in collision";
+      ROS_ERROR_STREAM(message);
+      delete[] potential_array_;
+      return mbf_msgs::GetPathResult::BLOCKED_GOAL;
+    }
 
     if (found_legal) {
         //extract the plan
