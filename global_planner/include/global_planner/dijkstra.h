@@ -85,7 +85,7 @@ class DijkstraExpansion : public Expander {
 
         float getCost(unsigned char* costs, int n) {
             float c = costs[n];
-            if (c < lethal_cost_ - 1 || (unknown_ && c==255)) {
+            if (c < lethal_cost_ || (unknown_ && c==255)) {
                 c = c * factor_ + neutral_cost_;
                 if (c >= lethal_cost_)
                     c = lethal_cost_ - 1;
