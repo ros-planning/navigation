@@ -1013,7 +1013,7 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          if (recovery_flag_ == true)
+          if (recovery_flag_ == true || true)  // TODO(wada): Replace the true part with a parameter later.
           {
             ROS_INFO("Executing behavior %u of %zu", recovery_index_, recovery_behaviors_.size());
             recovery_behaviors_[recovery_index_]->runBehavior();
@@ -1039,7 +1039,7 @@ namespace move_base {
           MoveBase::clearCostmaps();
           ROS_INFO("Clear costmaps: line: %d", __LINE__);
 
-          if (recovery_flag_ == true)
+          if (recovery_flag_ == true || true)  // TODO(wada): Replace the true part with a parameter later.
           {
             ROS_INFO("Executing behavior (carrying ver.) %u of %zu", recovery_index_, recovery_behaviors_carrying_.size());
             recovery_behaviors_carrying_[recovery_index_]->runBehavior();
