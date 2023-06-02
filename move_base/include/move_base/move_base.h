@@ -206,6 +206,7 @@ namespace move_base {
       std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_, recovery_behaviors_carrying_;
       unsigned int recovery_index_;
       bool recovery_flag_ = false;
+      bool frequent_recovery_motion_ = false;
 
       geometry_msgs::PoseStamped global_pose_;
       std_msgs::String amr_status_msg_;
