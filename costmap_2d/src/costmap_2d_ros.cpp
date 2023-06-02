@@ -465,7 +465,8 @@ void Costmap2DROS::mapUpdateLoop(double frequency)
       publisher_->updateBounds(x0, xn, y0, yn);
 
       ros::Time now = ros::Time::now();
-      if (last_publish_ + publish_cycle < now)
+      ROS_WARN_COND(now < last_publish_, "ROS Time jumped backwards by %.3f s. Publishing costmaps anyway.", (last_publish_ - now).toSec());
+      if (now < last_publish_ || last_publish_ + publish_cycle < now)
       {
         publisher_->publishCostmap();
         last_publish_ = now;
