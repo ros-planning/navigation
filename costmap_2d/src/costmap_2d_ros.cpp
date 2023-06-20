@@ -415,7 +415,7 @@ void Costmap2DROS::movementCB(const ros::TimerEvent &event)
 
   if (!getRobotPose(new_pose))
   {
-    ROS_WARN_THROTTLE(1.0, "Could not get robot pose, cancelling reconfiguration");
+    ROS_WARN_THROTTLE(60.0, "Could not get robot pose, cancelling reconfiguration");
     robot_stopped_ = false;
   }
   // make sure that the robot is not moving
@@ -597,17 +597,17 @@ bool Costmap2DROS::getRobotPose(geometry_msgs::PoseStamped& global_pose) const
   }
   catch (tf2::LookupException& ex)
   {
-    ROS_ERROR_THROTTLE(1.0, "No Transform available Error looking up robot pose: %s\n", ex.what());
+    ROS_ERROR_THROTTLE(60.0, "No Transform available Error looking up robot pose: %s\n", ex.what());
     return false;
   }
   catch (tf2::ConnectivityException& ex)
   {
-    ROS_ERROR_THROTTLE(1.0, "Connectivity Error looking up robot pose: %s\n", ex.what());
+    ROS_ERROR_THROTTLE(60.0, "Connectivity Error looking up robot pose: %s\n", ex.what());
     return false;
   }
   catch (tf2::ExtrapolationException& ex)
   {
-    ROS_ERROR_THROTTLE(1.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
+    ROS_ERROR_THROTTLE(60.0, "Extrapolation Error looking up robot pose: %s\n", ex.what());
     return false;
   }
   // check global_pose timeout
