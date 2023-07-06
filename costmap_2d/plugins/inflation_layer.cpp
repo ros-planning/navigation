@@ -69,11 +69,18 @@ InflationLayer::InflationLayer()
   inflation_access_ = new boost::recursive_mutex();
 }
 
+void InflationLayer::vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
+{
+  boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
+  vel_msg = *msg;
+}
+
 void InflationLayer::onInitialize()
 {
   {
     boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
     ros::NodeHandle nh("~/" + name_), g_nh;
+    vel_sub = g_nh.subscribe<geometry_msgs::Twist>("/robot1/cmd_vel", 1, &InflationLayer::vel_callback, this);
     current_ = true;
     if (seen_)
       delete[] seen_;
@@ -174,6 +181,14 @@ void InflationLayer::onFootprintChanged()
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
+
+  double radius;
+  if (std::abs(vel_msg.linear.x) < 0.1) radius = 0.1;
+  else if (std::abs(vel_msg.linear.x) > 1.0) radius = 1.0;
+  else radius = vel_msg.linear.x;
+
+  setInflationParameters(radius, weight_);
+
   if (!enabled_ || (cell_inflation_radius_ == 0))
     return;
 
