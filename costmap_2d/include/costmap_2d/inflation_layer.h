@@ -44,6 +44,7 @@
 #include <costmap_2d/InflationPluginConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
+#include <lexxauto_msgs/DiffDriveEffortControllerDebug.h>
 
 namespace costmap_2d
 {
@@ -86,6 +87,10 @@ public:
         delete[] seen_;
   }
 
+  ros::Subscriber diff_drive_debug_info_sub;
+  lexxauto_msgs::DiffDriveEffortControllerDebug diff_drive_debug_info_msg;
+  void diff_drive_debug_info_callback(const lexxauto_msgs::DiffDriveEffortControllerDebug::ConstPtr& msg);
+
   virtual void onInitialize();
   virtual void updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x, double* min_y,
                             double* max_x, double* max_y);
@@ -122,18 +127,35 @@ public:
    * @brief Change the values of the inflation radius parameters
    * @param inflation_radius The new inflation radius
    * @param cost_scaling_factor The new weight
+   * @param use_variable_inflation Use variable inflation or not
+   * @param min_inflation_radius The minimum inflation radius
+   * @param max_inflation_radius The maximum inflation radius
+   * @param min_inflation_vel The minimum velocity to activate variable inflation
+   * @param max_inflation_vel The maximum velocity to activate variable inflation
    */
-  void setInflationParameters(double inflation_radius, double cost_scaling_factor);
+  void setInflationParameters(double inflation_radius,
+                              double cost_scaling_factor,
+                              bool use_variable_inflation,
+                              double min_inflation_radius,
+                              double max_inflation_radius,
+                              double min_inflation_vel,
+                              double max_inflation_vel);
 
 protected:
   virtual void onFootprintChanged();
   boost::recursive_mutex* inflation_access_;
+  boost::recursive_mutex* velocity_access_;
 
   double resolution_;
   double inflation_radius_;
   double inscribed_radius_;
   double weight_;
   bool inflate_unknown_;
+  bool use_variable_inflation_ = false;
+  double min_inflation_radius_ = 0.1;
+  double max_inflation_radius_ = 0.5;
+  double min_inflation_vel_ = 0.2;
+  double max_inflation_vel_ = 0.6;
 
 private:
   /**
@@ -169,6 +191,8 @@ private:
   void computeCaches();
   void deleteKernels();
   void inflate_area(int min_i, int min_j, int max_i, int max_j, unsigned char* master_grid);
+
+  double calculate_variable_inflation_radius();
 
   unsigned int cellDistance(double world_dist)
   {

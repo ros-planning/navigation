@@ -1,0 +1,4 @@
+<launch>
+  <test time-limit="300" test-name="inflation_tests_unit" pkg="costmap_2d" type="inflation_tests_unit">
+  </test>
+</launch>
