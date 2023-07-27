@@ -331,6 +331,8 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
               unsigned int index = my * nx + mx;
               double potential = potential_array_[index];
               double sdist = sq_distance(p, goal);
+              ROS_FATAL_STREAM_COND(sdist > tolerance, "sampled pose is " << sdist << " away from the goal, which is above tolerance " << tolerance);
+              assert(sdist <= tolerance);
               if(potential < POT_HIGH && sdist < best_sdist){
                 best_sdist = sdist;
                 best_pose = p;
