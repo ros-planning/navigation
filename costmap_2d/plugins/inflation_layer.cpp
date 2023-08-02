@@ -185,9 +185,12 @@ void InflationLayer::onFootprintChanged()
 
 double InflationLayer::calculate_variable_inflation_radius()
 {
-  boost::unique_lock < boost::recursive_mutex > lock_v(*velocity_access_);
+  double measured_velocity = 0.0;
   double variable_inflation_radius = min_inflation_radius_;
-  const double measured_velocity = diff_drive_debug_info_msg.measured_twist_filtered.linear.x;
+  {
+    boost::unique_lock < boost::recursive_mutex > lock_v(*velocity_access_);
+    measured_velocity = diff_drive_debug_info_msg.measured_twist_filtered.linear.x;
+  }
 
   if (std::abs(measured_velocity) < min_inflation_vel_)
   {
