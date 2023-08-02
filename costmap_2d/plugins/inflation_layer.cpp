@@ -76,14 +76,14 @@ InflationLayer::InflationLayer()
 
 void InflationLayer::diff_drive_debug_info_callback(const lexxauto_msgs::DiffDriveEffortControllerDebug::ConstPtr& msg)
 {
-  boost::unique_lock < boost::recursive_mutex > lock_v(*velocity_access_);
+  boost::unique_lock < boost::recursive_mutex > lock(*velocity_access_);
   diff_drive_debug_info_msg = *msg;
 }
 
 void InflationLayer::onInitialize()
 {
   {
-    boost::unique_lock < boost::recursive_mutex > lock_i(*inflation_access_);
+    boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
     current_ = true;
     if (seen_)
       delete[] seen_;
@@ -123,7 +123,7 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
 
 void InflationLayer::matchSize()
 {
-  boost::unique_lock < boost::recursive_mutex > lock_i(*inflation_access_);
+  boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
   costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
   resolution_ = costmap->getResolution();
   cell_inflation_radius_ = cellDistance(inflation_radius_);
@@ -188,7 +188,7 @@ double InflationLayer::calculate_variable_inflation_radius()
   double measured_velocity = 0.0;
   double variable_inflation_radius = min_inflation_radius_;
   {
-    boost::unique_lock < boost::recursive_mutex > lock_v(*velocity_access_);
+    boost::unique_lock < boost::recursive_mutex > lock(*velocity_access_);
     measured_velocity = diff_drive_debug_info_msg.measured_twist_filtered.linear.x;
   }
 
@@ -214,7 +214,7 @@ double InflationLayer::calculate_variable_inflation_radius()
 
 void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
-  boost::unique_lock < boost::recursive_mutex > lock_i(*inflation_access_);
+  boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
 
   if (use_variable_inflation_)
   {
@@ -428,7 +428,7 @@ void InflationLayer::setInflationParameters(double inflation_radius,
   {
     // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
     // when accessing the cached arrays
-    boost::unique_lock < boost::recursive_mutex > lock_i(*inflation_access_);
+    boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
 
     inflation_radius_ = inflation_radius;
     cell_inflation_radius_ = cellDistance(inflation_radius_);
