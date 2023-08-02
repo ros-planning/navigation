@@ -68,6 +68,10 @@ InflationLayer::InflationLayer()
 {
   inflation_access_ = new boost::recursive_mutex();
   velocity_access_ = new boost::recursive_mutex();
+
+  ros::NodeHandle nh("~/" + name_), g_nh;
+  diff_drive_debug_info_sub = g_nh.subscribe<lexxauto_msgs::DiffDriveEffortControllerDebug>
+    ("diff_drive_effort_controller/debug_info", 1, &InflationLayer::diff_drive_debug_info_callback, this);
 }
 
 void InflationLayer::diff_drive_debug_info_callback(const lexxauto_msgs::DiffDriveEffortControllerDebug::ConstPtr& msg)
@@ -80,9 +84,6 @@ void InflationLayer::onInitialize()
 {
   {
     boost::unique_lock < boost::recursive_mutex > lock_i(*inflation_access_);
-    ros::NodeHandle nh("~/" + name_), g_nh;
-    diff_drive_debug_info_sub = g_nh.subscribe<lexxauto_msgs::DiffDriveEffortControllerDebug>
-      ("diff_drive_effort_controller/debug_info", 1, &InflationLayer::diff_drive_debug_info_callback, this);
     current_ = true;
     if (seen_)
       delete[] seen_;
