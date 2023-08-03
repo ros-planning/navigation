@@ -36,13 +36,13 @@
  *         David V. Lu!!
  *********************************************************************/
 #include <algorithm>
-#include <costmap_2d/inflation_layer.h>
+#include <costmap_2d/variable_inflation_layer.h>
 #include <costmap_2d/costmap_math.h>
 #include <costmap_2d/footprint.h>
 #include <boost/thread.hpp>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(costmap_2d::InflationLayer, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(costmap_2d::VariableInflationLayer, costmap_2d::Layer)
 
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
@@ -51,7 +51,7 @@ using costmap_2d::NO_INFORMATION;
 namespace costmap_2d
 {
 
-InflationLayer::InflationLayer()
+VariableInflationLayer::VariableInflationLayer()
   : inflation_radius_(0)
   , weight_(0)
   , inflate_unknown_(false)
@@ -67,13 +67,23 @@ InflationLayer::InflationLayer()
   , last_max_y_(std::numeric_limits<float>::max())
 {
   inflation_access_ = new boost::recursive_mutex();
+  velocity_access_ = new boost::recursive_mutex();
+
+  ros::NodeHandle nh("~/" + name_), g_nh;
+  diff_drive_debug_info_sub = g_nh.subscribe<lexxauto_msgs::DiffDriveEffortControllerDebug>
+    ("diff_drive_effort_controller/debug_info", 1, &VariableInflationLayer::diff_drive_debug_info_callback, this);
 }
 
-void InflationLayer::onInitialize()
+void VariableInflationLayer::diff_drive_debug_info_callback(const lexxauto_msgs::DiffDriveEffortControllerDebug::ConstPtr& msg)
+{
+  boost::unique_lock < boost::recursive_mutex > lock(*velocity_access_);
+  diff_drive_debug_info_msg = *msg;
+}
+
+void VariableInflationLayer::onInitialize()
 {
   {
     boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
-    ros::NodeHandle nh("~/" + name_), g_nh;
     current_ = true;
     if (seen_)
       delete[] seen_;
@@ -81,8 +91,8 @@ void InflationLayer::onInitialize()
     seen_size_ = 0;
     need_reinflation_ = false;
 
-    dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>::CallbackType cb = boost::bind(
-        &InflationLayer::reconfigureCB, this, _1, _2);
+    dynamic_reconfigure::Server<costmap_2d::VariableInflationPluginConfig>::CallbackType cb = boost::bind(
+      &VariableInflationLayer::reconfigureCB, this, _1, _2);
 
     if (dsrv_ != NULL){
       dsrv_->clearCallback();
@@ -90,7 +100,7 @@ void InflationLayer::onInitialize()
     }
     else
     {
-      dsrv_ = new dynamic_reconfigure::Server<costmap_2d::InflationPluginConfig>(ros::NodeHandle("~/" + name_));
+      dsrv_ = new dynamic_reconfigure::Server<costmap_2d::VariableInflationPluginConfig>(ros::NodeHandle("~/" + name_));
       dsrv_->setCallback(cb);
     }
   }
@@ -98,9 +108,11 @@ void InflationLayer::onInitialize()
   matchSize();
 }
 
-void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, uint32_t level)
+void VariableInflationLayer::reconfigureCB(costmap_2d::VariableInflationPluginConfig &config, uint32_t level)
 {
-  setInflationParameters(config.inflation_radius, config.cost_scaling_factor);
+  setInflationParameters(config.inflation_radius, config.cost_scaling_factor,
+                         config.min_inflation_radius, config.max_inflation_radius,
+                         config.min_inflation_vel, config.max_inflation_vel);
 
   if (enabled_ != config.enabled || inflate_unknown_ != config.inflate_unknown) {
     enabled_ = config.enabled;
@@ -109,7 +121,7 @@ void InflationLayer::reconfigureCB(costmap_2d::InflationPluginConfig &config, ui
   }
 }
 
-void InflationLayer::matchSize()
+void VariableInflationLayer::matchSize()
 {
   boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
   costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
@@ -124,8 +136,8 @@ void InflationLayer::matchSize()
   seen_ = new bool[seen_size_];
 }
 
-void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
-                                           double* min_y, double* max_x, double* max_y)
+void VariableInflationLayer::updateBounds(double robot_x, double robot_y, double robot_yaw, double* min_x,
+                                          double* min_y, double* max_x, double* max_y)
 {
   if (need_reinflation_)
   {
@@ -159,21 +171,56 @@ void InflationLayer::updateBounds(double robot_x, double robot_y, double robot_y
   }
 }
 
-void InflationLayer::onFootprintChanged()
+void VariableInflationLayer::onFootprintChanged()
 {
   inscribed_radius_ = layered_costmap_->getInscribedRadius();
   cell_inflation_radius_ = cellDistance(inflation_radius_);
   computeCaches();
   need_reinflation_ = true;
 
-  ROS_DEBUG("InflationLayer::onFootprintChanged(): num footprint points: %lu,"
+  ROS_DEBUG("VariableInflationLayer::onFootprintChanged(): num footprint points: %lu,"
             " inscribed_radius_ = %.3f, inflation_radius_ = %.3f",
             layered_costmap_->getFootprint().size(), inscribed_radius_, inflation_radius_);
 }
 
-void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
+double VariableInflationLayer::calculate_variable_inflation_radius()
+{
+  double measured_velocity = 0.0;
+  double variable_inflation_radius = min_inflation_radius_;
+  {
+    boost::unique_lock < boost::recursive_mutex > lock(*velocity_access_);
+    measured_velocity = diff_drive_debug_info_msg.measured_twist_filtered.linear.x;
+  }
+
+  if (std::abs(measured_velocity) < min_inflation_vel_)
+  {
+    variable_inflation_radius = min_inflation_radius_;
+    ROS_INFO("inflation radius is min (%f) since velocity is low enough.", variable_inflation_radius);
+  }
+  else if (std::abs(measured_velocity) > max_inflation_vel_)
+  {
+    variable_inflation_radius = max_inflation_radius_;
+    ROS_INFO("inflation radius is max (%f) since velocity is large enough.", variable_inflation_radius);
+  }
+  else
+  {
+    double k = (max_inflation_radius_ - min_inflation_radius_) / (max_inflation_vel_ - min_inflation_vel_);
+    variable_inflation_radius = k * (std::abs(measured_velocity) - min_inflation_vel_) + min_inflation_radius_;
+    ROS_INFO("calculated inflation radius is %f.", variable_inflation_radius);
+  }
+
+  return variable_inflation_radius;
+}
+
+void VariableInflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j)
 {
   boost::unique_lock < boost::recursive_mutex > lock(*inflation_access_);
+
+  double variable_inflation_radius = calculate_variable_inflation_radius();
+  setInflationParameters(variable_inflation_radius, weight_,
+                         min_inflation_radius_, max_inflation_radius_,
+                         min_inflation_vel_, max_inflation_vel_);
+
   if (!enabled_ || (cell_inflation_radius_ == 0))
     return;
 
@@ -184,13 +231,13 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
   if (seen_ == NULL) {
-    ROS_WARN("InflationLayer::updateCosts(): seen_ array is NULL");
+    ROS_WARN("VariableInflationLayer::updateCosts(): seen_ array is NULL");
     seen_size_ = size_x * size_y;
     seen_ = new bool[seen_size_];
   }
   else if (seen_size_ != size_x * size_y)
   {
-    ROS_WARN("InflationLayer::updateCosts(): seen_ array size is wrong");
+    ROS_WARN("VariableInflationLayer::updateCosts(): seen_ array size is wrong");
     delete[] seen_;
     seen_size_ = size_x * size_y;
     seen_ = new bool[seen_size_];
@@ -286,7 +333,7 @@ void InflationLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, 
  * @param  src_x The x index of the obstacle point inflation started at
  * @param  src_y The y index of the obstacle point inflation started at
  */
-inline void InflationLayer::enqueue(unsigned int index, unsigned int mx, unsigned int my,
+inline void VariableInflationLayer::enqueue(unsigned int index, unsigned int mx, unsigned int my,
                                     unsigned int src_x, unsigned int src_y)
 {
   if (!seen_[index])
@@ -303,7 +350,7 @@ inline void InflationLayer::enqueue(unsigned int index, unsigned int mx, unsigne
   }
 }
 
-void InflationLayer::computeCaches()
+void VariableInflationLayer::computeCaches()
 {
   if (cell_inflation_radius_ == 0)
     return;
@@ -338,7 +385,7 @@ void InflationLayer::computeCaches()
   }
 }
 
-void InflationLayer::deleteKernels()
+void VariableInflationLayer::deleteKernels()
 {
   if (cached_distances_ != NULL)
   {
@@ -364,9 +411,16 @@ void InflationLayer::deleteKernels()
   }
 }
 
-void InflationLayer::setInflationParameters(double inflation_radius, double cost_scaling_factor)
+void VariableInflationLayer::setInflationParameters(double inflation_radius,
+                                                    double cost_scaling_factor,
+                                                    double min_inflation_radius,
+                                                    double max_inflation_radius,
+                                                    double min_inflation_vel,
+                                                    double max_inflation_vel)
 {
-  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius)
+  if (weight_ != cost_scaling_factor || inflation_radius_ != inflation_radius ||
+      min_inflation_radius_ != min_inflation_radius || max_inflation_radius_ != max_inflation_radius ||
+      min_inflation_vel_ != min_inflation_vel || max_inflation_vel_ != max_inflation_vel)
   {
     // Lock here so that reconfiguring the inflation radius doesn't cause segfaults
     // when accessing the cached arrays
@@ -376,6 +430,12 @@ void InflationLayer::setInflationParameters(double inflation_radius, double cost
     cell_inflation_radius_ = cellDistance(inflation_radius_);
     weight_ = cost_scaling_factor;
     need_reinflation_ = true;
+
+    min_inflation_radius_ = min_inflation_radius;
+    max_inflation_radius_ = max_inflation_radius;
+    min_inflation_vel_ = min_inflation_vel;
+    max_inflation_vel_ = max_inflation_vel;
+
     computeCaches();
   }
 }

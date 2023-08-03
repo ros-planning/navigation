@@ -344,7 +344,11 @@ void Costmap2DROS::copyParentParameters(const std::string& plugin_name, const st
   {
     move_parameter(nh, target_layer, "cost_scaling_factor", false);
     move_parameter(nh, target_layer, "inflation_radius", false);
-    move_parameter(nh, target_layer, "use_variable_inflation", false);
+  }
+  else if(plugin_type == "costmap_2d::VariableInflationLayer")
+  {
+    move_parameter(nh, target_layer, "cost_scaling_factor", false);
+    move_parameter(nh, target_layer, "inflation_radius", false);
     move_parameter(nh, target_layer, "min_inflation_radius", false);
     move_parameter(nh, target_layer, "max_inflation_radius", false);
     move_parameter(nh, target_layer, "min_inflation_vel", false);

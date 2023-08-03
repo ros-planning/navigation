@@ -9,14 +9,14 @@
 
 #define protected public
 #define private public
-#include <costmap_2d/inflation_layer.h>
+#include <costmap_2d/variable_inflation_layer.h>
 #undef private
 #undef protected
 
 using namespace costmap_2d;
 
 TEST(costmap, testCalculateVariableInflationRadius){
-  boost::shared_ptr<InflationLayer> ilayer = boost::make_shared<InflationLayer>();
+  boost::shared_ptr<VariableInflationLayer> ilayer = boost::make_shared<VariableInflationLayer>();
   double radius = 0.0;
 
   ilayer->min_inflation_radius_ = 0.1;
