@@ -38,7 +38,7 @@ TEST(costmap, testCalculateVariableInflationRadius){
 }
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "inflation_tests_unit");
+  ros::init(argc, argv, "variable_inflation_tests_unit");
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
