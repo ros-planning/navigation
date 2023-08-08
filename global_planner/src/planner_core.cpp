@@ -322,18 +322,26 @@ uint32_t GlobalPlanner::makePlan(const geometry_msgs::PoseStamped& start, const 
 
       double best_sdist = DBL_MAX;
 
+      // reduce tolerance to ensure all poses are clearly inside the tolerance
+      // TODO: use constexpr T max( std::initializer_list<T> ilist ); (since C++14)
+      const double tol_reduction = 1e-6 * std::max(std::max(1.0, tolerance), std::max(std::abs(p.pose.position.x), std::abs(p.pose.position.y)));
+      const double reduced_tolerance = tolerance - tol_reduction;
+
+      // sample denser than cell to not unnecessarily use up tolerance, and ensure at least 5 sampled points
+      const double step_size = std::min(0.5 * resolution, 0.999*tolerance);
+
       unsigned int mx, my;
-      for(double dy = -tolerance; dy <= tolerance; dy += resolution){
+      for(double dy = -reduced_tolerance; dy <= reduced_tolerance; dy += step_size){
         p.pose.position.y = goal.pose.position.y + dy;
-        const double dx = std::sqrt(tolerance*tolerance - dy*dy);
-        for(p.pose.position.x = goal.pose.position.x - dx; p.pose.position.x <= goal.pose.position.x + dx; p.pose.position.x += resolution){
+        const double dx = std::sqrt(reduced_tolerance*reduced_tolerance - dy*dy);
+        for(p.pose.position.x = goal.pose.position.x - dx; p.pose.position.x <= goal.pose.position.x + dx; p.pose.position.x += step_size){
             if(costmap_->worldToMap(p.pose.position.x, p.pose.position.y, mx, my)) {
               unsigned int index = my * nx + mx;
               double potential = potential_array_[index];
               double sdist = sq_distance(p, goal);
               ROS_FATAL_STREAM_COND(sdist > tolerance, "sampled pose is " << sdist << " away from the goal, which is above tolerance " << tolerance);
               assert(sdist <= tolerance);
-              if(potential < POT_HIGH && sdist < best_sdist){
+              if(potential < POT_HIGH && sdist < best_sdist && sdist < tolerance){
                 best_sdist = sdist;
                 best_pose = p;
                 found_legal = true;
