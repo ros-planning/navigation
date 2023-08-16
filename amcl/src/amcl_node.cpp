@@ -290,7 +290,9 @@ class AmclNode
     void reconfigureCB(amcl::AMCLConfig &config, uint32_t level);
 
     ros::Time last_laser_received_ts_;
+    ros::Time last_particlecloud_published_ts_;
     ros::Duration laser_check_interval_;
+    ros::Duration particlecloud_pub_interval_;
     void checkLaserReceived(const ros::TimerEvent& event);
 };
 
@@ -506,6 +508,8 @@ AmclNode::AmclNode() :
   laser_check_interval_ = ros::Duration(15.0);
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
                                        boost::bind(&AmclNode::checkLaserReceived, this, _1));
+  particlecloud_pub_interval_ = ros::Duration(1.0);
+  last_particlecloud_published_ts_ = ros::Time::now();
 
   diagnosic_updater_.setHardwareID("None");
   diagnosic_updater_.add("Standard deviation", this, &AmclNode::standardDeviationDiagnostics);
@@ -1350,7 +1354,13 @@ AmclNode::laserReceived(const sensor_msgs::LaserScanConstPtr& laser_scan)
         q.setRPY(0, 0, set->samples[i].pose.v[2]);
         tf2::convert(q, cloud_msg.poses[i].orientation);
       }
-      particlecloud_pub_.publish(cloud_msg);
+      // Publish particlecloud every second
+      ros::Duration d = ros::Time::now() - last_particlecloud_published_ts_;
+      if(d > particlecloud_pub_interval_)
+      {
+        particlecloud_pub_.publish(cloud_msg);
+        last_particlecloud_published_ts_ = ros::Time::now();
+      }
     }
   }
 
