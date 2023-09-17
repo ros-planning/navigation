@@ -210,25 +210,25 @@ class MapServer
 #endif
       try {
         doc["resolution"] >> res;
-      } catch (YAML::InvalidScalar &) {
+      } catch (YAML::BadConversion &) {
         ROS_ERROR("The map does not contain a resolution tag or it is invalid.");
         return false;
       }
       try {
         doc["negate"] >> negate;
-      } catch (YAML::InvalidScalar &) {
+      } catch (YAML::BadConversion &) {
         ROS_ERROR("The map does not contain a negate tag or it is invalid.");
         return false;
       }
       try {
         doc["occupied_thresh"] >> occ_th;
-      } catch (YAML::InvalidScalar &) {
+      } catch (YAML::BadConversion &) {
         ROS_ERROR("The map does not contain an occupied_thresh tag or it is invalid.");
         return false;
       }
       try {
         doc["free_thresh"] >> free_th;
-      } catch (YAML::InvalidScalar &) {
+      } catch (YAML::BadConversion &) {
         ROS_ERROR("The map does not contain a free_thresh tag or it is invalid.");
         return false;
       }
@@ -254,7 +254,7 @@ class MapServer
         doc["origin"][0] >> origin[0];
         doc["origin"][1] >> origin[1];
         doc["origin"][2] >> origin[2];
-      } catch (YAML::InvalidScalar &) {
+      } catch (YAML::BadConversion &) {
         ROS_ERROR("The map does not contain an origin tag or it is invalid.");
         return false;
       }
@@ -275,7 +275,7 @@ class MapServer
           mapfpath = dir / mapfpath;
           mapfname = mapfpath.string();
         }
-      } catch (YAML::InvalidScalar &) {
+      } catch (YAML::BadConversion &) {
         ROS_ERROR("The map does not contain an image tag or it is invalid.");
         return false;
       }
