@@ -41,6 +41,7 @@
 #include <costmap_2d/layered_costmap.h>
 #include <string>
 #include <tf2_ros/buffer.h>
+#include <boost/any.hpp>
 
 namespace costmap_2d
 {
@@ -128,6 +129,20 @@ public:
    * changes (via LayeredCostmap::setFootprint()).  Override to be
    * notified of changes to the robot's footprint. */
   virtual void onFootprintChanged() {}
+
+  enum class LayerType{
+    NONE,
+    STATIC,
+    INFLATION,
+    OBSTACLE,
+    SEMANTIC,
+    VOXEL
+  };
+
+  virtual boost::any dump(LayerType& type){
+    type = LayerType::NONE;
+    return boost::any();
+  }
 
 protected:
   /** @brief This is called at the end of initialize().  Override to

@@ -156,7 +156,7 @@ Costmap2DROS::Costmap2DROS(const std::string& name, tf2_ros::Buffer& tf) :
 
   setUnpaddedRobotFootprint(makeFootprintFromParams(private_nh));
 
-  publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_->getCostmap(), global_frame_, "costmap",
+  publisher_ = new Costmap2DPublisher(&private_nh, layered_costmap_, global_frame_, "costmap",
                                       always_send_full_costmap);
 
   // create a thread to handle updating the map

@@ -66,6 +66,8 @@ public:
 
   virtual void matchSize();
 
+  const LayerType type = LayerType::STATIC;
+
 private:
   /**
    * @brief  Callback to update the costmap's map from the map_server

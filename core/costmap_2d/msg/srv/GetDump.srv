@@ -1,0 +1,5 @@
+---
+Header header
+nav_msgs/OccupancyGrid costmap
+ObstacleDump[] obstacle_layers
+SemanticDump[] semantic_layers

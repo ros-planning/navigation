@@ -44,14 +44,16 @@ namespace costmap_2d
 
 char* Costmap2DPublisher::cost_translation_table_ = NULL;
 
-Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* costmap, std::string global_frame,
+Costmap2DPublisher::Costmap2DPublisher(ros::NodeHandle* ros_node, LayeredCostmap* costmap, std::string global_frame,
                                        std::string topic_name, bool always_send_full_costmap) :
-    node(ros_node), costmap_(costmap), global_frame_(global_frame), active_(false),
-    always_send_full_costmap_(always_send_full_costmap)
+    node(ros_node), costmap_(costmap->getCostmap()), global_frame_(global_frame), active_(false),
+    always_send_full_costmap_(always_send_full_costmap), layered_costmap_(costmap)
 {
   costmap_pub_ = ros_node->advertise<nav_msgs::OccupancyGrid>(topic_name, 1,
                                                     boost::bind(&Costmap2DPublisher::onNewSubscription, this, _1));
   costmap_update_pub_ = ros_node->advertise<map_msgs::OccupancyGridUpdate>(topic_name + "_updates", 1);
+
+  getDump_srv_ = ros_node->advertiseService("get_dump", &Costmap2DPublisher::cb_getDump, this);
 
   if (cost_translation_table_ == NULL)
   {
@@ -164,6 +166,36 @@ void Costmap2DPublisher::publishCostmap()
   xn_ = yn_ = 0;
   x0_ = costmap_->getSizeInCellsX();
   y0_ = costmap_->getSizeInCellsY();
+}
+
+bool Costmap2DPublisher::cb_getDump(costmap_2d::GetDump::Request& req, costmap_2d::GetDump::Response& res){
+  
+  res.header.stamp = ros::Time::now();
+  res.header.frame_id = global_frame_;
+
+  res.costmap = grid_;
+
+  auto layers = *(layered_costmap_->getPlugins());
+
+  for(const auto& layer: layers){
+    Layer::LayerType type;
+    auto dump = layer->dump(type);
+
+    switch(type){
+      case Layer::LayerType::OBSTACLE:
+        res.obstacle_layers.push_back(boost::any_cast<ObstacleDump>(dump));
+        break;
+
+      case Layer::LayerType::SEMANTIC:
+        res.semantic_layers.push_back(boost::any_cast<SemanticDump>(dump));
+        break;
+
+      default:
+        break;
+    }
+  }
+  
+  return true;
 }
 
 }  // end namespace costmap_2d

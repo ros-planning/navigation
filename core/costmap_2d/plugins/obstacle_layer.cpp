@@ -619,4 +619,21 @@ void ObstacleLayer::reset()
     activate();
 }
 
+boost::any ObstacleLayer::dump(LayerType& type) {
+  type = LayerType::OBSTACLE;
+  
+  auto dump = ObstacleDump();
+
+  for(const auto& buffer : observation_buffers_){
+    auto container = std::vector<Observation>();
+    buffer->getObservations(container);
+
+    for(const auto& observation : container){
+      dump.scans.push_back(*observation.cloud_);
+    }
+  }
+
+  return dump;
+}
+
 }  // namespace costmap_2d

@@ -44,6 +44,7 @@
 namespace costmap_2d
 {
 
+
 class CostmapLayer : public Layer, public Costmap2D
 {
 public:

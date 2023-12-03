@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${default}"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "ros",
+            "includePath": [
+                "/home/vova/Documents/Development/reproduce/devel/include",
+                "/usr/include/eigen3",
+                "${workspaceFolder}/core/costmap_2d/include",
+                "/opt/ros/noetic/include",
+                "${workspaceFolder}/core/costmap_2d/include/costmap_2d"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

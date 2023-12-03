@@ -55,6 +55,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <costmap_2d/ObstaclePluginConfig.h>
 #include <costmap_2d/footprint.h>
+#include <costmap_2d/ObstacleDump.h>
 
 namespace costmap_2d
 {
@@ -170,6 +171,8 @@ protected:
 
 private:
   void reconfigureCB(costmap_2d::ObstaclePluginConfig &config, uint32_t level);
+  
+  boost::any dump(LayerType& type) override;
 };
 
 }  // namespace costmap_2d

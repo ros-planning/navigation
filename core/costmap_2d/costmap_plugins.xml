@@ -12,6 +12,8 @@
     <class type="costmap_2d::VoxelLayer"     base_class_type="costmap_2d::Layer">
       <description>Similar to obstacle costmap, but uses 3D voxel grid to store data.</description>
     </class>
+    <class type="costmap_2d::SemanticLayer"     base_class_type="costmap_2d::Layer">
+      <description>Listens to pedsim semantic data and translates them to costmap grid.</description>
+    </class>
   </library>
 </class_libraries>
-

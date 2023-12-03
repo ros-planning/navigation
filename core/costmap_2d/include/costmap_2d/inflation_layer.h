@@ -125,6 +125,8 @@ public:
    */
   void setInflationParameters(double inflation_radius, double cost_scaling_factor);
 
+  const LayerType type = LayerType::INFLATION;
+
 protected:
   virtual void onFootprintChanged();
   boost::recursive_mutex* inflation_access_;

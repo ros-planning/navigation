@@ -21,6 +21,7 @@ find_package(catkin REQUIRED
             tf2_sensor_msgs
             visualization_msgs
             voxel_grid
+            pedsim_msgs
         )
 
 find_package(Eigen3 REQUIRED)
@@ -36,9 +37,17 @@ add_definitions(${EIGEN3_DEFINITIONS})
 
 # messages
 add_message_files(
-    DIRECTORY msg
+    DIRECTORY msg/msg
     FILES
+    ObstacleDump.msg
+    SemanticDump.msg
     VoxelGrid.msg
+)
+
+add_service_files(
+    DIRECTORY msg/srv
+    FILES
+    GetDump.srv
 )
 
 generate_messages(
@@ -46,6 +55,8 @@ generate_messages(
         std_msgs
         geometry_msgs
         map_msgs
+        nav_msgs
+        pedsim_msgs
 )
 
 # dynamic reconfigure
@@ -55,6 +66,7 @@ generate_dynamic_reconfigure_options(
   cfg/GenericPlugin.cfg
   cfg/InflationPlugin.cfg
   cfg/VoxelPlugin.cfg
+  cfg/SemanticPlugin.cfg
 )
 
 catkin_package(
@@ -105,6 +117,7 @@ add_library(layers
   plugins/obstacle_layer.cpp
   plugins/static_layer.cpp
   plugins/voxel_layer.cpp
+  plugins/semantic_layer.cpp
   src/observation_buffer.cpp
 )
 add_dependencies(layers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -81,6 +81,7 @@ public:
   virtual void matchSize();
   virtual void reset();
 
+  const LayerType type = LayerType::VOXEL;
 
 protected:
   virtual void setupDynamicReconfigure(ros::NodeHandle& nh);

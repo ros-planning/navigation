@@ -38,9 +38,14 @@
 #ifndef COSTMAP_2D_COSTMAP_2D_PUBLISHER_H_
 #define COSTMAP_2D_COSTMAP_2D_PUBLISHER_H_
 #include <ros/ros.h>
-#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/layered_costmap.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <map_msgs/OccupancyGridUpdate.h>
+
+#include <costmap_2d/GetDump.h>
+
+#include "costmap_2d/obstacle_layer.h"
+#include "costmap_2d/semantic_layer.h"
 
 namespace costmap_2d
 {
@@ -54,7 +59,7 @@ public:
   /**
    * @brief  Constructor for the Costmap2DPublisher
    */
-  Costmap2DPublisher(ros::NodeHandle * ros_node, Costmap2D* costmap, std::string global_frame,
+  Costmap2DPublisher(ros::NodeHandle * ros_node, LayeredCostmap* costmap, std::string global_frame,
                      std::string topic_name, bool always_send_full_costmap = false);
 
   /**
@@ -85,6 +90,8 @@ public:
     return active_;
   }
 
+  bool cb_getDump(costmap_2d::GetDump::Request& req, costmap_2d::GetDump::Response& res);
+
 private:
   /** @brief Prepare grid_ message for publication. */
   void prepareGrid();
@@ -93,6 +100,7 @@ private:
   void onNewSubscription(const ros::SingleSubscriberPublisher& pub);
 
   ros::NodeHandle* node;
+  LayeredCostmap* layered_costmap_;
   Costmap2D* costmap_;
   std::string global_frame_;
   unsigned int x0_, xn_, y0_, yn_;
@@ -103,6 +111,8 @@ private:
   ros::Publisher costmap_update_pub_;
   nav_msgs::OccupancyGrid grid_;
   static char* cost_translation_table_;  ///< Translate from 0-255 values in costmap to -1 to 100 values in message.
+
+  ros::ServiceServer getDump_srv_;
 };
 }  // namespace costmap_2d
 #endif  // COSTMAP_2D_COSTMAP_2D_PUBLISHER_H
