@@ -1,4 +1,4 @@
 *~
 *.project
 *.cproject
-
+.vscode
