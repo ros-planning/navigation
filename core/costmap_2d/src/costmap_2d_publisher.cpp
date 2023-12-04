@@ -173,6 +173,7 @@ bool Costmap2DPublisher::cb_getDump(costmap_2d::GetDump::Request& req, costmap_2
   res.header.stamp = ros::Time::now();
   res.header.frame_id = global_frame_;
 
+  prepareGrid();
   res.costmap = grid_;
 
   auto layers = *(layered_costmap_->getPlugins());
