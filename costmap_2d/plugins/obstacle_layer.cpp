@@ -278,7 +278,10 @@ void ObstacleLayer::laserScanValidInfCallback(const sensor_msgs::LaserScanConstP
   for (size_t i = 0; i < message.ranges.size(); i++)
   {
     float range = message.ranges[ i ];
-    if (!std::isfinite(range) && range > 0)
+    if ((!std::isfinite(range) && range > 0) || 
+	    (range < message.range_min) || 
+		(range > message.range_max) || 
+		 std::isnan(range))
     {
       message.ranges[ i ] = message.range_max - epsilon;
     }
@@ -527,53 +530,69 @@ void ObstacleLayer::raytraceFreespace(const Observation& clearing_observation, d
   {
     double wx = *iter_x;
     double wy = *iter_y;
+    
+    double inflate_dx = 2.0, inflate_dy = 2.0;
+    std::vector< std::pair<double,double> > inflate_pts;
 
-    // now we also need to make sure that the enpoint we're raytracing
-    // to isn't off the costmap and scale if necessary
-    double a = wx - ox;
-    double b = wy - oy;
+    inflate_pts.push_back(std::make_pair(wx + 0              , wy + 0             ));
+    inflate_pts.push_back(std::make_pair(wx + 0              , wy + 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 0              , wy + 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 0              , wy + 3 * inflate_dy));
 
-    // the minimum value to raytrace from is the origin
-    if (wx < origin_x)
-    {
-      double t = (origin_x - ox) / a;
-      wx = origin_x;
-      wy = oy + b * t;
+    inflate_pts.push_back(std::make_pair(wx - 0              , wy - 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 0              , wy - 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 0              , wy - 3 * inflate_dy));
+
+    inflate_pts.push_back(std::make_pair(wx - 1 * inflate_dx , wy - 0             ));
+    inflate_pts.push_back(std::make_pair(wx - 1 * inflate_dx , wy - 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 1 * inflate_dx , wy - 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 1 * inflate_dx , wy - 3 * inflate_dy));
+
+    inflate_pts.push_back(std::make_pair(wx + 1 * inflate_dx , wy + 0             ));
+    inflate_pts.push_back(std::make_pair(wx + 1 * inflate_dx , wy + 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 1 * inflate_dx , wy + 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 1 * inflate_dx , wy + 3 * inflate_dy));
+
+    inflate_pts.push_back(std::make_pair(wx - 2 * inflate_dx , wy - 0             ));
+    inflate_pts.push_back(std::make_pair(wx - 2 * inflate_dx , wy - 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 2 * inflate_dx , wy - 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 2 * inflate_dx , wy - 3 * inflate_dy));
+
+    inflate_pts.push_back(std::make_pair(wx + 2 * inflate_dx , wy + 0             ));
+    inflate_pts.push_back(std::make_pair(wx + 2 * inflate_dx , wy + 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 2 * inflate_dx , wy + 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 2 * inflate_dx , wy + 3 * inflate_dy));
+
+    inflate_pts.push_back(std::make_pair(wx - 3 * inflate_dx , wy - 0             ));
+    inflate_pts.push_back(std::make_pair(wx - 3 * inflate_dx , wy - 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 3 * inflate_dx , wy - 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx - 3 * inflate_dx , wy - 3 * inflate_dy));
+
+    inflate_pts.push_back(std::make_pair(wx + 3 * inflate_dx , wy + 0             ));
+    inflate_pts.push_back(std::make_pair(wx + 3 * inflate_dx , wy + 1 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 3 * inflate_dx , wy + 2 * inflate_dy));
+    inflate_pts.push_back(std::make_pair(wx + 3 * inflate_dx , wy + 3 * inflate_dy));
+
+    std::vector< std::pair<double,double> >::iterator inflate_iter;
+
+    for(inflate_iter = inflate_pts.begin(); inflate_iter != inflate_pts.end(); inflate_iter++) {
+
+      wx = (*inflate_iter).first;
+      wy = (*inflate_iter).second;
+
+      // now that the vector is scaled correctly... we'll get the map coordinates of its endpoint
+      unsigned int x1, y1;
+
+      // check for legality just in case
+      if (!worldToMap(wx, wy, x1, y1))
+        continue;
+
+      unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
+      MarkCell marker(costmap_, FREE_SPACE);
+      // and finally... we can execute our trace to clear obstacles along that line
+      raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
+      updateRaytraceBounds(ox, oy, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
     }
-    if (wy < origin_y)
-    {
-      double t = (origin_y - oy) / b;
-      wx = ox + a * t;
-      wy = origin_y;
-    }
-
-    // the maximum value to raytrace to is the end of the map
-    if (wx > map_end_x)
-    {
-      double t = (map_end_x - ox) / a;
-      wx = map_end_x - .001;
-      wy = oy + b * t;
-    }
-    if (wy > map_end_y)
-    {
-      double t = (map_end_y - oy) / b;
-      wx = ox + a * t;
-      wy = map_end_y - .001;
-    }
-
-    // now that the vector is scaled correctly... we'll get the map coordinates of its endpoint
-    unsigned int x1, y1;
-
-    // check for legality just in case
-    if (!worldToMap(wx, wy, x1, y1))
-      continue;
-
-    unsigned int cell_raytrace_range = cellDistance(clearing_observation.raytrace_range_);
-    MarkCell marker(costmap_, FREE_SPACE);
-    // and finally... we can execute our trace to clear obstacles along that line
-    raytraceLine(marker, x0, y0, x1, y1, cell_raytrace_range);
-
-    updateRaytraceBounds(ox, oy, wx, wy, clearing_observation.raytrace_range_, min_x, min_y, max_x, max_y);
   }
 }
 
