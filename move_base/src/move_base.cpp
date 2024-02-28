@@ -650,12 +650,12 @@ namespace move_base {
 
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
-    if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
+    geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+
+    if(!isQuaternionValid(goal.pose.orientation)){
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
     }
-
-    geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
 
     publishZeroVelocity();
     //we have a goal so start the planner
@@ -693,14 +693,14 @@ namespace move_base {
       if(as_->isPreemptRequested()){
         if(as_->isNewGoalAvailable()){
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
-          move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
+          move_base_msgs::MoveBaseGoal new_move_base_goal = *as_->acceptNewGoal();
+          geometry_msgs::PoseStamped new_goal = goalToGlobalFrame(new_move_base_goal.target_pose);
 
-          if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
+          if(!isQuaternionValid(new_goal.pose.orientation)){
             as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
             return;
           }
-
-          goal = goalToGlobalFrame(new_goal.target_pose);
+          goal = new_goal;
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
