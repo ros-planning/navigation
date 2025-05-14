@@ -90,7 +90,7 @@ namespace move_base {
     controller_plan_ = new std::vector<geometry_msgs::PoseStamped>();
 
     //set up the planner's thread
-    planner_thread_ = new boost::thread(boost::bind(&MoveBase::planThread, this));
+    planner_thread_ = new boost::thread(std::bind(&MoveBase::planThread, this));
 
     //for commanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);

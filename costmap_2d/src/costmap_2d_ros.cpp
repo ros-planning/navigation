@@ -352,7 +352,7 @@ void Costmap2DROS::reconfigureCB(costmap_2d::Costmap2DConfig &config, uint32_t l
 
   // only construct the thread if the frequency is positive
   if(map_update_frequency > 0.0)
-    map_update_thread_ = new boost::thread(boost::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
+    map_update_thread_ = new boost::thread(std::bind(&Costmap2DROS::mapUpdateLoop, this, map_update_frequency));
 }
 
 void Costmap2DROS::readFootprintFromConfig(const costmap_2d::Costmap2DConfig &new_config,

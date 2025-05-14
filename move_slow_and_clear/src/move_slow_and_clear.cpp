@@ -177,7 +177,7 @@ namespace move_slow_and_clear
         remove_limit_thread_->join();
         delete remove_limit_thread_;
       }
-      remove_limit_thread_ = new boost::thread(boost::bind(&MoveSlowAndClear::removeSpeedLimit, this));
+      remove_limit_thread_ = new boost::thread(std::bind(&MoveSlowAndClear::removeSpeedLimit, this));
 
       distance_check_timer_.stop();
     }

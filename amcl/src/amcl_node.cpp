@@ -489,8 +489,8 @@ AmclNode::AmclNode() :
                                                              odom_frame_id_,
                                                              100,
                                                              nh_);
-  laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
-                                                   this, _1));
+  laser_scan_filter_->registerCallback(std::bind(&AmclNode::laserReceived,
+                                                 this, std::placeholders::_1));
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 
   if(use_map_topic_) {
@@ -502,13 +502,13 @@ AmclNode::AmclNode() :
   m_force_update = false;
 
   dsrv_ = new dynamic_reconfigure::Server<amcl::AMCLConfig>(ros::NodeHandle("~"));
-  dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = boost::bind(&AmclNode::reconfigureCB, this, _1, _2);
+  dynamic_reconfigure::Server<amcl::AMCLConfig>::CallbackType cb = std::bind(&AmclNode::reconfigureCB, this, std::placeholders::_1, std::placeholders::_2);
   dsrv_->setCallback(cb);
 
   // 15s timer to warn on lack of receipt of laser scans, #5209
   laser_check_interval_ = ros::Duration(15.0);
   check_laser_timer_ = nh_.createTimer(laser_check_interval_, 
-                                       boost::bind(&AmclNode::checkLaserReceived, this, _1));
+                                       std::bind(&AmclNode::checkLaserReceived, this, std::placeholders::_1));
 
   diagnosic_updater_.setHardwareID("None");
   diagnosic_updater_.add("Standard deviation", this, &AmclNode::standardDeviationDiagnostics);
@@ -666,8 +666,8 @@ void AmclNode::reconfigureCB(AMCLConfig &config, uint32_t level)
                                                              odom_frame_id_,
                                                              100,
                                                              nh_);
-  laser_scan_filter_->registerCallback(boost::bind(&AmclNode::laserReceived,
-                                                   this, _1));
+  laser_scan_filter_->registerCallback(std::bind(&AmclNode::laserReceived,
+                                                 this, std::placeholders::_1));
 
   initial_pose_sub_ = nh_.subscribe("initialpose", 2, &AmclNode::initialPoseReceived, this);
 }
